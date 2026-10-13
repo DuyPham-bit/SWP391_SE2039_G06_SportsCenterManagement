@@ -621,6 +621,23 @@ export const receptionApi = {
     return asArray(await apiRequest(`centers/${centerId()}/checkins/today`));
   },
 
+  async requestCheckInReview(identifier, reason, requestedApprover) {
+    const term = String(identifier || '').trim();
+    if (!term || !reason?.trim()) throw new Error('Nhập mã hội viên và lý do cần xử lý ngoại lệ.');
+    const members = await this.lookupMember(term);
+    const normalized = term.toLowerCase();
+    const exact = members.filter(member => [member.id, member.memberCode, member.email, member.phone, member.username]
+      .some(value => String(value || '').toLowerCase() === normalized));
+    const candidates = exact.length ? exact : members;
+    if (candidates.length !== 1) throw new Error('Nhập chính xác mã, email hoặc số điện thoại của một hội viên để lưu yêu cầu.');
+    return this.createSupportRequest({
+      memberId: candidates[0].id,
+      subject: `Yêu cầu xử lý ngoại lệ check-in · ${candidates[0].memberCode}`,
+      description: `Lý do: ${reason.trim()}\nNgười được đề nghị xử lý: ${requestedApprover?.trim() || 'Quản lý trung tâm'}\nĐây là yêu cầu chờ xử lý; chưa phê duyệt check-in hoặc mở cổng.`,
+      priority: 'High'
+    });
+  },
+
   async getCheckInSummary() {
     return apiRequest(`centers/${centerId()}/checkins/summary`);
   },

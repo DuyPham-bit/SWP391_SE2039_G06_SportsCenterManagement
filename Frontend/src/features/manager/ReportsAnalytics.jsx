@@ -5,6 +5,12 @@ import { StatCard } from '../../components/common/StatCard.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
+import {
+  RevenueTrendChart,
+  NewMembersAreaChart,
+  SportsDonutChart,
+  ClassCapacityBarChart
+} from './AnalyticsCharts.jsx';
 
 const field = 'border border-slate-200 rounded-lg p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500';
 const button = 'px-4 py-2 rounded-lg bg-slate-900 text-white text-sm font-semibold hover:bg-slate-800 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm';
@@ -475,6 +481,14 @@ export function ReportsAnalytics() {
                 </div>
               </div>
 
+              {/* Visual Capacity Comparison Chart */}
+              <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80">
+                <span className="text-xs font-bold text-slate-700 block mb-3 uppercase tracking-wider">
+                  📊 Biểu đồ so sánh Lượt đặt vs Sức chứa tối đa (Top 5 Lớp dẫn đầu)
+                </span>
+                <ClassCapacityBarChart classes={processedClasses} />
+              </div>
+
               {/* Classes Table */}
               <div className="overflow-x-auto border border-slate-100 rounded-xl">
                 <table className="w-full text-left border-collapse text-sm">
@@ -602,6 +616,14 @@ export function ReportsAnalytics() {
                     So sánh thị phần đặt chỗ, công suất cung ứng và tỷ lệ lấp đầy giữa các bộ môn thể thao.
                   </p>
                 </div>
+              </div>
+
+              {/* Interactive Sports Donut Chart */}
+              <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80">
+                <span className="text-xs font-bold text-slate-700 block mb-2 uppercase tracking-wider">
+                  🍩 Biểu Đồ Donut Thị Phần Đặt Chỗ Theo Bộ Môn (Tương tác Hover)
+                </span>
+                <SportsDonutChart sports={metrics.topSports} />
               </div>
 
               {/* Sports Grid */}
@@ -862,54 +884,32 @@ export function ReportsAnalytics() {
                 </div>
               </section>
 
-              {/* Revenue & Events Graphs */}
+              {/* Revenue & Member Trend Charts */}
               <div className="grid lg:grid-cols-2 gap-5">
-                <section className="bg-white border rounded-xl p-5 space-y-3 shadow-sm">
-                  <h2 className="font-bold text-slate-900 text-sm font-chivo">
-                    Doanh thu thuần theo {metrics.groupBy === 'month' ? 'tháng' : 'ngày'}
-                  </h2>
-                  {revenue.length ? revenue.map(r => (
-                    <div key={r.periodStart} className="space-y-1">
-                      <div className="text-xs flex justify-between gap-3 font-semibold">
-                        <span className="text-slate-600">{r.periodStart}</span>
-                        <span className="text-slate-900 font-bold">{Number(r.net || 0).toLocaleString('vi-VN')}đ</span>
-                      </div>
-                      <div className="h-2 rounded-full bg-slate-100 overflow-hidden">
-                        <div
-                          className="h-2 rounded-full bg-red-600 transition-all duration-300"
-                          style={{ width: `${Math.max(0, Math.min(100, (Number(r.net || 0) / maxRevenue) * 100))}%` }}
-                        />
-                      </div>
-                    </div>
-                  )) : (
-                    <p className="text-xs text-slate-400 py-4 text-center">Chưa có doanh thu trong kỳ đã chọn.</p>
-                  )}
+                <section className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm">
+                  <div>
+                    <h2 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                      Biểu Đồ Cột Doanh Thu Thuần ({metrics.groupBy === 'month' ? 'Theo Tháng' : 'Theo Ngày'})
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Trực quan hóa doanh thu thực nhận từng ngày/tháng với định dạng tiền tệ và mốc doanh thu đỉnh.
+                    </p>
+                  </div>
+                  <RevenueTrendChart data={revenue} groupBy={metrics.groupBy} />
                 </section>
 
-                <section className="bg-white border rounded-xl p-5 space-y-3 shadow-sm">
-                  <h2 className="font-bold text-slate-900 text-sm font-chivo">
-                    Thành viên mới theo kỳ
-                  </h2>
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-xs text-left border-collapse">
-                      <thead>
-                        <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
-                          <th className="p-2.5">Kỳ</th>
-                          <th className="p-2.5 text-right">Số thành viên mới</th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-slate-100">
-                        {membership.length ? membership.map(r => (
-                          <tr key={r.periodStart} className="hover:bg-slate-50">
-                            <td className="p-2.5 text-slate-700 font-medium">{r.periodStart}</td>
-                            <td className="p-2.5 text-right font-bold text-slate-900">{r.newMembers}</td>
-                          </tr>
-                        )) : (
-                          <tr><td colSpan={2} className="p-4 text-center text-slate-400">Chưa có dữ liệu thành viên mới.</td></tr>
-                        )}
-                      </tbody>
-                    </table>
+                <section className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm">
+                  <div>
+                    <h2 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                      Biểu Đồ Miền Xu Hướng Thành Viên Mới
+                    </h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Đường cong tăng trưởng số lượng học viên đăng ký tài khoản trung tâm theo từng ngày.
+                    </p>
                   </div>
+                  <NewMembersAreaChart data={membership} />
                 </section>
               </div>
             </>
