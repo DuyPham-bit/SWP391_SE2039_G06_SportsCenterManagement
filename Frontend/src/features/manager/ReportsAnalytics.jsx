@@ -44,8 +44,8 @@ export function ReportsAnalytics() {
   const [error, setError] = useState(null);
   const [revision, setRevision] = useState(0);
 
-  // Analytical filters
-  const [activeTab, setActiveTab] = useState('all'); // all | classes | sports | rooms | finance
+  // Table filters
+  const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | sports | rooms | logs
   const [classSearch, setClassSearch] = useState('');
   const [classSportFilter, setClassSportFilter] = useState('ALL');
   const [classSortBy, setClassSortBy] = useState('booked'); // booked | occupancy | sessions
@@ -118,7 +118,7 @@ export function ReportsAnalytics() {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Page Header */}
+      {/* 1. PAGE HEADER */}
       <div className="flex flex-wrap justify-between items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200/80 shadow-sm">
         <div>
           <div className="flex items-center gap-2">
@@ -130,7 +130,7 @@ export function ReportsAnalytics() {
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Phân tích chuyên sâu tần suất đăng ký lớp học, tỷ trọng bộ môn và hiệu suất khai thác sân/phòng tập.
+            Tổng hợp biểu đồ thống kê trực quan, thị phần bộ môn và hiệu suất vận hành toàn trung tâm.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -145,7 +145,7 @@ export function ReportsAnalytics() {
         </div>
       </div>
 
-      {/* Date Range & Period Selector */}
+      {/* 2. DATE RANGE & PERIOD SELECTOR */}
       <div className="flex flex-wrap items-center justify-between gap-3 bg-slate-50 p-4 rounded-xl border border-slate-200">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1">Kỳ nhanh:</span>
@@ -236,7 +236,7 @@ export function ReportsAnalytics() {
         />
       ) : metrics && (
         <>
-          {/* Executive Top Row KPI Cards */}
+          {/* 3. EXECUTIVE TOP KPI CARDS */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Doanh thu thuần"
@@ -268,7 +268,29 @@ export function ReportsAnalytics() {
             />
           </div>
 
-          {/* 🏆 BỘ 3 QUÁN QUÂN HOẠT ĐỘNG (TOP OPERATIONAL PERFORMERS) */}
+          {/* 3b. INLINE CURRENT CLASS STATUS STRIP */}
+          <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-slate-500 text-[18px]">event_seat</span>
+              <strong className="text-slate-900">Trạng thái đăng ký lớp học:</strong>
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              {Object.entries(metrics.classStatusCounts).map(([status, count]) => (
+                <span
+                  key={status}
+                  className="px-2.5 py-1 rounded-lg border border-slate-200 bg-slate-50 text-slate-700 font-semibold flex items-center gap-1.5"
+                >
+                  <span className="text-slate-500">{statusName(status)}:</span>
+                  <strong className="text-slate-900 font-bold text-xs">{count}</strong>
+                </span>
+              ))}
+              <span className="px-2 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold">
+                Tỷ lệ lấp đầy: {metrics.occupancyRate}%
+              </span>
+            </div>
+          </div>
+
+          {/* 4. 🏆 BỘ 3 QUÁN QUÂN HOẠT ĐỘNG (TOP OPERATIONAL PERFORMERS) */}
           <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-slate-700/60">
             <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-white/10 pb-4">
               <div className="flex items-center gap-3">
@@ -404,438 +426,78 @@ export function ReportsAnalytics() {
             </div>
           </div>
 
-          {/* Navigation Tab Switcher */}
-          <div className="flex flex-wrap gap-2 border-b border-slate-200 pb-2">
-            {[
-              ['all', '📊 Toàn cảnh & Tổng hợp'],
-              ['classes', '🏅 Xếp hạng Lớp học'],
-              ['sports', '🥋 Phân tích Bộ môn'],
-              ['rooms', '🏟️ Hiệu suất Sân & Phòng'],
-              ['finance', '📈 Doanh thu & Hội viên']
-            ].map(([tabKey, tabLabel]) => (
-              <button
-                key={tabKey}
-                onClick={() => setActiveTab(tabKey)}
-                className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                  activeTab === tabKey
-                    ? 'bg-slate-900 text-white shadow-sm'
-                    : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
-                }`}
-              >
-                {tabLabel}
-              </button>
-            ))}
+          {/* 5. 📊 KHỐI BIỂU ĐỒ THỐNG KÊ TỔNG QUAN (ĐẨY LÊN ĐẦU TIÊN) */}
+          <div className="space-y-5">
+            <div className="flex items-center gap-2">
+              <span className="material-symbols-outlined text-red-600 text-[22px]">monitoring</span>
+              <h2 className="text-lg font-black tracking-tight font-chivo text-slate-900">
+                TRUNG TÂM BIỂU ĐỒ THỐNG KÊ TRỰC QUAN
+              </h2>
+              <span className="px-2 py-0.5 rounded bg-slate-900 text-white text-[11px] font-bold">
+                CHARTS SHOWCASE
+              </span>
+            </div>
+
+            {/* Hàng biểu đồ 1: Doanh thu & Hội viên mới */}
+            <div className="grid lg:grid-cols-2 gap-5">
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <h3 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                    Biểu Đồ Cột Doanh Thu Thuần ({metrics.groupBy === 'month' ? 'Theo Tháng' : 'Theo Ngày'})
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Trực quan hóa doanh thu thực nhận từng ngày/tháng với định dạng tiền tệ và mốc doanh thu đỉnh.
+                  </p>
+                </div>
+                <RevenueTrendChart data={revenue} groupBy={metrics.groupBy} />
+              </section>
+
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <h3 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
+                    Biểu Đồ Miền Xu Hướng Thành Viên Mới
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Đường cong tăng trưởng số lượng học viên đăng ký tài khoản trung tâm theo từng ngày.
+                  </p>
+                </div>
+                <NewMembersAreaChart data={membership} />
+              </section>
+            </div>
+
+            {/* Hàng biểu đồ 2: Thị phần Bộ môn (Donut) & So sánh công suất lớp học */}
+            <div className="grid lg:grid-cols-2 gap-5">
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <h3 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-sky-600"></span>
+                    Biểu Đồ Donut Thị Phần Đặt Chỗ Theo Bộ Môn
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Tỷ trọng phần trăm lượt đặt chỗ giữa các môn thể thao (Di chuột vào từng phần quạt màu).
+                  </p>
+                </div>
+                <SportsDonutChart sports={metrics.topSports} />
+              </section>
+
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <h3 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    Biểu Đồ So Sánh Công Suất & Lượt Đặt Top Lớp
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    So sánh kép số chỗ đã đặt (Booked) với tổng sức chứa tối đa mở bán (Capacity).
+                  </p>
+                </div>
+                <ClassCapacityBarChart classes={processedClasses} />
+              </section>
+            </div>
           </div>
 
-          {/* TAB 1: XẾP HẠNG LỚP HỌC (TOP CLASSES) */}
-          {(activeTab === 'all' || activeTab === 'classes') && (
-            <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 font-chivo flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
-                    Bảng Xếp Hạng Chi Tiết Lớp Học
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Thứ hạng các lớp học theo số lượng học viên đăng ký, số buổi mở và tỷ lệ lấp đầy trong kỳ.
-                  </p>
-                </div>
-
-                <div className="flex flex-wrap items-center gap-2">
-                  {/* Search box */}
-                  <div className="relative">
-                    <span className="material-symbols-outlined absolute left-2.5 top-2 text-slate-400 text-[18px]">
-                      search
-                    </span>
-                    <input
-                      type="text"
-                      placeholder="Tìm lớp hoặc HLV..."
-                      value={classSearch}
-                      onChange={e => setClassSearch(e.target.value)}
-                      className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
-                    />
-                  </div>
-
-                  {/* Sport Filter */}
-                  <select
-                    className="text-xs font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none"
-                    value={classSportFilter}
-                    onChange={e => setClassSportFilter(e.target.value)}
-                  >
-                    <option value="ALL">Tất cả bộ môn</option>
-                    {metrics.topSports?.map(s => (
-                      <option key={s.name} value={s.name}>{s.name}</option>
-                    ))}
-                  </select>
-
-                  {/* Sắp xếp */}
-                  <select
-                    className="text-xs font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none"
-                    value={classSortBy}
-                    onChange={e => setClassSortBy(e.target.value)}
-                  >
-                    <option value="booked">Sắp xếp: Đặt nhiều nhất</option>
-                    <option value="occupancy">Sắp xếp: % Lấp đầy cao nhất</option>
-                    <option value="sessions">Sắp xếp: Số buổi nhiều nhất</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Visual Capacity Comparison Chart */}
-              <div className="bg-slate-50/70 p-4 rounded-xl border border-slate-200/80">
-                <span className="text-xs font-bold text-slate-700 block mb-3 uppercase tracking-wider">
-                  📊 Biểu đồ so sánh Lượt đặt vs Sức chứa tối đa (Top 5 Lớp dẫn đầu)
-                </span>
-                <ClassCapacityBarChart classes={processedClasses} />
-              </div>
-
-              {/* Classes Table */}
-              <div className="overflow-x-auto border border-slate-100 rounded-xl">
-                <table className="w-full text-left border-collapse text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-600 font-chivo text-xs uppercase tracking-wider border-b border-slate-200">
-                      <th className="py-3 px-3 w-14 text-center">Hạng</th>
-                      <th className="py-3 px-4">Lớp học</th>
-                      <th className="py-3 px-4">Bộ môn & HLV</th>
-                      <th className="py-3 px-4">Sân / Phòng diễn ra</th>
-                      <th className="py-3 px-3 text-center">Số buổi</th>
-                      <th className="py-3 px-4 text-center">Lượt đặt / Sức chứa</th>
-                      <th className="py-3 px-4 w-44">Tỷ lệ lấp đầy</th>
-                      <th className="py-3 px-3 text-center">Đánh giá tải</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {processedClasses.length ? processedClasses.map((cls, idx) => {
-                      const sportStyle = getSportStyle(cls.sportName);
-                      const isTop1 = idx === 0 && classSortBy === 'booked' && !classSearch && classSportFilter === 'ALL';
-                      const isTop2 = idx === 1 && classSortBy === 'booked' && !classSearch && classSportFilter === 'ALL';
-                      const isTop3 = idx === 2 && classSortBy === 'booked' && !classSearch && classSportFilter === 'ALL';
-
-                      let badgeRank = `#${idx + 1}`;
-                      let badgeRankColor = 'bg-slate-100 text-slate-600 border-slate-200';
-                      if (isTop1) { badgeRank = '🥇 #1'; badgeRankColor = 'bg-amber-100 text-amber-900 border-amber-300 font-bold'; }
-                      else if (isTop2) { badgeRank = '🥈 #2'; badgeRankColor = 'bg-slate-200 text-slate-800 border-slate-300 font-bold'; }
-                      else if (isTop3) { badgeRank = '🥉 #3'; badgeRankColor = 'bg-amber-50 text-amber-800 border-amber-200 font-bold'; }
-
-                      return (
-                        <tr key={cls.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3 px-3 text-center">
-                            <span className={`inline-block px-2 py-0.5 rounded text-xs border ${badgeRankColor}`}>
-                              {badgeRank}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 font-bold text-slate-900">
-                            {cls.name}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="flex flex-col gap-0.5">
-                              <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border w-fit ${sportStyle.bg}`}>
-                                <span className="material-symbols-outlined text-[13px]">{sportStyle.icon}</span>
-                                {cls.sportName}
-                              </span>
-                              <span className="text-xs text-slate-500">HLV: {cls.coachName}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-4 text-xs font-medium text-slate-700">
-                            <div className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[16px] text-slate-400">meeting_room</span>
-                              {cls.roomName}
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                            {cls.sessionsCount}
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="font-bold text-slate-900">{cls.booked}</span>
-                            <span className="text-xs text-slate-400"> / {cls.capacity}</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs font-bold">
-                                <span className={cls.occupancyRate >= 20 ? 'text-emerald-600' : 'text-slate-600'}>
-                                  {cls.occupancyRate}%
-                                </span>
-                                <span className="text-[11px] text-slate-400 font-normal">
-                                  {cls.capacity ? `${cls.booked}/${cls.capacity}` : '0/0'}
-                                </span>
-                              </div>
-                              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                <div
-                                  className={`h-2 rounded-full transition-all duration-500 ${
-                                    cls.occupancyRate >= 20
-                                      ? 'bg-emerald-500'
-                                      : cls.occupancyRate >= 10
-                                      ? 'bg-blue-500'
-                                      : 'bg-slate-400'
-                                  }`}
-                                  style={{ width: `${Math.min(100, cls.occupancyRate)}%` }}
-                                />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            {cls.booked >= 15 ? (
-                              <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-50 text-red-700 border border-red-200">
-                                🔥 Rất Hot
-                              </span>
-                            ) : cls.booked >= 5 ? (
-                              <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                ✅ Ổn định
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
-                                ⚠️ Thấp điểm
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    }) : (
-                      <tr>
-                        <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
-                          Không có lớp học nào thỏa mãn điều kiện lọc.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          {/* TAB 2: PHÂN TÍCH BỘ MÔN (SPORTS BREAKDOWN) */}
-          {(activeTab === 'all' || activeTab === 'sports') && (
-            <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 font-chivo flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-sky-600"></span>
-                    Phân Tích Chi Tiết Từng Bộ Môn
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    So sánh thị phần đặt chỗ, công suất cung ứng và tỷ lệ lấp đầy giữa các bộ môn thể thao.
-                  </p>
-                </div>
-              </div>
-
-              {/* Interactive Sports Donut Chart */}
-              <div className="bg-slate-50/70 p-5 rounded-2xl border border-slate-200/80">
-                <span className="text-xs font-bold text-slate-700 block mb-2 uppercase tracking-wider">
-                  🍩 Biểu Đồ Donut Thị Phần Đặt Chỗ Theo Bộ Môn (Tương tác Hover)
-                </span>
-                <SportsDonutChart sports={metrics.topSports} />
-              </div>
-
-              {/* Sports Grid */}
-              <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {metrics.topSports?.map((sport, idx) => {
-                  const style = getSportStyle(sport.name);
-                  return (
-                    <div
-                      key={sport.name}
-                      className="border border-slate-200/80 rounded-xl p-4 bg-slate-50/40 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between"
-                    >
-                      <div>
-                        <div className="flex items-center justify-between">
-                          <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${style.bg}`}>
-                            <span className="material-symbols-outlined text-[16px]">{style.icon}</span>
-                            {sport.name}
-                          </span>
-                          <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
-                            Hạng #{idx + 1}
-                          </span>
-                        </div>
-
-                        <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
-                          <div className="bg-white p-2.5 rounded-lg border border-slate-200/60">
-                            <span className="text-slate-400 block text-[11px]">Đã đặt chỗ</span>
-                            <span className="text-base font-black text-slate-900">{sport.booked} lượt</span>
-                          </div>
-                          <div className="bg-white p-2.5 rounded-lg border border-slate-200/60">
-                            <span className="text-slate-400 block text-[11px]">Sức chứa mở</span>
-                            <span className="text-base font-black text-slate-900">{sport.capacity} chỗ</span>
-                          </div>
-                        </div>
-
-                        <div className="mt-3 space-y-1.5">
-                          <div className="flex justify-between text-xs font-semibold">
-                            <span className="text-slate-500">Tỷ lệ lấp đầy:</span>
-                            <span className="text-slate-900 font-bold">{sport.percentage}%</span>
-                          </div>
-                          <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
-                            <div className={`h-2 rounded-full ${style.bar}`} style={{ width: `${Math.min(100, sport.percentage)}%` }} />
-                          </div>
-                        </div>
-
-                        <div className="mt-2.5 space-y-1.5">
-                          <div className="flex justify-between text-xs font-semibold">
-                            <span className="text-slate-500">Thị phần toàn trung tâm:</span>
-                            <span className="text-sky-700 font-bold">{sport.share}%</span>
-                          </div>
-                          <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
-                            <div className="h-1.5 rounded-full bg-sky-600" style={{ width: `${Math.min(100, sport.share)}%` }} />
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
-                        <span>Số ca học: <strong>{sport.sessionsCount}</strong> buổi</span>
-                        <span>Số lớp hoạt động: <strong>{sport.classesCount}</strong> lớp</span>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-          )}
-
-          {/* TAB 3: HIỆU SUẤT SÂN & PHÒNG TẬP (COURT / ROOM UTILIZATION) */}
-          {(activeTab === 'all' || activeTab === 'rooms') && (
-            <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
-              <div className="flex flex-wrap items-center justify-between gap-3">
-                <div>
-                  <h2 className="text-lg font-black text-slate-900 font-chivo flex items-center gap-2">
-                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                    Hiệu Suất Khai Thác Sân & Phòng Tập
-                  </h2>
-                  <p className="text-xs text-slate-500">
-                    Đánh giá mức độ sử dụng sân, mật độ khách tiếp nhận và tần suất ca học phân bổ tại từng khu vực.
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-2">
-                  <select
-                    className="text-xs font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none"
-                    value={roomSortBy}
-                    onChange={e => setRoomSortBy(e.target.value)}
-                  >
-                    <option value="booked">Sắp xếp: Đặt nhiều nhất</option>
-                    <option value="sessions">Sắp xếp: Số ca học nhiều nhất</option>
-                    <option value="occupancy">Sắp xếp: % Khai thác công suất</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Rooms Table */}
-              <div className="overflow-x-auto border border-slate-100 rounded-xl">
-                <table className="w-full text-left border-collapse text-sm">
-                  <thead>
-                    <tr className="bg-slate-50 text-slate-600 font-chivo text-xs uppercase tracking-wider border-b border-slate-200">
-                      <th className="py-3 px-3 w-14 text-center">Hạng</th>
-                      <th className="py-3 px-4">Tên Sân / Phòng</th>
-                      <th className="py-3 px-4">Loại hình & Vị trí</th>
-                      <th className="py-3 px-3 text-center">Sức chứa / ca</th>
-                      <th className="py-3 px-3 text-center">Số ca đã tổ chức</th>
-                      <th className="py-3 px-4 text-center">Lượt khách tiếp nhận</th>
-                      <th className="py-3 px-4 w-44">Tỷ lệ khai thác</th>
-                      <th className="py-3 px-3 text-center">Tình trạng tải</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100">
-                    {processedRooms.length ? processedRooms.map((room, idx) => {
-                      const isTop1 = idx === 0 && roomSortBy === 'booked';
-                      const isTop2 = idx === 1 && roomSortBy === 'booked';
-                      const isTop3 = idx === 2 && roomSortBy === 'booked';
-
-                      let badgeRank = `#${idx + 1}`;
-                      let badgeRankColor = 'bg-slate-100 text-slate-600 border-slate-200';
-                      if (isTop1) { badgeRank = '🥇 #1'; badgeRankColor = 'bg-amber-100 text-amber-900 border-amber-300 font-bold'; }
-                      else if (isTop2) { badgeRank = '🥈 #2'; badgeRankColor = 'bg-slate-200 text-slate-800 border-slate-300 font-bold'; }
-                      else if (isTop3) { badgeRank = '🥉 #3'; badgeRankColor = 'bg-amber-50 text-amber-800 border-amber-200 font-bold'; }
-
-                      return (
-                        <tr key={room.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3 px-3 text-center">
-                            <span className={`inline-block px-2 py-0.5 rounded text-xs border ${badgeRankColor}`}>
-                              {badgeRank}
-                            </span>
-                          </td>
-                          <td className="py-3 px-4 font-bold text-slate-900">
-                            <div className="flex items-center gap-2">
-                              <span className="material-symbols-outlined text-slate-400 text-[18px]">stadium</span>
-                              <span>{room.name}</span>
-                            </div>
-                            {room.classesList?.length > 0 && (
-                              <div className="mt-1 flex flex-wrap gap-1">
-                                {room.classesList.map(cName => (
-                                  <span key={cName} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
-                                    {cName}
-                                  </span>
-                                ))}
-                              </div>
-                            )}
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="text-xs">
-                              <span className="font-semibold text-slate-800 block">{room.type}</span>
-                              <span className="text-slate-400">{room.location || 'Chưa cập nhật'}</span>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center font-semibold text-slate-700">
-                            {room.unitCapacity} chỗ
-                          </td>
-                          <td className="py-3 px-3 text-center font-bold text-slate-900">
-                            {room.sessionsCount} ca
-                          </td>
-                          <td className="py-3 px-4 text-center">
-                            <span className="font-black text-slate-900 text-base">{room.booked}</span>
-                            <span className="text-xs text-slate-400"> / {room.capacity} chỗ</span>
-                          </td>
-                          <td className="py-3 px-4">
-                            <div className="space-y-1">
-                              <div className="flex justify-between text-xs font-bold">
-                                <span className={room.occupancyRate >= 20 ? 'text-emerald-600' : 'text-slate-600'}>
-                                  {room.occupancyRate}%
-                                </span>
-                                <span className="text-[11px] text-slate-400 font-normal">
-                                  {room.capacity ? `${room.booked}/${room.capacity}` : '0/0'}
-                                </span>
-                              </div>
-                              <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
-                                <div
-                                  className={`h-2 rounded-full transition-all duration-500 ${
-                                    room.occupancyRate >= 20
-                                      ? 'bg-emerald-500'
-                                      : room.occupancyRate >= 10
-                                      ? 'bg-blue-500'
-                                      : 'bg-slate-400'
-                                  }`}
-                                  style={{ width: `${Math.min(100, room.occupancyRate)}%` }}
-                                />
-                              </div>
-                            </div>
-                          </td>
-                          <td className="py-3 px-3 text-center">
-                            {room.booked >= 15 ? (
-                              <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                🔥 Tải cao
-                              </span>
-                            ) : room.booked >= 5 ? (
-                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                                ✅ Đang tối ưu
-                              </span>
-                            ) : (
-                              <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                                ⚠️ Còn nhiều ca trống
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    }) : (
-                      <tr>
-                        <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
-                          Không có dữ liệu sân/phòng nào.
-                        </td>
-                      </tr>
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-          )}
-
-          {/* 💡 BẢNG KHUYẾN NGHỊ VẬN HÀNH THÔNG MINH (OPERATIONAL INSIGHTS) */}
+          {/* 6. 💡 BẢNG KHUYẾN NGHỊ VẬN HÀNH THÔNG MINH (OPERATIONAL INSIGHTS) */}
           <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3">
             <div className="flex items-center gap-2 text-amber-900 font-chivo font-black text-base">
               <span className="material-symbols-outlined text-amber-600 text-[22px]">lightbulb</span>
@@ -863,57 +525,475 @@ export function ReportsAnalytics() {
             </div>
           </div>
 
-          {/* TAB 4: DOANH THU & HỘI VIÊN (FINANCIAL & MEMBERSHIP SECTION) */}
-          {(activeTab === 'all' || activeTab === 'finance') && (
-            <>
-              {/* Current Class Statuses */}
-              <section className="bg-white border rounded-xl p-5 space-y-3 shadow-sm">
-                <h2 className="font-bold text-slate-900 text-sm font-chivo">
-                  Tình trạng đăng ký lớp hiện tại toàn trung tâm
+          {/* 7. 📋 PHẦN TRA CỨU & BẢNG BIỂU CHI TIẾT (ĐẶT Ở NỬA DƯỚI) */}
+          <div className="space-y-4 pt-4 border-t border-slate-200">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <h2 className="text-lg font-black tracking-tight font-chivo text-slate-900 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-slate-700 text-[22px]">table_chart</span>
+                  BẢNG TRA CỨU CHI TIẾT VẬN HÀNH
                 </h2>
-                <div className="flex flex-wrap gap-3">
-                  {Object.entries(metrics.classStatusCounts).map(([status, count]) => (
-                    <div key={status} className="border border-slate-200 rounded-lg px-3 py-2 text-xs bg-slate-50 flex items-center gap-2">
-                      <span className="text-slate-500">{statusName(status)}:</span>
-                      <strong className="text-slate-900 font-bold text-sm">{count}</strong>
+                <p className="text-xs text-slate-500">
+                  Tra cứu chi tiết từng lớp học, bộ môn, sân bãi và nhật ký sự kiện.
+                </p>
+              </div>
+
+              {/* Table Tab Switcher */}
+              <div className="flex flex-wrap gap-2">
+                {[
+                  ['classes', '🏅 Bảng Lớp học'],
+                  ['sports', '🥋 Danh sách Bộ môn'],
+                  ['rooms', '🏟️ Bảng Sân & Phòng'],
+                  ['logs', '📋 Lịch sử & Đăng ký']
+                ].map(([tabKey, tabLabel]) => (
+                  <button
+                    key={tabKey}
+                    onClick={() => setActiveTableTab(tabKey)}
+                    className={`px-3.5 py-2 rounded-xl text-xs font-bold transition-all ${
+                      activeTableTab === tabKey
+                        ? 'bg-slate-900 text-white shadow-sm'
+                        : 'bg-white text-slate-600 hover:bg-slate-100 border border-slate-200'
+                    }`}
+                  >
+                    {tabLabel}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* TABLE TAB 1: BẢNG LỚP HỌC */}
+            {activeTableTab === 'classes' && (
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      Chi tiết thứ hạng từng lớp học
+                    </h3>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Search box */}
+                    <div className="relative">
+                      <span className="material-symbols-outlined absolute left-2.5 top-2 text-slate-400 text-[18px]">
+                        search
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm lớp hoặc HLV..."
+                        value={classSearch}
+                        onChange={e => setClassSearch(e.target.value)}
+                        className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      />
                     </div>
-                  ))}
-                  {!Object.keys(metrics.classStatusCounts).length && (
-                    <p className="text-xs text-slate-500">Chưa có dữ liệu đăng ký lớp hiện tại.</p>
-                  )}
+
+                    {/* Sport Filter */}
+                    <select
+                      className="text-xs font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none"
+                      value={classSportFilter}
+                      onChange={e => setClassSportFilter(e.target.value)}
+                    >
+                      <option value="ALL">Tất cả bộ môn</option>
+                      {metrics.topSports?.map(s => (
+                        <option key={s.name} value={s.name}>{s.name}</option>
+                      ))}
+                    </select>
+
+                    {/* Sắp xếp */}
+                    <select
+                      className="text-xs font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none"
+                      value={classSortBy}
+                      onChange={e => setClassSortBy(e.target.value)}
+                    >
+                      <option value="booked">Sắp xếp: Đặt nhiều nhất</option>
+                      <option value="occupancy">Sắp xếp: % Lấp đầy cao nhất</option>
+                      <option value="sessions">Sắp xếp: Số buổi nhiều nhất</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Classes Table */}
+                <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-600 font-chivo text-xs uppercase tracking-wider border-b border-slate-200">
+                        <th className="py-3 px-3 w-14 text-center">Hạng</th>
+                        <th className="py-3 px-4">Lớp học</th>
+                        <th className="py-3 px-4">Bộ môn & HLV</th>
+                        <th className="py-3 px-4">Sân / Phòng diễn ra</th>
+                        <th className="py-3 px-3 text-center">Số buổi</th>
+                        <th className="py-3 px-4 text-center">Lượt đặt / Sức chứa</th>
+                        <th className="py-3 px-4 w-44">Tỷ lệ lấp đầy</th>
+                        <th className="py-3 px-3 text-center">Đánh giá tải</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {processedClasses.length ? processedClasses.map((cls, idx) => {
+                        const sportStyle = getSportStyle(cls.sportName);
+                        const isTop1 = idx === 0 && classSortBy === 'booked' && !classSearch && classSportFilter === 'ALL';
+                        const isTop2 = idx === 1 && classSortBy === 'booked' && !classSearch && classSportFilter === 'ALL';
+                        const isTop3 = idx === 2 && classSortBy === 'booked' && !classSearch && classSportFilter === 'ALL';
+
+                        let badgeRank = `#${idx + 1}`;
+                        let badgeRankColor = 'bg-slate-100 text-slate-600 border-slate-200';
+                        if (isTop1) { badgeRank = '🥇 #1'; badgeRankColor = 'bg-amber-100 text-amber-900 border-amber-300 font-bold'; }
+                        else if (isTop2) { badgeRank = '🥈 #2'; badgeRankColor = 'bg-slate-200 text-slate-800 border-slate-300 font-bold'; }
+                        else if (isTop3) { badgeRank = '🥉 #3'; badgeRankColor = 'bg-amber-50 text-amber-800 border-amber-200 font-bold'; }
+
+                        return (
+                          <tr key={cls.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-3 text-center">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs border ${badgeRankColor}`}>
+                                {badgeRank}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">
+                              {cls.name}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="flex flex-col gap-0.5">
+                                <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs font-semibold border w-fit ${sportStyle.bg}`}>
+                                  <span className="material-symbols-outlined text-[13px]">{sportStyle.icon}</span>
+                                  {cls.sportName}
+                                </span>
+                                <span className="text-xs text-slate-500">HLV: {cls.coachName}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4 text-xs font-medium text-slate-700">
+                              <div className="flex items-center gap-1.5">
+                                <span className="material-symbols-outlined text-[16px] text-slate-400">meeting_room</span>
+                                {cls.roomName}
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                              {cls.sessionsCount}
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="font-bold text-slate-900">{cls.booked}</span>
+                              <span className="text-xs text-slate-400"> / {cls.capacity}</span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-xs font-bold">
+                                  <span className={cls.occupancyRate >= 20 ? 'text-emerald-600' : 'text-slate-600'}>
+                                    {cls.occupancyRate}%
+                                  </span>
+                                  <span className="text-[11px] text-slate-400 font-normal">
+                                    {cls.capacity ? `${cls.booked}/${cls.capacity}` : '0/0'}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-500 ${
+                                      cls.occupancyRate >= 20
+                                        ? 'bg-emerald-500'
+                                        : cls.occupancyRate >= 10
+                                        ? 'bg-blue-500'
+                                        : 'bg-slate-400'
+                                    }`}
+                                    style={{ width: `${Math.min(100, cls.occupancyRate)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              {cls.booked >= 15 ? (
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-red-50 text-red-700 border border-red-200">
+                                  🔥 Rất Hot
+                                </span>
+                              ) : cls.booked >= 5 ? (
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  ✅ Ổn định
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                  ⚠️ Thấp điểm
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
+                            Không có lớp học nào thỏa mãn điều kiện lọc.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
                 </div>
               </section>
+            )}
 
-              {/* Revenue & Member Trend Charts */}
-              <div className="grid lg:grid-cols-2 gap-5">
-                <section className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm">
+            {/* TABLE TAB 2: DANH SÁCH BỘ MÔN */}
+            {activeTableTab === 'sports' && (
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+                <h3 className="font-bold text-slate-900 text-sm">
+                  Thông số chi tiết từng bộ môn thể thao
+                </h3>
+                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  {metrics.topSports?.map((sport, idx) => {
+                    const style = getSportStyle(sport.name);
+                    return (
+                      <div
+                        key={sport.name}
+                        className="border border-slate-200/80 rounded-xl p-4 bg-slate-50/40 hover:bg-white hover:shadow-md transition-all flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="flex items-center justify-between">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs font-bold border ${style.bg}`}>
+                              <span className="material-symbols-outlined text-[16px]">{style.icon}</span>
+                              {sport.name}
+                            </span>
+                            <span className="text-xs font-bold px-2 py-0.5 rounded bg-slate-200 text-slate-700">
+                              Hạng #{idx + 1}
+                            </span>
+                          </div>
+
+                          <div className="grid grid-cols-2 gap-2 mt-4 text-xs">
+                            <div className="bg-white p-2.5 rounded-lg border border-slate-200/60">
+                              <span className="text-slate-400 block text-[11px]">Đã đặt chỗ</span>
+                              <span className="text-base font-black text-slate-900">{sport.booked} lượt</span>
+                            </div>
+                            <div className="bg-white p-2.5 rounded-lg border border-slate-200/60">
+                              <span className="text-slate-400 block text-[11px]">Sức chứa mở</span>
+                              <span className="text-base font-black text-slate-900">{sport.capacity} chỗ</span>
+                            </div>
+                          </div>
+
+                          <div className="mt-3 space-y-1.5">
+                            <div className="flex justify-between text-xs font-semibold">
+                              <span className="text-slate-500">Tỷ lệ lấp đầy:</span>
+                              <span className="text-slate-900 font-bold">{sport.percentage}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
+                              <div className={`h-2 rounded-full ${style.bar}`} style={{ width: `${Math.min(100, sport.percentage)}%` }} />
+                            </div>
+                          </div>
+
+                          <div className="mt-2.5 space-y-1.5">
+                            <div className="flex justify-between text-xs font-semibold">
+                              <span className="text-slate-500">Thị phần toàn trung tâm:</span>
+                              <span className="text-sky-700 font-bold">{sport.share}%</span>
+                            </div>
+                            <div className="w-full bg-slate-200 rounded-full h-1.5 overflow-hidden">
+                              <div className="h-1.5 rounded-full bg-sky-600" style={{ width: `${Math.min(100, sport.share)}%` }} />
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="mt-4 pt-3 border-t border-slate-200/60 flex items-center justify-between text-[11px] text-slate-500">
+                          <span>Số ca học: <strong>{sport.sessionsCount}</strong> buổi</span>
+                          <span>Số lớp hoạt động: <strong>{sport.classesCount}</strong> lớp</span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </section>
+            )}
+
+            {/* TABLE TAB 3: BẢNG SÂN & PHÒNG */}
+            {activeTableTab === 'rooms' && (
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                   <div>
-                    <h2 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
-                      Biểu Đồ Cột Doanh Thu Thuần ({metrics.groupBy === 'month' ? 'Theo Tháng' : 'Theo Ngày'})
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Trực quan hóa doanh thu thực nhận từng ngày/tháng với định dạng tiền tệ và mốc doanh thu đỉnh.
-                    </p>
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      Chi tiết hiệu suất từng sân & phòng tập
+                    </h3>
                   </div>
-                  <RevenueTrendChart data={revenue} groupBy={metrics.groupBy} />
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      className="text-xs font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none"
+                      value={roomSortBy}
+                      onChange={e => setRoomSortBy(e.target.value)}
+                    >
+                      <option value="booked">Sắp xếp: Đặt nhiều nhất</option>
+                      <option value="sessions">Sắp xếp: Số ca học nhiều nhất</option>
+                      <option value="occupancy">Sắp xếp: % Khai thác công suất</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Rooms Table */}
+                <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-600 font-chivo text-xs uppercase tracking-wider border-b border-slate-200">
+                        <th className="py-3 px-3 w-14 text-center">Hạng</th>
+                        <th className="py-3 px-4">Tên Sân / Phòng</th>
+                        <th className="py-3 px-4">Loại hình & Vị trí</th>
+                        <th className="py-3 px-3 text-center">Sức chứa / ca</th>
+                        <th className="py-3 px-3 text-center">Số ca đã tổ chức</th>
+                        <th className="py-3 px-4 text-center">Lượt khách tiếp nhận</th>
+                        <th className="py-3 px-4 w-44">Tỷ lệ khai thác</th>
+                        <th className="py-3 px-3 text-center">Tình trạng tải</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {processedRooms.length ? processedRooms.map((room, idx) => {
+                        const isTop1 = idx === 0 && roomSortBy === 'booked';
+                        const isTop2 = idx === 1 && roomSortBy === 'booked';
+                        const isTop3 = idx === 2 && roomSortBy === 'booked';
+
+                        let badgeRank = `#${idx + 1}`;
+                        let badgeRankColor = 'bg-slate-100 text-slate-600 border-slate-200';
+                        if (isTop1) { badgeRank = '🥇 #1'; badgeRankColor = 'bg-amber-100 text-amber-900 border-amber-300 font-bold'; }
+                        else if (isTop2) { badgeRank = '🥈 #2'; badgeRankColor = 'bg-slate-200 text-slate-800 border-slate-300 font-bold'; }
+                        else if (isTop3) { badgeRank = '🥉 #3'; badgeRankColor = 'bg-amber-50 text-amber-800 border-amber-200 font-bold'; }
+
+                        return (
+                          <tr key={room.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-3 text-center">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs border ${badgeRankColor}`}>
+                                {badgeRank}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-slate-400 text-[18px]">stadium</span>
+                                <span>{room.name}</span>
+                              </div>
+                              {room.classesList?.length > 0 && (
+                                <div className="mt-1 flex flex-wrap gap-1">
+                                  {room.classesList.map(cName => (
+                                    <span key={cName} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 text-slate-600">
+                                      {cName}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="text-xs">
+                                <span className="font-semibold text-slate-800 block">{room.type}</span>
+                                <span className="text-slate-400">{room.location || 'Chưa cập nhật'}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                              {room.unitCapacity} chỗ
+                            </td>
+                            <td className="py-3 px-3 text-center font-bold text-slate-900">
+                              {room.sessionsCount} ca
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="font-black text-slate-900 text-base">{room.booked}</span>
+                              <span className="text-xs text-slate-400"> / {room.capacity} chỗ</span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-xs font-bold">
+                                  <span className={room.occupancyRate >= 20 ? 'text-emerald-600' : 'text-slate-600'}>
+                                    {room.occupancyRate}%
+                                  </span>
+                                  <span className="text-[11px] text-slate-400 font-normal">
+                                    {room.capacity ? `${room.booked}/${room.capacity}` : '0/0'}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-500 ${
+                                      room.occupancyRate >= 20
+                                        ? 'bg-emerald-500'
+                                        : room.occupancyRate >= 10
+                                        ? 'bg-blue-500'
+                                        : 'bg-slate-400'
+                                    }`}
+                                    style={{ width: `${Math.min(100, room.occupancyRate)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              {room.booked >= 15 ? (
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  🔥 Tải cao
+                                </span>
+                              ) : room.booked >= 5 ? (
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
+                                  ✅ Đang tối ưu
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
+                                  ⚠️ Còn nhiều ca trống
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
+                            Không có dữ liệu sân/phòng nào.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* TABLE TAB 4: LỊCH SỬ & ĐĂNG KÝ */}
+            {activeTableTab === 'logs' && (
+              <div className="grid lg:grid-cols-2 gap-5">
+                <section className="bg-white border rounded-2xl p-5 space-y-3 shadow-sm">
+                  <h3 className="font-bold text-slate-900 text-sm">
+                    Bảng đối soát doanh thu theo kỳ
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                          <th className="p-2.5">Thời gian</th>
+                          <th className="p-2.5 text-right">Doanh thu thuần</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {revenue.length ? revenue.map(r => (
+                          <tr key={r.periodStart} className="hover:bg-slate-50">
+                            <td className="p-2.5 text-slate-700 font-medium">{r.periodStart}</td>
+                            <td className="p-2.5 text-right font-bold text-slate-900">{Number(r.net || 0).toLocaleString('vi-VN')}đ</td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={2} className="p-4 text-center text-slate-400">Chưa có dữ liệu doanh thu.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
                 </section>
 
-                <section className="bg-white border rounded-2xl p-5 space-y-4 shadow-sm">
-                  <div>
-                    <h2 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
-                      <span className="w-2.5 h-2.5 rounded-full bg-blue-600"></span>
-                      Biểu Đồ Miền Xu Hướng Thành Viên Mới
-                    </h2>
-                    <p className="text-xs text-slate-500 mt-0.5">
-                      Đường cong tăng trưởng số lượng học viên đăng ký tài khoản trung tâm theo từng ngày.
-                    </p>
+                <section className="bg-white border rounded-2xl p-5 space-y-3 shadow-sm">
+                  <h3 className="font-bold text-slate-900 text-sm">
+                    Sự kiện đăng ký lớp trong kỳ
+                  </h3>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left border-collapse">
+                      <thead>
+                        <tr className="bg-slate-50 text-slate-600 font-semibold border-b border-slate-200">
+                          <th className="p-2.5">Kỳ</th>
+                          <th className="p-2.5">Trạng thái / Số lượng</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {events.length ? events.map(r => (
+                          <tr key={r.periodStart} className="hover:bg-slate-50">
+                            <td className="p-2.5 text-slate-700 font-medium">{r.periodStart}</td>
+                            <td className="p-2.5 text-slate-800 font-bold">
+                              {Object.entries(r.statusCounts || {}).map(([status, count]) => `${statusName(status)}: ${count}`).join(' · ') || '0'}
+                            </td>
+                          </tr>
+                        )) : (
+                          <tr><td colSpan={2} className="p-4 text-center text-slate-400">Chưa có sự kiện trong kỳ.</td></tr>
+                        )}
+                      </tbody>
+                    </table>
                   </div>
-                  <NewMembersAreaChart data={membership} />
                 </section>
               </div>
-            </>
-          )}
+            )}
+          </div>
         </>
       )}
     </div>
