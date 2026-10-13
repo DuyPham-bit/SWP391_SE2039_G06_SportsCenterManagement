@@ -1,0 +1,30 @@
+{
+  "name": "scms-sports-center-frontend",
+  "version": "1.0.0",
+  "description": "Sports Center Management System (SCMS) - Frontend Flow Implementation (React + JavaScript)",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "start": "vite",
+    "build": "vite build",
+    "build:api": "vite build --outDir ../Backend/Backend/SportsCenterManagement.API/wwwroot --emptyOutDir",
+    "preview": "vite preview"
+  },
+  "keywords": [
+    "scms",
+    "sports-center",
+    "react",
+    "tailwind",
+    "management-system"
+  ],
+  "author": "SCMS Development Team",
+  "license": "MIT",
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.4",
+    "vite": "^5.4.14"
+  }
+}
