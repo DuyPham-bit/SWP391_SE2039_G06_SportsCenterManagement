@@ -742,26 +742,156 @@ export const reportApi = {
     }
     const query = new URLSearchParams({ from, to, groupBy, centerId: String(centerId()) });
     const checkinQuery = new URLSearchParams({ from: today, to: today });
-    const [revenue, membership, classes, sessionItems, checkins] = await Promise.all([
+    const [revenue, membership, classes, sessionItems, checkins, rawRooms, rawClasses] = await Promise.all([
       apiRequest(`reports/revenue?${query}`),
       apiRequest(`reports/membership?${query}`),
       apiRequest(`reports/classes?${query}`),
       loadSessionsBetween(from, to),
-      apiRequest(`reports/checkins?${checkinQuery}`)
+      apiRequest(`reports/checkins?${checkinQuery}`),
+      apiRequest(`centers/${centerId()}/rooms`).catch(() => []),
+      apiRequest(`centers/${centerId()}/classes/all`).catch(() => [])
     ]);
     const capacity = sessionItems.reduce((sum, item) => sum + (item.capacity || 0), 0);
     const booked = sessionItems.reduce((sum, item) => sum + (item.bookedCount || 0), 0);
     const activeBookingCount = Object.entries(classes.currentStatusCounts || {})
       .filter(([status]) => /book|confirm|wait/i.test(status))
       .reduce((sum, [, count]) => sum + Number(count || 0), 0);
-    const utilization = new Map();
-    for (const item of sessionItems) {
-      const sport = item.sportName || 'Khác';
-      const totals = utilization.get(sport) || { name: sport, capacity: 0, booked: 0 };
-      totals.capacity += item.capacity || 0;
-      totals.booked += item.bookedCount || 0;
-      utilization.set(sport, totals);
+
+    const roomsList = asArray(rawRooms);
+    const classesList = asArray(rawClasses);
+    const roomMap = new Map(roomsList.map(r => [r.id, r]));
+    const classDefMap = new Map(classesList.map(c => [c.id, c]));
+
+    // 1. Seed classes stats
+    const classStatsMap = new Map();
+    for (const c of classesList) {
+      classStatsMap.set(c.id, {
+        id: c.id,
+        name: c.name,
+        sportName: c.sportName,
+        coachName: c.coachName || 'Chưa gán HLV',
+        roomName: c.roomName || roomMap.get(c.roomId)?.name || 'Chưa gán sân',
+        sessionsCount: 0,
+        booked: 0,
+        capacity: 0,
+        occupancyRate: 0
+      });
     }
+
+    // 2. Seed room stats
+    const roomStatsMap = new Map();
+    for (const r of roomsList) {
+      roomStatsMap.set(r.id, {
+        id: r.id,
+        name: r.name,
+        type: r.type || 'Sân/Phòng',
+        location: r.location || '',
+        unitCapacity: r.capacity || 0,
+        sessionsCount: 0,
+        booked: 0,
+        capacity: 0,
+        occupancyRate: 0,
+        classes: new Set()
+      });
+    }
+
+    // 3. Seed sport stats
+    const sportStatsMap = new Map();
+
+    for (const s of sessionItems) {
+      // Class
+      let cStat = classStatsMap.get(s.classId);
+      if (!cStat) {
+        cStat = {
+          id: s.classId,
+          name: s.className,
+          sportName: s.sportName,
+          coachName: s.coachName || 'Chưa gán HLV',
+          roomName: (roomMap.get(s.roomId)?.name) || 'Chưa gán sân',
+          sessionsCount: 0,
+          booked: 0,
+          capacity: 0,
+          occupancyRate: 0
+        };
+        classStatsMap.set(s.classId, cStat);
+      }
+      cStat.sessionsCount += 1;
+      cStat.booked += (s.bookedCount || 0);
+      cStat.capacity += (s.capacity || 0);
+
+      // Room
+      const targetRoomId = s.roomId || classDefMap.get(s.classId)?.roomId;
+      if (targetRoomId) {
+        let rStat = roomStatsMap.get(targetRoomId);
+        if (!rStat) {
+          rStat = {
+            id: targetRoomId,
+            name: `Phòng ${targetRoomId}`,
+            type: 'Sân/Phòng',
+            location: '',
+            unitCapacity: s.capacity || 0,
+            sessionsCount: 0,
+            booked: 0,
+            capacity: 0,
+            occupancyRate: 0,
+            classes: new Set()
+          };
+          roomStatsMap.set(targetRoomId, rStat);
+        }
+        rStat.sessionsCount += 1;
+        rStat.booked += (s.bookedCount || 0);
+        rStat.capacity += (s.capacity || 0);
+        if (s.className) rStat.classes.add(s.className);
+      }
+
+      // Sport
+      const sportName = s.sportName || 'Khác';
+      let spStat = sportStatsMap.get(sportName);
+      if (!spStat) {
+        spStat = {
+          name: sportName,
+          booked: 0,
+          capacity: 0,
+          sessionsCount: 0,
+          classes: new Set()
+        };
+        sportStatsMap.set(sportName, spStat);
+      }
+      spStat.booked += (s.bookedCount || 0);
+      spStat.capacity += (s.capacity || 0);
+      spStat.sessionsCount += 1;
+      if (s.className) spStat.classes.add(s.className);
+    }
+
+    const totalBookedAll = [...sportStatsMap.values()].reduce((sum, sp) => sum + sp.booked, 0);
+
+    const topClasses = [...classStatsMap.values()]
+      .map(c => ({
+        ...c,
+        occupancyRate: c.capacity > 0 ? Math.round((c.booked / c.capacity) * 100) : 0
+      }))
+      .sort((a, b) => b.booked - a.booked || b.occupancyRate - a.occupancyRate || b.sessionsCount - a.sessionsCount);
+
+    const topRooms = [...roomStatsMap.values()]
+      .map(r => ({
+        ...r,
+        classesCount: r.classes.size,
+        classesList: [...r.classes],
+        occupancyRate: r.capacity > 0 ? Math.round((r.booked / r.capacity) * 100) : 0
+      }))
+      .sort((a, b) => b.booked - a.booked || b.sessionsCount - a.sessionsCount || b.occupancyRate - a.occupancyRate);
+
+    const topSports = [...sportStatsMap.values()]
+      .map(sp => ({
+        name: sp.name,
+        booked: sp.booked,
+        capacity: sp.capacity,
+        sessionsCount: sp.sessionsCount,
+        classesCount: sp.classes.size,
+        percentage: sp.capacity > 0 ? Math.round((sp.booked / sp.capacity) * 100) : 0,
+        share: totalBookedAll > 0 ? Math.round((sp.booked / totalBookedAll) * 100) : 0
+      }))
+      .sort((a, b) => b.booked - a.booked || b.percentage - a.percentage);
 
     return {
       from, to, groupBy,
@@ -778,12 +908,20 @@ export const reportApi = {
       monthlyRevenue: revenue.net,
       revenueGrowth: null,
       revenuePeriods: revenue.periods || [],
-      utilizationBySport: [...utilization.values()].map(item => ({
+      utilizationBySport: topSports.map(item => ({
         name: item.name,
         capacity: item.capacity,
         booked: item.booked,
-        percentage: item.capacity ? Math.round((item.booked / item.capacity) * 100) : 0
-      }))
+        percentage: item.percentage
+      })),
+      topSports,
+      topClasses,
+      topRooms,
+      highlights: {
+        mostPopularClass: topClasses[0] || null,
+        mostPopularSport: topSports[0] || null,
+        mostBookedRoom: topRooms[0] || null
+      }
     };
   }
 };
