@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.js';
 import { Badge } from '../../components/common/StatCard.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
+import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
 import { BOOKING_LABELS, formatMemberDate, formatMemberDateTime, isUpcomingBooking } from './memberOverview.js';
 
 const { useState, useEffect } = React;
@@ -21,6 +22,7 @@ export function MyBookings() {
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+  const [cancelError, setCancelError] = useState(null);
 
   const loadBookings = async () => {
     if (!currentUser) return;
@@ -31,7 +33,7 @@ export function MyBookings() {
       setWaitlist(waiting);
     } catch (error) {
       setError(error.message || 'Không thể tải danh sách đặt chỗ.');
-      showError(error.message || 'Không thể tải danh sách đặt chỗ.');
+      showError(error);
     } finally {
       setLoading(false);
     }
@@ -43,20 +45,22 @@ export function MyBookings() {
 
   const openCancelModal = (booking) => {
     setBookingToCancel(booking);
+    setCancelError(null);
     setCancelModalOpen(true);
   };
 
   const handleConfirmCancel = async () => {
     if (!bookingToCancel || !currentUser) return;
     setCancelling(true);
+    setCancelError(null);
     try {
       const result = await bookingApi.cancelBooking(bookingToCancel.id, currentUser.id);
       showSuccess(result.message);
       setCancelModalOpen(false);
       loadBookings();
     } catch (err) {
-      const hint = err.code === 'ME-06' ? `\n👉 Hướng dẫn: ${err.proposedHandling || 'Liên hệ lễ tân hỗ trợ'}` : '';
-      showError((err.message || 'Không thể hủy đặt chỗ.') + hint);
+      setCancelError(err);
+      showError(err);
     } finally {
       setCancelling(false);
     }
@@ -167,9 +171,20 @@ export function MyBookings() {
                 [ME-06] Áp dụng chính sách hủy: Hủy trước thời hạn quy định (ít nhất 2 giờ) sẽ giải phóng chỗ và hoàn lại lượt tập. Hủy muộn hoặc sau khi buổi học bắt đầu sẽ tính là đã tham gia.
               </p>
               <p className="text-[11px] text-amber-700 italic pt-1 border-t border-red-200/60">
-                * Bản nháp đề xuất: Hạn hủy lớp và chính sách trừ lượt tập cần được trung tâm xác nhận chính thức. Nếu không được hủy trên hệ thống, vui lòng liên hệ quầy lễ tân để được hỗ trợ.
+                * Hạn hủy lớp và chính sách trừ lượt tập được áp dụng tự động. Nếu cần hủy khẩn cấp do lý do sức khỏe, vui lòng liên hệ quầy lễ tân.
               </p>
             </div>
+
+            {/* Cancel Error Feedback */}
+            {cancelError && (
+              <BusinessAlert
+                type="error"
+                title="Không thể hủy ca học"
+                code={cancelError.code || 'ME-06'}
+                message={cancelError.message || String(cancelError)}
+                proposedHandling={cancelError.proposedHandling || 'Ca học đã sát giờ bắt đầu (dưới 2 tiếng). Vui lòng liên hệ trực tiếp quầy lễ tân để được kiểm tra và hỗ trợ giải quyết ngoại lệ.'}
+              />
+            )}
 
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
               <button

@@ -6,6 +6,8 @@
   "scripts": {
     "dev": "vite",
     "start": "vite",
+    "test": "node --test tests/*.test.cjs",
+    "test:payment:browser": "node tests/payment-checkout.browser.cjs",
     "build": "vite build",
     "build:api": "vite build --outDir ../Backend/Backend/SportsCenterManagement.API/wwwroot --emptyOutDir",
     "preview": "vite preview"

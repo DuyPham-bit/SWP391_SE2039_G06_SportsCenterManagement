@@ -64,7 +64,38 @@ export function PackageManagement() {
   const handleSavePackage = async (e) => {
     e.preventDefault();
     if (!name.trim()) {
-      showError('Vui lòng nhập tên gói tập!');
+      showError({
+        message: 'Vui lòng nhập tên gói tập!',
+        code: 'VAL-PKG-NAME',
+        proposedHandling: 'Đặt tên gợi nhớ rõ ràng (ví dụ: Gói Bơi Olympic Tháng, Gói Hội Viên Bạch Kim).'
+      });
+      return;
+    }
+
+    if (Number(price) <= 0) {
+      showError({
+        message: 'Học phí / Giá gói tập phải lớn hơn 0 VNĐ.',
+        code: 'VAL-PKG-PRICE',
+        proposedHandling: 'Nhập số tiền hợp lệ theo chính sách biểu phí của trung tâm.'
+      });
+      return;
+    }
+
+    if (Number(durationDays) <= 0) {
+      showError({
+        message: 'Thời hạn sử dụng gói phải từ 1 ngày trở lên.',
+        code: 'VAL-PKG-DURATION',
+        proposedHandling: 'Quy định thời hạn phổ biến: 30 ngày (1 tháng), 90 ngày (3 tháng), 365 ngày (1 năm).'
+      });
+      return;
+    }
+
+    if (Number(allowedSports) <= 0) {
+      showError({
+        message: 'Số bộ môn thể thao được phép tập phải từ 1 môn trở lên.',
+        code: 'VAL-PKG-SPORTS',
+        proposedHandling: 'Chọn số môn tối thiểu là 1 môn (hoặc 15 môn cho gói All-Access).'
+      });
       return;
     }
 
@@ -95,19 +126,24 @@ export function PackageManagement() {
       setModalOpen(false);
       loadPackages();
     } catch (err) {
-      showError(err.message || 'Lỗi lưu gói tập');
+      showError(err);
     } finally {
       setSaving(false);
     }
   };
 
   const handleToggleStatus = async (pkg) => {
+    if (pkg.status === 'Active') {
+      const confirmed = window.confirm(`Cảnh báo: Bạn có chắc chắn muốn ngưng phát hành gói "${pkg.name}"?\nCác hội viên đã mua gói này trước đó vẫn được bảo lưu thời hạn đến ngày kết thúc.`);
+      if (!confirmed) return;
+    }
+
     try {
       await packageApi.toggleStatus(pkg.id);
       showSuccess(`Đã thay đổi trạng thái của gói ${pkg.name}`);
       loadPackages();
     } catch (err) {
-      showError(err.message || 'Lỗi cập nhật');
+      showError(err);
     }
   };
 

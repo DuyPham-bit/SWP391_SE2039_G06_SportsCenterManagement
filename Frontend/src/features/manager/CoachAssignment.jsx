@@ -3,11 +3,12 @@ import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { Badge } from '../../components/common/StatCard.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
+import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
 
 const { useState, useEffect } = React;
 
 export function CoachAssignment() {
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showWarning } = useToast();
   const [classes, setClasses] = useState([]);
   const [coaches, setCoaches] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -18,6 +19,7 @@ export function CoachAssignment() {
   const [selectedClass, setSelectedClass] = useState(null);
   const [selectedCoachId, setSelectedCoachId] = useState('');
   const [assigning, setAssigning] = useState(false);
+  const [assignError, setAssignError] = useState(null);
 
   const loadData = async () => {
     setError('');
@@ -42,6 +44,7 @@ export function CoachAssignment() {
   const openAssignModal = (cls) => {
     setSelectedClass(cls);
     setSelectedCoachId(cls.coachId || coaches[0]?.id || '');
+    setAssignError(null);
     setModalOpen(true);
   };
 
@@ -53,13 +56,15 @@ export function CoachAssignment() {
     }
 
     setAssigning(true);
+    setAssignError(null);
     try {
       await classApi.assignCoach(selectedClass.id, selectedCoachId);
       showSuccess(`Phân công HLV cho lớp "${selectedClass.name}" thành công!`);
       setModalOpen(false);
       loadData();
     } catch (err) {
-      showError(err.message || 'Lỗi phân công HLV!');
+      setAssignError(err);
+      showError(err);
     } finally {
       setAssigning(false);
     }
@@ -167,7 +172,7 @@ export function CoachAssignment() {
               </label>
               <select
                 value={selectedCoachId}
-                onChange={e => setSelectedCoachId(e.target.value)}
+                onChange={e => { setSelectedCoachId(e.target.value); setAssignError(null); }}
                 className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
               >
                 {coaches.map(c => (
@@ -178,9 +183,37 @@ export function CoachAssignment() {
               </select>
             </div>
 
+            {/* Unhappy Case: Chuyên môn không khớp với bộ môn của lớp */}
+            {(() => {
+              const candidate = coaches.find(c => String(c.id) === String(selectedCoachId));
+              const mismatch = candidate?.specialization && selectedClass?.sportName &&
+                !candidate.specialization.toLowerCase().includes(selectedClass.sportName.toLowerCase()) &&
+                !selectedClass.sportName.toLowerCase().includes(candidate.specialization.toLowerCase());
+              if (!mismatch) return null;
+              return (
+                <BusinessAlert
+                  type="warning"
+                  title="Cảnh báo lệch chuyên môn huấn luyện"
+                  message={`HLV ${candidate.fullName} đăng ký chuyên môn "${candidate.specialization}", khác với môn "${selectedClass.sportName}" của lớp.`}
+                  proposedHandling="Quản lý cần đối chiếu chứng chỉ phụ hoặc năng lực thực tế trước khi phân công để đảm bảo chất lượng giảng dạy chuẩn Olympic."
+                />
+              );
+            })()}
+
+            {/* Exception / Conflict Result Alert */}
+            {assignError && (
+              <BusinessAlert
+                type="error"
+                title="Lỗi phân công huấn luyện viên"
+                code={assignError.code || 'COACH-ASSIGN-ERR'}
+                message={assignError.message || String(assignError)}
+                proposedHandling={assignError.proposedHandling || 'Chặn lưu lịch bị xung đột; chỉ rõ lớp/phòng/thời gian liên quan để đổi lịch hoặc đổi HLV.'}
+              />
+            )}
+
             <div className="p-3 rounded-lg bg-amber-50 text-amber-800 text-xs flex items-start gap-2 border border-amber-200">
               <span className="material-symbols-outlined text-[18px] shrink-0 mt-0.5">verified_user</span>
-              <span>Hệ thống sẽ tự động đối soát lịch giảng dạy của HLV được chọn. Nếu trùng ca dạy ở lớp khác, hệ thống sẽ phát tín hiệu cảnh báo xung đột và ngăn chặn phân công.</span>
+              <span>Hệ thống tự động đối soát lịch giảng dạy của HLV. Nếu trùng ca dạy ở lớp khác, hệ thống sẽ phát tín hiệu cảnh báo xung đột và ngăn chặn phân công.</span>
             </div>
 
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">

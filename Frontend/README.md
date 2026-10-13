@@ -529,8 +529,11 @@ Gồm 8 màn hình, cùng luồng đăng ký tài khoản và chỉnh sửa hồ
 ### 10.2 UC-41 Mua & Gia Hạn Gói Tập Trực Tuyến (Member Packages)
 - Route: `#/member/packages` | Component: `MemberPackages.jsx` | Đăng nhập vai trò Member
 - Xem danh sách các gói cước đang mở bán.
-- Mở Checkout Modal, chọn VNPay, MoMo hoặc PayOS/VietQR và chuyển tới URL thanh toán do backend trả về.
+- Mở Checkout Modal, chọn VNPay, MoMo hoặc PayOS/VietQR; cổng thanh toán mở trong cửa sổ riêng để giữ đăng nhập trên trang gói tập.
+- Hủy/hoàn tất thanh toán đưa về tab gói tập ban đầu và tải lại hóa đơn/hồ sơ qua API. Đóng cửa sổ thủ công cũng cập nhật hóa đơn; nếu popup bị chặn, thông báo trước khi gọi API tạo thanh toán.
 - Gói được kích hoạt sau khi backend xác minh thanh toán. Cổng cần cấu hình riêng; FE không tự tạo giao dịch hoặc kích hoạt gói.
+
+Kiểm tra hồi quy: `npm test` và `npm run test:payment:browser` (cần Chrome; có thể đặt `CHROME_PATH`). Browser test dùng API/cổng thanh toán giả lập cục bộ và lưu report ở `.validation/payment-checkout/`. Chi tiết: [sửa luồng quay về khi hủy thanh toán](docs/payment-cancel-return-fix.md).
 
 ### 10.3 UC-42 & UC-43 Tra Cứu Lịch & Đặt Chỗ Lớp Học (Class Schedule & Booking)
 - Route: `#/member/schedule` | Component: `ClassScheduleView.jsx` | Capability: `book_class`

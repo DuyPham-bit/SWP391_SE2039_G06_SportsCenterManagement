@@ -24,7 +24,7 @@ export function AIRecommendation() {
   const load = async () => {
     setLoading(true); setLoadError('');
     try { setClasses(await coachApi.getCoachClassesAndMembers()); }
-    catch (e) { setLoadError(e.message); }
+    catch (e) { setLoadError(e); }
     finally { setLoading(false); }
   };
   useEffect(() => { load(); }, []);
@@ -38,7 +38,7 @@ export function AIRecommendation() {
     coachApi.getAIContext(selectedClass.id, member.id).then(data => {
       if (!active) return;
       setContext(data); setGoal(data.fitnessGoal || ''); setLevel(data.fitnessLevel || ''); setNotes(data.medicalNote || '');
-    }).catch(e => { if (active) setContextError(e.message); }).finally(() => { if (active) setContextLoading(false); });
+    }).catch(e => { if (active) setContextError(e); }).finally(() => { if (active) setContextLoading(false); });
     return () => { active = false; };
   }, [selectedClass?.id, member?.id, version]);
   useEffect(() => { setResult(null); setError(''); }, [goal, level, notes]);
@@ -48,7 +48,7 @@ export function AIRecommendation() {
     setBusy(true); setResult(null); setError('');
     try {
       setResult(await coachApi.getAIRecommendation({ classId: selectedClass.id, memberId: member.id, fitnessGoal: goal.trim(), currentLevel: level.trim(), notes: notes.trim() }));
-    } catch (err) { setError(err.message); }
+    } catch (err) { setError(err); }
     finally { setBusy(false); }
   };
   const apply = async () => {
@@ -59,7 +59,7 @@ export function AIRecommendation() {
         startDate: coachDate(), fitnessCondition: notes, exercises: result.exercises });
       showSuccess('Đã lưu giáo án cá nhân sau khi HLV xem xét.');
       window.location.hash = '#/coach/training-plan';
-    } catch (err) { setError(err.message); }
+    } catch (err) { setError(err); }
     finally { setBusy(false); }
   };
   return <div className="space-y-5">

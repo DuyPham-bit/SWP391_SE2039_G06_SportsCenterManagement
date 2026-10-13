@@ -1,7 +1,10 @@
 import { useEffect, useState } from 'react';
 import { apiRequest } from '../../services/http.js';
+import { useAuth } from '../../context/AuthContext.js';
+import { notifyPaymentReturn } from '../../services/paymentCheckout.js';
 
 export function PaymentResult() {
+  const { isAuthenticated } = useAuth();
   const [state, setState] = useState({ loading: true, result: null, error: '' });
 
   useEffect(() => {
@@ -21,12 +24,24 @@ export function PaymentResult() {
       .catch(error => setState({ loading: false, result: null, error: error.message || 'Không thể xác nhận giao dịch.' }));
   }, []);
 
-  const isPayOsReturn = new URLSearchParams(window.location.search).has('orderCode');
-  const cancelled = new URLSearchParams(window.location.search).get('cancel') === 'true';
+  const query = new URLSearchParams(window.location.search);
+  const isPayOsReturn = query.has('orderCode');
+  const cancelled = query.get('cancel') === 'true' || query.get('status') === 'CANCELLED' ||
+    query.get('vnp_ResponseCode') === '24' || query.get('resultCode') === '1006';
+
+  useEffect(() => {
+    if (state.loading) return;
+    return notifyPaymentReturn({ cancelled, failed: Boolean(state.error) || state.result?.success === false });
+  }, [state.loading, state.error, state.result, cancelled]);
 
   const handleBackToPackages = () => {
-    const origin = window.location.port === '54162' ? 'http://localhost:3004' : window.location.origin;
-    window.location.assign(`${origin}/#/member/packages`);
+    if (window.opener && !window.opener.closed) {
+      window.opener.focus();
+      window.close();
+      return;
+    }
+    if (isAuthenticated) window.location.hash = '#/member/packages';
+    else window.close();
   };
 
   return (
@@ -54,10 +69,14 @@ export function PaymentResult() {
         <button
           type="button"
           onClick={handleBackToPackages}
+          disabled={state.loading}
           className="mt-6 inline-flex rounded-lg bg-red-600 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-700 shadow-md transition-all cursor-pointer"
         >
-          Quay lại gói tập
+          {isAuthenticated || window.opener ? 'Quay lại gói tập' : 'Đóng cửa sổ thanh toán'}
         </button>
+        {!isAuthenticated && !window.opener && (
+          <p className="mt-3 text-xs text-slate-500">Quay lại tab gói tập đang mở. Nếu đã đóng tab đó, bạn cần đăng nhập lại để xem hóa đơn.</p>
+        )}
       </section>
     </main>
   );

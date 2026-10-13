@@ -3,12 +3,14 @@ import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
+import { openPaymentCheckout } from '../../services/paymentCheckout.js';
 
-const { useState, useEffect } = React;
+const { useState, useEffect, useRef } = React;
 
 export function MemberPackages() {
-  const { currentUser } = useAuth();
-  const { showSuccess, showError } = useToast();
+  const { currentUser, refreshUser } = useAuth();
+  const { showSuccess, showError, showInfo, showWarning } = useToast();
+  const checkoutRef = useRef(null);
 
   const [packages, setPackages] = useState([]);
   const [pendingInvoices, setPendingInvoices] = useState([]);
@@ -43,6 +45,10 @@ export function MemberPackages() {
 
   useEffect(() => {
     loadData();
+    return () => {
+      checkoutRef.current?.dispose();
+      checkoutRef.current = null;
+    };
   }, []);
 
   const handleOpenCheckout = (pkg, existingInvoiceNumber = null) => {
@@ -68,19 +74,36 @@ export function MemberPackages() {
   };
 
   const handleConfirmSubscribe = async () => {
-    if (!selectedPkg || !currentUser) return;
+    if (!selectedPkg || !currentUser || processing || checkoutRef.current) return;
 
     setProcessing(true);
+    let checkout = null;
     try {
+      checkout = openPaymentCheckout(({ cancelled, failed, closed }) => {
+        checkoutRef.current = null;
+        setProcessing(false);
+        if (cancelled) showWarning('Đã hủy thanh toán. Bạn có thể tiếp tục chọn gói tập hoặc thanh toán hóa đơn chờ.');
+        else if (failed) showWarning('Chưa thể xác nhận thanh toán. Vui lòng kiểm tra trạng thái hóa đơn trước khi thử lại.');
+        else if (closed) showInfo('Đã đóng cửa sổ thanh toán. Đang cập nhật trạng thái hóa đơn.');
+        else showInfo('Đã quay lại trang gói tập. Trạng thái thanh toán được cập nhật từ hệ thống.');
+        loadData();
+        refreshUser().catch(error => showError(error.message || 'Không thể cập nhật thông tin gói tập.'));
+      });
+      checkoutRef.current = checkout;
       const res = await memberApi.subscribeOnline({
         memberId: currentUser.id,
         packageId: selectedPkg.id,
         paymentMethod,
         invoiceNumber: activeInvoiceNumber || undefined
       });
+      if (checkoutRef.current !== checkout) return;
       if (!res.paymentUrl) throw new Error('Backend không trả về địa chỉ thanh toán.');
-      window.location.assign(res.paymentUrl);
+      if (checkout.navigate(res.paymentUrl)) setModalOpen(false);
     } catch (err) {
+      // An earlier API response must not close a checkout opened after it.
+      if (checkout && checkoutRef.current !== checkout) return;
+      checkoutRef.current?.dispose();
+      checkoutRef.current = null;
       const errMsg = err.message || 'Lỗi thanh toán';
       const match = errMsg.match(/\((SC-[^\)]+)\)/);
       if (match || errMsg.includes('hóa đơn chờ thanh toán')) {
@@ -95,7 +118,7 @@ export function MemberPackages() {
         showError(errMsg);
       }
     } finally {
-      setProcessing(false);
+      if (!checkoutRef.current) setProcessing(false);
     }
   };
 
@@ -333,7 +356,7 @@ export function MemberPackages() {
 
             <div className="p-3 rounded-xl bg-blue-50 text-blue-900 text-xs flex items-start gap-2">
               <span className="material-symbols-outlined text-[18px] shrink-0 mt-0.5">verified</span>
-              <span>Cổng thanh toán bảo mật liên ngân hàng. Thẻ tập sẽ được hệ thống SCMS kích hoạt ngay sau khi giao dịch hoàn tất.</span>
+              <span>Thanh toán mở trong cửa sổ riêng. Khi hủy hoặc hoàn tất, bạn quay lại trang gói tập đang đăng nhập. Thẻ tập được kích hoạt sau khi hệ thống xác nhận giao dịch.</span>
             </div>
 
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">

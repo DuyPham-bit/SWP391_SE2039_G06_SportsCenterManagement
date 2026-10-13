@@ -59,12 +59,19 @@ export function MemberAIAssistant() {
         }
       ]);
     } catch (err) {
+      const errorText = err.proposedHandling
+        ? `${err.message || 'Lỗi kết nối Trợ lý AI'}\n\n💡 Hướng dẫn xử lý: ${err.proposedHandling}`
+        : `${err.message || 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.'}`;
+
       setMessages(prev => [
         ...prev,
         {
           id: `ai-err-${Date.now()}`,
           sender: 'ai',
-          text: `[Lỗi API]: ${err.message}`,
+          isError: true,
+          code: err.code || (err.status === 429 ? 'AI-RATE-LIMIT' : 'AI-ERROR'),
+          text: errorText,
+          failedQuestion: text,
           time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
         }
       ]);
@@ -144,10 +151,29 @@ export function MemberAIAssistant() {
                 className={`max-w-[80%] sm:max-w-[70%] rounded-2xl p-4 text-xs sm:text-sm leading-relaxed shadow-sm ${
                   msg.sender === 'user'
                     ? 'bg-red-600 text-white rounded-tr-none'
+                    : msg.isError
+                    ? 'bg-red-50 text-red-950 border border-red-300 rounded-tl-none whitespace-pre-line'
                     : 'bg-white text-slate-800 border border-slate-200 rounded-tl-none whitespace-pre-line'
                 }`}
               >
+                {msg.isError && msg.code && (
+                  <span className="inline-block px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-red-200 text-red-900 mb-1 border border-red-300">
+                    MÃ: {msg.code}
+                  </span>
+                )}
                 <div className="font-medium">{msg.text}</div>
+                {msg.isError && msg.failedQuestion && (
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSend(msg.failedQuestion)}
+                      className="px-3 py-1 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-colors inline-flex items-center gap-1 shadow-sm"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">refresh</span>
+                      <span>Thử gửi lại câu hỏi này</span>
+                    </button>
+                  </div>
+                )}
                 <div
                   className={`text-[10px] mt-2 font-mono ${
                     msg.sender === 'user' ? 'text-red-200 text-right' : 'text-slate-400'

@@ -1,14 +1,29 @@
 import React, { useState, useEffect } from 'react';
 import { classApi } from '../../services/api.js';
 import { coachDate } from './coachOverview.js';
+import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
 
 export const coachInput = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-red-600';
 
 export function CoachError({ message, retry }) {
   if (!message) return null;
-  return <div role="alert" className="p-4 rounded-xl border border-red-200 bg-red-50 text-sm text-red-800">
-    <p>{message}</p>{retry && <button type="button" onClick={retry} className="font-bold underline mt-2">Thử lại</button>}
-  </div>;
+  const isObj = message && typeof message === 'object';
+  const text = isObj ? (message.message || String(message)) : String(message);
+  const code = isObj ? message.code : null;
+  const proposedHandling = isObj ? message.proposedHandling : null;
+
+  return (
+    <BusinessAlert
+      type="error"
+      title="Thông báo lỗi thao tác"
+      code={code}
+      message={text}
+      proposedHandling={proposedHandling}
+      actionText={retry ? "Thử lại" : undefined}
+      onAction={retry}
+      className="my-3"
+    />
+  );
 }
 
 export function useTeachingSessions(endOffset = 30, anchorDate = null) {

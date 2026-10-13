@@ -26,7 +26,7 @@ export function Attendance() {
       if (!active) return;
       setMembers(data);
       setRecords(Object.fromEntries(data.map(m => [m.memberId, { memberId: m.memberId, status: m.attendanceStatus || '', note: m.note || '' }])));
-    }).catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); });
+    }).catch(e => { if (active) setError(e); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [session?.id, version]);
   const change = (id, field, value) => setRecords(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
@@ -38,7 +38,7 @@ export function Attendance() {
     try {
       await coachApi.takeAttendance(session.id, null, null, null, payload);
       showSuccess('Đã lưu kết quả điểm danh.'); setVersion(v => v + 1);
-    } catch (e) { showError(e.message); }
+    } catch (e) { showError(e); }
     finally { setSaving(false); }
   };
   return <div className="space-y-5">

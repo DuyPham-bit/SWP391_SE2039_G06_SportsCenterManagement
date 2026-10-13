@@ -4,6 +4,7 @@ import { createReportCsv } from '../../services/reportExport.js';
 import { StatCard } from '../../components/common/StatCard.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { useToast } from '../../context/ToastContext.js';
+import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
 
 const field = 'border rounded-lg p-2 text-sm';
 const button = 'px-3 py-2 rounded-lg bg-slate-900 text-white text-sm disabled:opacity-50';
@@ -17,12 +18,12 @@ export function ReportsAnalytics() {
   const [selection, setSelection] = useState('MONTH');
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [error, setError] = useState(null);
   const [revision, setRevision] = useState(0);
   useEffect(() => {
-    let active = true; setLoading(true); setError(''); setMetrics(null);
+    let active = true; setLoading(true); setError(null); setMetrics(null);
     reportApi.getOverview(selection).then(data => { if (active) setMetrics(data); })
-      .catch(e => { if (active) setError(e.message); }).finally(() => { if (active) setLoading(false); });
+      .catch(e => { if (active) setError(e); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [selection, revision]);
   const exportReport = () => {
@@ -30,20 +31,41 @@ export function ReportsAnalytics() {
       const url = URL.createObjectURL(new Blob([createReportCsv(metrics, period)], { type: 'text/csv;charset=utf-8' }));
       const link = document.createElement('a'); link.href = url; link.download = `SCMS-report-${period}.csv`;
       document.body.appendChild(link); link.click(); link.remove(); setTimeout(() => URL.revokeObjectURL(url), 1000);
-    } catch (e) { showError(e.message); }
+    } catch (e) { showError(e); }
   };
   const revenue = metrics?.revenuePeriods || [], membership = metrics?.membershipPeriods || [], events = metrics?.classPeriods || [];
   const maxRevenue = Math.max(1, ...revenue.map(r => Number(r.net)));
   return <div className="space-y-5">
     <div className="flex flex-wrap justify-between items-center gap-3"><div><h1 className="text-2xl font-bold">Báo cáo & thống kê hoạt động</h1><p className="text-sm text-slate-500">Doanh thu, hội viên mới và tình trạng đăng ký lớp theo thời gian.</p></div><button className={button} disabled={loading || !metrics} onClick={exportReport}>Xuất Báo Cáo</button></div>
     <div className="flex flex-wrap gap-2">{[['MONTH','Tháng này'],['QUARTER','Quý này'],['YEAR','Năm nay']].map(([id,label]) => <button key={id} className={`${button} ${period === id ? 'ring-2 ring-red-500' : ''}`} onClick={() => { setPeriod(id); setSelection(id); }}>{label}</button>)}</div>
-    <form className="flex flex-wrap gap-3 items-end bg-white border rounded-xl p-4" onSubmit={e => { e.preventDefault(); setPeriod('CUSTOM'); setSelection({ ...range }); }}>
+    <form className="flex flex-wrap gap-3 items-end bg-white border rounded-xl p-4" onSubmit={e => {
+      e.preventDefault();
+      if (range.from && range.to && range.from > range.to) {
+        showError({
+          message: 'Khoảng ngày không hợp lệ: Từ ngày phải nhỏ hơn hoặc bằng Đến ngày.',
+          code: 'VAL-REPORT-DATE',
+          proposedHandling: 'Vui lòng chọn lại khoảng thời gian tra cứu.'
+        });
+        return;
+      }
+      setPeriod('CUSTOM'); setSelection({ ...range });
+    }}>
       <label className="flex flex-col gap-1 text-sm">Từ ngày<input className={field} type="date" name="from" required value={range.from} onChange={e => setRange(r => ({ ...r, from: e.target.value }))} /></label>
       <label className="flex flex-col gap-1 text-sm">Đến ngày<input className={field} type="date" name="to" required min={range.from} value={range.to} onChange={e => setRange(r => ({ ...r, to: e.target.value }))} /></label>
       <label className="flex flex-col gap-1 text-sm">Nhóm theo<select className={field} name="groupBy" value={range.groupBy} onChange={e => setRange(r => ({ ...r, groupBy: e.target.value }))}><option value="day">Ngày</option><option value="month">Tháng</option></select></label>
       <button className={button}>Áp dụng khoảng ngày</button>
     </form>
-    {loading ? <LoadingSpinner text="Đang tải báo cáo..." /> : error ? <div role="alert" className="bg-red-50 p-4 rounded-lg"><p>{error}</p><button className={button} onClick={() => setRevision(x => x + 1)}>Thử lại</button></div> : metrics && <>
+    {loading ? <LoadingSpinner text="Đang tải báo cáo..." /> : error ? (
+      <BusinessAlert
+        type="error"
+        title="Không thể tải báo cáo thống kê"
+        code={error.code || 'REPORT-LOAD-ERR'}
+        message={error.message || String(error)}
+        proposedHandling={error.proposedHandling || 'Truy vấn dữ liệu lớn có thể bị gián đoạn đường truyền. Vui lòng thử lại hoặc thu hẹp khoảng ngày.'}
+        actionText="Thử lại"
+        onAction={() => setRevision(x => x + 1)}
+      />
+    ) : metrics && <>
       <p className="text-sm font-semibold">Kỳ báo cáo: {metrics.from} – {metrics.to} · {metrics.groupBy === 'month' ? 'Theo tháng' : 'Theo ngày'}</p>
       <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard title="Doanh thu thuần" value={`${Number(metrics.monthlyRevenue).toLocaleString('vi-VN')}đ`} subtitle="Trong kỳ đã chọn" icon="payments" color="red" />

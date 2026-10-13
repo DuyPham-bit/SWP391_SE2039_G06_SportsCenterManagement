@@ -42,6 +42,34 @@ export function WorkoutProgress() {
   const save = async e => {
     e.preventDefault();
     if (!member || !session || saving) return;
+
+    if (form.weight !== '' && (Number(form.weight) < 25 || Number(form.weight) > 300)) {
+      showError({
+        message: 'Chỉ số cân nặng không hợp lý (chỉ chấp nhận từ 25kg đến 300kg).',
+        code: 'VAL-WEIGHT-RANGE',
+        proposedHandling: 'Kiểm tra lại số đo trên cân điện tử của trung tâm trước khi ghi nhận.'
+      });
+      return;
+    }
+
+    if (form.bodyFat !== '' && (Number(form.bodyFat) < 2 || Number(form.bodyFat) > 65)) {
+      showError({
+        message: 'Tỷ lệ mỡ (Body Fat) không hợp lý (chỉ chấp nhận từ 2% đến 65%).',
+        code: 'VAL-FAT-RANGE',
+        proposedHandling: 'Đối chiếu lại kết quả từ máy đo InBody/chỉ số sinh trắc học.'
+      });
+      return;
+    }
+
+    if (form.muscleMass !== '' && (Number(form.muscleMass) < 10 || Number(form.muscleMass) > 120)) {
+      showError({
+        message: 'Khối lượng cơ bắp (Muscle Mass) không hợp lý (chỉ chấp nhận từ 10kg đến 120kg).',
+        code: 'VAL-MUSCLE-RANGE',
+        proposedHandling: 'Đối chiếu lại kết quả từ máy đo InBody trước khi ghi nhận.'
+      });
+      return;
+    }
+
     setSaving(true);
     try {
       await coachApi.recordWorkoutProgress({
@@ -53,7 +81,7 @@ export function WorkoutProgress() {
       });
       showSuccess('Đã lưu kết quả và nhận xét cho buổi tập.');
       setModal(false); await load();
-    } catch (err) { showError(err.message); }
+    } catch (err) { showError(err); }
     finally { setSaving(false); }
   };
   return <div className="space-y-5">
