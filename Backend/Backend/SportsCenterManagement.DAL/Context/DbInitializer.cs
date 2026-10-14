@@ -12,6 +12,8 @@ namespace SportsCenterManagement.DAL.Context;
 /// </summary>
 public static class DbInitializer
 {
+    private const string DemoSeedMarker = "seed.demo-data.v1";
+
     public static async Task SeedAsync(SportsCenterDbContext context, bool baselineLegacySchema = false, bool seedDemoData = true)
     {
         if (baselineLegacySchema)
@@ -27,6 +29,13 @@ public static class DbInitializer
         {
             await context.Database.EnsureCreatedAsync();
         }
+
+        var demoRequested = seedDemoData;
+        // Existing business data belongs to users. Never replay demo defaults over it.
+        seedDemoData = seedDemoData
+            && !await context.SystemSettings.AnyAsync(item => item.SettingKey == DemoSeedMarker)
+            && !await context.Users.AnyAsync()
+            && !await context.Centers.AnyAsync();
 
         Center? center = null;
         if (seedDemoData)
@@ -105,17 +114,7 @@ public static class DbInitializer
             foreach (var pkg in packagesToSync)
             {
                 var existing = existingPackages.FirstOrDefault(p => p.Name == pkg.Name);
-                if (existing != null)
-                {
-                    existing.Description = pkg.Description;
-                    existing.DurationDays = pkg.DurationDays;
-                    existing.Price = pkg.Price;
-                    existing.MaxClasses = pkg.MaxClasses;
-                    existing.AccessType = pkg.AccessType;
-                    existing.Status = "Active";
-                    existing.UpdatedAt = DateTime.UtcNow;
-                }
-                else
+                if (existing == null)
                 {
                     await context.MembershipPackages.AddAsync(pkg);
                 }
@@ -142,8 +141,10 @@ public static class DbInitializer
         }
         await context.SaveChangesAsync();
 
+        await EnsureRolesAndPermissionsAsync(context);
         if (!seedDemoData)
         {
+            if (demoRequested) await MarkDemoInitializedAsync(context);
             await EnsureAuthAndReceptionPermissionsAsync(context);
             return;
         }
@@ -362,6 +363,41 @@ public static class DbInitializer
             }
         }
 
+        // Admin User seed
+        adminRole = await context.Roles.FirstOrDefaultAsync(role => role.Name == "Admin" || role.Name == RoleNames.SystemAdmin);
+        if (adminRole is not null && !await context.Users.AnyAsync(user => user.Email == "admin@sportscenter.vn"))
+        {
+            await context.Users.AddAsync(new User
+            {
+                RoleId = adminRole.Id,
+                Username = "admin",
+                Email = "admin@sportscenter.vn",
+                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123456"),
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow
+            });
+            await context.SaveChangesAsync();
+        }
+
+        await SeedDemoClassesMembersAndPlansAsync(context, demoCenter);
+        await MarkDemoInitializedAsync(context);
+        await EnsureAuthAndReceptionPermissionsAsync(context);
+    }
+
+    private static async Task MarkDemoInitializedAsync(SportsCenterDbContext context)
+    {
+        if (await context.SystemSettings.AnyAsync(item => item.SettingKey == DemoSeedMarker)) return;
+        context.SystemSettings.Add(new SystemSetting
+        {
+            SettingKey = DemoSeedMarker,
+            SettingValue = "completed",
+            Description = "Demo data initializes a new development database once; saved business data is preserved."
+        });
+        await context.SaveChangesAsync();
+    }
+
+    private static async Task EnsureRolesAndPermissionsAsync(SportsCenterDbContext context)
+    {
         // Roles
         foreach (var roleName in new[]
                  {
@@ -516,75 +552,6 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // Admin User seed
-        adminRole = await context.Roles.FirstOrDefaultAsync(role => role.Name == "Admin" || role.Name == RoleNames.SystemAdmin);
-        if (adminRole is not null && !await context.Users.AnyAsync(user => user.Email == "admin@sportscenter.vn"))
-        {
-            await context.Users.AddAsync(new User
-            {
-                RoleId = adminRole.Id,
-                Username = "admin",
-                Email = "admin@sportscenter.vn",
-                PasswordHash = BCrypt.Net.BCrypt.HashPassword("Admin@123456"),
-                Status = "Active",
-                CreatedAt = DateTime.UtcNow
-            });
-            await context.SaveChangesAsync();
-        }
-
-        var seededMemberUser = await context.Users.SingleOrDefaultAsync(user => user.Username == "member01");
-        if (seededMemberUser is not null && !seededMemberUser.PasswordHash.StartsWith("$2", StringComparison.Ordinal))
-        {
-            seededMemberUser.PasswordHash = BCrypt.Net.BCrypt.HashPassword("password123");
-            seededMemberUser.UpdatedAt = DateTime.UtcNow;
-            await context.SaveChangesAsync();
-        }
-
-        var seededAdmin = await context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
-        if (seededAdmin != null && seededAdmin.PasswordHash.Contains(':'))
-        {
-            seededAdmin.PasswordHash = HashPassword("Admin@123456");
-            seededAdmin.FailedLoginAttempts = 0;
-            seededAdmin.LockedUntil = null;
-            await context.SaveChangesAsync();
-        }
-
-        var seededManager = await context.Users.FirstOrDefaultAsync(u => u.Username == "manager01");
-        if (seededManager != null && seededManager.PasswordHash.Contains(':'))
-        {
-            seededManager.PasswordHash = HashPassword("Manager@123456");
-            seededManager.FailedLoginAttempts = 0;
-            seededManager.LockedUntil = null;
-            await context.SaveChangesAsync();
-        }
-
-        var seededReception = await context.Users.FirstOrDefaultAsync(u => u.Username == "reception01");
-        if (seededReception != null && seededReception.PasswordHash.Contains(':'))
-        {
-            seededReception.PasswordHash = HashPassword("Reception@123456");
-            seededReception.FailedLoginAttempts = 0;
-            seededReception.LockedUntil = null;
-            await context.SaveChangesAsync();
-        }
-
-        var seededCoach = await context.Users.FirstOrDefaultAsync(u => u.Username == "coach01");
-        if (seededCoach != null && seededCoach.PasswordHash.Contains(':'))
-        {
-            seededCoach.PasswordHash = HashPassword("Coach@123456");
-            seededCoach.FailedLoginAttempts = 0;
-            seededCoach.LockedUntil = null;
-            await context.SaveChangesAsync();
-        }
-
-        var seededMember = await context.Users.FirstOrDefaultAsync(u => u.Email == "member01@sportscenter.vn");
-        if (seededMember != null && seededMember.PasswordHash.Contains(':'))
-        {
-            seededMember.PasswordHash = HashPassword("Member@123456");
-            seededMember.FailedLoginAttempts = 0;
-            seededMember.LockedUntil = null;
-            await context.SaveChangesAsync();
-        }
-
         var systemAdminRole = await context.Roles.FirstOrDefaultAsync(role => role.Name == RoleNames.SystemAdmin);
         var permManage = await context.Permissions.FirstOrDefaultAsync(
             permission => permission.Code == PermissionCodes.RolePermissionManage);
@@ -616,8 +583,6 @@ public static class DbInitializer
             }
         }
 
-        await SeedDemoClassesMembersAndPlansAsync(context, demoCenter);
-        await EnsureAuthAndReceptionPermissionsAsync(context);
     }
 
     private static async Task EnsureAuthAndReceptionPermissionsAsync(SportsCenterDbContext context)
@@ -729,19 +694,6 @@ public static class DbInitializer
                 await context.Users.AddAsync(user);
                 await context.SaveChangesAsync();
             }
-            else
-            {
-                user.Email = m.Email;
-                user.Phone = m.Phone;
-                user.Status = "Active";
-                if (user.PasswordHash.Contains(':'))
-                {
-                    user.PasswordHash = HashPassword("Member@123456");
-                }
-                user.FailedLoginAttempts = 0;
-                user.LockedUntil = null;
-                await context.SaveChangesAsync();
-            }
 
             var profile = await context.MemberProfiles.FirstOrDefaultAsync(p => p.UserId == user.Id);
             if (profile == null)
@@ -762,17 +714,6 @@ public static class DbInitializer
                     CreatedAt = DateTime.UtcNow
                 };
                 await context.MemberProfiles.AddAsync(profile);
-                await context.SaveChangesAsync();
-            }
-            else
-            {
-                profile.FullName = m.FullName;
-                profile.MemberCode = m.MemberCode;
-                profile.Gender = m.Gender;
-                profile.FitnessGoal = m.Goal;
-                profile.FitnessLevel = m.Level;
-                profile.HeightCm = m.Height;
-                profile.WeightKg = m.Weight;
                 await context.SaveChangesAsync();
             }
 

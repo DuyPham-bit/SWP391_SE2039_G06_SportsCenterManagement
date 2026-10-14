@@ -20,14 +20,16 @@ export function MemberCheckIn() {
   const [overrideModalOpen, setOverrideModalOpen] = useState(false);
   const [overrideReason, setOverrideReason] = useState('');
   const [overrideApprover, setOverrideApprover] = useState('Quản lý ca trực');
-  const [overrideSuccess, setOverrideSuccess] = useState(false);
+  const [failedIdentifier, setFailedIdentifier] = useState('');
+  const [historyError, setHistoryError] = useState('');
 
   const loadData = async () => {
     try {
       const history = await receptionApi.getCheckInHistory();
       setCheckIns(history || []);
-    } catch {
-      // Bỏ qua lỗi kết nối ban đầu
+      setHistoryError('');
+    } catch (error) {
+      setHistoryError(error.message || 'Không thể tải nhật ký check-in từ hệ thống.');
     }
   };
 
@@ -55,6 +57,7 @@ export function MemberCheckIn() {
 
     setProcessing(true);
     setCheckInError(null);
+    setFailedIdentifier(term);
     try {
       const result = await receptionApi.checkInMember(term);
       setLastCheckIn(result);
@@ -73,26 +76,15 @@ export function MemberCheckIn() {
   const handleOverrideCheckIn = async (e) => {
     e.preventDefault();
     if (!overrideReason.trim()) {
-      showWarning('Vui lòng ghi rõ lý do chấp thuận ngoại lệ check-in!');
+      showWarning('Vui lòng ghi rõ lý do cần xử lý ngoại lệ check-in.');
       return;
     }
     setProcessing(true);
     try {
-      // Mock log override checkin record
-      const mockOverride = {
-        id: Date.now(),
-        memberName: checkInError?.payload?.memberName || identifier || 'Hội viên ghi đè',
-        memberCode: checkInError?.payload?.memberCode || identifier,
-        packageName: `Ghi đè ngoại lệ (${overrideApprover}): ${overrideReason.trim()}`,
-        checkInTime: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }),
-        receptionistName: 'Lễ tân trực quầy'
-      };
-      setLastCheckIn(mockOverride);
-      setCheckIns(prev => [mockOverride, ...prev]);
-      setCheckInError(null);
+      const result = await receptionApi.requestCheckInReview(failedIdentifier || identifier, overrideReason, overrideApprover);
       setOverrideModalOpen(false);
       setOverrideReason('');
-      showSuccess('Đã duyệt vào cổng theo diện ngoại lệ đặc biệt!');
+      showSuccess(`Đã lưu yêu cầu #${result.request.id} vào hệ thống. Theo dõi xử lý tại mục Yêu cầu hỗ trợ.`);
     } catch (err) {
       showError(err);
     } finally {
@@ -217,7 +209,7 @@ export function MemberCheckIn() {
                   className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-sm"
                 >
                   <span className="material-symbols-outlined text-[16px]">verified_user</span>
-                  <span>Duyệt Ngoại Lệ (Override Check-in)</span>
+                  <span>Gửi yêu cầu xử lý ngoại lệ</span>
                 </button>
               </div>
             </div>
@@ -228,16 +220,16 @@ export function MemberCheckIn() {
         <Modal
           isOpen={overrideModalOpen}
           onClose={() => setOverrideModalOpen(false)}
-          title="Xử Lý Ngoại Lệ Check-in Đặc Biệt"
+          title="Gửi Yêu Cầu Xử Lý Ngoại Lệ Check-in"
           size="md"
         >
           <form onSubmit={handleOverrideCheckIn} className="space-y-4">
             <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-xs text-amber-900 leading-relaxed">
-              <strong>Lưu ý kiểm soát:</strong> Mọi thao tác ghi đè ngoại lệ sẽ được lưu vào hệ thống Audit Log và thông báo cho Quản lý trung tâm. Chỉ áp dụng khi có lý do chính đáng (quên thẻ vật lý, thẻ lỗi kỹ thuật, học bù có xác nhận của HLV).
+              Yêu cầu và lý do được lưu vào hệ thống để theo dõi xử lý. Việc gửi yêu cầu chưa phê duyệt check-in hoặc mở cổng; các điều kiện về tài khoản, gói tập và lượt vào vẫn được kiểm tra.
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Người phê duyệt ngoại lệ *
+                Người được đề nghị xử lý *
               </label>
               <input
                 type="text"
@@ -249,7 +241,7 @@ export function MemberCheckIn() {
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                Lý do chấp thuận vào cổng *
+                Lý do cần xử lý *
               </label>
               <textarea
                 required
@@ -273,7 +265,7 @@ export function MemberCheckIn() {
                 disabled={processing}
                 className="px-5 py-2 text-xs font-bold text-white bg-slate-900 hover:bg-slate-800 rounded-lg shadow"
               >
-                {processing ? 'Đang lưu...' : 'XÁC NHẬN MỞ CỬA'}
+                {processing ? 'Đang lưu...' : 'LƯU YÊU CẦU'}
               </button>
             </div>
           </form>
@@ -288,6 +280,7 @@ export function MemberCheckIn() {
             <span className="text-xs font-semibold text-emerald-600">Trực tiếp</span>
           </div>
 
+          {historyError && <p role="alert" className="text-sm text-red-700">{historyError}</p>}
           <div className="divide-y divide-slate-100 max-h-[500px] overflow-y-auto pr-1 space-y-2">
             {checkIns.map(item => (
               <div key={item.id} className="pt-2.5 pb-1 flex items-start justify-between gap-3 text-xs">

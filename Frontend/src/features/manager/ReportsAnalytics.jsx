@@ -9,7 +9,9 @@ import {
   RevenueTrendChart,
   NewMembersAreaChart,
   SportsDonutChart,
-  ClassCapacityBarChart
+  ClassCapacityBarChart,
+  SportRevenueRankingChart,
+  RoomRevenueRankingChart
 } from './AnalyticsCharts.jsx';
 
 const field = 'border border-slate-200 rounded-lg p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500';
@@ -493,6 +495,41 @@ export function ReportsAnalytics() {
                   </p>
                 </div>
                 <ClassCapacityBarChart classes={processedClasses} />
+              </section>
+            </div>
+
+            {/* Hàng biểu đồ 3: Xếp hạng Bộ môn & Sân bãi theo Doanh thu / Lượt đặt */}
+            <div className="grid lg:grid-cols-2 gap-5">
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <h3 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-red-600"></span>
+                    Biểu Đồ Xếp Hạng Bộ Môn: Doanh Thu & Lượt Đặt Chỗ
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Thống kê bộ môn thể thao nào mang lại nhiều tiền nhất và được hội viên đặt chỗ nhiều nhất.
+                  </p>
+                </div>
+                <SportRevenueRankingChart
+                  sports={metrics.topSports}
+                  totalRevenue={metrics.monthlyRevenue}
+                />
+              </section>
+
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
+                <div>
+                  <h3 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
+                    Biểu Đồ Khai Thác Sân Bãi: Doanh Thu & Lượt Khách
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Thống kê sân bãi / phòng tập nào đạt doanh thu cao nhất và tiếp nhận đông khách nhất.
+                  </p>
+                </div>
+                <RoomRevenueRankingChart
+                  rooms={processedRooms}
+                  totalRevenue={metrics.monthlyRevenue}
+                />
               </section>
             </div>
           </div>

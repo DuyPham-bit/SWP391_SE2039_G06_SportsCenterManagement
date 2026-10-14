@@ -578,3 +578,262 @@ export function ClassCapacityBarChart({ classes = [] }) {
     </div>
   );
 }
+
+/**
+ * 5. BIỂU ĐỒ XẾP HẠNG BỘ MÔN: DOANH THU & LƯỢT ĐẶT (TOP SPORTS BY REVENUE / BOOKINGS)
+ */
+export function SportRevenueRankingChart({ sports = [], totalRevenue = 0 }) {
+  const [metricMode, setMetricMode] = useState('revenue'); // 'revenue' | 'booked'
+
+  if (!sports || !sports.length) {
+    return <div className="text-xs text-slate-400 py-8 text-center">Chưa có dữ liệu bộ môn.</div>;
+  }
+
+  const totalBookings = sports.reduce((sum, s) => sum + (s.booked || 0), 0) || 1;
+  const numRevenue = Number(totalRevenue || 0);
+
+  // Compute revenue and metrics for each sport
+  const sportsWithMetrics = sports.map(s => {
+    const shareFraction = s.share ? s.share / 100 : (s.booked || 0) / totalBookings;
+    const estimatedRev = Math.round(numRevenue * shareFraction);
+    return {
+      ...s,
+      revenue: estimatedRev,
+      color: getSportColor(s.name)
+    };
+  });
+
+  // Sort based on current mode
+  const sorted = [...sportsWithMetrics].sort((a, b) => {
+    if (metricMode === 'revenue') return b.revenue - a.revenue || b.booked - a.booked;
+    return b.booked - a.booked || b.revenue - a.revenue;
+  });
+
+  const maxVal = Math.max(1, ...sorted.map(s => metricMode === 'revenue' ? s.revenue : s.booked));
+
+  return (
+    <div className="space-y-4">
+      {/* Toggle mode controller */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="text-slate-500 font-medium">
+          {metricMode === 'revenue' ? 'Xếp hạng theo doanh thu thực nhận:' : 'Xếp hạng theo tổng lượt đặt chỗ:'}
+        </span>
+        <div className="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setMetricMode('revenue')}
+            className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
+              metricMode === 'revenue'
+                ? 'bg-red-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[14px]">payments</span>
+            <span>Doanh Thu</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMetricMode('booked')}
+            className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
+              metricMode === 'booked'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[14px]">confirmation_number</span>
+            <span>Lượt Đặt Chỗ</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Bars List */}
+      <div className="space-y-2.5">
+        {sorted.map((s, idx) => {
+          const isTop1 = idx === 0;
+          const val = metricMode === 'revenue' ? s.revenue : s.booked;
+          const barWidth = Math.max(4, Math.round((val / maxVal) * 100));
+
+          let rankBadge = `#${idx + 1}`;
+          let rankColor = 'bg-slate-100 text-slate-700';
+          if (idx === 0) { rankBadge = '🥇 #1'; rankColor = 'bg-amber-100 text-amber-900 border border-amber-300 font-black'; }
+          else if (idx === 1) { rankBadge = '🥈 #2'; rankColor = 'bg-slate-200 text-slate-800 font-bold'; }
+          else if (idx === 2) { rankBadge = '🥉 #3'; rankColor = 'bg-amber-50 text-amber-800 font-bold'; }
+
+          return (
+            <div
+              key={s.name}
+              className={`p-3 rounded-xl border transition-all ${
+                isTop1 ? 'bg-amber-50/30 border-amber-200/80 shadow-xs' : 'bg-white border-slate-200/80 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] ${rankColor}`}>
+                    {rankBadge}
+                  </span>
+                  <span className="font-bold text-slate-900">{s.name}</span>
+                  <span className="text-[11px] text-slate-400">({s.sessionsCount || 0} ca · {s.classesCount || 0} lớp)</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <strong className={`font-chivo font-black text-sm ${metricMode === 'revenue' ? 'text-red-600' : 'text-slate-900'}`}>
+                    {metricMode === 'revenue' ? formatVnd(s.revenue) : `${s.booked} lượt`}
+                  </strong>
+                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
+                    {s.share}% thị phần
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className={`h-2.5 rounded-full transition-all duration-500 ${
+                    metricMode === 'revenue'
+                      ? isTop1 ? 'bg-gradient-to-r from-red-600 to-amber-500' : 'bg-red-600'
+                      : isTop1 ? 'bg-gradient-to-r from-sky-600 to-emerald-500' : 'bg-sky-600'
+                  }`}
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                <span>Lấp đầy: <strong className="text-slate-700">{s.percentage}%</strong> ({s.booked}/{s.capacity} chỗ)</span>
+                <span>{metricMode === 'revenue' ? `${s.booked} lượt đặt chỗ` : formatVnd(s.revenue)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 6. BIỂU ĐỒ XẾP HẠNG SÂN BÃI / PHÒNG TẬP: DOANH THU & LƯỢT KHÁCH (TOP COURTS BY REVENUE / BOOKINGS)
+ */
+export function RoomRevenueRankingChart({ rooms = [], totalRevenue = 0 }) {
+  const [metricMode, setMetricMode] = useState('revenue'); // 'revenue' | 'booked'
+
+  if (!rooms || !rooms.length) {
+    return <div className="text-xs text-slate-400 py-8 text-center">Chưa có dữ liệu sân bãi.</div>;
+  }
+
+  const totalRoomBookings = rooms.reduce((sum, r) => sum + (r.booked || 0), 0) || 1;
+  const numRevenue = Number(totalRevenue || 0);
+
+  // Compute revenue for each room based on attendee share
+  const roomsWithMetrics = rooms.map(r => {
+    const shareFraction = (r.booked || 0) / totalRoomBookings;
+    const estimatedRev = Math.round(numRevenue * shareFraction);
+    return {
+      ...r,
+      revenue: estimatedRev
+    };
+  });
+
+  // Sort based on current mode
+  const sorted = [...roomsWithMetrics].sort((a, b) => {
+    if (metricMode === 'revenue') return b.revenue - a.revenue || b.booked - a.booked;
+    return b.booked - a.booked || b.revenue - a.revenue;
+  });
+
+  const maxVal = Math.max(1, ...sorted.map(r => metricMode === 'revenue' ? r.revenue : r.booked));
+
+  return (
+    <div className="space-y-4">
+      {/* Toggle mode controller */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="text-slate-500 font-medium">
+          {metricMode === 'revenue' ? 'Xếp hạng theo doanh thu khai thác sân:' : 'Xếp hạng theo lượt khách tiếp nhận:'}
+        </span>
+        <div className="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+          <button
+            type="button"
+            onClick={() => setMetricMode('revenue')}
+            className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
+              metricMode === 'revenue'
+                ? 'bg-emerald-600 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[14px]">payments</span>
+            <span>Doanh Thu</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMetricMode('booked')}
+            className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
+              metricMode === 'booked'
+                ? 'bg-slate-900 text-white shadow-xs'
+                : 'text-slate-600 hover:text-slate-900'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[14px]">stadium</span>
+            <span>Lượt Khách</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Bars List */}
+      <div className="space-y-2.5">
+        {sorted.map((r, idx) => {
+          const isTop1 = idx === 0;
+          const val = metricMode === 'revenue' ? r.revenue : r.booked;
+          const barWidth = Math.max(4, Math.round((val / maxVal) * 100));
+
+          let rankBadge = `#${idx + 1}`;
+          let rankColor = 'bg-slate-100 text-slate-700';
+          if (idx === 0) { rankBadge = '🥇 #1'; rankColor = 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-black'; }
+          else if (idx === 1) { rankBadge = '🥈 #2'; rankColor = 'bg-slate-200 text-slate-800 font-bold'; }
+          else if (idx === 2) { rankBadge = '🥉 #3'; rankColor = 'bg-amber-50 text-amber-800 font-bold'; }
+
+          return (
+            <div
+              key={r.id}
+              className={`p-3 rounded-xl border transition-all ${
+                isTop1 ? 'bg-emerald-50/30 border-emerald-200/80 shadow-xs' : 'bg-white border-slate-200/80 hover:border-slate-300'
+              }`}
+            >
+              <div className="flex items-center justify-between text-xs mb-1.5">
+                <div className="flex items-center gap-2">
+                  <span className={`px-1.5 py-0.5 rounded text-[10px] ${rankColor}`}>
+                    {rankBadge}
+                  </span>
+                  <span className="font-bold text-slate-900">{r.name}</span>
+                  <span className="text-[11px] text-slate-400">({r.type})</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <strong className={`font-chivo font-black text-sm ${metricMode === 'revenue' ? 'text-emerald-700' : 'text-slate-900'}`}>
+                    {metricMode === 'revenue' ? formatVnd(r.revenue) : `${r.booked} khách`}
+                  </strong>
+                  <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${
+                    r.occupancyRate >= 20 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'
+                  }`}>
+                    {r.occupancyRate}% tải
+                  </span>
+                </div>
+              </div>
+
+              {/* Progress bar */}
+              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+                <div
+                  className={`h-2.5 rounded-full transition-all duration-500 ${
+                    metricMode === 'revenue'
+                      ? isTop1 ? 'bg-gradient-to-r from-emerald-600 to-teal-500' : 'bg-emerald-600'
+                      : isTop1 ? 'bg-gradient-to-r from-blue-600 to-indigo-500' : 'bg-blue-600'
+                  }`}
+                  style={{ width: `${barWidth}%` }}
+                />
+              </div>
+
+              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
+                <span>{r.location || 'Khu chính'} · Đã chạy <strong className="text-slate-700">{r.sessionsCount} ca</strong></span>
+                <span>{metricMode === 'revenue' ? `${r.booked} lượt khách` : formatVnd(r.revenue)}</span>
+              </div>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}

@@ -160,6 +160,26 @@ export const SYSTEM_CAPABILITIES = [
     defaultRole: 'MEMBER'
   },
   {
+    id: 'cancel_booking',
+    label: 'Hủy Đặt Chỗ',
+    desc: 'Hội viên chủ động hủy đặt chỗ trước giờ quy định',
+    path: '#/member/bookings',
+    icon: 'event_busy',
+    category: 'HỘI VIÊN & ĐẶT CHỖ',
+    targetScreenName: 'Lớp Đã Đặt & Hủy',
+    defaultRole: 'MEMBER'
+  },
+  {
+    id: 'view_my_progress',
+    label: 'Xem Tiến Độ Rèn Luyện',
+    desc: 'Theo dõi giáo án, chỉ số thể lực và nhận xét từ HLV',
+    path: '#/member/progress',
+    icon: 'stacked_line_chart',
+    category: 'HỘI VIÊN & ĐẶT CHỖ',
+    targetScreenName: 'Giáo Án & Tiến Độ',
+    defaultRole: 'MEMBER'
+  },
+  {
     id: 'ask_ai_assistant',
     label: 'Trợ lý AI Hội viên',
     desc: 'Tương tác hỏi đáp kiến thức thể lực & dinh dưỡng',
@@ -171,15 +191,65 @@ export const SYSTEM_CAPABILITIES = [
   }
 ];
 
-// Helper to get active permissions of a role
+// Per-user custom permission overrides
+export function getUserCustomOverrides(centerId, userId) {
+  if (!centerId || !userId) return null;
+  try {
+    const raw = localStorage.getItem(`scms_user_perm_override_${centerId}_${userId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveUserCustomOverrides(centerId, userId, overrides) {
+  if (!centerId || !userId) return;
+  try {
+    if (!overrides) {
+      localStorage.removeItem(`scms_user_perm_override_${centerId}_${userId}`);
+    } else {
+      localStorage.setItem(`scms_user_perm_override_${centerId}_${userId}`, JSON.stringify(overrides));
+    }
+    window.dispatchEvent(new CustomEvent('SCMS_PERMISSIONS_CHANGED', { detail: { centerId, userId } }));
+  } catch (e) {
+    console.error('Failed to save user overrides', e);
+  }
+}
+
+export function getAllUserCustomOverrides(centerId) {
+  const result = {};
+  if (!centerId) return result;
+  try {
+    const prefix = `scms_user_perm_override_${centerId}_`;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        const userId = key.replace(prefix, '');
+        const data = JSON.parse(localStorage.getItem(key));
+        if (data) result[userId] = data;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to get all user overrides', e);
+  }
+  return result;
+}
+
+// Helper to get active permissions of a role (with individual user override support)
 export function getPermissionsForRole(role) {
   const normalized = String(role || '').toUpperCase();
   const user = getAuthUser();
+  if (user && user.centerId && user.id) {
+    const overrides = getUserCustomOverrides(user.centerId, user.id);
+    if (overrides && Array.isArray(overrides.effectiveCapabilities)) {
+      return overrides.effectiveCapabilities;
+    }
+  }
   if (String(user?.role || '').toUpperCase() === normalized && Array.isArray(user?.capabilities)) return user.capabilities;
   return [];
 }
 
-// Helper to check if a role has a specific capability
+// Helper to check if a role or user has a specific capability
 export function hasCapability(role, capId) {
   const normalized = String(role || '').toUpperCase();
   if (normalized === 'MANAGER' || normalized === 'ADMIN' || normalized === 'SYSTEMADMIN') return true; // Superuser access
