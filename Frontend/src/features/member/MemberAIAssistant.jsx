@@ -3,38 +3,6 @@ import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
 import { aiApi } from '../../services/api.js';
 
-// Suggestion Prompts by Category
-const QUICK_PROMPTS = [
-  {
-    category: 'Lịch tập',
-    icon: 'fitness_center',
-    color: 'from-orange-500 to-amber-600',
-    title: 'Lịch tăng cơ 4 buổi/tuần',
-    prompt: 'Tôi muốn lịch tập tăng cơ 4 buổi/tuần chia theo nhóm cơ Upper/Lower.'
-  },
-  {
-    category: 'Dinh dưỡng',
-    icon: 'restaurant',
-    color: 'from-emerald-500 to-teal-600',
-    title: 'Thực đơn thể thao giàu Protein',
-    prompt: 'Gợi ý thực đơn dinh dưỡng một ngày giàu protein khoảng 2000 calo để xây dựng cơ bắp.'
-  },
-  {
-    category: 'Khóa học',
-    icon: 'pool',
-    color: 'from-sky-500 to-blue-600',
-    title: 'Tư vấn lớp Bơi lội Olympic',
-    prompt: 'Trung tâm có các lớp Bơi sải kỹ thuật Olympic nào và trình độ yêu cầu là gì?'
-  },
-  {
-    category: 'Phục hồi',
-    icon: 'self_improvement',
-    color: 'from-purple-500 to-indigo-600',
-    title: 'Giãn cơ phục hồi sau tập',
-    prompt: 'Hướng dẫn 4 bài tập giãn cơ tĩnh (Static Stretching) sau khi tập tạ nặng để chống đau cơ.'
-  }
-];
-
 // Helper to render inline markdown (bold, italic, inline code)
 function renderInlineMarkdown(text = '') {
   const tokens = text.split(/(\*\*[^*]+?\*\*|`[^`]+?`|\*[^*]+?\*)/g);
@@ -355,118 +323,8 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
         </div>
       </div>
 
-      {/* 2. Bento KPI Metric Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Card 1: AI Engine */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Mô hình phân tích</span>
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 border border-indigo-100 text-indigo-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[22px]">smart_toy</span>
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-slate-900">Gemini 1.5 Pro</span>
-          </div>
-          <div className="mt-2 text-xs text-slate-600 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[15px] text-indigo-500">bolt</span>
-            <span>Tốc độ phản hồi: <strong>&lt; 1.2s</strong></span>
-          </div>
-        </div>
-
-        {/* Card 2: Personalization */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Hội viên tương tác</span>
-            <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-100 text-red-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[22px]">person</span>
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-base font-extrabold text-slate-900 truncate">
-              {currentUser?.fullName || 'Hội viên SCMS'}
-            </span>
-          </div>
-          <div className="mt-2 text-xs text-slate-600 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[15px] text-red-500">card_membership</span>
-            <span className="truncate">{currentUser?.packageName || 'Gói thành viên Olympic'}</span>
-          </div>
-        </div>
-
-        {/* Card 3: Capabilities */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Phạm vi hỗ trợ</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 border border-emerald-100 text-emerald-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[22px]">fitness_center</span>
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-slate-900">Toàn diện 4 môn</span>
-          </div>
-          <div className="mt-2 text-xs text-slate-600 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[15px] text-emerald-500">check_circle</span>
-            <span>Gym, Bơi lội, Boxing, Yoga</span>
-          </div>
-        </div>
-
-        {/* Card 4: Safety Standard */}
-        <div className="bg-white rounded-2xl p-5 border border-slate-200 shadow-sm">
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Chuẩn y tế thể thao</span>
-            <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-100 text-amber-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[22px]">verified_user</span>
-            </div>
-          </div>
-          <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-2xl font-extrabold text-amber-600">HLV thẩm định</span>
-          </div>
-          <div className="mt-2 text-xs text-slate-600 flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[15px] text-amber-500">health_and_safety</span>
-            <span>Khuyến nghị cần kiểm chứng</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 3. Quick Topic Prompts Bar */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between text-xs text-slate-500 font-semibold uppercase tracking-wider px-1">
-          <span className="flex items-center gap-1.5">
-            <span className="material-symbols-outlined text-[16px] text-red-600">lightbulb</span>
-            Gợi ý câu hỏi nhanh (Chạm để hỏi ngay)
-          </span>
-          <span className="text-[11px] text-slate-400 lowercase font-normal">nhấn để gửi câu hỏi</span>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-          {QUICK_PROMPTS.map((item, idx) => (
-            <button
-              key={idx}
-              onClick={() => handleSend(item.prompt)}
-              disabled={isAsking}
-              className="p-3.5 bg-white rounded-2xl border border-slate-200 hover:border-red-300 hover:shadow-md transition text-left flex items-start gap-3 group active:scale-[0.98] disabled:opacity-50"
-            >
-              <div className={`w-9 h-9 rounded-xl bg-gradient-to-tr ${item.color} text-white flex items-center justify-center shrink-0 shadow-sm`}>
-                <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
-              </div>
-              <div className="min-w-0 flex-1">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block">
-                  {item.category}
-                </span>
-                <h4 className="text-xs font-bold text-slate-800 group-hover:text-red-600 transition truncate">
-                  {item.title}
-                </h4>
-                <p className="text-[11px] text-slate-500 line-clamp-1 mt-0.5">
-                  {item.prompt}
-                </p>
-              </div>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* 4. Chat Studio Box */}
-      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-[600px] overflow-hidden">
+      {/* Chat Studio Box */}
+      <div className="bg-white rounded-3xl border border-slate-200 shadow-sm flex flex-col h-[650px] overflow-hidden">
         {/* Chat Header Bar */}
         <div className="px-6 py-4 bg-slate-50/80 border-b border-slate-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
