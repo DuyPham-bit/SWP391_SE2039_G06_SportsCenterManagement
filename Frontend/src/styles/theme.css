@@ -24,6 +24,24 @@
   font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif !important;
 }
 
+/* Material Symbols Outlined & Material Icons normalization */
+.material-symbols-outlined,
+.material-icons {
+  font-family: 'Material Symbols Outlined' !important;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  vertical-align: middle;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
 /* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
