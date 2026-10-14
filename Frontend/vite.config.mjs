@@ -55,6 +55,9 @@ export default defineConfig({
   server: {
     port: 3004,
     host: 'localhost',
+    watch: {
+      ignored: ['**/.validation/**', '**/dist/**']
+    },
     proxy: {
       '/api': {
         target: 'http://localhost:54162',

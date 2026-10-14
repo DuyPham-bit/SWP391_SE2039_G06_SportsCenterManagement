@@ -3,7 +3,6 @@ import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { Badge } from '../../components/common/StatCard.js';
 import { PasswordInput } from './PasswordInput.js';
-import { GoogleLoginModal } from './GoogleLoginModal.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 
 const { useState } = React;
@@ -13,7 +12,6 @@ export function ProfileModal({ isOpen, onClose }) {
   const { showSuccess, showError } = useToast();
 
   const [activeTab, setActiveTab] = useState('profile'); // 'profile' | 'password'
-  const [googleOpen, setGoogleOpen] = useState(false);
 
   // Profile Form State
   const [fullName, setFullName] = useState(currentUser?.fullName || '');
@@ -80,7 +78,6 @@ export function ProfileModal({ isOpen, onClose }) {
   return (
     <Modal isOpen={isOpen} onClose={onClose} title="Hồ Sơ & Bảo Mật Tài Khoản">
       {/* Tabs */}
-      <button type="button" onClick={() => setGoogleOpen(true)} className="mb-4 px-3 py-2 border rounded text-sm">Liên kết Google</button>
       <div className="flex border-b border-slate-200 mb-6">
         <button
           onClick={() => setActiveTab('profile')}
@@ -257,7 +254,6 @@ export function ProfileModal({ isOpen, onClose }) {
           </div>
         </form>
       )}
-      <GoogleLoginModal isOpen={googleOpen && isOpen} onClose={() => setGoogleOpen(false)} linkAccount />
     </Modal>
   );
 }

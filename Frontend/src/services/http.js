@@ -58,7 +58,6 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
     const publicAuthEndpoints = new Set([
       'auth/login',
       'auth/register',
-      'auth/google',
       'auth/request-password-reset',
       'auth/reset-password'
     ]);

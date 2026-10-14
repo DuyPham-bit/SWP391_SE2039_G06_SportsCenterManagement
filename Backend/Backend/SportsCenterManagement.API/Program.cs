@@ -79,7 +79,6 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ICheckinService, CheckinService>();
 builder.Services.AddScoped<SupportRequestService>();
 builder.Services.AddScoped<TrainingService>();
-builder.Services.AddSingleton<GoogleTokenValidator>();
 builder.Services.AddHttpClient<GeminiService>(client => client.Timeout = TimeSpan.FromSeconds(45));
 builder.Services.AddRateLimiter(options =>
 {
@@ -97,7 +96,7 @@ builder.Services.AddSwaggerGen(options =>
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
         Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",
-        Description = "Nhập accessToken trả về từ POST /api/auth/login hoặc /api/auth/google."
+        Description = "Nhập accessToken trả về từ POST /api/auth/login."
     });
     options.OperationFilter<SportsCenterManagement.API.Authentication.JwtSecurityOperationFilter>();
 });

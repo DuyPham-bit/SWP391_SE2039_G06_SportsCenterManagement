@@ -3,10 +3,8 @@ import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
 import { SUPPORTED_SPORTS } from '../../services/sportsCatalog.js';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
-import { loadGoogleIdentity, googleClientId } from '../../services/googleIdentity.js';
 import { AuthField } from './AuthField.js';
 import { ForgotPasswordModal } from './ForgotPasswordModal.js';
-import { GoogleLoginModal } from './GoogleLoginModal.js';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -43,11 +41,10 @@ function redirectToRoleDashboard(role) {
 }
 
 export function LoginPage() {
-  const { login, register, logout, loginWithGoogle, isAuthenticated, role } = useAuth();
+  const { login, register, logout, isAuthenticated, role } = useAuth();
   const { showSuccess, showError } = useToast();
   const [activeTab, setActiveTab] = useState(() => window.location.hash.split('?')[0] === '#/register' ? 'register' : 'login');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
-  const [showGoogleModal, setShowGoogleModal] = useState(false);
   const [loginEmail, setLoginEmail] = useState(readRememberedEmail);
   const [loginPassword, setLoginPassword] = useState('');
   const [rememberEmail, setRememberEmail] = useState(() => Boolean(readRememberedEmail()));
@@ -61,11 +58,6 @@ export function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const isRegister = activeTab === 'register';
-
-  // Tích hợp Google Identity trực tiếp trên trang
-  const googleButtonRef = useRef(null);
-  const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleRendered, setGoogleRendered] = useState(false);
 
   const clearFormFeedback = () => {
     setFieldErrors({});
@@ -93,50 +85,6 @@ export function LoginPage() {
     }
     if (isAuthenticated) redirectToRoleDashboard(role);
   }, [isAuthenticated, role, logout]);
-
-  // Render nút Google Identity trực tiếp trên trang
-  useEffect(() => {
-    if (!googleClientId) return;
-    let active = true;
-    loadGoogleIdentity().then(google => {
-      if (!active || !googleButtonRef.current) return;
-      google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: async ({ credential }) => {
-          if (!active) return;
-          setGoogleLoading(true);
-          try {
-            const user = await loginWithGoogle({ credential });
-            showSuccess('Đăng nhập Google thành công! Chào mừng ' + (user.fullName || 'bạn') + '.');
-            redirectToRoleDashboard(user.role);
-          } catch (err) {
-            showError(err.message || 'Đăng nhập Google thất bại.');
-          } finally {
-            if (active) setGoogleLoading(false);
-          }
-        }
-      });
-
-      if (googleButtonRef.current) {
-        googleButtonRef.current.innerHTML = '';
-      }
-
-      const buttonWidth = Math.min(380, Math.max(260, googleButtonRef.current?.offsetWidth || 360));
-      google.accounts.id.renderButton(googleButtonRef.current, {
-        type: 'standard',
-        theme: 'outline',
-        size: 'large',
-        width: buttonWidth,
-        text: isRegister ? 'signup_with' : 'signin_with',
-        shape: 'rectangular',
-        logo_alignment: 'left'
-      });
-      if (active) setGoogleRendered(true);
-    }).catch(() => {
-      if (active) setGoogleRendered(false);
-    });
-    return () => { active = false; };
-  }, [isRegister]);
 
   const handleTabChange = (tab) => {
     if (isSubmitting || tab === activeTab) return;
@@ -440,47 +388,7 @@ export function LoginPage() {
               </p>
             </div>
 
-            {/* Nút Đăng nhập Google trực tiếp trên trang */}
-            <div className="w-full flex flex-col items-center justify-center mb-3 sm:mb-3.5">
-              <div
-                ref={googleButtonRef}
-                className={`w-full flex justify-center min-h-[40px] transition-all ${googleLoading ? 'pointer-events-none opacity-40' : ''}`}
-              />
 
-              {!googleRendered && (
-                <button
-                  type="button"
-                  disabled={isSubmitting || googleLoading}
-                  onClick={() => setShowGoogleModal(true)}
-                  className="w-full min-h-10 sm:min-h-10.5 px-3 py-2 inline-flex items-center justify-center gap-2.5 border border-slate-200 hover:border-slate-300 rounded-xl bg-white text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60 transition-all active:scale-[0.99] cursor-pointer"
-                >
-                  <svg className="w-5 h-5 shrink-0" style={{ width: '20px', height: '20px', minWidth: '20px', minHeight: '20px' }} viewBox="0 0 24 24" aria-hidden="true">
-                    <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
-                    <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.13C3.26 21.36 7.33 24 12 24z" />
-                    <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.13z" />
-                    <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.13c.95-2.83 3.6-4.96 6.72-4.96z" />
-                  </svg>
-                  <span className="font-medium text-slate-800">{isRegister ? 'Đăng ký với Google' : 'Tiếp tục với Google'}</span>
-                </button>
-              )}
-
-              {googleLoading && (
-                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-rose-600 mt-1.5 animate-pulse">
-                  <svg className="animate-spin h-3.5 w-3.5 text-rose-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  <span>Đang xác thực thông tin với Google...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Dải phân cách mỏng thanh lịch */}
-            <div className="flex items-center gap-3 my-2.5 sm:my-3 text-xs text-slate-400">
-              <span className="h-px bg-slate-200 flex-1" />
-              <span className="text-[11px] font-semibold text-slate-400 uppercase tracking-wider">hoặc qua email</span>
-              <span className="h-px bg-slate-200 flex-1" />
-            </div>
 
             {formError && (
               <div role="alert" className="mb-3 p-2.5 rounded-xl border border-red-200 bg-red-50 text-xs text-red-700 leading-snug font-medium flex items-center gap-2">
@@ -565,8 +473,7 @@ export function LoginPage() {
         </div>
       </section>
 
-      {/* Modals hỗ trợ dự phòng */}
-      <GoogleLoginModal isOpen={showGoogleModal} onClose={() => setShowGoogleModal(false)} onSuccess={user => redirectToRoleDashboard(user.role)} />
+      {/* Modal quên mật khẩu */}
       <ForgotPasswordModal isOpen={showForgotPassword} onClose={() => setShowForgotPassword(false)} onResetSuccess={email => { setLoginEmail(email); clearFormFeedback(); handleTabChange('login'); }} />
     </div>
   );

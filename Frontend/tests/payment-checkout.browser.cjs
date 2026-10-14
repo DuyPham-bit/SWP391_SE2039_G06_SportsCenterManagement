@@ -140,14 +140,21 @@ async function checkout(session) {
   apiOrigin = `http://127.0.0.1:${api.address().port}`;
   const build = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'build', '--outDir', path.join(artifacts, 'dist')], {
     cwd: frontend, windowsHide: true, stdio: ['ignore', 'pipe', 'pipe'],
-    env: { ...process.env, VITE_API_BASE_URL: `${apiOrigin}/api`, VITE_GOOGLE_CLIENT_ID: '' }
+    env: { ...process.env, VITE_API_BASE_URL: `${apiOrigin}/api` }
   });
   let buildOutput = '';
   build.stdout.on('data', data => { buildOutput += data; });
   build.stderr.on('data', data => { buildOutput += data; });
   const buildExit = await new Promise((resolve, reject) => { build.on('exit', resolve); build.on('error', reject); });
   assert.equal(buildExit, 0, buildOutput);
-  const browser = process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
+  const browserCandidates = [
+    process.env.CHROME_PATH,
+    'C:/Program Files/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+    'C:/Program Files (x86)/Microsoft/Edge/Application/msedge.exe',
+    'C:/Program Files/Microsoft/Edge/Application/msedge.exe'
+  ].filter(Boolean);
+  const browser = browserCandidates.find(p => fs.existsSync(p)) || 'C:/Program Files/Google/Chrome/Application/chrome.exe';
   const profile = path.join(artifacts, `chrome-${Date.now()}`);
   chrome = spawn(browser, ['--headless=new', '--disable-gpu', '--disable-background-networking', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
   const activePort = path.join(profile, 'DevToolsActivePort');

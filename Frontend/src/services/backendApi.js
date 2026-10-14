@@ -215,16 +215,6 @@ export const authApi = {
     return (await this.login(cleanEmail, password)).user;
   },
 
-  async loginWithGoogle({ credential }) {
-    return loginAndLoad('auth/google', {
-      idToken: credential, centerId: Number(import.meta.env.VITE_SPORTS_CENTER_ID) || null
-    });
-  },
-
-  async linkGoogle(credential, currentPassword) {
-    return apiRequest('auth/google/link', { method: 'POST', body: { idToken: credential, currentPassword } });
-  },
-
   async requestPasswordReset(email) {
     return apiRequest('auth/request-password-reset', { method: 'POST', body: { email: email.trim() } });
   },

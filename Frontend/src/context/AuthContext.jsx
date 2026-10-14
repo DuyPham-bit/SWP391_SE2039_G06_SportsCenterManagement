@@ -65,16 +65,6 @@ export function AuthProvider({ children }) {
     }
   };
 
-  const loginWithGoogle = async (googleUser) => {
-    setLoading(true);
-    try {
-      const res = await authApi.loginWithGoogle(googleUser);
-      return applyUser(res.user);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const logout = () => {
     authApi.logout();
     setCurrentUser(null);
@@ -100,7 +90,6 @@ export function AuthProvider({ children }) {
     initializing,
     initializationError,
     login,
-    loginWithGoogle,
     register,
     logout,
     updateProfile,
