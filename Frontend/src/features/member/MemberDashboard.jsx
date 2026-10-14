@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from 'react';
+import QRCode from 'qrcode';
 import { bookingApi, memberApi } from '../../services/api.js';
 import { useNotifications } from '../../components/common/useNotifications.js';
 import { useAuth } from '../../context/AuthContext.js';
@@ -141,11 +142,35 @@ export function MemberDashboard() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
   const [copiedCode, setCopiedCode] = useState(false);
+  const [qrDataUrl, setQrDataUrl] = useState('');
 
   // Quick cancel modal states
   const [cancelModalOpen, setCancelModalOpen] = useState(false);
   const [bookingToCancel, setBookingToCancel] = useState(null);
   const [cancelling, setCancelling] = useState(false);
+
+  const memberCode = currentUser?.memberCode || 'MEM-00005';
+
+  // Generate genuine scannable QR Code
+  useEffect(() => {
+    if (memberCode) {
+      QRCode.toDataURL(memberCode, {
+        width: 320,
+        margin: 1,
+        color: {
+          dark: '#0f172a',
+          light: '#ffffff'
+        },
+        errorCorrectionLevel: 'H'
+      })
+        .then(url => {
+          setQrDataUrl(url);
+        })
+        .catch(err => {
+          console.error('Error generating QR code:', err);
+        });
+    }
+  }, [memberCode]);
 
   const capabilities = currentUser?.capabilities || [];
   const canBook = capabilities.includes('book_class');
@@ -659,15 +684,22 @@ export function MemberDashboard() {
               <span>Chạm để mở mã QR Check-in qua cổng</span>
             </button>
 
-            {/* Simulated barcode graphic */}
+            {/* Barcode & Mini Real QR Preview */}
             <div
               onClick={() => setQrModalOpen(true)}
-              className="mt-3 bg-white p-2 rounded-lg cursor-pointer hover:opacity-90 transition flex items-center justify-between gap-1 overflow-hidden h-8"
-              title="Chạm để phóng to mã vạch"
+              className="mt-3 bg-white p-2 rounded-xl cursor-pointer hover:ring-2 hover:ring-amber-400 transition flex items-center justify-between gap-2 overflow-hidden shadow-inner group/cardqr"
+              title="Chạm để phóng to mã QR & mã vạch Check-in"
             >
-              {[12, 4, 8, 16, 6, 10, 3, 14, 8, 18, 5, 9, 15, 6, 12, 4, 8, 10, 4, 16, 7, 11, 4, 14, 6].map((w, i) => (
-                <div key={i} className="h-full bg-slate-900" style={{ width: `${w * 1.5}px` }} />
-              ))}
+              <div className="flex-1 flex items-center gap-1 overflow-hidden h-7">
+                {[12, 4, 8, 16, 6, 10, 3, 14, 8, 18, 5, 9, 15, 6, 12, 4, 8, 10, 4, 16, 7, 11, 4, 14, 6].map((w, i) => (
+                  <div key={i} className="h-full bg-slate-900" style={{ width: `${w * 1.5}px` }} />
+                ))}
+              </div>
+              {qrDataUrl && (
+                <div className="w-8 h-8 rounded border border-slate-200 p-0.5 bg-white shrink-0 shadow-sm group-hover/cardqr:scale-110 transition flex items-center justify-center">
+                  <img src={qrDataUrl} alt="Mini QR" className="w-full h-full object-contain" />
+                </div>
+              )}
             </div>
 
             <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between gap-2">
@@ -977,41 +1009,60 @@ export function MemberDashboard() {
             </p>
           </div>
 
-          {/* QR Code Container with scanline */}
-          <div className="relative mx-auto w-56 h-56 p-4 bg-white rounded-3xl border-2 border-slate-900 shadow-xl flex flex-col items-center justify-center">
+          {/* Real Scannable QR Code Container with target marks */}
+          <div className="relative mx-auto w-64 h-64 p-3 bg-white rounded-3xl border-2 border-slate-900 shadow-2xl flex flex-col items-center justify-center overflow-hidden">
             {/* Corner decorations */}
-            <div className="absolute top-2 left-2 w-4 h-4 border-t-2 border-l-2 border-red-600" />
-            <div className="absolute top-2 right-2 w-4 h-4 border-t-2 border-r-2 border-red-600" />
-            <div className="absolute bottom-2 left-2 w-4 h-4 border-b-2 border-l-2 border-red-600" />
-            <div className="absolute bottom-2 right-2 w-4 h-4 border-b-2 border-r-2 border-red-600" />
+            <div className="absolute top-2.5 left-2.5 w-5 h-5 border-t-4 border-l-4 border-red-600 rounded-tl-lg pointer-events-none" />
+            <div className="absolute top-2.5 right-2.5 w-5 h-5 border-t-4 border-r-4 border-red-600 rounded-tr-lg pointer-events-none" />
+            <div className="absolute bottom-2.5 left-2.5 w-5 h-5 border-b-4 border-l-4 border-red-600 rounded-bl-lg pointer-events-none" />
+            <div className="absolute bottom-2.5 right-2.5 w-5 h-5 border-b-4 border-r-4 border-red-600 rounded-br-lg pointer-events-none" />
 
-            {/* High-contrast QR Simulation Matrix */}
-            <div className="w-full h-full bg-slate-950 p-2.5 rounded-2xl flex flex-col items-center justify-between text-white">
-              <div className="w-full flex justify-between">
-                <div className="w-10 h-10 border-4 border-white rounded-md flex items-center justify-center">
-                  <div className="w-4 h-4 bg-white rounded-sm" />
-                </div>
-                <div className="w-10 h-10 border-4 border-white rounded-md flex items-center justify-center">
-                  <div className="w-4 h-4 bg-white rounded-sm" />
+            {/* Laser scanning sweep line */}
+            <div className="absolute inset-x-4 h-0.5 bg-gradient-to-r from-transparent via-red-500 to-transparent shadow-[0_0_10px_rgba(239,68,68,0.9)] animate-pulse top-1/2 pointer-events-none z-10" />
+
+            {/* Authentic Scannable QR Code Image */}
+            {qrDataUrl ? (
+              <div className="relative w-full h-full flex items-center justify-center">
+                <img
+                  src={qrDataUrl}
+                  alt={`Mã QR Check-in: ${memberCode}`}
+                  className="w-56 h-56 object-contain rounded-2xl select-none"
+                />
+                {/* Center SCMS Badge */}
+                <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                  <div className="w-10 h-10 rounded-xl bg-red-600 text-white font-black text-xs flex items-center justify-center shadow-lg border-2 border-white tracking-wider">
+                    SCMS
+                  </div>
                 </div>
               </div>
-
-              {/* Center Logo */}
-              <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shadow-lg font-black text-sm">
-                SCMS
+            ) : (
+              <div className="w-full h-full flex flex-col items-center justify-center text-xs text-slate-400">
+                <span className="material-symbols-outlined text-3xl animate-spin text-red-600 mb-2">progress_activity</span>
+                <span>Đang tạo mã QR...</span>
               </div>
+            )}
+          </div>
 
-              <div className="w-full flex justify-between">
-                <div className="w-10 h-10 border-4 border-white rounded-md flex items-center justify-center">
-                  <div className="w-4 h-4 bg-white rounded-sm" />
-                </div>
-                <div className="w-10 h-10 flex flex-col justify-between p-1">
-                  <div className="w-full h-1 bg-white rounded" />
-                  <div className="w-full h-1 bg-white rounded" />
-                  <div className="w-full h-1 bg-white rounded" />
-                </div>
-              </div>
-            </div>
+          {/* Quick Actions Under QR */}
+          <div className="flex items-center justify-center gap-2 pt-1">
+            <button
+              type="button"
+              onClick={handleCopyMemberCode}
+              className="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition"
+            >
+              <span className="material-symbols-outlined text-[15px]">content_copy</span>
+              <span>{copiedCode ? 'Đã sao chép!' : 'Chép mã thẻ'}</span>
+            </button>
+            {qrDataUrl && (
+              <a
+                href={qrDataUrl}
+                download={`SCMS-QR-${memberCode}.png`}
+                className="px-3 py-1.5 rounded-xl bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold flex items-center gap-1.5 transition border border-red-200"
+              >
+                <span className="material-symbols-outlined text-[15px]">download</span>
+                <span>Tải ảnh QR</span>
+              </a>
+            )}
           </div>
 
           <div className="p-3 bg-amber-50 rounded-2xl border border-amber-200 text-xs text-amber-900 space-y-1">
