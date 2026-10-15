@@ -26,7 +26,7 @@ Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai 
 
 ## Dùng chung qua Internet
 
-Muốn mọi máy nhìn thấy cùng tài khoản và dữ liệu, hãy triển khai một Frontend, một Backend API và một cơ sở dữ liệu SQL Server tập trung trên máy chủ có tên miền và HTTPS. Trình duyệt chỉ truy cập tên miền chung; không kết nối trực tiếp tới máy chủ database. Cấu hình máy chủ và các biến môi trường nằm trong [DEPLOYMENT.md](./DEPLOYMENT.md).
+Muốn mọi máy nhìn thấy cùng tài khoản và dữ liệu, hãy triển khai một Frontend, một Backend API và một cơ sở dữ liệu SQL Server tập trung trên máy chủ có tên miền và HTTPS. Trình duyệt chỉ truy cập tên miền chung; không kết nối trực tiếp tới máy chủ database. Cấu hình máy chủ và các biến môi trường nằm trong [DEPLOYMENT.md](./docs/DEPLOYMENT.md).
 
 ## Các luồng đã nối API
 
