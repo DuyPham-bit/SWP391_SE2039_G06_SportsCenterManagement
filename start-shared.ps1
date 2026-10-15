@@ -42,6 +42,19 @@ try {
         # Credentials are supplied outside the script; Windows Authentication is the default.
         $env:ConnectionStrings__SportsCenter = "Server=$SqlServer;Database=$Database;Integrated Security=True;TrustServerCertificate=True"
     }
+    $existingConns = Get-NetTCPConnection -LocalPort $Port -ErrorAction SilentlyContinue
+    if ($existingConns) {
+        $pids = $existingConns.OwningProcess | Select-Object -Unique
+        foreach ($p in $pids) {
+            $proc = Get-Process -Id $p -ErrorAction SilentlyContinue
+            if ($proc -and ($proc.ProcessName -like '*SportsCenterManagement*' -or $proc.ProcessName -eq 'dotnet')) {
+                Write-Host "Dang giai phong port $Port tu tien trinh cu (PID: $p)..."
+                Stop-Process -Id $p -Force -ErrorAction SilentlyContinue
+                Start-Sleep -Milliseconds 500
+            }
+        }
+    }
+
     Write-Host "May nay: http://localhost:$Port"
     Write-Host "May khac trong cung mang: http://${env:COMPUTERNAME}:$Port (hoac dia chi IP cua may nay)."
     Write-Host 'Dung cung URL backend de moi may doc/ghi chung SQL. Ctrl+C de dung.'

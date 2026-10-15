@@ -1,4 +1,6 @@
 using Google.Apis.Auth.OAuth2;
+using Google.Apis.Auth.OAuth2.Flows;
+using Google.Apis.Auth.OAuth2.Responses;
 using Google.Apis.Drive.v3;
 using Google.Apis.Services;
 using Google.Apis.Upload;
@@ -52,96 +54,113 @@ public class GoogleDriveService
 
     private DriveService CreateDriveService()
     {
-        var resolvedPath = ResolveCredentialsPath();
+        var authMode = _configuration["GoogleDrive:AuthMode"] ?? "ServiceAccount";
 
-        if (!File.Exists(resolvedPath))
+        if (string.Equals(authMode, "OAuth", StringComparison.OrdinalIgnoreCase))
         {
-            throw new FlowException(500, $"Không tìm thấy tệp credentials.json xác thực Google Drive tại: {resolvedPath}. Vui lòng đặt file credentials.json trong thư mục API.");
+            var clientId = _configuration["GoogleDrive:ClientId"];
+            var clientSecret = _configuration["GoogleDrive:ClientSecret"];
+            var refreshToken = _configuration["GoogleDrive:RefreshToken"];
+
+            if (string.IsNullOrWhiteSpace(clientId) || string.IsNullOrWhiteSpace(clientSecret) || string.IsNullOrWhiteSpace(refreshToken))
+            {
+                throw new FlowException(500, "Cấu hình Google Drive OAuth (ClientId, ClientSecret, RefreshToken) chưa đầy đủ.");
+            }
+
+            var tokenResponse = new TokenResponse
+            {
+                RefreshToken = refreshToken
+            };
+
+            var flow = new GoogleAuthorizationCodeFlow(new GoogleAuthorizationCodeFlow.Initializer
+            {
+                ClientSecrets = new ClientSecrets
+                {
+                    ClientId = clientId.Trim(),
+                    ClientSecret = clientSecret.Trim()
+                },
+                Scopes = new[] { DriveService.ScopeConstants.Drive }
+            });
+
+            var credential = new UserCredential(flow, "scms_user", tokenResponse);
+
+            return new DriveService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "SCMS-SportsCenterManagement"
+            });
         }
-
-        var credential = GoogleCredential.FromFile(resolvedPath)
-            .CreateScoped(DriveService.ScopeConstants.Drive);
-
-        return new DriveService(new BaseClientService.Initializer
+        else
         {
-            HttpClientInitializer = credential,
-            ApplicationName = "SCMS-SportsCenterManagement"
-        });
+            var resolvedPath = ResolveCredentialsPath();
+
+            if (!File.Exists(resolvedPath))
+            {
+                throw new FlowException(500, $"Không tìm thấy tệp credentials.json xác thực Google Drive tại: {resolvedPath}. Vui lòng đặt file credentials.json trong thư mục API.");
+            }
+
+            var credential = GoogleCredential.FromFile(resolvedPath)
+                .CreateScoped(DriveService.ScopeConstants.Drive);
+
+            return new DriveService(new BaseClientService.Initializer
+            {
+                HttpClientInitializer = credential,
+                ApplicationName = "SCMS-SportsCenterManagement"
+            });
+        }
     }
 
-    public async Task<UploadMediaResultDto> UploadFileAsync(
+    private async Task<UploadMediaResultDto> SaveLocalFileAsync(
         Stream fileStream,
         string fileName,
         string mimeType,
         long? fileSize,
-        long? currentUserId = null,
-        CancellationToken cancellationToken = default)
+        long? currentUserId,
+        CancellationToken cancellationToken)
     {
-        if (fileStream == null || fileStream.Length == 0)
+        var webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
+        if (!Directory.Exists(webRoot))
         {
-            throw new FlowException(400, "Tệp tải lên không được rỗng.");
-        }
-
-        var driveService = CreateDriveService();
-
-        // 1. Lấy folderId từ cấu hình, nếu null thì fallback cứng ID để không bao giờ bị lỗi quota
-        var folderId = _configuration["GoogleDrive:FolderId"];
-        if (string.IsNullOrWhiteSpace(folderId) || folderId == "YOUR_GOOGLE_DRIVE_FOLDER_ID")
-        {
-            // Điền trực tiếp ID thư mục đã share quyền Editor cho bot
-            folderId = "1nRMC1FaHiICnhfvfPHKGHc3iBZJl101R"; 
-        }
-
-        _logger.LogInformation(">>> Đang tải file lên thư mục Google Drive ID: '{FolderId}'", folderId);
-
-        // 2. Bắt buộc gán Parents vào fileMetadata
-        var fileMetadata = new Google.Apis.Drive.v3.Data.File
-        {
-            Name = fileName,
-            MimeType = mimeType,
-            Parents = new List<string> { folderId.Trim() }
-        };
-
-        var request = driveService.Files.Create(fileMetadata, fileStream, mimeType);
-        request.Fields = "id, name, mimeType, size, webViewLink, thumbnailLink";
-
-        var progress = await request.UploadAsync(cancellationToken);
-        if (progress.Status != UploadStatus.Completed)
-        {
-            _logger.LogError(progress.Exception, "Lỗi khi upload file lên Google Drive: {Error}", progress.Exception?.Message);
-            throw new FlowException(500, $"Tải file lên Google Drive thất bại: {progress.Exception?.Message}");
-        }
-
-        var driveFile = request.ResponseBody;
-        var fileId = driveFile.Id;
-
-        // Cấp quyền xem công khai reader/anyone để ảnh có thể hiển thị trực tiếp
-        try
-        {
-            var permission = new Google.Apis.Drive.v3.Data.Permission
+            var apiSubdir = Path.Combine(Directory.GetCurrentDirectory(), "SportsCenterManagement.API", "wwwroot");
+            if (Directory.Exists(apiSubdir))
             {
-                Role = "reader",
-                Type = "anyone"
-            };
-            await driveService.Permissions.Create(permission, fileId).ExecuteAsync(cancellationToken);
+                webRoot = apiSubdir;
+            }
+            else
+            {
+                Directory.CreateDirectory(webRoot);
+            }
         }
-        catch (Exception ex)
+
+        var uploadsDir = Path.Combine(webRoot, "uploads");
+        if (!Directory.Exists(uploadsDir))
         {
-            _logger.LogWarning(ex, "Không thể mở quyền xem công khai cho file {FileId}: {Message}", fileId, ex.Message);
+            Directory.CreateDirectory(uploadsDir);
         }
 
-        // Định dạng URL ảnh công khai từ Google Usercontent theo ID
-        var publicUrl = $"https://lh3.googleusercontent.com/d/{fileId}";
+        var ext = Path.GetExtension(fileName);
+        var safeFileName = $"{Guid.NewGuid():N}{ext}";
+        var physicalPath = Path.Combine(uploadsDir, safeFileName);
 
-        // Lưu vào Database thông qua Code-First Entity
+        if (fileStream.CanSeek)
+        {
+            fileStream.Position = 0;
+        }
+
+        using (var destStream = new FileStream(physicalPath, FileMode.Create, FileAccess.Write))
+        {
+            await fileStream.CopyToAsync(destStream, cancellationToken);
+        }
+
+        var publicUrl = $"/uploads/{safeFileName}";
         var entity = new UploadedMedia
         {
-            DriveFileId = fileId,
+            DriveFileId = $"local_{Guid.NewGuid():N}",
             FileName = fileName,
             MimeType = mimeType,
             FileSize = fileSize ?? fileStream.Length,
             FileUrl = publicUrl,
-            WebViewLink = driveFile.WebViewLink,
+            WebViewLink = publicUrl,
             UploadedByUserId = currentUserId,
             CreatedAt = DateTime.UtcNow
         };
@@ -157,8 +176,128 @@ public class GoogleDriveService
             entity.MimeType,
             entity.FileSize,
             entity.CreatedAt,
-            driveFile.ThumbnailLink ?? publicUrl
+            entity.FileUrl
         );
+    }
+
+    public async Task<UploadMediaResultDto> UploadFileAsync(
+        Stream fileStream,
+        string fileName,
+        string mimeType,
+        long? fileSize,
+        long? currentUserId = null,
+        CancellationToken cancellationToken = default)
+    {
+        if (fileStream == null || fileStream.Length == 0)
+        {
+            throw new FlowException(400, "Tệp tải lên không được rỗng.");
+        }
+
+        var storageProvider = _configuration["GoogleDrive:StorageProvider"] ?? "GoogleDrive";
+        if (string.Equals(storageProvider, "Local", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogInformation("StorageProvider được chỉ định là 'Local'. Lưu trực tiếp vào bộ nhớ máy chủ.");
+            return await SaveLocalFileAsync(fileStream, fileName, mimeType, fileSize, currentUserId, cancellationToken);
+        }
+
+        try
+        {
+            var driveService = CreateDriveService();
+
+            var folderId = _configuration["GoogleDrive:FolderId"];
+            if (string.IsNullOrWhiteSpace(folderId) || folderId == "YOUR_GOOGLE_DRIVE_FOLDER_ID")
+            {
+                folderId = "1nRmC1FaHiICnhfvfPHKGHc3iBZJLl01R"; 
+            }
+
+            _logger.LogInformation(">>> Đang tải file lên thư mục Google Drive ID: '{FolderId}'", folderId);
+
+            var fileMetadata = new Google.Apis.Drive.v3.Data.File
+            {
+                Name = fileName,
+                MimeType = mimeType,
+                Parents = new List<string> { folderId.Trim() }
+            };
+
+            if (fileStream.CanSeek)
+            {
+                fileStream.Position = 0;
+            }
+
+            var request = driveService.Files.Create(fileMetadata, fileStream, mimeType);
+            request.SupportsAllDrives = true;
+            request.Fields = "id, name, mimeType, size, webViewLink, thumbnailLink";
+
+            var progress = await request.UploadAsync(cancellationToken);
+            if (progress.Status != UploadStatus.Completed)
+            {
+                _logger.LogError(progress.Exception, "Lỗi khi upload file lên Google Drive: {Error}", progress.Exception?.Message);
+                throw progress.Exception ?? new Exception($"Upload failed with status: {progress.Status}");
+            }
+
+            var driveFile = request.ResponseBody;
+            var fileId = driveFile.Id;
+
+            // Cấp quyền xem công khai reader/anyone để ảnh có thể hiển thị trực tiếp
+            try
+            {
+                var permission = new Google.Apis.Drive.v3.Data.Permission
+                {
+                    Role = "reader",
+                    Type = "anyone"
+                };
+                var permReq = driveService.Permissions.Create(permission, fileId);
+                permReq.SupportsAllDrives = true;
+                await permReq.ExecuteAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Không thể mở quyền xem công khai cho file {FileId}: {Message}", fileId, ex.Message);
+            }
+
+            // Định dạng URL ảnh công khai từ Google Usercontent theo ID
+            var publicUrl = $"https://lh3.googleusercontent.com/d/{fileId}";
+
+            // Lưu vào Database thông qua Code-First Entity
+            var entity = new UploadedMedia
+            {
+                DriveFileId = fileId,
+                FileName = fileName,
+                MimeType = mimeType,
+                FileSize = fileSize ?? fileStream.Length,
+                FileUrl = publicUrl,
+                WebViewLink = driveFile.WebViewLink,
+                UploadedByUserId = currentUserId,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            _dbContext.UploadedMedias.Add(entity);
+            await _dbContext.SaveChangesAsync(cancellationToken);
+
+            return new UploadMediaResultDto(
+                entity.Id,
+                entity.DriveFileId,
+                entity.FileUrl,
+                entity.FileName,
+                entity.MimeType,
+                entity.FileSize,
+                entity.CreatedAt,
+                driveFile.ThumbnailLink ?? publicUrl
+            );
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Upload lên Google Drive thất bại: {Error}. Đang tự động lưu file cục bộ (Local Fallback)...", ex.Message);
+            try
+            {
+                return await SaveLocalFileAsync(fileStream, fileName, mimeType, fileSize, currentUserId, cancellationToken);
+            }
+            catch (Exception localEx)
+            {
+                _logger.LogError(localEx, "Lưu file cục bộ cũng thất bại: {Error}", localEx.Message);
+                throw new FlowException(500, $"Tải file lên Google Drive thất bại: {ex.Message}");
+            }
+        }
     }
 
     /// <summary>
@@ -173,6 +312,7 @@ public class GoogleDriveService
         {
             var driveService = CreateDriveService();
             var request = driveService.Files.List();
+            request.SupportsAllDrives = true;
             request.PageSize = 100;
             request.Fields = "files(id, name, mimeType, size, createdTime, webViewLink, thumbnailLink)";
 
@@ -281,23 +421,32 @@ public class GoogleDriveService
     public async Task<GoogleDriveStatusDto> GetStatusAsync(CancellationToken cancellationToken = default)
     {
         var folderId = _configuration["GoogleDrive:FolderId"]?.Trim() ?? "";
-        string serviceAccountEmail = "";
+        var authMode = _configuration["GoogleDrive:AuthMode"] ?? "ServiceAccount";
+        string accountInfo = "";
 
         try
         {
-            var resolvedPath = ResolveCredentialsPath();
-            if (File.Exists(resolvedPath))
+            if (string.Equals(authMode, "OAuth", StringComparison.OrdinalIgnoreCase))
             {
-                var json = await File.ReadAllTextAsync(resolvedPath, cancellationToken);
-                using var doc = System.Text.Json.JsonDocument.Parse(json);
-                if (doc.RootElement.TryGetProperty("client_email", out var emailProp))
+                accountInfo = "OAuth2 Personal Google Drive";
+            }
+            else
+            {
+                var resolvedPath = ResolveCredentialsPath();
+                if (File.Exists(resolvedPath))
                 {
-                    serviceAccountEmail = emailProp.GetString() ?? "";
+                    var json = await File.ReadAllTextAsync(resolvedPath, cancellationToken);
+                    using var doc = System.Text.Json.JsonDocument.Parse(json);
+                    if (doc.RootElement.TryGetProperty("client_email", out var emailProp))
+                    {
+                        accountInfo = emailProp.GetString() ?? "";
+                    }
                 }
             }
 
             var driveService = CreateDriveService();
             var request = driveService.Files.List();
+            request.SupportsAllDrives = true;
             request.PageSize = 100;
             request.Fields = "files(id, name, mimeType)";
             if (!string.IsNullOrWhiteSpace(folderId) && folderId != "YOUR_GOOGLE_DRIVE_FOLDER_ID")
@@ -314,7 +463,7 @@ public class GoogleDriveService
 
             return new GoogleDriveStatusDto(
                 IsConnected: true,
-                ServiceAccountEmail: serviceAccountEmail,
+                ServiceAccountEmail: accountInfo,
                 FolderId: folderId,
                 TotalImages: imageCount,
                 Message: "Kết nối Google Drive API thành công. Thư mục đã sẵn sàng."
@@ -324,10 +473,10 @@ public class GoogleDriveService
         {
             return new GoogleDriveStatusDto(
                 IsConnected: false,
-                ServiceAccountEmail: serviceAccountEmail,
+                ServiceAccountEmail: accountInfo,
                 FolderId: folderId,
                 TotalImages: 0,
-                Message: $"Không thể kết nối Google Drive: {ex.Message}. Vui lòng chia sẻ thư mục Google Drive cho email: {serviceAccountEmail} với quyền Người chỉnh sửa (Editor)."
+                Message: $"Không thể kết nối Google Drive: {ex.Message}."
             );
         }
     }
