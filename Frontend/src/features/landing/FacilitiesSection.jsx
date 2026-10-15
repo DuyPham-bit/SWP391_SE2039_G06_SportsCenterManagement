@@ -12,8 +12,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [activeModalTab, setActiveModalTab] = useState('booking'); // 'booking' | 'specs' | 'photos'
   const [bookingType, setBookingType] = useState('rent'); // 'rent' (thuê sân) | 'tour' (tham quan trải nghiệm)
 
-  // Carousel & View Mode State
-  const [facilitiesViewMode, setFacilitiesViewMode] = useState('carousel'); // 'carousel' | 'grid'
+  // Carousel State
   const [facilityCarouselIndex, setFacilityCarouselIndex] = useState(0);
   const [canScrollFacilityPrev, setCanScrollFacilityPrev] = useState(false);
   const [canScrollFacilityNext, setCanScrollFacilityNext] = useState(true);
@@ -378,54 +377,18 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           </div>
         </div>
 
-        {/* RESULTS COUNT, STATUS & VIEW MODE TOGGLE */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 text-xs text-slate-500 font-semibold px-1">
-          <div className="flex flex-wrap items-center gap-3">
-            <div>
-              Hiển thị <strong>{filteredFacilities.length}</strong> / {SCMS_FACILITIES.length} cụm sân và phòng chức năng
-            </div>
-            <span className="hidden sm:inline text-slate-300">•</span>
-            <div className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-              <span className="text-emerald-700">Tất cả cụm sân đều sẵn sàng phục vụ</span>
-            </div>
+        {/* RESULTS COUNT & STATUS */}
+        <div className="flex items-center justify-between mb-6 text-xs text-slate-500 font-semibold px-1">
+          <div>
+            Hiển thị <strong>{filteredFacilities.length}</strong> / {SCMS_FACILITIES.length} cụm sân và phòng chức năng
           </div>
-
-          {/* View Switcher: Carousel vs 3-Column Grid */}
-          <div className="flex items-center gap-2 self-end sm:self-auto">
-            <span className="text-xs text-slate-400 font-medium hidden md:inline">Chế độ hiển thị:</span>
-            <div className="inline-flex items-center p-1 rounded-xl bg-slate-200/80 border border-slate-300/70 shadow-inner">
-              <button
-                type="button"
-                onClick={() => setFacilitiesViewMode('carousel')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
-                  facilitiesViewMode === 'carousel'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Hiển thị dạng Carousel lướt ngang mượt mà"
-              >
-                <span className="material-symbols-outlined text-[16px]">view_carousel</span>
-                <span>Carousel Lướt</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setFacilitiesViewMode('grid')}
-                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
-                  facilitiesViewMode === 'grid'
-                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-                title="Hiển thị dạng lưới 3 cột tiêu chuẩn"
-              >
-                <span className="material-symbols-outlined text-[16px]">grid_view</span>
-                <span>Lưới 3 Cột</span>
-              </button>
-            </div>
+          <div className="flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+            <span className="text-emerald-700">Tất cả cụm sân đều sẵn sàng phục vụ</span>
           </div>
         </div>
 
-        {/* FACILITIES CAROUSEL OR GRID RENDERING */}
+        {/* FACILITIES CAROUSEL RENDERING */}
         {filteredFacilities.length === 0 ? (
           <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 mb-16 shadow-sm">
             <span className="material-symbols-outlined text-5xl text-slate-300 mb-3 block">search_off</span>
@@ -438,7 +401,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
               Xem tất cả
             </button>
           </div>
-        ) : facilitiesViewMode === 'carousel' ? (
+        ) : (
           <div className="relative w-full mb-16">
             {/* Carousel Header Bar: Counter, Guidance & Navigation Controls */}
             <div className="flex items-center justify-between mb-4">
@@ -502,11 +465,6 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 ))}
               </div>
             )}
-          </div>
-        ) : (
-          /* Grid View Mode */
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            {filteredFacilities.map(fac => renderFacilityCard(fac, false))}
           </div>
         )}
 
