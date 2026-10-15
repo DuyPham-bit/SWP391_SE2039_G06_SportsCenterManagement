@@ -1,0 +1,134 @@
+/* Apex Athletic Arena Custom Theme Styles */
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    background-color: #f8f9ff;
+    color: #0b1c30;
+    font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  input, button, select, textarea {
+    font-family: inherit;
+  }
+}
+
+.font-chivo {
+  font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+.font-inter {
+  font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+/* Material Symbols Outlined & Material Icons normalization */
+.material-symbols-outlined,
+.material-icons {
+  font-family: 'Material Symbols Outlined' !important;
+  font-weight: normal;
+  font-style: normal;
+  line-height: 1;
+  letter-spacing: normal;
+  text-transform: none;
+  display: inline-block;
+  white-space: nowrap;
+  word-wrap: normal;
+  direction: ltr;
+  vertical-align: middle;
+  -webkit-font-feature-settings: 'liga';
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Glassmorphism Accents */
+.glass-panel {
+  background: rgba(255, 255, 255, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.glass-panel-dark {
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Athletic Brutalism Accents */
+.athletic-border {
+  border: 1px solid #e2e8f0;
+}
+
+.athletic-shadow {
+  box-shadow: 0 4px 0 #0f172a;
+}
+
+.athletic-shadow-red {
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
+}
+
+/* Pulse badge */
+@keyframes scms-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.1); }
+}
+
+.pulse-live {
+  animation: scms-pulse 2s infinite ease-in-out;
+}
+
+.font-lexend {
+  font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif !important;
+}
+
+.glow-red {
+  box-shadow: 0 10px 25px -5px rgba(227, 22, 45, 0.4);
+}
+
+.dynamic-typo-grid {
+  background-size: 32px 32px;
+  background-image: 
+    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
+    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+}
+
+/* Trang chủ SCMS (#/) - Thiết kế giao diện phong cách Olympic hiện đại */
+
+/* Modal Animations */
+@keyframes modalEntrance {
+  0% {
+    opacity: 0;
+    transform: scale(0.94) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-modal-entrance {
+  animation: modalEntrance 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
