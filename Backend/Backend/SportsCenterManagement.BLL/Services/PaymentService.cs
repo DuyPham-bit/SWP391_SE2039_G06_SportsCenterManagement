@@ -1119,9 +1119,9 @@ public sealed class PaymentService(
         string groupBy,
         CancellationToken cancellationToken = default)
     {
-        if (from > to || to == DateOnly.MaxValue || to.DayNumber - from.DayNumber > 366)
+        if (from > to || to == DateOnly.MaxValue || to.DayNumber - from.DayNumber > 365)
         {
-            throw BusinessException.BadRequest("Khoảng ngày phải hợp lệ và không vượt quá 367 ngày.");
+            throw BusinessException.BadRequest("Khoảng ngày phải hợp lệ và không vượt quá 366 ngày.");
         }
         groupBy = (groupBy ?? string.Empty).Trim().ToLowerInvariant();
         if (groupBy is not ("day" or "month"))

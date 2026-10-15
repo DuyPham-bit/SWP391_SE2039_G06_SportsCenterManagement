@@ -1,4 +1,4 @@
-import { staffApi } from '../../services/api.js';
+import { staffApi, classApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
 import { Table, LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
@@ -30,6 +30,10 @@ export function StaffManagement() {
   const [formPhone, setFormPhone] = useState('');
   const [formRole, setFormRole] = useState('COACH');
   const [formSpecialty, setFormSpecialty] = useState('');
+  const [formSportIds, setFormSportIds] = useState([]);
+  const [sports, setSports] = useState([]);
+  const [newSpecialtyName, setNewSpecialtyName] = useState('');
+  const [addingSpecialty, setAddingSpecialty] = useState(false);
   const [formCertification, setFormCertification] = useState('');
   const [saving, setSaving] = useState(false);
 
@@ -46,6 +50,7 @@ export function StaffManagement() {
 
   useEffect(() => {
     loadStaff();
+    classApi.getSports().then(setSports).catch(() => showError('Không thể tải danh sách chuyên môn'));
   }, []);
 
   // Handle click outside to close dropdown
@@ -68,6 +73,7 @@ export function StaffManagement() {
     setFormPhone('');
     setFormRole('COACH');
     setFormSpecialty('');
+    setFormSportIds([]);
     setFormCertification('');
     setIsDropdownOpen(false);
 
@@ -102,6 +108,7 @@ export function StaffManagement() {
     setFormPhone(staff.phone || '');
     setFormRole(staff.role);
     setFormSpecialty(staff.specialty || '');
+    setFormSportIds(staff.sportIds || []);
     setFormCertification(staff.certification || '');
     setPreviewId(staff.id);
     setModalOpen(true);
@@ -144,6 +151,10 @@ export function StaffManagement() {
       showError('Vui lòng điền họ và tên nhân viên!');
       return;
     }
+    if (formRole === 'COACH' && formSportIds.length === 0) {
+      showError('Vui lòng chọn ít nhất một chuyên môn cho Huấn luyện viên!');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -153,6 +164,7 @@ export function StaffManagement() {
           phone: formPhone.trim(),
           role: formRole,
           specialty: formSpecialty.trim(),
+          sportIds: formRole === 'COACH' ? formSportIds : [],
           certification: formCertification.trim()
         });
         showSuccess('Cập nhật nhân viên thành công!');
@@ -163,6 +175,7 @@ export function StaffManagement() {
           phone: selectedMember.phone || '',
           role: formRole,
           specialty: formRole === 'COACH' ? formSpecialty.trim() : '',
+          sportIds: formRole === 'COACH' ? formSportIds : [],
           certification: formRole === 'COACH' ? formCertification.trim() : '',
           avatar: selectedMember?.avatar,
           memberId: selectedMember.id,
@@ -184,6 +197,72 @@ export function StaffManagement() {
       setSaving(false);
     }
   };
+
+  const toggleSport = (sportId) => {
+    setFormSportIds(current => current.includes(sportId)
+      ? current.filter(id => id !== sportId)
+      : [...current, sportId]);
+  };
+
+  const handleAddSpecialty = async () => {
+    const name = newSpecialtyName.trim();
+    if (!name) return showError('Vui lòng nhập tên chuyên môn.');
+    setAddingSpecialty(true);
+    try {
+      const created = await classApi.createSport({ name, description: 'Chuyên môn HLV', status: 'Active' });
+      setSports(current => [...current, created].sort((a, b) => a.name.localeCompare(b.name, 'vi')));
+      setFormSportIds(current => [...new Set([...current, Number(created.id)])]);
+      setNewSpecialtyName('');
+      showSuccess(`Đã thêm chuyên môn ${created.name}`);
+    } catch (error) {
+      showError(error.message || 'Không thể thêm chuyên môn');
+    } finally {
+      setAddingSpecialty(false);
+    }
+  };
+
+  const specialtyPicker = (
+    <div className="space-y-3">
+      <div>
+        <div className="flex items-center justify-between gap-2 mb-2">
+          <label className="text-xs font-bold uppercase tracking-wider text-slate-700">Chuyên môn phụ trách *</label>
+          <span className="text-[11px] text-slate-500">Chọn ít nhất 1 bộ môn</span>
+        </div>
+        {sports.length ? (
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {sports.map(sport => {
+              const selected = formSportIds.includes(Number(sport.id));
+              return (
+                <button key={sport.id} type="button" onClick={() => toggleSport(Number(sport.id))}
+                  className={`p-2.5 rounded-lg border-2 text-left text-xs font-semibold transition-all ${selected
+                    ? 'border-red-600 bg-red-50 text-red-700 ring-1 ring-red-200'
+                    : 'border-slate-200 bg-white text-slate-700 hover:border-slate-400'}`}>
+                  <span className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[17px]">{selected ? 'check_circle' : 'circle'}</span>
+                    {sport.name}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        ) : <div className="rounded-lg border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">Chưa có chuyên môn hoạt động. Hãy thêm chuyên môn bên dưới.</div>}
+      </div>
+      <div className="rounded-lg border border-dashed border-slate-300 bg-white p-2.5">
+        <label className="block text-[11px] font-bold text-slate-600 mb-1.5">Thêm nhanh chuyên môn mới</label>
+        <div className="flex gap-2">
+          <input type="text" maxLength="100" value={newSpecialtyName}
+            onChange={event => setNewSpecialtyName(event.target.value)}
+            placeholder="VD: Pickleball"
+            className="min-w-0 flex-1 px-3 py-2 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600" />
+          <button type="button" disabled={addingSpecialty || !newSpecialtyName.trim()} onClick={handleAddSpecialty}
+            className="px-3 py-2 rounded-lg bg-slate-900 text-white text-xs font-bold disabled:opacity-50 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[16px]">add</span>
+            {addingSpecialty ? 'Đang thêm...' : 'Thêm'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   const handleToggleStatus = async (staff) => {
     try {
@@ -530,22 +609,10 @@ export function StaffManagement() {
                 <div className="bg-slate-50 border border-slate-200 rounded-xl p-3 space-y-2.5">
                   <div className="text-xs font-bold text-slate-700 uppercase tracking-wider flex items-center gap-1">
                     <span className="material-symbols-outlined text-[16px] text-slate-500">fitness_center</span>
-                    <span>Thông tin bổ sung HLV (Tùy chọn)</span>
+                    <span>Thông tin chuyên môn HLV</span>
                   </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
-                    <div>
-                      <label className="block text-[11px] font-semibold text-slate-600 mb-1">
-                        Chuyên môn môn học
-                      </label>
-                      <input
-                        type="text"
-                        placeholder="VD: Bơi lội & Gym, Cầu lông..."
-                        value={formSpecialty}
-                        onChange={e => setFormSpecialty(e.target.value)}
-                        className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 bg-white"
-                      />
-                    </div>
-                    <div>
+                  {specialtyPicker}
+                  <div>
                       <label className="block text-[11px] font-semibold text-slate-600 mb-1">
                         Chứng chỉ quốc tế
                       </label>
@@ -556,7 +623,6 @@ export function StaffManagement() {
                         onChange={e => setFormCertification(e.target.value)}
                         className="w-full px-3 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 bg-white"
                       />
-                    </div>
                   </div>
                 </div>
               )}
@@ -618,18 +684,7 @@ export function StaffManagement() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                  Chuyên môn môn học
-                </label>
-                <input
-                  type="text"
-                  placeholder="VD: Bơi lội & Gym, Cầu lông, Yoga..."
-                  value={formSpecialty}
-                  onChange={e => setFormSpecialty(e.target.value)}
-                  className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
-                />
-              </div>
+              {formRole === 'COACH' && specialtyPicker}
 
               <div>
                 <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">

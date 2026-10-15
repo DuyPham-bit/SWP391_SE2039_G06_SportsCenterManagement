@@ -14,6 +14,10 @@ public interface IReportService
         string groupBy,
         CancellationToken cancellationToken = default);
 
+    Task<SportRevenueReportResponse> GetSportRevenueReportAsync(
+        long centerId, DateOnly from, DateOnly to,
+        CancellationToken cancellationToken = default);
+
     Task<MembershipReportResponse> GetMembershipReportAsync(
         long centerId,
         DateOnly from,

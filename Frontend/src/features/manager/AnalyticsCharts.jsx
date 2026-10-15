@@ -578,3 +578,28 @@ export function ClassCapacityBarChart({ classes = [] }) {
     </div>
   );
 }
+
+export function SportRevenueBarChart({ sports = [] }) {
+  const rows = sports.filter(item => Number(item.net || 0) !== 0);
+  if (!rows.length) return <div className="text-xs text-slate-400 py-8 text-center">Chưa có doanh thu bộ môn trong kỳ.</div>;
+  const max = Math.max(1, ...rows.map(item => Math.abs(Number(item.net || 0))));
+  return (
+    <div className="space-y-3">
+      {rows.map((item, index) => (
+        <div key={item.sportId ?? 'unallocated'} className="rounded-xl border border-slate-200 p-3 bg-white">
+          <div className="flex justify-between gap-3 text-xs mb-2">
+            <span className="font-bold text-slate-900">{index === 0 && item.sportId ? '🥇 ' : ''}{item.sportName}</span>
+            <span className="font-black text-red-700">{formatVnd(item.net)} · {Number(item.share || 0).toLocaleString('vi-VN')}%</span>
+          </div>
+          <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
+            <div className={`h-full rounded-full ${item.sportId ? 'bg-gradient-to-r from-red-600 to-amber-500' : 'bg-slate-400'}`}
+              style={{ width: `${Math.max(item.net ? 2 : 0, Math.abs(Number(item.net || 0)) / max * 100)}%` }} />
+          </div>
+          <div className="mt-1.5 flex justify-between text-[10px] text-slate-500">
+            <span>Thu: {formatVnd(item.gross)}</span><span>Hoàn: {formatVnd(item.refunds)}</span>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}

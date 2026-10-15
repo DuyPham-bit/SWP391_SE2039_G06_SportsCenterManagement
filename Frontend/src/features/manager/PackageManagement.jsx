@@ -3,6 +3,7 @@ import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { Badge } from '../../components/common/StatCard.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
+import { MAX_PACKAGE_PRICE, sortMembershipPackages, validatePackagePrice } from './packageManagementForm.js';
 
 const { useState, useEffect } = React;
 
@@ -27,7 +28,7 @@ export function PackageManagement() {
   const loadPackages = async () => {
     try {
       const data = await packageApi.getAll();
-      setPackages(data);
+      setPackages(sortMembershipPackages(data));
     } catch (e) {
       showError('Không thể tải danh sách gói tập');
     } finally {
@@ -72,11 +73,12 @@ export function PackageManagement() {
       return;
     }
 
-    if (Number(price) <= 0) {
+    const priceValidation = validatePackagePrice(price);
+    if (!priceValidation.valid) {
       showError({
-        message: 'Học phí / Giá gói tập phải lớn hơn 0 VNĐ.',
+        message: priceValidation.message,
         code: 'VAL-PKG-PRICE',
-        proposedHandling: 'Nhập số tiền hợp lệ theo chính sách biểu phí của trung tâm.'
+        proposedHandling: `Nhập số tiền lớn hơn 0 và không vượt quá ${MAX_PACKAGE_PRICE.toLocaleString('vi-VN')} VNĐ; không bắt buộc theo bước 50.000 VNĐ.`
       });
       return;
     }
@@ -105,7 +107,7 @@ export function PackageManagement() {
         await packageApi.update(editingPkg.id, {
           name: name.trim(),
           durationDays: Number(durationDays),
-          price: Number(price),
+          price: priceValidation.value,
           allowedSports: Number(allowedSports),
           description: description.trim(),
           badge: badge.trim()
@@ -115,7 +117,7 @@ export function PackageManagement() {
         await packageApi.create({
           name: name.trim(),
           durationDays: Number(durationDays),
-          price: Number(price),
+          price: priceValidation.value,
           allowedSports: Number(allowedSports),
           description: description.trim(),
           badge: badge.trim(),
@@ -292,12 +294,18 @@ export function PackageManagement() {
               <input
                 type="number"
                 required
-                min="0"
-                step="50000"
+                min="0.01"
+                max={MAX_PACKAGE_PRICE}
+                step="0.01"
+                inputMode="decimal"
                 value={price}
                 onChange={e => setPrice(e.target.value)}
+                aria-describedby="package-price-hint"
                 className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
               />
+              <p id="package-price-hint" className="mt-1 text-[11px] leading-4 text-slate-500">
+                Có thể nhập mọi mức giá hợp lệ (tối đa 2 số lẻ), không bắt buộc theo bội số 50.000 VNĐ.
+              </p>
             </div>
           </div>
 

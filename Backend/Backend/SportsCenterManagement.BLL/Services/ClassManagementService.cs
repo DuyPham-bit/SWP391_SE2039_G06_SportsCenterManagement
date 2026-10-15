@@ -15,6 +15,7 @@ namespace SportsCenterManagement.BLL.Services;
 public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManagementService
 {
     private const int MaxScheduleSpanDays = 366;
+    private const double MaxDailyTeachingHours = 8.0;
 
     private SportsCenterDbContext Db => unitOfWork.Context;
 
@@ -141,8 +142,8 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
                 select new
                 {
                     assignment.IsPrimary,
+                    CoachId = coach.Id,
                     coach.FullName,
-                    coach.Specialization,
                     CoachActive = coach.Status == "Active" && user.Status == "Active"
                         && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)
                 }).ToListAsync(cancellationToken);
@@ -152,9 +153,10 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
             {
                 throw new InvalidOperationException("Không thể đổi bộ môn của lớp đang mở khi chưa có HLV chính đang hoạt động.") { Data = { ["StatusCode"] = 409 } };
             }
+            var compatibleCoachIds = await Db.CoachSports.Where(item => item.SportId == request.SportId)
+                .Select(item => item.CoachId).ToListAsync(cancellationToken);
             var incompatibleCoach = assignedCoaches.FirstOrDefault(coach => coach.CoachActive
-                && (string.IsNullOrWhiteSpace(coach.Specialization)
-                    || !coach.Specialization.Contains(newSportName, StringComparison.OrdinalIgnoreCase)));
+                && !compatibleCoachIds.Contains(coach.CoachId));
             if (incompatibleCoach is not null)
             {
                 throw new InvalidOperationException($"HLV {incompatibleCoach.FullName} chưa có chuyên môn phù hợp với bộ môn '{newSportName}'.") { Data = { ["StatusCode"] = 409 } };
@@ -285,6 +287,28 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return new CancelClassResult(classId, entity.Status, enrollments.Count, bookings, sessions);
+    }
+
+    public async Task<ClassDetailResponse> RestoreClassAsync(long actorUserId, long classId, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await Db.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable, cancellationToken);
+        var entity = await unitOfWork.Repository<ClassEntity>().GetByIdAsync(classId, cancellationToken)
+            ?? throw new InvalidOperationException("Lớp học không tồn tại.") { Data = { ["StatusCode"] = 404 } };
+
+        if (!string.Equals(entity.Status, FlowStatuses.ClassCancelled, StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Chỉ lớp đã hủy mới có thể mở lại.") { Data = { ["StatusCode"] = 409 } };
+
+        entity.Status = FlowStatuses.ClassDraft;
+        entity.UpdatedAt = DateTime.UtcNow;
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        AuditLogWriter.Add(unitOfWork, actorUserId, entity.CenterId, "class.restored", "Class", entity.Id,
+            new { Status = FlowStatuses.ClassCancelled },
+            new { Status = entity.Status, HistoricalDataRestored = false });
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return ToResponse(entity);
     }
 
     // ---------------------------------------------------------------- schedules
@@ -526,13 +550,13 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
                 && s.Status == FlowStatuses.ScheduleActive
                 && c.Status != FlowStatuses.ClassCancelled && c.Status != FlowStatuses.ClassCompleted
                 && s.DayOfWeek == dayOfWeek
-                && cc.ClassId != classId
-            select new { cc.CoachId, s.StartTime, s.EndTime, s.StartDate, s.EndDate, ClassName = c.Name })
+                && (!excludeScheduleId.HasValue || s.Id != excludeScheduleId.Value)
+            select new { cc.CoachId, Schedule = s, ClassName = c.Name })
             .ToListAsync(ct);
 
         var clash = candidates.FirstOrDefault(x =>
-            ScheduleTime.Overlaps(start, end, x.StartTime, x.EndTime) &&
-            ScheduleTime.DateRangesOverlap(startDate, endDate, x.StartDate, x.EndDate));
+            ScheduleTime.Overlaps(start, end, x.Schedule.StartTime, x.Schedule.EndTime) &&
+            ScheduleTime.DateRangesOverlap(startDate, endDate, x.Schedule.StartDate, x.Schedule.EndDate));
         if (clash is not null)
         {
             var name = coaches.First(c => c.Id == clash.CoachId).FullName;
@@ -546,6 +570,94 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
                 }
             };
         }
+
+        var approvedLeaves = await Db.CoachLeaves
+            .Where(leave => coachIds.Contains(leave.CoachId) && leave.Status.ToLower() == "approved")
+            .ToListAsync(ct);
+        foreach (var coach in coaches)
+        {
+            if (approvedLeaves.Any(leave => leave.CoachId == coach.Id && ProposedScheduleOverlapsLeave(
+                    dayOfWeek, start, end, startDate, endDate, leave)))
+            {
+                throw new InvalidOperationException($"HLV {coach.FullName} đã được duyệt nghỉ trong thời gian của lịch học này.")
+                {
+                    Data =
+                    {
+                        ["StatusCode"] = 409,
+                        ["Code"] = "CM-05",
+                        ["ProposedHandling"] = "Chọn HLV khác hoặc điều chỉnh khoảng ngày/giờ học ngoài thời gian nghỉ đã duyệt."
+                    }
+                };
+            }
+
+            var coachSchedules = candidates.Where(item => item.CoachId == coach.Id)
+                .Select(item => item.Schedule).ToList();
+            EnsureDailyTeachingLimitForProposedSchedule(
+                coach.FullName, dayOfWeek, start, end, startDate, endDate, coachSchedules);
+        }
+    }
+
+    private static void EnsureDailyTeachingLimitForProposedSchedule(
+        string coachName, int dayOfWeek, TimeOnly start, TimeOnly end,
+        DateOnly? startDate, DateOnly? endDate, IReadOnlyCollection<ClassSchedule> existingSchedules)
+    {
+        var today = ScheduleTime.VietnamToday;
+        var candidateDates = new HashSet<DateOnly> { NextOccurrence(today, dayOfWeek) };
+        var boundaries = existingSchedules.Select(schedule => schedule.StartDate)
+            .Append(startDate).Where(date => date.HasValue).Select(date => date!.Value);
+        foreach (var boundary in boundaries)
+            candidateDates.Add(NextOccurrence(boundary > today ? boundary : today, dayOfWeek));
+
+        foreach (var date in candidateDates)
+        {
+            var proposedActive = dayOfWeek == (int)date.DayOfWeek
+                && (!startDate.HasValue || startDate.Value <= date)
+                && (!endDate.HasValue || endDate.Value >= date);
+            var hours = proposedActive ? (end.ToTimeSpan() - start.ToTimeSpan()).TotalHours : 0;
+            hours += existingSchedules.Where(schedule => schedule.DayOfWeek == (int)date.DayOfWeek
+                    && (!schedule.StartDate.HasValue || schedule.StartDate.Value <= date)
+                    && (!schedule.EndDate.HasValue || schedule.EndDate.Value >= date))
+                .Sum(schedule => (schedule.EndTime.ToTimeSpan() - schedule.StartTime.ToTimeSpan()).TotalHours);
+            if (hours > MaxDailyTeachingHours)
+            {
+                throw new InvalidOperationException(
+                    $"Lịch mới làm cho HLV {coachName} dạy {hours:F1} giờ trong ngày, vượt giới hạn {MaxDailyTeachingHours:F1} giờ/ngày.")
+                {
+                    Data =
+                    {
+                        ["StatusCode"] = 409,
+                        ["Code"] = "CM-06",
+                        ["ProposedHandling"] = "Giảm thời lượng hoặc chuyển lịch sang ngày khác."
+                    }
+                };
+            }
+        }
+    }
+
+    private static bool ProposedScheduleOverlapsLeave(
+        int dayOfWeek, TimeOnly start, TimeOnly end, DateOnly? startDate, DateOnly? endDate, CoachLeave leave)
+    {
+        var firstDate = DateOnly.FromDateTime(leave.StartAt);
+        var lastDate = DateOnly.FromDateTime(leave.EndAt);
+        if (startDate.HasValue && startDate.Value > firstDate) firstDate = startDate.Value;
+        if (endDate.HasValue && endDate.Value < lastDate) lastDate = endDate.Value;
+        if (lastDate < firstDate) return false;
+
+        var occurrence = NextOccurrence(firstDate, dayOfWeek);
+        while (occurrence <= lastDate)
+        {
+            var sessionStart = occurrence.ToDateTime(start);
+            var sessionEnd = occurrence.ToDateTime(end);
+            if (sessionStart < leave.EndAt && sessionEnd > leave.StartAt) return true;
+            occurrence = occurrence.AddDays(7);
+        }
+        return false;
+    }
+
+    private static DateOnly NextOccurrence(DateOnly date, int dayOfWeek)
+    {
+        var daysUntil = (dayOfWeek - (int)date.DayOfWeek + 7) % 7;
+        return date.AddDays(daysUntil);
     }
 
     // ------------------------------------------------------------------ helpers

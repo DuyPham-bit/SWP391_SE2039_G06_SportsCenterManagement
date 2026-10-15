@@ -13,6 +13,11 @@ public interface IClassManagementService
     /// <summary>"Delete" = soft cancel. Never hard-deletes a class with enrollments/bookings.</summary>
     Task<CancelClassResult> CancelClassAsync(long actorUserId, long classId, CancellationToken cancellationToken = default);
 
+    /// <summary>
+    /// Reopens a cancelled class as Draft. Cancelled schedules, sessions, enrollments and bookings stay cancelled.
+    /// </summary>
+    Task<ClassDetailResponse> RestoreClassAsync(long actorUserId, long classId, CancellationToken cancellationToken = default);
+
     Task<IReadOnlyList<ClassScheduleResponse>> GetSchedulesAsync(long classId, CancellationToken cancellationToken = default);
     Task<ClassScheduleResponse> CreateScheduleAsync(long actorUserId, long classId, CreateClassScheduleRequest request, CancellationToken cancellationToken = default);
     Task<ClassScheduleResponse> UpdateScheduleAsync(long actorUserId, long classId, long scheduleId, UpdateClassScheduleRequest request, CancellationToken cancellationToken = default);

@@ -35,6 +35,87 @@ public sealed class ReportService(
         CancellationToken cancellationToken = default) =>
         _paymentService.GetRevenueReportAsync(centerId, from, to, groupBy, cancellationToken);
 
+    public async Task<SportRevenueReportResponse> GetSportRevenueReportAsync(
+        long centerId, DateOnly from, DateOnly to, CancellationToken cancellationToken = default)
+    {
+        ValidateRequest(from, to, "day");
+        await EnsureCenterExistsAsync(centerId, cancellationToken);
+        var (startUtc, endUtc) = GetUtcRange(from, to, GetReportTimeZone());
+        var payments = await (
+            from payment in _unitOfWork.Context.Payments.AsNoTracking()
+            join invoice in _unitOfWork.Context.Invoices.AsNoTracking() on payment.InvoiceId equals invoice.Id
+            where invoice.CenterId == centerId && payment.PaymentStatus == "Succeeded"
+                && payment.PaidAt != null && payment.PaidAt >= startUtc && payment.PaidAt < endUtc
+            select new { payment.Id, payment.InvoiceId, payment.Amount }).ToListAsync(cancellationToken);
+        var refundRows = await (
+            from refund in _unitOfWork.Context.PaymentRefunds.AsNoTracking()
+            join payment in _unitOfWork.Context.Payments.AsNoTracking() on refund.PaymentId equals payment.Id
+            join invoice in _unitOfWork.Context.Invoices.AsNoTracking() on payment.InvoiceId equals invoice.Id
+            where invoice.CenterId == centerId && refund.Status == "Succeeded"
+                && refund.ProcessedAt != null && refund.ProcessedAt >= startUtc && refund.ProcessedAt < endUtc
+            select new { payment.InvoiceId, refund.Amount }).ToListAsync(cancellationToken);
+        var invoiceIds = payments.Select(item => item.InvoiceId)
+            .Concat(refundRows.Select(item => item.InvoiceId)).Distinct().ToArray();
+        var invoiceItems = await _unitOfWork.Context.InvoiceItems.AsNoTracking()
+            .Where(item => invoiceIds.Contains(item.InvoiceId))
+            .Select(item => new { item.InvoiceId, item.SubscriptionId, item.EnrollmentId })
+            .ToListAsync(cancellationToken);
+        var subscriptionIds = invoiceItems.Where(item => item.SubscriptionId.HasValue)
+            .Select(item => item.SubscriptionId!.Value).Distinct().ToArray();
+        var enrollmentIds = invoiceItems.Where(item => item.EnrollmentId.HasValue)
+            .Select(item => item.EnrollmentId!.Value).Distinct().ToArray();
+        var enrollmentSports = await (
+            from enrollment in _unitOfWork.Context.ClassEnrollments.AsNoTracking()
+            join cls in _unitOfWork.Context.Classes.AsNoTracking() on enrollment.ClassId equals cls.Id
+            join sport in _unitOfWork.Context.Sports.AsNoTracking() on cls.SportId equals sport.Id
+            where cls.CenterId == centerId &&
+                (enrollmentIds.Contains(enrollment.Id)
+                 || (enrollment.SubscriptionId.HasValue && subscriptionIds.Contains(enrollment.SubscriptionId.Value)))
+            select new { enrollment.Id, enrollment.SubscriptionId, SportId = sport.Id, SportName = sport.Name })
+            .ToListAsync(cancellationToken);
+
+        var buckets = new Dictionary<(long? Id, string Name), (decimal Gross, decimal Refunds)>();
+        (long? Id, string Name)[] Targets(long invoiceId)
+        {
+            var items = invoiceItems.Where(item => item.InvoiceId == invoiceId).ToArray();
+            var directIds = items.Where(item => item.EnrollmentId.HasValue).Select(item => item.EnrollmentId!.Value).ToHashSet();
+            var subs = items.Where(item => item.SubscriptionId.HasValue).Select(item => item.SubscriptionId!.Value).ToHashSet();
+            var sports = enrollmentSports.Where(item => directIds.Contains(item.Id)
+                    || (item.SubscriptionId.HasValue && subs.Contains(item.SubscriptionId.Value)))
+                .Select(item => (item.SportId, item.SportName)).Distinct().ToArray();
+            return sports.Length > 0 ? sports.Select(item => ((long?)item.SportId, item.SportName)).ToArray()
+                : new[] { ((long?)null, "Chưa phân bổ") };
+        }
+        foreach (var payment in payments)
+        {
+            var targets = Targets(payment.InvoiceId);
+            foreach (var target in targets)
+            {
+                var current = buckets.GetValueOrDefault(target);
+                buckets[target] = (current.Gross + payment.Amount / targets.Length, current.Refunds);
+            }
+        }
+        foreach (var refund in refundRows)
+        {
+            var targets = Targets(refund.InvoiceId);
+            foreach (var target in targets)
+            {
+                var current = buckets.GetValueOrDefault(target);
+                buckets[target] = (current.Gross, current.Refunds + refund.Amount / targets.Length);
+            }
+        }
+
+        var totalNet = payments.Sum(item => item.Amount) - refundRows.Sum(item => item.Amount);
+        var rows = buckets.Select(item => new SportRevenueItem(item.Key.Id, item.Key.Name,
+                decimal.Round(item.Value.Gross, 2), decimal.Round(item.Value.Refunds, 2),
+                decimal.Round(item.Value.Gross - item.Value.Refunds, 2),
+                totalNet > 0 ? decimal.Round((item.Value.Gross - item.Value.Refunds) / totalNet * 100, 2) : 0))
+            .OrderByDescending(item => item.Net).ThenBy(item => item.SportName).ToArray();
+        var unallocated = rows.Where(item => item.SportId is null).Sum(item => item.Net);
+        return new SportRevenueReportResponse(centerId, from, to, totalNet,
+            rows.Where(item => item.SportId is not null).Sum(item => item.Net), unallocated, rows);
+    }
+
     public async Task<MembershipReportResponse> GetMembershipReportAsync(
         long centerId,
         DateOnly from,
@@ -152,9 +233,9 @@ public sealed class ReportService(
 
     private static void ValidateRequest(DateOnly from, DateOnly to, string groupBy)
     {
-        if (from > to || to == DateOnly.MaxValue || to.DayNumber - from.DayNumber > 364)
+        if (from > to || to == DateOnly.MaxValue || to.DayNumber - from.DayNumber > 365)
         {
-            throw BusinessException.BadRequest("Khoảng ngày phải hợp lệ và không vượt quá 365 ngày.");
+            throw BusinessException.BadRequest("Khoảng ngày phải hợp lệ và không vượt quá 366 ngày.");
         }
         if (!string.Equals(groupBy?.Trim(), "day", StringComparison.OrdinalIgnoreCase) &&
             !string.Equals(groupBy?.Trim(), "month", StringComparison.OrdinalIgnoreCase))

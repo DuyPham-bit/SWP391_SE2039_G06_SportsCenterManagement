@@ -47,6 +47,23 @@ public sealed record RevenuePeriod(
     decimal Gross,
     decimal Refunds,
     decimal Net);
+
+public sealed record SportRevenueReportResponse(
+    long CenterId,
+    DateOnly From,
+    DateOnly To,
+    decimal Net,
+    decimal AllocatedNet,
+    decimal UnallocatedNet,
+    IReadOnlyList<SportRevenueItem> Sports);
+
+public sealed record SportRevenueItem(
+    long? SportId,
+    string SportName,
+    decimal Gross,
+    decimal Refunds,
+    decimal Net,
+    decimal Share);
 }
 
 namespace SportsCenterManagement.BLL.DTOs.CoreFlows

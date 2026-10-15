@@ -22,6 +22,7 @@ public sealed class ClassResourcesController(SportsCenterDbContext db) : FlowCon
             select new { cls.Id, cls.SportId, SportName = sport.Name, cls.RoomId, cls.Name,
                 cls.Description, cls.Level, cls.Capacity, cls.DurationMinutes, cls.Status, cls.AllowWaitlist,
                 EnrolledCount = db.ClassEnrollments.Count(e => e.ClassId == cls.Id && e.Status == "Confirmed"),
+                ActiveScheduleCount = db.ClassSchedules.Count(schedule => schedule.ClassId == cls.Id && schedule.Status == "Active"),
                 RoomName = db.Rooms.Where(r => r.Id == cls.RoomId).Select(r => r.Name).FirstOrDefault(),
                 CoachId = db.ClassCoaches.Where(c => c.ClassId == cls.Id && c.IsPrimary).Select(c => (long?)c.CoachId).FirstOrDefault(),
                 CoachName = (from a in db.ClassCoaches join c in db.CoachProfiles on a.CoachId equals c.Id
@@ -44,7 +45,8 @@ public sealed class ClassResourcesController(SportsCenterDbContext db) : FlowCon
         return Ok(await (from coach in db.CoachProfiles join user in db.Users on coach.UserId equals user.Id
             where coach.CenterId == centerId && coach.Status == "Active" && user.Status == "Active"
             orderby coach.FullName
-            select new { coach.Id, coach.UserId, coach.FullName, coach.Specialization, coach.Certification }).ToListAsync(ct));
+            select new { coach.Id, coach.UserId, coach.FullName, coach.Specialization, coach.Certification,
+                SportIds = db.CoachSports.Where(item => item.CoachId == coach.Id).Select(item => item.SportId).ToArray() }).ToListAsync(ct));
     }
 
     [HttpGet("centers/{centerId:long}/sports/all")]

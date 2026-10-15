@@ -62,7 +62,7 @@ public sealed class MembersController(IMemberService memberService, ICoreFlowSer
     public async Task<IActionResult> UpdateAtCenter(
         long centerId,
         long memberId,
-        MembersRequests.UpdateMemberProfileRequest request,
+        MembersRequests.UpdateMemberAtCenterRequest request,
         CancellationToken cancellationToken)
     {
         return await Run(async () => Ok(await memberService.UpdateAtCenterAsync(

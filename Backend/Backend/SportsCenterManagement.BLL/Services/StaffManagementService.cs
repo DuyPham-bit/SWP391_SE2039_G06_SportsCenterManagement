@@ -49,7 +49,13 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
             .Take(pageSize)
             .ToListAsync(cancellationToken);
 
-        return rows.Select(row => Map(row.Staff, row.User, row.RoleName, row.Coach)).ToArray();
+        var coachIds = rows.Where(row => row.Coach is not null).Select(row => row.Coach!.Id).ToArray();
+        var sportIdsByCoach = await unitOfWork.Context.CoachSports.AsNoTracking()
+            .Where(item => coachIds.Contains(item.CoachId))
+            .GroupBy(item => item.CoachId)
+            .ToDictionaryAsync(group => group.Key, group => (IReadOnlyList<long>)group.Select(item => item.SportId).ToArray(), cancellationToken);
+        return rows.Select(row => Map(row.Staff, row.User, row.RoleName, row.Coach,
+            row.Coach is not null && sportIdsByCoach.TryGetValue(row.Coach.Id, out var ids) ? ids : [])).ToArray();
     }
 
     public async Task<StaffResponses.CenterStaffResponse> CreateAtCenterAsync(
@@ -71,6 +77,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         await using var transaction = await unitOfWork.Context.Database.BeginTransactionAsync(
             IsolationLevel.Serializable, cancellationToken);
         await EnsureCanManageStaffAsync(actorUserId, centerId, cancellationToken);
+        var sports = await ResolveCoachSportsAsync(centerId, request.RoleName, request.SportIds, cancellationToken);
         var actor = await unitOfWork.Repository<User>().GetByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Không có quyền thao tác.");
         var actorRole = await unitOfWork.Repository<Role>().GetByIdAsync(actor.RoleId, cancellationToken);
@@ -151,11 +158,12 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (coach is not null) SetCoachSports(coach, sports);
         AuditLogWriter.Add(unitOfWork, actorUserId, centerId, "staff.created", "User", user.Id,
             newValues: new { Role = request.RoleName, staff.StaffCode, staff.Status });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return Map(staff, user, role.Name, coach);
+        return Map(staff, user, role.Name, coach, sports.Select(item => item.Id).ToArray());
     }
 
     public async Task<StaffResponses.CenterStaffResponse> AppointAtCenterAsync(
@@ -168,6 +176,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         await using var transaction = await unitOfWork.Context.Database.BeginTransactionAsync(
             IsolationLevel.Serializable, cancellationToken);
         await EnsureCanManageStaffAsync(actorUserId, centerId, cancellationToken);
+        var sports = await ResolveCoachSportsAsync(centerId, request.RoleName, request.SportIds, cancellationToken);
         var member = await unitOfWork.Context.MemberProfiles.SingleOrDefaultAsync(
             m => m.Id == request.MemberId && m.CenterId == centerId, cancellationToken)
             ?? throw new KeyNotFoundException("Không tìm thấy hội viên trong trung tâm này.");
@@ -193,11 +202,13 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
                 Bio = Normalize(request.Bio), HireDate = request.HireDate, Status = "Active", CreatedAt = now };
             unitOfWork.Context.CoachProfiles.Add(coach);
         }
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (coach is not null) SetCoachSports(coach, sports);
         AuditLogWriter.Add(unitOfWork, actorUserId, centerId, "staff.appointed", "User", user.Id,
             new { Role = previousRole.Name }, new { Role = role.Name, staff.StaffCode });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return Map(staff, user, role.Name, coach);
+        return Map(staff, user, role.Name, coach, sports.Select(item => item.Id).ToArray());
     }
 
     public async Task<StaffResponses.CenterStaffResponse> UpdateAtCenterAsync(
@@ -333,6 +344,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
             role = await unitOfWork.Context.Roles.SingleAsync(r => r.Name == request.RoleName, cancellationToken);
             user.RoleId = role.Id;
         }
+        var sports = await ResolveCoachSportsAsync(centerId, role.Name, request.SportIds, cancellationToken);
         var oldStatus = user.Status;
         var now = DateTime.UtcNow;
         staff.FullName = request.FullName.Trim();
@@ -373,11 +385,23 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
             if (coach.Id != 0) unitOfWork.Context.CoachProfiles.Update(coach);
         }
 
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        if (coach is not null)
+        {
+            var existingSports = await unitOfWork.Context.CoachSports
+                .Where(item => item.CoachId == coach.Id).ToListAsync(cancellationToken);
+            var desiredIds = sports.Select(item => item.Id).ToHashSet();
+            unitOfWork.Context.CoachSports.RemoveRange(existingSports.Where(item => !desiredIds.Contains(item.SportId)));
+            foreach (var sport in sports.Where(item => existingSports.All(current => current.SportId != item.Id)))
+                unitOfWork.Context.CoachSports.Add(new CoachSport { CoachId = coach.Id, SportId = sport.Id });
+            coach.Specialization = string.Join(", ", sports.Select(item => item.Name));
+        }
+
         AuditLogWriter.Add(unitOfWork, actorUserId, centerId, "staff.updated", "User", user.Id,
             new { Status = oldStatus, Role = oldRole }, new { Status = user.Status, Role = role.Name });
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        return Map(staff, user, role.Name, coach);
+        return Map(staff, user, role.Name, coach, sports.Select(item => item.Id).ToArray());
     }
 
     private async Task EnsureCanManageStaffAsync(
@@ -423,10 +447,38 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         }
     }
 
-    private static StaffResponses.CenterStaffResponse Map(StaffProfile staff, User user, string roleName, CoachProfile? coach) =>
+    private async Task<List<Sport>> ResolveCoachSportsAsync(long centerId, string roleName,
+        IReadOnlyList<long>? requestedIds, CancellationToken cancellationToken)
+    {
+        var ids = requestedIds?.Where(id => id > 0).Distinct().ToArray() ?? [];
+        if (roleName != RoleNames.Coach)
+        {
+            if (ids.Length > 0) throw new ValidationException("Chỉ Huấn luyện viên mới được chọn chuyên môn.");
+            return [];
+        }
+        if (ids.Length == 0) throw new ValidationException("Huấn luyện viên phải có ít nhất một chuyên môn.");
+
+        var sports = await unitOfWork.Context.Sports
+            .Where(item => ids.Contains(item.Id) && (item.CenterId == null || item.CenterId == centerId)
+                && item.Status == "Active")
+            .OrderBy(item => item.Name).ToListAsync(cancellationToken);
+        if (sports.Count != ids.Length)
+            throw new ValidationException("Có chuyên môn không tồn tại, đã ngừng hoạt động hoặc không thuộc trung tâm này.");
+        return sports;
+    }
+
+    private void SetCoachSports(CoachProfile coach, IReadOnlyCollection<Sport> sports)
+    {
+        coach.Specialization = string.Join(", ", sports.Select(item => item.Name));
+        foreach (var sport in sports)
+            unitOfWork.Context.CoachSports.Add(new CoachSport { CoachId = coach.Id, SportId = sport.Id });
+    }
+
+    private static StaffResponses.CenterStaffResponse Map(StaffProfile staff, User user, string roleName, CoachProfile? coach,
+        IReadOnlyList<long>? sportIds = null) =>
         new(user.Id, staff.CenterId, staff.StaffCode, coach?.CoachCode, user.Username, user.Email, user.Phone,
             roleName, staff.FullName, user.Status, staff.HireDate, coach?.Specialization,
-            coach?.Certification, coach?.ExperienceYears, coach?.Bio);
+            coach?.Certification, coach?.ExperienceYears, coach?.Bio, sportIds ?? []);
 
     private static string MakeCode(string prefix) => $"{prefix}{Guid.NewGuid():N}"[..12].ToUpperInvariant();
     private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();
