@@ -6,6 +6,8 @@ import {
   fetchGoogleDriveStatus
 } from '../../services/cloudMediaStorage.js';
 
+const BROKEN_IMG_FALLBACK = "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='90' viewBox='0 0 120 90' fill='%23f1f5f9'%3E%3Crect width='120' height='90' fill='%23f8fafc'/%3E%3Cpath d='M40 40a8 8 0 1 0 0-16 8 8 0 0 0 0 16zm-20 30h80L75 42l-20 25-15-18-20 21z' fill='%23cbd5e1'/%3E%3C/svg%3E";
+
 /**
  * CloudMediaPickerModal: Modal Quản lý và chọn tệp Đa phương tiện Đám mây & Google Drive API
  * Tự động đồng bộ với Google Drive của quản trị viên và lưu cơ sở dữ liệu.
@@ -85,7 +87,8 @@ export function CloudMediaPickerModal({
   };
 
   const handleFileChange = async (e) => {
-    const file = e.target.files?.[0];
+    const inputEl = e.target;
+    const file = inputEl?.files?.[0];
     if (!file) return;
 
     setUploadLoading(true);
@@ -102,6 +105,9 @@ export function CloudMediaPickerModal({
       setUploadError(err.message || 'Lỗi khi tải ảnh lên máy chủ');
     } finally {
       setUploadLoading(false);
+      if (inputEl) {
+        inputEl.value = '';
+      }
     }
   };
 
@@ -361,8 +367,14 @@ export function CloudMediaPickerModal({
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
                             onError={(e) => {
-                              e.target.onerror = null;
-                              e.target.src = item.url;
+                              const img = e.currentTarget;
+                              if (img.src === BROKEN_IMG_FALLBACK) return;
+                              if (item.url && img.src !== item.url && !img.dataset.retried) {
+                                img.dataset.retried = 'true';
+                                img.src = item.url;
+                              } else {
+                                img.src = BROKEN_IMG_FALLBACK;
+                              }
                             }}
                           />
                         </div>
@@ -538,7 +550,9 @@ export function CloudMediaPickerModal({
                   alt="Xem trước ảnh"
                   className="w-full h-full object-cover"
                   onError={(e) => {
-                    e.target.onerror = null;
+                    const img = e.currentTarget;
+                    if (img.src === BROKEN_IMG_FALLBACK) return;
+                    img.src = BROKEN_IMG_FALLBACK;
                   }}
                 />
               </div>

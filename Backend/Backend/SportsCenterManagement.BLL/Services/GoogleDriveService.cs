@@ -389,26 +389,49 @@ public class GoogleDriveService
             _logger.LogError(ex, "Lỗi khi lấy danh sách file từ Google Drive API: {Message}", ex.Message);
         }
 
-        // Lấy thêm từ DB nếu có ảnh chưa nằm trong results
+        // Lấy danh sách từ DB để bổ sung các file local hoặc dọn dẹp các file Drive đã bị xóa
         var dbList = await _dbContext.UploadedMedias
             .OrderByDescending(m => m.CreatedAt)
             .ToListAsync(cancellationToken);
 
         var existingIds = results.Select(r => r.FileId).ToHashSet();
+        var staleItems = new List<UploadedMedia>();
+
         foreach (var m in dbList)
         {
-            if (!existingIds.Contains(m.DriveFileId))
+            if (m.DriveFileId != null && m.DriveFileId.StartsWith("local_"))
             {
-                results.Add(new UploadMediaResultDto(
-                    m.Id,
-                    m.DriveFileId,
-                    m.FileUrl,
-                    m.FileName,
-                    m.MimeType,
-                    m.FileSize,
-                    m.CreatedAt,
-                    m.FileUrl
-                ));
+                if (!existingIds.Contains(m.DriveFileId))
+                {
+                    results.Add(new UploadMediaResultDto(
+                        m.Id,
+                        m.DriveFileId,
+                        m.FileUrl,
+                        m.FileName,
+                        m.MimeType,
+                        m.FileSize,
+                        m.CreatedAt,
+                        m.FileUrl
+                    ));
+                }
+            }
+            else if (results.Count > 0 && !existingIds.Contains(m.DriveFileId))
+            {
+                // File này từng được lưu nhưng không còn tồn tại trên Google Drive
+                staleItems.Add(m);
+            }
+        }
+
+        if (staleItems.Count > 0)
+        {
+            try
+            {
+                _dbContext.UploadedMedias.RemoveRange(staleItems);
+                await _dbContext.SaveChangesAsync(cancellationToken);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Lỗi dọn dẹp {Count} bản ghi media đã bị xóa khỏi Google Drive: {Message}", staleItems.Count, ex.Message);
             }
         }
 
