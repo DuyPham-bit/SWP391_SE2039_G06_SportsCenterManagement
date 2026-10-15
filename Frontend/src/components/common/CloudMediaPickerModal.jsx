@@ -95,11 +95,11 @@ export function CloudMediaPickerModal({
       const result = await uploadMediaFileToCloud(file);
       setPreviewUrl(result.url);
       setFileMeta(result);
-      setUploadSuccess(`Đã tải lên Google Drive thành công: ${result.name}`);
-      // Làm mới lại danh sách Drive để ảnh mới xuất hiện ngay lập tức
+      setUploadSuccess(`Đã tải ảnh lên thành công: ${result.name}`);
+      // Làm mới lại danh sách để ảnh mới xuất hiện ngay lập tức
       loadDriveData();
     } catch (err) {
-      setUploadError(err.message || 'Lỗi khi tải ảnh lên Google Drive');
+      setUploadError(err.message || 'Lỗi khi tải ảnh lên máy chủ');
     } finally {
       setUploadLoading(false);
     }
@@ -201,8 +201,8 @@ export function CloudMediaPickerModal({
                 : 'border-transparent text-slate-600 hover:text-slate-900'
             }`}
           >
-            <span className="material-symbols-outlined text-[17px] text-blue-600">add_to_drive</span>
-            <span>Kho Ảnh Google Drive của Tôi</span>
+            <span className="material-symbols-outlined text-[17px] text-blue-600">photo_library</span>
+            <span>Kho Ảnh Đã Tải Lên</span>
             {driveFiles.length > 0 && (
               <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-red-100 text-red-700 font-bold">
                 {driveFiles.length}
@@ -273,10 +273,10 @@ export function CloudMediaPickerModal({
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-xs font-bold text-slate-700 uppercase">
-                    Ảnh đồng bộ từ Thư mục Google Drive
+                    {driveStatus?.folderId?.includes('uploads') ? 'Ảnh Lưu Trữ Máy Chủ Cục Bộ' : 'Kho Ảnh Hệ Thống'}
                   </span>
                   <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
-                    ID: 1nRmC1FaHiICnhfvfPHKGHc3iBZJLl01R
+                    {driveStatus?.folderId ? `Lưu tại: ${driveStatus.folderId}` : 'ID: 1nRmC1FaHiICnhfvfPHKGHc3iBZJLl01R'}
                   </span>
                 </div>
                 <button
@@ -284,32 +284,32 @@ export function CloudMediaPickerModal({
                   onClick={loadDriveData}
                   disabled={driveLoading}
                   className="px-3 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold flex items-center gap-1.5 transition-colors cursor-pointer"
-                  title="Làm mới danh sách từ Drive"
+                  title="Làm mới danh sách ảnh"
                 >
                   <span className={`material-symbols-outlined text-[16px] ${driveLoading ? 'animate-spin' : ''}`}>
                     sync
                   </span>
-                  <span>{driveLoading ? 'Đang tải...' : 'Làm mới Drive'}</span>
+                  <span>{driveLoading ? 'Đang tải...' : 'Làm mới'}</span>
                 </button>
               </div>
 
               {driveLoading && (
                 <div className="py-12 flex flex-col items-center justify-center text-center">
                   <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin mb-3" />
-                  <p className="text-xs font-semibold text-slate-600">Đang đồng bộ ảnh từ Google Drive API...</p>
+                  <p className="text-xs font-semibold text-slate-600">Đang tải danh sách ảnh từ máy chủ...</p>
                 </div>
               )}
 
               {!driveLoading && driveFiles.length === 0 && (
                 <div className="py-10 px-4 rounded-2xl border-2 border-dashed border-slate-200 text-center flex flex-col items-center justify-center bg-slate-50">
                   <div className="w-14 h-14 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center mb-3 shadow-inner">
-                    <span className="material-symbols-outlined text-[28px]">cloud_off</span>
+                    <span className="material-symbols-outlined text-[28px]">photo_library</span>
                   </div>
                   <h4 className="font-chivo text-sm font-bold text-slate-800 uppercase">
-                    Chưa tìm thấy ảnh trong thư mục Google Drive
+                    Chưa có ảnh nào trong kho lưu trữ
                   </h4>
                   <p className="text-xs text-slate-500 max-w-md mt-1 leading-relaxed">
-                    Bạn có thể chọn tab <b>"TẢI LÊN TỪ MÁY TÍNH"</b> để tải ảnh lên Google Drive, hoặc thêm ảnh trực tiếp vào thư mục Google Drive của bạn.
+                    Bạn có thể chọn tab <b>"TẢI LÊN TỪ MÁY TÍNH"</b> để tải ảnh lên máy chủ ngay lập tức, hoặc chọn nhanh từ Kho Mẫu Tuyển Chọn.
                   </p>
                   <div className="mt-4 flex gap-2">
                     <button
@@ -336,6 +336,7 @@ export function CloudMediaPickerModal({
                   {driveFiles.map((item) => {
                     const isSelected = previewUrl === item.url;
                     const displayThumb = item.thumbnailUrl || item.url;
+                    const isLocal = item.url?.startsWith('/uploads');
                     return (
                       <div
                         key={item.fileId || item.id}
@@ -344,7 +345,7 @@ export function CloudMediaPickerModal({
                           setFileMeta({
                             name: item.fileName,
                             size: item.fileSize ? `${Math.round(item.fileSize / 1024)} KB` : '',
-                            dimensions: 'Google Drive Direct LH3'
+                            dimensions: isLocal ? 'Local Server Media' : 'Google Drive Cloud'
                           });
                         }}
                         className={`group relative rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
@@ -360,7 +361,6 @@ export function CloudMediaPickerModal({
                             className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
                             loading="lazy"
                             onError={(e) => {
-                              // Nếu direct lh3 chưa tải được, hiển thị fallback
                               e.target.onerror = null;
                               e.target.src = item.url;
                             }}
@@ -369,7 +369,7 @@ export function CloudMediaPickerModal({
                         <div className="p-2 bg-white">
                           <span className="text-[10px] font-bold text-blue-600 block uppercase truncate flex items-center gap-1">
                             <span className="material-symbols-outlined text-[12px]">cloud_done</span>
-                            Google Drive
+                            {isLocal ? 'Máy chủ Cục bộ' : 'Google Drive'}
                           </span>
                           <p className="text-[11px] font-medium text-slate-700 truncate mt-0.5" title={item.fileName}>
                             {item.fileName}

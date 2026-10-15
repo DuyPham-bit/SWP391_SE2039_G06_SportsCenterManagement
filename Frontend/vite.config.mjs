@@ -79,6 +79,10 @@ export default defineConfig(({ mode }) => {
               }));
             });
           }
+        },
+        '/uploads': {
+          target: apiTarget,
+          changeOrigin: true
         }
       },
       open: false

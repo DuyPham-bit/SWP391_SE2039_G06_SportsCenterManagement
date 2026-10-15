@@ -83,18 +83,24 @@ public class GoogleDriveService
         }
 
         var driveService = CreateDriveService();
-        var folderId = _configuration["GoogleDrive:FolderId"];
 
+        // 1. Lấy folderId từ cấu hình, nếu null thì fallback cứng ID để không bao giờ bị lỗi quota
+        var folderId = _configuration["GoogleDrive:FolderId"];
+        if (string.IsNullOrWhiteSpace(folderId) || folderId == "YOUR_GOOGLE_DRIVE_FOLDER_ID")
+        {
+            // Điền trực tiếp ID thư mục đã share quyền Editor cho bot
+            folderId = "1nRMC1FaHiICnhfvfPHKGHc3iBZJl101R"; 
+        }
+
+        _logger.LogInformation(">>> Đang tải file lên thư mục Google Drive ID: '{FolderId}'", folderId);
+
+        // 2. Bắt buộc gán Parents vào fileMetadata
         var fileMetadata = new Google.Apis.Drive.v3.Data.File
         {
             Name = fileName,
-            MimeType = mimeType
+            MimeType = mimeType,
+            Parents = new List<string> { folderId.Trim() }
         };
-
-        if (!string.IsNullOrWhiteSpace(folderId) && folderId != "YOUR_GOOGLE_DRIVE_FOLDER_ID")
-        {
-            fileMetadata.Parents = new List<string> { folderId.Trim() };
-        }
 
         var request = driveService.Files.Create(fileMetadata, fileStream, mimeType);
         request.Fields = "id, name, mimeType, size, webViewLink, thumbnailLink";
