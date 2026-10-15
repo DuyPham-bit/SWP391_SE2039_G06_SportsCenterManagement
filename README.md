@@ -54,6 +54,7 @@ Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](./Backend/Ba
 
 - Frontend: `npm run build` trong `Frontend/`.
 - Frontend regression: `npm test` trong `Frontend/`.
+- Kiểm tra kết nối API thật và xử lý lỗi 500/proxy: [api-connection-fix.md](./Frontend/docs/api-connection-fix.md).
 - Backend: `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` từ `Backend/Backend/`.
 - Backend regression: `dotnet run --project Backend/Backend/tests/Flow2.Regression/Flow2.Regression.csproj` từ workspace root.
 - API/JWT/SQL Server/browser: `dotnet run --project Backend/Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj -- --sql --browser` từ workspace root. Cần Chrome/Edge, frontend đã build và SQL Server LocalDB; mỗi lần chạy tạo database kiểm thử riêng.

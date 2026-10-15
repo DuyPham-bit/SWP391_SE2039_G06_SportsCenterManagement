@@ -123,14 +123,16 @@ public sealed class SqlServerPersistenceTests : IAsyncLifetime
         await Request(manager, HttpMethod.Post, $"/api/centers/{centerId}/staff", new
         {
             username = "sql_coach", email = "coach.sql@example.test", password = "Coach@Password123!", fullName = "HLV SQL",
-            roleName = "Coach", phone = "0934567892", hireDate = "2026-10-01", specialization = "Bơi", experienceYears = 2
+            roleName = "Coach", phone = "0934567892", hireDate = "2026-10-01", specialization = "Bơi", experienceYears = 2,
+            sportIds = new[] { sportId }
         }, HttpStatusCode.Created);
         long staffId;
         await using (var db = OpenDatabase()) staffId = await db.Users.Where(item => item.Email == "coach.sql@example.test").Select(item => item.Id).SingleAsync();
         await Request(manager, HttpMethod.Patch, $"/api/centers/{centerId}/staff/{staffId}", new
         {
             fullName = "HLV đã sửa SQL", email = "coach.edited@example.test", phone = "0934567892", status = "Active",
-            roleName = "Coach", specialization = "Gym", certification = "Chứng nhận SQL", experienceYears = 4, bio = "Hồ sơ SQL"
+            roleName = "Coach", specialization = "Gym", certification = "Chứng nhận SQL", experienceYears = 4, bio = "Hồ sơ SQL",
+            sportIds = new[] { sportId }
         });
         await using (var db = OpenDatabase())
         {
@@ -169,6 +171,63 @@ public sealed class SqlServerPersistenceTests : IAsyncLifetime
             Assert.Equal("Lớp sửa SQL", (await db.Classes.SingleAsync(item => item.Id == classId)).Name);
             Assert.Equal("InProgress", (await db.SupportRequests.SingleAsync(item => item.Id == supportId)).Status);
             Assert.Equal("coach.edited@example.test", (await db.Users.SingleAsync(item => item.Id == staffId)).Email);
+        }
+    }
+
+    [SqlServerFact]
+    public async Task FourOperationalRolesCanLoadTheirFrontendApiDataFromSqlServer()
+    {
+        using var client = application!.CreateClient();
+        long centerId;
+        await using (var db = OpenDatabase()) centerId = await db.Centers.Select(center => center.Id).FirstAsync();
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)).ToString("yyyy-MM-dd");
+        var query = $"from={today}&to={today}&groupBy=day&centerId={centerId}";
+        var center = $"/api/centers/{centerId}";
+        var accounts = new[]
+        {
+            (Role: "MANAGER", Email: "manager01@sportscenter.vn", Password: "Manager@123456"),
+            (Role: "RECEPTIONIST", Email: "reception01@sportscenter.vn", Password: "Reception@123456"),
+            (Role: "COACH", Email: "coach01@sportscenter.vn", Password: "Coach@123456"),
+            (Role: "MEMBER", Email: "member01@sportscenter.vn", Password: "Member@123456")
+        };
+
+        foreach (var account in accounts)
+        {
+            await Login(client, account.Email, account.Password);
+            var endpoints = new List<string>
+            {
+                "/api/profile/me", "/api/access/me/capabilities", "/api/notifications/me",
+                $"{center}/membership-packages{(account.Role == "MANAGER" ? "/all" : "")}",
+            };
+            if (account.Role == "MANAGER")
+            {
+                endpoints.AddRange(new[]
+                {
+                    $"{center}/members", $"{center}/staff", $"{center}/classes/all", $"{center}/rooms",
+                    $"{center}/sports", $"{center}/sports/all", $"{center}/coaches",
+                    $"/api/reports/revenue?{query}", $"/api/reports/revenue-by-sport?{query}",
+                    $"/api/reports/membership?{query}", $"/api/reports/classes?{query}",
+                    $"/api/reports/checkins?{query}",
+                    $"{center}/audit-logs", $"{center}/roles"
+                });
+            }
+            if (account.Role == "RECEPTIONIST") endpoints.AddRange(new[]
+            {
+                $"{center}/members?query=member", $"{center}/invoices", $"{center}/support-requests",
+                $"{center}/checkins/today", $"{center}/checkins/summary", $"/api/class-sessions?{query}"
+            });
+            if (account.Role == "COACH") endpoints.AddRange(new[]
+            {
+                "/api/coaches/me/classes", $"/api/coaches/me/teaching-schedule?{query}",
+                "/api/coaches/me/training-plans", "/api/coaches/me/progress", "/api/coaches/me/notifications"
+            });
+            if (account.Role == "MEMBER") endpoints.AddRange(new[]
+            {
+                "/api/members/me", $"/api/class-sessions?{query}", "/api/members/me/session-bookings",
+                "/api/members/me/session-waitlist", "/api/members/me/progress", "/api/members/me/training-plans",
+                "/api/payments/my-pending-invoices"
+            });
+            foreach (var endpoint in endpoints) await Request(client, HttpMethod.Get, endpoint);
         }
     }
 
