@@ -44,6 +44,16 @@ export const SYSTEM_CAPABILITIES = [
     defaultRole: 'MANAGER'
   },
   {
+    id: 'manage_landing_content',
+    label: 'QUẢN LÝ NỘI DUNG TRANG CHỦ & ĐA PHƯƠNG TIỆN',
+    desc: 'Tùy biến nội dung landing page, môn học, cụm sân bãi và hình ảnh đám mây',
+    path: '#/manager/home-content',
+    icon: 'dashboard_customize',
+    category: 'VẬN HÀNH & NHÂN SỰ',
+    targetScreenName: 'QUẢN LÝ NỘI DUNG TRANG CHỦ & ĐA PHƯƠNG TIỆN',
+    defaultRole: 'MANAGER'
+  },
+  {
     id: 'view_reports',
     label: 'Báo cáo Thống kê',
     desc: 'Xem biểu đồ doanh thu và công suất khai thác sân bãi',
@@ -286,6 +296,7 @@ export function getDynamicNavItems(role) {
       if (perms.includes('manage_packages')) items.push({ path: '#/manager/packages', icon: 'card_membership', label: 'Gói Tập Hội Viên' });
       if (perms.includes('manage_classes')) items.push({ path: '#/manager/classes-rooms', icon: 'sports_score', label: 'Lớp, Bộ Môn & Phòng' });
       if (perms.includes('assign_coach')) items.push({ path: '#/manager/coach-assignment', icon: 'assignment_ind', label: 'Phân Công HLV' });
+      items.push({ path: '#/manager/home-content', icon: 'dashboard_customize', label: 'QUẢN LÝ NỘI DUNG TRANG CHỦ & ĐA PHƯƠNG TIỆN' });
 
       items.push({ label: 'BÁO CÁO & BẢO MẬT', isHeader: true });
       if (perms.includes('view_reports')) items.push({ path: '#/manager/reports', icon: 'analytics', label: 'Báo Cáo & Thống Kê' });

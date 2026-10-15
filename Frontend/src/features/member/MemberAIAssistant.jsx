@@ -301,7 +301,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               Trợ Lý Thể Thao AI Độc Quyền
             </h1>
             <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-              Cố vấn bài tập cá nhân hóa, gợi ý dinh dưỡng vận động và giải đáp thông tin lịch biểu, phòng tập 24/7.
+              Hỏi lịch lớp theo ngày, giá gói tập, sân/phòng, giờ mở cửa và liên hệ trung tâm 24/7. Gợi ý bài tập cần được HLV xem xét trước khi áp dụng.
             </p>
           </div>
 
@@ -521,7 +521,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                 ref={inputRef}
                 type="text"
                 aria-label="Câu hỏi cho trợ lý AI"
-                placeholder="Hỏi về lịch tập, giáo án tăng cơ, thực đơn thể thao hoặc dịch vụ..."
+                placeholder="Ví dụ: Ngày mai có lớp gì? Giá gói tập? Trung tâm mở cửa lúc mấy giờ?..."
                 value={inputQuestion}
                 onChange={(e) => setInputQuestion(e.target.value)}
                 disabled={isAsking}

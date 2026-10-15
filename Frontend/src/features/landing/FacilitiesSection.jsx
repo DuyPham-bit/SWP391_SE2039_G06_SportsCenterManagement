@@ -1,239 +1,31 @@
-const { useState, useMemo, useEffect } = React;
+import React, { useState, useMemo, useEffect } from 'react';
+import { getLandingContent, LANDING_CONTENT_CHANGE_EVENT } from '../../services/landingContentService.js';
+import { SCMS_FACILITIES } from '../../services/facilitiesCatalog.js';
 
-export const SCMS_FACILITIES = [
-  {
-    id: 'room-01',
-    name: 'Bể Bơi 4 Mùa Nước Ấm 25m',
-    category: 'aquatics',
-    categoryName: 'Bơi lội',
-    location: 'Khu A • Tầng 1',
-    zone: 'Khu A',
-    capacity: '25 - 35 người/ca',
-    openHours: '06:00 - 21:00 hàng ngày',
-    priceRate: 'Từ 50.000đ/lượt • 250.000đ/làn/giờ',
-    badge: 'Nước Ấm 4 Mùa',
-    badgeColor: 'bg-cyan-600',
-    image: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1530549387789-4c1017266635?q=80&w=800&auto=format&fit=crop',
-    highlights: 'Bể bơi 25m tiêu chuẩn tập luyện • Nước ấm quanh năm • Cứu hộ túc trực liên tục',
-    description: 'Bể bơi trong nhà kích thước 25m x 12.5m với 5 làn bơi riêng biệt, độ sâu an toàn từ 1.2m đến 1.8m. Hệ thống lọc nước tuần hoàn khử khuẩn sạch sẽ mỗi ngày, nước ấm ổn định phù hợp cho việc học bơi và rèn luyện thể lực quanh năm cho cả người lớn lẫn trẻ em.',
-    specs: [
-      { label: 'Quy cách hồ', value: '25m x 12.5m (5 làn bơi)' },
-      { label: 'Độ sâu an toàn', value: '1.2m - 1.8m tiện tập luyện' },
-      { label: 'Hệ thống nước', value: 'Lọc tuần hoàn & Gia nhiệt 4 mùa' },
-      { label: 'Khung giờ mở', value: '06:00 - 21:00 hàng ngày' }
-    ],
-    amenities: ['Phòng thay đồ & tắm tráng nóng lạnh', 'Tủ để đồ cá nhân có chìa khóa', 'Phao bơi & áo phao mượn miễn phí', 'Nhân viên cứu hộ quan sát thường trực'],
-    tags: ['Bơi lội phong trào', 'Lớp học bơi cơ bản', 'Rèn luyện sức khỏe']
-  },
-  {
-    id: 'room-02',
-    name: 'Sân Bóng Đá Cỏ Nhân Tạo (Sân 5 & Sân 7)',
-    category: 'team-sports',
-    categoryName: 'Sân bóng & Vợt',
-    location: 'Khu Ngoài trời',
-    zone: 'Ngoài trời',
-    capacity: '10 - 20 cầu thủ/sân',
-    openHours: '06:00 - 22:30 hàng ngày',
-    priceRate: 'Từ 180.000đ - 350.000đ/giờ',
-    badge: 'Cỏ Nhân Tạo Tiêu Chuẩn',
-    badgeColor: 'bg-emerald-600',
-    image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=800&auto=format&fit=crop',
-    highlights: 'Mặt cỏ nhân tạo êm chân • Dàn đèn LED chiếu sáng ban đêm • Lưới bao sân an toàn',
-    description: 'Cụm sân bóng đá cỏ nhân tạo ngoài trời gồm các sân 5 người và có thể ghép thành sân 7 người. Mặt cỏ dày, rải hạt cao su đàn hồi giảm chấn động cho khớp gối và cổ chân. Hệ thống thoát nước nhanh chóng giúp sân luôn khô ráo sau mưa.',
-    specs: [
-      { label: 'Quy cách sân', value: '2 sân 5 hoặc ghép thành 1 sân 7' },
-      { label: 'Mặt cỏ', value: 'Cỏ nhân tạo chuyên dụng rải hạt cao su' },
-      { label: 'Chiếu sáng', value: 'Dàn đèn LED cao áp rõ nét ban đêm' },
-      { label: 'Bao quanh', value: 'Lưới chắn bóng cao 6m chắc chắn' }
-    ],
-    amenities: ['Ghế ngồi chờ có mái che bên sân', 'Phòng thay đồ & vệ sinh sạch sẽ', 'Cho mượn áo bib phân đội & bóng tập', 'Quầy nước giải khát tiện lợi'],
-    tags: ['Bóng đá phong trào', 'Giao lưu đội nhóm', 'Thi đấu giao hữu']
-  },
-  {
-    id: 'room-03',
-    name: 'Cụm Sân Cầu Lông Thảm Chống Trượt',
-    category: 'team-sports',
-    categoryName: 'Sân bóng & Vợt',
-    location: 'Khu B • Tầng 2',
-    zone: 'Khu B',
-    capacity: '16 - 24 người chơi',
-    openHours: '06:00 - 22:00 hàng ngày',
-    priceRate: 'Từ 60.000đ - 100.000đ/giờ/sân',
-    badge: 'Thảm Chuyên Dụng',
-    badgeColor: 'bg-blue-600',
-    image: 'https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=800&auto=format&fit=crop',
-    highlights: 'Thảm cao su chống trơn trượt • Đèn LED góc xiên không lóa mắt • Không gian thoáng mát',
-    description: 'Khu vực gồm 4 sân cầu lông tiêu chuẩn trong nhà, mặt sàn trải thảm cao su chuyên dụng bám giày và giảm chấn êm ái. Hệ thống đèn chiếu sáng bố trí góc chếch hạn chế chói mắt khi ngửa đầu đón cầu, thông gió tự nhiên không tạo gió xoáy làm bạt cầu.',
-    specs: [
-      { label: 'Quy mô cụm sân', value: '4 sân cầu lông trong nhà' },
-      { label: 'Mặt sàn', value: 'Thảm cao su PVC vân chống trượt' },
-      { label: 'Độ cao trần', value: '8m thoáng mát, không gió tạt' },
-      { label: 'Ánh sáng', value: 'Đèn LED chống chói mắt người chơi' }
-    ],
-    amenities: ['Ghế nghỉ có quạt gió mát mẻ', 'Dịch vụ căng cước và bán cầu tại quầy', 'Tủ cất balo và giày thể thao', 'Bình nước lọc phục vụ miễn phí'],
-    tags: ['Cầu lông phong trào', 'Giao lưu câu lạc bộ', 'Rèn luyện phản xạ']
-  },
-  {
-    id: 'room-04',
-    name: 'Khu Bóng Bàn Trong Nhà',
-    category: 'team-sports',
-    categoryName: 'Sân bóng & Vợt',
-    location: 'Khu B • Tầng 3',
-    zone: 'Khu B',
-    capacity: '8 - 16 người chơi',
-    openHours: '06:00 - 22:00 hàng ngày',
-    priceRate: 'Từ 40.000đ - 70.000đ/giờ/bàn',
-    badge: 'Bàn Tập Chuyên Dụng',
-    badgeColor: 'bg-purple-600',
-    image: 'https://images.unsplash.com/photo-1708268411988-d30e0e1eef0c?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1621726543096-a8be76db3708?q=80&w=800&auto=format&fit=crop',
-    highlights: '4 bàn bóng bàn chuyên dụng • Lưới và vợt tập đầy đủ • Đèn chiếu sáng đều, hạn chế chói',
-    description: 'Khu bóng bàn trong nhà gồm 4 bàn tập, bố trí khoảng trống quanh bàn để di chuyển và luyện kỹ thuật an toàn. Mặt sàn chống trượt, ánh sáng đều và thông gió nhẹ phù hợp cho các lớp bóng bàn cơ bản, luyện đánh đơn, đánh đôi và giao lưu câu lạc bộ.',
-    specs: [
-      { label: 'Quy mô', value: '4 bàn bóng bàn trong nhà' },
-      { label: 'Kích thước bàn', value: '2.74m x 1.525m, cao 0.76m' },
-      { label: 'Mặt sàn', value: 'Sàn thể thao chống trượt, có khoảng trống di chuyển' },
-      { label: 'Thiết bị tập', value: 'Lưới, vợt, bóng tập và bảng điểm' }
-    ],
-    amenities: ['Cho mượn vợt và bóng tập cơ bản', 'Ghế nghỉ giữa các lượt chơi', 'Tủ cất đồ cá nhân', 'Bình nước lọc phục vụ miễn phí'],
-    tags: ['Bóng bàn cơ bản', 'Đánh đơn & Đánh đôi', 'Giao lưu câu lạc bộ']
-  },
-  {
-    id: 'room-05',
-    name: 'Sân Bóng Rổ Tiêu Chuẩn Phong Trào',
-    category: 'team-sports',
-    categoryName: 'Sân bóng & Vợt',
-    location: 'Khu B • Tầng 1',
-    zone: 'Khu B',
-    capacity: '15 - 20 người chơi',
-    openHours: '06:00 - 22:00 hàng ngày',
-    priceRate: 'Từ 80.000đ/nửa sân • 180.000đ/trọn sân/giờ',
-    badge: 'Sân Tiêu Chuẩn',
-    badgeColor: 'bg-amber-600',
-    image: 'https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=800&auto=format&fit=crop',
-    highlights: 'Mặt sân sơn thể thao chống trơn • Trụ rổ kiên cố bảng kính cường lực • Mái che râm mát',
-    description: 'Sân bóng rổ trong nhà có mái che, mặt sân sơn phủ thể thao chống trơn trượt và vạch kẻ chuẩn xác. Trụ rổ chắc chắn, bảng rổ kính cường lực có độ nảy bóng tốt, tạo không gian năng động cho các bạn học sinh, sinh viên và hội nhóm giao lưu cuối tuần.',
-    specs: [
-      { label: 'Quy cách', value: '1 sân thi đấu chính hoặc 2 nửa sân tập' },
-      { label: 'Mặt sân', value: 'Sơn phủ thể thao Acrylic chống mài mòn' },
-      { label: 'Bảng rổ', value: 'Kính cường lực kèm vành lò xo bền bỉ' },
-      { label: 'Chỗ ngồi', value: 'Băng ghế nghỉ bên sân thoáng mát' }
-    ],
-    amenities: ['Bảng lật điểm số tay', 'Cho mượn bóng tập luyện cơ bản', 'Quạt công nghiệp làm mát', 'Khu vệ sinh và rửa tay gần sân'],
-    tags: ['Bóng rổ học sinh sinh viên', 'Giao lưu cuối tuần', 'Rèn luyện sức bật']
-  },
-  {
-    id: 'room-06',
-    name: 'Cụm Sân Pickleball Ngoài Trời',
-    category: 'team-sports',
-    categoryName: 'Sân bóng & Vợt',
-    location: 'Khu Ngoài trời',
-    zone: 'Ngoài trời',
-    capacity: '8 - 16 người chơi',
-    openHours: '05:30 - 22:00 hàng ngày',
-    priceRate: 'Từ 50.000đ - 90.000đ/giờ/sân',
-    badge: 'Sân Sơn Đạt Chuẩn',
-    badgeColor: 'bg-teal-600',
-    image: 'https://images.unsplash.com/photo-1693142517898-2f986215e412?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1753901821774-22a88913130f?q=80&w=800&auto=format&fit=crop',
-    highlights: 'Mặt sân cứng phẳng đẹp • Lưới căng đúng kích thước • Đèn chiếu sáng phục vụ chơi tối',
-    description: 'Cụm 4 sân Pickleball ngoài trời dành cho các lớp nhập môn, luyện đánh đơn, đánh đôi và giao lưu phong trào. Mặt sân phủ sơn thể thao chống trượt, có vạch khu vực bếp rõ ràng và lưới riêng cho từng sân. Hệ thống đèn LED và rào chắn bóng hỗ trợ tập luyện thuận tiện vào buổi tối.',
-    specs: [
-      { label: 'Quy mô', value: '4 sân Pickleball, mỗi sân 6.1m x 13.41m' },
-      { label: 'Mặt sàn', value: 'Sơn Acrylic chống trượt, vạch khu vực bếp rõ ràng' },
-      { label: 'Hệ thống đèn', value: 'Đèn pha LED chiếu sáng ban đêm' },
-      { label: 'Rào chắn', value: 'Lưới thép bọc nhựa bảo vệ quanh sân' }
-    ],
-    amenities: ['Ghế ngồi nghỉ có ô che nắng', 'Dịch vụ cho thuê vợt và bóng tập', 'Bình nước uống mát phục vụ người chơi', 'Bãi đỗ xe rộng rãi ngay cạnh sân'],
-    tags: ['Pickleball cơ bản', 'Đánh đơn & Đánh đôi', 'Rèn luyện phản xạ']
-  },
-  {
-    id: 'room-07',
-    name: 'Phòng Tập Võ Thuật & Boxing',
-    category: 'combat-studio',
-    categoryName: 'Võ thuật & Boxing',
-    location: 'Khu C • Tầng 1',
-    zone: 'Khu C',
-    capacity: '15 - 25 võ sinh/ca',
-    openHours: '06:00 - 21:30 hàng ngày',
-    priceRate: 'Theo khóa học từ 300.000đ/tháng hoặc thuê sàn từ 150.000đ/giờ',
-    badge: 'Sàn Thảm An Toàn',
-    badgeColor: 'bg-red-700',
-    image: 'https://images.unsplash.com/photo-1517438322307-e67111335449?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=800&auto=format&fit=crop',
-    highlights: 'Thảm xốp ghép êm ái • Dàn bao cát tập đấm đá • Dụng cụ bảo hộ tập luyện cơ bản',
-    description: 'Phòng tập võ thuật sạch sẽ, thoáng mát dành cho các câu lạc bộ Taekwondo, Karate, Vovinam, Boxing và các lớp kỹ năng tự vệ. Mặt sàn trải thảm xốp ghép thể thao êm ái, giảm chấn va đập, trang bị bao đấm và đích đá cơ bản giúp võ sinh an tâm rèn luyện.',
-    specs: [
-      { label: 'Diện tích', value: '90m² mặt sàn thông thoáng' },
-      { label: 'Thảm sàn', value: 'Thảm xốp ghép mút EVA dày 3cm chống trơn' },
-      { label: 'Dàn bao cát', value: '4 - 6 bao đấm treo kiên cố' },
-      { label: 'Dụng cụ tập', value: 'Đích đấm, đích đá, găng tay cơ bản' }
-    ],
-    amenities: ['Tủ cất đồ võ phục và dụng cụ cá nhân', 'Gương dán tường hỗ trợ chỉnh đòn thế', 'Quạt gió công nghiệp thoáng đãng', 'Tủ thuốc y tế và băng gạc sơ cứu cơ bản'],
-    tags: ['Taekwondo & Karate', 'Boxing căn bản', 'Tự vệ & Rèn luyện tính kỷ luật']
-  },
-  {
-    id: 'room-08',
-    name: 'Phòng Tập Gym & Fitness',
-    category: 'fitness',
-    categoryName: 'Gym, Yoga & Pilates',
-    location: 'Khu A • Tầng 2',
-    zone: 'Khu A',
-    capacity: '30 - 45 hội viên cùng lúc',
-    openHours: '05:30 - 21:30 hàng ngày',
-    priceRate: 'Vé ngày 30.000đ • Vé tháng từ 250.000đ - 350.000đ/tháng',
-    badge: 'Máy Tập Đầy Đủ',
-    badgeColor: 'bg-orange-600',
-    image: 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=800&auto=format&fit=crop',
-    highlights: 'Đầy đủ máy Cardio & máy khối kháng lực • Dàn tạ đơn đa dạng cân nặng • Không gian sạch sẽ',
-    description: 'Phòng tập thể hình trang bị đầy đủ máy chạy bộ, xe đạp tập, máy ép ngực, kéo xô và các dàn tạ tay từ nhẹ đến nặng. Không gian tập luyện hòa đồng, thân thiện, có nhân viên túc trực hỗ trợ hướng dẫn cơ bản cho người mới bắt đầu.',
-    specs: [
-      { label: 'Diện tích', value: 'Khoảng 250m² chia khu hợp lý' },
-      { label: 'Máy Cardio', value: 'Máy chạy bộ điện & xe đạp tập thể lực' },
-      { label: 'Khu tạ tự do', value: 'Tạ tay cao su từ 2kg đến 35kg, đòn tạ dài' },
-      { label: 'Giàn máy khối', value: 'Máy ép ngực, kéo xô, đạp đùi đa năng' }
-    ],
-    amenities: ['Tủ gửi đồ có khóa an toàn', 'Cân sức khỏe và thước đo chiều cao', 'Phòng tắm và thay đồ riêng biệt', 'Quạt gió và điều hòa thông thoáng'],
-    tags: ['Tập Gym tăng cơ giảm mỡ', 'Cardio rèn luyện tim mạch', 'Rèn luyện sức bền hàng ngày']
-  },
-  {
-    id: 'room-09',
-    name: 'Phòng Tập Yoga & Pilates',
-    category: 'fitness',
-    categoryName: 'Gym, Yoga & Pilates',
-    location: 'Khu C • Tầng 3',
-    zone: 'Khu C',
-    capacity: '15 - 20 học viên/lớp',
-    openHours: '06:00 - 21:00 hàng ngày',
-    priceRate: 'Từ 50.000đ/buổi • Gói tháng từ 350.000đ/tháng',
-    badge: 'Thư Giãn & Tĩnh Tâm',
-    badgeColor: 'bg-emerald-700',
-    image: 'https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=1200&auto=format&fit=crop',
-    secondaryImage: 'https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800&auto=format&fit=crop',
-    highlights: 'Không gian yên tĩnh • Khu thảm Yoga & Pilates Mat • Máy Reformer tập theo nhóm nhỏ',
-    description: 'Phòng tập Yoga & Pilates có khu thảm cho các bài tập thở, kéo giãn, thăng bằng và Pilates Mat, cùng khu máy Reformer dành cho nhóm nhỏ theo lịch hướng dẫn. Trang bị thảm tập, gạch Yoga, dây đai, vòng Pilates và bóng tập hỗ trợ học viên rèn luyện sự dẻo dai, sức mạnh cơ trung tâm và kiểm soát tư thế.',
-    specs: [
-      { label: 'Không gian', value: 'Yên tĩnh, thoáng mát, sàn lót gỗ sạch sẽ' },
-      { label: 'Khu thảm', value: 'Thảm Yoga TPE và thảm Pilates Mat bám sàn tốt' },
-      { label: 'Khu Pilates Reformer', value: '4 máy Reformer cho lớp nhóm nhỏ theo lịch' },
-      { label: 'Dụng cụ hỗ trợ', value: 'Gạch Yoga, dây đai, vòng Pilates và bóng tập' }
-    ],
-    amenities: ['Bình nước uống lọc miễn phí', 'Giá cất thảm và tủ để đồ cá nhân', 'Phòng thay đồ lịch sự', 'Có mở các lớp cơ bản cho người mới'],
-    tags: ['Yoga cơ bản', 'Pilates Mat & Reformer', 'Kéo giãn & Cân bằng tư thế']
-  }
-];
+export { SCMS_FACILITIES };
 
 export function FacilitiesSection({ externalFacility = null, onModalClose = null } = {}) {
+  const [landingContent, setLandingContent] = useState(() => getLandingContent());
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [activeModalTab, setActiveModalTab] = useState('booking'); // 'booking' | 'specs' | 'photos'
   const [bookingType, setBookingType] = useState('rent'); // 'rent' (thuê sân) | 'tour' (tham quan trải nghiệm)
+
+  useEffect(() => {
+    const handleSync = (e) => {
+      if (e.detail) setLandingContent(e.detail);
+      else setLandingContent(getLandingContent());
+    };
+    window.addEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
+    return () => window.removeEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
+  }, []);
+
+  const facilitiesList = landingContent.facilitiesSection?.facilitiesList || SCMS_FACILITIES;
+  // Lọc chỉ những cụm sân có isVisible !== false (manager chủ động ẩn/hiện)
+  const visibleFacilities = useMemo(() => {
+    return facilitiesList.filter(f => f.isVisible !== false);
+  }, [facilitiesList]);
   
   // Booking Form State
   const [formState, setFormState] = useState({
@@ -250,25 +42,25 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [submitted, setSubmitted] = useState(false);
   const [showFacilityPicker, setShowFacilityPicker] = useState(false);
 
-  const categories = [
-    { id: 'all', label: `Tất cả (${SCMS_FACILITIES.length} cụm sân)`, icon: 'grid_view' },
+  const categories = useMemo(() => [
+    { id: 'all', label: `Tất cả (${visibleFacilities.length} cụm sân)`, icon: 'grid_view' },
     { id: 'team-sports', label: 'Sân bóng & Vợt', icon: 'sports_soccer' },
     { id: 'aquatics', label: 'Bơi lội', icon: 'pool' },
     { id: 'fitness', label: 'Gym, Yoga & Pilates', icon: 'fitness_center' },
     { id: 'combat-studio', label: 'Võ thuật & Boxing', icon: 'sports_mma' }
-  ];
+  ], [visibleFacilities.length]);
 
   const filteredFacilities = useMemo(() => {
-    return SCMS_FACILITIES.filter(fac => {
+    return visibleFacilities.filter(fac => {
       const matchCat = activeCategory === 'all' || fac.category === activeCategory;
       const matchSearch = !searchQuery.trim() || 
         fac.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         fac.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        fac.highlights.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        fac.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+        (fac.highlights && fac.highlights.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (fac.tags && Array.isArray(fac.tags) && fac.tags.some(t => t.toLowerCase().includes(searchQuery.toLowerCase())));
       return matchCat && matchSearch;
     });
-  }, [activeCategory, searchQuery]);
+  }, [visibleFacilities, activeCategory, searchQuery]);
 
   const handleOpenModal = (facility, initialTab = 'rent') => {
     setSelectedFacility(facility);
@@ -347,57 +139,44 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         <div className="text-center max-w-3xl mx-auto mb-12">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-chivo font-black uppercase tracking-widest mb-4">
             <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
-            HẠ TẦNG THỂ THAO TIÊU CHUẨN
+            {landingContent.facilitiesSection?.badge || 'HẠ TẦNG THỂ THAO TIÊU CHUẨN'}
           </div>
           <h2 className="font-chivo text-3xl sm:text-4xl lg:text-5xl font-black uppercase text-slate-900 tracking-tight leading-tight">
-            HỆ THỐNG CƠ SỞ VẬT CHẤT <span className="text-red-600">TIỆN NGHI &amp; CHẤT LƯỢNG</span>
+            {landingContent.facilitiesSection?.title || 'HỆ THỐNG CƠ SỞ VẬT CHẤT TIỆN NGHI & CHẤT LƯỢNG'}
           </h2>
           <p className="font-inter text-slate-600 text-sm sm:text-base mt-4 leading-relaxed">
-            Khu liên hợp thể thao rộng rãi, sạch đẹp với {SCMS_FACILITIES.length} cụm sân bãi và phòng tập dành cho bơi lội, Gym &amp; Fitness, Yoga &amp; Pilates, Võ thuật &amp; Boxing, bóng đá, cầu lông, bóng rổ, bóng bàn và Pickleball. Phục vụ nhu cầu học tập, rèn luyện sức khỏe, sinh hoạt câu lạc bộ và thi đấu phong trào.
+            {landingContent.facilitiesSection?.description || `Khu liên hợp thể thao rộng rãi, sạch đẹp với ${visibleFacilities.length} cụm sân bãi và phòng tập dành cho các bộ môn chuẩn Olympic.`}
           </p>
         </div>
 
-        {/* 4 CORE HIGHLIGHT METRICS (CON SỐ THỰC TẾ CẤP TRUNG) */}
+        {/* 4 CORE HIGHLIGHT METRICS (CON SỐ THỰC TẾ ĐỘNG TỪ MANAGER) */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-12">
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group">
-            <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-[28px]">domain</span>
-            </div>
-            <div>
-              <div className="font-chivo text-2xl sm:text-3xl font-black text-slate-900">3.500m²</div>
-              <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Tổng diện tích mặt sàn</div>
-            </div>
-          </div>
+          {(landingContent.facilitiesSection?.metrics || [
+            { icon: 'domain', value: '3.500m²', label: 'Tổng diện tích mặt sàn' },
+            { icon: 'verified', value: `${visibleFacilities.length} Khu Vực`, label: 'Đa dạng môn tập luyện' },
+            { icon: 'groups', value: '600+', label: 'Lượt tập luyện/ngày' },
+            { icon: 'cleaning_services', value: '100%', label: 'Vệ sinh & Bảo trì định kỳ' }
+          ]).map((metric, idx) => {
+            const colors = [
+              { bg: 'bg-red-50', text: 'text-red-600' },
+              { bg: 'bg-blue-50', text: 'text-blue-600' },
+              { bg: 'bg-emerald-50', text: 'text-emerald-600' },
+              { bg: 'bg-amber-50', text: 'text-amber-600' }
+            ];
+            const color = colors[idx % colors.length];
 
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group">
-            <div className="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-[28px]">verified</span>
-            </div>
-            <div>
-              <div className="font-chivo text-2xl sm:text-3xl font-black text-slate-900">{SCMS_FACILITIES.length} Khu Vực</div>
-              <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Đa dạng môn tập luyện</div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group">
-            <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-[28px]">groups</span>
-            </div>
-            <div>
-              <div className="font-chivo text-2xl sm:text-3xl font-black text-slate-900">600+</div>
-              <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Lượt tập luyện/ngày</div>
-            </div>
-          </div>
-
-          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group">
-            <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-              <span className="material-symbols-outlined text-[28px]">cleaning_services</span>
-            </div>
-            <div>
-              <div className="font-chivo text-2xl sm:text-3xl font-black text-slate-900">100%</div>
-              <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">Vệ sinh &amp; Bảo trì định kỳ</div>
-            </div>
-          </div>
+            return (
+              <div key={metric.id || idx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group">
+                <div className={`w-12 h-12 rounded-xl ${color.bg} ${color.text} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
+                  <span className="material-symbols-outlined text-[28px]">{metric.icon || 'domain'}</span>
+                </div>
+                <div>
+                  <div className="font-chivo text-2xl sm:text-3xl font-black text-slate-900">{metric.value}</div>
+                  <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">{metric.label}</div>
+                </div>
+              </div>
+            );
+          })}
         </div>
 
         {/* SEARCH & CATEGORY FILTER BAR */}
@@ -579,85 +358,75 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-5">
               <span className="text-red-500 font-chivo text-xs font-black uppercase tracking-widest block mb-2">
-                BỐ TRÍ KHÔNG GIAN THUẬN TIỆN
+                {landingContent.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN'}
               </span>
               <h3 className="font-chivo text-2xl sm:text-3xl font-black uppercase text-white leading-tight">
-                SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN
+                {landingContent.zonesLayout?.title || 'SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN'}
               </h3>
               <p className="text-slate-300 text-xs sm:text-sm mt-3 leading-relaxed">
-                {SCMS_FACILITIES.length} cụm sân bãi và phòng tập được quy hoạch gọn gàng, lối đi thông thoáng, biển báo chỉ dẫn rõ ràng. Hệ thống quầy lễ tân tiếp đón chu đáo và hỗ trợ đặt sân nhanh chóng trực tiếp hoặc online.
+                {landingContent.zonesLayout?.description || `${visibleFacilities.length} cụm sân bãi và phòng tập được quy hoạch gọn gàng, lối đi thông thoáng, biển báo chỉ dẫn rõ ràng.`}
               </p>
 
-              {/* 4 Added Service Amenities */}
+              {/* Added Service Amenities */}
               <div className="mt-6 space-y-3">
-                <div className="flex items-center gap-3 text-xs text-slate-300">
-                  <span className="material-symbols-outlined text-red-500 text-[20px]">badge</span>
-                  <span>Tủ cất đồ cá nhân có chìa khóa an toàn, thuận tiện sử dụng</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-slate-300">
-                  <span className="material-symbols-outlined text-red-500 text-[20px]">shower</span>
-                  <span>Phòng thay đồ và khu vực tắm tráng nóng lạnh sạch sẽ</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-slate-300">
-                  <span className="material-symbols-outlined text-red-500 text-[20px]">local_cafe</span>
-                  <span>Quầy căn-tin nước giải khát, nước khoáng phục vụ nhanh</span>
-                </div>
-                <div className="flex items-center gap-3 text-xs text-slate-300">
-                  <span className="material-symbols-outlined text-red-500 text-[20px]">medical_services</span>
-                  <span>Tủ thuốc y tế và dụng cụ sơ cứu ban đầu luôn sẵn sàng</span>
-                </div>
+                {(landingContent.zonesLayout?.serviceAmenities || [
+                  { icon: 'badge', text: 'Tủ cất đồ cá nhân có chìa khóa an toàn, thuận tiện sử dụng' },
+                  { icon: 'shower', text: 'Phòng thay đồ và khu vực tắm tráng nóng lạnh sạch sẽ' },
+                  { icon: 'local_cafe', text: 'Quầy căn-tin nước giải khát, nước khoáng phục vụ nhanh' },
+                  { icon: 'medical_services', text: 'Tủ thuốc y tế và dụng cụ sơ cứu ban đầu luôn sẵn sàng' }
+                ]).map((amenity, idx) => (
+                  <div key={amenity.id || idx} className="flex items-center gap-3 text-xs text-slate-300">
+                    <span className="material-symbols-outlined text-red-500 text-[20px]">{amenity.icon}</span>
+                    <span>{amenity.text}</span>
+                  </div>
+                ))}
               </div>
             </div>
 
             {/* 4 Zones Map Columns */}
             <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-red-500/50 transition-colors">
-                <div className="flex items-center gap-2 text-red-400 font-chivo text-xs font-bold uppercase mb-1.5">
-                  <span className="material-symbols-outlined text-[18px]">pool</span>
-                  <span>Khu A: Bơi Lội, Gym &amp; Fitness</span>
+              {(landingContent.zonesLayout?.zones || [
+                {
+                  id: 'zone-a',
+                  name: 'Khu A: Bơi Lội, Gym & Fitness',
+                  icon: 'pool',
+                  color: 'text-red-400',
+                  items: ['Tầng 1: Bể bơi 4 mùa 25m trong nhà nước ấm', 'Tầng 2: Phòng tập Gym & Fitness', 'Tầng 3: Khu thay đồ & tắm tráng nóng lạnh']
+                },
+                {
+                  id: 'zone-b',
+                  name: 'Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn',
+                  icon: 'sports_basketball',
+                  color: 'text-blue-400',
+                  items: ['Tầng 1: Sân bóng rổ tiêu chuẩn phong trào có mái che', 'Tầng 2: Cụm 4 sân cầu lông thảm cao su chống trượt', 'Tầng 3: Khu bóng bàn trong nhà với 4 bàn tập']
+                },
+                {
+                  id: 'zone-c',
+                  name: 'Khu C: Võ Thuật, Boxing, Yoga & Pilates',
+                  icon: 'self_improvement',
+                  color: 'text-purple-400',
+                  items: ['Tầng 1: Phòng tập võ thuật & Boxing, thảm và bao cát', 'Tầng 3: Phòng tập Yoga & Pilates, khu thảm và máy Reformer', 'Tủ đồ cá nhân và khu thay đồ phục vụ học viên']
+                },
+                {
+                  id: 'zone-d',
+                  name: 'Khu Ngoài Trời: Bóng Đá & Pickleball',
+                  icon: 'stadium',
+                  color: 'text-emerald-400',
+                  items: ['Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)', 'Cụm 4 sân Pickleball, có lưới riêng và vạch khu vực bếp', 'Dàn đèn pha LED chiếu sáng ban đêm rõ nét']
+                }
+              ]).map((zone, idx) => (
+                <div key={zone.id || idx} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-red-500/50 transition-colors">
+                  <div className={`flex items-center gap-2 ${zone.color || 'text-red-400'} font-chivo text-xs font-bold uppercase mb-1.5`}>
+                    <span className="material-symbols-outlined text-[18px]">{zone.icon}</span>
+                    <span>{zone.name}</span>
+                  </div>
+                  <ul className="text-xs text-slate-300 space-y-1">
+                    {(zone.items || []).map((item, itemIdx) => (
+                      <li key={itemIdx}>• {item}</li>
+                    ))}
+                  </ul>
                 </div>
-                <ul className="text-xs text-slate-300 space-y-1">
-                  <li>• <strong>Tầng 1:</strong> Bể bơi 4 mùa 25m trong nhà nước ấm</li>
-                  <li>• <strong>Tầng 2:</strong> Phòng tập Gym &amp; Fitness</li>
-                  <li>• <strong>Tầng 3:</strong> Khu thay đồ &amp; tắm tráng nóng lạnh</li>
-                </ul>
-              </div>
-
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-red-500/50 transition-colors">
-                <div className="flex items-center gap-2 text-blue-400 font-chivo text-xs font-bold uppercase mb-1.5">
-                  <span className="material-symbols-outlined text-[18px]">sports_basketball</span>
-                  <span>Khu B: Bóng Rổ, Cầu Lông &amp; Bóng Bàn</span>
-                </div>
-                <ul className="text-xs text-slate-300 space-y-1">
-                  <li>• <strong>Tầng 1:</strong> Sân bóng rổ tiêu chuẩn phong trào có mái che</li>
-                  <li>• <strong>Tầng 2:</strong> Cụm 4 sân cầu lông thảm cao su chống trượt</li>
-                  <li>• <strong>Tầng 3:</strong> Khu bóng bàn trong nhà với 4 bàn tập</li>
-                </ul>
-              </div>
-
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-red-500/50 transition-colors">
-                <div className="flex items-center gap-2 text-purple-400 font-chivo text-xs font-bold uppercase mb-1.5">
-                  <span className="material-symbols-outlined text-[18px]">self_improvement</span>
-                  <span>Khu C: Võ Thuật, Boxing, Yoga &amp; Pilates</span>
-                </div>
-                <ul className="text-xs text-slate-300 space-y-1">
-                  <li>• <strong>Tầng 1:</strong> Phòng tập võ thuật &amp; Boxing, thảm và bao cát</li>
-                  <li>• <strong>Tầng 3:</strong> Phòng tập Yoga &amp; Pilates, khu thảm và máy Reformer</li>
-                  <li>• Tủ đồ cá nhân và khu thay đồ phục vụ học viên</li>
-                </ul>
-              </div>
-
-              <div className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-red-500/50 transition-colors">
-                <div className="flex items-center gap-2 text-emerald-400 font-chivo text-xs font-bold uppercase mb-1.5">
-                  <span className="material-symbols-outlined text-[18px]">stadium</span>
-                  <span>Khu Ngoài Trời: Bóng Đá &amp; Pickleball</span>
-                </div>
-                <ul className="text-xs text-slate-300 space-y-1">
-                  <li>• Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)</li>
-                  <li>• Cụm 4 sân Pickleball, có lưới riêng và vạch khu vực bếp</li>
-                  <li>• Dàn đèn pha LED chiếu sáng ban đêm rõ nét</li>
-                </ul>
-              </div>
+              ))}
             </div>
           </div>
         </div>
@@ -666,30 +435,30 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         <div className="bg-gradient-to-r from-red-600 via-red-600 to-red-700 text-white rounded-3xl p-8 sm:p-12 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="max-w-2xl">
             <span className="inline-block px-3 py-1 rounded bg-black/20 text-white font-chivo text-[11px] font-black uppercase tracking-wider mb-2">
-              DÀNH CHO ĐỘI NHÓM &amp; TỔ CHỨC SỰ KIỆN
+              {landingContent.ctaAndFooter?.ctaBadge || 'DÀNH CHO ĐỘI NHÓM & TỔ CHỨC SỰ KIỆN'}
             </span>
             <h3 className="font-chivo text-2xl sm:text-3xl font-black uppercase text-white">
-              Liên Hệ Đặt Thuê Sân Tập &amp; Tổ Chức Giải Đấu
+              {landingContent.ctaAndFooter?.ctaTitle || 'Liên Hệ Đặt Thuê Sân Tập & Tổ Chức Giải Đấu'}
             </h3>
             <p className="text-white/90 text-xs sm:text-sm mt-2 leading-relaxed">
-              Bạn đang tìm sân tập thường xuyên cho đội nhóm hoặc cần thuê sân tổ chức giao lưu, giải đấu phong trào? Hãy liên hệ ngay với chúng tôi để chọn khung giờ đẹp và nhận mức giá ưu đãi nhất.
+              {landingContent.ctaAndFooter?.ctaDescription || 'Bạn đang tìm sân tập thường xuyên cho đội nhóm hoặc cần thuê sân tổ chức giao lưu, giải đấu phong trào? Hãy liên hệ ngay với chúng tôi để chọn khung giờ đẹp và nhận mức giá ưu đãi nhất.'}
             </p>
           </div>
 
           <div className="shrink-0 flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
             <button
               type="button"
-              onClick={() => handleOpenModal(SCMS_FACILITIES[0], 'rent')}
-              className="w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-slate-100 text-red-600 font-chivo text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 flex items-center justify-center gap-2"
+              onClick={() => handleOpenModal(visibleFacilities[0] || SCMS_FACILITIES[0], 'rent')}
+              className="w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-slate-100 text-red-600 font-chivo text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
             >
               <span className="material-symbols-outlined text-[19px]">calendar_today</span>
-              <span>Đặt Thuê Cụm Sân Ngay</span>
+              <span>{landingContent.ctaAndFooter?.ctaPrimaryText || 'Đặt Thuê Cụm Sân Ngay'}</span>
             </button>
             <a
-              href="#/login"
+              href={landingContent.ctaAndFooter?.ctaSecondaryLink || '#/login'}
               className="w-full sm:w-auto px-6 py-3.5 bg-red-900/40 hover:bg-red-900 text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl border border-white/20 transition-colors flex items-center justify-center gap-2"
             >
-              <span>Xem Bảng Giá Gói Tập</span>
+              <span>{landingContent.ctaAndFooter?.ctaSecondaryText || 'Xem Bảng Giá Gói Tập'}</span>
               <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
             </a>
           </div>

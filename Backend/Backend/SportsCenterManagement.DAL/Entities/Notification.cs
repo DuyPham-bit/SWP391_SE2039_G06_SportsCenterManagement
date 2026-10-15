@@ -28,4 +28,8 @@ public class Notification : Common.BaseEntity
     [Column("scheduled_at")]
     public DateTime? ScheduledAt { get; set; }
 
+    [MaxLength(100)]
+    [Column("reminder_key")]
+    public string? ReminderKey { get; set; }
+
 }

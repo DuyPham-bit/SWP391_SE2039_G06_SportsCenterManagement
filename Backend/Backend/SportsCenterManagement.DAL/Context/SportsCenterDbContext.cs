@@ -51,6 +51,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<SupportRequestMessage> SupportRequestMessages => Set<SupportRequestMessage>();
     public DbSet<AiMessage> AiMessages => Set<AiMessage>();
     public DbSet<AiExerciseRecommendation> AiExerciseRecommendations => Set<AiExerciseRecommendation>();
+    public DbSet<UploadedMedia> UploadedMedias => Set<UploadedMedia>();
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -116,6 +117,8 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
         modelBuilder.Entity<PasswordResetToken>().HasIndex(entity => entity.Token).IsUnique();
         modelBuilder.Entity<Invoice>().HasIndex(entity => entity.InvoiceNumber).IsUnique();
         modelBuilder.Entity<AuditLog>().HasIndex(entity => new { entity.CenterId, entity.CreatedAt });
+        modelBuilder.Entity<Notification>().HasIndex(entity => entity.ReminderKey).IsUnique()
+            .HasFilter("[reminder_key] IS NOT NULL");
         modelBuilder.Entity<SessionBooking>()
             .HasIndex(entity => new { entity.SessionId, entity.MemberId })
             .IsUnique();

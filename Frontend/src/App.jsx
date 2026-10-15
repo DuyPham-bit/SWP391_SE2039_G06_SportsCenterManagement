@@ -18,6 +18,7 @@ const CoachAssignment = lazy(() => import('./features/manager/CoachAssignment.js
 const ReportsAnalytics = lazy(() => import('./features/manager/ReportsAnalytics.js').then(m => ({ default: m.ReportsAnalytics })));
 const RolesPermissions = lazy(() => import('./features/manager/RolesPermissions.js').then(m => ({ default: m.RolesPermissions })));
 const AuditLogs = lazy(() => import('./features/manager/AuditLogs.js').then(m => ({ default: m.AuditLogs })));
+const HomeContentManagement = lazy(() => import('./features/manager/HomeContentManagement.jsx').then(m => ({ default: m.HomeContentManagement })));
 
 // Receptionist Pages (Lazy Loaded)
 const ReceptionistDashboard = lazy(() => import('./features/receptionist/ReceptionistDashboard.js').then(m => ({ default: m.ReceptionistDashboard })));
@@ -185,6 +186,8 @@ function AppRouter() {
         return renderManagerRoute(RolesPermissions, 'manage_roles');
       case '#/manager/audit-logs':
         return renderManagerRoute(AuditLogs, 'view_audit_logs');
+      case '#/manager/home-content':
+        return renderManagerRoute(HomeContentManagement, 'manage_landing_content');
 
       // RECEPTIONIST ROUTES (4 chức năng)
       case '#/receptionist/dashboard':

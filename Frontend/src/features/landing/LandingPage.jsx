@@ -1,8 +1,9 @@
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { SUPPORTED_SPORTS } from '../../services/sportsCatalog.js';
-import { FacilitiesSection, SCMS_FACILITIES } from './FacilitiesSection.js';
-
-const { useState, useEffect, useRef } = React;
+import { FacilitiesSection } from './FacilitiesSection.js';
+import { SCMS_FACILITIES } from '../../services/facilitiesCatalog.js';
+import { getLandingContent, LANDING_CONTENT_CHANGE_EVENT } from '../../services/landingContentService.js';
 
 // Danh mục trang chủ và cơ sở tập luyện tương ứng cho từng môn.
 export const LANDING_SPORTS = SUPPORTED_SPORTS.map(sport => ({
@@ -218,6 +219,7 @@ export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '
 
 export function LandingPage() {
   const { isAuthenticated, role, logout } = useAuth();
+  const [landingContent, setLandingContent] = useState(() => getLandingContent());
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [coursesViewMode, setCoursesViewMode] = useState('cards'); // 'cards' (chi tiết đầy đủ) | 'compact' (lưới tinh gọn)
   const [selectedFacilityForModal, setSelectedFacilityForModal] = useState(null);
@@ -235,21 +237,31 @@ export function LandingPage() {
   const isManualScrollRef = useRef(false);
   const manualScrollTimerRef = useRef(null);
 
-  const leftSports = [
-    { id: 'all', name: 'Tất cả' },
-    { id: 'bong-ban', name: 'Bóng bàn' },
-    { id: 'bong-da', name: 'Bóng đá' },
-    { id: 'bong-ro', name: 'Bóng rổ' },
-    { id: 'boi-loi', name: 'Bơi lội' },
-  ];
+  // Đồng bộ thời gian thực khi Manager chỉnh sửa nội dung
+  useEffect(() => {
+    const handleSync = (e) => {
+      if (e.detail) setLandingContent(e.detail);
+      else setLandingContent(getLandingContent());
+    };
+    window.addEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
+    return () => window.removeEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
+  }, []);
 
-  const rightSports = [
-    { id: 'cau-long', name: 'Cầu lông' },
-    { id: 'gym-fitness', name: 'Gym & Fitness' },
-    { id: 'pickleball', name: 'Pickleball' },
-    { id: 'vo-thuat', name: 'Võ thuật & Boxing' },
-    { id: 'yoga-pilates', name: 'Yoga & Pilates' },
-  ];
+  // Danh sách các môn học (Chủ động ẩn/hiện bởi manager qua isVisible)
+  const sportsList = landingContent.coursesSection?.sportsList || LANDING_SPORTS;
+  const visibleSports = useMemo(() => {
+    return sportsList.filter(s => s.isVisible !== false);
+  }, [sportsList]);
+
+  const leftSports = useMemo(() => {
+    const items = [{ id: 'all', name: 'Tất cả' }];
+    visibleSports.slice(0, Math.ceil(visibleSports.length / 2)).forEach(s => items.push({ id: s.id, name: s.name }));
+    return items;
+  }, [visibleSports]);
+
+  const rightSports = useMemo(() => {
+    return visibleSports.slice(Math.ceil(visibleSports.length / 2)).map(s => ({ id: s.id, name: s.name }));
+  }, [visibleSports]);
 
   const navItems = [
     { id: 'trang-chu', href: '#/', label: 'TRANG CHỦ', targetId: 'trang-chu' },
@@ -451,16 +463,22 @@ export function LandingPage() {
     };
   }, []);
 
-  const categoryConfig = [
-    { id: 'Tất cả', label: 'Tất cả', icon: 'grid_view', count: LANDING_SPORTS.length },
-    { id: 'Thể thao đối kháng', label: 'Đối kháng', icon: 'sports_mma', count: 1 },
-    { id: 'Bóng & Vợt', label: 'Bóng & Vợt', icon: 'sports_tennis', count: 5 },
-    { id: 'Sức bền & Tĩnh tâm', label: 'Sức bền', icon: 'self_improvement', count: 3 },
-  ];
+  const categoryConfig = useMemo(() => {
+    const counts = { 'Thể thao đối kháng': 0, 'Bóng & Vợt': 0, 'Sức bền & Tĩnh tâm': 0 };
+    visibleSports.forEach(s => {
+      if (counts[s.category] !== undefined) counts[s.category]++;
+    });
+    return [
+      { id: 'Tất cả', label: 'Tất cả', icon: 'grid_view', count: visibleSports.length },
+      { id: 'Thể thao đối kháng', label: 'Đối kháng', icon: 'sports_mma', count: counts['Thể thao đối kháng'] || 0 },
+      { id: 'Bóng & Vợt', label: 'Bóng & Vợt', icon: 'sports_tennis', count: counts['Bóng & Vợt'] || 0 },
+      { id: 'Sức bền & Tĩnh tâm', label: 'Sức bền', icon: 'self_improvement', count: counts['Sức bền & Tĩnh tâm'] || 0 },
+    ];
+  }, [visibleSports]);
 
   const filteredSports = selectedCategory === 'Tất cả'
-    ? LANDING_SPORTS
-    : LANDING_SPORTS.filter(s => s.category === selectedCategory);
+    ? visibleSports
+    : visibleSports.filter(s => s.category === selectedCategory);
 
   const getDashboardLink = () => {
     const normalized = String(role || '').toUpperCase();
@@ -863,9 +881,9 @@ export function LandingPage() {
             muted
             playsInline
             className="w-full h-full object-cover scale-105"
-            poster="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop"
+            poster={landingContent.heroBanner?.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
           >
-            <source src="./hero-video.mp4" type="video/mp4" />
+            <source src={landingContent.heroBanner?.videoUrl || './hero-video.mp4'} type="video/mp4" />
           </video>
           {/* Olympic Scrim Overlay: ensures sharp readability of headings, badges, and stats */}
           <div className="absolute inset-0 bg-slate-950/65" />
@@ -881,35 +899,35 @@ export function LandingPage() {
           <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/10 backdrop-blur-md border border-white/15 shadow-sm mb-6">
             <span className="w-2.5 h-2.5 bg-red-600 animate-pulse" />
             <span className="font-chivo text-xs uppercase tracking-widest text-white font-bold">
-              TRUNG TÂM THỂ THAO ĐẲNG CẤP QUỐC TẾ SCMS
+              {landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO ĐẲNG CẤP QUỐC TẾ SCMS'}
             </span>
           </div>
 
           {/* Heading */}
           <h1 className="font-chivo text-4xl sm:text-5xl md:text-6xl lg:text-7xl text-white font-black tracking-tight leading-tight uppercase max-w-4xl mx-auto drop-shadow-md">
-            SHAPING RESILIENCE THROUGH SPORTS
+            {landingContent.heroBanner?.title || 'SHAPING RESILIENCE THROUGH SPORTS'}
           </h1>
 
           {/* Subtext */}
           <p className="font-inter text-base sm:text-lg text-slate-200 max-w-2xl mx-auto mt-6 leading-relaxed">
-            Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống {SCMS_FACILITIES.length} cụm sân, phòng tập phục vụ {LANDING_SPORTS.length} bộ môn thể thao.
+            {landingContent.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${SCMS_FACILITIES.length} cụm sân, phòng tập phục vụ ${visibleSports.length} bộ môn thể thao.`}
           </p>
 
           {/* CTA Buttons */}
           <div className="flex flex-col sm:flex-row items-center gap-4 mt-8 w-full sm:w-auto">
             <a
-              href="#/register"
+              href={landingContent.heroBanner?.primaryCtaLink || '#/register'}
               className="w-full sm:w-auto bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-bold uppercase px-8 py-4 shadow-lg hover:shadow-red-600/40 transition-all transform hover:-translate-y-0.5 inline-flex items-center justify-center gap-2"
             >
-              <span>ĐĂNG KÝ HỘI VIÊN MỚI</span>
+              <span>{landingContent.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI'}</span>
               <span className="material-symbols-outlined text-[20px]">arrow_forward</span>
             </a>
             <a
-              href="#khoa-hoc"
+              href={landingContent.heroBanner?.secondaryCtaLink || '#khoa-hoc'}
               className="w-full sm:w-auto bg-white/10 hover:bg-white/20 backdrop-blur-md text-white font-chivo text-xs font-bold uppercase px-8 py-4 border border-white/20 transition-all transform hover:-translate-y-0.5 inline-flex items-center justify-center gap-2"
             >
               <span className="material-symbols-outlined text-[20px]">sports_score</span>
-              <span>KHÁM PHÁ {LANDING_SPORTS.length} MÔN HỌC</span>
+              <span>{landingContent.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports.length} MÔN HỌC`}</span>
             </a>
           </div>
         </div>
@@ -917,22 +935,17 @@ export function LandingPage() {
         {/* Quick Metrics Strip & Scroll Indicator Anchored at Bottom of 1st Page */}
         <div className="relative z-10 w-full max-w-4xl mx-auto flex flex-col items-center shrink-0">
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 w-full bg-white/5 backdrop-blur-md p-6 border border-white/10 shadow-xl">
-            <div className="flex flex-col items-center">
-              <span className="font-chivo text-3xl font-black text-red-500">100%</span>
-              <span className="font-chivo text-xs text-slate-300 uppercase tracking-wider mt-1 font-bold">Chuẩn Thi Đấu</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="font-chivo text-3xl font-black text-red-500">24/7</span>
-              <span className="font-chivo text-xs text-slate-300 uppercase tracking-wider mt-1 font-bold">Lọc Khí &amp; Điều Hòa</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="font-chivo text-3xl font-black text-red-500">50+</span>
-              <span className="font-chivo text-xs text-slate-300 uppercase tracking-wider mt-1 font-bold">Chuyên Gia Huấn Luyện</span>
-            </div>
-            <div className="flex flex-col items-center">
-              <span className="font-chivo text-3xl font-black text-red-500">5.0 ★</span>
-              <span className="font-chivo text-xs text-slate-300 uppercase tracking-wider mt-1 font-bold">Đánh Giá Hội Viên</span>
-            </div>
+            {(landingContent.heroBanner?.metrics || [
+              { value: '100%', label: 'Chuẩn Thi Đấu' },
+              { value: '24/7', label: 'Lọc Khí & Điều Hòa' },
+              { value: '50+', label: 'Chuyên Gia Huấn Luyện' },
+              { value: '5.0 ★', label: 'Đánh Giá Hội Viên' }
+            ]).map((metric, idx) => (
+              <div key={metric.id || idx} className="flex flex-col items-center">
+                <span className="font-chivo text-3xl font-black text-red-500">{metric.value}</span>
+                <span className="font-chivo text-xs text-slate-300 uppercase tracking-wider mt-1 font-bold">{metric.label}</span>
+              </div>
+            ))}
           </div>
 
           {/* Subtle scroll down indicator */}
@@ -974,110 +987,72 @@ export function LandingPage() {
           <div className="lg:col-span-6 flex flex-col items-start">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-red-50 text-red-600 font-chivo text-xs uppercase tracking-widest font-bold mb-4 border border-red-200">
               <span className="material-symbols-outlined text-[16px]">verified</span>
-              TẠI SAO NÊN CHỌN SCMS
+              {landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN SCMS'}
             </div>
             <h2 className="font-chivo text-3xl sm:text-4xl font-extrabold text-slate-900 leading-tight tracking-tight">
-              Nền Tảng Vững Chắc Cho Hành Trình Chinh Phục Đỉnh Cao
+              {landingContent.whyUs?.title || 'Nền Tảng Vững Chắc Cho Hành Trình Chinh Phục Đỉnh Cao'}
             </h2>
             <p className="text-base text-slate-600 leading-relaxed mt-5">
-              SCMS tự hào là tổ hợp thể thao đa năng chuẩn quốc tế, mang đến không gian tập luyện chuyên nghiệp, đội ngũ huấn luyện viên chứng chỉ AFC & NASM cùng quy trình cá nhân hóa toàn diện cho từng học viên.
+              {landingContent.whyUs?.description || 'SCMS tự hào là tổ hợp thể thao đa năng chuẩn quốc tế, mang đến không gian tập luyện chuyên nghiệp, đội ngũ huấn luyện viên chứng chỉ AFC & NASM cùng quy trình cá nhân hóa toàn diện cho từng học viên.'}
             </p>
 
             <div className="w-full space-y-4 mt-8">
-              <div id="huan-luyen-vien" className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors scroll-mt-28">
-                <div className="w-10 h-10 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <span className="material-symbols-outlined text-[22px]">workspace_premium</span>
+              {(landingContent.whyUs?.features || [
+                {
+                  id: 'f1',
+                  icon: 'workspace_premium',
+                  title: 'Huấn luyện viên đạt chuẩn quốc tế',
+                  description: '100% đội ngũ huấn luyện sở hữu chứng chỉ AFC, FIBA, BWF hoặc NASM với kinh nghiệm đào tạo thực chiến.'
+                },
+                {
+                  id: 'f2',
+                  icon: 'tune',
+                  title: 'Giáo án cá nhân hóa theo từng thể trạng',
+                  description: 'Đo lường chỉ số InBody định kỳ, thiết lập biểu đồ vận động riêng biệt và AI Workout Recommender theo mục tiêu.'
+                },
+                {
+                  id: 'f3',
+                  icon: 'local_fire_department',
+                  title: 'Môi trường năng động và truyền cảm hứng',
+                  description: 'Cộng đồng hội viên văn minh, các giải đấu nội bộ định kỳ và hệ thống sân bãi đạt chuẩn thi đấu Olympic.'
+                }
+              ]).map((feat, idx) => (
+                <div key={feat.id || idx} className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
+                  <div className="w-10 h-10 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+                    <span className="material-symbols-outlined text-[22px]">{feat.icon}</span>
+                  </div>
+                  <div>
+                    <h3 className="font-chivo text-sm font-bold text-slate-900">{feat.title}</h3>
+                    <p className="text-xs text-slate-500 mt-1">{feat.description}</p>
+                  </div>
                 </div>
-                <div>
-                  <h3 className="font-chivo text-sm font-bold text-slate-900">Huấn luyện viên đạt chuẩn quốc tế</h3>
-                  <p className="text-xs text-slate-500 mt-1">100% đội ngũ huấn luyện sở hữu chứng chỉ AFC, FIBA, BWF hoặc NASM với kinh nghiệm đào tạo thực chiến.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <span className="material-symbols-outlined text-[22px]">tune</span>
-                </div>
-                <div>
-                  <h3 className="font-chivo text-sm font-bold text-slate-900">Giáo án cá nhân hóa theo từng thể trạng</h3>
-                  <p className="text-xs text-slate-500 mt-1">Đo lường chỉ số InBody định kỳ, thiết lập biểu đồ vận động riêng biệt và AI Workout Recommender theo mục tiêu.</p>
-                </div>
-              </div>
-
-              <div className="flex items-start gap-4 p-4 rounded-xl bg-slate-50 border border-slate-100 hover:border-slate-300 transition-colors">
-                <div className="w-10 h-10 rounded-lg bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm">
-                  <span className="material-symbols-outlined text-[22px]">local_fire_department</span>
-                </div>
-                <div>
-                  <h3 className="font-chivo text-sm font-bold text-slate-900">Môi trường năng động và truyền cảm hứng</h3>
-                  <p className="text-xs text-slate-500 mt-1">Cộng đồng hội viên văn minh, các giải đấu nội bộ định kỳ và hệ thống sân bãi đạt chuẩn thi đấu Olympic.</p>
-                </div>
-              </div>
+              ))}
             </div>
           </div>
 
           {/* Right Column: 4 Stat Cards (6 cols) */}
           <div className="lg:col-span-6 w-full">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {/* Card 1 */}
-              <div className="bg-red-600 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center text-center hover:-translate-y-1.5 transition-transform duration-300 justify-center min-h-[180px] relative overflow-hidden">
-                <div className="absolute -right-4 -bottom-4 text-white/10 pointer-events-none">
-                  <span className="material-symbols-outlined text-[100px]">stadium</span>
+              {(landingContent.whyUs?.stats || [
+                { number: SCMS_FACILITIES.length, suffix: '', title: 'CỤM SÂN & PHÒNG TẬP', subtitle: 'Tiêu chuẩn thi đấu chuyên nghiệp', icon: 'stadium' },
+                { number: visibleSports.length, suffix: '', title: 'MÔN THỂ THAO', subtitle: 'Đa dạng lựa chọn cho mọi lứa tuổi', icon: 'sports_kabaddi' },
+                { number: 400, suffix: '+', title: 'HỌC VIÊN', subtitle: 'Thường xuyên rèn luyện mỗi ngày', icon: 'diversity_3' },
+                { number: 13000, suffix: ' m²', title: 'DIỆN TÍCH', subtitle: 'Tổ hợp liên hợp khép kín hiện đại', icon: 'domain', formatThousands: true }
+              ]).map((st, idx) => (
+                <div key={st.id || idx} className="bg-red-600 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center text-center hover:-translate-y-1.5 transition-transform duration-300 justify-center min-h-[180px] relative overflow-hidden">
+                  <div className="absolute -right-4 -bottom-4 text-white/10 pointer-events-none">
+                    <span className="material-symbols-outlined text-[100px]">{st.icon}</span>
+                  </div>
+                  <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mb-2">
+                    <span className="material-symbols-outlined text-[22px]">{st.icon}</span>
+                  </div>
+                  <div className="font-chivo text-4xl sm:text-5xl font-black tracking-tight leading-none text-white whitespace-nowrap">
+                    <AnimatedNumber value={st.number} duration={1200} suffix={st.suffix} formatThousands={Boolean(st.formatThousands)} />
+                  </div>
+                  <div className="font-chivo text-base font-extrabold uppercase tracking-wide mt-2">{st.title}</div>
+                  <div className="text-xs text-white/80 mt-1 font-medium">{st.subtitle}</div>
                 </div>
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mb-2">
-                  <span className="material-symbols-outlined text-[22px]">stadium</span>
-                </div>
-                <div className="font-chivo text-5xl font-black tracking-tight leading-none text-white">
-                  <AnimatedNumber value={SCMS_FACILITIES.length} duration={1000} />
-                </div>
-                <div className="font-chivo text-base font-extrabold uppercase tracking-wide mt-2">CỤM SÂN &amp; PHÒNG TẬP</div>
-                <div className="text-xs text-white/80 mt-1 font-medium">Tiêu chuẩn thi đấu chuyên nghiệp</div>
-              </div>
-
-              {/* Card 2 */}
-              <div className="bg-red-600 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center text-center hover:-translate-y-1.5 transition-transform duration-300 justify-center min-h-[180px] relative overflow-hidden">
-                <div className="absolute -right-4 -bottom-4 text-white/10 pointer-events-none">
-                  <span className="material-symbols-outlined text-[100px]">sports_soccer</span>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mb-2">
-                  <span className="material-symbols-outlined text-[22px]">sports_kabaddi</span>
-                </div>
-                <div className="font-chivo text-5xl font-black tracking-tight leading-none text-white">
-                  <AnimatedNumber value={LANDING_SPORTS.length} duration={1000} />
-                </div>
-                <div className="font-chivo text-base font-extrabold uppercase tracking-wide mt-2">MÔN THỂ THAO</div>
-                <div className="text-xs text-white/80 mt-1 font-medium">Đa dạng lựa chọn cho mọi lứa tuổi</div>
-              </div>
-
-              {/* Card 3 */}
-              <div className="bg-red-600 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center text-center hover:-translate-y-1.5 transition-transform duration-300 justify-center min-h-[180px] relative overflow-hidden">
-                <div className="absolute -right-4 -bottom-4 text-white/10 pointer-events-none">
-                  <span className="material-symbols-outlined text-[100px]">groups</span>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mb-2">
-                  <span className="material-symbols-outlined text-[22px]">diversity_3</span>
-                </div>
-                <div className="font-chivo text-5xl font-black tracking-tight leading-none text-white">
-                  <AnimatedNumber value={400} duration={1400} suffix="+" />
-                </div>
-                <div className="font-chivo text-base font-extrabold uppercase tracking-wide mt-2">HỌC VIÊN</div>
-                <div className="text-xs text-white/80 mt-1 font-medium">Thường xuyên rèn luyện mỗi ngày</div>
-              </div>
-
-              {/* Card 4 */}
-              <div className="bg-red-600 text-white p-6 rounded-2xl shadow-lg flex flex-col items-center text-center hover:-translate-y-1.5 transition-transform duration-300 justify-center min-h-[180px] relative overflow-hidden">
-                <div className="absolute -right-4 -bottom-4 text-white/10 pointer-events-none">
-                  <span className="material-symbols-outlined text-[100px]">aspect_ratio</span>
-                </div>
-                <div className="w-10 h-10 rounded-full bg-white/20 flex items-center justify-center mb-2">
-                  <span className="material-symbols-outlined text-[22px]">domain</span>
-                </div>
-                <div className="font-chivo text-4xl sm:text-5xl font-black tracking-tight leading-none text-white whitespace-nowrap">
-                  <AnimatedNumber value={13000} duration={1600} suffix=" m²" formatThousands={true} />
-                </div>
-                <div className="font-chivo text-base font-extrabold uppercase tracking-wide mt-2">DIỆN TÍCH</div>
-                <div className="text-xs text-white/80 mt-1 font-medium">Tổ hợp liên hợp khép kín hiện đại</div>
-              </div>
+              ))}
             </div>
 
             {/* Extra Trust Strip */}
@@ -1085,12 +1060,16 @@ export function LandingPage() {
               <div className="flex items-center gap-3">
                 <span className="material-symbols-outlined text-red-600 text-[28px]">verified_user</span>
                 <div>
-                  <div className="font-chivo text-xs font-bold text-slate-900">Bảo hiểm rèn luyện toàn diện</div>
-                  <div className="text-xs text-slate-500">Tất cả hội viên được trang bị y tế sơ cấp cứu tại sân 24/7</div>
+                  <div className="font-chivo text-xs font-bold text-slate-900">
+                    {landingContent.whyUs?.trustBanner?.title || 'Bảo hiểm rèn luyện toàn diện'}
+                  </div>
+                  <div className="text-xs text-slate-500">
+                    {landingContent.whyUs?.trustBanner?.description || 'Tất cả hội viên được trang bị y tế sơ cấp cứu tại sân 24/7'}
+                  </div>
                 </div>
               </div>
               <span className="font-chivo text-xs font-bold text-red-600 px-3 py-1 bg-white rounded shadow-sm shrink-0 border border-slate-200">
-                ISO 9001
+                {landingContent.whyUs?.trustBanner?.certificate || 'ISO 9001'}
               </span>
             </div>
           </div>
@@ -1112,29 +1091,27 @@ export function LandingPage() {
           <div className="text-center max-w-4xl mb-8 sm:mb-10 lg:mb-12">
             <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-gradient-to-r from-red-500/15 via-rose-500/15 to-amber-500/15 border border-rose-500/30 text-rose-400 text-[11px] font-extrabold uppercase tracking-[0.2em] mb-3.5 shadow-sm backdrop-blur-md">
               <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse" />
-              <span>Chương trình đào tạo chuyên nghiệp</span>
+              <span>{landingContent.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp'}</span>
             </div>
             <h2 className="font-chivo text-3xl sm:text-4xl lg:text-5xl font-black text-white uppercase tracking-tight leading-tight">
-              {LANDING_SPORTS.length} Khóa Học Thể Thao Đa Năng
+              {visibleSports.length} {landingContent.coursesSection?.title || 'Khóa Học Thể Thao Đa Năng'}
             </h2>
             <p className="text-sm sm:text-base text-slate-300 mt-3 max-w-3xl mx-auto font-normal leading-relaxed">
-              Thiết kế bài bản từ nền tảng đến chuyên sâu thi đấu, đáp ứng mọi nhu cầu rèn luyện thể chất chuẩn Olympic cùng đội ngũ huấn luyện viên kiện tướng quốc gia.
+              {landingContent.coursesSection?.description || 'Thiết kế bài bản từ nền tảng đến chuyên sâu thi đấu, đáp ứng mọi nhu cầu rèn luyện thể chất chuẩn Olympic cùng đội ngũ huấn luyện viên kiện tướng quốc gia.'}
             </p>
 
             {/* Trust & Credentials Badges */}
             <div className="flex flex-wrap items-center justify-center gap-2.5 sm:gap-4 mt-5 text-xs text-slate-300/90">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800">
-                <span className="material-symbols-outlined text-[16px] text-rose-400">military_tech</span>
-                <span>Chuẩn Đào Tạo Olympic</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800">
-                <span className="material-symbols-outlined text-[16px] text-amber-400">verified</span>
-                <span>100% HLV Chứng Chỉ Quốc Tế</span>
-              </span>
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800">
-                <span className="material-symbols-outlined text-[16px] text-emerald-400">shield</span>
-                <span>Bảo Hiểm &amp; Y Tế 24/7</span>
-              </span>
+              {(landingContent.coursesSection?.trustBadges || [
+                { id: 'tb1', icon: 'military_tech', text: 'Chuẩn Đào Tạo Olympic' },
+                { id: 'tb2', icon: 'verified', text: '100% HLV Chứng Chỉ Quốc Tế' },
+                { id: 'tb3', icon: 'shield', text: 'Bảo Hiểm & Y Tế 24/7' }
+              ]).map((tb, idx) => (
+                <span key={tb.id || idx} className="inline-flex items-center gap-1.5 px-3 py-1 rounded-lg bg-slate-900/80 border border-slate-800">
+                  <span className="material-symbols-outlined text-[16px] text-rose-400">{tb.icon}</span>
+                  <span>{tb.text}</span>
+                </span>
+              ))}
             </div>
           </div>
 
@@ -1203,17 +1180,18 @@ export function LandingPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 lg:gap-7 xl:gap-8 w-full">
               {filteredSports.map(sport => {
                 const isHighlighted = highlightedSportId === sport.id;
-                const facility = SCMS_FACILITIES.find(f => f.id === SPORT_FACILITY_MAP[sport.id]) || {};
-                const details = SPORT_CATALOG_DETAILS[sport.id] || {
-                  rating: '4.9',
-                  ratingCount: '150',
-                  level: 'Mọi trình độ',
-                  coach: 'HLV Chuyên Nghiệp',
-                  schedule: facility.openHours || '06:00 - 22:00',
-                  highlight: facility.highlights || facility.description,
-                  price: facility.priceRate?.split('•')[0]?.trim() || 'Học phí ưu đãi',
-                  capacity: facility.capacity || 'Tiêu chuẩn',
-                  badges: [facility.badge || 'Đạt Chuẩn']
+                const facility = SCMS_FACILITIES.find(f => f.id === (sport.facilityId || SPORT_FACILITY_MAP[sport.id])) || {};
+                const staticDetails = SPORT_CATALOG_DETAILS[sport.id] || {};
+                const details = {
+                  rating: sport.rating || staticDetails.rating || '4.9',
+                  ratingCount: sport.ratingCount || staticDetails.ratingCount || '150',
+                  level: sport.level || staticDetails.level || 'Mọi trình độ',
+                  coach: sport.coach || staticDetails.coach || 'HLV Chuyên Nghiệp',
+                  schedule: sport.schedule || staticDetails.schedule || facility.openHours || '06:00 - 22:00',
+                  highlight: sport.highlight || staticDetails.highlight || facility.highlights || facility.description,
+                  price: sport.price || staticDetails.price || facility.priceRate?.split('•')[0]?.trim() || 'Học phí ưu đãi',
+                  capacity: sport.capacity || staticDetails.capacity || facility.capacity || 'Tiêu chuẩn',
+                  badges: (sport.badges && sport.badges.length > 0) ? sport.badges : (staticDetails.badges || [facility.badge || 'Đạt Chuẩn'])
                 };
                 const catCfg = SPORT_CATEGORY_CONFIG[sport.category] || {
                   badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
@@ -1244,7 +1222,7 @@ export function LandingPage() {
                     {/* CARD MEDIA HEADER (IMAGE + OVERLAYS + BADGES) */}
                     <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-950">
                       <img
-                        src={facility.image || facility.secondaryImage}
+                        src={sport.image || facility.image || facility.secondaryImage}
                         alt={sport.name}
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                         loading="lazy"
@@ -1368,7 +1346,7 @@ export function LandingPage() {
                     {/* Background cover image with subtle opacity and zoom */}
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
                       <img
-                        src={facility.image || facility.secondaryImage}
+                        src={sport.image || facility.image || facility.secondaryImage}
                         alt={sport.name}
                         className="w-full h-full object-cover opacity-20 group-hover:opacity-35 group-hover:scale-110 transition-all duration-500"
                       />
@@ -1404,7 +1382,7 @@ export function LandingPage() {
                         {sport.venue}
                       </span>
                       <span className="text-[10px] text-amber-300 font-bold mt-1.5">
-                        {details.price}
+                        {sport.price || details.price}
                       </span>
                     </div>
                   </div>
@@ -1513,7 +1491,7 @@ export function LandingPage() {
               </p>
               <div className="inline-flex items-center gap-2 mt-4 px-3 py-1.5 rounded-full border border-slate-800 bg-slate-900/70 text-[11px] font-semibold text-slate-300">
                 <span className="material-symbols-outlined text-red-400 text-[16px]" aria-hidden="true">sports_score</span>
-                <span>{LANDING_SPORTS.length} bộ môn · {SCMS_FACILITIES.length} khu tập luyện</span>
+                <span>{visibleSports.length} bộ môn · {(landingContent.facilitiesSection?.facilitiesList || SCMS_FACILITIES).filter(f => f.isVisible !== false).length} khu tập luyện</span>
               </div>
             </div>
 
@@ -1524,18 +1502,18 @@ export function LandingPage() {
               <ul className="space-y-3 text-xs leading-6 text-slate-300">
                 <li className="flex items-start gap-2">
                   <span className="material-symbols-outlined text-red-400 text-[18px] shrink-0 mt-0.5" aria-hidden="true">location_on</span>
-                  <span>Khu công nghệ cao, Thủ Đức, TP. Hồ Chí Minh</span>
+                  <span>{landingContent.ctaAndFooter?.contactAddress || 'Khu công nghệ cao, Thủ Đức, TP. Hồ Chí Minh'}</span>
                 </li>
                 <li className="flex items-center gap-2">
                   <span className="material-symbols-outlined text-red-400 text-[18px] shrink-0" aria-hidden="true">call</span>
-                  <a href="tel:0859859367" className="rounded hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors">
-                    0859 859 367
+                  <a href={`tel:${(landingContent.ctaAndFooter?.contactPhone || '0859859367').replace(/\s+/g, '')}`} className="rounded hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors">
+                    {landingContent.ctaAndFooter?.contactPhone || '0859 859 367'}
                   </a>
                 </li>
                 <li className="flex items-start gap-2">
                   <span className="material-symbols-outlined text-red-400 text-[18px] shrink-0 mt-0.5" aria-hidden="true">mail</span>
-                  <a href="mailto:lienhe@scmsportscenter.vn" className="min-w-0 break-words rounded hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors">
-                    lienhe@scmsportscenter.vn
+                  <a href={`mailto:${landingContent.ctaAndFooter?.contactEmail || 'lienhe@scmsportscenter.vn'}`} className="min-w-0 break-words rounded hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors">
+                    {landingContent.ctaAndFooter?.contactEmail || 'lienhe@scmsportscenter.vn'}
                   </a>
                 </li>
               </ul>
@@ -1548,15 +1526,21 @@ export function LandingPage() {
               <ul className="space-y-2 text-xs leading-6">
                 <li className="flex justify-between gap-3 pb-2 border-b border-slate-800">
                   <span>Thứ Hai - Thứ Sáu:</span>
-                  <span className="font-bold text-slate-200 tabular-nums whitespace-nowrap">05:30 - 22:30</span>
+                  <span className="font-bold text-slate-200 tabular-nums whitespace-nowrap">
+                    {landingContent.ctaAndFooter?.hoursWeekdays || '05:30 - 22:30'}
+                  </span>
                 </li>
                 <li className="flex justify-between gap-3 pb-2 border-b border-slate-800">
                   <span>Thứ Bảy - Chủ Nhật:</span>
-                  <span className="font-bold text-slate-200 tabular-nums whitespace-nowrap">06:00 - 22:00</span>
+                  <span className="font-bold text-slate-200 tabular-nums whitespace-nowrap">
+                    {landingContent.ctaAndFooter?.hoursWeekend || '06:00 - 22:00'}
+                  </span>
                 </li>
                 <li className="flex justify-between gap-3">
                   <span>Ngày Lễ:</span>
-                  <span className="font-semibold text-red-400 text-right">Mở cửa linh hoạt</span>
+                  <span className="font-semibold text-red-400 text-right">
+                    {landingContent.ctaAndFooter?.hoursHolidays || 'Mở cửa linh hoạt'}
+                  </span>
                 </li>
               </ul>
               <p className="text-[11px] leading-5 text-slate-400 mt-3">
@@ -1569,7 +1553,7 @@ export function LandingPage() {
                 Bộ Môn &amp; Cơ Sở
               </h4>
               <ul className="grid grid-cols-2 gap-x-3 gap-y-2 text-xs">
-                {LANDING_SPORTS.map(sport => (
+                {visibleSports.map(sport => (
                   <li key={sport.id} className="min-w-0">
                     <button
                       type="button"
@@ -1587,7 +1571,7 @@ export function LandingPage() {
           </div>
 
           <div className="pt-6 border-t border-slate-800 flex flex-col lg:flex-row items-center justify-between gap-5 text-[11px]">
-            <p className="text-center lg:text-left leading-5">© 2026 SCMS Sports Center. Bảo lưu mọi quyền.</p>
+            <p className="text-center lg:text-left leading-5">{landingContent.ctaAndFooter?.copyright || '© 2026 SCMS Sports Center. Bảo lưu mọi quyền.'}</p>
             <nav aria-label="Liên kết cuối trang" className="flex flex-wrap items-center justify-center lg:justify-end gap-x-5 gap-y-3">
               {navItems.filter(item => item.id !== 'trang-chu').map(item => (
                 <a

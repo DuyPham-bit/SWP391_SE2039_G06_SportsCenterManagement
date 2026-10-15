@@ -11,7 +11,8 @@ const shortcuts = [
   ['reports', 'analytics', 'Báo cáo theo thời gian', 'Thành viên, đăng ký lớp và doanh thu.'],
   ['packages', 'card_membership', 'Gói tập & học phí', 'Thiết lập giá, thời hạn và trạng thái gói.'],
   ['roles-permissions', 'admin_panel_settings', 'Phân quyền truy cập', 'Quyền nghiệp vụ của từng vai trò trong trung tâm.'],
-  ['audit-logs', 'history', 'Lịch sử thao tác', 'Tra cứu các thay đổi quan trọng trên hệ thống.']
+  ['audit-logs', 'history', 'Lịch sử thao tác', 'Tra cứu các thay đổi quan trọng trên hệ thống.'],
+  ['home-content', 'dashboard_customize', 'Nội dung trang chủ & đa phương tiện', 'Tùy biến nội dung landing page, môn học, cụm sân bãi và hình ảnh đám mây.']
 ];
 
 export function ManagerDashboard() {

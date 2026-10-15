@@ -6,7 +6,7 @@ using Microsoft.Extensions.Configuration;
 
 namespace SportsCenterManagement.BLL.Services;
 
-public sealed record AiTurn(string Role, string Text);
+public sealed record AiTurn(string Role, string Text, DateTime? CreatedAt = null);
 
 public sealed class GeminiService(HttpClient client, IConfiguration configuration)
 {

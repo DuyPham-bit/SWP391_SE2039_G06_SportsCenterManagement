@@ -52,7 +52,7 @@ export function getMemberReminders(user, bookings, now = new Date()) {
         : 'Bạn chưa có gói tập còn hiệu lực. Hãy chọn gói phù hợp để đăng ký lớp.',
       href: '#/member/packages', action: 'Xem gói tập', icon: 'card_membership' });
   }
-  for (const booking of getUpcomingBookings(bookings, now).filter(b => bookingStart(b) - now.getTime() <= DAY_MS)) {
+  for (const booking of getUpcomingBookings(bookings, now).filter(b => bookingStart(b) - now.getTime() <= 60 * 60 * 1000)) {
     reminders.push({ id: `session-${booking.id}`, title: `Sắp đến giờ: ${booking.className}`,
       content: `${formatMemberDate(booking.bookingDate)} · ${booking.timeSlot} · ${booking.roomName}`,
       href: '#/member/bookings', action: 'Xem lịch cá nhân', icon: 'event' });

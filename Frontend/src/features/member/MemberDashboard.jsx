@@ -802,6 +802,8 @@ export function MemberDashboard() {
               </a>
             </div>
 
+            <p className="text-xs text-slate-500">Bạn sẽ nhận thông báo nhắc lịch trước giờ bắt đầu ca học 1 tiếng.</p>
+
             {errors.bookings ? (
               <div className="p-4 rounded-xl bg-red-50 text-xs text-red-700">
                 Chưa thể tải dữ liệu lịch học. Vui lòng thử lại sau.
