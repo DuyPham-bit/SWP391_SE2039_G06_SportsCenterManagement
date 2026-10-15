@@ -222,9 +222,9 @@ export function LandingPage() {
   const [landingContent, setLandingContent] = useState(() => getLandingContent());
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [sportCarouselIndex, setSportCarouselIndex] = useState(0);
-  const [canScrollSportsPrev, setCanScrollSportsPrev] = useState(false);
-  const [canScrollSportsNext, setCanScrollSportsNext] = useState(true);
   const sportsCarouselRef = useRef(null);
+  const isSportsProgrammaticScrollRef = useRef(false);
+  const sportsScrollTimeoutRef = useRef(null);
   const [selectedFacilityForModal, setSelectedFacilityForModal] = useState(null);
   const [activeNav, setActiveNav] = useState('trang-chu');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -484,47 +484,64 @@ export function LandingPage() {
     : visibleSports.filter(s => s.category === selectedCategory);
 
   const handleSportsScroll = () => {
+    if (isSportsProgrammaticScrollRef.current) return;
     const el = sportsCarouselRef.current;
     if (!el) return;
     const scrollLeft = el.scrollLeft;
     const maxScroll = el.scrollWidth - el.clientWidth;
-    setCanScrollSportsPrev(scrollLeft > 10);
-    setCanScrollSportsNext(scrollLeft < maxScroll - 10);
-    const itemEl = el.querySelector('[data-carousel-item]');
-    if (itemEl) {
-      const itemWidth = itemEl.offsetWidth + 20;
-      const idx = Math.min(
-        filteredSports.length - 1,
-        Math.max(0, Math.round(scrollLeft / itemWidth))
-      );
-      setSportCarouselIndex(idx);
-    }
-  };
+    const items = el.querySelectorAll('[data-carousel-item]');
+    if (!items.length) return;
 
-  const handleScrollSports = (direction) => {
-    const el = sportsCarouselRef.current;
-    if (!el) return;
-    const itemEl = el.querySelector('[data-carousel-item]');
-    const itemWidth = (itemEl ? itemEl.offsetWidth : 400) + 20;
-    const targetScroll = direction === 'next' ? el.scrollLeft + itemWidth : el.scrollLeft - itemWidth;
-    el.scrollTo({ left: targetScroll, behavior: 'smooth' });
+    // Nếu đã cuộn gần chạm mép phải (thẻ cuối cùng đang hiển thị đầy đủ)
+    if (scrollLeft >= maxScroll - 25) {
+      setSportCarouselIndex(items.length - 1);
+      return;
+    }
+
+    // Tìm thẻ có mép trái gần sát vị trí đầu container nhất
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    const containerLeft = el.getBoundingClientRect().left;
+
+    items.forEach((item, idx) => {
+      const itemRect = item.getBoundingClientRect();
+      const diff = Math.abs(itemRect.left - containerLeft);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    setSportCarouselIndex(closestIdx);
   };
 
   const handleScrollSportsToIndex = (idx) => {
     const el = sportsCarouselRef.current;
     if (!el) return;
-    const itemEl = el.querySelector('[data-carousel-item]');
-    const itemWidth = (itemEl ? itemEl.offsetWidth : 400) + 20;
-    el.scrollTo({ left: idx * itemWidth, behavior: 'smooth' });
+    const items = el.querySelectorAll('[data-carousel-item]');
+    if (!items[idx]) return;
+
+    isSportsProgrammaticScrollRef.current = true;
     setSportCarouselIndex(idx);
+
+    const targetItem = items[idx];
+    const scrollTarget = targetItem.offsetLeft - el.offsetLeft;
+
+    el.scrollTo({
+      left: Math.max(0, scrollTarget),
+      behavior: 'smooth'
+    });
+
+    if (sportsScrollTimeoutRef.current) clearTimeout(sportsScrollTimeoutRef.current);
+    sportsScrollTimeoutRef.current = setTimeout(() => {
+      isSportsProgrammaticScrollRef.current = false;
+    }, 450);
   };
 
   useEffect(() => {
     if (sportsCarouselRef.current) {
       sportsCarouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
       setSportCarouselIndex(0);
-      setCanScrollSportsPrev(false);
-      setCanScrollSportsNext(filteredSports.length > 1);
     }
   }, [selectedCategory, filteredSports.length]);
 

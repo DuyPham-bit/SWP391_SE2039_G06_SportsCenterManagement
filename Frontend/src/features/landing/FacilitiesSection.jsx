@@ -14,9 +14,9 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
 
   // Carousel State
   const [facilityCarouselIndex, setFacilityCarouselIndex] = useState(0);
-  const [canScrollFacilityPrev, setCanScrollFacilityPrev] = useState(false);
-  const [canScrollFacilityNext, setCanScrollFacilityNext] = useState(true);
   const facilityCarouselRef = useRef(null);
+  const isFacilityProgrammaticScrollRef = useRef(false);
+  const facilityScrollTimeoutRef = useRef(null);
 
   useEffect(() => {
     const handleSync = (e) => {
@@ -69,39 +69,58 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   }, [visibleFacilities, activeCategory, searchQuery]);
 
   const handleFacilityScroll = () => {
+    if (isFacilityProgrammaticScrollRef.current) return;
     const el = facilityCarouselRef.current;
     if (!el) return;
     const scrollLeft = el.scrollLeft;
     const maxScroll = el.scrollWidth - el.clientWidth;
-    setCanScrollFacilityPrev(scrollLeft > 10);
-    setCanScrollFacilityNext(scrollLeft < maxScroll - 10);
-    const itemEl = el.querySelector('[data-facility-carousel-item]');
-    if (itemEl) {
-      const itemWidth = itemEl.offsetWidth + 24;
-      const idx = Math.min(
-        filteredFacilities.length - 1,
-        Math.max(0, Math.round(scrollLeft / itemWidth))
-      );
-      setFacilityCarouselIndex(idx);
-    }
-  };
+    const items = el.querySelectorAll('[data-facility-carousel-item]');
+    if (!items.length) return;
 
-  const handleScrollFacility = (direction) => {
-    const el = facilityCarouselRef.current;
-    if (!el) return;
-    const itemEl = el.querySelector('[data-facility-carousel-item]');
-    const itemWidth = (itemEl ? itemEl.offsetWidth : 420) + 24;
-    const targetScroll = direction === 'next' ? el.scrollLeft + itemWidth : el.scrollLeft - itemWidth;
-    el.scrollTo({ left: targetScroll, behavior: 'smooth' });
+    // Nếu đã cuộn gần chạm mép phải (thẻ cuối cùng đang hiển thị đầy đủ)
+    if (scrollLeft >= maxScroll - 25) {
+      setFacilityCarouselIndex(items.length - 1);
+      return;
+    }
+
+    // Tìm thẻ có mép trái gần sát vị trí đầu container nhất
+    let closestIdx = 0;
+    let minDiff = Infinity;
+    const containerLeft = el.getBoundingClientRect().left;
+
+    items.forEach((item, idx) => {
+      const itemRect = item.getBoundingClientRect();
+      const diff = Math.abs(itemRect.left - containerLeft);
+      if (diff < minDiff) {
+        minDiff = diff;
+        closestIdx = idx;
+      }
+    });
+
+    setFacilityCarouselIndex(closestIdx);
   };
 
   const handleScrollFacilityToIndex = (idx) => {
     const el = facilityCarouselRef.current;
     if (!el) return;
-    const itemEl = el.querySelector('[data-facility-carousel-item]');
-    const itemWidth = (itemEl ? itemEl.offsetWidth : 420) + 24;
-    el.scrollTo({ left: idx * itemWidth, behavior: 'smooth' });
+    const items = el.querySelectorAll('[data-facility-carousel-item]');
+    if (!items[idx]) return;
+
+    isFacilityProgrammaticScrollRef.current = true;
     setFacilityCarouselIndex(idx);
+
+    const targetItem = items[idx];
+    const scrollTarget = targetItem.offsetLeft - el.offsetLeft;
+
+    el.scrollTo({
+      left: Math.max(0, scrollTarget),
+      behavior: 'smooth'
+    });
+
+    if (facilityScrollTimeoutRef.current) clearTimeout(facilityScrollTimeoutRef.current);
+    facilityScrollTimeoutRef.current = setTimeout(() => {
+      isFacilityProgrammaticScrollRef.current = false;
+    }, 450);
   };
 
   useEffect(() => {
@@ -109,8 +128,6 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     if (facilityCarouselRef.current) {
       facilityCarouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
     }
-    setCanScrollFacilityPrev(false);
-    setCanScrollFacilityNext(filteredFacilities.length > 1);
   }, [activeCategory, searchQuery, filteredFacilities.length]);
 
   const handleOpenModal = (facility, initialTab = 'rent') => {
