@@ -1194,40 +1194,6 @@ export function LandingPage() {
 
           {/* COURSES CAROUSEL (OLYMPIC HORIZONTAL CAROUSEL) */}
           <div className="relative w-full">
-              {/* Carousel Header Bar: Counter, Guidance & Navigation Controls */}
-              <div className="flex items-center justify-between mb-5">
-                <div className="flex items-center gap-3">
-                  <span className="font-mono text-xs font-black text-rose-400 bg-rose-950/70 border border-rose-500/40 px-3 py-1 rounded-full tracking-wider shadow-sm">
-                    {String(sportCarouselIndex + 1).padStart(2, '0')} / {String(filteredSports.length).padStart(2, '0')} BỘ MÔN
-                  </span>
-                  <span className="text-xs text-slate-400 hidden sm:inline-flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px] text-rose-500">swipe</span>
-                    <span>Kéo lướt ngang hoặc dùng phím mũi tên để xem thêm</span>
-                  </span>
-                </div>
-
-                {/* Left / Right Nav Arrows with tactile hover & active feedback */}
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => handleScrollSports('prev')}
-                    disabled={!canScrollSportsPrev}
-                    aria-label="Xem môn trước"
-                    className="w-11 h-11 rounded-xl bg-slate-900/90 border border-slate-700/80 text-white flex items-center justify-center hover:bg-slate-800 hover:border-rose-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-700 disabled:hover:text-white transition-all shadow-lg active:scale-90 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[22px]">chevron_left</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => handleScrollSports('next')}
-                    disabled={!canScrollSportsNext}
-                    aria-label="Xem môn tiếp theo"
-                    className="w-11 h-11 rounded-xl bg-slate-900/90 border border-slate-700/80 text-white flex items-center justify-center hover:bg-slate-800 hover:border-rose-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-700 disabled:hover:text-white transition-all shadow-lg active:scale-90 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[22px]">chevron_right</span>
-                  </button>
-                </div>
-              </div>
 
               {/* Scroll Track */}
               <div

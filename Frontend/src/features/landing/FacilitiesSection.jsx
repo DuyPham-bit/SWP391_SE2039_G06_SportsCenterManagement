@@ -403,41 +403,6 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           </div>
         ) : (
           <div className="relative w-full mb-16">
-            {/* Carousel Header Bar: Counter, Guidance & Navigation Controls */}
-            <div className="flex items-center justify-between mb-4">
-              <div className="flex items-center gap-3">
-                <span className="font-mono text-xs font-black text-red-700 bg-red-100 border border-red-200 px-3 py-1 rounded-full tracking-wider shadow-sm">
-                  {String(facilityCarouselIndex + 1).padStart(2, '0')} / {String(filteredFacilities.length).padStart(2, '0')} KHU VỰC TIÊU CHUẨN
-                </span>
-                <span className="text-xs text-slate-500 hidden sm:inline-flex items-center gap-1.5 font-medium">
-                  <span className="material-symbols-outlined text-[16px] text-red-600">swipe</span>
-                  <span>Kéo lướt ngang hoặc dùng nút điều hướng để xem thêm</span>
-                </span>
-              </div>
-
-              {/* Left / Right Nav Arrows */}
-              <div className="flex items-center gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleScrollFacility('prev')}
-                  disabled={!canScrollFacilityPrev}
-                  aria-label="Xem khu vực trước"
-                  className="w-11 h-11 rounded-xl bg-white border border-slate-300 text-slate-700 flex items-center justify-center hover:bg-slate-100 hover:border-red-500 hover:text-red-600 disabled:opacity-35 disabled:cursor-not-allowed shadow-sm active:scale-90 transition-all cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[22px]">chevron_left</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => handleScrollFacility('next')}
-                  disabled={!canScrollFacilityNext}
-                  aria-label="Xem khu vực tiếp theo"
-                  className="w-11 h-11 rounded-xl bg-white border border-slate-300 text-slate-700 flex items-center justify-center hover:bg-slate-100 hover:border-red-500 hover:text-red-600 disabled:opacity-35 disabled:cursor-not-allowed shadow-sm active:scale-90 transition-all cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[22px]">chevron_right</span>
-                </button>
-              </div>
-            </div>
-
             {/* Scroll Track */}
             <div
               ref={facilityCarouselRef}
