@@ -1,0 +1,2752 @@
+﻿The various user classes identified the following primary actors and use cases for the Cafeteria Ordering System:
+Primary Actor
+Use Cases
+Manager
+10. Manage Staff Accounts
+11. Manage Membership Packages
+12. Manage Classes & Rooms
+13. Assign Coach to Class
+14. View Reports & Analytics
+15. Manage System Roles & Permissions
+16. View Audit Logs
+Receptionist
+20. Lookup Member Profile
+21. Register/Renew Package at Counter
+22. Check-in Member
+Coach
+30. View Teaching Schedule
+31. Manage Class Members
+32. Create Training Plan
+33. Record Workout Progress
+34. Take Class Attendance
+35. Send Homework/Notifications
+36. Get AI Workout Recommendation
+Member
+40. Register Member Account
+41. Subscribe/Renew Package
+42. View Class Schedules
+43. Book Class
+44. Cancel Class Booking
+45. View Personal Progress & Feedback
+46. Ask AI Assistant
+ID and Name:
+UC-1 Login System
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager, Receptionist, Coach, Member
+Secondary Actors:
+None
+Description:
+A registered user accesses the Sports Center Management System (SCMS) and enters his or her account credentials. SCMS verifies the credentials and, if they are valid, grants access to the system according to the user's role.
+Trigger:
+A user indicates that he or she wants to log into SCMS.
+Preconditions:
+PRE-1. User has a registered SCMS account.PRE-2. User account is active.PRE-3. User is not currently logged into SCMS.
+Postconditions:
+POST-1. User is successfully authenticated by SCMS.POST-2. SCMS creates a login session for the user.POST-3. SCMS identifies the user's role and provides access to the functions permitted for that role.POST-4. User is redirected to the appropriate system interface.
+Normal Flow:
+1.0 Login
+User opens the SCMS login page.
+SCMS displays the login form.
+User enters the account identifier and password.
+User submits the login form.
+SCMS verifies the account credentials.
+SCMS checks that the account is active.
+SCMS identifies the user's role.
+SCMS creates the user session and displays the appropriate interface.
+Alternative Flows:
+1.1 User enters invalid credentials
+SCMS informs the user that the account identifier or password is incorrect.
+User re-enters the login information.
+Return to step 3 of the normal flow.
+1.2 User forgot password
+User selects the password reset option.
+SCMS starts UC-04 Reset Password.
+After resetting the password, the user returns to the login page.
+Exceptions:
+1.0.E1 Account is inactive
+SCMS informs the user that the account is inactive.
+SCMS does not create a user session.
+The use case terminates.
+Priority:
+High
+Frequency of Use:
+High. The use case is expected to be used by all 4 user roles whenever they access SCMS.
+Business Rules:
+BR-AUTH-01, BR-AUTH-04
+Other Information:
+Email is used as the primary username for authentication.
+The system should provide access to the password reset function when the user forgets the password.
+Authentication must be completed before the user can access protected functions.
+Assumptions:
+User account information has already been registered in SCMS.
+The user's password has been securely hashed before being stored in the database.
+Each user has one of the 4 supported primary roles.
+Cần xem thêm: tách ra làm 2 use case riêng
+ID and Name:
+UC-03 View Profile & Change Password
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager, Receptionist, Coach, Member
+Secondary Actors:
+None
+Description:
+A logged-in user accesses his or her profile information in the Sports Center Management System (SCMS). The user can view personal account information and change the account password when required.
+Trigger:
+A logged-in user selects the Profile function or requests to change the account password.
+Preconditions:
+PRE-1. User is logged into SCMS.PRE-2. User has an active account.
+Postconditions:
+POST-1. The user's profile information is displayed.POST-2. If the password is changed successfully, the new password is securely stored in SCMS.POST-3. The user's account remains associated with the same role.
+Normal Flow:
+3.0 View Profile
+User selects the Profile function.
+SCMS retrieves the user's account information.
+SCMS displays the user's available profile information.
+User can review the displayed information.
+3.1 Change Password
+User selects the Change Password function.
+SCMS displays the password change form.
+User enters the current password and a new password.
+User confirms the new password.
+SCMS verifies the current password and validates the new password.
+SCMS securely stores the new password.
+SCMS informs the user that the password has been changed successfully.
+Alternative Flows:
+3.1.1 User cancels password change
+User cancels the password change process.
+SCMS returns the user to the profile page.
+The existing password remains unchanged.
+Exceptions:
+3.0.E1 Current password is incorrect
+SCMS determines that the entered current password is incorrect.
+SCMS displays an error message.
+User may re-enter the current password.
+Return to step 3 of flow 3.1.
+3.0.E2 New password and confirmation do not match
+SCMS detects that the new password and confirmation are different.
+SCMS displays an error message.
+User re-enters the new password and confirmation.
+Return to step 3 of flow 3.1.
+Priority:
+High
+Frequency of Use:
+Medium. Users may view their profile regularly, while password changes are expected to occur less frequently.
+Business Rules:
+BR-AUTH-01, BR-AUTH-04
+Other Information:
+   Users can only modify their own account password.
+   The system should not display the user's password in plain-text.
+   Profile information displayed to the user should correspond to the currently logged-in account.
+Assumptions
+   The user account already exists in SCMS.
+   The user's authentication session is valid.
+   Password hashing is handled by the system before the new password is stored in the database.
+ID and Name:
+UC-02 Logout System
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager, Receptionist, Coach, Member
+Secondary Actors:
+None
+Description:
+A logged-in user chooses to log out of the Sports Center Management System (SCMS). The system terminates the user's current session and prevents further access to protected functions until the user logs in again.
+Trigger:
+A logged-in user selects the Logout function.
+Preconditions:
+PRE-1. User is logged into SCMS.PRE-2. User has an active user session.
+Postconditions:
+POST-1. The user's current session is terminated.POST-2. The user can no longer access protected functions without logging in again.POST-3. SCMS redirects the user to the login page.
+Normal Flow:
+2.0 Logout
+User selects the Logout function.
+SCMS terminates the user's current session.
+SCMS redirects the user to the login page.
+User can log into SCMS again if access is required.
+Alternative Flows:
+None
+Exceptions:
+2.0.E1 User session has already expired
+SCMS detects that the user's session is no longer active.
+SCMS redirects the user to the login page.
+The use case terminates.
+Priority:
+High
+Frequency of Use:
+High. The use case may be executed by any of the 4 user roles whenever the user finishes using SCMS.
+Business Rules:
+BR-AUTH-04
+Other Information:
+  Logout should terminate the current authenticated session.
+  After logout, the user should not be able to access protected pages by using the browser's Back button.
+  The user must log in again to access protected functions after logging out.
+Assumptions
+  SCMS uses a session-based authentication mechanism.
+  The user has already successfully logged into SCMS before executing this use case.
+ID and Name:
+UC-04 Reset Password
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager, Receptionist, Coach, Member
+Secondary Actors:
+None
+Description:
+A user who cannot remember the current password requests to reset the password. SCMS verifies the user's account information and allows the user to create a new password.
+Trigger:
+A user selects the Forgot Password function from the login page.
+Preconditions:
+PRE-1. The user has a registered SCMS account.PRE-2. The user can provide the email associated with the account.
+Postconditions:
+POST-1. The user's password is updated successfully.POST-2. The new password is securely stored in hashed form.POST-3. The user can use the new password to log into SCMS.
+Normal Flow:
+4.0 Reset Password
+User selects Forgot Password on the login page.
+SCMS asks the user to provide the registered email.
+User enters the email and submits the request.
+SCMS verifies that the email belongs to a registered account.
+SCMS allows the user to enter a new password.
+User enters and confirms the new password.
+SCMS validates the new password.
+SCMS securely stores the new password and informs the user that the password has been reset.
+Alternative Flows:
+4.1 User cancels password reset
+User cancels the password reset process.
+SCMS returns the user to the login page.
+The existing password remains unchanged.
+Exceptions:
+4.0.E1 Email is not registered
+SCMS cannot find an account associated with the entered email.
+SCMS informs the user that the account could not be found.
+User may enter another email or terminate the use case.
+4.0.E2 New passwords do not match
+SCMS detects that the new password and confirmation password are different.
+SCMS displays an error message.
+User enters the new password and confirmation again.
+Return to step 6 of the normal flow.
+Priority:
+High
+Frequency of Use:
+Low to Medium. Most users will use this function only when they forget their password.
+Business Rules:
+BR-AUTH-01
+Other Information:
+   The password reset function is available from the SCMS login page.
+   Resetting a password does not change the user's role or other account information.
+  The user must use the newly created password for subsequent login attempts.
+Assumptions
+  The user's email is already registered in SCMS.
+  The password reset process can verify ownership of the account.
+  Password hashing is performed by SCMS before the new password is stored.
+ID and Name:
+UC-10 Manage Staff Accounts
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager
+Secondary Actors:
+None
+Description:
+The Manager manages staff accounts in the Sports Center Management System, including viewing, creating, updating, activating, and deactivating accounts for Receptionists and Coaches.
+Trigger:
+The Manager selects the Staff Accounts management function.
+Preconditions:
+  PRE-1: The Manager has successfully logged into the system.
+  PRE-2: The Manager has permission to manage staff accounts.
+Postconditions:
+  POST-1: Staff account information is created or updated successfully.
+  POST-2: The account status is updated when the Manager activates or deactivates an account.
+  POST-3: Changes are stored in the system and take effect for the corresponding staff account.
+Normal Flow:
+10.0 Manage Staff Accounts
+The Manager selects Staff Accounts.
+The system displays the list of staff accounts.
+The Manager selects an account or chooses to create a new staff account.
+The system displays the corresponding account form.
+The Manager enters or updates the required staff information and role.
+The Manager submits the information.
+The system validates the entered information.
+The system saves the changes.
+The system displays a success message and refreshes the staff account list.
+Alternative Flows:
+10.1 Create Staff Account
+The Manager selects Create Staff Account.
+The system displays the account creation form.
+The Manager enters the staff member's information and selects the appropriate role.
+The system validates the information.
+The system creates the staff account.
+The system displays a confirmation message.
+10.2 Update Staff Account
+The Manager selects an existing staff account.
+The system displays the current account information.
+The Manager modifies the required information.
+The system validates and saves the changes.
+The system displays a confirmation message.
+10.3 Activate/Deactivate Staff Account
+The Manager selects a staff account.
+The Manager chooses Activate or Deactivate.
+The system updates the account status.
+The system displays the updated status.
+10.4 Cancel Operation
+The Manager cancels the current operation.
+The system discards unsaved changes.
+The system returns to the staff account list.
+Exceptions:
+10.0.E1:
+ Required information is missing → The system displays a validation message and asks the Manager to complete the required fields.
+10.0.E2:
+ Email is already registered → The system rejects the operation and informs the Manager that the email must be unique.
+10.0.E3:
+ Invalid role is selected → The system rejects the operation and asks the Manager to select a valid staff role.
+10.0.E4:
+ System/database error occurs while saving → The system displays an error message and does not apply the incomplete change.
+Priority:
+High
+Frequency of Use:
+Medium
+Business Rules:
+BR-AUTH-01, BR-AUTH-02, BR-AUTH-04
+Other Information:
+  Staff accounts managed in this use case are primarily Receptionist and Coach accounts.
+  Each staff account has one primary role.
+  Email is used as the unique username of the account.
+  Passwords must not be stored in plain text.
+  Deactivating an account prevents the staff member from accessing protected system functions.
+Assumptions
+  The Manager is authorized to manage staff accounts.
+  The system supports the roles Manager, Receptionist, Coach, and Member.
+  The database can store and update staff account information..
+ID and Name:
+UC-11 Manage Membership Packages
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager
+Secondary Actors:
+None
+Description:
+The Manager manages membership packages offered by the Sports Center, including viewing, creating, updating, and activating or deactivating available packages.
+Trigger:
+The Manager selects the Membership Packages management function.
+Preconditions:
+  PRE-1: The Manager has successfully logged into the system.
+  PRE-2: The Manager has permission to manage membership packages.
+Postconditions:
+  POST-1: Membership package information is created or updated successfully.
+  POST-2: The package status is updated when the Manager activates or deactivates a package.
+  POST-3: The changes are stored in the system and are available for future member subscriptions.
+Normal Flow:
+11.0 Manage Membership Packages
+The Manager selects Membership Packages.
+The system displays the list of available membership packages.
+The Manager selects an existing package or chooses to create a new package.
+The system displays the package information form.
+The Manager enters or updates the package information, including package name, duration, and price.
+The Manager submits the information.
+The system validates the entered information.
+The system saves the changes.
+The system displays a success message and refreshes the package list.
+Alternative Flows:
+11.1 Create Membership Package
+The Manager selects Create Package.
+The system displays the package creation form.
+The Manager enters the package name, duration, price, and other required information.
+The system validates the information.
+The system creates the membership package.
+The system displays a confirmation message.
+11.2 Update Membership Package
+The Manager selects an existing package.
+The system displays the current package information.
+The Manager modifies the required information.
+The system validates and saves the changes.
+The system displays a confirmation message.
+11.3 Activate/Deactivate Membership Package
+The Manager selects a membership package.
+The Manager chooses Activate or Deactivate.
+The system updates the package status.
+The system displays the updated status.
+11.4 Cancel Operation
+The Manager cancels the current operation.
+The system discards unsaved changes.
+The system returns to the membership package list.
+Exceptions:
+  11.0.E1: Required information is missing → The system displays a validation message and asks the Manager to complete the required fields.
+  11.0.E2: The package duration or price is invalid → The system rejects the submitted information and asks the Manager to enter valid values.
+  11.0.E3: A system/database error occurs while saving → The system displays an error message and does not apply the incomplete change.
+Priority:
+High
+Frequency of Use:
+Medium
+Business Rules:
+BR-PAY-02, BR-MEM-02, BR-MEM-03, BR-MEM-04, BR-MEM-05
+Other Information:
+   Membership packages define the available plans that members can subscribe to or renew.
+  Package duration and listed price are used when calculating the member's payment.
+  Deactivated packages should not be offered for new subscriptions.
+  Existing member packages are not automatically changed when the package definition is modified.
+Assumptions
+  The Manager is authorized to manage membership packages.
+  The system stores package information in the database.
+  Payment processing and package activation follow the applicable membership and payment business rules.
+ID and Name:
+UC-12 Manage Classes & Rooms
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager
+Secondary Actors:
+None
+Description:
+The Manager manages classes and training rooms in the Sports Center Management System, including creating, viewing, updating, and activating or deactivating classes and rooms.
+Trigger:
+The Manager selects the Classes & Rooms management function.
+Preconditions:
+  PRE-1: The Manager has successfully logged into the system.
+  PRE-2: The Manager has permission to manage classes and rooms.
+Postconditions:
+  POST-1: Class or room information is created or updated successfully.
+  POST-2: The system prevents invalid class schedules or room conflicts.
+  POST-3: The updated information is stored and available for scheduling and booking
+Normal Flow:
+12.0 Manage Classes & Rooms
+The Manager selects Classes & Rooms.
+The system displays the existing classes and rooms.
+The Manager selects a class or room, or chooses to create a new one.
+The system displays the corresponding information form.
+The Manager enters or updates the required information.
+The system validates the information and checks for scheduling conflicts when applicable.
+The Manager confirms the changes.
+The system saves the information.
+The system displays a success message and refreshes the list.
+Alternative Flows:
+12.1 Create Class
+The Manager selects Create Class.
+The system displays the class creation form.
+The Manager enters the class name, schedule, room, and maximum capacity.
+The system validates the information.
+The system checks whether the selected room is available at the specified time.
+The system creates the class.
+The system displays a confirmation message.
+12.2 Update Class
+The Manager selects an existing class.
+The system displays the current class information.
+The Manager modifies the required information.
+The system validates the changes and checks for conflicts.
+The system saves the updated information.
+The system displays a confirmation message.
+12.3 Create or Update Room
+The Manager selects Rooms.
+The Manager chooses to create a new room or update an existing room.
+The system displays the room information form.
+The Manager enters or modifies the room information.
+The system validates the information.
+The system saves the changes.
+The system displays a confirmation message.
+12.4 Activate/Deactivate Class or Room
+The Manager selects a class or room.
+The Manager chooses Activate or Deactivate.
+The system updates the status.
+The system displays the updated status.
+12.5 Cancel Operation
+The Manager cancels the current operation.
+The system discards unsaved changes.
+The system returns to the Classes & Rooms list.
+Exceptions:
+  12.0.E1: Required information is missing → The system displays a validation message and asks the Manager to complete the required fields.
+  12.0.E2: The class capacity exceeds the allowed room capacity → The system rejects the class information and asks the Manager to enter a valid capacity.
+  12.0.E3: The selected room is already assigned to another class during the same time slot → The system rejects the schedule.
+  12.0.E4: The class schedule conflicts with another class using the same room → The system informs the Manager and requests another schedule or room.
+  12.0.E5: A system/database error occurs while saving → The system displays an error message and does not apply the incomplete change.
+Priority:
+High
+Frequency of Use:
+Medium
+Business Rules:
+BR-CLASS-01, BR-CLASS-03
+Other Information:
+  Each class has a maximum capacity that limits the number of members who can book it.
+  A room cannot host two different classes during the same time slot.
+  Deactivated classes or rooms should not be available for new scheduling or booking operations.
+  Coach assignment is handled separately in UC-13 – Assign Coach to Class.
+Assumptions
+  The Manager is authorized to manage classes and rooms.
+  The system stores class and room information in the database.
+  Class schedules contain sufficient information to determine whether two classes overlap..
+ID and Name:
+UC-13 Assign Coach to Class
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager
+Secondary Actors:
+None
+Description:
+The Manager assigns a Coach to a class and can change or remove the assigned Coach. The system checks the Coach's schedule to prevent overlapping class assignments.
+Trigger:
+The Manager selects the function to assign a Coach to a class.
+Preconditions:
+  PRE-1: The Manager has successfully logged into the system.
+  PRE-2: The Manager has permission to manage class assignments.
+  PRE-3: The class and Coach already exist in the system.
+Postconditions:
+  POST-1: The selected Coach is successfully assigned to the class.
+POST-2: The class schedule is updated with the assigned Coach. 
+  POST-3: No overlapping Coach assignment is created.
+Normal Flow:
+13.0 Assign Coach to Class
+The Manager selects a class.
+The system displays the class information and current Coach assignment.
+The Manager selects an available Coach.
+The system checks the Coach's existing teaching schedule.
+The system confirms that the Coach is available at the selected time.
+The Manager confirms the assignment.
+The system saves the Coach assignment.
+The system displays a success message.
+Alternative Flows:
+13.1 Change Assigned Coach
+The Manager selects a class that already has a Coach.
+The Manager selects another Coach.
+The system checks the new Coach's schedule.
+If no conflict exists, the system updates the assignment.
+The system displays a confirmation message.
+13.2 Remove Coach Assignment
+The Manager selects a class.
+The Manager chooses to remove the assigned Coach.
+The system asks the Manager to confirm.
+The system removes the Coach assignment.
+The system displays a confirmation message.
+13.3 Cancel Operation
+The Manager cancels the assignment operation.
+The system discards the unsaved changes.
+The system returns to the class information.
+Exceptions:
+  13.0.E1: No Coach is selected → The system asks the Manager to select a Coach.
+  13.0.E2: The selected Coach has another class at an overlapping time → The system rejects the assignment and informs the Manager.
+  13.0.E3: The selected class or Coach is inactive → The system does not allow the assignment.
+  13.0.E4: A system/database error occurs while saving → The system displays an error message and does not apply the assignment.
+Priority:
+High
+Frequency of Use:
+Medium
+Business Rules:
+BR-CLASS-02
+Other Information:
+  A Coach cannot be assigned to two overlapping classes on the same day and time.
+  The Manager can change the assigned Coach when necessary.
+  Coach assignment is associated with the class schedule.
+Assumptions
+  The Manager has permission to assign Coaches.
+  Coach and class information already exists in the system.
+  The system can determine whether two class schedules overlap.
+ID and Name:
+UC-14 View Reports & Analytics
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager
+Secondary Actors:
+None
+Description:
+The Manager views reports and analytics provided by the Sports Center Management System to monitor membership, packages, classes, bookings, attendance, and revenue-related information.
+Trigger:
+The Manager selects the Reports & Analytics function.
+Preconditions:
+  PRE-1: The Manager has successfully logged into the system.
+  PRE-2: The Manager has permission to view reports and analytics.
+  PRE-3: The system contains available data for the selected report.
+Postconditions:
+  POST-1: The requested report or analytics information is displayed.
+  POST-2: The Manager can review the information for management and decision-making purposes.
+Normal Flow:
+14.0 View Reports & Analytics
+The Manager selects Reports & Analytics.
+The system displays the available report categories.
+The Manager selects a report and the required time period or filters.
+The system retrieves the corresponding data.
+The system calculates and summarizes the selected information.
+The system displays the report results.
+The Manager reviews the report and analytics.
+Alternative Flows:
+14.1 Change Report Filters
+The Manager changes the selected time period or filter criteria.
+The system retrieves the corresponding data.
+The system refreshes the report results.
+14.2 No Data Available
+The Manager selects a report for which no data exists.
+The system displays a message indicating that no data is available.
+The Manager may change the filters or select another report.
+Exceptions:
+  14.0.E1: Invalid filter or time period → The system displays a validation message and asks the Manager to provide valid criteria.
+  14.0.E2: Report data cannot be retrieved → The system displays an error message and allows the Manager to retry.
+  14.0.E3: A system/database error occurs → The system cannot display the requested report and informs the Manager.
+Priority:
+High
+Frequency of Use:
+Medium
+Business Rules:
+BR-PAY-01, BR-PAY-02, BR-PAY-03
+Other Information:
+   Reports may provide summarized information about members, membership packages, classes, bookings, attendance, and payments.
+  Report results depend on the data recorded in the system.
+  The Manager uses the reports to monitor the operation of the Sports Center.
+  The system should provide report results within the project's defined performance target.
+Assumptions
+  The Manager has access to the required reports.
+  Relevant data has been recorded correctly in the system.
+  The system can retrieve and summarize the required information from the database.
+ID and Name:
+UC-14 View Reports & Analytics
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager
+Secondary Actors:
+None
+Description:
+The Manager views reports and analytics provided by the Sports Center Management System to monitor membership, packages, classes, bookings, attendance, and revenue-related information.
+Trigger:
+The Manager selects the Reports & Analytics function.
+Preconditions:
+  PRE-1: The Manager has successfully logged into the system.
+  PRE-2: The Manager has permission to view reports and analytics.
+  PRE-3: The system contains available data for the selected report.
+Postconditions:
+  POST-1: The requested report or analytics information is displayed.
+  POST-2: The Manager can review the information for management and decision-making purposes.
+Normal Flow:
+14.0 View Reports & Analytics
+The Manager selects Reports & Analytics.
+The system displays the available report categories.
+The Manager selects a report and the required time period or filters.
+The system retrieves the corresponding data.
+The system calculates and summarizes the selected information.
+The system displays the report results.
+The Manager reviews the report and analytics.
+Alternative Flows:
+14.1 Change Report Filters
+The Manager changes the selected time period or filter criteria.
+The system retrieves the corresponding data.
+The system refreshes the report results.
+14.2 No Data Available
+The Manager selects a report for which no data exists.
+The system displays a message indicating that no data is available.
+The Manager may change the filters or select another report.
+Exceptions:
+  14.0.E1: Invalid filter or time period → The system displays a validation message and asks the Manager to provide valid criteria.
+  14.0.E2: Report data cannot be retrieved → The system displays an error message and allows the Manager to retry.
+  14.0.E3: A system/database error occurs → The system cannot display the requested report and informs the Manager.
+Priority:
+High
+Frequency of Use:
+Medium
+Business Rules:
+BR-PAY-01, BR-PAY-02, BR-PAY-03
+Other Information:
+   Reports may provide summarized information about members, membership packages, classes, bookings, attendance, and payments.
+  Report results depend on the data recorded in the system.
+  The Manager uses the reports to monitor the operation of the Sports Center.
+  The system should provide report results within the project's defined performance target.
+Assumptions
+  The Manager has access to the required reports.
+  Relevant data has been recorded correctly in the system.
+  The system can retrieve and summarize the required information from the database.
+ID and Name:
+UC-15 Manage System Roles & Permissions
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager
+Secondary Actors:
+None
+Description:
+The Manager manages system roles and permissions to control which functions and resources each user role can access in the Sports Center Management System.
+Trigger:
+The Manager selects the Roles & Permissions management function.
+Preconditions:
+  PRE-1: The Manager has successfully logged into the system.
+  PRE-2: The Manager has permission to manage system roles and permissions.
+Postconditions:
+  POST-1: Role or permission information is successfully updated.
+  POST-2: The updated access permissions are applied to the corresponding users.
+  POST-3: Users can only access functions allowed by their assigned role.
+Normal Flow:
+15.0 Manage System Roles & Permissions
+The Manager selects Roles & Permissions.
+The system displays the available system roles and their permissions.
+The Manager selects a role.
+The system displays the permissions associated with the selected role.
+The Manager adds or removes the required permissions.
+The Manager confirms the changes.
+The system validates the changes.
+The system saves the updated permissions.
+The system displays a success message.
+Alternative Flows:
+15.1 View Role Permissions
+The Manager selects a system role.
+The system displays the permissions assigned to that role.
+The Manager reviews the information.
+15.2 Update Role Permissions
+The Manager selects a system role.
+The Manager modifies the permissions.
+The system validates the changes.
+The Manager confirms the update.
+The system saves the new permission configuration.
+15.3 Cancel Operation
+The Manager cancels the current operation.
+The system discards unsaved changes.
+The system returns to the Roles & Permissions page.
+Exceptions:
+  15.0.E1: Invalid permission configuration → The system rejects the changes and informs the Manager.
+  15.0.E2: The Manager attempts to assign an unsupported role → The system rejects the operation.
+  15.0.E3: A system/database error occurs while saving → The system displays an error message and does not apply the incomplete changes.
+Priority:
+High
+Frequency of Use:
+Low
+Business Rules:
+BR-AUTH-04
+Other Information:
+  The system supports the primary roles MANAGER, RECEPTIONIST, COACH, and MEMBER.
+  Each user has exactly one primary role.
+  Permissions determine which system functions and APIs a user can access.
+  Changes to permissions may affect the access of users assigned to the corresponding role.
+Assumptions
+  The Manager is authorized to manage system roles and permissions.
+  The system maintains role and permission information.
+  Access control is enforced for protected system functions and APIs.
+ID and Name:
+UC-16 View Audit Logs
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Manager
+Secondary Actors:
+None
+Description:
+The Manager views audit logs recorded by the Sports Center Management System to monitor important user and system activities
+Trigger:
+The Manager selects the Audit Logs function.
+Preconditions:
+  PRE-1: The Manager has successfully logged into the system.
+  PRE-2: The Manager has permission to view audit logs.
+  PRE-3: Audit log records are available in the system
+Postconditions:
+  POST-1: The requested audit log records are displayed.
+  POST-2: The Manager can review recorded activities and their details.
+Normal Flow:
+16.0 View Audit Logs
+The Manager selects Audit Logs.
+The system displays the available audit log records.
+The Manager selects filters such as user, action, or time period.
+The system retrieves the matching records.
+The system displays the audit log details.
+The Manager reviews the recorded activities.
+Alternative Flows:
+16.1 Filter Audit Logs
+The Manager enters or selects filtering criteria.
+The system searches the audit log records.
+The system displays records matching the selected criteria.
+16.2 No Matching Records
+The Manager applies a filter.
+The system finds no matching audit records.
+The system displays a message indicating that no records were found.
+The Manager may modify the filters and search again.
+Exceptions:
+  16.0.E1: Invalid filter criteria → The system displays a validation message and asks the Manager to provide valid criteria.
+  16.0.E2: Audit log data cannot be retrieved → The system displays an error message and allows the Manager to retry.
+  16.0.E3: A system/database error occurs → The system cannot display the requested audit logs and informs the Manager.
+Priority:
+High
+Frequency of Use:
+Low
+Business Rules:
+BR-AUTH-04
+Other Information:
+  Audit logs record important activities performed within the system.
+  Audit log information may include the user, action, time, and related activity details.
+  Audit logs should be available for monitoring and reviewing system activities.
+  Access to audit logs is restricted to authorized users.
+Assumptions
+  The Manager has permission to view audit logs.
+  The system records relevant activities in the audit log.
+  Audit log records are stored in the system and can be retrieved when required.
+ID and Name:
+UC-20 Lookup Member Profile
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Receptionist
+Secondary Actors:
+None
+Description:
+The Receptionist searches for and views a member's profile and membership information to support front-desk services.
+Trigger:
+The Receptionist selects the Lookup Member Profile function.
+Preconditions:
+  PRE-1: The Receptionist has successfully logged into the system.
+  PRE-2: The Receptionist has permission to view member information.
+Postconditions:
+  POST-1: The requested member profile is displayed.
+  POST-2: The Receptionist can review the member's account and membership information.
+Normal Flow:
+20.0 Lookup Member Profile
+The Receptionist selects Lookup Member Profile.
+The system displays the member search form.
+The Receptionist enters a member identifier such as email or phone number.
+The Receptionist submits the search request.
+The system searches for the corresponding member.
+The system displays the member's profile and membership information.
+The Receptionist reviews the information.
+Alternative Flows:
+20.1 Search Using Different Information
+The Receptionist enters another available member identifier.
+The system searches for the corresponding member.
+The system displays the matching member profile.
+20.2 View Membership Status
+The Receptionist opens a member profile.
+The system displays the member's current membership package and status.
+The Receptionist reviews the membership information.
+20.3 Cancel Search
+The Receptionist cancels the search operation.
+The system returns to the previous page.
+Exceptions:
+  20.0.E1: Member cannot be found → The system displays a message indicating that no matching member exists.
+  20.0.E2: Invalid or incomplete search information → The system asks the Receptionist to enter valid search information.
+  20.0.E3: A system/database error occurs → The system displays an error message and allows the Receptionist to retry.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-AUTH-04, BR-MEM-01, BR-MEM-03
+Other Information:
+ The Receptionist can use the member profile to verify membership information before providing services at the counter.
+ Membership status may be Active or Expired depending on the current date and package (EndDate).
+ The Receptionist should only access member information permitted by the system.
+Assumptions
+  The member has an existing SCMS account.
+  The system stores member profile and membership information.
+  The Receptionist has sufficient permission to view the required information..
+* TransactionRef: Mỗi giao dịch đều có một mã tham chiếu riêng, không trùng lặp.
+ID and Name:
+UC-21 Register/Renew Package at Counter
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Receptionist
+Secondary Actors:
+None
+Description:
+The Receptionist registers a membership package for a member or renews an existing package at the counter. The system calculates the payment amount, records the payment, and activates or extends the membership package after successful payment confirmation
+Trigger:
+The Receptionist selects the function to register or renew a membership package for a member.
+Preconditions:
+  PRE-1: The Receptionist has successfully logged into the system.
+  PRE-2: The Receptionist has permission to process membership packages.
+  PRE-3: The member has an existing SCMS account.
+  PRE-4: An active membership package is available for registration or renewal.
+Postconditions:
+  POST-1: The membership payment is recorded with a unique transaction reference.
+  POST-2: The membership package is activated or renewed after successful payment.
+  POST-3: The package start date and EndDate are updated according to the applicable membership rules.
+Normal Flow:
+21.0 Register/Renew Package at Counter
+The Receptionist searches for and selects the member.
+The system displays the member's current membership information.
+The Receptionist selects an available membership package.
+The system displays the package duration and listed price.
+The system calculates the total payment amount.
+The Receptionist confirms the package and payment information.
+The payment is processed.
+The system receives a successful payment response.
+The system records the transaction with a unique TransactionRef.
+The system activates or renews the membership package.
+The system displays a payment and membership confirmation.
+Alternative Flows:
+21.1 Register New Package
+The Receptionist selects an available package for the member.
+The system calculates the payment amount.
+The Receptionist confirms the payment.
+After successful payment, the system activates the package immediately.
+The package start date is set to the payment date.
+21.2 Renew Existing Package
+The Receptionist selects a package for renewal.
+The system checks the current package EndDate.
+If the existing package is still valid, the system adds the new package duration to the existing EndDate.
+If the existing package has expired, the system calculates the new EndDate from the renewal date.
+The Receptionist confirms the payment.
+After successful payment, the system updates the membership package.
+21.3 Payment Cancelled or Failed
+The payment is cancelled or returns an unsuccessful result.
+The system does not activate or renew the membership package.
+The system informs the Receptionist that the payment was unsuccessful.
+The Receptionist may retry the payment.
+21.4 Cancel Operation
+The Receptionist cancels the registration or renewal.
+The system discards the unsaved transaction.
+The system returns to the member profile.
+Exceptions:
+  21.0.E1: Selected package is unavailable or inactive → The system rejects the operation and asks the Receptionist to select another package.
+  21.0.E2: Payment amount is invalid → The system prevents the transaction from being completed.
+  21.0.E3: Payment does not return a Success response → The system does not activate or renew the package.
+  21.0.E4: TransactionRef cannot be generated or is duplicated → The system rejects the transaction and requires it to be processed again.
+  21.0.E5: A system/database error occurs → The system does not apply the incomplete membership change and informs the Receptionist.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-MEM-02, BR-MEM-03, BR-MEM-04, BR-MEM-05, BR-PAY-01, BR-PAY-02, BR-PAY-03
+Other Information:
+  A membership package is activated only after successful payment confirmation.
+  When renewing a package that is still valid, the new duration is added to the existing EndDate.
+  When renewing an expired package, the new duration starts from the renewal date.
+  A paid and activated package cannot normally be refunded unless the Center Manager approves a special case.
+  The payment amount is calculated from the listed package price and applicable promotion discount and fees. 
+Assumptions
+  The member and membership package information already exists in the system.
+  The Receptionist is authorized to process membership payments.
+  The payment service can return a Success or unsuccessful payment response.
+  The system can generate a unique TransactionRef for each payment.
+ID and Name:
+UC-22 Check-in Member
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Receptionist
+Secondary Actors:
+None
+Description:
+The Receptionist checks in a member when the member arrives at the Sports Center. The system verifies the member's account and membership status before recording the check-in.
+Trigger:
+The Receptionist selects the Check-in Member function when a member arrives at the Sports Center.
+Preconditions:
+  PRE-1: The Receptionist has successfully logged into the system.
+PRE-2: The Receptionist has permission to perform member check-in.
+PRE-3: The member has an existing SCMS account.
+PRE-4: The member has a valid active membership package.
+Postconditions:
+  POST-1: The member's check-in is successfully recorded.
+  POST-2: The system records the check-in date and time.
+  POST-3: The member is allowed to use the Sports Center services according to the active membership package.
+Normal Flow:
+22.0 Check-in Member
+The Receptionist selects Check-in Member.
+The Receptionist searches for the member using the member's email, phone number, or other supported identifier.
+The system displays the member's profile and membership status.
+The system verifies that the member has an active and valid membership package.
+The Receptionist confirms the member's check-in.
+The system records the check-in date and time.
+The system displays a successful check-in message.
+Alternative Flows:
+22.1 Member Has Multiple Packages
+The system displays the member's available membership packages.
+The Receptionist selects the applicable active package.
+The system verifies the selected package.
+The Receptionist confirms the check-in.
+The system records the check-in.
+22.2 Cancel Check-in
+The Receptionist cancels the check-in operation.
+The system does not create a check-in record.
+The system returns to the check-in screen.
+Exceptions:
+  22.0.E1: Member cannot be found → The system informs the Receptionist that no matching member exists.
+  22.0.E2: Member does not have an active package → The system rejects the check-in and informs the Receptionist.
+  22.0.E3: Membership package has expired → The system rejects the check-in and displays the expired membership status.
+  22.0.E4: Member account is inactive → The system does not allow the check-in.
+  22.0.E5: A system/database error occurs → The system cannot record the check-in and informs the Receptionist.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-MEM-01, BR-MEM-03, BR-MEM-04
+Other Information:
+  Only members with an active and valid membership package can check in.
+  The system uses the current date to determine whether a membership package is still valid.
+  The check-in record can be used for attendance and operational reporting.
+Assumptions
+  The member's account and membership information are available in the system.
+  The Receptionist is authorized to perform check-in.
+  The system can determine the current membership status based on the package EndDate.
+ID and Name:
+UC-30 View Teaching Schedule
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Coach
+Secondary Actors:
+None
+Description:
+The Coach views their assigned teaching schedule, including class information, room, date, time, and class status.
+Trigger:
+The Coach selects the Teaching Schedule function.
+Preconditions:
+  PRE-1: The Coach has successfully logged into the system.
+  PRE-2: The Coach has permission to view their teaching schedule.
+  PRE-3: The Coach has at least one assigned class or schedule.
+Postconditions:
+  POST-1: The Coach's teaching schedule is displayed.
+  POST-2: The Coach can review the information needed to prepare for and conduct assigned classes..
+Normal Flow:
+30.0 View Teaching Schedule
+The Coach selects Teaching Schedule.
+The system retrieves the classes assigned to the Coach.
+The system displays the Coach's schedule.
+The Coach selects a class to view its details.
+The system displays the class name, date, time, room, and other available information.
+The Coach reviews the schedule.
+Alternative Flows:
+30.1 Filter Schedule
+The Coach selects a date or time period.
+The system retrieves the corresponding teaching schedule.
+The system displays the filtered schedule.
+30.2 No Assigned Classes
+The Coach opens the teaching schedule.
+The system finds no assigned classes.
+The system displays a message indicating that no teaching schedule is available.
+Exceptions:
+ 30.0.E1: Schedule information cannot be retrieved → The system displays an error message and allows the Coach to retry.
+ 30.0.E2: A system/database error occurs → The system cannot display the schedule and informs the Coach.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-CLASS-02, BR-AUTH-04
+Other Information:
+  The Coach can view only classes assigned to them.
+  The displayed schedule should contain sufficient information for the Coach to identify each class.
+  Schedule information may be filtered by date or time period.
+Assumptions
+  The Coach account is active and authorized to access the teaching schedule.
+  Class and Coach assignment information has been stored in the system.
+  The system can retrieve the Coach's assigned classes.
+ID and Name:
+UC-31 Manage Class Members
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Coach
+Secondary Actors:
+None
+Description:
+The Coach views and manages the member list of an assigned class, including reviewing enrolled members and their relevant membership information.
+Trigger:
+The Coach selects an assigned class and opens its member list.
+Preconditions:
+  PRE-1: The Coach has successfully logged into the system.
+  PRE-2: The Coach has permission to manage class members.
+  PRE-3: The Coach is assigned to the selected class.
+Postconditions:
+  POST-1: The Coach can view the current members of the selected class.
+  POST-2: Any permitted changes to class member information are saved in the system.
+Normal Flow:
+31.0 Manage Class Members
+The Coach selects an assigned class.
+The system displays the class information.
+The Coach selects Class Members.
+The system retrieves the members currently enrolled in the class.
+The system displays the member list.
+The Coach selects a member to view their relevant information.
+The system displays the selected member's available information.
+Alternative Flows:
+31.1 View Member Details
+The Coach selects a member from the class member list.
+The system displays the member's relevant profile and class-related information.
+The Coach reviews the information.
+31.2 No Members Enrolled
+The Coach opens the class member list.
+The system finds no enrolled members.
+The system displays a message indicating that the class currently has no members.
+31.3 Cancel Operation
+The Coach returns to the class information.
+The system closes the class member list.
+Exceptions:
+  31.0.E1: The selected class is not assigned to the Coach → The system denies access to the class member list.
+  31.0.E2: Member information cannot be retrieved → The system displays an error message and allows the Coach to retry.
+  31.0.E3: A system/database error occurs → The system cannot display the class members and informs the Coach.
+Priority:
+Medium
+Frequency of Use:
+High
+Business Rules:
+BR-CLASS-01, BR-AUTH-04
+Other Information:
+  The Coach can manage or view members only for classes assigned to them.
+  The class member list reflects members who have successfully booked or enrolled in the class.
+  The class capacity must not be exceeded when members are added through the booking process.
+Assumptions
+  The Coach is assigned to the selected class.
+  Class and member enrollment information is available in the system.
+  Booking and class-capacity validation are handled by the corresponding booking functions.
+ID and Name:
+UC-32 Create Training Plan
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Coach
+Secondary Actors:
+None
+Description:
+The Coach creates a training plan for a member based on the member's training goals and available information. The Coach can define exercises, targets, and training instructions for the member.
+Trigger:
+The Coach selects the function to create a training plan for a member.
+Preconditions:
+  PRE-1: The Coach has successfully logged into the system.
+  PRE-2: The Coach has permission to create training plans.
+  PRE-3: The selected member exists in the system.
+  PRE-4: The Coach has access to the member's relevant training information.
+Postconditions:
+  POST-1: The training plan is successfully created and stored.
+  POST-2: The training plan is associated with the selected member.
+  POST-3: The member can view the training plan when it is officially delivered.
+Normal Flow:
+32.0 Create Training Plan
+The Coach selects a member.
+The system displays the member's available training information.
+The Coach selects Create Training Plan.
+The Coach enters the training goals, exercises, schedule, and instructions.
+The system validates the entered information.
+The Coach reviews and confirms the training plan.
+The system saves the training plan.
+The system displays a success message.
+Alternative Flows:
+32.1 Modify Training Plan Before Saving
+The Coach reviews the training plan.
+The Coach modifies the exercises, targets, or instructions.
+The system validates the updated information.
+The Coach confirms the changes.
+The system saves the updated training plan.
+32.2 Cancel Creation
+The Coach cancels the training plan creation.
+The system discards the unsaved information.
+The system returns to the member's training information.
+Exceptions:
+  32.0.E1: Required training information is missing → The system asks the Coach to complete the required fields.
+  32.0.E2: Invalid training information is entered → The system displays a validation message and asks the Coach to correct the information.
+  32.0.E3: Member information cannot be retrieved → The system displays an error message and prevents the training plan from being created.
+  32.0.E4: A system/database error occurs while saving → The system does not create the incomplete training plan and informs the Coach.
+Priority:
+High
+Frequency of Use:
+Medium
+Business Rules:
+BR-AI-02, BR-AUTH-04
+Other Information:
+  The Coach is responsible for creating and managing training plans for members.
+  Training plans may contain exercises, targets, schedules, and instructions.
+  If an AI-generated plan is used for an advanced class, it must be reviewed or edited by the Coach before being officially delivered to the member.
+Assumptions
+  The member has an existing account.
+  The Coach is authorized to create training plans.
+  The system can store training plan information and associate it with the corresponding member.
+ID and Name:
+UC-33 Record Workout Progress
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Coach
+Secondary Actors:
+None
+Description:
+The Coach records and updates a member's workout progress based on training sessions, exercises, results, and feedback.
+Trigger:
+The Coach selects the function to record workout progress for a member.
+Preconditions:
+   PRE-1: The Coach has successfully logged into the system.
+  PRE-2: The Coach has permission to record workout progress.
+  PRE-3: The selected member exists in the system.
+  PRE-4: The Coach has access to the member's training plan or workout information.
+Postconditions:
+  POST-1: The member's workout progress is successfully recorded.
+  POST-2: The recorded progress is associated with the corresponding member and training plan.
+  POST-3: The updated progress can be used to monitor the member's development.
+Normal Flow:
+33.0 Record Workout Progress
+The Coach selects a member.
+The system displays the member's training plan and previous workout progress.
+The Coach selects the relevant workout session or exercise.
+The Coach enters the member's workout results and progress information.
+The Coach adds feedback or notes when necessary.
+The system validates the entered information.
+The Coach confirms the recorded progress.
+The system saves the workout progress.
+The system displays a success message.
+Alternative Flows:
+33.1 Update Existing Progress
+The Coach selects a previously recorded workout.
+The system displays the recorded progress.
+The Coach modifies the required information.
+The system validates the changes.
+The system saves the updated progress.
+33.2 Cancel Operation
+The Coach cancels the current operation.
+The system discards unsaved information.
+The system returns to the member's progress page.
+Exceptions:
+  33.0.E1: Required workout information is missing → The system asks the Coach to complete the required fields.
+  33.0.E2: Invalid progress information is entered → The system displays a validation message and asks the Coach to correct the information.
+  33.0.E3: Member or training information cannot be retrieved → The system displays an error message and prevents the progress from being recorded.
+  33.0.E4: A system/database error occurs while saving → The system does not apply the incomplete progress record and informs the Coach.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-AUTH-04
+Other Information:
+  Workout progress is associated with the corresponding member.
+  The Coach can use previous progress records to monitor the member's development.
+  Progress information may be used as input when creating or adjusting future training plans.
+Assumptions
+  The member has an existing account and training information.
+  The Coach is authorized to record the member's workout progress.
+  The system can store and retrieve workout progress records.
+ID and Name:
+UC-34 Take Class Attendance
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Coach
+Secondary Actors:
+None
+Description:
+The Coach records attendance for members enrolled in an assigned class. The system verifies that attendance is being taken within the permitted attendance period and records each member's attendance status.
+Trigger:
+The Coach selects the Class Attendance function for an assigned class.
+Preconditions:
+  PRE-1: The Coach has successfully logged into the system.
+  PRE-2: The Coach has permission to take class attendance.
+  PRE-3: The Coach is assigned to the selected class.
+  PRE-4: The attendance period is within the allowed time window.
+Postconditions:
+  POST-1: Attendance records for the class are saved.
+  POST-2: Each enrolled member has an attendance status recorded.
+  POST-3: Members who do not attend can be processed according to the no-show rules.
+Normal Flow:
+34.0 Take Class Attendance
+The Coach selects an assigned class.
+The system checks whether attendance can currently be taken.
+The system displays the list of members booked for the class.
+The Coach marks the attendance status for each member.
+The Coach reviews the attendance records.
+The Coach confirms the attendance.
+The system saves the attendance records.
+The system displays a confirmation message.
+Alternative Flows:
+34.1 Member Does Not Attend
+The Coach identifies a booked member who is not present.
+The Coach records the member as absent.
+The system saves the absence status.
+The system applies the applicable no-show processing.
+34.2 Update Attendance Before Confirmation
+The Coach reviews the attendance list.
+The Coach changes an incorrect attendance status.
+The system updates the selected status.
+The Coach confirms the final attendance records.
+34.3 Cancel Attendance
+The Coach cancels the attendance operation before confirmation.
+The system discards unsaved attendance changes.
+The system returns to the class information.
+Exceptions:
+  34.0.E1: Attendance is opened outside the permitted time → The system does not allow attendance to be recorded.
+  34.0.E2: The selected class is not assigned to the Coach → The system denies access to the attendance function.
+  34.0.E3: No enrolled members are available → The system informs the Coach that there are no members to mark attendance for.
+  34.0.E4: A system/database error occurs while saving → The system does not apply the incomplete attendance records and informs the Coach.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-ATT-01, BR-ATT-02, BR-ATT-03, BR-AUTH-04
+Other Information:
+  Attendance can be opened from 15 minutes before the class until 30 minutes after the class ends.
+  A booked member who does not attend and does not cancel according to the cancellation policy is considered absent.
+  Repeated absences may result in the member being temporarily disabled from online class booking according to the applicable business rule.
+Assumptions
+  The class has an assigned Coach.
+  The system has the list of members who booked the class.
+  The system can determine the class start and end time.
+  Attendance records can be stored and updated in the system.
+ID and Name:
+UC-35 Send Homework/Notifications
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Coach
+Secondary Actors:
+None
+Description:
+The Coach creates and sends homework or training notifications to members of an assigned class or to individual members. The system delivers the information through the available notification function.
+Trigger:
+The Coach selects the function to send homework or notifications.
+Preconditions:
+ PRE-1: The Coach has successfully logged into the system.
+PRE-2: The Coach has permission to send homework or notifications.
+PRE-3: The target member or class exists in the system.
+PRE-4: The Coach is authorized to communicate with the selected member or class.
+Postconditions:
+  POST-1: The homework or notification is successfully created.
+  POST-2: The message is associated with the selected member or class.
+  POST-3: The target recipients can view the sent homework or notification.
+Normal Flow:
+35.0 Send Homework/Notifications
+The Coach selects Homework/Notifications.
+The Coach selects a class or member as the recipient.
+The system displays the message creation form.
+The Coach enters the homework, training instructions, or notification.
+The Coach reviews the message.
+The Coach submits the message.
+The system validates the message and recipient.
+The system saves and sends the notification.
+The system displays a success message.
+Alternative Flows:
+35.1 Send Homework to Class
+The Coach selects an assigned class.
+The system retrieves the members of the class.
+The Coach creates the homework or training instructions.
+The Coach confirms the message.
+The system sends the message to the class members.
+35.2 Send Notification to Individual Member
+The Coach selects a member.
+The Coach enters the notification.
+The Coach confirms the message.
+The system sends the notification to the selected member.
+35.3 Cancel Operation
+The Coach cancels the message creation.
+The system discards the unsent message.
+The system returns to the previous page.
+Exceptions:
+  35.0.E1: No recipient is selected → The system asks the Coach to select a valid member or class.
+  35.0.E2: Required message content is missing → The system asks the Coach to enter the required content.
+  35.0.E3: The Coach is not assigned to the selected class → The system denies the operation.
+  35.0.E4: Notification cannot be sent or saved → The system displays an error message and allows the Coach to retry.
+  35.0.E5: A system/database error occurs → The system does not create the incomplete notification and informs the Coach.
+Priority:
+Medium
+Frequency of Use:
+Medium
+Business Rules:
+BR-AUTH-04
+Other Information:
+  The Coach can send homework or notifications to individual members or members of an assigned class.
+  Notifications may contain training instructions, homework, reminders, or other class-related information.
+  The system should ensure that notifications are delivered only to the intended recipients.
+Assumptions
+   The Coach has access to the selected member or assigned class.
+  The notification function is available in the system.
+  The system can store and deliver notification content.
+ID and Name:
+UC-36 Get AI Workout Recommendation
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Coach
+Secondary Actors:
+AI Recommendation Service
+Description:
+The Coach requests an AI-generated workout recommendation based on a member's personal metrics and training goal. The Coach reviews the recommendation and can use it as a basis for creating or adjusting the member's training plan.
+Trigger:
+The Coach selects the AI Workout Recommendation function for a member.
+Preconditions:
+  PRE-1: The Coach has successfully logged into the system.
+  PRE-2: The Coach has permission to access AI workout recommendations.
+  PRE-3: The selected member has completed the required personal metrics.
+  PRE-4: The member's height, weight, and training goal are available.
+Postconditions:
+  POST-1: The AI-generated workout recommendation is displayed to the Coach.
+  POST-2: The Coach can review and modify the recommendation before using it in a training plan.
+  POST-3: The final training plan is not officially delivered based solely on an unreviewed AI recommendation.
+Normal Flow:
+36.0 Get AI Workout Recommendation
+The Coach selects a member.
+The Coach selects AI Workout Recommendation.
+The system retrieves the member's height, weight, and training goal.
+The system sends the required information to the AI Recommendation Service.
+The AI Recommendation Service generates a workout recommendation.
+The system displays the recommendation to the Coach.
+The Coach reviews the recommendation.
+The Coach can use the recommendation as a basis for creating or updating the member's training plan.
+Alternative Flows:
+36.1 Modify AI Recommendation
+The Coach reviews the AI-generated recommendation.
+The Coach modifies or adjusts the suggested exercises or training information.
+The Coach confirms the adjusted recommendation.
+The adjusted information can be used in the member's training plan.
+36.2 Member Information Is Incomplete
+The system checks the member's personal metrics.
+Required information is missing.
+The system informs the Coach that the AI recommendation cannot be generated.
+The Coach can update the required member information and request the recommendation again.
+36.3 Cancel Recommendation
+The Coach cancels the AI recommendation request.
+The system does not create a recommendation.
+The system returns to the member's training information.
+Exceptions:
+  36.0.E1: Height, weight, or training goal is missing → The system does not generate the recommendation and asks the Coach to complete the required information.
+  36.0.E2: AI Recommendation Service is unavailable → The system displays an error message and allows the Coach to retry.
+  36.0.E3: The AI service returns an invalid or unusable recommendation → The system informs the Coach that the recommendation cannot be used.
+  36.0.E4: A system/database error occurs → The system does not save incomplete recommendation information and informs the Coach.
+Priority:
+Medium
+Frequency of Use:
+Low to Medium
+Business Rules:
+BR-AI-01, BR-AI-02, BR-AUTH-04
+Other Information:
+  The AI recommendation requires the member's height, weight, and training goal as input.
+  Supported training goals include lose weight and build muscle.
+  AI-generated recommendations are suggestions and must be reviewed by the Coach before being officially delivered to the member.
+  For advanced classes, the Coach must review or edit the AI-generated plan or exercises before official delivery.
+Assumptions
+  The AI Recommendation Service is available when the request is made.
+  The member's required personal metrics are stored in the system.
+  The Coach remains responsible for reviewing and approving the recommendation before official use.
+Member
+ID and Name:
+UC-40 Register Member Account
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Member
+Secondary Actors:
+None
+Description:
+The Coach requests an AI-generated workout recommendation based on a member's personal metrics and training goal. The Coach reviews the recommendation and can use it as a basis for creating or adjusting the member's training plan.
+Trigger:
+The user selects the Register Member Account function.
+Preconditions:
+  PRE-1: The user does not already have a registered account with the provided email.
+  PRE-2: The registration function is available.
+  PRE-3: The user can provide the required registration information.
+Postconditions:
+  POST-1: A new Member account is created successfully.
+  POST-2: The account information is stored in the system.
+  POST-3: The password is securely stored in hashed form.
+  POST-4: The user can log in using the registered email and password.
+Normal Flow:
+40.0 Register Member Account
+User selects Register Member Account.
+System displays the registration form.
+User enters the required information such as full name, email, and password.
+User confirms the registration.
+System validates the entered information.
+System checks whether the email is already registered.
+System securely hashes the password.
+System creates the Member account.
+System displays a registration success message.
+User can proceed to the Login function.
+Alternative Flows:
+40.1 Cancel Registration
+User selects Cancel during registration.
+System returns to the previous or login page.
+No account is created.
+40.2 Duplicate Email
+System detects that the entered email already belongs to an existing account.
+System displays an error message.
+User enters another email and continues registration.
+Exceptions:
+  40.0.E1 Missing Required Information: System informs the user that required fields must be completed.
+  40.0.E2 Invalid Email: System informs the user that the email format is invalid.
+  40.0.E3 Password Validation Failed: System informs the user that the password does not satisfy the required validation rules.
+  40.0.E4 System/Database Error: System cannot create the account and informs the user that registration could not be completed.
+Priority:
+High
+Frequency of Use:
+Medium
+Business Rules:
+BR-AUTH-01, BR-AUTH-02, BR-AUTH-04
+Other Information:
+  Email is used as the primary username for login.
+  A newly registered account is assigned the MEMBER role.
+  Registration creates the account only; subscribing to a membership package is handled separately by UC-41 – Subscribe/Renew Package.
+  Passwords must never be stored or displayed as plain text.
+Assumptions
+  The user provides valid registration information.
+  The email is accessible and can be used for the account.
+  The system can securely store the account information.
+  The default role for a newly registered account is Member.
+ID and Name:
+UC-41 Subscribe/Renew Package
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Member
+Secondary Actors:
+Payment Service
+Description:
+The Member subscribes to a new membership package or renews an existing package through the Sports Center Management System. The system calculates the payment amount, processes the payment, and activates or extends the membership package after receiving a successful payment result.
+Trigger:
+The Member selects Subscribe/Renew Package.
+Preconditions:
+  PRE-1: Member is logged in.
+  PRE-2: Member account is active.
+  PRE-3: At least one membership package is available for subscription or renewal.
+  PRE-4: The selected package is active and available.
+Postconditions:
+  POST-1: The payment transaction is recorded with a unique TransactionRef.
+POST-2: The membership package is activated or renewed after successful payment.
+  POST-3: The membership start and end dates are updated according to the membership rules.
+  POST-4: The Member can use the active package for eligible system functions.
+Normal Flow:
+41.0 Subscribe/Renew Package
+Member selects Subscribe/Renew Package.
+System displays available membership packages.
+Member selects a package.
+System displays the package duration and price.
+System calculates the total payment amount.
+Member reviews and confirms the payment information.
+System sends the payment request to the Payment Service.
+Payment Service returns a successful payment result.
+System generates and records a unique TransactionRef.
+System activates the new package or extends the existing package.
+System displays the payment and membership confirmation.
+Alternative Flows:
+41.1 Subscribe to a New Package
+Member selects a package without an existing active package.
+System processes the payment.
+After successful payment, the package becomes Active immediately.
+The package start date is set to the payment date.
+41.2 Renew an Active Package
+Member selects a package for renewal while the current package is still valid.
+System processes the payment.
+After successful payment, the new duration is added to the existing package end date.
+System updates the new EndDate.
+41.3 Renew an Expired Package
+Member selects a package for renewal after the previous package has expired.
+System processes the payment.
+After successful payment, the new package starts from the renewal date.
+System calculates the new EndDate based on the selected package duration.
+41.4 Cancel Payment
+Member cancels the payment before completion.
+System does not activate or renew the package.
+System returns the Member to the package selection or previous page.
+Exceptions:
+  41.0.E1 Package Unavailable: The selected package is inactive or unavailable. System informs the Member and asks them to select another package.
+  41.0.E2 Invalid Payment Amount: System detects an invalid payment amount and does not continue the transaction.
+  41.0.E3 Payment Failed: Payment Service returns a failed payment result. System does not activate or renew the package.
+  41.0.E4 TransactionRef Error: System cannot generate or record a unique TransactionRef. The transaction is not considered successfully completed.
+  41.0.E5 System/Database Error: System cannot complete the transaction and informs the Member.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-MEM-02, BR-MEM-03, BR-MEM-04, BR-MEM-05
+BR-PAY-01, BR-PAY-02, BR-PAY-03
+Other Information:
+  The Member can view available package information before making a payment.
+  Payment must be successfully confirmed before the package is activated or renewed.
+  Renewal rules depend on whether the existing package is still valid or has already expired.
+  Refund processing is subject to the Center Manager's approval under special circumstances.
+Assumptions
+  The Member has a valid account and is logged in.
+  Membership package information and prices are available in the system.
+  The Payment Service can return a success or failure result.
+  The system can generate and store a unique TransactionRef.
+ID and Name:
+UC-42 View Class Schedules
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Member
+Secondary Actors:
+None
+Description:
+The Member views available class schedules in the Sports Center Management System. The system displays relevant information such as class name, Coach, room, date, time, and available capacity so that the Member can select a suitable class for booking.
+Trigger:
+The Member selects View Class Schedules.
+Preconditions:
+  PRE-1: Member is logged in.
+  PRE-2: Member account is active.
+  PRE-3: Class schedule information is available in the system.
+Postconditions:
+  POST-1: Available class schedules are displayed.
+  POST-2: Member can review class details before making a booking.
+  POST-3: No booking is created by this use case.
+Normal Flow:
+42.0 View Class Schedules
+Member selects View Class Schedules.
+System retrieves available class schedules.
+System displays the list of classes.
+Member selects a class to view its details.
+System displays class information including class name, Coach, room, date, time, and capacity information.
+Member reviews the class schedule.
+Member can select Book Class to continue to UC-43.
+Alternative Flows:
+42.1 Filter Class Schedule
+Member selects available filtering options.
+Member enters or selects criteria such as date, class, or time.
+System retrieves schedules matching the selected criteria.
+System displays the filtered class list.
+42.2 No Available Classes
+System finds no classes matching the selected criteria.
+System displays a message indicating that no suitable classes are available.
+Member can change the filter or return to the class schedule list.
+42.3 Cancel Viewing
+Member leaves the class schedule page.
+System returns to the previous page or Member dashboard.
+No booking is created or changed.
+Exceptions:
+  42.0.E1 Invalid Filter: System detects invalid search/filter information and asks the Member to enter valid criteria.
+  42.0.E2 Schedule Retrieval Failure: System cannot retrieve class schedule information and informs the Member.
+  42.0.E3 System/Database Error: System cannot load the schedule data.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-CLASS-01, BR-CLASS-03, BR-CLASS-04
+Other Information:
+  Class information should show enough details for the Member to decide whether to book.
+  Capacity information can be used to indicate whether a class still has available seats.
+  Viewing a schedule does not reserve a seat.
+  Actual booking validation is handled by UC-43 – Book Class.
+Assumptions
+  Class and schedule information is maintained by the system.
+  Only classes available for Member viewing are displayed.
+  The system can determine class capacity and schedule information.
+ID and Name:
+UC-43 Book Class
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Member
+Secondary Actors:
+None
+Description:
+The Member books an available class through the Sports Center Management System. The system verifies the Member's active membership package, booking time, class capacity, and schedule conflicts before confirming the booking.
+Trigger:
+The Member selects Book Class for an available class.
+Preconditions:
+  PRE-1: Member is logged in.
+  PRE-2: Member account is active.
+  PRE-3: Member has at least one valid Active membership package.
+  PRE-4: The selected class is available for booking.
+  PRE-5: The booking request is within the allowed booking period.
+Postconditions:
+  POST-1: A class booking is created successfully.
+  POST-2: The booked seat is counted toward the class capacity.
+  POST-3: The Member can view the booking in their booking information.
+  POST-4: The class's available capacity is updated.
+Normal Flow:
+43.0 Book Class
+Member selects an available class.
+System displays the class details and booking information.
+Member selects Book Class.
+System verifies that the Member has an Active and valid membership package.
+System checks whether the booking request is within the allowed booking time.
+System checks the remaining class capacity.
+System checks whether the Member already has an overlapping class booking.
+System confirms that all booking conditions are satisfied.
+System creates the class booking.
+System updates the available capacity.
+System displays a booking confirmation.
+Alternative Flows:
+43.1 Book from Class Schedule
+Member views the class list through UC-42.
+Member selects a class.
+Member chooses Book Class.
+System continues from step 4 of the normal flow.
+43.2 Class is Full
+System detects that the class has reached MaxCapacity.
+System does not create the booking.
+System informs the Member that the class is full.
+Member can choose another available class.
+43.3 Cancel Booking Before Confirmation
+Member chooses to cancel the booking process.
+System returns to the class details or schedule.
+No booking is created.
+43.4 Member Has No Valid Package
+System detects that the Member does not have an Active and valid membership package.
+System rejects the booking.
+System informs the Member that a valid membership package is required.
+Member can subscribe or renew a package through UC-41.
+Exceptions:
+  43.0.E1 Booking Outside Allowed Time: The booking request is not within the permitted booking period. System rejects the booking.
+  43.0.E2 Class Capacity Exceeded: The class has no remaining capacity. System rejects the booking.
+  43.0.E3 Overlapping Booking: Member already has another class booking that overlaps with the selected class. System rejects the booking.
+  43.0.E4 Membership Expired: The Member's package is no longer valid. System rejects the booking.
+  43.0.E5 System/Database Error: System cannot create or update the booking and informs the Member.
+Priority:
+High
+Frequency of Use:
+High
+Business Rules:
+BR-MEM-01, BR-CLASS-01, BR-BOOK-01, BR-BOOK-03, BR-AUTH-04
+Other Information:
+  A successful booking reserves one seat in the selected class.
+  Viewing a class schedule does not reserve a seat.
+  Membership validity is checked at the time of booking.
+  The system must reject attempts to exceed the class capacity.
+  Cancellation of an existing booking is handled separately by UC-44 – Cancel Class Booking.
+  Waitlist processing, if implemented, is handled according to BR-BOOK-04.
+Assumptions
+  Class schedules and capacity information are available in the system.
+  The Member's membership status can be verified.
+  The system can determine whether two class schedules overlap.
+  Booking information can be stored and updated successfully.
+ID and Name:
+UC-44 Cancel Class Booking
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Member
+Secondary Actors:
+None
+Description:
+The Member cancels a previously created class booking through the Sports Center Management System. The system verifies that the booking can still be cancelled according to the cancellation policy and updates the booking and class capacity after successful cancellation.
+Trigger:
+The Member selects Cancel Class Booking for an existing booking.
+Preconditions:
+  PRE-1: Member is logged in.
+  PRE-2: Member account is active.
+  PRE-3: The Member has an existing class booking.
+  PRE-4: The booking has not already been cancelled or completed.
+Postconditions:
+  POST-1: The selected booking is cancelled successfully.
+  POST-2: The cancelled seat is released from the Member's booking.
+  POST-3: The class's available capacity is updated.
+  POST-4: If applicable, the released seat can be offered to the next waitlisted Member.
+Normal Flow:
+44.0 Cancel Class Booking
+Member opens their class bookings.
+System displays the Member's existing bookings.
+Member selects the booking to cancel.
+System displays the booking details.
+Member selects Cancel Booking.
+System checks whether the cancellation is within the allowed time.
+System asks the Member to confirm the cancellation.
+Member confirms the cancellation.
+System changes the booking status to Cancelled.
+System releases the reserved seat.
+System updates the class capacity.
+System displays a cancellation confirmation.
+Alternative Flows:
+44.1 Member Cancels Before the Deadline
+Member requests cancellation at least 2 hours before the class.
+System confirms that the cancellation is permitted.
+System cancels the booking and releases the seat.
+44.2 Member Does Not Confirm Cancellation
+System displays a cancellation confirmation request.
+Member chooses not to continue.
+System keeps the booking unchanged.
+Member returns to the booking list.
+44.3 Notify Waitlisted Member
+A seat becomes available after successful cancellation.
+System checks whether there is a waitlisted Member.
+If applicable, the system offers the available seat to the next waitlisted Member or sends a notification.
+Exceptions:
+  44.0.E1 Cancellation Deadline Passed: The Member attempts to cancel less than 2 hours before the class. System does not allow normal cancellation.
+  44.0.E2 Booking Not Found: System cannot find the selected booking and informs the Member.
+  44.0.E3 Booking Already Cancelled: System informs the Member that the booking has already been cancelled.
+  44.0.E4 System/Database Error: System cannot update the booking or class capacity and informs the Member.
+Priority:
+High
+Frequency of Use:
+Medium to High
+Business Rules:
+BR-BOOK-02, BR-BOOK-04, BR-AUTH-04
+Other Information:
+    Cancellation does not create a new booking.
+  A successful cancellation releases the reserved seat.
+  Late cancellation is not treated as a normal cancellation.
+  Waitlist processing may be implemented as an optional/future function.
+  The Member can view the updated booking status after cancellation.
+Assumptions
+  The Member's booking information is stored in the system.
+  The system can determine the class start time.
+  The system can calculate whether the cancellation deadline has passed.
+  The system can update booking status and class capacity.
+ID and Name:
+UC-45 View Personal Progress & Feedback
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Member
+Secondary Actors:
+None
+Description:
+The Member cancels a previously created class booking through the Sports Center Management System. The system verifies that the booking can still be cancelled according to the cancellation policy and updates the booking and class capacity after successful cancellation.
+Trigger:
+The Member selects View Personal Progress & Feedback.
+Preconditions:
+   PRE-1: Member is logged in.
+  PRE-2: Member account is active.
+  PRE-3: Personal training or progress information is available in the system.
+Postconditions:
+  POST-1: The Member's personal progress information is displayed.
+  POST-2: The Member can review training plans, workout results, and Coach feedback.
+  POST-3: No personal progress information is modified by this use case.
+Normal Flow:
+45.0 View Personal Progress & Feedback
+Member selects Personal Progress & Feedback.
+System retrieves the Member's training and progress information.
+System displays the current training plan and recent workout progress.
+Member selects a training session, exercise, or progress record.
+System displays the corresponding results and Coach feedback.
+Member reviews their progress and feedback.
+Alternative Flows:
+45.1 View Previous Progress
+Member selects a previous training session or progress record.
+System retrieves the selected historical information.
+System displays the previous workout results and feedback.
+45.2 No Progress Information
+System finds that the Member has no recorded workout progress.
+System displays an appropriate message.
+Member can return to the Member dashboard.
+45.3 Filter Progress
+Member selects a filter such as training period or workout session.
+System retrieves matching progress records.
+System displays the filtered results.
+Exceptions:
+  45.0.E1 Progress Data Unavailable: System cannot retrieve the Member's progress information.
+45.0.E2 Invalid Filter: System detects invalid filtering information and asks the Member to provide valid criteria.
+  45.0.E3 System/Database Error: System cannot load the requested progress or feedback information.
+Priority:
+Medium
+Frequency of Use:
+Medium to High
+Business Rules:
+BR-AI-02, BR-AUTH-04
+Other Information:
+  Progress information may include completed exercises, workout results, training plans, and Coach feedback.
+  The Member can view their own information only.
+  Progress records are created or updated through Coach-related functions such as UC-32 – Create Training Plan and UC-33 – Record Workout Progress.
+  AI-generated recommendations should not be considered an official training plan until reviewed by the Coach when the AI review rule applies.
+Assumptions
+  The Member has valid access to the system.
+  Training plans and progress records are stored in the system.
+  Coach feedback is associated with the appropriate Member and training records.
+ID and Name:
+UC-46 Ask AI Assistant
+Created By:
+SCMS Development Team
+Date Created:
+09/12/2026
+Primary Actor:
+Member
+Secondary Actors:
+AI Assistant Service
+Description:
+The Member interacts with the AI Assistant to ask questions related to workouts, exercises, training routines, and general fitness guidance. The system sends the Member's question to the AI Assistant Service and displays the generated response.
+Trigger:
+The Member selects Ask AI Assistant and submits a question.
+Preconditions:
+  PRE-1: Member is logged in.
+  PRE-2: Member account is active.
+  PRE-3: AI Assistant Service is available.
+  PRE-4: The Member has entered a question or request.
+Postconditions:
+  POST-1: The AI Assistant response is displayed to the Member.
+  POST-2: The conversation or response may be stored if the system supports conversation history.
+  POST-3: No official training plan is created solely from the AI Assistant response.
+Normal Flow:
+46.0 Ask AI Assistant
+Member selects Ask AI Assistant.
+System displays the AI Assistant interface.
+Member enters a question or request.
+Member submits the question.
+System validates the submitted content.
+System sends the request to the AI Assistant Service.
+AI Assistant Service generates a response.
+System displays the response to the Member.
+Member reviews the response and can ask another question.
+Alternative Flows:
+46.1 Ask a Follow-up Question
+Member reviews the AI Assistant's response.
+Member enters a follow-up question.
+System sends the new request to the AI Assistant Service.
+System displays the new response.
+46.2 Empty or Invalid Question
+Member submits an empty or invalid request.
+System informs the Member that a valid question is required.
+Member enters another question.
+46.3 End Conversation
+Member chooses to leave the AI Assistant.
+System returns to the Member dashboard or previous page.
+No further AI request is sent.
+Exceptions:
+  46.0.E1 AI Service Unavailable: The AI Assistant Service cannot process the request. System informs the Member that the service is temporarily unavailable.
+  46.0.E2 Invalid AI Response: The returned response cannot be processed or displayed correctly. System informs the Member that the request could not be completed.
+  46.0.E3 System/Database Error: System cannot process or store the request/response and informs the Member.
+Priority:
+Medium
+Frequency of Use:
+Medium
+Business Rules:
+BR-AI-01, BR-AI-02, BR-AUTH-04
+Other Information:
+  The AI Assistant is intended to provide general fitness and workout guidance.
+  An AI response does not automatically become an official training plan.
+  When AI-generated exercises or plans are used for advanced classes, they must be reviewed by a Coach before official delivery.
+  Personal progress and training information may be used as context only when permitted by the system.
+  The AI Assistant Service is an external supporting service.
+Assumptions
+  The Member has access to the AI Assistant function.
+  The AI Assistant Service is available when a request is submitted.
+  The system can send requests and receive responses from the AI service.
+  The Coach remains responsible for reviewing official training plans where required.
+ID
+Use Case
+Actors
+Use Case Description
+1
+UC-01 Login System
+Center Manager, Receptionist, Coach, Member
+Allows users to access the system by providing valid credentials based on their roles.
+2
+UC-02 Logout System
+Center Manager, Receptionist, Coach, Member
+Ends the user's session and securely logs them out of the system.
+3
+UC-03 View Profile & Change Password
+Center Manager, Receptionist, Coach, Member
+Enables users to view their personal profile information and update their account password.
+4
+UC-04 Reset Password
+Center Manager, Receptionist, Coach, Member
+Allows users to recover their account by resetting a forgotten password via email verification.
+5
+UC-10 Manage Staff Accounts
+Center Manager
+Allows the manager to create, update, activate, or deactivate accounts for Receptionists and Coaches.
+6
+UC-11 Manage Membership Packages
+Center Manager
+Enables the manager to create, update, and configure durations and prices for membership packages.
+7
+UC-12 Manage Classes & Rooms
+Center Manager
+Allows the manager to create training rooms, sports categories, and classes while avoiding scheduling conflicts.
+8
+UC-13 Assign Coach to Class
+Center Manager
+Assigns an available coach to a specific class, ensuring there are no overlapping teaching schedules.
+9
+UC-14 View Reports & Analytics
+Center Manager
+Displays summarized data and charts regarding center revenue, membership subscriptions, and class attendance.
+10
+UC-15 Manage System Roles & Permissions
+Center Manager
+Configures access controls and specific permissions for different user roles within the system.
+11
+UC-16 View Audit Logs
+Center Manager
+Displays a read-only log of critical system actions (Create, Update, Delete) performed by users for security tracking.
+12
+UC-20 Lookup Member Profile
+Receptionist
+Searches and views a member's profile and current membership package status at the front desk.
+13
+UC-21 Register/Renew Package at Counter
+Receptionist
+Assists members in subscribing to or renewing a membership package and processes payment directly at the counter.
+14
+UC-22 Check-in Member
+Receptionist
+Verifies the validity of a member's active package and records their check-in time when they arrive at the center.
+15
+UC-30 View Teaching Schedule
+Coach
+Displays the coach's assigned teaching schedule, including dates, times, and assigned training rooms.
+16
+UC-31 Manage Class Members
+Coach
+Allows the coach to view the list of members enrolled in their assigned classes and check their basic fitness goals.
+17
+UC-32 Create Training Plan
+Coach
+Enables the coach to design and assign specific training plans (exercises, targets) for a member or an entire class.
+18
+UC-33 Record Workout Progress
+Coach
+Records post-workout results and provides constructive feedback for members who attended the training session.
+19
+UC-34 Take Class Attendance
+Coach
+Records the attendance (Present/Absent) of enrolled members during a specific class time window.
+20
+UC-35 Send Homework/Notifications
+Coach
+Sends training reminders, homework, or class-related notifications to specific members or an entire class.
+21
+UC-36 Get AI Workout Recommendation
+Coach
+Requests an AI-generated training plan based on a member's body metrics and goals, which the coach can review and apply.
+22
+UC-40 Register Member Account
+Member
+Allows a new user to create a member account using their email and personal information to access system services.
+23
+UC-41 Subscribe/Renew Package
+Member
+Enables members to select, subscribe to, or renew a membership package and process payments online.
+24
+UC-42 View Class Schedules
+Member
+Displays available class schedules, coach assignments, and room capacities for members to browse.
+25
+UC-43 Book Class
+Member
+Allows a member with a valid membership to reserve a slot in a specific class without scheduling conflicts.
+26
+UC-44 Cancel Class Booking
+Member
+Enables a member to cancel a previously booked class before the deadline, freeing up the slot for others.
+27
+UC-45 View Personal Progress & Feedback
+Member
+Displays the member's personal training history, recorded workout progress, and feedback received from coaches.
+28
+UC-46 Ask AI Assistant
+Member
+Allows the member to chat with an AI assistant to get fitness advice, workout tips, or general information.
+BUSINESS RULES
+Phân Type Mã Quy tắc:
+-          BR-AUTH: Xác thực & Phân quyền
+-          BR-MEM: Gói tập & Thẻ thành viên
+-          BR-CLASS: Xếp lịch & Phòng tập
+-          BR-BOOK: Đặt lịch & Hủy lịch học
+-          BR-ATT: Điểm danh & Tiến độ
+-          BR-PAY: Thanh toán & Hóa đơn
+-          BR-AI: Tích hợp Trí tuệ Nhân tạo
+I. TÀI KHOẢN VÀ PHÂN QUYỀN (AUTH & USER)
+#
+Name
+Type
+Description
+Note
+BR-AUTH-01
+Mã hóa Mật khẩu
+Constraint
+Mật khẩu người dùng bắt buộc phải được mã hóa dạng băm trước khi lưu vào CSDL. Tuyệt đối không lưu dạng plain-text.
+BR-AUTH-02
+Duy nhất Email
+Fact
+Địa chỉ Email của người dùng là duy nhất trên toàn hệ thống và được dùng làm tên đăng nhập chính (Username).
+BR-AUTH-03
+Khóa tài khoản thử sai
+Constraint
+Nếu người dùng nhập sai mật khẩu 5 lần liên tiếp, hệ thống tự động khóa tài khoản tạm thời trong 15 phút để chống tấn công Brute-force.
+Làm sau
+BR-AUTH-04
+Kiểm soát Phân quyền (RBAC)
+Constraint
+Mỗi người dùng chỉ được gán đúng 1 vai trò chính (MANAGER, RECEPTIONIST, COACH, MEMBER) và chỉ có quyền truy cập các API/Màn hình tương ứng với vai trò đó.
+II. GÓI TẬP VÀ THÀNH VIÊN (MEMBERSHIP & SUBSCRIPTION)
+#
+Name
+Type
+Description
+BR-MEM-01
+Điều kiện Gói tập Hợp lệ
+Precondition
+Học viên bắt buộc phải có ít nhất 1 Gói tập đang có trạng thái Active (và Ngày hiện tại <= Ngày hết hạn) thì mới được phép thực hiện Đặt lịch lớp học (Class Booking).
+BR-MEM-02
+Kích hoạt Gói tập
+Action
+Gói tập tự động chuyển trạng thái Active ngay khi thanh toán thành công (hoặc khi Lễ tân xác nhận thu tiền tại quầy) và tính ngày bắt đầu từ ngày thanh toán.
+BR-MEM-03
+Tự động Hết hạn
+Action
+Khi ngày hiện tại vượt quá EndDate của gói tập, hệ thống tự động chuyển trạng thái gói từ Active -> Expired vào lúc 00:00:00 hàng ngày.
+BR-MEM-04
+Cộng dồn Gia hạn
+Computation
+Nếu Học viên gia hạn gói tập khi gói cũ vẫn còn hạn, ngày hết hạn mới = Ngày hết hạn cũ + Thời hạn gói mới. Nếu gói cũ đã hết hạn, ngày hết hạn mới = Ngày gia hạn + Thời hạn gói mới.
+BR-MEM-05
+Chính sách Hoàn tiền
+Constraint
+Gói tập đã thanh toán và kích hoạt không được phép hoàn tiền, trừ trường hợp đặc biệt được xét duyệt trực tiếp bởi Center Manager.
+III. QUẢN LÝ LỚP HỌC VÀ LỊCH TẬP (CLASS & SCHEDULE)
+#
+Name
+Type
+Description
+BR-CLASS-01
+Giới hạn Sĩ số
+Constraint
+Số lượng Học viên đặt chỗ trong một ca học không được phép vượt quá sĩ số tối đa (MaxCapacity) của Lớp học / Phòng tập đó.
+BR-CLASS-02
+Trùng lịch HLV
+Constraint
+Hệ thống không cho phép phân công một Huấn luyện viên (Coach) phụ trách 2 lớp học diễn ra trùng khung giờ (trùng ngày và ca học).
+BR-CLASS-03
+Trùng Phòng tập
+Constraint
+Một phòng tập (Room) không được phép xếp cho 2 lớp học khác nhau diễn ra trong cùng một ca học.
+IV. MÔ ĐUN ĐẶT LỊCH VÀ HỦY LỊCH HỌC (CLASS BOOKING)
+#
+Name
+Type
+Description
+BR-BOOK-01
+Khung giờ Đặt lịch
+Constraint
+Học viên chỉ được đặt lịch học trước giờ lớp bắt đầu tối thiểu 30 phút và tối đa 7 ngày.
+BR-BOOK-02
+Hạn chót Hủy lịch
+Constraint
+Học viên chỉ được hủy đặt chỗ (Cancel Booking) trước giờ lớp học bắt đầu tối thiểu 2 tiếng. Nếu hủy sau thời gian này, suất học vẫn bị tính là đã tham gia.
+BR-BOOK-03
+Trùng lịch Học viên
+Constraint
+Hệ thống từ chối cho Học viên đặt lịch 2 lớp học có khung giờ trùng nhau hoặc đè lên nhau trong cùng một ngày.
+BR-BOOK-04
+Xử lý Danh sách Chờ
+Action
+Khi một Học viên hủy lịch học thành công, suất trống sẽ tự động được giải phóng cho Học viên tiếp theo đăng ký (hoặc thông báo cho danh sách chờ).
+V. ĐIỂM DANH VÀ KỶ LUẬT (ATTENDANCE & PENALTY)
+#
+Name
+Type
+Description
+BR-ATT-01
+Khung giờ Điểm danh
+Constraint
+Lễ tân / HLV chỉ được mở điểm danh cho ca học trước 15 phút khi ca học bắt đầu và sau 30 phút khi ca học kết thúc.
+BR-ATT-02
+Xử lý Vắng mặt (No-Show)
+Action
+Nếu Học viên có lịch Booked nhưng không đến tập và không thực hiện hủy lịch đúng quy định, hệ thống tự động ghi nhận trạng thái Absent.
+VI. THANH TOÁN VÀ BÁO CÁO (PAYMENT & REPORT)
+#
+Name
+Type
+Description
+BR-PAY-01
+Mã Giao dịch Duy nhất
+Fact
+Mỗi giao dịch thanh toán mua gói tập / đăng ký lớp phải sinh ra một mã giao dịch duy nhất (TransactionRef).
+BR-PAY-02
+Tính Tổng tiền
+Computation
+Tổng tiền thanh toán = Giá niêm yết của gói - Số tiền giảm giá (Promotion) + Thuế/Phí (nếu có). Tổng tiền không được âm.
+BR-PAY-03
+Xác thực Thanh toán
+Constraint
+Mọi thay đổi về trạng thái tài chính hoặc kích hoạt gói tập chỉ được thực thi khi hệ thống nhận được phản hồi thanh toán Success.
+VII. TÍCH HỢP AI (AI FEATURES)
+#
+Name
+Type
+Description
+BR-AI-01
+Dữ liệu Đầu vào AI
+Precondition
+AI chỉ được sinh gợi ý bài tập khi Học viên đã cập nhật đầy đủ thông tin chỉ số cá nhân (Chiều cao, Cân nặng, Mục tiêu tập luyện: Giảm cân / Tăng cơ).
+BR-AI-02
+Quyền Duyệt của HLV
+Constraint
+Giáo án/Bài tập do AI gợi ý cho các lớp chuyên sâu bắt buộc phải được Huấn luyện viên (Coach) duyệt hoặc chỉnh sửa trước khi gửi chính thức cho Học viên.
+STT
+Mối quan hệ
+Description – Mô tả logic nghiệp vụ
+1
+ROLE → USER
+Mỗi User được gán một Role để xác định vai trò và quyền hạn của User trong hệ thống, ví dụ Manager, Receptionist, Coach hoặc Member.
+2
+USER → MEMBER_PROFILE
+User khi là Member sẽ có thêm Member Profile để lưu các thông tin cá nhân và thông tin liên quan đến việc tập luyện.
+3
+USER → COACH_PROFILE
+User khi là Coach sẽ có thêm Coach Profile để lưu thông tin chuyên môn như chuyên môn, chứng chỉ và kinh nghiệm.
+4
+USER → STAFF_PROFILE
+User khi là Staff sẽ có thêm Staff Profile để lưu thông tin công việc như chức vụ và trạng thái làm việc.
+5
+MEMBER_PROFILE → MEMBER_SUBSCRIPTION
+Một Member có thể đăng ký hoặc mua nhiều Subscription. Mỗi Subscription lưu thông tin về thời gian sử dụng, giá mua và trạng thái của gói.
+6
+MEMBERSHIP_PACKAGE → MEMBER_SUBSCRIPTION
+Membership Package là gói dịch vụ do trung tâm cung cấp, còn Member Subscription là việc một Member thực tế mua hoặc đăng ký gói đó.
+7
+SPORT → SPORT_CLASS
+Một Sport có thể có nhiều Sport Class. Quan hệ này cho biết một lớp học thuộc môn thể thao nào.
+8
+SPORT_CLASS → CLASS_SCHEDULE
+Một Sport Class có thể có một hoặc nhiều Schedule. Schedule xác định lớp học diễn ra vào ngày nào và thời gian nào.
+9
+ROOM → CLASS_SCHEDULE
+Mỗi Schedule được bố trí tại một Room cụ thể, giúp xác định địa điểm diễn ra lớp học.
+10
+SPORT_CLASS → CLASS_COACH
+Class Coach dùng để quản lý việc phân công Coach cho từng Sport Class.
+11
+COACH_PROFILE → CLASS_COACH
+Một Coach có thể được phân công cho nhiều Class. Quan hệ này cho biết Coach nào phụ trách Class nào.
+12
+MEMBER_PROFILE → CLASS_ENROLLMENT
+Khi Member muốn tham gia một lớp học, hệ thống tạo một Class Enrollment để ghi nhận việc đăng ký của Member.
+13
+SPORT_CLASS → CLASS_ENROLLMENT
+Một Sport Class có thể có nhiều Member đăng ký. Class Enrollment kết nối Member với Class mà họ muốn tham gia.
+14
+MEMBER_SUBSCRIPTION → CLASS_ENROLLMENT
+Enrollment có thể sử dụng một Subscription của Member để xác định gói thành viên nào được dùng cho việc tham gia lớp. Quan hệ này có thể để trống khi Member đăng ký theo hình thức drop-in.
+15
+USER → CLASS_ENROLLMENT
+Quan hệ này lưu lại User nào đã thực hiện việc đăng ký lớp. Ví dụ Member tự đăng ký hoặc Receptionist đăng ký thay cho Member.
+16
+MEMBER_PROFILE → INVOICE
+Khi Member phát sinh khoản cần thanh toán, hệ thống tạo Invoice để ghi nhận số tiền mà Member cần trả.
+17
+INVOICE → INVOICE_ITEM
+Một Invoice có thể có nhiều Invoice Item. Mỗi Item đại diện cho một khoản phí cụ thể trong hóa đơn.
+18
+MEMBERSHIP_PACKAGE → INVOICE_ITEM
+Invoice Item có thể tham chiếu đến Membership Package nếu khoản tiền trong Item phát sinh từ việc mua một gói dịch vụ.
+19
+MEMBER_SUBSCRIPTION → INVOICE_ITEM
+Invoice Item có thể liên kết với Subscription cụ thể mà Member đã mua, giúp xác định khoản tiền đó thuộc Subscription nào.
+20
+CLASS_ENROLLMENT → INVOICE_ITEM
+Invoice Item có thể liên kết với Class Enrollment khi việc đăng ký lớp phát sinh chi phí, ví dụ trường hợp Member mua lớp theo hình thức drop-in.
+21
+INVOICE → PAYMENT
+Payment ghi nhận việc thanh toán cho một Invoice, bao gồm số tiền, phương thức thanh toán, trạng thái và thời gian thanh toán.
+22
+MEMBER_PROFILE → PAYMENT
+Quan hệ này xác định Member nào là người thực hiện hoặc liên quan đến khoản thanh toán.
+23
+USER → PAYMENT
+Quan hệ này xác định User nào đã xử lý khoản thanh toán, ví dụ Receptionist thực hiện giao dịch cho Member.
+24
+USER → NOTIFICATION
+User có thể tạo hoặc gửi Notification đến những User khác trong hệ thống.
+25
+NOTIFICATION → USER_NOTIFICATION
+User Notification dùng để xác định một Notification được gửi đến những User nào và quản lý trạng thái nhận thông báo.
+26
+USER → USER_NOTIFICATION
+Quan hệ này xác định User nào nhận Notification và User đó đã đọc thông báo hay chưa.
+27
+USER → AUDIT_LOG
+Audit Log ghi lại các hành động quan trọng do User thực hiện để hệ thống có thể theo dõi lịch sử thay đổi.
+28
+CORE BUSINESS FLOW
+Luồng nghiệp vụ chính của hệ thống là: User → Membership → Class Registration → Invoice → Payment. Notification và Audit Log đóng vai trò hỗ trợ việc thông báo và theo dõi hoạt động.
+1. User
+User (1) - is a - (1) Member
+Nhiệm vụ: Kế thừa / định danh vai trò hội viên.
+Mô tả: Một tài khoản người dùng đóng vai trò là khách hàng đăng ký tập luyện tại trung tâm, sở hữu thông tin cá nhân và tài khoản đăng nhập.
+User (1) - is a - (1) Coach
+Nhiệm vụ: Kế thừa / định danh vai trò huấn luyện viên.
+Mô tả: Một tài khoản người dùng được cấp quyền của huấn luyện viên, quản lý giáo án và giảng dạy lớp.
+User (1) - is a - (1) Staff
+Nhiệm vụ: Kế thừa / định danh vai trò nhân viên vận hành.
+Mô tả: Một tài khoản người dùng đóng vai trò lễ tân, kế toán hoặc quản trị viên quản lý trung tâm.
+User (1) - registers on behalf - (N) Class Enrollment
+Nhiệm vụ: Ghi nhận người trực tiếp thực hiện đăng ký lớp.
+Mô tả: Nhân viên lễ tân hoặc chính hội viên (đóng vai trò User) thao tác đăng ký hồ sơ vào lớp học trên hệ thống.
+User (1) - marks attendance - (N) Attendance
+Nhiệm vụ: Ghi nhận người thực hiện thao tác điểm danh.
+Mô tả: Huấn luyện viên hoặc nhân viên phụ trách quét thẻ/chấm công để xác nhận sự có mặt của học viên trong buổi học.
+User (1) - assists check-in - (N) Center Check-In
+Nhiệm vụ: Ghi nhận nhân sự hỗ trợ ra/vào trung tâm.
+Mô tả: Lễ tân hoặc bảo vệ hỗ trợ quét mã/xác thực cho hội viên khi qua cổng check-in.
+User (1) - creates - (N) Invoice
+Nhiệm vụ: Ghi nhận người lập hóa đơn tài chính.
+Mô tả: Nhân viên thu ngân hoặc nhân viên bán hàng tạo lệnh thanh toán gói tập/lớp học cho hội viên.
+User (1) - processes - (N) Payment
+Nhiệm vụ: Ghi nhận giao dịch viên xử lý tiền.
+Mô tả: Nhân viên thu ngân nhận tiền mặt, quẹt thẻ POS hoặc xác nhận giao dịch chuyển khoản từ khách hàng.
+User (1) - approves refund - (N) Payment
+Nhiệm vụ: Phê duyệt giao dịch hoàn tiền.
+Mô tả: Quản lý hoặc nhân viên có thẩm quyền kiểm tra và đồng ý hoàn tiền cho khách hàng khi hủy dịch vụ.
+User (1) - sends - (N) Notification
+Nhiệm vụ: Gửi thông báo đi.
+Mô tả: Một người dùng (thường là nhân viên/HLV) tạo và gửi tin nhắn hoặc thông báo hệ thống đến đối tượng khác.
+User (1) - receives - (N) Notification
+Nhiệm vụ: Nhận thông báo.
+Mô tả: Người dùng nhận các cảnh báo, lịch tập, hóa đơn hoặc nhắc nhở từ hệ thống.
+2. Member
+Member (1) - purchases - (N) Member Subscription
+Nhiệm vụ: Mua gói dịch vụ/hợp đồng hội viên.
+Mô tả: Một hội viên có thể sở hữu nhiều gói đăng ký dịch vụ theo thời gian (hết hạn, gia hạn, hoặc mua gói mới).
+Member (1) - registers - (N) Class Enrollment
+Nhiệm vụ: Ghi danh tham gia lớp học.
+Mô tả: Liên kết hội viên với tư cách là học viên chính thức của một lớp học cụ thể.
+Member (1) - performs - (N) Center Check-In
+Nhiệm vụ: Điểm danh ra/vào trung tâm tập luyện.
+Mô tả: Hội viên thực hiện quẹt thẻ hoặc quét mã QR tại cổng kiểm soát để vào trung tâm tập luyện tự do.
+Member (1) - for individual - (N) Training Plan
+Nhiệm vụ: Gán giáo án tập luyện cá nhân (PT 1:1).
+Mô tả: Hội viên được phân bổ các kế hoạch luyện tập riêng biệt theo thể trạng và mục tiêu cá nhân.
+Member (1) - achieves - (N) Training Result
+Nhiệm vụ: Lưu chỉ số kết quả luyện tập của cá nhân.
+Mô tả: Lưu trữ các kết quả đo đạc thể chất (InBody, số đo vòng, mức tạ, nhịp tim) của hội viên sau quá trình tập.
+Member (1) - receives - (N) Assignment
+Nhiệm vụ: Nhận bài tập về nhà từ huấn luyện viên.
+Mô tả: Hội viên được chỉ định bài tập tự luyện ngoài giờ hoặc nhiệm vụ rèn luyện dinh dưỡng.
+Member (1) - submits - (N) Assignment Submission
+Nhiệm vụ: Nộp kết quả bài tập được giao.
+Mô tả: Hội viên tải video thực hiện động tác, hình ảnh hoặc báo cáo bài tập để HLV chấm điểm.
+Member (1) - billed on - (N) Invoice
+Nhiệm vụ: Quy định người chịu trách nhiệm thanh toán hóa đơn.
+Mô tả: Hóa đơn thu tiền được lập đích danh và gửi tới hội viên tương ứng.
+Member (1) - makes payment - (N) Payment
+Nhiệm vụ: Thực hiện giao dịch trả tiền.
+Mô tả: Hội viên thanh toán các khoản phí phát sinh cho trung tâm.
+3. Coach
+Center (1) - employs coach - (N) Coach
+Nhiệm vụ: Quản lý hợp đồng lao động của HLV tại trung tâm.
+Mô tả: Một trung tâm (chi nhánh) ký hợp đồng tuyển dụng và quản lý danh sách nhiều HLV làm việc tại đó.
+Coach (1) - manages - (N) Class
+Nhiệm vụ: Phụ trách quản lý lớp học.
+Mô tả: HLV được phân công chịu trách nhiệm chính về mặt chuyên môn và điều phối toàn bộ một lớp học.
+Coach (1) - teaches - (N) Class Session
+Nhiệm vụ: Đứng lớp giảng dạy buổi cụ thể.
+Mô tả: Ghi nhận HLV trực tiếp giảng dạy trong một ca tập nhất định (hỗ trợ trường hợp có HLV dạy thay).
+Coach (1) - creates plan - (N) Training Plan
+Nhiệm vụ: Thiết kế giáo án tập luyện.
+Mô tả: HLV soạn thảo kế hoạch tập luyện, bao gồm các bài tập, cường độ và chu kỳ tập cho học viên hoặc cả lớp.
+Coach (1) - records result - (N) Training Result
+Nhiệm vụ: Đánh giá và nhập kết quả tập.
+Mô tả: HLV kiểm tra, chấm điểm thành tích và ghi chép thông số kỹ thuật tập luyện của học viên.
+Coach (1) - assigns - (N) Assignment
+Nhiệm vụ: Giao bài tập về nhà.
+Mô tả: HLV tạo yêu cầu rèn luyện độc lập cho học viên thực hiện ngoài buổi học chính.
+4. Staff
+Center (1) - employs staff - (N) Staff
+Nhiệm vụ: Quản lý nhân sự vận hành của trung tâm.
+Mô tả: Mỗi trung tâm/chi nhánh sở hữu đội ngũ nhân viên riêng (lễ tân, quản lý, tạp vụ).
+5. Center
+Center (1) - has room - (N) Room
+Nhiệm vụ: Quản lý cơ sở vật chất phòng tập.
+Mô tả: Một trung tâm được chia thành nhiều không gian/phòng chức năng khác nhau (phòng Yoga, phòng tạ, sàn boxing).
+Center (1) - offers package - (N) Membership Package
+Nhiệm vụ: Cung cấp danh mục gói dịch vụ.
+Mô tả: Trung tâm phát hành và mở bán các gói tập phù hợp với chính sách kinh doanh của cơ sở.
+Center (1) - hosts - (N) Class
+Nhiệm vụ: Tổ chức các lớp học.
+Mô tả: Trung tâm là đơn vị đăng cai tổ chức và cung cấp địa điểm/dịch vụ cho các lớp thể thao.
+Center (1) - logs - (N) Center Check-In
+Nhiệm vụ: Lưu lịch sử lượt ra/vào cơ sở.
+Mô tả: Trung tâm ghi lại toàn bộ nhật ký khách hàng vào tập tự do để kiểm soát lưu lượng và mật độ sử dụng.
+Center (1) - issues - (N) Invoice
+Nhiệm vụ: Xuất chứng từ tài chính.
+Mô tả: Trung tâm (pháp nhân chi nhánh) là bên phát hành hóa đơn thu tiền bán dịch vụ.
+6. Room
+Room (1) - takes place in - (N) Class
+Nhiệm vụ: Xác định phòng học mặc định của lớp.
+Mô tả: Một phòng tập được chỉ định làm địa điểm cố định để tổ chức một hoặc nhiều lớp học.
+Room (1) - scheduled in - (N) Class Schedule
+Nhiệm vụ: Phân bổ phòng vào khung giờ định kỳ.
+Mô tả: Gắn phòng chức năng vào thời khóa biểu mẫu của tuần (tránh xung đột trùng lịch phòng).
+Room (1) - held in - (N) Class Session
+Nhiệm vụ: Xác định phòng thực tế diễn ra ca tập.
+Mô tả: Ghi nhận ca tập cụ thể diễn ra tại phòng nào (cho phép đổi phòng linh hoạt nếu có sự cố).
+7. Sport
+Sport (1) - categorizes - (N) Class
+Nhiệm vụ: Phân loại bộ môn cho lớp học.
+Mô tả: Xác định lớp học thuộc bộ môn thể thao nào (Kickboxing, Yoga, Pilates, Zumba).
+Sport (1) - includes - (N) Exercise
+Nhiệm vụ: Phân nhóm thư viện động tác.
+Mô tả: Mỗi bộ môn thể thao bao gồm danh sách các động tác/bài tập kỹ thuật đặc thù tương ứng.
+8. Exercise
+Exercise (1) - is part of - (N) Plan Exercise
+Nhiệm vụ: Đưa động tác vào giáo án chi tiết.
+Mô tả: Một động tác chuẩn từ thư viện được đưa vào kế hoạch tập kèm theo cấu hình cụ thể (số hiệp, số lần lặp, mức tạ).
+9. Membership Package
+Membership Package (1) - includes - (N) Member Subscription
+Nhiệm vụ: Định nghĩa khuôn mẫu cho thẻ hội viên.
+Mô tả: Gói cước (chuẩn hóa giá, quyền lợi, thời hạn) là khuôn mẫu để tạo ra các gói đăng ký thực tế của từng hội viên.
+Membership Package (1) - billed for - (N) Invoice
+Nhiệm vụ: Ghi nhận khoản thu mua gói tập trên hóa đơn.
+Mô tả: Dòng sản phẩm gói cước được liệt kê là lý do thu tiền trên hóa đơn thanh toán.
+10. Member Subscription
+Member Subscription (1) - covers - (N) Class Enrollment
+Nhiệm vụ: Dùng quyền lợi gói thẻ để tham gia lớp.
+Mô tả: Thẻ hội viên đang còn hạn hoặc còn lượt tập được dùng để chi trả/cấp quyền cho việc đăng ký lớp học.
+Member Subscription (1) - generates invoice - (N) Invoice
+Nhiệm vụ: Sinh hóa đơn từ giao dịch mua/gia hạn thẻ.
+Mô tả: Việc kích hoạt hoặc gia hạn thẻ hội viên sẽ tạo ra hóa đơn tài chính tương ứng.
+11. Class
+Class (1) - has schedule - (N) Class Schedule
+Nhiệm vụ: Cấu hình lịch định kỳ của lớp.
+Mô tả: Lớp học có các khung thời khóa biểu mẫu (ví dụ: Thứ 2-4-6 lúc 18:00 - 19:30).
+Class (1) - generates - (N) Class Session
+Nhiệm vụ: Phát sinh các ca tập cụ thể.
+Mô tả: Dựa trên lịch trình, hệ thống sinh ra từng buổi tập thực tế gắn với ngày tháng năm cụ thể.
+Class (1) - has enrollment - (N) Class Enrollment
+Nhiệm vụ: Quản lý danh sách học viên của lớp.
+Mô tả: Một lớp học duy trì danh sách những học viên đã đăng ký tham gia.
+Class (1) - for class - (N) Training Plan
+Nhiệm vụ: Áp dụng giáo án chung cho lớp.
+Mô tả: Kế hoạch tập luyện được thiết kế dùng chung cho toàn bộ thành viên trong cùng một lớp học.
+Class (1) - requires - (N) Assignment
+Nhiệm vụ: Giao bài tập chung theo chương trình lớp.
+Mô tả: Các bài tập rèn luyện thêm ngoài giờ áp dụng bắt buộc hoặc khuyến khích cho học viên lớp đó.
+12. Class Schedule
+Class Schedule (1) - instantiates - (N) Class Session
+Nhiệm vụ: Khởi tạo buổi tập từ thời khóa biểu mẫu.
+Mô tả: Một mẫu thời gian định kỳ (thứ 3 hàng tuần) sẽ tự động sinh ra hàng loạt buổi học thực tế theo từng tuần.
+13. Class Session
+Class Session (1) - records - (N) Attendance
+Nhiệm vụ: Lưu bảng điểm danh của ca học.
+Mô tả: Một buổi học cụ thể sẽ lưu lại trạng thái có mặt, vắng mặt hoặc đi muộn của từng học viên.
+Class Session (1) - evaluates - (N) Training Result
+Nhiệm vụ: Ghi nhận kết quả rèn luyện theo ca.
+Mô tả: Ghi lại kết quả, mức tạ hoặc thời gian hoàn thành bài tập của học viên đạt được ngay trong buổi học đó.
+14. Class Enrollment
+Class Enrollment (1) - tracks - (N) Attendance
+Nhiệm vụ: Thống kê lịch sử đi học của một lượt đăng ký.
+Mô tả: Ghi nhận toàn bộ quá trình chuyên cần của một học viên xuyên suốt lớp học để tính tỷ lệ tham gia.
+Class Enrollment (1) - invoices - (N) Invoice
+Nhiệm vụ: Xuất hóa đơn học phí của lớp.
+Mô tả: Hồ sơ đăng ký lớp học phát sinh khoản học phí cần thanh toán trên hóa đơn.
+15. Training Plan
+Training Plan (1) - contains - (N) Plan Exercise
+Nhiệm vụ: Cấu trúc các bước tập trong giáo án.
+Mô tả: Một giáo án tập luyện hoàn chỉnh bao gồm nhiều mục chi tiết (thứ tự động tác, số set, số rep, thời gian nghỉ).
+16. Plan Exercise
+Plan Exercise (1) - yields - (N) Training Result
+Nhiệm vụ: Đo lường hiệu suất của động tác bài tập.
+Mô tả: Bài tập cụ thể trong giáo án mang lại kết quả thực tế (ví dụ: kế hoạch yêu cầu Squat 60kg, kết quả đạt 65kg).
+17. Assignment
+Assignment (1) - has submission - (N) Assignment Submission
+Nhiệm vụ: Tiếp nhận bài nộp của học viên.
+Mô tả: Một đề bài tập về nhà có thể nhận về nhiều lượt nộp bài từ các học viên khác nhau hoặc các lần nộp lại.
+18. Invoice
+Invoice (1) - paid via - (N) Payment
+Nhiệm vụ: Ghi nhận thanh toán cho hóa đơn.
+Mô tả: Một hóa đơn có thể được thanh toán qua nhiều lần trả tiền hoặc kết hợp nhiều hình thức (ví dụ: trả trước 50% tiền mặt, 50% quẹt thẻ).
+Link: Cancel
+FLOW1: User & Membership Management  (Bảng 1 - 7)
+1/ Bảng user
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+id của user. Dùng xác định member_id, user_id
+full_name
+VARCHAR
+Họ và tên 
+email
+VARCHAR (Unique, Not Null)
+Địa chỉ Email, dùng làm tên đăng nhập (Username).
+password_hash
+VARCHAR (Not Null)
+Chuỗi mật khẩu đã mã hóa băm an toàn.
+phone_number
+VARCHAR
+Số điện thoại liên lạc.
+role
+user_role (Enum, Not Null)
+Vai trò trong hệ thống (CenterManager, Coach, Member, Receptionist).
+is_active
+BOOLEAN (Default: true)
+Trạng thái tài khoản (true: Đang hoạt động, false: Tạm khóa).
+created_at
+DATETIME (Default: now())
+Thời điểm khởi tạo tài khoản.
+updated_at
+DATETIME
+Thời điểm cập nhật thông tin tài khoản lần cuối.
+2/ Bảng member_profiles 
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh hồ sơ học viên
+user_id
+INT (FK -> users.id, Unique, Not Null)
+Liên kết 1-1 tới tài khoản học viên trong bảng users. 
+date_of_birth
+DATE
+Ngày tháng năm sinh của học viên.
+gender
+VARCHAR
+Giới tính.
+address
+VARCHAR
+Địa chỉ thường trú / liên hệ.
+goal
+VARCHAR
+Mục tiêu tổng thể. Nếu có time, thêm mục goal trong từng enrollment nữa
+fitness_level
+VARCHAR
+Trình độ thể lực (Beginner / Intermediate / Advanced).
+3/ Bảng coach_profiles 
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh hồ sơ huấn luyện viên.
+user_id
+INT (FK -> users.id, Unique, Not Null)
+Liên kết 1-1 tới tài khoản HLV trong bảng users.
+specialization
+VARCHAR
+Lĩnh vực chuyên môn huấn luyện (VD: Gym, Yoga, Kickboxing...).
+years_of_experience
+INT
+Số năm kinh nghiệm làm việc.
+bio
+TEXT
+Đoạn tiểu sử / giới thiệu bản thân của HLV.
+4/ Bảng membership_packages 
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh gói tập.
+name
+VARCHAR (Not Null)
+Tên gói tập (VD: Gói Gym VIP 3 tháng, Gói Yoga 1 tháng).
+description
+TEXT
+Mô tả chi tiết quyền lợi gói tập.
+price
+DECIMAL
+Giá tiền niêm yết của gói tập.
+duration_in_days
+INT (Not Null)
+Thời hạn sử dụng tính theo số ngày.
+is_active
+BOOLEAN (Default: true)
+Trạng thái kinh doanh gói (true: Cho phép đăng ký, false: Khóa).
+created_at
+DATETIME (Default: now())
+Thời điểm tạo gói tập trên hệ thống.
+5/ Bảng membership_subscriptions (Lượt Đăng ký / Gia hạn gói tập)
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh lượt đăng ký gói tập.
+member_id
+INT (FK -> users.id, Not Null)
+Mã học viên thực hiện đăng ký/gia hạn gói (same với user_id)
+package_id
+INT (FK -> membership_packages.id, Not Null)
+Mã gói tập được học viên lựa chọn (bảng ở trên)
+start_date
+DATE (Not Null)
+Ngày bắt đầu có hiệu lực
+end_date
+DATE (Not Null)
+Ngày hết hạn gói tập.
+status
+subscription_status (Enum, Default: Active)
+Trạng thái thẻ tập (Active, Expired, Cancelled).
+created_at
+DATETIME (Default: now())
+Thời điểm phát sinh giao dịch đăng ký.
+6/ Bảng audit_logs (Nhật ký thao tác hệ thống)
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã nhật ký hệ thống.
+user_id
+INT (FK -> users.id)
+Mã người dùng thực hiện thao tác.
+action
+VARCHAR
+Loại thao tác tác động (Create, Update, Delete).
+entity_name
+VARCHAR
+Tên bảng/đối tượng bị tác động (VD: User, MembershipPackage...).
+entity_id
+INT
+Mã ID của bản ghi bị tác động.
+detail
+TEXT
+Mô tả chi tiết nội dung thay đổi, auto ở Backend hoặc Trigger ở Db
+created_at
+DATETIME (Default: now())
+Thời điểm ghi nhận log.
+7/ Bảng notifications (Thông báo người dùng)
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh thông báo.
+user_id
+INT (FK -> users.id, Not Null)
+Mã người dùng nhận thông báo.
+title
+VARCHAR
+Tiêu đề thông báo.
+content
+TEXT
+Nội dung chi tiết của thông báo.
+is_read
+BOOLEAN (Default: false)
+Trạng thái đọc (false: Chưa đọc, true: Đã đọc).
+created_at
+DATETIME (Default: now())
+Thời điểm gửi thông báo.
+FLOW 2: Class Booking & Schedule Management (8-12)
+8/ Bảng subjects (Danh mục Bộ môn thể thao)
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh bộ môn thể thao.
+name
+VARCHAR (Not Null)
+Tên bộ môn (VD: Yoga, Pilates, Kickboxing, Gym).
+description
+TEXT
+Mô tả tổng quan về bộ môn.
+9/ Bảng rooms (Phòng tập) 
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh phòng tập.
+name
+VARCHAR (Not Null)
+Tên/Mã phòng tập (VD: Studio A, Room 201).
+capacity
+INT
+Sức chứa / Sĩ số tối đa của phòng tập.
+location
+VARCHAR
+Vị trí / Tầng của phòng tập.
+10/ Bảng classes (Danh sách Lớp học)
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh lớp học.
+name
+VARCHAR (Not Null)
+Tên lớp học (VD: Yoga Cơ bản K12).
+subject_id
+INT (FK -> subjects.id, Not Null)
+Mã bộ môn tương ứng.
+coach_id
+INT (FK -> users.id, Not Null)
+Mã Huấn luyện viên phụ trách lớp.
+room_id
+INT (FK -> rooms.id, Not Null)
+Mã phòng tập được xếp.
+capacity
+INT (Not Null)
+Sĩ số tối đa cho phép của lớp học.
+start_date
+DATE
+Ngày bắt đầu khóa học.
+end_date
+DATE
+Ngày kết thúc khóa học.
+status
+class_status (Enum, Default: Open)
+Trạng thái lớp học (Open, Closed, Cancelled).
+created_at
+DATETIME (Default: now())
+Thời điểm khởi tạo lớp học.
+11/ Bảng schedules (Lịch ca học theo tuần)
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã định danh lịch ca học.
+class_id
+INT (FK -> classes.id, Not Null)
+Mã lớp học.
+day_of_week
+INT
+Thứ trong tuần (0: Chủ nhật, 1: Thứ hai ... 6: Thứ bảy).
+start_time
+TIME (Not Null)
+Giờ bắt đầu ca học.
+end_time
+TIME (Not Null)
+Giờ kết thúc ca học.
+12/  Bảng enrollments (Đăng ký lớp)
+Property
+Data type
+Description
+id
+INT (PK, Auto Increment)
+Mã lượt đăng ký tham gia lớp.
+class_id
+INT (FK -> classes.id, Not Null)
+Mã lớp học đăng ký.
+member_id
+INT (FK -> users.id, Not Null)
+Mã học viên thực hiện đăng ký.
+status
+enrollment_status (Enum, Default: Active)
+Trạng thái đăng ký (Active, Cancelled, Completed).
+enrolled_date
+DATETIME (Default: now())
+Thời điểm ghi nhận đăng ký lớp.

@@ -1,0 +1,1071 @@
+<!DOCTYPE html>
+<html lang="vi" prefix="og: https://ogp.me/ns#">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Lexend:wght@100..900&display=swap" rel="stylesheet">
+<!-- Tối ưu hóa công cụ tìm kiếm bởi Rank Math - https://rankmath.com/ -->
+<title>Cơ sở vật chất - MLC Sports Center</title>
+<meta name="robots" content="follow, index, max-snippet:-1, max-video-preview:-1, max-image-preview:large"/>
+<link rel="canonical" href="https://mlcsports.edu.vn/co-so-vat-chat/" />
+<meta property="og:locale" content="vi_VN" />
+<meta property="og:type" content="article" />
+<meta property="og:title" content="Cơ sở vật chất - MLC Sports Center" />
+<meta property="og:url" content="https://mlcsports.edu.vn/co-so-vat-chat/" />
+<meta property="og:site_name" content="MLC Sports Center" />
+<meta property="og:updated_time" content="2026-09-02T23:11:08+07:00" />
+<meta property="og:image" content="https://mlcsports.edu.vn/wp-content/uploads/2026/08/banner-hang-rao-2025-3-02-02-20250709064601-oncqe-1.png" />
+<meta property="og:image:secure_url" content="https://mlcsports.edu.vn/wp-content/uploads/2026/08/banner-hang-rao-2025-3-02-02-20250709064601-oncqe-1.png" />
+<meta property="og:image:width" content="1609" />
+<meta property="og:image:height" content="905" />
+<meta property="og:image:alt" content="Cơ sở vật chất" />
+<meta property="og:image:type" content="image/png" />
+<meta property="article:published_time" content="2026-07-29T18:45:41+07:00" />
+<meta property="article:modified_time" content="2026-09-02T23:11:08+07:00" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Cơ sở vật chất - MLC Sports Center" />
+<meta name="twitter:image" content="https://mlcsports.edu.vn/wp-content/uploads/2026/08/banner-hang-rao-2025-3-02-02-20250709064601-oncqe-1.png" />
+<meta name="twitter:label1" content="Thời gian để đọc" />
+<meta name="twitter:data1" content="Chưa đến một phút" />
+<script type="application/ld+json" class="rank-math-schema">{"@context":"https://schema.org","@graph":[{"@type":["SportsOrganization","Organization"],"@id":"https://mlcsports.edu.vn/#organization","name":"MLC Sports","url":"https://mlcsports.edu.vn","logo":{"@type":"ImageObject","@id":"https://mlcsports.edu.vn/#logo","url":"https://mlcsports.edu.vn/wp-content/uploads/2026/08/mlc-logo.png","contentUrl":"https://mlcsports.edu.vn/wp-content/uploads/2026/08/mlc-logo.png","caption":"MLC Sports Center","inLanguage":"vi","width":"1920","height":"928"},"description":"Trung t\u00e2m V\u0103n h\u00f3a Th\u1ec3 Thao MLC Sports (MLC Sports Center) t\u1ea1i Ph\u01b0\u1eddng T\u00e2n M\u1ef9 l\u00e0 \u0111\u1ecba \u0111i\u1ec3m t\u1eadp luy\u1ec7n th\u1ec3 thao chu\u1ea9n qu\u1ed1c t\u1ebf v\u1edbi 14 b\u1ed9 m\u00f4n \u0111a d\u1ea1ng. \u0110\u01b0\u1ee3c d\u1eabn d\u1eaft b\u1edfi c\u00e1c hu\u1ea5n luy\u1ec7n vi\u00ean chuy\u00ean nghi\u1ec7p, MLC Sports mang \u0111\u1ebfn m\u00f4i tr\u01b0\u1eddng r\u00e8n luy\u1ec7n \u0111\u1eb3ng c\u1ea5p, gi\u00fap h\u1ecdc vi\u00ean ph\u00e1t tri\u1ec3n to\u00e0n di\u1ec7n s\u1ee9c kh\u1ecfe &amp; k\u1ef9 n\u0103ng th\u1ec3 thao.","legalName":"admin"},{"@type":"WebSite","@id":"https://mlcsports.edu.vn/#website","url":"https://mlcsports.edu.vn","name":"MLC Sports Center","publisher":{"@id":"https://mlcsports.edu.vn/#organization"},"inLanguage":"vi"},{"@type":"ImageObject","@id":"https://mlcsports.edu.vn/wp-content/uploads/2026/08/banner-hang-rao-2025-3-02-02-20250709064601-oncqe-1.png","url":"https://mlcsports.edu.vn/wp-content/uploads/2026/08/banner-hang-rao-2025-3-02-02-20250709064601-oncqe-1.png","width":"1609","height":"905","inLanguage":"vi"},{"@type":"WebPage","@id":"https://mlcsports.edu.vn/co-so-vat-chat/#webpage","url":"https://mlcsports.edu.vn/co-so-vat-chat/","name":"C\u01a1 s\u1edf v\u1eadt ch\u1ea5t - MLC Sports Center","datePublished":"2026-07-29T18:45:41+07:00","dateModified":"2026-09-02T23:11:08+07:00","isPartOf":{"@id":"https://mlcsports.edu.vn/#website"},"primaryImageOfPage":{"@id":"https://mlcsports.edu.vn/wp-content/uploads/2026/08/banner-hang-rao-2025-3-02-02-20250709064601-oncqe-1.png"},"inLanguage":"vi"},{"@type":"Person","@id":"https://mlcsports.edu.vn/author/admin/","name":"admin","url":"https://mlcsports.edu.vn/author/admin/","image":{"@type":"ImageObject","@id":"https://secure.gravatar.com/avatar/554d6c39bf25ae0fd71baefe97e964b837d5cd5a6c31cb63056c8b867e532939?s=96&amp;d=mm&amp;r=g","url":"https://secure.gravatar.com/avatar/554d6c39bf25ae0fd71baefe97e964b837d5cd5a6c31cb63056c8b867e532939?s=96&amp;d=mm&amp;r=g","caption":"admin","inLanguage":"vi"},"sameAs":["https://mlcsports.edu.vn"],"worksFor":{"@id":"https://mlcsports.edu.vn/#organization"}},{"@type":"Article","headline":"C\u01a1 s\u1edf v\u1eadt ch\u1ea5t - MLC Sports Center","datePublished":"2026-07-29T18:45:41+07:00","dateModified":"2026-09-02T23:11:08+07:00","author":{"@id":"https://mlcsports.edu.vn/author/admin/","name":"admin"},"publisher":{"@id":"https://mlcsports.edu.vn/#organization"},"name":"C\u01a1 s\u1edf v\u1eadt ch\u1ea5t - MLC Sports Center","@id":"https://mlcsports.edu.vn/co-so-vat-chat/#richSnippet","isPartOf":{"@id":"https://mlcsports.edu.vn/co-so-vat-chat/#webpage"},"image":{"@id":"https://mlcsports.edu.vn/wp-content/uploads/2026/08/banner-hang-rao-2025-3-02-02-20250709064601-oncqe-1.png"},"inLanguage":"vi","mainEntityOfPage":{"@id":"https://mlcsports.edu.vn/co-so-vat-chat/#webpage"}}]}</script>
+<!-- /Plugin SEO WordPress Rank Math -->
+<link rel='dns-prefetch' href='//www.google.com' />
+<link rel='dns-prefetch' href='//www.googletagmanager.com' />
+<link rel="alternate" type="application/rss+xml" title="MLC Sports Center &raquo; Feed" href="https://mlcsports.edu.vn/feed/" />
+<link rel="alternate" type="application/rss+xml" title="MLC Sports Center &raquo; Comments Feed" href="https://mlcsports.edu.vn/comments/feed/" />
+<link rel="alternate" type="application/rss+xml" title="MLC Sports Center &raquo; Cơ sở vật chất Comments Feed" href="https://mlcsports.edu.vn/co-so-vat-chat/feed/" />
+<link rel="alternate" title="oEmbed (JSON)" type="application/json+oembed" href="https://mlcsports.edu.vn/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fmlcsports.edu.vn%2Fco-so-vat-chat%2F" />
+<link rel="alternate" title="oEmbed (XML)" type="text/xml+oembed" href="https://mlcsports.edu.vn/wp-json/oembed/1.0/embed?url=https%3A%2F%2Fmlcsports.edu.vn%2Fco-so-vat-chat%2F&#038;format=xml" />
+<style id="wp-img-auto-sizes-contain-inline-css">
+img:is([sizes=auto i],[sizes^="auto," i]){contain-intrinsic-size:3000px 1500px}
+/*# sourceURL=wp-img-auto-sizes-contain-inline-css */
+</style>
+<style id="wp-emoji-styles-inline-css">
+img.wp-smiley, img.emoji {
+display: inline !important;
+border: none !important;
+box-shadow: none !important;
+height: 1em !important;
+width: 1em !important;
+margin: 0 0.07em !important;
+vertical-align: -0.1em !important;
+background: none !important;
+padding: 0 !important;
+}
+/*# sourceURL=wp-emoji-styles-inline-css */
+</style>
+<style id="wp-block-library-inline-css">
+:root{--wp-block-synced-color:#7a00df;--wp-block-synced-color--rgb:122,0,223;--wp-bound-block-color:var(--wp-block-synced-color);--wp-editor-canvas-background:#ddd;--wp-admin-theme-color:#007cba;--wp-admin-theme-color--rgb:0,124,186;--wp-admin-theme-color-darker-10:#006ba1;--wp-admin-theme-color-darker-10--rgb:0,107,160.5;--wp-admin-theme-color-darker-20:#005a87;--wp-admin-theme-color-darker-20--rgb:0,90,135;--wp-admin-border-width-focus:2px}@media (min-resolution:192dpi){:root{--wp-admin-border-width-focus:1.5px}}.wp-element-button{cursor:pointer}:root .has-very-light-gray-background-color{background-color:#eee}:root .has-very-dark-gray-background-color{background-color:#313131}:root .has-very-light-gray-color{color:#eee}:root .has-very-dark-gray-color{color:#313131}:root .has-vivid-green-cyan-to-vivid-cyan-blue-gradient-background{background:linear-gradient(135deg,#00d084,#0693e3)}:root .has-purple-crush-gradient-background{background:linear-gradient(135deg,#34e2e4,#4721fb 50%,#ab1dfe)}:root .has-hazy-dawn-gradient-background{background:linear-gradient(135deg,#faaca8,#dad0ec)}:root .has-subdued-olive-gradient-background{background:linear-gradient(135deg,#fafae1,#67a671)}:root .has-atomic-cream-gradient-background{background:linear-gradient(135deg,#fdd79a,#004a59)}:root .has-nightshade-gradient-background{background:linear-gradient(135deg,#330968,#31cdcf)}:root .has-midnight-gradient-background{background:linear-gradient(135deg,#020381,#2874fc)}:root{--wp--preset--font-size--normal:16px;--wp--preset--font-size--huge:42px}.has-regular-font-size{font-size:1em}.has-larger-font-size{font-size:2.625em}.has-normal-font-size{font-size:var(--wp--preset--font-size--normal)}.has-huge-font-size{font-size:var(--wp--preset--font-size--huge)}:root .has-text-align-center{text-align:center}:root .has-text-align-left{text-align:left}:root .has-text-align-right{text-align:right}.has-fit-text{white-space:nowrap!important}#end-resizable-editor-section{display:none}.aligncenter{clear:both}.items-justified-left{justify-content:flex-start}.items-justified-center{justify-content:center}.items-justified-right{justify-content:flex-end}.items-justified-space-between{justify-content:space-between}.screen-reader-text{word-wrap:normal!important;border:0;clip-path:inset(50%);height:1px;margin:-1px;overflow:hidden;padding:0;position:absolute;width:1px;word-break:normal!important}.screen-reader-text:focus{background-color:#ddd;clip-path:none;color:#444;display:block;font-size:1em;height:auto;left:5px;line-height:normal;padding:15px 23px 14px;text-decoration:none;top:5px;width:auto;z-index:100000}html :where(.has-border-color){border-style:solid}html :where([style^=border-color],[style*=";border-color"],[style*="; border-color"]){border-style:solid}html :where([style^=border-top-color],[style*=";border-top-color"],[style*="; border-top-color"]){border-top-style:solid}html :where([style^=border-right-color],[style*=";border-right-color"],[style*="; border-right-color"]){border-right-style:solid}html :where([style^=border-bottom-color],[style*=";border-bottom-color"],[style*="; border-bottom-color"]){border-bottom-style:solid}html :where([style^=border-left-color],[style*=";border-left-color"],[style*="; border-left-color"]){border-left-style:solid}html :where([style^=border-width],[style*=";border-width"],[style*="; border-width"]){border-style:solid}html :where([style^=border-top-width],[style*=";border-top-width"],[style*="; border-top-width"]){border-top-style:solid}html :where([style^=border-right-width],[style*=";border-right-width"],[style*="; border-right-width"]){border-right-style:solid}html :where([style^=border-bottom-width],[style*=";border-bottom-width"],[style*="; border-bottom-width"]){border-bottom-style:solid}html :where([style^=border-left-width],[style*=";border-left-width"],[style*="; border-left-width"]){border-left-style:solid}html :where(img[class*=wp-image-]){height:auto;max-width:100%}:where(figure){margin:0 0 1em}html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:var(--wp-admin--admin-bar--height,0px)}@media screen and (max-width:600px){html :where(.is-position-sticky){--wp-admin--admin-bar--position-offset:0px}}
+/*# sourceURL=/wp-includes/css/dist/block-library/common.min.css */
+</style>
+<style id="classic-theme-styles-inline-css">
+/*! This file is auto-generated */
+.wp-block-button__link{color:#fff;background-color:#32373c;border-radius:9999px;box-shadow:none;text-decoration:none;padding:calc(.667em + 2px) calc(1.333em + 2px);font-size:1.125em}.wp-block-file__button{background:#32373c;color:#fff;text-decoration:none}
+/*# sourceURL=/wp-includes/css/classic-themes.min.css */
+</style>
+<style id="global-styles-inline-css">
+:root{--wp--preset--aspect-ratio--square: 1;--wp--preset--aspect-ratio--4-3: 4/3;--wp--preset--aspect-ratio--3-4: 3/4;--wp--preset--aspect-ratio--3-2: 3/2;--wp--preset--aspect-ratio--2-3: 2/3;--wp--preset--aspect-ratio--16-9: 16/9;--wp--preset--aspect-ratio--9-16: 9/16;--wp--preset--color--black: #000000;--wp--preset--color--cyan-bluish-gray: #abb8c3;--wp--preset--color--white: #ffffff;--wp--preset--color--pale-pink: #f78da7;--wp--preset--color--vivid-red: #cf2e2e;--wp--preset--color--luminous-vivid-orange: #ff6900;--wp--preset--color--luminous-vivid-amber: #fcb900;--wp--preset--color--light-green-cyan: #7bdcb5;--wp--preset--color--vivid-green-cyan: #00d084;--wp--preset--color--pale-cyan-blue: #8ed1fc;--wp--preset--color--vivid-cyan-blue: #0693e3;--wp--preset--color--vivid-purple: #9b51e0;--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple: linear-gradient(135deg,rgb(6,147,227) 0%,rgb(155,81,224) 100%);--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan: linear-gradient(135deg,rgb(122,220,180) 0%,rgb(0,208,130) 100%);--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange: linear-gradient(135deg,rgb(252,185,0) 0%,rgb(255,105,0) 100%);--wp--preset--gradient--luminous-vivid-orange-to-vivid-red: linear-gradient(135deg,rgb(255,105,0) 0%,rgb(207,46,46) 100%);--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray: linear-gradient(135deg,rgb(238,238,238) 0%,rgb(169,184,195) 100%);--wp--preset--gradient--cool-to-warm-spectrum: linear-gradient(135deg,rgb(74,234,220) 0%,rgb(151,120,209) 20%,rgb(207,42,186) 40%,rgb(238,44,130) 60%,rgb(251,105,98) 80%,rgb(254,248,76) 100%);--wp--preset--gradient--blush-light-purple: linear-gradient(135deg,rgb(255,206,236) 0%,rgb(152,150,240) 100%);--wp--preset--gradient--blush-bordeaux: linear-gradient(135deg,rgb(254,205,165) 0%,rgb(254,45,45) 50%,rgb(107,0,62) 100%);--wp--preset--gradient--luminous-dusk: linear-gradient(135deg,rgb(255,203,112) 0%,rgb(199,81,192) 50%,rgb(65,88,208) 100%);--wp--preset--gradient--pale-ocean: linear-gradient(135deg,rgb(255,245,203) 0%,rgb(182,227,212) 50%,rgb(51,167,181) 100%);--wp--preset--gradient--electric-grass: linear-gradient(135deg,rgb(202,248,128) 0%,rgb(113,206,126) 100%);--wp--preset--gradient--midnight: linear-gradient(135deg,rgb(2,3,129) 0%,rgb(40,116,252) 100%);--wp--preset--font-size--small: 13px;--wp--preset--font-size--medium: 20px;--wp--preset--font-size--large: 36px;--wp--preset--font-size--x-large: 42px;--wp--preset--spacing--20: 0.44rem;--wp--preset--spacing--30: 0.67rem;--wp--preset--spacing--40: 1rem;--wp--preset--spacing--50: 1.5rem;--wp--preset--spacing--60: 2.25rem;--wp--preset--spacing--70: 3.38rem;--wp--preset--spacing--80: 5.06rem;--wp--preset--shadow--natural: 6px 6px 9px rgba(0, 0, 0, 0.2);--wp--preset--shadow--deep: 12px 12px 50px rgba(0, 0, 0, 0.4);--wp--preset--shadow--sharp: 6px 6px 0px rgba(0, 0, 0, 0.2);--wp--preset--shadow--outlined: 6px 6px 0px -3px rgb(255, 255, 255), 6px 6px rgb(0, 0, 0);--wp--preset--shadow--crisp: 6px 6px 0px rgb(0, 0, 0);}.wp-block-button{--wp--preset--dimension--25: 25%;--wp--preset--dimension--50: 50%;--wp--preset--dimension--75: 75%;--wp--preset--dimension--100: 100%;}:where(body) { margin: 0; }:where(.is-layout-flex){gap: 0.5em;}:where(.is-layout-grid){gap: 0.5em;}body .is-layout-flex{display: flex;}.is-layout-flex{flex-wrap: wrap;align-items: center;}.is-layout-flex > :is(*, div){margin: 0;}body .is-layout-grid{display: grid;}.is-layout-grid > :is(*, div){margin: 0;}body{padding-top: 0px;padding-right: 0px;padding-bottom: 0px;padding-left: 0px;}:root :where(.wp-element-button, .wp-block-button__link){background-color: #32373c;border-width: 0;color: #fff;font-family: inherit;font-size: inherit;font-style: inherit;font-weight: inherit;letter-spacing: inherit;line-height: inherit;padding-top: calc(0.667em + 2px);padding-right: calc(1.333em + 2px);padding-bottom: calc(0.667em + 2px);padding-left: calc(1.333em + 2px);text-decoration: none;text-transform: inherit;}.has-black-color{color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-color{color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-color{color: var(--wp--preset--color--white) !important;}.has-pale-pink-color{color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-color{color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-color{color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-color{color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-color{color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-color{color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-color{color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-color{color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-color{color: var(--wp--preset--color--vivid-purple) !important;}.has-black-background-color{background-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-background-color{background-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-background-color{background-color: var(--wp--preset--color--white) !important;}.has-pale-pink-background-color{background-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-background-color{background-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-background-color{background-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-background-color{background-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-background-color{background-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-background-color{background-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-background-color{background-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-background-color{background-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-background-color{background-color: var(--wp--preset--color--vivid-purple) !important;}.has-black-border-color{border-color: var(--wp--preset--color--black) !important;}.has-cyan-bluish-gray-border-color{border-color: var(--wp--preset--color--cyan-bluish-gray) !important;}.has-white-border-color{border-color: var(--wp--preset--color--white) !important;}.has-pale-pink-border-color{border-color: var(--wp--preset--color--pale-pink) !important;}.has-vivid-red-border-color{border-color: var(--wp--preset--color--vivid-red) !important;}.has-luminous-vivid-orange-border-color{border-color: var(--wp--preset--color--luminous-vivid-orange) !important;}.has-luminous-vivid-amber-border-color{border-color: var(--wp--preset--color--luminous-vivid-amber) !important;}.has-light-green-cyan-border-color{border-color: var(--wp--preset--color--light-green-cyan) !important;}.has-vivid-green-cyan-border-color{border-color: var(--wp--preset--color--vivid-green-cyan) !important;}.has-pale-cyan-blue-border-color{border-color: var(--wp--preset--color--pale-cyan-blue) !important;}.has-vivid-cyan-blue-border-color{border-color: var(--wp--preset--color--vivid-cyan-blue) !important;}.has-vivid-purple-border-color{border-color: var(--wp--preset--color--vivid-purple) !important;}.has-vivid-cyan-blue-to-vivid-purple-gradient-background{background: var(--wp--preset--gradient--vivid-cyan-blue-to-vivid-purple) !important;}.has-light-green-cyan-to-vivid-green-cyan-gradient-background{background: var(--wp--preset--gradient--light-green-cyan-to-vivid-green-cyan) !important;}.has-luminous-vivid-amber-to-luminous-vivid-orange-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-amber-to-luminous-vivid-orange) !important;}.has-luminous-vivid-orange-to-vivid-red-gradient-background{background: var(--wp--preset--gradient--luminous-vivid-orange-to-vivid-red) !important;}.has-very-light-gray-to-cyan-bluish-gray-gradient-background{background: var(--wp--preset--gradient--very-light-gray-to-cyan-bluish-gray) !important;}.has-cool-to-warm-spectrum-gradient-background{background: var(--wp--preset--gradient--cool-to-warm-spectrum) !important;}.has-blush-light-purple-gradient-background{background: var(--wp--preset--gradient--blush-light-purple) !important;}.has-blush-bordeaux-gradient-background{background: var(--wp--preset--gradient--blush-bordeaux) !important;}.has-luminous-dusk-gradient-background{background: var(--wp--preset--gradient--luminous-dusk) !important;}.has-pale-ocean-gradient-background{background: var(--wp--preset--gradient--pale-ocean) !important;}.has-electric-grass-gradient-background{background: var(--wp--preset--gradient--electric-grass) !important;}.has-midnight-gradient-background{background: var(--wp--preset--gradient--midnight) !important;}.has-small-font-size{font-size: var(--wp--preset--font-size--small) !important;}.has-medium-font-size{font-size: var(--wp--preset--font-size--medium) !important;}.has-large-font-size{font-size: var(--wp--preset--font-size--large) !important;}.has-x-large-font-size{font-size: var(--wp--preset--font-size--x-large) !important;}
+/*# sourceURL=global-styles-inline-css */
+</style>
+<!-- <link rel='stylesheet' id='sport-center-tailwind-css' href='https://mlcsports.edu.vn/wp-content/themes/sport-center/assets/css/theme.css?ver=1785957694' media='all' /> -->
+<!-- <link rel='stylesheet' id='sport-center-style-css' href='https://mlcsports.edu.vn/wp-content/themes/sport-center/style.css?ver=1.0.0' media='all' /> -->
+<!-- <link rel='stylesheet' id='flatpickr-css' href='https://mlcsports.edu.vn/wp-content/plugins/sunfolia-custom-form/assets/vendor/flatpickr/flatpickr.min.css?ver=1.0.0' media='all' /> -->
+<!-- <link rel='stylesheet' id='flatpickr-overrides-css' href='https://mlcsports.edu.vn/wp-content/plugins/sunfolia-custom-form/assets/vendor/flatpickr/flatpickr-overrides.css?ver=1.0.0' media='all' /> -->
+<link rel="stylesheet" type="text/css" href="//mlcsports.edu.vn/wp-content/cache/wpfc-minified/qu7q63ws/4kofi.css" media="all"/>
+<!-- Đoạn mã Google tag (gtag.js) được thêm bởi Site Kit -->
+<!-- Đoạn mã Google Analytics được thêm bởi Site Kit -->
+<script id="google_gtagjs-js" src="https://www.googletagmanager.com/gtag/js?id=GT-NNQ59MJL" async></script>
+<script id="google_gtagjs-js-after">
+window.dataLayer = window.dataLayer || [];function gtag(){dataLayer.push(arguments);}
+gtag("set","linker",{"domains":["mlcsports.edu.vn"]});
+gtag("js", new Date());
+gtag("set", "developer_id.dZTNiMT", true);
+gtag("config", "GT-NNQ59MJL");
+window._googlesitekit = window._googlesitekit || {}; window._googlesitekit.throttledEvents = []; window._googlesitekit.gtagEvent = (name, data) => { var key = JSON.stringify( { name, data } ); if ( !! window._googlesitekit.throttledEvents[ key ] ) { return; } window._googlesitekit.throttledEvents[ key ] = true; setTimeout( () => { delete window._googlesitekit.throttledEvents[ key ]; }, 5 ); gtag( "event", name, { ...data, event_source: "site-kit" } ); }; 
+//# sourceURL=google_gtagjs-js-after
+</script>
+<link rel="https://api.w.org/" href="https://mlcsports.edu.vn/wp-json/" /><link rel="alternate" title="JSON" type="application/json" href="https://mlcsports.edu.vn/wp-json/wp/v2/pages/98" /><link rel="EditURI" type="application/rsd+xml" title="RSD" href="https://mlcsports.edu.vn/xmlrpc.php?rsd" />
+<meta name="generator" content="WordPress 7.1.2" />
+<link rel='shortlink' href='https://mlcsports.edu.vn/?p=98' />
+<meta name="generator" content="Site Kit by Google 1.184.0" /><!-- Meta Pixel Code -->
+<script>
+!function(f,b,e,v,n,t,s)
+{if(f.fbq)return;n=f.fbq=function(){n.callMethod?
+n.callMethod.apply(n,arguments):n.queue.push(arguments)};
+if(!f._fbq)f._fbq=n;n.push=n;n.loaded=!0;n.version='2.0';
+n.queue=[];t=b.createElement(e);t.async=!0;
+t.src=v;s=b.getElementsByTagName(e)[0];
+s.parentNode.insertBefore(t,s)}(window, document,'script',
+'https://connect.facebook.net/en_US/fbevents.js');
+fbq('init', '1678328066564730');
+fbq('track', 'PageView');
+</script>
+<noscript><img height="1" width="1" style="display:none"
+src="https://www.facebook.com/tr?id=1678328066564730&ev=PageView&noscript=1"
+/></noscript>
+<!-- End Meta Pixel Code -->
+<!-- Google Tag Manager -->
+<script>(function(w,d,s,l,i){w[l]=w[l]||[];w[l].push({'gtm.start':
+new Date().getTime(),event:'gtm.js'});var f=d.getElementsByTagName(s)[0],
+j=d.createElement(s),dl=l!='dataLayer'?'&l='+l:'';j.async=true;j.src=
+'https://www.googletagmanager.com/gtm.js?id='+i+dl;f.parentNode.insertBefore(j,f);
+})(window,document,'script','dataLayer','GTM-T5CQ6HFG');</script>
+<!-- End Google Tag Manager --><link rel="pingback" href="https://mlcsports.edu.vn/xmlrpc.php"><meta name="google-site-verification" content="0eS-MmvxB2I_gCqFLDVce-RB3eOer5rOPC8X3ifR_40">
+<!-- Đoạn mã Google Tag Manager được thêm bởi Site Kit -->
+<script>
+( function( w, d, s, l, i ) {
+w[l] = w[l] || [];
+w[l].push( {'gtm.start': new Date().getTime(), event: 'gtm.js'} );
+var f = d.getElementsByTagName( s )[0],
+j = d.createElement( s ), dl = l != 'dataLayer' ? '&l=' + l : '';
+j.async = true;
+j.src = 'https://www.googletagmanager.com/gtm.js?id=' + i + dl;
+f.parentNode.insertBefore( j, f );
+} )( window, document, 'script', 'dataLayer', 'GTM-T7GKLQQP' );
+</script>
+<!-- Kết thúc đoạn mã Google Tag Manager được thêm bởi Site Kit -->
+<link rel="icon" href="https://mlcsports.edu.vn/wp-content/uploads/2026/07/android-chrome-512x512-1-150x150.png" sizes="32x32" />
+<link rel="icon" href="https://mlcsports.edu.vn/wp-content/uploads/2026/07/android-chrome-512x512-1-300x300.png" sizes="192x192" />
+<link rel="apple-touch-icon" href="https://mlcsports.edu.vn/wp-content/uploads/2026/07/android-chrome-512x512-1-300x300.png" />
+<meta name="msapplication-TileImage" content="https://mlcsports.edu.vn/wp-content/uploads/2026/07/android-chrome-512x512-1-300x300.png" />
+</head>
+<body class="wp-singular page-template page-template-page-facilities page-template-page-facilities-php page page-id-98 wp-theme-sport-center min-h-screen bg-background antialiased no-sidebar">
+<!-- Đoạn mã Google Tag Manager (noscript) được thêm bởi Site Kit -->
+<noscript>
+<iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T7GKLQQP" height="0" width="0" style="display:none;visibility:hidden"></iframe>
+</noscript>
+<!-- Kết thúc đoạn mã Google Tag Manager (noscript) được thêm bởi Site Kit -->
+<!-- Google Tag Manager (noscript) -->
+<noscript><iframe src="https://www.googletagmanager.com/ns.html?id=GTM-T5CQ6HFG"
+height="0" width="0" style="display:none;visibility:hidden"></iframe></noscript>
+<!-- End Google Tag Manager (noscript) --><header id="site-header" class="header top-0 left-0 right-0 z-50 transition-all duration-300 bg-transparent sticky sport-center-header--inner">
+<div class="container mx-auto flex items-center justify-between py-2 px-4 lg:px-2 xl:px-8 lg:py-3">
+<a href="https://mlcsports.edu.vn/" class="flex shrink-0 items-center">
+<img src="https://mlcsports.edu.vn/wp-content/themes/sport-center/assets/images/mlc-logo.png" alt="MLC Sports Center" class="h-14 w-auto sm:h-16 lg:h-20" width="200" height="80" loading="eager">
+</a>
+<nav class="ml-8 hidden flex-1 items-center justify-end gap-2 lg:flex xl:ml-12 xl:gap-4" aria-label="Primary">
+<a href="/" class="sport-center-header-link relative inline-flex h-12 -skew-x-6 items-center whitespace-nowrap px-3 text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wider font-body transition-all duration-200 before:absolute before:inset-0 before:-z-10 before:origin-center before:scale-x-0 before:bg-primary before:transition-transform before:duration-200 hover:text-primary-foreground hover:before:scale-x-100 xl:px-4 text-foreground" data-nav-link><span class="skew-x-6">Trang chủ</span></a></a><div class="relative group" data-dropdown><button type="button" class="sport-center-header-link relative inline-flex h-12 -skew-x-6 items-center whitespace-nowrap px-3 text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wider font-body transition-all duration-200 before:absolute before:inset-0 before:-z-10 before:origin-center before:scale-x-0 before:bg-primary before:transition-transform before:duration-200 hover:text-primary-foreground hover:before:scale-x-100 xl:px-4 gap-1 text-foreground" data-nav-link aria-expanded="false" aria-haspopup="true"><span class="skew-x-6 inline-flex items-center gap-1">Về chúng tôi<svg class="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span></button><div class="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all" data-dropdown-panel><div class="min-w-[180px] bg-background py-2"><a href="https://mlcsports.edu.vn/ve-chung-toi/ve-equest/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Về EQuest</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/lich-su-hinh-thanh/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Lịch sử hình thành</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/doi-tac/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Đối tác</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/co-hoi-nghe-nghiep/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Cơ hội nghề nghiệp</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/tin-tuc-su-kien/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Tin tức và sự kiện</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/lien-he/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Liên hệ</a></a></div></div></div><div class="relative group" data-dropdown><button type="button" class="sport-center-header-link relative inline-flex h-12 -skew-x-6 items-center whitespace-nowrap px-3 text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wider font-body transition-all duration-200 before:absolute before:inset-0 before:-z-10 before:origin-center before:scale-x-0 before:bg-primary before:transition-transform before:duration-200 hover:text-primary-foreground hover:before:scale-x-100 xl:px-4 gap-1 text-foreground" data-nav-link aria-expanded="false" aria-haspopup="true"><span class="skew-x-6 inline-flex items-center gap-1">Khóa học<svg class="w-3.5 h-3.5 transition-transform duration-200 group-hover:rotate-180" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></span></button><div class="absolute top-full left-1/2 -translate-x-1/2 pt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all" data-dropdown-panel><div class="grid grid-cols-[repeat(2,max-content)] gap-x-2 bg-background py-2"><a href="https://mlcsports.edu.vn/khoa-hoc/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Tất cả</a></a><a href="https://mlcsports.edu.vn/?post_type=courses&#038;p=531" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Ballet</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/bong-ban/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Bóng bàn</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/bong-chuyen/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Bóng chuyền</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/bong-da/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Bóng đá</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/bong-ro/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Bóng rổ</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/boi-loi/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Bơi lội</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/cau-long/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Cầu lông</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/co-vua/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Cờ vua</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/golf-3d/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Golf 3D</a></a><a href="https://mlcsports.edu.vn/?post_type=courses&#038;p=562" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Golf ngoài trời</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/kiem-thuat/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Kiếm thuật</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/nhay-hien-dai/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Nhảy hiện đại</a></a><a href="https://mlcsports.edu.vn/?post_type=courses&#038;p=641" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Pickleball</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/quan-vot/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Quần vợt</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/taekwondo/" class="block whitespace-nowrap px-5 py-2.5 text-sm font-body hover:text-primary hover:bg-secondary transition-colors text-foreground">Taekwondo</a></a></div></div></div><a href="https://mlcsports.edu.vn/huan-luyen-vien/" class="sport-center-header-link relative inline-flex h-12 -skew-x-6 items-center whitespace-nowrap px-3 text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wider font-body transition-all duration-200 before:absolute before:inset-0 before:-z-10 before:origin-center before:scale-x-0 before:bg-primary before:transition-transform before:duration-200 hover:text-primary-foreground hover:before:scale-x-100 xl:px-4 text-foreground" data-nav-link><span class="skew-x-6">Huấn luyện viên</span></a></a><a href="https://mlcsports.edu.vn/co-so-vat-chat/" class="sport-center-header-link relative inline-flex h-12 -skew-x-6 items-center whitespace-nowrap px-3 text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wider font-body transition-all duration-200 before:absolute before:inset-0 before:-z-10 before:origin-center before:scale-x-0 before:bg-primary before:transition-transform before:duration-200 hover:text-primary-foreground hover:before:scale-x-100 xl:px-4 active text-white before:scale-x-100 glow-red" data-nav-link><span class="skew-x-6">Cơ sở vật chất</span></a></a><a href="https://mlcsports.edu.vn/tuyen-sinh/" class="sport-center-header-link relative inline-flex h-12 -skew-x-6 items-center whitespace-nowrap px-3 text-sm lg:text-xs xl:text-sm font-bold uppercase tracking-wider font-body transition-all duration-200 before:absolute before:inset-0 before:-z-10 before:origin-center before:scale-x-0 before:bg-primary before:transition-transform before:duration-200 hover:text-primary-foreground hover:before:scale-x-100 xl:px-4 text-foreground" data-nav-link><span class="skew-x-6">Tuyển sinh</span></a></a>		</nav>
+<button type="button" class="sport-center-header-icon-btn md:hidden text-white" data-mobile-toggle aria-expanded="false" aria-controls="mobile-nav" aria-label="Menu">
+<svg data-icon-open class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+<svg data-icon-close class="hidden w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6 6 18M6 6l12 12"/></svg>
+</button>
+</div>
+<div id="mobile-nav" class="hidden md:hidden max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain bg-background backdrop-blur-lg" data-mobile-panel>
+<nav class="flex flex-col gap-1 p-4" aria-label="Mobile">
+<a href="/" class="py-3 px-4 text-muted-foreground hover:text-primary hover:bg-secondary transition-colors font-body uppercase tracking-wider text-sm">Trang chủ</a></a><div data-mobile-dropdown><button type="button" class="py-3 px-4 text-muted-foreground hover:text-primary hover:bg-secondary transition-colors font-body uppercase tracking-wider text-sm flex items-center justify-between w-full" data-mobile-submenu-toggle>Về chúng tôi<svg class="w-3.5 h-3.5 transition-transform" data-mobile-submenu-chevron viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="hidden ml-4 border-l-2 border-primary/20 pl-2" data-mobile-submenu-panel><a href="https://mlcsports.edu.vn/ve-chung-toi/ve-equest/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Về EQuest</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/lich-su-hinh-thanh/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Lịch sử hình thành</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/doi-tac/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Đối tác</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/co-hoi-nghe-nghiep/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Cơ hội nghề nghiệp</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/tin-tuc-su-kien/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Tin tức và sự kiện</a></a><a href="https://mlcsports.edu.vn/ve-chung-toi/lien-he/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Liên hệ</a></a></div></div><div data-mobile-dropdown><button type="button" class="py-3 px-4 text-muted-foreground hover:text-primary hover:bg-secondary transition-colors font-body uppercase tracking-wider text-sm flex items-center justify-between w-full" data-mobile-submenu-toggle>Khóa học<svg class="w-3.5 h-3.5 transition-transform" data-mobile-submenu-chevron viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="m6 9 6 6 6-6"/></svg></button><div class="hidden ml-4 border-l-2 border-primary/20 pl-2" data-mobile-submenu-panel><a href="https://mlcsports.edu.vn/khoa-hoc/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Tất cả</a></a><a href="https://mlcsports.edu.vn/?post_type=courses&#038;p=531" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Ballet</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/bong-ban/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Bóng bàn</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/bong-chuyen/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Bóng chuyền</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/bong-da/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Bóng đá</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/bong-ro/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Bóng rổ</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/boi-loi/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Bơi lội</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/cau-long/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Cầu lông</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/co-vua/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Cờ vua</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/golf-3d/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Golf 3D</a></a><a href="https://mlcsports.edu.vn/?post_type=courses&#038;p=562" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Golf ngoài trời</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/kiem-thuat/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Kiếm thuật</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/nhay-hien-dai/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Nhảy hiện đại</a></a><a href="https://mlcsports.edu.vn/?post_type=courses&#038;p=641" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Pickleball</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/quan-vot/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Quần vợt</a></a><a href="https://mlcsports.edu.vn/khoa-hoc/taekwondo/" class="block py-2.5 px-4 text-sm font-body hover:text-primary transition-colors text-muted-foreground">Taekwondo</a></a></div></div><a href="https://mlcsports.edu.vn/huan-luyen-vien/" class="py-3 px-4 text-muted-foreground hover:text-primary hover:bg-secondary transition-colors font-body uppercase tracking-wider text-sm">Huấn luyện viên</a></a><a href="https://mlcsports.edu.vn/co-so-vat-chat/" class="py-3 px-4 text-primary hover:text-primary hover:bg-secondary transition-colors font-body uppercase tracking-wider text-sm">Cơ sở vật chất</a></a><a href="https://mlcsports.edu.vn/tuyen-sinh/" class="py-3 px-4 text-muted-foreground hover:text-primary hover:bg-secondary transition-colors font-body uppercase tracking-wider text-sm">Tuyển sinh</a></a>		</nav>
+</div>
+</header>
+<main id="main-content" class="min-h-screen bg-background">
+<section class="relative min-h-[660px] overflow-hidden bg-[hsl(var(--mlc-dark))] text-background">
+<img
+src="https://mlcsports.edu.vn/wp-content/themes/sport-center/assets/images/facilities/facility-arena.webp"
+alt=""
+class="absolute inset-0 h-full w-full object-cover opacity-55"
+width="1920"
+height="1080"
+loading="eager"
+fetchpriority="high"
+aria-hidden="true"
+>
+<div class="pointer-events-none absolute inset-0 bg-gradient-to-r from-[hsl(var(--mlc-dark))] via-[hsl(var(--mlc-dark))]/78 to-[hsl(var(--mlc-dark))]/38" aria-hidden="true"></div>
+<div class="pointer-events-none absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/88 via-transparent to-[hsl(var(--mlc-dark))]/36" aria-hidden="true"></div>
+<div class="pointer-events-none absolute inset-0 dynamic-typo-grid opacity-30" aria-hidden="true"></div>
+<div class="pointer-events-none absolute -right-[5rem] top-0 h-full w-[45%] -skew-x-12 bg-primary/20" aria-hidden="true"></div>
+<div class="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 font-display text-[16vw] uppercase leading-none text-white/5" aria-hidden="true">
+FACILITIES		</div>
+<div class="container relative mx-auto flex min-h-[660px] items-center px-4 py-16 lg:px-8 lg:py-24">
+<div class="max-w-5xl transition-all duration-700 translate-y-10 opacity-0" data-sc-section-reveal>
+<div class="mb-5 inline-flex -skew-x-6 bg-primary px-5 py-2 text-primary-foreground shadow-[0_12px_30px_-14px_rgba(227,22,45,0.8)]">
+<span class="skew-x-6 font-body text-xs font-extrabold uppercase tracking-[0.2em]">
+MLC Sports Center					</span>
+</div>
+<h1 class="font-display text-5xl uppercase !leading-tight text-white drop-shadow-[0_8px_32px_rgba(0,0,0,0.5)] md:text-7xl lg:text-8xl">
+Cơ sở <span class="text-primary">vật chất</span>				</h1>
+<p
+class="mt-7 max-w-4xl border-l-4 border-primary pl-6 font-body text-lg leading-relaxed text-white/82 md:text-xl text-justify"
+>
+Hệ thống cơ sở vật chất đẳng cấp quốc tế, đáp ứng mọi nhu cầu tập luyện,<br />thi đấu và tổ chức sự kiện thể thao chuyên nghiệp.				</p>
+</div>
+</div>
+</section>
+<section class="relative overflow-hidden bg-[hsl(var(--mlc-dark))] py-6 md:py-8">
+<div class="pointer-events-none absolute inset-0 dynamic-typo-grid opacity-20" aria-hidden="true"></div>
+<div class="container relative mx-auto px-4 lg:px-8">
+<div class="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 0ms;"
+data-sc-section-reveal
+>
+<div class="group relative flex min-h-32 h-full -skew-x-6 items-stretch overflow-hidden bg-white/[0.06] shadow-[0_18px_45px_-28px_rgba(0,0,0,0.9)] transition-all duration-300 hover:-translate-y-1 hover:bg-primary">
+<div class="pointer-events-none absolute -right-8 -top-10 h-28 w-16 rotate-12 bg-primary/10 group-hover:bg-white/10" aria-hidden="true"></div>
+<div class="flex w-16 shrink-0 items-center justify-center border-r border-white/10">
+<svg class="h-8 w-8 skew-x-6 text-primary transition-colors duration-300 group-hover:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 9H4.5a2.5 2.5 0 0 1 0-5H6"></path><path d="M18 9h1.5a2.5 2.5 0 0 0 0-5H18"></path><path d="M4 22h16"></path><path d="M10 14.66V17c0 .55-.47.98-.97 1.21C7.85 18.75 7 20.24 7 22"></path><path d="M14 14.66V17c0 .55.47.98.97 1.21C16.15 18.75 17 20.24 17 22"></path><path d="M18 2H6v7a6 6 0 0 0 12 0V2Z"></path></svg>							</div>
+<div class="flex min-w-0 flex-1 skew-x-6 flex-col justify-center px-5 py-5">
+<span class="font-display text-4xl leading-none text-primary md:text-5xl lg:text-4xl xl:text-5xl group-hover:text-white">9</span>
+<span class="mt-3 font-body text-xs font-extrabold uppercase leading-tight tracking-[0.08em] text-white md:text-sm">
+Khu chức năng thể thao								</span>
+</div>
+</div>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 70ms;"
+data-sc-section-reveal
+>
+<div class="group relative flex min-h-32 h-full -skew-x-6 items-stretch overflow-hidden bg-white/[0.06] shadow-[0_18px_45px_-28px_rgba(0,0,0,0.9)] transition-all duration-300 hover:-translate-y-1 hover:bg-primary">
+<div class="pointer-events-none absolute -right-8 -top-10 h-28 w-16 rotate-12 bg-primary/10 group-hover:bg-white/10" aria-hidden="true"></div>
+<div class="flex w-16 shrink-0 items-center justify-center border-r border-white/10">
+<svg class="h-8 w-8 skew-x-6 text-primary transition-colors duration-300 group-hover:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.3 15.3 8.7 2.7a2.4 2.4 0 0 0-3.4 0L2.7 5.3a2.4 2.4 0 0 0 0 3.4l12.6 12.6a2.4 2.4 0 0 0 3.4 0l2.6-2.6a2.4 2.4 0 0 0 0-3.4Z"></path><path d="m14.5 12.5 2-2"></path><path d="m11.5 9.5 2-2"></path><path d="m8.5 6.5 2-2"></path></svg>							</div>
+<div class="flex min-w-0 flex-1 skew-x-6 flex-col justify-center px-5 py-5">
+<span class="font-display text-4xl leading-none text-primary md:text-5xl lg:text-4xl xl:text-5xl group-hover:text-white">1.976m²</span>
+<span class="mt-3 font-body text-xs font-extrabold uppercase leading-tight tracking-[0.08em] text-white md:text-sm">
+Diện tích sân vận động MLC								</span>
+</div>
+</div>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 140ms;"
+data-sc-section-reveal
+>
+<div class="group relative flex min-h-32 h-full -skew-x-6 items-stretch overflow-hidden bg-white/[0.06] shadow-[0_18px_45px_-28px_rgba(0,0,0,0.9)] transition-all duration-300 hover:-translate-y-1 hover:bg-primary">
+<div class="pointer-events-none absolute -right-8 -top-10 h-28 w-16 rotate-12 bg-primary/10 group-hover:bg-white/10" aria-hidden="true"></div>
+<div class="flex w-16 shrink-0 items-center justify-center border-r border-white/10">
+<svg class="h-8 w-8 skew-x-6 text-primary transition-colors duration-300 group-hover:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>							</div>
+<div class="flex min-w-0 flex-1 skew-x-6 flex-col justify-center px-5 py-5">
+<span class="font-display text-4xl leading-none text-primary md:text-5xl lg:text-4xl xl:text-5xl group-hover:text-white">2.500</span>
+<span class="mt-3 font-body text-xs font-extrabold uppercase leading-tight tracking-[0.08em] text-white md:text-sm">
+Sức chứa sự kiện tối đa								</span>
+</div>
+</div>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 210ms;"
+data-sc-section-reveal
+>
+<div class="group relative flex min-h-32 h-full -skew-x-6 items-stretch overflow-hidden bg-white/[0.06] shadow-[0_18px_45px_-28px_rgba(0,0,0,0.9)] transition-all duration-300 hover:-translate-y-1 hover:bg-primary">
+<div class="pointer-events-none absolute -right-8 -top-10 h-28 w-16 rotate-12 bg-primary/10 group-hover:bg-white/10" aria-hidden="true"></div>
+<div class="flex w-16 shrink-0 items-center justify-center border-r border-white/10">
+<svg class="h-8 w-8 skew-x-6 text-primary transition-colors duration-300 group-hover:text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9.9 10.8 8 16l-1.9-5.2L1 9l5.1-1.8L8 2l1.9 5.2L15 9z"></path><path d="M19 22l-1.3-3.7L14 17l3.7-1.3L19 12l1.3 3.7L24 17l-3.7 1.3z"></path></svg>							</div>
+<div class="flex min-w-0 flex-1 skew-x-6 flex-col justify-center px-5 py-5">
+<span class="font-display text-4xl leading-none text-primary md:text-5xl lg:text-4xl xl:text-5xl group-hover:text-white">50m</span>
+<span class="mt-3 font-body text-xs font-extrabold uppercase leading-tight tracking-[0.08em] text-white md:text-sm">
+Hồ bơi chuẩn Olympic								</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section class="py-20 lg:py-28">
+<div class="container relative mx-auto px-4 lg:px-8">
+<div class="mx-auto mb-14 max-w-7xl">
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 0ms;"
+data-sc-section-reveal
+>
+<h2 class="font-display text-3xl uppercase leading-[1.02] text-foreground md:text-4xl lg:text-5xl">
+Không gian <span class="text-primary">tập luyện &amp; thi đấu</span>					</h2>
+<div class="mt-5 h-1 w-28 -skew-x-12 bg-primary" aria-hidden="true"></div>
+<p class="mt-6 text-justify font-body text-base leading-relaxed text-muted-foreground md:text-lg">
+Mỗi khu vực tại MLC Sports được tổ chức như một điểm chạm trải nghiệm: đủ tiêu chuẩn cho đào tạo hằng ngày, đủ linh hoạt cho giải đấu, sự kiện và chương trình thể thao quy mô lớn.					</p>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0 mt-10"
+style="transition-delay: 120ms;"
+data-sc-section-reveal
+>
+<aside class="relative overflow-hidden bg-[hsl(var(--mlc-dark))] text-white shadow-[0_28px_90px_-48px_rgba(0,0,0,0.8)]">
+<div class="pointer-events-none absolute inset-0 dynamic-typo-grid opacity-20" aria-hidden="true"></div>
+<div class="relative grid lg:grid-cols-[0.92fr_1.08fr]">
+<div class="flex flex-col justify-between gap-8 p-6 md:p-8 lg:p-10">
+<div>
+<div class="mb-5 inline-flex -skew-x-6 items-center gap-3 bg-white/10 px-4 py-3">
+<svg class="h-5 w-5 skew-x-6 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 2v4"></path><path d="M16 2v4"></path><rect width="18" height="18" x="3" y="4" rx="2"></rect><path d="M3 10h18"></path></svg>										<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.18em] text-white/76">
+Facility tour										</span>
+</div>
+<h3 class="font-display text-4xl uppercase leading-[0.9] text-white md:text-5xl">
+Đăng ký <span class="text-primary">tham quan</span>									</h3>
+<p class="mt-5 font-body text-sm font-semibold leading-relaxed text-white/72 md:text-base text-justify">
+Lên lịch khảo sát trực tiếp với đội ngũ MLC Sports để xem mặt bằng, kiểm tra luồng di chuyển và chọn khu vực phù hợp cho lớp học, giải đấu hoặc sự kiện.									</p>
+</div>
+<div class="grid gap-3 sm:grid-cols-3 lg:grid-cols-1">
+<div class="flex items-center gap-4 bg-white/[0.06] p-4">
+<div class="flex h-11 w-11 shrink-0 -skew-x-6 items-center justify-center bg-primary text-white">
+<svg class="h-5 w-5 skew-x-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>											</div>
+<div>
+<p class="font-body text-[10px] font-black uppercase tracking-[0.16em] text-white/46">Thời lượng</p>
+<p class="mt-1 font-body text-sm font-extrabold text-white">45-60 phút</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white/[0.06] p-4">
+<div class="flex h-11 w-11 shrink-0 -skew-x-6 items-center justify-center bg-primary text-white">
+<svg class="h-5 w-5 skew-x-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M22 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>											</div>
+<div>
+<p class="font-body text-[10px] font-black uppercase tracking-[0.16em] text-white/46">Quy mô gợi ý</p>
+<p class="mt-1 font-body text-sm font-extrabold text-white">5-40 khách</p>
+</div>
+</div>
+<div class="flex items-center gap-4 bg-white/[0.06] p-4">
+<div class="flex h-11 w-11 shrink-0 -skew-x-6 items-center justify-center bg-primary text-white">
+<svg class="h-5 w-5 skew-x-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12S4 16 4 10a8 8 0 0 1 16 0Z"></path><circle cx="12" cy="10" r="3"></circle></svg>											</div>
+<div>
+<p class="font-body text-[10px] font-black uppercase tracking-[0.16em] text-white/46">Điểm hẹn</p>
+<p class="mt-1 font-body text-sm font-extrabold text-white">MLC Sports</p>
+</div>
+</div>
+</div>
+<div class="grid gap-3 border-t border-white/12 pt-6">
+<div class="flex gap-3 font-body text-sm leading-relaxed text-white/76 md:text-base">
+<svg class="mt-0.5 h-4 w-4 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.8 10A10 10 0 1 1 17 3.34"></path><path d="m9 11 3 3L22 4"></path></svg>											<span>Khảo sát thực tế không gian tập luyện, thi đấu và tổ chức sự kiện.</span>
+</div>
+<div class="flex gap-3 font-body text-sm leading-relaxed text-white/76 md:text-base">
+<svg class="mt-0.5 h-4 w-4 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.8 10A10 10 0 1 1 17 3.34"></path><path d="m9 11 3 3L22 4"></path></svg>											<span>Tư vấn lựa chọn khu vực phù hợp theo quy mô đoàn, lớp học hoặc giải đấu.</span>
+</div>
+<div class="flex gap-3 font-body text-sm leading-relaxed text-white/76 md:text-base">
+<svg class="mt-0.5 h-4 w-4 shrink-0 text-primary" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21.8 10A10 10 0 1 1 17 3.34"></path><path d="m9 11 3 3L22 4"></path></svg>											<span>Nhận thông tin thuê cơ sở vật chất trực tiếp từ đội ngũ MLC Sports.</span>
+</div>
+</div>
+</div>
+<form method="post" class="relative grid gap-5 bg-white p-5 text-[hsl(var(--mlc-dark))] md:grid-cols-2 md:p-7 lg:p-8" data-scf-ajax-form="facility-tour" novalidate>
+<div class="pointer-events-none absolute left-0 top-0 h-full w-1.5 bg-primary" aria-hidden="true"></div>
+<div class="relative md:col-span-2">
+<p class="font-body text-[11px] font-black uppercase tracking-[0.16em] text-primary">
+Gửi thông tin lịch hẹn									</p>
+<h4 class="mt-2 font-display text-3xl uppercase leading-none text-[hsl(var(--mlc-dark))]">
+Chọn ngày phù hợp									</h4>
+</div>
+<div class="relative hidden transition-all duration-500 ease-out md:col-span-2" data-scf-success role="status">
+<div class="flex items-center gap-4 border-l-4 border-mlc-green bg-mlc-green/5 px-5 py-4">
+<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-mlc-green/10">
+<svg class="h-6 w-6 text-mlc-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+</div>
+<div class="text-left">
+<p class="font-display text-base uppercase leading-snug text-mlc-green">Đăng ký thành công!</p>
+<p class="mt-0.5 font-body text-sm text-foreground/70">
+Đã gửi đăng ký tham quan.<br>MLC Sports sẽ liên hệ để xác nhận lịch hẹn với bạn.					</p>
+</div>
+</div>
+</div>
+<p class="relative hidden md:col-span-2 border-l-4 border-primary bg-[hsl(var(--mlc-gray))] px-4 py-3 font-body text-sm font-semibold text-[hsl(var(--mlc-dark))]" role="alert" data-scf-error></p>
+<div class="relative">
+<label for="tour-name" class="mb-2 block font-body text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--mlc-dark))]/70">
+Họ và tên <span class="text-primary">*</span>
+</label>
+<input id="tour-name" name="name" type="text" placeholder="Nguyễn Văn A" maxlength="100" class="h-14 w-full border border-[hsl(var(--mlc-dark))]/10 bg-[hsl(var(--mlc-gray))] px-3 font-body text-base font-semibold text-[hsl(var(--mlc-dark))] placeholder:text-[hsl(var(--mlc-dark))]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="name"></p>
+</div>
+<div class="relative">
+<label for="tour-phone" class="mb-2 block font-body text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--mlc-dark))]/70">
+Số điện thoại <span class="text-primary">*</span>
+</label>
+<input id="tour-phone" name="phone" type="tel" placeholder="0902 824 820" maxlength="12" class="h-14 w-full border border-[hsl(var(--mlc-dark))]/10 bg-[hsl(var(--mlc-gray))] px-3 font-body text-base font-semibold text-[hsl(var(--mlc-dark))] placeholder:text-[hsl(var(--mlc-dark))]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="phone"></p>
+</div>
+<div class="relative md:col-span-2">
+<label for="tour-email" class="mb-2 block font-body text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--mlc-dark))]/70">
+Email <span class="text-primary">*</span>
+</label>
+<input id="tour-email" name="email" type="email" placeholder="email@example.com" maxlength="255" class="h-14 w-full border border-[hsl(var(--mlc-dark))]/10 bg-[hsl(var(--mlc-gray))] px-3 font-body text-base font-semibold text-[hsl(var(--mlc-dark))] placeholder:text-[hsl(var(--mlc-dark))]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="email"></p>
+</div>
+<div class="relative">
+<label for="tour-date" class="mb-2 block font-body text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--mlc-dark))]/70">Ngày dự kiến</label>
+<input id="tour-date" name="date" type="text" data-flatpickr data-min-date="2026-09-25" placeholder="dd/mm/yyyy" autocomplete="off" class="h-14 w-full border border-[hsl(var(--mlc-dark))]/10 bg-[hsl(var(--mlc-gray))] px-3 font-body text-base font-semibold text-[hsl(var(--mlc-dark))] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="date"></p>
+</div>
+<div class="relative">
+<label for="tour-group-size" class="mb-2 block font-body text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--mlc-dark))]/70">Số lượng</label>
+<input id="tour-group-size" name="group_size" type="number" min="1" max="200" placeholder="10" class="h-14 w-full border border-[hsl(var(--mlc-dark))]/10 bg-[hsl(var(--mlc-gray))] px-3 font-body text-base font-semibold text-[hsl(var(--mlc-dark))] placeholder:text-[hsl(var(--mlc-dark))]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary">
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="group_size"></p>
+</div>
+<div class="relative md:col-span-2">
+<label for="tour-message" class="mb-2 block font-body text-[11px] font-extrabold uppercase tracking-[0.12em] text-[hsl(var(--mlc-dark))]/70">Nhu cầu tham quan</label>
+<textarea id="tour-message" name="message" placeholder="Khu vực muốn xem, mục đích tham quan..." maxlength="5000" rows="4" class="min-h-32 w-full resize-none border border-[hsl(var(--mlc-dark))]/10 bg-[hsl(var(--mlc-gray))] px-3 py-4 font-body text-base font-semibold text-[hsl(var(--mlc-dark))] placeholder:text-[hsl(var(--mlc-dark))]/35 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"></textarea>
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="message"></p>
+</div>
+<div class="relative md:col-span-2">
+<button type="submit" class="h-14 w-full rounded-none -skew-x-6 bg-primary px-6 font-body text-sm font-extrabold uppercase text-primary-foreground shadow-[0_18px_34px_-22px_rgba(227,22,45,0.9)] hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m22 2-7 20-4-9-9-4Z"></path><path d="M22 2 11 13"></path></svg>											Gửi đăng ký tham quan										</span>
+</button>
+</div>
+</form>
+</div>
+</aside>
+</div>
+</div>
+<div class="mx-auto grid max-w-7xl gap-10 lg:gap-14">
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 0ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12 lg:min-h-[560px]">
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/07/facility-arena-1024x683.webp" alt="Sân vận động MLC" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[520px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Arena										</span>
+</div>
+<div class="absolute right-5 top-0 flex items-center py-3">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/07/saigonheat.png" alt="Sân vận động MLC partner logo" class="h-10 max-w-[132px] object-contain md:h-12" width="132" height="48" loading="lazy">
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -bottom-5 -left-6" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Sân vận động MLC								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p>Sở hữu hệ thống trang thiết bị đạt chuẩn FIBA, sân vận động MLC có diện tích 1.976m² và sức chứa 1.500 – 2.500 chỗ ngồi. <b>MLC Sports là đối tác chiến lược, sân nhà của đội tuyển bóng rổ Saigon Heat, tạo điều kiện giúp học viên đội tuyển có cơ hội tham dự các giải đấu trong hệ thống SSA, cũng như tham dự những trận đấu của Saigon Heat tổ chức tại MLC Sports.</b></p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+1.976m²											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+1.500–2.500 chỗ											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Chuẩn FIBA											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Sân vận động MLC" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 90ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12">
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/07/facility-basketball-1024x683.webp" alt="Sân thi đấu đa năng" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[440px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Indoor court										</span>
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -right-6 -top-5" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Sân thi đấu đa năng								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p>Sân thi đấu trong nhà với diện tích 540m² được thiết kế phù hợp để tổ chức nhiều môn thể thao như bóng rổ, bóng chuyền, futsal với mục đích huấn luyện cá nhân và thi đấu nhóm.</p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+540m²											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Đa bộ môn											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Tập luyện &amp; thi đấu											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Sân thi đấu đa năng" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 180ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12">
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/07/facility-pool-1024x682.webp" alt="Hồ bơi chuẩn Olympic" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[440px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Aquatics										</span>
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -bottom-5 -left-6" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Hồ bơi chuẩn Olympic								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p>Hồ bơi 50m, 10 làn bơi đạt chuẩn Olympic – đáp ứng tiêu chuẩn thi đấu quốc tế. Hồ phụ dài 25m, lý tưởng cho các lớp học bơi cơ bản và hoạt động làm quen nước. Hệ thống lọc nước UV + Ozone đảm bảo an toàn.</p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+50m											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+10 làn bơi											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+UV + Ozone											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Hồ bơi chuẩn Olympic" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 0ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12">
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/07/facility-golf-sim-1024x683.webp" alt="Phòng mô phỏng XSwing &#8211; Golf 3D" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[440px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Golf simulator										</span>
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -right-6 -top-5" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Phòng mô phỏng XSwing &#8211; Golf 3D								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p>Phòng tập golf công nghệ cao với hệ thống mô phỏng 3D hiện đại, cho phép người chơi luyện tập kỹ thuật đánh bóng chính xác trong điều kiện không gian giống như thật.</p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Mô phỏng 3D											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Indoor											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Phân tích kỹ thuật											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Phòng mô phỏng XSwing &#8211; Golf 3D" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 90ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12">
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/07/facility-golf-green-1024x576.webp" alt="Sân tập Golf Putting Green" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[440px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Putting green										</span>
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -bottom-5 -left-6" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Sân tập Golf <br>Putting Green								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p>Khu sân tập ngoài trời với mặt cỏ chất lượng cao, được thiết kế để mang đến trải nghiệm luyện tập golf chuyên nghiệp trong không gian xanh mát và yên tĩnh.</p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Ngoài trời											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Mặt cỏ cao cấp											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Không gian xanh											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Sân tập Golf Putting Green" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 180ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12">
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/08/facility-tennis-1024x576.webp" alt="Sân tennis ngoài trời" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[440px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Tennis court										</span>
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -right-6 -top-5" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Sân tennis ngoài trời								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p>Sân tennis ngoài trời được thiết kế đạt chuẩn, phù hợp cho cả luyện tập cá nhân và thi đấu. Bề mặt acrylic cao cấp mang lại độ nảy chuẩn xác và độ bền vượt trội.</p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Acrylic											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Ngoài trời											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Thi đấu											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Sân tennis ngoài trời" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 0ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12">
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/08/facility-theater-1024x331.webp" alt="Nhà hát &#038; sân khấu" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[440px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Theater										</span>
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -bottom-5 -left-6" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Nhà hát &#038; sân khấu								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p>Với hơn 370 ghế ngồi và không gian rộng 408m², rạp hát MLC Sports được thiết kế chuyên biệt cho các hoạt động trình chiếu, biểu diễn, sự kiện nghệ thuật, hội thảo. Hệ thống màn hình LED và âm thanh chất lượng cao.</p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+370+ ghế											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+408m²											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+LED &amp; âm thanh											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Nhà hát &#038; sân khấu" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 90ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12">
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/07/facility-tabletennis-1024x683.webp" alt="Phòng tập đa năng (không gương)" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[440px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Table tennis										</span>
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -right-6 -top-5" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Phòng tập đa năng (không gương)								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">Không gian rộng rãi, linh hoạt, phù hợp cho nhiều bộ môn và nhu cầu tập luyện, thi đấu.</p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Rộng thoáng											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Chuẩn quốc tế											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Tập luyện											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Phòng tập đa năng (không gương)" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+<div	class="transition-all duration-700 translate-y-10 opacity-0"
+style="transition-delay: 180ms;"
+data-sc-section-reveal
+>
+<article class="group relative grid items-center gap-8 py-8 lg:grid-cols-12 lg:py-12">
+<div class="relative lg:col-span-6 lg:order-1">
+<div class="relative overflow-hidden shadow-[0_28px_80px_-48px_rgba(0,0,0,0.75)]">
+<img src="https://mlcsports.edu.vn/wp-content/uploads/2026/07/taekwondo-1-1024x683.webp" alt="Phòng tập đa năng (có gương)" class="h-full min-h-[320px] w-full object-cover transition-transform duration-700 group-hover:scale-105 lg:min-h-[440px]" width="900" height="600" loading="lazy">
+<div class="absolute inset-0 bg-gradient-to-t from-[hsl(var(--mlc-dark))]/78 via-[hsl(var(--mlc-dark))]/18 to-transparent" aria-hidden="true"></div>
+<div class="absolute inset-0 bg-[hsl(var(--mlc-teal))]/10 mix-blend-multiply" aria-hidden="true"></div>
+<div class="absolute left-5 top-5 flex -skew-x-6 bg-primary px-4 py-2 shadow-[0_14px_28px_-18px_rgba(227,22,45,0.95)]">
+<span class="skew-x-6 font-body text-[11px] font-black uppercase tracking-[0.16em] text-white">
+Studio										</span>
+</div>
+</div>
+<div class="pointer-events-none absolute -z-10 hidden h-24 w-48 -skew-x-12 bg-primary/12 lg:block -bottom-5 -left-6" aria-hidden="true"></div>
+</div>
+<div class="relative lg:col-span-6 lg:order-2">
+<div class="mb-4 inline-flex items-center gap-2">
+<span class="h-2 w-2 rounded-full bg-primary" aria-hidden="true"></span>
+<span class="font-body text-[11px] font-black uppercase tracking-[0.22em] text-[hsl(var(--mlc-dark))]/55">
+Elite infrastructure									</span>
+</div>
+<h3 class="font-display text-3xl uppercase leading-[0.88] md:text-4xl lg:text-5xl text-primary">
+Phòng tập đa năng (có gương)								</h3>
+<div class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">
+<p class="mt-5 font-body text-sm leading-relaxed text-muted-foreground md:text-base text-justify">Phòng tập rộng 266m² được trang bị tường gương toàn phần, đáp ứng nhu cầu tập luyện cho nhiều bộ môn như múa ballet, khiêu vũ, nhảy hiện đại, võ thuật. Hệ thống ánh sáng và âm thanh chất lượng cao.</p>
+</div>
+<div class="mt-6 grid gap-1 grid-cols-3 sm:gap-3">
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+266m²											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Tường gương											</p>
+</div>
+<div class="flex items-center justify-center -skew-x-6 border border-primary/40 bg-primary/5 p-2 shadow-[0_18px_45px_-35px_rgba(0,0,0,0.38)] transition-all duration-300 group-hover:border-primary/35">
+<p class="font-body skew-x-6 text-[10px] sm:text-xs font-extrabold uppercase leading-snug tracking-[0.04em] text-center text-[hsl(var(--mlc-dark))]">
+Âm thanh &amp; ánh sáng											</p>
+</div>
+</div>
+<button type="button" data-facility-rental-trigger data-facility-name="Phòng tập đa năng (có gương)" class="mt-7 rounded-none -skew-x-6 bg-primary px-7 py-3 font-body text-sm font-extrabold uppercase text-primary-foreground glow-red hover:bg-primary/90">
+<span class="inline-flex skew-x-6 items-center gap-2">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>										Thuê cơ sở vật chất										<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12h14"></path><path d="m12 5 7 7-7 7"></path></svg>									</span>
+</button>
+</div>
+</article>
+</div>
+</div>
+</div>
+</section>
+<div id="facility-rental-modal" data-facility-rental-modal class="fixed inset-0 z-[100] hidden items-center justify-center bg-foreground/60 p-4 backdrop-blur-sm" role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="facility-rental-title">
+<div class="relative w-full max-w-lg overflow-hidden border border-border bg-background shadow-2xl">
+<button type="button" class="absolute right-4 top-4 flex h-8 w-8 items-center justify-center bg-secondary text-foreground transition-colors hover:bg-destructive hover:text-destructive-foreground" data-facility-rental-close aria-label="Đóng">
+<svg class="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18"></path><path d="m6 6 12 12"></path></svg>			</button>
+<div class="p-8">
+<h3 id="facility-rental-title" class="mb-1 font-display text-2xl uppercase text-foreground">Đặt thuê sân</h3>
+<p class="mb-6 font-body text-sm font-semibold text-primary" data-facility-rental-name></p>
+<form method="post" class="space-y-4" data-scf-ajax-form="facility-rental" novalidate>
+<input type="hidden" name="facility_name" data-facility-rental-name-input value="">
+<div class="relative hidden transition-all duration-500 ease-out mb-4" data-scf-success role="status">
+<div class="flex items-center gap-4 border-l-4 border-mlc-green bg-mlc-green/5 px-5 py-4">
+<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-mlc-green/10">
+<svg class="h-6 w-6 text-mlc-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+</div>
+<div class="text-left">
+<p class="font-display text-base uppercase leading-snug text-mlc-green">Gửi thành công!</p>
+<p class="mt-0.5 font-body text-sm text-foreground/70">
+Cảm ơn bạn đã gửi yêu cầu! Chúng tôi sẽ liên hệ sớm nhất.					</p>
+</div>
+</div>
+</div>
+<p class="relative mb-4 hidden border-l-4 border-primary bg-secondary px-4 py-3 font-body text-sm text-foreground" role="alert" data-scf-error></p>
+<div>
+<div class="relative">
+<svg class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect width="16" height="20" x="4" y="2" rx="2" ry="2"></rect><path d="M9 22v-4h6v4"></path><path d="M8 6h.01"></path><path d="M16 6h.01"></path><path d="M12 6h.01"></path><path d="M12 10h.01"></path><path d="M12 14h.01"></path><path d="M16 10h.01"></path><path d="M16 14h.01"></path><path d="M8 10h.01"></path><path d="M8 14h.01"></path></svg>							<input type="text" name="company" placeholder="Tên đơn vị *" maxlength="100" class="rounded-none w-full border border-border bg-secondary/50 pl-11 pr-5 py-3.5 font-body text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring outline-none transition-all">
+</div>
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="company"></p>
+</div>
+<div>
+<div class="relative">
+<svg class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M19 21v-2a4 4 0 0 0-4-4H9a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>							<input type="text" name="contact_name" placeholder="Tên người liên hệ *" maxlength="100" class="rounded-none w-full border border-border bg-secondary/50 pl-11 pr-5 py-3.5 font-body text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring outline-none transition-all">
+</div>
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="contact_name"></p>
+</div>
+<div>
+<div class="relative">
+<svg class="pointer-events-none absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.11 4.18 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72c.12.9.33 1.77.63 2.61a2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.47-1.2a2 2 0 0 1 2.11-.45c.84.3 1.71.51 2.61.63A2 2 0 0 1 22 16.92z"></path></svg>							<input type="tel" name="phone" placeholder="Số điện thoại *" maxlength="12" class="rounded-none w-full border border-border bg-secondary/50 pl-11 pr-5 py-3.5 font-body text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring outline-none transition-all">
+</div>
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="phone"></p>
+</div>
+<div>
+<div class="relative">
+<svg class="pointer-events-none absolute left-4 top-4 h-4 w-4 text-muted-foreground" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 15a4 4 0 0 1-4 4H7l-4 4V7a4 4 0 0 1 4-4h10a4 4 0 0 1 4 4z"></path></svg>							<textarea name="needs" placeholder="Nhu cầu thuê" maxlength="500" rows="3" class="rounded-none w-full resize-none border border-border bg-secondary/50 pl-11 pr-5 py-3.5 font-body text-sm text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring outline-none transition-all"></textarea>
+</div>
+<p class="mt-1 hidden font-body text-xs text-primary" data-error-for="needs"></p>
+</div>
+<button type="submit" class="w-full -skew-x-6 bg-primary py-4 font-body text-sm font-bold uppercase tracking-wider text-primary-foreground transition-all hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60">
+<span class="inline-block skew-x-6">Gửi thông tin</span>
+</button>
+</form>
+</div>
+</div>
+</div>
+</main>
+<footer id="lien-he" class="footer relative overflow-hidden bg-foreground text-primary-foreground">
+<div class="grid md:grid-cols-2">
+<div class="relative z-10 flex flex-col justify-center px-6 py-12 md:px-10 lg:px-12 xl:px-14 order-2 md:order-1">
+<div class="mb-12">
+<img src="https://mlcsports.edu.vn/wp-content/themes/sport-center/assets/images/mlc-logo.png" alt="MLC Sports" class="mb-5 h-auto w-36" width="144" height="58" loading="lazy">
+<div class="flex gap-3">
+<a href="https://www.facebook.com/MLCSports.center/" target="_blank" class="flex h-9 w-9 items-center justify-center rounded-full bg-primary-foreground/10 text-primary-foreground/70 transition-colors hover:bg-primary hover:text-primary-foreground" aria-label="MLC Sports social 1">
+<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z"/></svg>
+</a>
+<a href="https://www.instagram.com/mlcsportscenter" target="_blank" class="flex h-9 w-9 items-center justify-center rounded-full bg-primary-foreground/10 text-primary-foreground/70 transition-colors hover:bg-primary hover:text-primary-foreground" aria-label="MLC Sports social 2">
+<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z"/></svg>
+</a>
+<a href="https://www.tiktok.com/@mlcsports.center" target="_blank" class="flex h-9 w-9 items-center justify-center rounded-full bg-primary-foreground/10 text-primary-foreground/70 transition-colors hover:bg-primary hover:text-primary-foreground" aria-label="MLC Sports social 3">
+<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M16.6 5.82s.51.5 0 0A4.278 4.278 0 0 1 15.54 3h-3.09v12.4a2.592 2.592 0 0 1-2.59 2.5c-1.42 0-2.6-1.16-2.6-2.6 0-1.72 1.66-3.01 3.37-2.48V9.66c-3.45-.46-6.47 2.22-6.47 5.64 0 3.33 2.76 5.7 5.69 5.7 3.14 0 5.69-2.55 5.69-5.7V9.01a7.35 7.35 0 0 0 4.3 1.38V7.3s-1.88.09-3.24-1.48z"/></svg>
+</a>
+</div>
+</div>
+<div class="grid gap-8 sm:grid-cols-[3fr_2fr] md:grid-cols-1 xl:grid-cols-[3fr_2fr]">
+<div class="font-body text-sm leading-relaxed text-primary-foreground/80 md:text-base">
+<h3 class="mb-4 font-display text-xl leading-snug text-primary-foreground uppercase">Thông tin liên hệ</h3>
+<div class="contact-links space-y-3">
+<div class="flex items-start gap-3">
+<svg class="mt-1 shrink-0 text-primary w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/></svg>
+<div>
+<p><a class="transition-colors hover:text-primary" href="tel:+84902824820">(+84) 902 82 4820</a></p>
+<p>(trong giờ hành chính)</p>
+</div>
+</div>
+<div class="flex items-start gap-3">
+<svg class="mt-1 shrink-0 text-primary w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/></svg>
+<a class="contact-email block transition-colors hover:text-primary word-break" href="mailto:enquiry@mlcsports.edu.vn">enquiry@mlcsports.edu.vn</a>
+</div>
+<div class="flex items-start gap-3">
+<svg class="mt-1 shrink-0 text-primary w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
+<a class="block transition-colors hover:text-primary word-break" target="_blank" href="https://maps.app.goo.gl/ma4PqiKJSJHqybL1A">Số 07, Đường 23, Phường Tân Mỹ, TP.HCM</a>
+</div>
+</div>
+</div>
+<nav class="font-body text-sm leading-tight text-primary-foreground/80 md:text-base" aria-label="Liên kết footer">
+<h3 class="mb-3 font-display text-xl leading-snug text-primary-foreground uppercase">Liên kết</h3>
+<div class="footer-links inline-flex flex-col gap-2.5">
+<li id="menu-item-409" class="menu-item menu-item-type-custom menu-item-object-custom menu-item-409"><a href="/">Trang chủ</a></li>
+<li id="menu-item-410" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-410"><a href="https://mlcsports.edu.vn/ve-chung-toi/ve-equest/">Về chúng tôi</a></li>
+<li id="menu-item-411" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-411"><a href="https://mlcsports.edu.vn/khoa-hoc/">Khóa học</a></li>
+<li id="menu-item-412" class="menu-item menu-item-type-post_type menu-item-object-page current-menu-item page_item page-item-98 current_page_item menu-item-412"><a href="https://mlcsports.edu.vn/co-so-vat-chat/" aria-current="page">Cơ sở vật chất</a></li>
+<li id="menu-item-413" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-413"><a href="https://mlcsports.edu.vn/ve-chung-toi/lien-he/">Liên hệ</a></li>
+<li id="menu-item-414" class="menu-item menu-item-type-post_type menu-item-object-page menu-item-414"><a href="https://mlcsports.edu.vn/tuyen-sinh/">Tuyển sinh</a></li>
+</div>
+</nav>
+</div>
+</div>
+<div class="relative flex items-center justify-center bg-primary px-6 py-12 lg:px-12 md:px-10 xl:py-14 order-1 md:order-2">
+<div class="absolute bottom-0 lg:left-[-65px] md:left-[-30px] md:-skew-x-[5deg] top-0 hidden w-36 lg:-skew-x-[10deg] bg-primary md:block"></div>
+<form class="relative z-10 w-full max-w-2xl text-center" data-footer-consultation-form novalidate>
+<h2 class="mb-6 font-display text-3xl uppercase leading-snug text-primary-foreground md:text-4xl">
+TƯ VẤN GHI DANH		</h2>
+<div class="relative hidden transition-all duration-500 ease-out my-5 bg-white" data-footer-consultation-success role="status">
+<div class="flex items-center gap-4 border-l-4 border-mlc-green bg-mlc-green/5 px-5 py-4">
+<div class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-mlc-green/10">
+<svg class="h-6 w-6 text-mlc-green" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>
+</div>
+<div class="text-left">
+<p class="font-display text-base uppercase leading-snug text-mlc-green">Đăng ký thành công!</p>
+<p class="mt-0.5 font-body text-sm text-foreground/70">
+Thông tin của bạn đã được ghi nhận.<br>Chúng tôi sẽ liên hệ trong thời gian sớm nhất.					</p>
+</div>
+</div>
+</div>
+<div class="flex flex-col gap-3">
+<div>
+<input type="text" name="fullName" placeholder="Họ và tên *" maxlength="100" class="rounded-none h-12 w-full border-0 bg-foreground px-5 text-center font-body text-md text-white outline-none placeholder:text-white/60 focus:ring-4 focus:ring-white/50 md:h-14 md:text-base lg:text-xl">
+<p class="mt-1 hidden text-left font-body text-xs text-white" data-error-for="fullName"></p>
+</div>
+<div>
+<input type="tel" name="phone" placeholder="Số điện thoại *" maxlength="12" class="rounded-none h-12 w-full border-0 bg-foreground px-5 text-center font-body text-md text-white outline-none placeholder:text-white/60 focus:ring-4 focus:ring-white/50 md:h-14 md:text-base lg:text-xl">
+<p class="mt-1 hidden text-left font-body text-xs text-white" data-error-for="phone"></p>
+</div>
+<div>
+<input type="email" name="email" placeholder="Email *" maxlength="255" class="rounded-none h-12 w-full border-0 bg-foreground px-5 text-center font-body text-md text-white outline-none placeholder:text-white/60 focus:ring-4 focus:ring-white/50 md:h-14 md:text-base lg:text-xl">
+<p class="mt-1 hidden text-left font-body text-xs text-white" data-error-for="email"></p>
+</div>
+<div class="relative" data-course-dropdown>
+<button type="button" class="flex min-h-12 w-full items-center justify-center gap-2 border-0 bg-foreground px-5 py-2 text-center font-body text-md text-white/60 outline-none focus:ring-4 focus:ring-white/50 md:min-h-14 md:text-base lg:text-xl" data-course-dropdown-toggle aria-haspopup="true" aria-expanded="false">
+<span class="min-w-0 text-white/60" data-course-dropdown-label>Môn học *</span>
+<svg class="h-4 w-4 shrink-0 text-white/60 transition-transform" data-course-dropdown-chevron viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><polyline points="6,9 12,15 18,9"/></svg>
+</button>
+<div class="absolute inset-x-0 top-full z-20 mt-1 hidden max-h-64 overflow-y-auto rounded bg-foreground text-left shadow-lg" data-course-dropdown-panel role="group" aria-label="Môn học">
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="529" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Bơi lội</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="404" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Bóng bàn</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="388" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Bóng chuyền</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="180" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Bóng đá</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="181" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Bóng rổ</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="506" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Cầu lông</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="527" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Cờ vua</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="646" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Golf 3D</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="630" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Kiếm thuật</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="633" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Nhảy hiện đại</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="635" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Quần vợt</span>
+</label>
+<label class="flex cursor-pointer items-center gap-2 px-5 py-2 font-body text-sm text-white hover:bg-white/10">
+<input type="checkbox" name="course[]" value="639" class="rounded-none h-4 w-4 shrink-0 accent-primary" data-course-checkbox>
+<span>Taekwondo</span>
+</label>
+</div>
+<p class="mt-1 hidden text-left font-body text-xs text-white" data-error-for="course"></p>
+</div>
+<div>
+<input type="number" name="age" placeholder="Độ tuổi học viên *" min="1" max="100" class="rounded-none h-12 w-full border-0 bg-foreground px-5 text-center font-body text-md text-white outline-none placeholder:text-white/60 focus:ring-4 focus:ring-white/50 md:h-14 md:text-base lg:text-xl">
+<p class="mt-1 hidden text-left font-body text-xs text-white" data-error-for="age"></p>
+</div>
+</div>
+<button type="submit" class="mt-8 -skew-x-6 bg-white px-10 py-3.5 font-body text-sm font-bold text-primary transition-transform hover:scale-105 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:scale-100 md:px-14 md:text-base" data-footer-consultation-submit>
+<span class="block skew-x-6">Đăng ký ngay</span>
+</button>
+<p class="mt-5 hidden font-body text-sm text-white" data-footer-consultation-error></p>
+</form>
+</div>
+</div>
+</footer>
+<script type="speculationrules">
+{"prefetch":[{"source":"document","where":{"and":[{"href_matches":"/*"},{"not":{"href_matches":["/wp-*.php","/wp-admin/*","/wp-content/uploads/*","/wp-content/*","/wp-content/plugins/*","/wp-content/themes/sport-center/*","/*\\?(.+)"]}},{"not":{"selector_matches":"a[rel~=\"nofollow\"]"}},{"not":{"selector_matches":".no-prefetch, .no-prefetch a"}}]},"eagerness":"conservative"}]}
+</script>
+<script id="sport-center-theme-js" src="https://mlcsports.edu.vn/wp-content/themes/sport-center/assets/js/theme.min.js?ver=1789141807"></script>
+<script id="google-recaptcha-js" src="https://www.google.com/recaptcha/api.js?render=6LcXHnYtAAAAAC7bMTonMWdTUpKMI34tgiXITSgk"></script>
+<script id="flatpickr-js" src="https://mlcsports.edu.vn/wp-content/plugins/sunfolia-custom-form/assets/vendor/flatpickr/flatpickr.min.js?ver=1.0.0"></script>
+<script id="flatpickr-vn-js" src="https://mlcsports.edu.vn/wp-content/plugins/sunfolia-custom-form/assets/vendor/flatpickr/l10n/vn.js?ver=1.0.0"></script>
+<script id="scf-forms-js-extra">
+var scfForms = {"ajaxUrl":"https://mlcsports.edu.vn/wp-admin/admin-ajax.php","nonces":{"consultation":"6499d12528","partner":"277f377653","facility-tour":"189ff507de","career":"b4a682d0b4","facility-rental":"d3bb2915e1"},"recaptchaSiteKey":"6LcXHnYtAAAAAC7bMTonMWdTUpKMI34tgiXITSgk"};
+//# sourceURL=scf-forms-js-extra
+</script>
+<script id="scf-forms-js" src="https://mlcsports.edu.vn/wp-content/plugins/sunfolia-custom-form/assets/js/scf-forms.js?ver=1.0.0"></script>
+<script id="wp-emoji-settings" type="application/json">
+{"baseUrl":"https://s.w.org/images/core/emoji/17.0.2/72x72/","ext":".png","svgUrl":"https://s.w.org/images/core/emoji/17.0.2/svg/","svgExt":".svg","source":{"concatemoji":"https://mlcsports.edu.vn/wp-includes/js/wp-emoji-release.min.js?ver=7.1.2"}}
+</script>
+<script type="module">
+/*! This file is auto-generated */
+var e="script#wp-emoji-settings",t=document.querySelector(e);if(!(t instanceof HTMLScriptElement))throw new Error("Element missing: "+e);const r=JSON.parse(t.text),s=(window._wpemojiSettings=r,"wpEmojiSettingsSupports"),o=["flag","emoji"];function i(e){try{var t={supportTests:e,timestamp:(new Date).valueOf()};sessionStorage.setItem(s,JSON.stringify(t))}catch(e){}}function c(e,t,n){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);t=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(n,0,0);const r=new Uint32Array(e.getImageData(0,0,e.canvas.width,e.canvas.height).data);return t.every((e,t)=>e===r[t])}function p(e,t){e.clearRect(0,0,e.canvas.width,e.canvas.height),e.fillText(t,0,0);var n=e.getImageData(16,16,1,1);for(let e=0;e<n.data.length;e++)if(0!==n.data[e])return!1;return!0}function u(e,t,n,r){switch(t){case"flag":return n(e,"\ud83c\udff3\ufe0f\u200d\u26a7\ufe0f","\ud83c\udff3\ufe0f\u200b\u26a7\ufe0f")?!1:!n(e,"\ud83c\udde8\ud83c\uddf6","\ud83c\udde8\u200b\ud83c\uddf6")&&!n(e,"\ud83c\udff4\udb40\udc67\udb40\udc62\udb40\udc65\udb40\udc6e\udb40\udc67\udb40\udc7f","\ud83c\udff4\u200b\udb40\udc67\u200b\udb40\udc62\u200b\udb40\udc65\u200b\udb40\udc6e\u200b\udb40\udc67\u200b\udb40\udc7f");case"emoji":return!r(e,"\ud83e\u1fac8")}return!1}function f(e,t,n,r){let a;const s=(a="undefined"!=typeof WorkerGlobalScope&&self instanceof WorkerGlobalScope?new OffscreenCanvas(300,150):document.createElement("canvas")).getContext("2d",{willReadFrequently:!0}),o=(s.textBaseline="top",s.font="600 32px Arial",{});return e.forEach(e=>{o[e]=t(s,e,n,r)}),o}function a(e){var t=document.createElement("script");t.src=e,t.defer=!0,document.head.appendChild(t)}r.supports={everything:!0,everythingExceptFlag:!0},new Promise(t=>{let n=function(){try{var e=JSON.parse(sessionStorage.getItem(s));if("object"==typeof e&&"number"==typeof e.timestamp&&(new Date).valueOf()<e.timestamp+604800&&"object"==typeof e.supportTests)return e.supportTests}catch(e){}return null}();if(!n){if("undefined"!=typeof Worker&&"undefined"!=typeof OffscreenCanvas&&"undefined"!=typeof URL&&URL.createObjectURL&&"undefined"!=typeof Blob)try{var e="postMessage("+f.toString()+"("+[JSON.stringify(o),u.toString(),c.toString(),p.toString()].join(",")+"));",r=new Blob([e],{type:"text/javascript"});const a=new Worker(URL.createObjectURL(r),{name:"wpTestEmojiSupports"});return void(a.onmessage=e=>{i(n=e.data),a.terminate(),t(n)})}catch(e){}i(n=f(o,u,c,p))}t(n)}).then(e=>{for(const n in e)r.supports[n]=e[n],r.supports.everything=r.supports.everything&&r.supports[n],"flag"!==n&&(r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&r.supports[n]);var t;r.supports.everythingExceptFlag=r.supports.everythingExceptFlag&&!r.supports.flag,r.supports.everything||((t=r.source||{}).concatemoji?a(t.concatemoji):t.wpemoji&&t.twemoji&&(a(t.twemoji),a(t.wpemoji)))});
+//# sourceURL=https://mlcsports.edu.vn/wp-includes/js/wp-emoji-loader.min.js
+</script>
+</body>
+</html><!-- WP Fastest Cache file was created in 0.412 seconds, on 24/09/2026 @ 12:20 pm -->
