@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { getLandingContent, LANDING_CONTENT_CHANGE_EVENT } from '../../services/landingContentService.js';
 import { SCMS_FACILITIES } from '../../services/facilitiesCatalog.js';
 
@@ -11,6 +11,13 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [activeModalTab, setActiveModalTab] = useState('booking'); // 'booking' | 'specs' | 'photos'
   const [bookingType, setBookingType] = useState('rent'); // 'rent' (thuê sân) | 'tour' (tham quan trải nghiệm)
+
+  // Carousel & View Mode State
+  const [facilitiesViewMode, setFacilitiesViewMode] = useState('carousel'); // 'carousel' | 'grid'
+  const [facilityCarouselIndex, setFacilityCarouselIndex] = useState(0);
+  const [canScrollFacilityPrev, setCanScrollFacilityPrev] = useState(false);
+  const [canScrollFacilityNext, setCanScrollFacilityNext] = useState(true);
+  const facilityCarouselRef = useRef(null);
 
   useEffect(() => {
     const handleSync = (e) => {
@@ -61,6 +68,51 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
       return matchCat && matchSearch;
     });
   }, [visibleFacilities, activeCategory, searchQuery]);
+
+  const handleFacilityScroll = () => {
+    const el = facilityCarouselRef.current;
+    if (!el) return;
+    const scrollLeft = el.scrollLeft;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCanScrollFacilityPrev(scrollLeft > 10);
+    setCanScrollFacilityNext(scrollLeft < maxScroll - 10);
+    const itemEl = el.querySelector('[data-facility-carousel-item]');
+    if (itemEl) {
+      const itemWidth = itemEl.offsetWidth + 24;
+      const idx = Math.min(
+        filteredFacilities.length - 1,
+        Math.max(0, Math.round(scrollLeft / itemWidth))
+      );
+      setFacilityCarouselIndex(idx);
+    }
+  };
+
+  const handleScrollFacility = (direction) => {
+    const el = facilityCarouselRef.current;
+    if (!el) return;
+    const itemEl = el.querySelector('[data-facility-carousel-item]');
+    const itemWidth = (itemEl ? itemEl.offsetWidth : 420) + 24;
+    const targetScroll = direction === 'next' ? el.scrollLeft + itemWidth : el.scrollLeft - itemWidth;
+    el.scrollTo({ left: targetScroll, behavior: 'smooth' });
+  };
+
+  const handleScrollFacilityToIndex = (idx) => {
+    const el = facilityCarouselRef.current;
+    if (!el) return;
+    const itemEl = el.querySelector('[data-facility-carousel-item]');
+    const itemWidth = (itemEl ? itemEl.offsetWidth : 420) + 24;
+    el.scrollTo({ left: idx * itemWidth, behavior: 'smooth' });
+    setFacilityCarouselIndex(idx);
+  };
+
+  useEffect(() => {
+    setFacilityCarouselIndex(0);
+    if (facilityCarouselRef.current) {
+      facilityCarouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+    }
+    setCanScrollFacilityPrev(false);
+    setCanScrollFacilityNext(filteredFacilities.length > 1);
+  }, [activeCategory, searchQuery, filteredFacilities.length]);
 
   const handleOpenModal = (facility, initialTab = 'rent') => {
     setSelectedFacility(facility);
@@ -125,6 +177,109 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     }
     setSubmitted(true);
   };
+
+  const renderFacilityCard = (fac, isCarousel = false) => (
+    <div
+      key={fac.id}
+      data-facility-carousel-item={isCarousel ? true : undefined}
+      className={`bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-2xl hover:border-red-500/40 hover:-translate-y-1.5 transition-all duration-300 flex flex-col overflow-hidden group ${
+        isCarousel ? 'w-[86vw] sm:w-[390px] lg:w-[420px] xl:w-[440px] shrink-0 snap-start h-full' : ''
+      }`}
+    >
+      {/* Visual Header with Photography */}
+      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950">
+        <img
+          src={fac.image}
+          alt={fac.name}
+          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+          loading="lazy"
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
+        
+        {/* Certification Badge */}
+        <span className={`absolute left-3.5 top-3.5 px-3 py-1 rounded-full text-white text-[11px] font-chivo font-black tracking-wider uppercase shadow-md ${fac.badgeColor}`}>
+          {fac.badge}
+        </span>
+
+        {/* Zone Tag */}
+        <span className="absolute right-3.5 top-3.5 px-2.5 py-1 rounded-full bg-slate-950/75 backdrop-blur-md text-slate-200 text-[11px] font-semibold flex items-center gap-1 border border-white/10">
+          <span className="material-symbols-outlined text-[14px] text-red-500">pin_drop</span>
+          <span>{fac.location}</span>
+        </span>
+
+        {/* Live Status Chip & Capacity */}
+        <div className="absolute left-3.5 bottom-3 right-3.5 flex items-center justify-between text-white text-xs">
+          <div className="flex items-center gap-1.5 font-medium drop-shadow">
+            <span className="material-symbols-outlined text-[16px] text-red-400">group</span>
+            <span>Sức chứa: <strong>{fac.capacity}</strong></span>
+          </div>
+          <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold backdrop-blur-sm">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+            Mở cửa
+          </span>
+        </div>
+      </div>
+
+      {/* Card Content */}
+      <div className="p-6 flex-1 flex flex-col justify-between">
+        <div>
+          {/* Facility Name & Price Rate */}
+          <div className="flex items-start justify-between gap-2">
+            <h3 className="font-chivo text-lg font-black text-slate-900 group-hover:text-red-600 transition-colors leading-snug">
+              {fac.name}
+            </h3>
+          </div>
+
+          <div className="text-xs text-red-600 font-bold mt-1.5 flex items-center gap-1">
+            <span className="material-symbols-outlined text-[15px]">payments</span>
+            <span>{fac.priceRate}</span>
+          </div>
+
+          {/* Highlights pill */}
+          <div className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 mt-3 leading-relaxed">
+            <strong className="text-red-600 font-semibold block mb-0.5">Đặc điểm nổi bật:</strong>
+            {fac.highlights}
+          </div>
+
+          <p className="text-xs text-slate-600 mt-3 line-clamp-3 leading-relaxed">
+            {fac.description}
+          </p>
+
+          {/* Key Technical Specs Chips */}
+          <div className="grid grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-slate-100">
+            {fac.specs.slice(0, 2).map((s, idx) => (
+              <div key={idx} className="bg-slate-50/80 rounded px-2 py-1 text-[11px]">
+                <span className="text-slate-400 block text-[10px] uppercase font-bold">{s.label}</span>
+                <span className="text-slate-800 font-semibold truncate block">{s.value}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Action Buttons */}
+        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2">
+          <button
+            type="button"
+            onClick={() => handleOpenModal(fac, 'rent')}
+            className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-bold uppercase rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+          >
+            <span className="material-symbols-outlined text-[16px]">calendar_today</span>
+            <span>Đặt Thuê Sân</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => handleOpenModal(fac, 'specs')}
+            className="px-3.5 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-chivo text-xs font-bold uppercase transition-colors flex items-center gap-1 cursor-pointer"
+            title="Xem thông số kỹ thuật &amp; Tiện ích sân"
+          >
+            <span className="material-symbols-outlined text-[17px]">info</span>
+            <span>Chi tiết</span>
+          </button>
+        </div>
+      </div>
+    </div>
+  );
 
   return (
     <section id="co-so-vat-chat" className="w-full bg-slate-50 text-slate-900 font-inter min-h-screen py-24 px-6 sm:px-10 md:px-14 lg:px-20 relative overflow-hidden flex flex-col justify-center">
@@ -223,131 +378,135 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           </div>
         </div>
 
-        {/* RESULTS COUNT & STATUS */}
-        <div className="flex items-center justify-between mb-6 text-xs text-slate-500 font-semibold px-1">
-          <div>
-            Hiển thị <strong>{filteredFacilities.length}</strong> / {SCMS_FACILITIES.length} cụm sân và phòng chức năng
+        {/* RESULTS COUNT, STATUS & VIEW MODE TOGGLE */}
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 text-xs text-slate-500 font-semibold px-1">
+          <div className="flex flex-wrap items-center gap-3">
+            <div>
+              Hiển thị <strong>{filteredFacilities.length}</strong> / {SCMS_FACILITIES.length} cụm sân và phòng chức năng
+            </div>
+            <span className="hidden sm:inline text-slate-300">•</span>
+            <div className="flex items-center gap-2">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
+              <span className="text-emerald-700">Tất cả cụm sân đều sẵn sàng phục vụ</span>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            <span className="text-emerald-700">Tất cả cụm sân đều sẵn sàng phục vụ</span>
+
+          {/* View Switcher: Carousel vs 3-Column Grid */}
+          <div className="flex items-center gap-2 self-end sm:self-auto">
+            <span className="text-xs text-slate-400 font-medium hidden md:inline">Chế độ hiển thị:</span>
+            <div className="inline-flex items-center p-1 rounded-xl bg-slate-200/80 border border-slate-300/70 shadow-inner">
+              <button
+                type="button"
+                onClick={() => setFacilitiesViewMode('carousel')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
+                  facilitiesViewMode === 'carousel'
+                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Hiển thị dạng Carousel lướt ngang mượt mà"
+              >
+                <span className="material-symbols-outlined text-[16px]">view_carousel</span>
+                <span>Carousel Lướt</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setFacilitiesViewMode('grid')}
+                className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
+                  facilitiesViewMode === 'grid'
+                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Hiển thị dạng lưới 3 cột tiêu chuẩn"
+              >
+                <span className="material-symbols-outlined text-[16px]">grid_view</span>
+                <span>Lưới 3 Cột</span>
+              </button>
+            </div>
           </div>
         </div>
 
-        {/* FACILITIES ATHLETIC CARDS GRID */}
+        {/* FACILITIES CAROUSEL OR GRID RENDERING */}
         {filteredFacilities.length === 0 ? (
-          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8">
+          <div className="text-center py-16 bg-white rounded-2xl border border-slate-200 p-8 mb-16 shadow-sm">
             <span className="material-symbols-outlined text-5xl text-slate-300 mb-3 block">search_off</span>
             <h3 className="font-chivo text-lg font-bold text-slate-700">Không tìm thấy cụm sân phù hợp</h3>
             <p className="text-xs text-slate-500 mt-1">Hãy thử tìm với từ khóa khác như "bơi lội", "bóng đá", "cầu lông", hoặc chọn mục Tất cả.</p>
             <button
               onClick={() => { setActiveCategory('all'); setSearchQuery(''); }}
-              className="mt-4 px-4 py-2 bg-red-600 text-white text-xs font-bold uppercase rounded-lg font-chivo"
+              className="mt-4 px-4 py-2 bg-red-600 text-white text-xs font-bold uppercase rounded-lg font-chivo cursor-pointer hover:bg-red-700 transition-colors"
             >
               Xem tất cả
             </button>
           </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
-            {filteredFacilities.map(fac => (
-              <div
-                key={fac.id}
-                className="bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 flex flex-col overflow-hidden group"
-              >
-                {/* Visual Header with Photography */}
-                <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950">
-                  <img
-                    src={fac.image}
-                    alt={fac.name}
-                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    loading="lazy"
-                  />
-                  <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
-                  
-                  {/* Certification Badge */}
-                  <span className={`absolute left-3.5 top-3.5 px-3 py-1 rounded-full text-white text-[11px] font-chivo font-black tracking-wider uppercase shadow-md ${fac.badgeColor}`}>
-                    {fac.badge}
-                  </span>
-
-                  {/* Zone Tag */}
-                  <span className="absolute right-3.5 top-3.5 px-2.5 py-1 rounded-full bg-slate-950/75 backdrop-blur-md text-slate-200 text-[11px] font-semibold flex items-center gap-1 border border-white/10">
-                    <span className="material-symbols-outlined text-[14px] text-red-500">pin_drop</span>
-                    <span>{fac.location}</span>
-                  </span>
-
-                  {/* Live Status Chip & Capacity */}
-                  <div className="absolute left-3.5 bottom-3 right-3.5 flex items-center justify-between text-white text-xs">
-                    <div className="flex items-center gap-1.5 font-medium drop-shadow">
-                      <span className="material-symbols-outlined text-[16px] text-red-400">group</span>
-                      <span>Sức chứa: <strong>{fac.capacity}</strong></span>
-                    </div>
-                    <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold backdrop-blur-sm">
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                      Mở cửa
-                    </span>
-                  </div>
-                </div>
-
-                {/* Card Content */}
-                <div className="p-6 flex-1 flex flex-col justify-between">
-                  <div>
-                    {/* Facility Name & Price Rate */}
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-chivo text-lg font-black text-slate-900 group-hover:text-red-600 transition-colors leading-snug">
-                        {fac.name}
-                      </h3>
-                    </div>
-
-                    <div className="text-xs text-red-600 font-bold mt-1.5 flex items-center gap-1">
-                      <span className="material-symbols-outlined text-[15px]">payments</span>
-                      <span>{fac.priceRate}</span>
-                    </div>
-
-                    {/* Highlights pill */}
-                    <div className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 mt-3 leading-relaxed">
-                      <strong className="text-red-600 font-semibold block mb-0.5">Đặc điểm nổi bật:</strong>
-                      {fac.highlights}
-                    </div>
-
-                    <p className="text-xs text-slate-600 mt-3 line-clamp-3 leading-relaxed">
-                      {fac.description}
-                    </p>
-
-                    {/* Key Technical Specs Chips */}
-                    <div className="grid grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-slate-100">
-                      {fac.specs.slice(0, 2).map((s, idx) => (
-                        <div key={idx} className="bg-slate-50/80 rounded px-2 py-1 text-[11px]">
-                          <span className="text-slate-400 block text-[10px] uppercase font-bold">{s.label}</span>
-                          <span className="text-slate-800 font-semibold truncate block">{s.value}</span>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* Action Buttons */}
-                  <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2">
-                    <button
-                      type="button"
-                      onClick={() => handleOpenModal(fac, 'rent')}
-                      className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-bold uppercase rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">calendar_today</span>
-                      <span>Đặt Thuê Sân</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      onClick={() => handleOpenModal(fac, 'specs')}
-                      className="px-3.5 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-chivo text-xs font-bold uppercase transition-colors flex items-center gap-1"
-                      title="Xem thông số kỹ thuật &amp; Tiện ích sân"
-                    >
-                      <span className="material-symbols-outlined text-[17px]">info</span>
-                      <span>Chi tiết</span>
-                    </button>
-                  </div>
-                </div>
+        ) : facilitiesViewMode === 'carousel' ? (
+          <div className="relative w-full mb-16">
+            {/* Carousel Header Bar: Counter, Guidance & Navigation Controls */}
+            <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center gap-3">
+                <span className="font-mono text-xs font-black text-red-700 bg-red-100 border border-red-200 px-3 py-1 rounded-full tracking-wider shadow-sm">
+                  {String(facilityCarouselIndex + 1).padStart(2, '0')} / {String(filteredFacilities.length).padStart(2, '0')} KHU VỰC TIÊU CHUẨN
+                </span>
+                <span className="text-xs text-slate-500 hidden sm:inline-flex items-center gap-1.5 font-medium">
+                  <span className="material-symbols-outlined text-[16px] text-red-600">swipe</span>
+                  <span>Kéo lướt ngang hoặc dùng nút điều hướng để xem thêm</span>
+                </span>
               </div>
-            ))}
+
+              {/* Left / Right Nav Arrows */}
+              <div className="flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => handleScrollFacility('prev')}
+                  disabled={!canScrollFacilityPrev}
+                  aria-label="Xem khu vực trước"
+                  className="w-11 h-11 rounded-xl bg-white border border-slate-300 text-slate-700 flex items-center justify-center hover:bg-slate-100 hover:border-red-500 hover:text-red-600 disabled:opacity-35 disabled:cursor-not-allowed shadow-sm active:scale-90 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[22px]">chevron_left</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleScrollFacility('next')}
+                  disabled={!canScrollFacilityNext}
+                  aria-label="Xem khu vực tiếp theo"
+                  className="w-11 h-11 rounded-xl bg-white border border-slate-300 text-slate-700 flex items-center justify-center hover:bg-slate-100 hover:border-red-500 hover:text-red-600 disabled:opacity-35 disabled:cursor-not-allowed shadow-sm active:scale-90 transition-all cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[22px]">chevron_right</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Scroll Track */}
+            <div
+              ref={facilityCarouselRef}
+              onScroll={handleFacilityScroll}
+              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-6 pt-2 px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+            >
+              {filteredFacilities.map(fac => renderFacilityCard(fac, true))}
+            </div>
+
+            {/* Carousel Bottom Interactive Indicator Dots */}
+            {filteredFacilities.length > 1 && (
+              <div className="flex items-center justify-center gap-2 pt-2">
+                {filteredFacilities.map((fac, idx) => (
+                  <button
+                    key={fac.id}
+                    type="button"
+                    onClick={() => handleScrollFacilityToIndex(idx)}
+                    aria-label={`Chuyển tới cụm sân ${idx + 1}: ${fac.name}`}
+                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
+                      facilityCarouselIndex === idx
+                        ? 'w-8 bg-red-600 shadow-md shadow-red-600/30'
+                        : 'w-2.5 bg-slate-300 hover:bg-slate-400'
+                    }`}
+                  />
+                ))}
+              </div>
+            )}
+          </div>
+        ) : (
+          /* Grid View Mode */
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-16">
+            {filteredFacilities.map(fac => renderFacilityCard(fac, false))}
           </div>
         )}
 

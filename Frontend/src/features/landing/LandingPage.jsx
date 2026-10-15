@@ -221,7 +221,11 @@ export function LandingPage() {
   const { isAuthenticated, role, logout } = useAuth();
   const [landingContent, setLandingContent] = useState(() => getLandingContent());
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
-  const [coursesViewMode, setCoursesViewMode] = useState('cards'); // 'cards' (chi tiết đầy đủ) | 'compact' (lưới tinh gọn)
+  const [coursesViewMode, setCoursesViewMode] = useState('carousel'); // 'carousel' | 'cards' | 'compact'
+  const [sportCarouselIndex, setSportCarouselIndex] = useState(0);
+  const [canScrollSportsPrev, setCanScrollSportsPrev] = useState(false);
+  const [canScrollSportsNext, setCanScrollSportsNext] = useState(true);
+  const sportsCarouselRef = useRef(null);
   const [selectedFacilityForModal, setSelectedFacilityForModal] = useState(null);
   const [activeNav, setActiveNav] = useState('trang-chu');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -479,6 +483,51 @@ export function LandingPage() {
   const filteredSports = selectedCategory === 'Tất cả'
     ? visibleSports
     : visibleSports.filter(s => s.category === selectedCategory);
+
+  const handleSportsScroll = () => {
+    const el = sportsCarouselRef.current;
+    if (!el) return;
+    const scrollLeft = el.scrollLeft;
+    const maxScroll = el.scrollWidth - el.clientWidth;
+    setCanScrollSportsPrev(scrollLeft > 10);
+    setCanScrollSportsNext(scrollLeft < maxScroll - 10);
+    const itemEl = el.querySelector('[data-carousel-item]');
+    if (itemEl) {
+      const itemWidth = itemEl.offsetWidth + 20;
+      const idx = Math.min(
+        filteredSports.length - 1,
+        Math.max(0, Math.round(scrollLeft / itemWidth))
+      );
+      setSportCarouselIndex(idx);
+    }
+  };
+
+  const handleScrollSports = (direction) => {
+    const el = sportsCarouselRef.current;
+    if (!el) return;
+    const itemEl = el.querySelector('[data-carousel-item]');
+    const itemWidth = (itemEl ? itemEl.offsetWidth : 400) + 20;
+    const targetScroll = direction === 'next' ? el.scrollLeft + itemWidth : el.scrollLeft - itemWidth;
+    el.scrollTo({ left: targetScroll, behavior: 'smooth' });
+  };
+
+  const handleScrollSportsToIndex = (idx) => {
+    const el = sportsCarouselRef.current;
+    if (!el) return;
+    const itemEl = el.querySelector('[data-carousel-item]');
+    const itemWidth = (itemEl ? itemEl.offsetWidth : 400) + 20;
+    el.scrollTo({ left: idx * itemWidth, behavior: 'smooth' });
+    setSportCarouselIndex(idx);
+  };
+
+  useEffect(() => {
+    if (sportsCarouselRef.current) {
+      sportsCarouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      setSportCarouselIndex(0);
+      setCanScrollSportsPrev(false);
+      setCanScrollSportsNext(filteredSports.length > 1);
+    }
+  }, [selectedCategory, filteredSports.length]);
 
   const getDashboardLink = () => {
     const normalized = String(role || '').toUpperCase();
@@ -1143,11 +1192,25 @@ export function LandingPage() {
               })}
             </div>
 
-            {/* View Switcher: Full Cards vs Compact Grid */}
+            {/* View Switcher: Carousel vs Full Cards vs Compact Grid */}
             <div className="flex items-center gap-2">
               <span className="text-xs text-slate-400 font-medium hidden lg:inline">Chế độ hiển thị:</span>
               <div className="inline-flex items-center p-1 rounded-xl bg-slate-900 border border-slate-800">
                 <button
+                  type="button"
+                  onClick={() => setCoursesViewMode('carousel')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
+                    coursesViewMode === 'carousel'
+                      ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-rose-600/30'
+                      : 'text-slate-400 hover:text-white'
+                  }`}
+                  title="Hiển thị dạng Carousel lướt ngang mượt mà"
+                >
+                  <span className="material-symbols-outlined text-[16px]">view_carousel</span>
+                  <span className="hidden sm:inline">Carousel Lướt</span>
+                </button>
+                <button
+                  type="button"
                   onClick={() => setCoursesViewMode('cards')}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
                     coursesViewMode === 'cards'
@@ -1160,6 +1223,7 @@ export function LandingPage() {
                   <span className="hidden sm:inline">Thẻ Chi Tiết</span>
                 </button>
                 <button
+                  type="button"
                   onClick={() => setCoursesViewMode('compact')}
                   className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase transition-all cursor-pointer ${
                     coursesViewMode === 'compact'
@@ -1174,6 +1238,202 @@ export function LandingPage() {
               </div>
             </div>
           </div>
+
+          {/* COURSES VIEW: MODE 'carousel' (OLYMPIC HORIZONTAL CAROUSEL) */}
+          {coursesViewMode === 'carousel' && (
+            <div className="relative w-full">
+              {/* Carousel Header Bar: Counter, Guidance & Navigation Controls */}
+              <div className="flex items-center justify-between mb-5">
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-xs font-black text-rose-400 bg-rose-950/70 border border-rose-500/40 px-3 py-1 rounded-full tracking-wider shadow-sm">
+                    {String(sportCarouselIndex + 1).padStart(2, '0')} / {String(filteredSports.length).padStart(2, '0')} BỘ MÔN
+                  </span>
+                  <span className="text-xs text-slate-400 hidden sm:inline-flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[16px] text-rose-500">swipe</span>
+                    <span>Kéo lướt ngang hoặc dùng phím mũi tên để xem thêm</span>
+                  </span>
+                </div>
+
+                {/* Left / Right Nav Arrows with tactile hover & active feedback */}
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handleScrollSports('prev')}
+                    disabled={!canScrollSportsPrev}
+                    aria-label="Xem môn trước"
+                    className="w-11 h-11 rounded-xl bg-slate-900/90 border border-slate-700/80 text-white flex items-center justify-center hover:bg-slate-800 hover:border-rose-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-700 disabled:hover:text-white transition-all shadow-lg active:scale-90 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[22px]">chevron_left</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleScrollSports('next')}
+                    disabled={!canScrollSportsNext}
+                    aria-label="Xem môn tiếp theo"
+                    className="w-11 h-11 rounded-xl bg-slate-900/90 border border-slate-700/80 text-white flex items-center justify-center hover:bg-slate-800 hover:border-rose-500 hover:text-rose-400 disabled:opacity-30 disabled:cursor-not-allowed disabled:hover:border-slate-700 disabled:hover:text-white transition-all shadow-lg active:scale-90 cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[22px]">chevron_right</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Scroll Track */}
+              <div
+                ref={sportsCarouselRef}
+                onScroll={handleSportsScroll}
+                className="flex gap-5 sm:gap-6 lg:gap-7 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-5 pt-1 px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              >
+                {filteredSports.map(sport => {
+                  const facility = SCMS_FACILITIES.find(f => f.id === (sport.facilityId || SPORT_FACILITY_MAP[sport.id])) || {};
+                  const staticDetails = SPORT_CATALOG_DETAILS[sport.id] || {};
+                  const details = {
+                    rating: sport.rating || staticDetails.rating || '4.9',
+                    ratingCount: sport.ratingCount || staticDetails.ratingCount || '150',
+                    level: sport.level || staticDetails.level || 'Mọi trình độ',
+                    coach: sport.coach || staticDetails.coach || 'HLV Chuyên Nghiệp',
+                    schedule: sport.schedule || staticDetails.schedule || facility.openHours || '06:00 - 22:00',
+                    highlight: sport.highlight || staticDetails.highlight || facility.highlights || facility.description,
+                    price: sport.price || staticDetails.price || facility.priceRate?.split('•')[0]?.trim() || 'Học phí ưu đãi',
+                    capacity: sport.capacity || staticDetails.capacity || facility.capacity || 'Tiêu chuẩn',
+                    badges: (sport.badges && sport.badges.length > 0) ? sport.badges : (staticDetails.badges || [facility.badge || 'Đạt Chuẩn'])
+                  };
+                  const catCfg = SPORT_CATEGORY_CONFIG[sport.category] || {
+                    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+                    iconColor: 'text-rose-400',
+                    gradientHover: 'group-hover:from-red-600 group-hover:to-rose-500',
+                    label: sport.category
+                  };
+                  const isHighlighted = highlightedSportId === sport.id;
+
+                  return (
+                    <div
+                      key={sport.id}
+                      data-carousel-item
+                      className="w-[85vw] sm:w-[380px] lg:w-[410px] xl:w-[430px] shrink-0 snap-start flex flex-col"
+                    >
+                      <div
+                        id={`sport-card-${sport.id}`}
+                        onClick={() => handleSportClick(sport)}
+                        className={`group relative overflow-hidden rounded-2xl bg-slate-900/90 border transition-all duration-300 flex flex-col justify-between cursor-pointer hover:-translate-y-1.5 h-full ${
+                          isHighlighted
+                            ? 'border-rose-500 shadow-[0_0_35px_rgba(244,63,94,0.45)] ring-2 ring-rose-500/80 scale-[1.02] z-10'
+                            : 'border-slate-800/90 hover:border-rose-500/60 shadow-xl hover:shadow-[0_22px_45px_rgba(0,0,0,0.7),0_0_30px_rgba(244,63,94,0.18)]'
+                        }`}
+                      >
+                        {isHighlighted && (
+                          <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600 text-white text-[10px] font-bold shadow-lg shadow-rose-600/50 animate-bounce">
+                            <span className="w-2 h-2 rounded-full bg-white animate-ping" />
+                            <span>Đang chọn</span>
+                          </div>
+                        )}
+
+                        <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-950">
+                          <img
+                            src={sport.image || facility.image || facility.secondaryImage}
+                            alt={sport.name}
+                            className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
+                            loading="lazy"
+                          />
+                          <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
+                          <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent opacity-80" />
+
+                          <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
+                            <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md border ${catCfg.badge}`}>
+                              <span className="material-symbols-outlined text-[13px]">{sport.icon}</span>
+                              <span>{catCfg.label}</span>
+                            </span>
+
+                            <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider backdrop-blur-md bg-black/55 text-slate-200 border border-white/15">
+                              <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                              <span>{facility.badge || 'Tiêu chuẩn'}</span>
+                            </span>
+                          </div>
+
+                          <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between z-10">
+                            <div className="w-11 h-11 rounded-xl bg-slate-900/90 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-lg group-hover:bg-gradient-to-tr group-hover:from-red-600 group-hover:to-rose-500 group-hover:border-transparent group-hover:scale-105 group-hover:rotate-3 transition-all duration-300">
+                              <span className="material-symbols-outlined text-[24px] text-rose-300 group-hover:text-white transition-colors">{sport.icon}</span>
+                            </div>
+
+                            <div className="px-3 py-1 rounded-lg bg-black/75 backdrop-blur-md border border-white/15 text-right shadow-md">
+                              <span className="text-[10px] text-slate-400 block uppercase font-medium">Học phí / Vé</span>
+                              <span className="text-xs sm:text-sm font-black text-amber-300">{details.price}</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="p-5 sm:p-6 flex flex-col flex-1 justify-between">
+                          <div>
+                            <div className="flex items-start justify-between gap-2 mb-2">
+                              <h3 className="font-chivo text-xl sm:text-2xl font-black text-white group-hover:text-rose-400 transition-colors uppercase tracking-tight">
+                                {sport.name}
+                              </h3>
+                              <div className="flex items-center gap-1 px-2 py-0.5 rounded-md bg-amber-500/15 border border-amber-500/30 text-amber-300 text-[11px] font-bold shrink-0">
+                                <span className="material-symbols-outlined text-[13px] text-amber-400 fill-1">star</span>
+                                <span>{details.rating}</span>
+                                <span className="text-slate-400 text-[10px]">({details.ratingCount})</span>
+                              </div>
+                            </div>
+
+                            <div className="flex items-center gap-1.5 text-xs text-rose-400/95 font-semibold mb-3">
+                              <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">location_on</span>
+                              <span className="truncate">{facility.name} • {facility.location}</span>
+                            </div>
+
+                            <p className="text-xs sm:text-[13px] text-slate-300 line-clamp-2 leading-relaxed mb-4">
+                              {details.highlight}
+                            </p>
+
+                            <div className="grid grid-cols-2 gap-2 mb-5">
+                              <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 text-[11px] text-slate-300" title={details.coach}>
+                                <span className="material-symbols-outlined text-[15px] text-rose-400 shrink-0">sports</span>
+                                <span className="truncate">{details.coach}</span>
+                              </div>
+                              <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 text-[11px] text-slate-300" title={facility.openHours}>
+                                <span className="material-symbols-outlined text-[15px] text-amber-400 shrink-0">schedule</span>
+                                <span className="truncate">{facility.openHours ? facility.openHours.replace('hàng ngày', '') : 'Linh hoạt'}</span>
+                              </div>
+                              <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 text-[11px] text-slate-300 col-span-2" title={details.level}>
+                                <span className="material-symbols-outlined text-[15px] text-emerald-400 shrink-0">verified</span>
+                                <span className="truncate">{details.level}</span>
+                              </div>
+                            </div>
+                          </div>
+
+                          <button
+                            className="w-full py-3 px-4 rounded-xl bg-slate-800/90 group-hover:bg-gradient-to-r group-hover:from-red-600 group-hover:via-rose-600 group-hover:to-amber-600 border border-slate-700/80 group-hover:border-transparent text-white text-xs sm:text-[13px] font-bold font-chivo uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-rose-600/30 cursor-pointer"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleSportClick(sport);
+                            }}
+                          >
+                            <span>Xem Chi Tiết &amp; Đặt Lịch</span>
+                            <span className="material-symbols-outlined text-[16px] group-hover:translate-x-1.5 transition-transform duration-200">arrow_forward</span>
+                          </button>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Interactive Pagination Dots / Indicator Pills */}
+              <div className="flex items-center justify-center gap-2 mt-4 sm:mt-6">
+                {filteredSports.map((sport, idx) => (
+                  <button
+                    key={sport.id}
+                    type="button"
+                    onClick={() => handleScrollSportsToIndex(idx)}
+                    aria-label={`Chuyển đến môn ${sport.name}`}
+                    className={`h-2 transition-all duration-300 rounded-full cursor-pointer ${
+                      sportCarouselIndex === idx
+                        ? 'w-8 sm:w-10 bg-gradient-to-r from-red-500 via-rose-500 to-amber-500 shadow-md shadow-rose-500/40'
+                        : 'w-2 bg-slate-800 hover:bg-slate-700'
+                    }`}
+                  />
+                ))}
+              </div>
+            </div>
+          )}
 
           {/* COURSES VIEW: MODE 'cards' (FULL DETAIL CARDS) */}
           {coursesViewMode === 'cards' && (
@@ -1211,7 +1471,6 @@ export function LandingPage() {
                         : 'border-slate-800/90 hover:border-rose-500/60 shadow-xl hover:shadow-[0_22px_45px_rgba(0,0,0,0.7),0_0_30px_rgba(244,63,94,0.18)]'
                     }`}
                   >
-                    {/* Highlight Pulse Indicator if navigated from header */}
                     {isHighlighted && (
                       <div className="absolute top-3 right-3 z-30 flex items-center gap-1.5 px-3 py-1 rounded-full bg-rose-600 text-white text-[10px] font-bold shadow-lg shadow-rose-600/50 animate-bounce">
                         <span className="w-2 h-2 rounded-full bg-white animate-ping" />
@@ -1219,7 +1478,6 @@ export function LandingPage() {
                       </div>
                     )}
 
-                    {/* CARD MEDIA HEADER (IMAGE + OVERLAYS + BADGES) */}
                     <div className="relative h-52 sm:h-56 w-full overflow-hidden bg-slate-950">
                       <img
                         src={sport.image || facility.image || facility.secondaryImage}
@@ -1227,11 +1485,9 @@ export function LandingPage() {
                         className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700 ease-out"
                         loading="lazy"
                       />
-                      {/* Gradient Scrims for perfect readability */}
                       <div className="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/40 to-transparent" />
                       <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-transparent to-transparent opacity-80" />
 
-                      {/* Top Badges */}
                       <div className="absolute top-3 left-3 right-3 flex items-center justify-between z-10">
                         <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-extrabold uppercase tracking-wider backdrop-blur-md border ${catCfg.badge}`}>
                           <span className="material-symbols-outlined text-[13px]">{sport.icon}</span>
@@ -1244,7 +1500,6 @@ export function LandingPage() {
                         </span>
                       </div>
 
-                      {/* Overlaid Sport Icon & Price Tag */}
                       <div className="absolute bottom-3 left-3 right-3 flex items-end justify-between z-10">
                         <div className="w-11 h-11 rounded-xl bg-slate-900/90 backdrop-blur-md border border-white/20 text-white flex items-center justify-center shadow-lg group-hover:bg-gradient-to-tr group-hover:from-red-600 group-hover:to-rose-500 group-hover:border-transparent group-hover:scale-105 group-hover:rotate-3 transition-all duration-300">
                           <span className="material-symbols-outlined text-[24px] text-rose-300 group-hover:text-white transition-colors">{sport.icon}</span>
@@ -1257,10 +1512,8 @@ export function LandingPage() {
                       </div>
                     </div>
 
-                    {/* CARD BODY CONTENT */}
                     <div className="p-5 sm:p-6 flex flex-col flex-1 justify-between">
                       <div>
-                        {/* Title and Rating */}
                         <div className="flex items-start justify-between gap-2 mb-2">
                           <h3 className="font-chivo text-xl sm:text-2xl font-black text-white group-hover:text-rose-400 transition-colors uppercase tracking-tight">
                             {sport.name}
@@ -1272,18 +1525,15 @@ export function LandingPage() {
                           </div>
                         </div>
 
-                        {/* Venue Location Pin */}
                         <div className="flex items-center gap-1.5 text-xs text-rose-400/95 font-semibold mb-3">
                           <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">location_on</span>
                           <span className="truncate">{facility.name} • {facility.location}</span>
                         </div>
 
-                        {/* Highlights Description */}
                         <p className="text-xs sm:text-[13px] text-slate-300 line-clamp-2 leading-relaxed mb-4">
                           {details.highlight}
                         </p>
 
-                        {/* Feature Pills */}
                         <div className="grid grid-cols-2 gap-2 mb-5">
                           <div className="flex items-center gap-2 p-2 rounded-lg bg-slate-950/70 border border-slate-800/80 text-[11px] text-slate-300" title={details.coach}>
                             <span className="material-symbols-outlined text-[15px] text-rose-400 shrink-0">sports</span>
@@ -1300,7 +1550,6 @@ export function LandingPage() {
                         </div>
                       </div>
 
-                      {/* Action CTA Button */}
                       <button
                         className="w-full py-3 px-4 rounded-xl bg-slate-800/90 group-hover:bg-gradient-to-r group-hover:from-red-600 group-hover:via-rose-600 group-hover:to-amber-600 border border-slate-700/80 group-hover:border-transparent text-white text-xs sm:text-[13px] font-bold font-chivo uppercase tracking-wider transition-all duration-300 flex items-center justify-center gap-2 group-hover:shadow-lg group-hover:shadow-rose-600/30 cursor-pointer"
                         onClick={(e) => {
