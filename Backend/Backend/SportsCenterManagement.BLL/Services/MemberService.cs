@@ -32,14 +32,22 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         return await UpdateProfileAsync(userId, profile.CenterId, profile.Id, request, "member.profile.updated", cancellationToken);
     }
 
-    public Task<MembersResponses.MemberProfileResponse> UpdateAtCenterAsync(
+    public async Task<MembersResponses.MemberProfileResponse> UpdateAtCenterAsync(
         long actorUserId,
         long centerId,
         long memberId,
-        MembersRequests.UpdateMemberProfileRequest request,
+        MembersRequests.UpdateMemberAtCenterRequest request,
         CancellationToken cancellationToken = default)
     {
-        return UpdateProfileAsync(actorUserId, centerId, memberId, request, "member.profile.updated.by_staff", cancellationToken);
+        await EnsureCenterManagerAsync(actorUserId, centerId, cancellationToken);
+        var profileRequest = new MembersRequests.UpdateMemberProfileRequest(
+            request.FullName,
+            Email: null,
+            request.Phone,
+            request.DateOfBirth,
+            request.Gender,
+            request.Address);
+        return await UpdateProfileAsync(actorUserId, centerId, memberId, profileRequest, "member.profile.updated.by_staff", cancellationToken);
     }
 
     private async Task<MembersResponses.MemberProfileResponse> UpdateProfileAsync(
@@ -85,10 +93,6 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
             if (profile.CenterId != requiredCenterId)
             {
                 throw new KeyNotFoundException("Không tìm thấy thành viên tại trung tâm này.");
-            }
-            if (profile.UserId != actorUserId)
-            {
-                await EnsureCenterManagerAsync(actorUserId, requiredCenterId.Value, cancellationToken);
             }
         }
         var user = await unitOfWork.Repository<User>().GetByIdAsync(profile.UserId, cancellationToken)
@@ -207,7 +211,7 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
                       || profile.FullName.Contains(term)
                       || user.Email.Contains(term)
                       || (user.Phone != null && user.Phone.Contains(term)))
-            orderby profile.FullName, profile.Id
+            orderby user.Status == "Active" ? 0 : 1, profile.FullName, profile.Id
             select new MembersResponses.MemberProfileResponse(profile.Id, user.Id, profile.MemberCode, user.Username,
                 user.Email, user.Phone, profile.FullName, profile.DateOfBirth, profile.Gender,
                 profile.Address, profile.CreatedAt, user.Status);

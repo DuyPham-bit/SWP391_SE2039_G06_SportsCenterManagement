@@ -260,7 +260,7 @@ public static class DbInitializer
             await context.Users.AddAsync(coachUser);
             await context.SaveChangesAsync();
 
-            await context.CoachProfiles.AddAsync(new CoachProfile
+            var coachProfile = new CoachProfile
             {
                 UserId = coachUser.Id,
                 CenterId = demoCenter.Id,
@@ -272,7 +272,15 @@ public static class DbInitializer
                 Bio = "HLV giàu kinh nghiệm hỗ trợ cá nhân hóa bài tập",
                 Status = "Active",
                 CreatedAt = DateTime.UtcNow
-            });
+            };
+            await context.CoachProfiles.AddAsync(coachProfile);
+            await context.SaveChangesAsync();
+            var demoSportIds = await context.Sports
+                .Where(sport => (sport.CenterId == null || sport.CenterId == demoCenter.Id)
+                    && (sport.Name == "Gym & Fitness" || sport.Name == "Bơi lội"))
+                .Select(sport => sport.Id).ToListAsync();
+            await context.CoachSports.AddRangeAsync(demoSportIds.Select(sportId =>
+                new CoachSport { CoachId = coachProfile.Id, SportId = sportId }));
             await context.SaveChangesAsync();
         }
 

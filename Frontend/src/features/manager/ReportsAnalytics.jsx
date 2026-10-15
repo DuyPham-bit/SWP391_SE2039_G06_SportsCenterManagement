@@ -11,7 +11,8 @@ import {
   SportsDonutChart,
   ClassCapacityBarChart,
   SportRevenueRankingChart,
-  RoomRevenueRankingChart
+  RoomUsageRankingChart,
+  SportRevenueBarChart
 } from './AnalyticsCharts.jsx';
 
 const field = 'border border-slate-200 rounded-lg p-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500';
@@ -116,6 +117,7 @@ export function ReportsAnalytics() {
   const highlights = metrics?.highlights || {};
   const topClass = highlights.mostPopularClass;
   const topSport = highlights.mostPopularSport;
+  const topRevenueSport = highlights.highestRevenueSport;
   const topRoom = highlights.mostBookedRoom;
 
   return (
@@ -152,6 +154,8 @@ export function ReportsAnalytics() {
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 mr-1">Kỳ nhanh:</span>
           {[
+            ['DAY', 'Hôm nay'],
+            ['WEEK', 'Tuần này'],
             ['MONTH', 'Tháng này'],
             ['QUARTER', 'Quý này'],
             ['YEAR', 'Năm nay']
@@ -242,8 +246,8 @@ export function ReportsAnalytics() {
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             <StatCard
               title="Doanh thu thuần"
-              value={`${Number(metrics.monthlyRevenue || 0).toLocaleString('vi-VN')}đ`}
-              subtitle={`Kỳ: ${metrics.from} → ${metrics.to}`}
+              value={`${Number(metrics.netRevenue || 0).toLocaleString('vi-VN')}đ`}
+              subtitle={`Thu ${Number(metrics.grossRevenue || 0).toLocaleString('vi-VN')}đ · hoàn ${Number(metrics.refundedRevenue || 0).toLocaleString('vi-VN')}đ`}
               icon="payments"
               color="red"
             />
@@ -354,37 +358,35 @@ export function ReportsAnalytics() {
                 </div>
               </div>
 
-              {/* Top 1 Môn học */}
+              {/* Top 1 doanh thu bộ môn */}
               <div className="bg-white/5 hover:bg-white/10 transition-all rounded-xl p-4 border border-white/10 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1">
-                      🥇 BỘ MÔN ĐẶT NHIỀU NHẤT
+                      🥇 BỘ MÔN DOANH THU CAO NHẤT
                     </span>
                     <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
                       TOP 1 SPORT
                     </span>
                   </div>
                   <h3 className="font-bold text-base text-white line-clamp-1">
-                    {topSport ? topSport.name : 'Chưa có môn'}
+                    {topRevenueSport ? topRevenueSport.sportName : 'Chưa có doanh thu'}
                   </h3>
                   <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-300">
-                    <span>Tổng buổi: <strong>{topSport?.sessionsCount || 0}</strong> ca</span>
-                    <span>•</span>
-                    <span>Thị phần: <strong className="text-sky-300">{topSport?.share || 0}%</strong></span>
+                    <span>Tỷ trọng doanh thu: <strong className="text-sky-300">{topRevenueSport?.share || 0}%</strong></span>
                   </div>
                 </div>
                 <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-slate-400">Tổng lượt đặt chỗ</span>
+                    <span className="text-slate-400">Doanh thu thuần</span>
                     <p className="text-sm font-bold text-white">
-                      {topSport ? `${topSport.booked} lượt` : '0'}
+                      {topRevenueSport ? `${Number(topRevenueSport.net || 0).toLocaleString('vi-VN')}đ` : '0đ'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-slate-400">Tỷ lệ lấp đầy</span>
+                    <span className="text-slate-400">Đã hoàn tiền</span>
                     <p className="text-sm font-bold text-sky-300">
-                      {topSport ? `${topSport.percentage}%` : '0%'}
+                      {topRevenueSport ? `${Number(topRevenueSport.refunds || 0).toLocaleString('vi-VN')}đ` : '0đ'}
                     </p>
                   </div>
                 </div>
@@ -469,6 +471,24 @@ export function ReportsAnalytics() {
               </section>
             </div>
 
+            <section className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm">
+              <div className="flex flex-wrap items-start justify-between gap-3">
+                <div>
+                  <h3 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-500"></span>
+                    Doanh Thu Theo Bộ Môn
+                  </h3>
+                  <p className="text-xs text-slate-500 mt-0.5">Phân bổ doanh thu hóa đơn theo các bộ môn thực tế mà gói hội viên đã sử dụng.</p>
+                </div>
+                {Number(metrics.unallocatedSportRevenue || 0) !== 0 && (
+                  <span className="text-xs font-semibold rounded-lg bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5">
+                    Chưa phân bổ: {Number(metrics.unallocatedSportRevenue).toLocaleString('vi-VN')}đ
+                  </span>
+                )}
+              </div>
+              <SportRevenueBarChart sports={metrics.revenueBySport} />
+            </section>
+
             {/* Hàng biểu đồ 2: Thị phần Bộ môn (Donut) & So sánh công suất lớp học */}
             <div className="grid lg:grid-cols-2 gap-5">
               <section className="bg-white border border-slate-200/90 rounded-2xl p-5 space-y-4 shadow-sm hover:shadow-md transition-shadow">
@@ -512,7 +532,7 @@ export function ReportsAnalytics() {
                 </div>
                 <SportRevenueRankingChart
                   sports={metrics.topSports}
-                  totalRevenue={metrics.monthlyRevenue}
+                  revenueBySport={metrics.revenueBySport}
                 />
               </section>
 
@@ -520,15 +540,14 @@ export function ReportsAnalytics() {
                 <div>
                   <h3 className="font-black text-slate-900 text-base font-chivo flex items-center gap-2">
                     <span className="w-2.5 h-2.5 rounded-full bg-emerald-600"></span>
-                    Biểu Đồ Khai Thác Sân Bãi: Doanh Thu & Lượt Khách
+                    Biểu Đồ Khai Thác Sân Bãi: Số Ca Học & Lượt Khách
                   </h3>
                   <p className="text-xs text-slate-500 mt-0.5">
-                    Thống kê sân bãi / phòng tập nào đạt doanh thu cao nhất và tiếp nhận đông khách nhất.
+                    Thống kê số ca học và lượt khách thực tế theo sân bãi / phòng tập.
                   </p>
                 </div>
-                <RoomRevenueRankingChart
+                <RoomUsageRankingChart
                   rooms={processedRooms}
-                  totalRevenue={metrics.monthlyRevenue}
                 />
               </section>
             </div>
@@ -551,13 +570,17 @@ export function ReportsAnalytics() {
                 <span className="font-bold text-amber-900 block mb-1">
                   2. Cân bằng thị phần bộ môn:
                 </span>
-                Bộ môn <strong className="text-slate-900">{topSport?.name || 'Bơi lội'}</strong> chiếm hơn <strong className="text-red-600">{topSport?.share || 0}%</strong> tổng lượt đặt chỗ toàn trung tâm. Cần chiến dịch truyền thông chéo để thu hút học viên trải nghiệm Gym, Yoga và Võ thuật.
+                {topSport
+                  ? <>Bộ môn <strong className="text-slate-900">{topSport.name}</strong> chiếm <strong className="text-red-600">{topSport.share || 0}%</strong> tổng lượt đặt chỗ. So sánh với các bộ môn còn lại trước khi điều chỉnh lịch hoặc chương trình quảng bá.</>
+                  : 'Chưa đủ dữ liệu đặt chỗ để đưa ra khuyến nghị theo bộ môn.'}
               </div>
               <div className="bg-white/80 p-3.5 rounded-xl border border-amber-200/60 shadow-xs">
                 <span className="font-bold text-amber-900 block mb-1">
                   3. Tối ưu sân có nhiều khung giờ trống:
                 </span>
-                Các khu vực như Sân Cầu lông hoặc Võ đài còn nhiều ca trống trong kỳ. Khuyến nghị thiết kế thêm các gói đặt sân kèm HLV riêng (PT 1:1) hoặc workshop cuối tuần cho tân hội viên.
+                {processedRooms.length
+                  ? <>Khu vực <strong>{processedRooms[processedRooms.length - 1]?.name}</strong> có lượng sử dụng thấp nhất trong dữ liệu kỳ này. Cần đối chiếu khung giờ trước khi mở thêm ưu đãi.</>
+                  : 'Chưa đủ dữ liệu sân/phòng để đưa ra khuyến nghị.'}
               </div>
             </div>
           </div>

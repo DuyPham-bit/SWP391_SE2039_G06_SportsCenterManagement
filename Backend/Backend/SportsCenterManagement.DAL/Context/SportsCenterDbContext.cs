@@ -18,6 +18,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<Exercise> Exercises => Set<Exercise>();
     public DbSet<MemberProfile> MemberProfiles => Set<MemberProfile>();
     public DbSet<CoachProfile> CoachProfiles => Set<CoachProfile>();
+    public DbSet<CoachSport> CoachSports => Set<CoachSport>();
     public DbSet<CoachLeave> CoachLeaves => Set<CoachLeave>();
     public DbSet<StaffProfile> StaffProfiles => Set<StaffProfile>();
     public DbSet<ClassEntity> Classes => Set<ClassEntity>();
@@ -62,6 +63,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .HasForeignKey(entity => entity.ClassId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<RolePermission>().HasKey(entity => new { entity.RoleId, entity.PermissionId });
         modelBuilder.Entity<ClassCoach>().HasKey(entity => new { entity.ClassId, entity.CoachId });
+        modelBuilder.Entity<CoachSport>().HasKey(entity => new { entity.CoachId, entity.SportId });
 
         modelBuilder.Entity<RolePermission>()
             .HasOne<Role>()
@@ -87,6 +89,16 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .HasOne<CoachProfile>()
             .WithMany()
             .HasForeignKey(entity => entity.CoachId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CoachSport>()
+            .HasOne<CoachProfile>()
+            .WithMany()
+            .HasForeignKey(entity => entity.CoachId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<CoachSport>()
+            .HasOne<Sport>()
+            .WithMany()
+            .HasForeignKey(entity => entity.SportId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Role>().HasIndex(entity => entity.Name).IsUnique();

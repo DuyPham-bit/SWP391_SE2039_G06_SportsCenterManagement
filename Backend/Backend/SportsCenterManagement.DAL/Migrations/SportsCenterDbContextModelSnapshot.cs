@@ -581,6 +581,23 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.ToTable("class_enrollments", "dbo");
                 });
 
+            modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachSport", b =>
+                {
+                    b.Property<long>("CoachId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("coach_id");
+
+                    b.Property<long>("SportId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("sport_id");
+
+                    b.HasKey("CoachId", "SportId");
+
+                    b.HasIndex("SportId");
+
+                    b.ToTable("coach_sports", "dbo");
+                });
+
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ClassEntity", b =>
                 {
                     b.Property<long>("Id")
@@ -2663,6 +2680,21 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasOne("SportsCenterManagement.DAL.Entities.CoachProfile", null)
                         .WithMany()
                         .HasForeignKey("CoachId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachSport", b =>
+                {
+                    b.HasOne("SportsCenterManagement.DAL.Entities.CoachProfile", null)
+                        .WithMany()
+                        .HasForeignKey("CoachId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("SportsCenterManagement.DAL.Entities.Sport", null)
+                        .WithMany()
+                        .HasForeignKey("SportId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
                 });

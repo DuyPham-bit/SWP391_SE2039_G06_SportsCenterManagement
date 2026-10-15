@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
-import { staffApi } from '../../services/api.js';
+import { staffApi, classApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
@@ -98,6 +98,10 @@ export function StaffManagement() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
+  const [sports, setSports] = useState([]);
+  const [sportsError, setSportsError] = useState('');
+  const [newSpecialtyName, setNewSpecialtyName] = useState('');
+  const [addingSpecialty, setAddingSpecialty] = useState(false);
 
   // Form states
   const [form, setForm] = useState({
@@ -109,6 +113,7 @@ export function StaffManagement() {
     role: 'COACH',
     hireDate: today(),
     specialty: '',
+    sportIds: [],
     certification: '',
     experienceYears: '',
     bio: ''
@@ -128,7 +133,14 @@ export function StaffManagement() {
 
   useEffect(() => {
     loadStaff();
+    loadSports();
   }, []);
+
+  const loadSports = async () => {
+    setSportsError('');
+    try { setSports(await classApi.getSports()); }
+    catch (error) { setSportsError(error.message || 'Không thể tải danh sách chuyên môn.'); }
+  };
 
   // Handle click outside to close dropdown
   useEffect(() => {
@@ -231,6 +243,7 @@ export function StaffManagement() {
       role: 'COACH',
       hireDate: today(),
       specialty: '',
+      sportIds: [],
       certification: '',
       experienceYears: '1',
       bio: ''
@@ -238,6 +251,7 @@ export function StaffManagement() {
     setMemberSearchQuery('');
     setFilteredMembers([]);
     setSelectedMember(null);
+    setNewSpecialtyName('');
     setCreateMode('DIRECT');
     setCreateModalOpen(true);
   };
@@ -253,6 +267,7 @@ export function StaffManagement() {
       role: staff.role || 'COACH',
       hireDate: staff.hireDate ? String(staff.hireDate).slice(0, 10) : today(),
       specialty: staff.specialty || '',
+      sportIds: (staff.sportIds || []).map(Number),
       certification: staff.certification || '',
       experienceYears: staff.experienceYears ? String(staff.experienceYears) : '',
       bio: staff.bio || ''
@@ -287,6 +302,10 @@ export function StaffManagement() {
   // Handle Save (Create or Edit)
   const handleSaveStaff = async (e) => {
     e.preventDefault();
+    if (form.role === 'COACH' && !form.sportIds?.length) {
+      showError('Vui lòng chọn ít nhất một chuyên môn cho Huấn luyện viên.');
+      return;
+    }
     setSaving(true);
     try {
       if (editingStaff) {
@@ -296,6 +315,7 @@ export function StaffManagement() {
           role: form.role,
           hireDate: form.hireDate || null,
           specialty: form.specialty.trim(),
+          sportIds: form.role === 'COACH' ? form.sportIds : [],
           certification: form.certification.trim(),
           experienceYears: form.experienceYears ? Number(form.experienceYears) : null,
           bio: form.bio.trim()
@@ -314,6 +334,7 @@ export function StaffManagement() {
             role: form.role,
             hireDate: form.hireDate || today(),
             specialty: form.specialty.trim(),
+            sportIds: form.role === 'COACH' ? form.sportIds : [],
             certification: form.certification.trim(),
             experienceYears: form.experienceYears ? Number(form.experienceYears) : null,
             bio: form.bio.trim()
@@ -329,6 +350,7 @@ export function StaffManagement() {
             role: form.role,
             hireDate: form.hireDate || today(),
             specialty: form.specialty.trim(),
+            sportIds: form.role === 'COACH' ? form.sportIds : [],
             certification: form.certification.trim(),
             experienceYears: form.experienceYears ? Number(form.experienceYears) : null,
             bio: form.bio.trim()
@@ -344,6 +366,37 @@ export function StaffManagement() {
       setSaving(false);
     }
   };
+
+  const handleAddSpecialty = async () => {
+    const name = newSpecialtyName.trim();
+    if (!name || addingSpecialty) return;
+    setAddingSpecialty(true);
+    try {
+      const created = await classApi.createSport({ name, description: 'Chuyên môn HLV', status: 'Active' });
+      setSports(current => [...current, created].sort((a, b) => a.name.localeCompare(b.name, 'vi')));
+      setForm(current => ({ ...current, sportIds: [...new Set([...(current.sportIds || []), Number(created.id)])] }));
+      setNewSpecialtyName('');
+      showSuccess(`Đã thêm chuyên môn ${created.name}.`);
+    } catch (error) { showError(error.message || 'Không thể thêm chuyên môn.'); }
+    finally { setAddingSpecialty(false); }
+  };
+
+  const specialtyPicker = (
+    <div className="space-y-3">
+      <label className={labelClass}>Chuyên môn thể thao *</label>
+      {sportsError ? <div role="alert" className="text-sm text-red-700"><p>{sportsError}</p><button type="button" className="underline" onClick={loadSports}>Thử lại</button></div>
+        : <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">{sports.map(sport => {
+          const selected = (form.sportIds || []).includes(Number(sport.id));
+          return <button key={sport.id} type="button" disabled={saving || addingSpecialty} aria-pressed={selected}
+            onClick={() => setForm(current => ({ ...current, sportIds: selected ? current.sportIds.filter(id => id !== Number(sport.id)) : [...(current.sportIds || []), Number(sport.id)] }))}
+            className={`rounded-xl border p-3 text-left text-xs font-bold ${selected ? 'border-red-600 bg-red-50 text-red-700' : 'border-slate-200 bg-white text-slate-700'}`}>{sport.name}</button>;
+        })}{!sports.length && <p className="col-span-full text-sm text-slate-500">Chưa có chuyên môn hoạt động.</p>}</div>}
+      <div className="flex gap-2">
+        <input aria-label="Tên chuyên môn mới" maxLength={100} className={inputClass} value={newSpecialtyName} onChange={event => setNewSpecialtyName(event.target.value)} placeholder="Thêm chuyên môn mới" />
+        <button type="button" disabled={addingSpecialty || saving || !newSpecialtyName.trim()} onClick={handleAddSpecialty} className="shrink-0 rounded-xl bg-slate-900 px-3 text-xs font-bold text-white disabled:opacity-50">{addingSpecialty ? 'Đang thêm...' : 'Thêm'}</button>
+      </div>
+    </div>
+  );
 
   // Handle Toggle Status
   const handleToggleStatus = async () => {
@@ -1018,16 +1071,7 @@ export function StaffManagement() {
 
                   {form.role === 'COACH' && (
                     <>
-                      <div>
-                        <label className={labelClass}>Chuyên môn thể thao</label>
-                        <input
-                          className={inputClass}
-                          name="specialty"
-                          placeholder="VD: Bơi lội & Gym, Cầu lông, Yoga..."
-                          value={form.specialty}
-                          onChange={handleFormChange}
-                        />
-                      </div>
+                      {specialtyPicker}
 
                       <div>
                         <label className={labelClass}>Chứng chỉ quốc tế</label>
@@ -1244,16 +1288,7 @@ export function StaffManagement() {
                       onChange={handleFormChange}
                     />
                   </div>
-                  <div>
-                    <label className={labelClass}>Chuyên môn (nếu là HLV)</label>
-                    <input
-                      className={inputClass}
-                      name="specialty"
-                      placeholder="VD: Bơi lội & Gym, Cầu lông..."
-                      value={form.specialty}
-                      onChange={handleFormChange}
-                    />
-                  </div>
+                  {form.role === 'COACH' && specialtyPicker}
                   <div>
                     <label className={labelClass}>Chứng chỉ quốc tế</label>
                     <input
@@ -1380,16 +1415,7 @@ export function StaffManagement() {
                 />
               </div>
 
-              <div>
-                <label className={labelClass}>Chuyên môn</label>
-                <input
-                  className={inputClass}
-                  name="specialty"
-                  placeholder="VD: Bơi lội & Gym, Cầu lông..."
-                  value={form.specialty}
-                  onChange={handleFormChange}
-                />
-              </div>
+              {form.role === 'COACH' && specialtyPicker}
 
               <div>
                 <label className={labelClass}>Chứng chỉ đào tạo quốc tế</label>

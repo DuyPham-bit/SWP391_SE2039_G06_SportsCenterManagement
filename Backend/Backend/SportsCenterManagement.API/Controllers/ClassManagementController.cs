@@ -49,6 +49,16 @@ public sealed class ClassManagementController(IClassManagementService service, S
         return Ok(await service.CancelClassAsync(CurrentUserId, classId, ct));
     }
 
+    /// <summary>
+    /// Reopens a cancelled class as a draft. Historical cancellations are deliberately not reversed.
+    /// </summary>
+    [HttpPost("classes/{classId:long}/restore")]
+    public async Task<IActionResult> Restore(long classId, CancellationToken ct)
+    {
+        await CenterScope.EnsureClassAccessAsync(db, User, classId, ct);
+        return Ok(await service.RestoreClassAsync(CurrentUserId, classId, ct));
+    }
+
     [HttpGet("classes/{classId:long}/schedules")]
     public async Task<IActionResult> GetSchedules(long classId, CancellationToken ct)
     {

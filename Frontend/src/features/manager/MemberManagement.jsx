@@ -1,9 +1,11 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import { memberApi, receptionApi } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
 import { useToast } from '../../context/ToastContext.js';
 import { formatMemberDate, formatMemberDateTime } from '../member/memberOverview.js';
+import { buildMemberUpdatePayload, getSubscriptionPresentation, normalizeSubscriptionHistory,
+  formatMembershipPrice, formatMembershipDuration } from './memberManagementView.js';
 
 // Color palette gradients for member initials
 const AVATAR_GRADIENTS = [
@@ -63,6 +65,8 @@ export function MemberManagement() {
   const [busy, setBusy] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
   const [loadingSubs, setLoadingSubs] = useState(false);
+  const [subscriptionError, setSubscriptionError] = useState('');
+  const subscriptionRequest = useRef(0);
   const [copiedCode, setCopiedCode] = useState(null);
 
   // Fetch members
@@ -166,17 +170,22 @@ export function MemberManagement() {
 
   const openSubscriptions = async (row, e) => {
     e?.stopPropagation();
-    setBusy(true);
+    const requestId = ++subscriptionRequest.current;
+    setModal({ type: 'subscriptions', row });
+    setSubscriptions([]);
+    setSubscriptionError('');
     setLoadingSubs(true);
     try {
       const subs = await receptionApi.getMemberSubscriptions(row.memberId);
-      setSubscriptions(Array.isArray(subs) ? subs : (subs?.items || []));
-      setModal({ type: 'subscriptions', row });
+      if (subscriptionRequest.current === requestId) {
+        setSubscriptions(normalizeSubscriptionHistory(Array.isArray(subs) ? subs : (subs?.items || [])));
+      }
     } catch (err) {
-      showError(err.message || 'Không thể tải lịch sử gói tập');
+      if (subscriptionRequest.current === requestId) {
+        setSubscriptionError(err.message || 'Không thể tải lịch sử gói tập');
+      }
     } finally {
-      setBusy(false);
-      setLoadingSubs(false);
+      if (subscriptionRequest.current === requestId) setLoadingSubs(false);
     }
   };
 
@@ -190,14 +199,7 @@ export function MemberManagement() {
     setBusy(true);
     try {
       if (modal.row) {
-        await memberApi.updateAtCenter(modal.row.memberId, {
-          fullName: form.fullName.trim(),
-          email: form.email.trim(),
-          phone: form.phone?.trim() || '',
-          dateOfBirth: form.dateOfBirth || null,
-          gender: form.gender || null,
-          address: form.address?.trim() || ''
-        });
+        await memberApi.updateAtCenter(modal.row.memberId, buildMemberUpdatePayload(form));
         showSuccess('Cập nhật hồ sơ thành viên thành công!');
       } else {
         await receptionApi.createMember({
@@ -826,6 +828,7 @@ export function MemberManagement() {
                 className={inputClass}
                 name="email"
                 type="email"
+                readOnly={Boolean(modal?.row)}
                 required
                 maxLength={150}
                 placeholder="email@domain.com"
@@ -1083,11 +1086,15 @@ export function MemberManagement() {
 
           {loadingSubs ? (
             <LoadingSpinner text="Đang tải lịch sử đăng ký..." />
+          ) : subscriptionError ? (
+            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+              <p>{subscriptionError}</p>
+              <button type="button" className="mt-2 font-bold underline" onClick={() => openSubscriptions(modal.row)}>Thử lại</button>
+            </div>
           ) : subscriptions.length > 0 ? (
             <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
               {subscriptions.map(s => {
-                const isActive = s.status === 'ACTIVE';
-                const isCancelled = s.status === 'CANCELLED';
+                const status = getSubscriptionPresentation(s.status);
                 return (
                   <article
                     key={s.subscriptionId}
@@ -1098,25 +1105,19 @@ export function MemberManagement() {
                         <span className="material-symbols-outlined text-red-600 text-[18px]">
                           workspace_premium
                         </span>
-                        <h4 className="font-bold text-sm text-slate-900">{s.packageName}</h4>
+                        <h4 className="font-bold text-sm text-slate-900">{s.packageName || 'Gói chưa có tên'}</h4>
                       </div>
-                      <span className={`px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                        isActive
-                          ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                          : isCancelled
-                          ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                          : 'bg-amber-100 text-amber-800 border border-amber-200'
-                      }`}>
-                        {s.status}
+                      <span className={`px-2 py-0.5 rounded border text-[10px] font-bold tracking-wider ${status.className}`}>
+                        {status.label}
                       </span>
                     </div>
 
                     <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
                       <span className="font-bold text-slate-900">
-                        {Number(s.price).toLocaleString('vi-VN')} đ
+                        {formatMembershipPrice(s.price)}
                       </span>
                       <span>·</span>
-                      <span>Thời hạn: <strong>{s.durationDays} ngày</strong></span>
+                      <span>Thời hạn: <strong>{formatMembershipDuration(s.durationDays)}</strong></span>
                       <span>·</span>
                       <span className="text-slate-500">
                         Hiệu lực: {s.startDate ? formatMemberDate(s.startDate) : 'Chưa kích hoạt'} – {s.endDate ? formatMemberDate(s.endDate) : 'Chưa có'}

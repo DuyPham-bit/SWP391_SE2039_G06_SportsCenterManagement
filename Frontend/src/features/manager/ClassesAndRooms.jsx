@@ -3,6 +3,10 @@ import { classApi, roomApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
+import {
+  CLASS_STATUS, WEEK_DAYS, effectiveScheduleRoom, filterClasses, groupSchedulesByDay,
+  splitAndSortClasses, validateClassForm, validateScheduleForm
+} from './classManagementView.js';
 
 // Visual Sport Theme Mapping
 const SPORT_THEMES = {
@@ -59,17 +63,6 @@ function getSportTheme(sportName = '') {
   };
 }
 
-const DAYS_OF_WEEK = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-
-const TIME_PRESETS = [
-  { label: 'Sáng sớm (06:00 - 07:30)', start: '06:00', end: '07:30' },
-  { label: 'Sáng (08:00 - 09:30)', start: '08:00', end: '09:30' },
-  { label: 'Trưa (11:30 - 13:00)', start: '11:30', end: '13:00' },
-  { label: 'Chiều (16:00 - 17:30)', start: '16:00', end: '17:30' },
-  { label: 'Tối (18:00 - 19:30)', start: '18:00', end: '19:30' },
-  { label: 'Tối muộn (19:30 - 21:00)', start: '19:30', end: '21:00' }
-];
-
 const todayDate = () => new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
 const futureDate = (days = 90) => {
   const d = new Date(Date.now() + (7 * 3600 + days * 86400) * 1000);
@@ -94,6 +87,7 @@ export function ClassesAndRooms() {
   // Modals
   const [modal, setModal] = useState(null); // { type: 'class'|'room'|'sport'|'schedule'|'cancel', row }
   const [form, setForm] = useState({});
+  const [formError, setFormError] = useState('');
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [editingScheduleId, setEditingScheduleId] = useState(null);
@@ -131,8 +125,11 @@ export function ClassesAndRooms() {
     loadData();
   }, []);
 
+  const classGroups = useMemo(() => splitAndSortClasses(data.classes), [data.classes]);
+
   // Form Change Handler
   const handleFormChange = (e) => {
+    setFormError('');
     const { name, value, type, checked } = e.target;
     setForm((prev) => ({
       ...prev,
@@ -148,6 +145,7 @@ export function ClassesAndRooms() {
       showSuccess(successMsg);
       await loadData();
     } catch (err) {
+      setFormError(err.message || 'Có lỗi xảy ra trong quá trình thực hiện.');
       showError(err.message || 'Có lỗi xảy ra trong quá trình thực hiện.');
     } finally {
       setBusy(false);
@@ -156,6 +154,7 @@ export function ClassesAndRooms() {
 
   // Open Modal Handlers
   const openClassModal = (row = null) => {
+    setFormError('');
     if (row) {
       setForm({
         name: row.name || '',
@@ -224,6 +223,8 @@ export function ClassesAndRooms() {
   const openScheduleModal = async (classRow) => {
     try {
       setLoadingSchedules(true);
+      setFormError('');
+      setSchedules([]);
       setEditingScheduleId(null);
       setModal({ type: 'schedule', row: classRow });
       const fetchedSchedules = await classApi.getSchedules(classRow.id);
@@ -246,6 +247,10 @@ export function ClassesAndRooms() {
   // Submit Modal Form
   const handleSaveModal = async (e) => {
     e.preventDefault();
+    const validation = modal.type === 'class' ? validateClassForm(form)
+      : modal.type === 'schedule' ? validateScheduleForm(form) : '';
+    if (validation) { setFormError(validation); return; }
+    setFormError('');
     await executeAction(async () => {
       if (modal.type === 'class') {
         const body = {
@@ -268,11 +273,15 @@ export function ClassesAndRooms() {
         }
 
         // If coach is chosen, assign coach
-        if (savedClassId && form.coachId) {
+        if (savedClassId && form.coachId && String(form.coachId) !== String(modal.row?.coachId)) {
           try {
             await classApi.assignCoach(savedClassId, form.coachId);
           } catch (err) {
-            console.warn('Lỗi phân công HLV:', err.message);
+            const savedClass = { id: savedClassId, ...body };
+            setModal({ type: 'class', row: savedClass });
+            setFormError(`Đã lưu thông tin lớp nhưng chưa phân công được HLV: ${err.message || 'Vui lòng thử lại.'}`);
+            await loadData();
+            throw new Error(`Đã lưu lớp nhưng chưa phân công được HLV: ${err.message || 'Vui lòng thử lại.'}`);
           }
         }
       } else if (modal.type === 'sport') {
@@ -376,23 +385,16 @@ export function ClassesAndRooms() {
   const filteredItems = useMemo(() => {
     const query = searchQuery.trim().toLowerCase();
 
-    if (tab === 'classes') {
-      return data.classes.filter((cls) => {
-        const matchesQuery =
-          !query ||
-          (cls.name && cls.name.toLowerCase().includes(query)) ||
-          (cls.sportName && cls.sportName.toLowerCase().includes(query)) ||
-          (cls.coachName && cls.coachName.toLowerCase().includes(query)) ||
-          (cls.roomName && cls.roomName.toLowerCase().includes(query)) ||
-          (cls.level && cls.level.toLowerCase().includes(query));
-
+    if (tab === 'classes' || tab === 'cancelled') {
+      const rows = tab === 'cancelled' ? classGroups.cancelled : classGroups.active;
+      return filterClasses(rows, searchQuery).filter((cls) => {
         const matchesSport =
           !selectedSportFilter || String(cls.sportId) === String(selectedSportFilter);
 
         const matchesStatus =
           !selectedStatusFilter || String(cls.status).toLowerCase() === selectedStatusFilter.toLowerCase();
 
-        return matchesQuery && matchesSport && matchesStatus;
+        return matchesSport && matchesStatus;
       });
     }
 
@@ -426,7 +428,7 @@ export function ClassesAndRooms() {
     }
 
     return [];
-  }, [data, tab, searchQuery, selectedSportFilter, selectedStatusFilter]);
+  }, [data, classGroups, tab, searchQuery, selectedSportFilter, selectedStatusFilter]);
 
   if (loading) {
     return (
@@ -488,7 +490,7 @@ export function ClassesAndRooms() {
               <span>Làm mới</span>
             </button>
 
-            <button
+            {tab !== 'cancelled' && <button
               onClick={() => {
                 if (tab === 'classes') openClassModal(null);
                 else if (tab === 'rooms') openRoomModal(null);
@@ -503,7 +505,7 @@ export function ClassesAndRooms() {
                 {tab === 'rooms' && 'Thêm phòng / Sân mới'}
                 {tab === 'sports' && 'Thêm bộ môn thể thao'}
               </span>
-            </button>
+            </button>}
           </div>
         </div>
       </div>
@@ -625,8 +627,14 @@ export function ClassesAndRooms() {
               <span className={`text-[11px] px-1.5 py-0.5 rounded-full font-bold ${
                 tab === 'classes' ? 'bg-red-50 text-red-600' : 'bg-slate-200 text-slate-600'
               }`}>
-                {data.classes.length}
+                {classGroups.active.length}
               </span>
+            </button>
+
+            <button type="button" onClick={() => { setTab('cancelled'); setSelectedSportFilter(''); setSelectedStatusFilter(''); }}
+              className={`flex shrink-0 items-center gap-2 px-4 py-2 text-xs md:text-sm font-semibold rounded-lg transition-all ${tab === 'cancelled' ? 'bg-white text-red-700 shadow-sm' : 'text-slate-600 hover:text-slate-900'}`}>
+              <span className="material-symbols-outlined text-[18px]">event_busy</span>
+              Lớp đã hủy <span className="text-[11px]">{classGroups.cancelled.length}</span>
             </button>
 
             <button
@@ -794,7 +802,21 @@ export function ClassesAndRooms() {
       )}
 
       {/* 4. Main Content: Grid Cards View vs Table View */}
-      {filteredItems.length === 0 ? (
+      {tab === 'cancelled' ? (
+        <div className="space-y-4">
+          <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">Mở lại lớp sẽ đưa lớp về bản nháp. Lịch và lượt đặt chỗ đã hủy được giữ nguyên để bảo toàn lịch sử.</p>
+          {filteredItems.length ? <div className="grid md:grid-cols-2 gap-4">{filteredItems.map(cls => (
+            <article key={cls.id} className="rounded-2xl border border-red-100 bg-white p-5 space-y-3">
+              <h2 className="font-bold text-slate-900">{cls.name}</h2>
+              <p className="text-sm text-slate-500">{cls.sportName} · {cls.roomName || 'Chưa có phòng'}</p>
+              <div className="flex flex-wrap gap-2">
+                <button className={secondaryButton} disabled={busy} onClick={() => openScheduleModal(cls)}>Xem lịch sử lịch</button>
+                <button className={primaryButton} disabled={busy} onClick={() => setModal({ type: 'restore', row: cls })}>Mở lại lớp</button>
+              </div>
+            </article>
+          ))}</div> : <p className="p-8 text-center text-slate-500">Chưa có lớp đã hủy phù hợp.</p>}
+        </div>
+      ) : filteredItems.length === 0 ? (
         <div className="bg-white rounded-3xl border border-slate-200 p-12 text-center space-y-4 shadow-sm">
           <div className="w-16 h-16 bg-slate-100 text-slate-400 rounded-2xl flex items-center justify-center mx-auto">
             <span className="material-symbols-outlined text-[36px]">search_off</span>
@@ -1336,289 +1358,19 @@ export function ClassesAndRooms() {
         </div>
       </Modal>
 
-      {/* Modal: Schedule Manager */}
-      <Modal
-        isOpen={modal?.type === 'schedule'}
-        onClose={() => !busy && setModal(null)}
-        title={`Quản lý Lịch Học: ${modal?.row?.name || ''}`}
-      >
-        <div className="space-y-6 max-h-[75vh] overflow-y-auto pr-1">
-          {/* Header info badge */}
-          <div className="p-3.5 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-between text-xs text-slate-600">
-            <div>
-              <span className="text-slate-400">Bộ môn:</span>{' '}
-              <strong className="text-slate-800">{modal?.row?.sportName}</strong>
-            </div>
-            <div>
-              <span className="text-slate-400">Phòng mặc định:</span>{' '}
-              <strong className="text-slate-800">{modal?.row?.roomName || 'Chưa chọn'}</strong>
-            </div>
-            <div>
-              <span className="text-slate-400">Sức chứa:</span>{' '}
-              <strong className="text-slate-800">{modal?.row?.capacity} học viên</strong>
-            </div>
-          </div>
-
-          {/* List of existing schedules */}
-          <div className="space-y-3">
-            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-blue-600">event_note</span>
-              <span>Lịch học định kỳ đang thiết lập ({schedules.length})</span>
-            </h4>
-
-            {loadingSchedules ? (
-              <div className="py-6 flex justify-center">
-                <LoadingSpinner text="Đang tải danh sách lịch học..." />
-              </div>
-            ) : schedules.length === 0 ? (
-              <div className="p-6 bg-slate-50 border border-dashed border-slate-300 rounded-2xl text-center text-xs text-slate-500">
-                Lớp này chưa có lịch học nào. Điền form bên dưới để thêm ca học định kỳ đầu tiên.
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 gap-2.5">
-                {schedules.map((sch) => {
-                  const dayName = DAYS_OF_WEEK[sch.dayOfWeek] || `Thứ ${sch.dayOfWeek}`;
-                  const isCurrentEditing = editingScheduleId === sch.id;
-                  const isActive = sch.status === 'Active';
-
-                  return (
-                    <div
-                      key={sch.id}
-                      className={`p-3.5 rounded-xl border transition flex flex-col sm:flex-row sm:items-center justify-between gap-3 ${
-                        isCurrentEditing
-                          ? 'bg-blue-50/70 border-blue-300 ring-2 ring-blue-500/10'
-                          : 'bg-white border-slate-200'
-                      }`}
-                    >
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2">
-                          <span className="px-2 py-0.5 bg-slate-900 text-white rounded-md text-xs font-bold">
-                            {dayName}
-                          </span>
-                          <span className="text-sm font-extrabold text-blue-700">
-                            {sch.startTime?.slice(0, 5)} - {sch.endTime?.slice(0, 5)}
-                          </span>
-                          <span
-                            className={`px-2 py-0.5 rounded-full text-[11px] font-semibold ${
-                              isActive ? 'bg-emerald-50 text-emerald-700' : 'bg-slate-100 text-slate-500'
-                            }`}
-                          >
-                            {isActive ? 'Đang áp dụng' : 'Đã hủy'}
-                          </span>
-                        </div>
-                        <p className="text-xs text-slate-500">
-                          Áp dụng từ: <strong>{sch.startDate}</strong> đến <strong>{sch.endDate}</strong>
-                          {sch.roomName && (
-                            <span> · Phòng: <strong>{sch.roomName}</strong></span>
-                          )}
-                        </p>
-                      </div>
-
-                      {isActive && (
-                        <div className="flex items-center gap-2 shrink-0">
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() => {
-                              setEditingScheduleId(sch.id);
-                              setForm({
-                                roomId: sch.roomId || modal.row.roomId || '',
-                                dayOfWeek: sch.dayOfWeek,
-                                startTime: sch.startTime.slice(0, 5),
-                                endTime: sch.endTime.slice(0, 5),
-                                startDate: sch.startDate || todayDate(),
-                                endDate: sch.endDate || futureDate(90)
-                              });
-                            }}
-                            className="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg text-xs font-semibold transition"
-                          >
-                            Sửa ca
-                          </button>
-                          <button
-                            type="button"
-                            disabled={busy}
-                            onClick={() =>
-                              executeAction(async () => {
-                                await classApi.cancelSchedule(modal.row.id, sch.id);
-                                const refreshed = await classApi.getSchedules(modal.row.id);
-                                setSchedules(refreshed || []);
-                                if (editingScheduleId === sch.id) setEditingScheduleId(null);
-                              }, 'Đã hủy ca học định kỳ thành công.')
-                            }
-                            className="px-3 py-1.5 text-rose-600 hover:bg-rose-50 rounded-lg text-xs font-medium transition"
-                          >
-                            Hủy ca
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
-
-          {/* Form to Add or Edit Schedule */}
-          <form onSubmit={handleSaveModal} className="p-4 bg-slate-50/80 border border-slate-200 rounded-2xl space-y-4">
-            <div className="flex items-center justify-between">
-              <h4 className="text-sm font-bold text-slate-800 flex items-center gap-1.5">
-                <span className="material-symbols-outlined text-[18px] text-red-600">
-                  {editingScheduleId ? 'edit_calendar' : 'add_circle'}
-                </span>
-                <span>{editingScheduleId ? 'Chỉnh sửa ca học đã chọn' : 'Thêm ca học định kỳ mới & Tạo các buổi học'}</span>
-              </h4>
-
-              {editingScheduleId && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setEditingScheduleId(null);
-                    setForm({
-                      roomId: modal.row.roomId || '',
-                      dayOfWeek: 1,
-                      startTime: '08:00',
-                      endTime: '09:30',
-                      startDate: todayDate(),
-                      endDate: futureDate(90)
-                    });
-                  }}
-                  className="text-xs text-slate-500 hover:text-slate-800 underline"
-                >
-                  Hủy sửa, thêm mới
-                </button>
-              )}
-            </div>
-
-            {/* Quick Time Presets */}
-            <div>
-              <label className="block text-xs font-semibold text-slate-600 mb-1.5">
-                Khung giờ mẫu nhanh:
-              </label>
-              <div className="flex flex-wrap gap-1.5">
-                {TIME_PRESETS.map((preset, idx) => (
-                  <button
-                    key={idx}
-                    type="button"
-                    onClick={() => {
-                      setForm((f) => ({ ...f, startTime: preset.start, endTime: preset.end }));
-                    }}
-                    className="px-2.5 py-1 bg-white hover:bg-blue-50 border border-slate-200 hover:border-blue-300 text-slate-700 hover:text-blue-700 rounded-lg text-[11px] font-medium transition"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Thứ trong tuần <span className="text-rose-500">*</span>
-                </label>
-                <select
-                  name="dayOfWeek"
-                  value={form.dayOfWeek ?? 1}
-                  onChange={handleFormChange}
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs md:text-sm font-medium focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                >
-                  {DAYS_OF_WEEK.map((d, i) => (
-                    <option key={i} value={i}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Phòng tập áp dụng cho ca này
-                </label>
-                <select
-                  name="roomId"
-                  value={form.roomId || ''}
-                  onChange={handleFormChange}
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                >
-                  <option value="">Theo phòng mặc định của lớp</option>
-                  {data.rooms
-                    .filter((r) => r.status === 'Active')
-                    .map((r) => (
-                      <option key={r.id} value={r.id}>
-                        {r.name} (Sức chứa: {r.capacity})
-                      </option>
-                    ))}
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Giờ bắt đầu <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  name="startTime"
-                  required
-                  value={form.startTime || '08:00'}
-                  onChange={handleFormChange}
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Giờ kết thúc <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="time"
-                  name="endTime"
-                  required
-                  value={form.endTime || '09:30'}
-                  onChange={handleFormChange}
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Áp dụng từ ngày <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="startDate"
-                  required
-                  value={form.startDate || todayDate()}
-                  onChange={handleFormChange}
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 mb-1">
-                  Đến ngày <span className="text-rose-500">*</span>
-                </label>
-                <input
-                  type="date"
-                  name="endDate"
-                  required
-                  value={form.endDate || futureDate(90)}
-                  onChange={handleFormChange}
-                  className="w-full p-2.5 bg-white border border-slate-300 rounded-xl text-xs md:text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-                />
-              </div>
-            </div>
-
-            <div className="flex items-center justify-end gap-3 pt-2">
-              <button
-                type="submit"
-                disabled={busy}
-                className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-xs md:text-sm font-semibold rounded-xl transition shadow active:scale-95 disabled:opacity-50"
-              >
-                <span className="material-symbols-outlined text-[18px]">save</span>
-                <span>{busy ? 'Đang lưu...' : editingScheduleId ? 'Lưu cập nhật ca học' : 'Thêm ca học & Sinh lịch buổi'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
+      <Modal isOpen={modal?.type === 'restore'} onClose={() => !busy && setModal(null)} title="Mở lại lớp đã hủy">
+        {modal?.type === 'restore' && <ConfirmRestore row={modal.row} busy={busy} onClose={() => setModal(null)} onConfirm={() => executeAction(async () => { await classApi.restore(modal.row.id); setModal(null); }, 'Đã mở lại lớp dưới dạng bản nháp.')} />}
+      </Modal>
+      <Modal isOpen={modal?.type === 'schedule'} onClose={() => !busy && setModal(null)} title={`Lịch học: ${modal?.row?.name || ''}`} maxWidth="max-w-7xl">
+        {modal?.type === 'schedule' && (loadingSchedules ? <LoadingSpinner text="Đang tải lịch học..." /> :
+          <form onSubmit={handleSaveModal} className="space-y-4">
+            {formError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
+            <ScheduleManager row={modal.row} schedules={schedules} rooms={data.rooms} form={form} change={handleFormChange} busy={busy}
+              editingScheduleId={editingScheduleId} setEditingScheduleId={setEditingScheduleId} setForm={setForm}
+              onReset={() => { setEditingScheduleId(null); setForm({ roomId: modal.row.roomId || '', dayOfWeek: 1, startTime: '08:00', endTime: '09:30', startDate: todayDate(), endDate: futureDate(90) }); }}
+              onCancelSchedule={id => executeAction(async () => { await classApi.cancelSchedule(modal.row.id, id); setSchedules(await classApi.getSchedules(modal.row.id)); setEditingScheduleId(null); }, 'Đã hủy lịch học.')} />
+            {modal.row.status !== CLASS_STATUS.CANCELLED && <div className="flex justify-end"><button className={primaryButton} disabled={busy || loadingSchedules} type="submit">{busy ? 'Đang lưu...' : editingScheduleId ? 'Lưu lịch học' : 'Thêm ca học'}</button></div>}
+          </form>)}
       </Modal>
 
       {/* Modal: Create / Edit Class */}
@@ -1628,6 +1380,7 @@ export function ClassesAndRooms() {
         title={modal?.row ? `Chỉnh sửa lớp: ${modal.row.name}` : 'Mở Lớp Đào Tạo Mới'}
       >
         <form onSubmit={handleSaveModal} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
+          {formError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
           <div className="space-y-1">
             <label className="block text-xs font-semibold text-slate-700">
               Tên lớp đào tạo <span className="text-rose-500">*</span>
@@ -1972,4 +1725,41 @@ export function ClassesAndRooms() {
       </Modal>
     </div>
   );
+}
+
+const field = 'mt-1.5 border border-slate-300 rounded-xl px-3 py-2.5 w-full text-sm bg-white focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-red-500';
+const primaryButton = 'inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-bold shadow-sm transition disabled:opacity-50 disabled:cursor-not-allowed';
+const secondaryButton = 'inline-flex items-center justify-center gap-1.5 rounded-lg px-3 py-2 border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 text-xs font-bold transition disabled:opacity-50 disabled:cursor-not-allowed';
+const timeValue = value => String(value || '').slice(0, 5);
+
+const statusInfo = {
+  Draft: ['Bản nháp', 'bg-amber-50 text-amber-700 border-amber-200'],
+  Published: ['Đang mở', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+  Cancelled: ['Đã hủy', 'bg-red-50 text-red-700 border-red-200'],
+  Completed: ['Đã kết thúc', 'bg-slate-100 text-slate-600 border-slate-200'],
+  Active: ['Đang sử dụng', 'bg-emerald-50 text-emerald-700 border-emerald-200'],
+  Inactive: ['Ngừng sử dụng', 'bg-slate-100 text-slate-600 border-slate-200']
+};
+
+function StatusBadge({ value }) {
+  const [label, css] = statusInfo[value] || [value || 'Chưa rõ', 'bg-slate-100 text-slate-600 border-slate-200'];
+  return <span className={`inline-flex rounded-full border px-2.5 py-1 text-[11px] font-bold ${css}`}>{label}</span>;
+}
+
+function Icon({ children, className = '' }) {
+  return <span aria-hidden="true" className={`material-symbols-outlined text-[18px] ${className}`}>{children}</span>;
+}
+
+
+function ScheduleManager({ row, schedules, rooms, form, change, busy, editingScheduleId, setEditingScheduleId, setForm, onCancelSchedule, onReset }) {
+  const groups = groupSchedulesByDay(schedules);
+  const readOnly = row.status === CLASS_STATUS.CANCELLED;
+  return <><div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 rounded-xl bg-slate-900 p-4 text-white"><div><p className="font-black">{row.name}</p><p className="text-xs text-slate-300">{row.sportName} · Phòng mặc định: {row.roomName || 'Chưa chọn'}</p></div><StatusBadge value={row.status} /></div><section aria-label="Lịch học theo tuần"><div className="mb-3"><h3 className="font-black text-slate-900">Lịch học hàng tuần</h3><p className="text-xs text-slate-500">Mỗi ca hiển thị đầy đủ giờ, phòng và khoảng hiệu lực.</p></div><div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2">
+    {groups.map(group => <div key={group.dayOfWeek} className="min-h-32 rounded-xl border border-slate-200 bg-slate-50 p-2"><h4 className="mb-2 rounded-lg bg-white px-2 py-1.5 text-center text-xs font-black text-slate-700 shadow-sm">{group.label}</h4><div className="space-y-2">{group.items.map(schedule => <div key={schedule.id} className={`rounded-lg border p-2.5 text-xs ${schedule.status === 'Active' ? 'border-red-100 bg-white' : 'border-slate-200 bg-slate-100 opacity-70'}`}><div className="flex items-center justify-between gap-1"><strong className="text-sm text-slate-900">{timeValue(schedule.startTime)}–{timeValue(schedule.endTime)}</strong><span className={`h-2 w-2 rounded-full ${schedule.status === 'Active' ? 'bg-emerald-500' : 'bg-slate-400'}`} title={schedule.status === 'Active' ? 'Đang hoạt động' : 'Đã hủy'} /></div><p className="mt-1 flex items-start gap-1 text-slate-600"><Icon className="text-[14px]">meeting_room</Icon>{effectiveScheduleRoom(schedule, row, rooms)}</p><p className="mt-1 text-[10px] text-slate-400">{schedule.startDate || 'Không giới hạn'} → {schedule.endDate || 'Không giới hạn'}</p>{!readOnly && schedule.status === 'Active' && <div className="mt-2 flex gap-1 border-t border-slate-100 pt-2"><button type="button" aria-label={`Sửa lịch ${group.label} ${timeValue(schedule.startTime)}`} className="text-blue-700 hover:underline" disabled={busy} onClick={() => { setEditingScheduleId(schedule.id); setForm({ ...schedule, roomId: schedule.roomId || '', startTime: timeValue(schedule.startTime), endTime: timeValue(schedule.endTime) }); }}>Sửa</button><span className="text-slate-300">·</span><button type="button" className="text-red-700 hover:underline" disabled={busy} onClick={() => onCancelSchedule(schedule.id)}>Hủy</button></div>}</div>)}{!group.items.length && <p className="py-5 text-center text-[11px] text-slate-400">Trống</p>}</div></div>)}
+  </div></section>{!readOnly && <section className="rounded-xl border border-slate-200 p-4"><div className="flex items-center justify-between gap-3"><div><h3 className="font-black text-slate-900">{editingScheduleId ? 'Chỉnh sửa ca học' : 'Thêm ca học'}</h3><p className="text-xs text-slate-500">Hệ thống sẽ kiểm tra trùng phòng và lịch HLV.</p></div>{editingScheduleId && <button type="button" className={secondaryButton} onClick={onReset}>Bỏ chỉnh sửa</button>}</div><div className="mt-4 grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+    <label className="block text-sm font-semibold text-slate-700">Ngày trong tuần<select className={field} name="dayOfWeek" value={form.dayOfWeek ?? 1} onChange={change}>{WEEK_DAYS.map((day, index) => <option key={day} value={index}>{day}</option>)}</select></label><label className="block text-sm font-semibold text-slate-700">Phòng<select className={field} name="roomId" value={form.roomId || ''} onChange={change}><option value="">Dùng phòng mặc định</option>{rooms.filter(room => room.status === 'Active').map(room => <option key={room.id} value={room.id}>{room.name} · {room.capacity} người</option>)}</select></label><label className="block text-sm font-semibold text-slate-700">Từ ngày *<input className={field} required type="date" name="startDate" value={form.startDate || ''} onChange={change} /></label><label className="block text-sm font-semibold text-slate-700">Đến ngày *<input className={field} required type="date" name="endDate" min={form.startDate || undefined} value={form.endDate || ''} onChange={change} /></label><label className="block text-sm font-semibold text-slate-700">Giờ bắt đầu *<input className={field} required type="time" name="startTime" value={form.startTime || ''} onChange={change} /></label><label className="block text-sm font-semibold text-slate-700">Giờ kết thúc *<input className={field} required type="time" name="endTime" value={form.endTime || ''} onChange={change} /></label>
+  </div></section>}</>;
+}
+function ConfirmRestore({ row, busy, onClose, onConfirm }) {
+  return <div className="space-y-5"><div className="flex gap-3 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-emerald-800"><Icon className="shrink-0">restart_alt</Icon><div><p className="font-black">Mở lại lớp “{row.name}”?</p><p className="mt-1 text-sm">Lớp sẽ trở về trạng thái bản nháp để bạn kiểm tra và cấu hình lại.</p></div></div><p className="text-sm text-slate-600">Vì an toàn dữ liệu, lịch, buổi học, đăng ký và lượt đặt chỗ cũ vẫn giữ trạng thái đã hủy. Hãy tạo lịch mới, kiểm tra HLV rồi công bố lại lớp.</p><div className="flex justify-end gap-2"><button className={secondaryButton} disabled={busy} onClick={onClose}>Để sau</button><button className={primaryButton} disabled={busy} onClick={onConfirm}>{busy ? 'Đang mở lại...' : 'Mở lại thành bản nháp'}</button></div></div>;
 }

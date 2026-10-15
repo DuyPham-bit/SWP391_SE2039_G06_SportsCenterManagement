@@ -4,6 +4,9 @@ import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
+import {
+  coachWorkload, filterAndSortAssignmentClasses, isCoachCompatible
+} from './coachAssignmentView.js';
 
 // Visual Sport Theme Mapping
 const SPORT_THEMES = {
@@ -85,13 +88,6 @@ function getInitials(name = '') {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
-function checkSpecializationMatch(coachSpecialty = '', sportName = '') {
-  if (!coachSpecialty || !sportName) return null;
-  const spec = coachSpecialty.toLowerCase();
-  const sport = sportName.toLowerCase();
-  return spec.includes(sport) || sport.includes(spec);
-}
-
 export function CoachAssignment() {
   const { showSuccess, showError } = useToast();
   const [classes, setClasses] = useState([]);
@@ -119,11 +115,10 @@ export function CoachAssignment() {
     setError('');
     try {
       const [classList, staffList] = await Promise.all([
-        classApi.getManagementClasses(),
-        classApi.getCoaches()
+        classApi.getManagementClasses(), classApi.getCoaches()
       ]);
-      setClasses(classList || []);
-      setCoaches(staffList || []);
+      setClasses(filterAndSortAssignmentClasses(classList || []));
+      setCoaches(coachWorkload(staffList || [], classList || []));
       if (isManualRefresh) {
         showSuccess('Dữ liệu phân công HLV đã được làm mới!');
       }
@@ -135,27 +130,27 @@ export function CoachAssignment() {
       setRefreshing(false);
     }
   };
+  useEffect(() => { loadData(); }, []);
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const openAssignModal = (cls) => {
+  const openAssignModal = cls => {
+    const compatible = coaches.filter(coach => isCoachCompatible(coach, cls));
+    const currentIsCompatible = compatible.some(coach => String(coach.id) === String(cls.coachId));
     setSelectedClass(cls);
-    setSelectedCoachId(cls.coachId || coaches[0]?.id || '');
+    setSelectedCoachId(currentIsCompatible ? String(cls.coachId) : String(compatible[0]?.id || ''));
     setAssignError(null);
     setModalOpen(true);
   };
 
-  const handleConfirmAssign = async (e) => {
-    e.preventDefault();
-    if (!selectedCoachId) {
-      showError('Vui lòng chọn huấn luyện viên!');
+  const handleConfirmAssign = async event => {
+    event.preventDefault();
+    if (!selectedCoachId || !isCoachCompatible(coaches.find(coach => String(coach.id) === String(selectedCoachId)), selectedClass)) {
+      setAssignError({ message: 'Vui lòng chọn HLV có chuyên môn phù hợp với lớp.' }); return;
+    }
+    if (String(selectedCoachId) === String(selectedClass.coachId)) {
+      setAssignError({ message: 'HLV này đang phụ trách lớp. Hãy chọn một HLV khác để thay đổi.' });
       return;
     }
-
-    setAssigning(true);
-    setAssignError(null);
+    setAssigning(true); setAssignError(null);
     try {
       await classApi.assignCoach(selectedClass.id, selectedCoachId);
       const assignedCoach = coaches.find(c => String(c.id) === String(selectedCoachId));
@@ -182,7 +177,7 @@ export function CoachAssignment() {
       if (cls.coachId) {
         const coach = coaches.find(c => String(c.id) === String(cls.coachId));
         if (coach?.specialization && cls.sportName) {
-          const isMatch = checkSpecializationMatch(coach.specialization, cls.sportName);
+          const isMatch = isCoachCompatible(coach, cls);
           if (isMatch === false) mismatchCount++;
         }
       }
@@ -234,7 +229,7 @@ export function CoachAssignment() {
       } else if (selectedStatusFilter === 'MISMATCH') {
         if (!cls.coachId) return false;
         const coach = coaches.find(c => String(c.id) === String(cls.coachId));
-        const isMatch = coach ? checkSpecializationMatch(coach.specialization, cls.sportName) : true;
+        const isMatch = coach ? isCoachCompatible(coach, cls) : true;
         matchesStatus = isMatch === false;
       }
 
@@ -598,7 +593,7 @@ export function CoachAssignment() {
             const currentCoach = coaches.find((c) => String(c.id) === String(cls.coachId));
             const theme = getSportTheme(cls.sportName);
             const isAssigned = Boolean(cls.coachId);
-            const isMatch = currentCoach ? checkSpecializationMatch(currentCoach.specialization, cls.sportName) : null;
+            const isMatch = currentCoach ? isCoachCompatible(currentCoach, cls) : null;
             const isMismatch = isMatch === false;
             const enrollmentPercent = cls.capacity > 0 ? Math.min(100, Math.round(((cls.enrolledCount || 0) / cls.capacity) * 100)) : 0;
             const coachAvatarGrad = getAvatarGradient(cls.coachName || 'HLV');
@@ -788,7 +783,7 @@ export function CoachAssignment() {
                   const currentCoach = coaches.find((c) => String(c.id) === String(cls.coachId));
                   const theme = getSportTheme(cls.sportName);
                   const isAssigned = Boolean(cls.coachId);
-                  const isMatch = currentCoach ? checkSpecializationMatch(currentCoach.specialization, cls.sportName) : null;
+                  const isMatch = currentCoach ? isCoachCompatible(currentCoach, cls) : null;
                   const isMismatch = isMatch === false;
                   const coachAvatarGrad = getAvatarGradient(cls.coachName || 'HLV');
 
@@ -904,7 +899,7 @@ export function CoachAssignment() {
                 className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white"
               >
                 {coaches.map((c) => (
-                  <option key={c.id} value={c.id}>
+                  <option key={c.id} value={c.id} disabled={!isCoachCompatible(c, selectedClass)}>
                     {c.fullName} ({c.specialization || 'Chưa cập nhật chuyên môn'}{c.certification ? ` · ${c.certification}` : ''})
                   </option>
                 ))}
@@ -915,7 +910,7 @@ export function CoachAssignment() {
             {(() => {
               const candidate = coaches.find((c) => String(c.id) === String(selectedCoachId));
               if (!candidate) return null;
-              const isMatch = checkSpecializationMatch(candidate.specialization, selectedClass?.sportName);
+              const isMatch = isCoachCompatible(candidate, selectedClass);
 
               if (isMatch) {
                 return (
@@ -975,7 +970,7 @@ export function CoachAssignment() {
               </button>
               <button
                 type="submit"
-                disabled={assigning}
+                disabled={assigning || !selectedCoachId || String(selectedCoachId) === String(selectedClass?.coachId)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-md shadow-red-600/20 transition active:scale-95 disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]">check</span>

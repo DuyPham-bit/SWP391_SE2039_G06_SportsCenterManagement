@@ -11,6 +11,8 @@ namespace SportsCenterManagement.BLL.Services;
 
 public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembershipPackageService
 {
+    private const decimal MaxPackagePrice = 9_999_999_999m;
+
     public Task<IReadOnlyList<MembershipPackageResponse>> GetPackagesAsync(
         long centerId,
         CancellationToken cancellationToken = default) =>
@@ -214,7 +216,8 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
         }
 
         var packages = await query
-            .OrderBy(package => package.Price)
+            .OrderBy(package => package.Status == "Inactive" ? 1 : 0)
+            .ThenBy(package => package.Price)
             .ToListAsync(cancellationToken);
         return packages.Select(ToResponse).ToList();
     }
@@ -257,9 +260,17 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
         {
             throw new ArgumentException("Package name is required.");
         }
-        if (request.DurationDays <= 0 || request.Price <= 0 || request.MaxClasses is <= 0 || request.AllowedSports <= 0)
+        if (request.DurationDays <= 0 || request.MaxClasses is <= 0 || request.AllowedSports <= 0)
         {
-            throw new ArgumentException("Duration, price, and class limit must be positive.");
+            throw new ArgumentException("Thời hạn, số lớp và số môn phải lớn hơn 0.");
+        }
+        if (request.Price <= 0 || request.Price > MaxPackagePrice)
+        {
+            throw new ArgumentException($"Giá gói tập phải lớn hơn 0 và không vượt quá {MaxPackagePrice:N0} VNĐ.");
+        }
+        if (decimal.Round(request.Price, 2) != request.Price)
+        {
+            throw new ArgumentException("Giá gói tập chỉ được có tối đa 2 chữ số thập phân.");
         }
     }
 

@@ -8,6 +8,12 @@ namespace SportsCenterManagement.BLL.DTOs.Classes
         public required long CoachId { get; init; }
 
         public bool IsPrimary { get; init; } = true;
+
+        /// <summary>
+        /// When true, former primary assignments are removed instead of being retained as assistants.
+        /// Existing API consumers keep the multi-coach behavior by default.
+        /// </summary>
+        public bool ReplacePrimary { get; init; }
     }
 
     public sealed record CreateClassRequest(
