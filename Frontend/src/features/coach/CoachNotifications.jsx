@@ -412,36 +412,40 @@ export function CoachNotifications() {
   if (loading) return <LoadingSpinner text="Đang tải danh sách thông báo..." />;
 
   return (
-    <div className="space-y-4">
-      {/* 1. TOP HEADER BANNER - TINH GỌN, SANG TRỌNG */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-slate-200">
-        <div className="flex items-center gap-2.5">
-          <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 shadow-2xs">
-            <span className="material-symbols-outlined text-[22px]">campaign</span>
+    <div className="space-y-5">
+      {/* 1. TOP HEADER BANNER (Giống chuẩn Lịch Giảng Dạy) */}
+      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-slate-800">
+        <div className="space-y-1">
+          <div className="flex items-center gap-2">
+            <span className="font-chivo text-xs uppercase tracking-widest text-red-500 font-bold flex items-center gap-1.5">
+              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+              CHUYÊN MÔN & KẾT NỐI HỌC VIÊN
+            </span>
           </div>
-          <div>
-            <h1 className="font-chivo text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
-              Gửi Bài Tập & Thông Báo Cho Học Viên
-            </h1>
-            <p className="text-xs text-slate-500">
-              Giao bài tập về nhà theo lớp hoặc gửi nhận xét & góp ý kỹ thuật riêng 1-1 tới từng học viên.
-            </p>
-          </div>
+          <h1 className="font-chivo text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[28px] text-red-500">campaign</span>
+            Gửi Bài Tập & Thông Báo Cho Học Viên
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+            Giao bài tập về nhà theo lớp hoặc gửi nhận xét & góp ý kỹ thuật riêng 1-1 tới từng học viên.
+          </p>
         </div>
 
-        <button
-          type="button"
-          onClick={() => {
-            setTitle('');
-            setContent('');
-            setModalOpen(true);
-          }}
-          disabled={!classes.length || Boolean(error)}
-          className="px-4 py-2.5 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-chivo text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          <span className="material-symbols-outlined text-[18px]">add_circle</span>
-          <span>Soạn Thông Báo Mới</span>
-        </button>
+        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
+          <button
+            type="button"
+            onClick={() => {
+              setTitle('');
+              setContent('');
+              setModalOpen(true);
+            }}
+            disabled={!classes.length || Boolean(error)}
+            className="px-5 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 active:scale-[0.98] text-white font-chivo text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-red-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <span className="material-symbols-outlined text-[20px]">add_circle</span>
+            <span>Soạn Thông Báo Mới</span>
+          </button>
+        </div>
       </div>
 
       {/* 2. KPI METRICS TILES - GỌN GÀNG, ĐỒNG BỘ NỀN TRẮNG */}
