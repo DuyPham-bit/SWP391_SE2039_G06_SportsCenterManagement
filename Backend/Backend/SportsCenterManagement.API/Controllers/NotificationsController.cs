@@ -40,7 +40,15 @@ public sealed class NotificationsController(SportsCenterDbContext db) : FlowCont
     public async Task<IActionResult> Sent(CancellationToken ct) => Ok(await db.Notifications
         .Where(n => n.SenderId == CurrentUserId && n.NotificationType == "CoachMessage")
         .OrderByDescending(n => n.CreatedAt).ThenByDescending(n => n.Id).Take(200)
-        .Select(n => new { n.Id, n.Title, Content = n.Message, n.CreatedAt,
-            Target = "Học viên được phân công", RecipientCount = db.UserNotifications.Count(l => l.NotificationId == n.Id) })
+        .Select(n => new {
+            n.Id,
+            n.Title,
+            Content = n.Message,
+            n.CreatedAt,
+            RecipientCount = db.UserNotifications.Count(l => l.NotificationId == n.Id),
+            Target = db.UserNotifications.Count(l => l.NotificationId == n.Id) == 1
+                ? (db.MemberProfiles.Where(m => db.UserNotifications.Any(l => l.NotificationId == n.Id && l.UserId == m.UserId)).Select(m => "Học viên: " + m.FullName).FirstOrDefault() ?? "Học viên được phân công")
+                : "Học viên được phân công"
+        })
         .ToListAsync(ct));
 }
