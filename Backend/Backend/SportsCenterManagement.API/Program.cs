@@ -272,8 +272,7 @@ app.Use(async (context, next) =>
 {
     var isPaymentCreateRequest = context.Request.Method == HttpMethods.Post &&
         context.Request.Path.Value is "/api/payments/create-vnpay-url"
-            or "/api/payments/create-momo-url"
-            or "/api/payments/create-payos-url";
+            or "/api/payments/create-momo-url";
 
     if (isPaymentCreateRequest)
     {

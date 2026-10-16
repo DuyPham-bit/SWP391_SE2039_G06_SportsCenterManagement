@@ -24,6 +24,16 @@ public sealed class NotificationsController(SportsCenterDbContext db) : FlowCont
         return count == 0 ? NotFound() : NoContent();
     }
 
+    [HttpPut("notifications/me/read-all")]
+    public async Task<IActionResult> ReadAll(CancellationToken ct)
+    {
+        var readAt = DateTime.UtcNow;
+        await db.UserNotifications.Where(link => link.UserId == CurrentUserId && !link.IsRead)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(link => link.IsRead, true)
+                .SetProperty(link => link.ReadAt, readAt), ct);
+        return NoContent();
+    }
+
     [HttpGet("coaches/me/notifications")]
     [Authorize(Roles = "COACH")]
     [CenterCapability("view_teaching_schedule")]

@@ -327,6 +327,15 @@ export function MemberDashboard() {
       color: 'from-sky-600 to-cyan-700',
       badge: unread > 0 ? `${unread} mới` : 'Đã đọc hết',
       badgeColor: unread > 0 ? 'bg-red-50 text-red-600 font-bold' : 'bg-slate-100 text-slate-600'
+    },
+    {
+      href: '#/member/support',
+      icon: 'support_agent',
+      title: 'Hỗ trợ & Khiếu nại',
+      subtitle: 'Gửi yêu cầu tới Lễ tân / BQL',
+      color: 'from-emerald-600 to-teal-700',
+      badge: '24/7',
+      badgeColor: 'bg-emerald-50 text-emerald-700'
     }
   ];
 

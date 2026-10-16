@@ -5,11 +5,14 @@ import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
 import { CoachError } from './CoachShared.js';
 import { formatMemberDateTime } from '../member/memberOverview.js';
+import { useNotifications } from '../../components/common/useNotifications.js';
+import { NotificationList } from '../../components/common/NotificationList.jsx';
 
 const { useState, useEffect } = React;
 
 export function CoachNotifications() {
   const { currentUser } = useAuth();
+  const inbox = useNotifications();
   const { showSuccess, showError } = useToast();
 
   const [notifications, setNotifications] = useState([]);
@@ -107,6 +110,8 @@ export function CoachNotifications() {
         </button>
       </div>
 
+      <NotificationList notifications={inbox} />
+      <h2 className="font-bold text-lg">Thông báo đã gửi cho học viên</h2>
       {/* Notifications Cards Feed */}
       <CoachError message={error} retry={loadData} />
       <div className="space-y-4">

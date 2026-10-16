@@ -1,7 +1,6 @@
 using System.Net;
 using System.Net.Http.Json;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using Microsoft.Extensions.Configuration;
 
 namespace SportsCenterManagement.BLL.Services;
@@ -10,18 +9,17 @@ public sealed record AiTurn(string Role, string Text, DateTime? CreatedAt = null
 
 public sealed class GeminiService(HttpClient client, IConfiguration configuration)
 {
-    public string Model => configuration["AI:Model"] ?? "gemini-3.5-flash-lite";
+    public const string ModelName = "gemini-3.5-flash-lite";
+    public string Model => ModelName;
 
     public async Task<string> GenerateAsync(string instruction, IEnumerable<AiTurn> history, bool json, CancellationToken ct)
     {
         var apiKey = configuration["AI:ApiKey"];
         if (string.IsNullOrWhiteSpace(apiKey))
             throw new InvalidOperationException("AI chưa được cấu hình. Hãy thêm Gemini API key ở backend.") { Data = { ["StatusCode"] = 503 } };
-        if (!Regex.IsMatch(Model, @"^[a-zA-Z0-9._-]{1,100}$"))
-            throw new InvalidOperationException("Tên mô hình AI không hợp lệ.") { Data = { ["StatusCode"] = 503 } };
         using var request = new HttpRequestMessage(HttpMethod.Post,
             $"https://generativelanguage.googleapis.com/v1beta/models/{Model}:generateContent");
-        request.Headers.Add("x-goog-api-key", apiKey);
+        request.Headers.Add("x-goog-api-key", apiKey.Trim());
         request.Content = JsonContent.Create(new
         {
             systemInstruction = new { parts = new[] { new { text = instruction } } },

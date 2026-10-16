@@ -157,6 +157,16 @@ export const SYSTEM_CAPABILITIES = [
     targetScreenName: 'Gợi Ý Giáo Án AI',
     defaultRole: 'COACH'
   },
+  {
+    id: 'coach_support',
+    label: 'Yêu cầu Hỗ trợ',
+    desc: 'Gửi yêu cầu hỗ trợ chuyên môn, thiết bị và lịch trình tới BQL',
+    path: '#/coach/support',
+    icon: 'support_agent',
+    category: 'HUẤN LUYỆN VIÊN',
+    targetScreenName: 'Yêu Cầu Hỗ Trợ',
+    defaultRole: 'COACH'
+  },
 
   // 4. Hội viên
   {
@@ -197,6 +207,16 @@ export const SYSTEM_CAPABILITIES = [
     icon: 'smart_toy',
     category: 'HỘI VIÊN & ĐẶT CHỖ',
     targetScreenName: 'Trợ Lý Thể Thao AI',
+    defaultRole: 'MEMBER'
+  },
+  {
+    id: 'member_support',
+    label: 'Yêu cầu Hỗ trợ',
+    desc: 'Gửi và theo dõi yêu cầu hỗ trợ, khiếu nại tới trung tâm',
+    path: '#/member/support',
+    icon: 'support_agent',
+    category: 'HỘI VIÊN & ĐẶT CHỖ',
+    targetScreenName: 'Yêu Cầu Hỗ Trợ',
     defaultRole: 'MEMBER'
   }
 ];
@@ -292,6 +312,7 @@ export function getDynamicNavItems(role) {
       ];
 
       if (normalized === 'MANAGER') items.push({ path: '#/manager/members', icon: 'group', label: 'Quản Lý Thành Viên' });
+      if (normalized === 'MANAGER') items.push({ path: '#/receptionist/support', icon: 'support_agent', label: 'Tiếp Nhận Yêu Cầu Hỗ Trợ' });
       if (perms.includes('manage_staff')) items.push({ path: '#/manager/staff', icon: 'badge', label: 'Quản Lý Nhân Viên' });
       if (perms.includes('manage_packages')) items.push({ path: '#/manager/packages', icon: 'card_membership', label: 'Gói Tập Hội Viên' });
       if (perms.includes('manage_classes')) items.push({ path: '#/manager/classes-rooms', icon: 'sports_score', label: 'Lớp, Bộ Môn & Phòng' });
@@ -370,8 +391,11 @@ export function getDynamicNavItems(role) {
         }
       }
 
+      items.push({ label: 'HỖ TRỢ & LIÊN HỆ', isHeader: true });
+      items.push({ path: '#/coach/support', icon: 'support_agent', label: 'Yêu Cầu Hỗ Trợ' });
+
       // Add extra granted permissions if assigned by Manager
-      const defaultCoachCapIds = ['view_teaching_schedule', 'view_class_members', 'create_training_plan', 'record_workout_progress', 'take_attendance', 'send_coach_notifications', 'get_ai_recommendation'];
+      const defaultCoachCapIds = ['view_teaching_schedule', 'view_class_members', 'create_training_plan', 'record_workout_progress', 'take_attendance', 'send_coach_notifications', 'get_ai_recommendation', 'coach_support'];
       const extraCaps = perms.filter(capId => !defaultCoachCapIds.includes(capId));
 
       if (extraCaps.length > 0) {
@@ -404,13 +428,14 @@ export function getDynamicNavItems(role) {
       items.push({ label: 'RÈN LUYỆN & HỖ TRỢ', isHeader: true });
       if (perms.includes('view_my_progress')) items.push({ path: '#/member/progress', icon: 'stacked_line_chart', label: 'Giáo Án, Tiến Độ & Nhận Xét' });
       items.push({ path: '#/member/notifications', icon: 'notifications', label: 'Thông Báo Của Tôi' });
+      items.push({ path: '#/member/support', icon: 'support_agent', label: 'Yêu Cầu Hỗ Trợ' });
 
       if (perms.includes('ask_ai_assistant')) {
         items.push({ path: '#/member/ai-assistant', icon: 'smart_toy', label: 'Trợ Lý Thể Thao AI' });
       }
 
       // Add extra granted permissions if assigned by Manager
-      const defaultMemberCapIds = ['view_packages', 'subscribe_package', 'view_schedules', 'book_class', 'cancel_booking', 'view_my_progress', 'ask_ai_assistant'];
+      const defaultMemberCapIds = ['view_packages', 'subscribe_package', 'view_schedules', 'book_class', 'cancel_booking', 'view_my_progress', 'ask_ai_assistant', 'member_support'];
       const extraCaps = perms.filter(capId => !defaultMemberCapIds.includes(capId));
 
       if (extraCaps.length > 0) {

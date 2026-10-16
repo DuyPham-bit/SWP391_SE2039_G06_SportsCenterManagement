@@ -80,6 +80,7 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
   assertAuthVersion(version);
   let memberId = null;
   let activeSubscription = null;
+  let scheduledSubscriptions = [];
 
   if (String(profile.role).toUpperCase() === 'MEMBER') {
     const member = await apiRequest('members/me', { token });
@@ -91,6 +92,9 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
     const activeSubs = asArray(subscriptions).filter(item => String(item.status).toUpperCase() === 'ACTIVE' && item.startDate && item.endDate && item.startDate <= today && item.endDate >= today);
     activeSubs.sort((a, b) => (b.endDate || '').localeCompare(a.endDate || ''));
     activeSubscription = activeSubs[0] || null;
+    scheduledSubscriptions = asArray(subscriptions)
+      .filter(item => String(item.status).toUpperCase() === 'ACTIVE' && item.startDate > today && item.endDate >= item.startDate)
+      .sort((a, b) => a.startDate.localeCompare(b.startDate) || Number(a.subscriptionId) - Number(b.subscriptionId));
   }
 
   const capabilities = await apiRequest('access/me/capabilities', { token });
@@ -111,6 +115,7 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
     packageName: activeSubscription?.packageName || 'Chưa đăng ký gói tập',
     packageExpiry: activeSubscription?.endDate || null,
     packageStatus: activeSubscription ? 'ACTIVE' : 'INACTIVE',
+    scheduledSubscriptions,
     avatar: null
   };
   setAuthUser(user);
@@ -701,8 +706,7 @@ export const memberApi = {
   async subscribeOnline({ packageId, paymentMethod = 'VNPAY', invoiceNumber, cancelPendingIfAny }) {
     const provider = {
       VNPAY: 'create-vnpay-url',
-      MOMO: 'create-momo-url',
-      VIETQR: 'create-payos-url'
+      MOMO: 'create-momo-url'
     }[paymentMethod];
     if (!provider) throw new Error('Cổng thanh toán không được hỗ trợ.');
     return apiRequest(`payments/${provider}`, {

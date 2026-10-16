@@ -63,7 +63,6 @@ API được xây bằng ASP.NET Core MVC Controllers và trả JSON; không dù
 | PATCH | `/api/membership-packages/{packageId}` | Manager cập nhật gói |
 | POST | `/api/payments/create-vnpay-url` | Tạo hoặc tiếp tục thanh toán gói của Member |
 | POST | `/api/payments/create-momo-url` | Tạo hoặc tiếp tục thanh toán MoMo |
-| POST | `/api/payments/create-payos-url` | Tạo hoặc tiếp tục thanh toán PayOS |
 | GET | `/api/payments/vnpay-callback` | Xác thực kết quả callback VNPay |
 | POST | `/api/payments/payos-ipn` | Xác thực webhook PayOS và ghi nhận giao dịch hợp lệ |
 | POST | `/api/invoices/{invoiceId}/payments` | Manager/Receptionist ghi nhận tiền mặt; chỉ kích hoạt khi đã thu đủ |
@@ -74,7 +73,9 @@ API được xây bằng ASP.NET Core MVC Controllers và trả JSON; không dù
 
 MVP tắt email verification; mật khẩu cần ít nhất 6 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt. API dùng JWT HS256 qua JwtBearer, kiểm tra chữ ký, issuer, audience và thời hạn (mặc định 60 phút, cấu hình `Jwt:ExpiresMinutes`); trạng thái tài khoản, role và center được đọc lại từ DB mỗi request. Token Data Protection cũ cần đăng nhập lại. Subscription chỉ bắt đầu khi invoice được thanh toán đủ.
 
-Không sử dụng Session/cookie để đăng nhập. Frontend giữ JWT và hồ sơ/quyền trong bộ nhớ riêng từng tab; F5 cần đăng nhập lại. Nếu dùng frontend nhúng do API phục vụ, chạy `npm.cmd run build:api` tại `Frontend/` trước khi chạy/publish backend để cập nhật `SportsCenterManagement.API/wwwroot` và loại bỏ bundle cũ. `wwwroot` chỉ chứa tài nguyên build; sửa tài nguyên nguồn ở `Frontend/public/`.
+Không sử dụng Session/cookie để đăng nhập. Frontend lưu JWT bằng sessionStorage riêng từng tab; F5 tải lại hồ sơ/quyền từ API và giữ đăng nhập nếu JWT còn hợp lệ. Nếu dùng frontend nhúng do API phục vụ, chạy `npm.cmd run build:api` tại `Frontend/` trước khi chạy/publish backend để cập nhật `SportsCenterManagement.API/wwwroot` và loại bỏ bundle cũ. `wwwroot` chỉ chứa tài nguyên build; sửa tài nguyên nguồn ở `Frontend/public/`.
+
+Member/Coach gửi và theo dõi yêu cầu qua `GET/POST /api/support-requests/me`, xem chi tiết qua `GET /api/support-requests/me/{id}` và bổ sung phản hồi qua `POST /api/support-requests/me/{id}/messages`. Backend tự lấy người gửi/trung tâm; API tiếp nhận của Lễ tân/Manager giữ phạm vi trung tâm. `PUT /api/notifications/me/read-all` đọc tất cả thông báo của người dùng hiện tại. Chi tiết: [thiết kế và migration](../../docs/SUPPORT_AND_ACCOUNT_FIXES.md).
 
 Giáo án, tiến độ, thông báo và các endpoint Google/AI được mô tả tại [api-jwt-integration.md](docs/requirements/api-jwt-integration.md). Thiết lập Google Client ID và Gemini Free Tier: [free-google-gemini-setup.md](docs/requirements/free-google-gemini-setup.md).
 
@@ -104,7 +105,6 @@ Các API Flow 3 yêu cầu JWT, ngoại trừ callback/IPN do cổng thanh toán
 |---|---|---|---|
 | POST | `/api/payments/create-vnpay-url` | Member | Tạo hoặc phát lại link VNPay |
 | POST | `/api/payments/create-momo-url` | Member | Tạo hoặc phát lại link MoMo |
-| POST | `/api/payments/create-payos-url` | Member | Tạo hoặc phát lại link PayOS |
 | GET | `/api/payments/vnpay-callback`, `/api/payments/vnpay-ipn` | Cổng thanh toán | Xác nhận callback/IPN có chữ ký |
 | GET/POST | `/api/payments/momo-callback`, `/api/payments/momo-ipn` | Cổng thanh toán | Xác nhận callback/IPN có chữ ký |
 | POST | `/api/payments/payos-ipn` | PayOS | Xác thực chữ ký webhook; chỉ callback thành công đúng orderCode/số tiền mới ghi nhận thanh toán |
@@ -151,7 +151,7 @@ $env:Cors__AllowedOrigins__0 = "http://localhost:3004"
 
 Gateway secret được đọc từ biến môi trường/User Secrets: `VnPay__HashSecret`, `Momo__AccessKey`, `Momo__SecretKey`, `PayOS__ClientId`, `PayOS__ApiKey`, `PayOS__ChecksumKey`. Không cấu hình provider thì các API khác vẫn chạy; endpoint tạo link của provider đó trả `503` trước khi tạo payment attempt.
 
-Để chạy PayOS local, lấy ba giá trị kết nối từ tài khoản PayOS rồi chạy tại thư mục `Backend/Backend/SportsCenterManagement.API`:
+VietQR/PayOS đã được gỡ khỏi khởi tạo thanh toán mới. Chỉ cần cấu hình PayOS để xác minh/đối soát giao dịch đã tạo trước đó. Khi cần xử lý giao dịch cũ, cấu hình tại `Backend/Backend/SportsCenterManagement.API`:
 
 ```powershell
 dotnet user-secrets set "PayOS:ClientId" "GIÁ_TRỊ_CLIENT_ID"

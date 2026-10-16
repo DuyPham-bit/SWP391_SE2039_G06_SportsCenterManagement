@@ -49,6 +49,7 @@ const MyAttendance = lazy(() => import('./features/member/MyAttendance.jsx').the
 const MemberNotifications = lazy(() => import('./features/member/MemberNotifications.jsx').then(m => ({ default: m.MemberNotifications })));
 const MemberAIAssistant = lazy(() => import('./features/member/MemberAIAssistant.js').then(m => ({ default: m.MemberAIAssistant })));
 const PaymentResult = lazy(() => import('./features/member/PaymentResult.js').then(m => ({ default: m.PaymentResult })));
+const MySupportRequests = lazy(() => import('./features/shared/MySupportRequests.jsx').then(m => ({ default: m.MySupportRequests })));
 
 function RouteFallback() {
   return (
@@ -204,6 +205,9 @@ function AppRouter() {
         return renderReceptionistRoute(CounterInvoices, 'register_counter_package');
       case '#/receptionist/support':
         return renderReceptionistRoute(SupportRequests, 'lookup_member');
+      case '#/member/support':
+      case '#/coach/support':
+        return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MEMBER', 'COACH']}><MySupportRequests /></RoleGuard></ProtectedRoute></AppLayout>;
 
       // COACH ROUTES (8 chức năng)
       case '#/coach/dashboard':

@@ -1,8 +1,22 @@
 import { beginAuthOperation, getAuthVersion, setAuthUser } from './authState.js';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
-// Memory belongs to this document, so another tab cannot replace its JWT.
-let accessToken = null;
+const TOKEN_STORAGE_KEY = 'scms.auth.token.v1';
+
+function restoreToken() {
+  try {
+    const token = globalThis.sessionStorage?.getItem(TOKEN_STORAGE_KEY);
+    if (!token) return null;
+    const parts = token.split('.');
+    const payload = parts.length === 3 && JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+    if (payload && Number.isFinite(payload.exp) && payload.exp * 1000 > Date.now()) return token;
+  } catch { /* A blocked store or malformed token must not prevent opening the login page. */ }
+  try { globalThis.sessionStorage?.removeItem(TOKEN_STORAGE_KEY); } catch { /* Storage may be disabled. */ }
+  return null;
+}
+
+// sessionStorage survives F5 while keeping each tab's authentication separate.
+let accessToken = restoreToken();
 
 export function getApiUrl(path) {
   return `${API_BASE_URL}/${path.replace(/^\/+/, '')}`;
@@ -16,6 +30,10 @@ export function setApiToken(token) {
   beginAuthOperation();
   if (!token || token !== accessToken) setAuthUser(null);
   accessToken = token || null;
+  try {
+    if (accessToken) globalThis.sessionStorage?.setItem(TOKEN_STORAGE_KEY, accessToken);
+    else globalThis.sessionStorage?.removeItem(TOKEN_STORAGE_KEY);
+  } catch { /* Keep the current login usable if this browser blocks session storage. */ }
 }
 
 export function clearApiToken() {

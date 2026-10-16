@@ -415,6 +415,21 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .HasForeignKey(entity => entity.HandledBy)
             .OnDelete(DeleteBehavior.Restrict);
 
+        modelBuilder.Entity<SupportRequest>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(entity => entity.RequesterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SupportRequest>()
+            .HasOne<Center>()
+            .WithMany()
+            .HasForeignKey(entity => entity.CenterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SupportRequest>().HasIndex(entity => new { entity.RequesterId, entity.CreatedAt });
+        modelBuilder.Entity<SupportRequest>().HasIndex(entity => new { entity.CenterId, entity.Status, entity.CreatedAt });
+
         modelBuilder.Entity<AiConversation>()
             .HasOne<User>()
             .WithMany()

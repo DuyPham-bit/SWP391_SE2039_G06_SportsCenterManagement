@@ -114,6 +114,17 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
                 <span>Trang chủ Landing Page</span>
               </a>
 
+              {(role === 'MEMBER' || role === 'COACH') && (
+                <a
+                  href={role === 'COACH' ? '#/coach/support' : '#/member/support'}
+                  onClick={() => setShowUserMenu(false)}
+                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-red-500">support_agent</span>
+                  <span>Gửi yêu cầu hỗ trợ</span>
+                </a>
+              )}
+
               <div className="border-t border-slate-100 my-1" />
 
               <button

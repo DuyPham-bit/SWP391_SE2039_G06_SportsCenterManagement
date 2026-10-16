@@ -1,4 +1,4 @@
-﻿import { apiRequest } from './http.js';
+import { apiRequest } from './http.js';
 
 function planRequest(plan) {
   return {
@@ -49,7 +49,23 @@ export const coachApi = {
 
 export const notificationApi = {
   getMine: () => apiRequest('notifications/me'),
-  markRead: id => apiRequest('notifications/'+id+'/read', { method: 'PUT' })
+  markRead: id => apiRequest('notifications/'+id+'/read', { method: 'PUT' }),
+  markAllRead: () => apiRequest('notifications/me/read-all', { method: 'PUT' })
+};
+
+export const supportApi = {
+  getMine: ({ status = '', page = 1 } = {}) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: '20' });
+    if (status) params.set('status', status);
+    return apiRequest(`support-requests/me?${params.toString()}`);
+  },
+  get: id => apiRequest(`support-requests/me/${Number(id)}`),
+  submit: ({ subject, description, priority }) => apiRequest('support-requests/me', {
+    method: 'POST', body: { subject: subject.trim(), description: description.trim(), priority }
+  }),
+  reply: (id, message) => apiRequest(`support-requests/me/${Number(id)}/messages`, {
+    method: 'POST', body: { message: message.trim() }
+  })
 };
 
 export const aiApi = {

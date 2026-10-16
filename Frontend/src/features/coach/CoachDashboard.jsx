@@ -9,7 +9,7 @@ const links = [
   ['schedule', 'calendar_month', 'Lịch dạy'], ['members', 'group', 'Hồ sơ học viên'],
   ['training-plan', 'assignment', 'Giáo án'], ['progress', 'monitoring', 'Kết quả & nhận xét'],
   ['attendance', 'fact_check', 'Điểm danh'], ['notifications', 'campaign', 'Thông báo & bài tập'],
-  ['ai-recommendation', 'psychology', 'Gợi ý AI']
+  ['ai-recommendation', 'psychology', 'Gợi ý AI'], ['support', 'support_agent', 'Yêu cầu hỗ trợ']
 ];
 
 export function CoachDashboard() {

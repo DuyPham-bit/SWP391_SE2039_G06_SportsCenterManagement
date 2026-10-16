@@ -1660,10 +1660,8 @@ public sealed class PaymentService(
             subscription.DurationDays = durationDays;
             subscription.Status = "Active";
             subscription.UpdatedAt = now;
-            await FlowNotificationWriter.CreateForMemberAsync(_unitOfWork.Context, senderId, subscription.MemberId,
-                "Thanh toán thành công - Gói tập đã kích hoạt",
-                $"Gói {package.Name} đã được thanh toán và kích hoạt từ {subscription.StartDate:dd/MM/yyyy} đến {subscription.EndDate:dd/MM/yyyy}.",
-                "MembershipActivated", cancellationToken);
+            await FlowNotificationWriter.MembershipPaidAsync(_unitOfWork.Context, senderId, subscription,
+                package.Name, today, cancellationToken);
         }
     }
 

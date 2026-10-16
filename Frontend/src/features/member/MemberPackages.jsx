@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { openPaymentCheckout } from '../../services/paymentCheckout.js';
+import { formatMemberDate } from './memberOverview.js';
 
 const { useState, useEffect, useRef } = React;
 
@@ -198,6 +199,14 @@ export function MemberPackages() {
         </div>
       </div>
 
+      {currentUser?.scheduledSubscriptions?.length > 0 && <section aria-label="Gói đã thanh toán chờ hiệu lực" className="rounded-xl border border-emerald-200 bg-emerald-50 p-4 space-y-2">
+        <h2 className="font-bold text-sm text-emerald-900">Gói đã thanh toán, chờ ngày bắt đầu</h2>
+        <p className="text-sm text-emerald-800">Gói mới được xếp nối tiếp sau gói hiện tại. Bạn chưa cần thanh toán lại.</p>
+        {currentUser.scheduledSubscriptions.map(subscription => <p key={subscription.subscriptionId} className="text-sm text-emerald-900">
+          <strong>{subscription.packageName}</strong> · {formatMemberDate(subscription.startDate)} – {formatMemberDate(subscription.endDate)}
+        </p>)}
+      </section>}
+
       {/* Package Tier Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {packages.map(pkg => {
@@ -333,8 +342,8 @@ export function MemberPackages() {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
                 Chọn cổng thanh toán *
               </label>
-              <div className="grid grid-cols-3 gap-2">
-                {['VNPAY', 'MOMO', 'VIETQR'].map(m => (
+              <div className="grid grid-cols-2 gap-2">
+                {['VNPAY', 'MOMO'].map(m => (
                   <button
                     key={m}
                     type="button"
@@ -346,7 +355,7 @@ export function MemberPackages() {
                     }`}
                   >
                     <span className="material-symbols-outlined text-[20px]">
-                      {m === 'MOMO' ? 'account_balance_wallet' : m === 'VIETQR' ? 'qr_code_2' : 'credit_card'}
+                      {m === 'MOMO' ? 'account_balance_wallet' : 'credit_card'}
                     </span>
                     <span>{m}</span>
                   </button>

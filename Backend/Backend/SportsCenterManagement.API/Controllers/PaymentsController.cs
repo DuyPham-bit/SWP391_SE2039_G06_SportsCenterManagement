@@ -148,46 +148,6 @@ public sealed class PaymentsController : ControllerBase
         return Ok(new { success = true, paymentUrl });
     }
 
-    [Authorize]
-    [HttpPost("create-payos-url")]
-    public async Task<IActionResult> CreatePayOsPaymentUrl(
-        [FromBody] CreatePaymentRequest request,
-        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
-        CancellationToken cancellationToken)
-    {
-        _logger.LogInformation(
-            "Payment debug: PayOS action entered. TraceId={TraceId}",
-            HttpContext.TraceIdentifier);
-        if (string.IsNullOrWhiteSpace(idempotencyKey))
-        {
-            return BadRequest(new { success = false, message = "Header Idempotency-Key là bắt buộc." });
-        }
-
-        var userId = GetRequiredUserId();
-        var memberId = await GetCurrentMemberIdAsync(userId, cancellationToken);
-        if (request.PackageId > 0)
-        {
-            await _memberService.EnsureCanBuyPackageAsync(userId, request.PackageId, cancellationToken);
-        }
-
-        _logger.LogInformation(
-            "Payment debug: PayOS checks passed; calling payment service. TraceId={TraceId}",
-            HttpContext.TraceIdentifier);
-        var paymentUrl = await _paymentService.CreatePayOsPaymentUrlAsync(
-            memberId, request, idempotencyKey.Trim(), cancellationToken);
-        _logger.LogInformation(
-            "Payment debug: PayOS link created. TraceId={TraceId}",
-            HttpContext.TraceIdentifier);
-        return Ok(new { success = true, paymentUrl });
-    }
-
-    [HttpPost("vietqr/{orderCode:long}/sync")]
-    [ProducesResponseType(typeof(PaymentResultResponse), StatusCodes.Status200OK)]
-    public async Task<ActionResult<PaymentResultResponse>> SyncVietQrPayment(long orderCode, CancellationToken cancellationToken)
-    {
-        var memberId = await GetCurrentMemberIdAsync(GetRequiredUserId(), cancellationToken);
-        return Ok(await _paymentService.SyncVietQrPaymentAsync(memberId, orderCode, cancellationToken));
-    }
 
     [AllowAnonymous]
     [HttpGet("momo-callback")]

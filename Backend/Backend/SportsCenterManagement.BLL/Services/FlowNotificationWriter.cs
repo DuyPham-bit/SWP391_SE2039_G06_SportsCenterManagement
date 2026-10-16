@@ -6,6 +6,17 @@ namespace SportsCenterManagement.BLL.Services;
 
 internal static class FlowNotificationWriter
 {
+    public static Task MembershipPaidAsync(SportsCenterDbContext db, long? senderId, MemberSubscription subscription,
+        string packageName, DateOnly today, CancellationToken cancellationToken)
+    {
+        var scheduled = subscription.StartDate > today;
+        var title = scheduled ? "Thanh toán thành công - Gói tập chờ hiệu lực" : "Thanh toán thành công - Gói tập đã kích hoạt";
+        var state = scheduled ? "sẽ có hiệu lực" : "có hiệu lực";
+        var message = $"{packageName} đã được thanh toán và {state} từ {subscription.StartDate:dd/MM/yyyy} đến {subscription.EndDate:dd/MM/yyyy}.";
+        if (scheduled) message += " Gói đang dùng tiếp tục có hiệu lực đến ngày hết hạn của gói đó.";
+        return CreateForMemberAsync(db, senderId, subscription.MemberId, title, message, "MembershipActivated", cancellationToken);
+    }
+
     public static async Task CreateForMemberAsync(
         SportsCenterDbContext db, long? senderId, long memberId,
         string title, string message, string type, CancellationToken cancellationToken)
