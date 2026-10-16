@@ -4,6 +4,7 @@ import { SUPPORTED_SPORTS } from '../../services/sportsCatalog.js';
 import { FacilitiesSection } from './FacilitiesSection.js';
 import { SCMS_FACILITIES } from '../../services/facilitiesCatalog.js';
 import { useLandingContent } from '../../hooks/useLandingContent.js';
+import { getExternalContactUrl, normalizeZaloPhone } from '../../services/landingContentService.js';
 
 // Danh mục trang chủ và cơ sở tập luyện tương ứng cho từng môn.
 export const LANDING_SPORTS = SUPPORTED_SPORTS.map(sport => ({
@@ -220,6 +221,11 @@ export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '
 export function LandingPage() {
   const { isAuthenticated, role, logout } = useAuth();
   const landingContent = useLandingContent();
+  const zaloPhone = normalizeZaloPhone(landingContent.ctaAndFooter?.contactZaloPhone);
+  const socialContacts = [
+    { label: `Zalo: ${zaloPhone}`, icon: 'chat', url: zaloPhone ? `https://zalo.me/${zaloPhone}` : '' },
+    { label: 'Facebook', icon: 'public', url: getExternalContactUrl(landingContent.ctaAndFooter?.contactFacebookUrl) }
+  ].filter(contact => contact.url);
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [sportCarouselIndex, setSportCarouselIndex] = useState(0);
   const sportsCarouselRef = useRef(null);
@@ -1484,6 +1490,19 @@ export function LandingPage() {
                     {landingContent.ctaAndFooter?.contactEmail || 'lienhe@scmsportscenter.vn'}
                   </a>
                 </li>
+                {socialContacts.map(contact => (
+                  <li key={contact.label} className="flex items-center gap-2">
+                    <span className="material-symbols-outlined text-red-400 text-[18px] shrink-0" aria-hidden="true">{contact.icon}</span>
+                    <a
+                      href={contact.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="rounded hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 transition-colors"
+                    >
+                      {contact.label}
+                    </a>
+                  </li>
+                ))}
               </ul>
             </div>
 

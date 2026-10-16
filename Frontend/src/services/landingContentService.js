@@ -393,6 +393,8 @@ export const DEFAULT_LANDING_CONTENT = {
     contactAddress: 'Khu công nghệ cao, Thủ Đức, TP. Hồ Chí Minh',
     contactPhone: '0859 859 367',
     contactEmail: 'lienhe@scmsportscenter.vn',
+    contactZaloPhone: '',
+    contactFacebookUrl: '',
     hoursWeekdays: '05:30 - 22:30',
     hoursWeekend: '06:00 - 22:00',
     hoursHolidays: 'Mở cửa linh hoạt',
@@ -455,8 +457,36 @@ function notifyPublishedContent() {
   try { localStorage.setItem(UPDATE_STORAGE_KEY, `${Date.now()}-${Math.random()}`); } catch { /* optional */ }
 }
 
+export function getExternalContactUrl(value) {
+  if (typeof value !== 'string') return '';
+  const url = value.trim();
+  if (!/^https?:\/\//i.test(url) || /[\u0000-\u001f\u007f\\]/.test(url)) return '';
+  try {
+    return new URL(url).hostname ? url : '';
+  } catch { return ''; }
+}
+
+export function normalizeZaloPhone(value) {
+  if (typeof value !== 'string') return '';
+  const phone = value.replace(/[\s().-]/g, '');
+  return /^(0\d{9}|\+84\d{9})$/.test(phone) ? phone.replace(/^\+84/, '0') : '';
+}
+
 export async function saveLandingContent(content) {
-  const response = await apiRequest('landing-content', { method: 'PUT', body: { content } });
+  const footer = { ...content.ctaAndFooter };
+  const zaloValue = footer.contactZaloPhone ?? '';
+  const zaloPhone = normalizeZaloPhone(zaloValue);
+  if (typeof zaloValue !== 'string' || (zaloValue.trim() && !zaloPhone)) {
+    throw new Error('Số điện thoại Zalo phải gồm 10 chữ số, bắt đầu bằng 0 hoặc dùng đầu số +84. Để trống để ẩn Zalo.');
+  }
+  footer.contactZaloPhone = zaloPhone;
+  const facebookValue = footer.contactFacebookUrl ?? '';
+  const facebookUrl = getExternalContactUrl(facebookValue);
+  if (typeof facebookValue !== 'string' || (facebookValue.trim() && !facebookUrl)) {
+    throw new Error('Liên kết Facebook phải là đường dẫn HTTP/HTTPS hợp lệ hoặc để trống.');
+  }
+  footer.contactFacebookUrl = facebookUrl;
+  const response = await apiRequest('landing-content', { method: 'PUT', body: { content: { ...content, ctaAndFooter: footer } } });
   publishedContent = mergeContent(DEFAULT_LANDING_CONTENT, response.content);
   notifyPublishedContent();
   return getLandingContent();
