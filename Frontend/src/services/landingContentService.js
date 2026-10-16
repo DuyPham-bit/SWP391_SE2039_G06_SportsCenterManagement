@@ -4,10 +4,13 @@
  * Cho phép Manager chủ động thay đổi nội dung, thẻ môn học, thẻ cụm sân bãi và đa phương tiện.
  */
 
+import { apiRequest } from './http.js';
 import { SCMS_FACILITIES } from './facilitiesCatalog.js';
 import { SUPPORTED_SPORTS } from './sportsCatalog.js';
 
-const STORAGE_KEY = 'SCMS_DYNAMIC_LANDING_CONTENT_V1';
+const LEGACY_STORAGE_KEY = 'SCMS_DYNAMIC_LANDING_CONTENT_V1';
+const PREVIEW_STORAGE_KEY = 'SCMS_LANDING_PREVIEW_V1';
+const UPDATE_STORAGE_KEY = 'SCMS_LANDING_CONTENT_UPDATED';
 export const LANDING_CONTENT_CHANGE_EVENT = 'SCMS_LANDING_CONTENT_CHANGED';
 
 // Dữ liệu mặc định ban đầu bám sát 100% các thành phần trong 8 ảnh chụp screenshot
@@ -398,174 +401,99 @@ export const DEFAULT_LANDING_CONTENT = {
   }
 };
 
-/**
- * Đọc nội dung trang chủ từ LocalStorage hoặc gán mặc định
- */
+// Published content is cached only in memory. SQL/API remains the source of truth.
+let publishedContent = null;
+const clone = value => JSON.parse(JSON.stringify(value));
+
+function mergeContent(defaults, value) {
+  if (Array.isArray(defaults)) {
+    if (!Array.isArray(value)) return clone(defaults);
+    return value.map((item, index) => {
+      if (!item || typeof item !== 'object' || Array.isArray(item)) return clone(item);
+      const template = defaults[index] || defaults[0] || {};
+      const merged = mergeContent(template, item);
+      if (!Object.hasOwn(item, 'id')) delete merged.id;
+      return merged;
+    });
+  }
+  if (defaults && typeof defaults === 'object') {
+    const input = value && typeof value === 'object' && !Array.isArray(value) ? value : {};
+    const result = {};
+    for (const key of new Set([...Object.keys(defaults), ...Object.keys(input)])) {
+      if (key === '__proto__' || key === 'constructor' || key === 'prototype') continue;
+      result[key] = key in defaults ? mergeContent(defaults[key], input[key]) : clone(input[key]);
+    }
+    return result;
+  }
+  return value === undefined || value === null ? clone(defaults) : clone(value);
+}
+
+export function getDefaultLandingContent() {
+  return clone(DEFAULT_LANDING_CONTENT);
+}
+
 export function getLandingContent() {
+  return clone(publishedContent || DEFAULT_LANDING_CONTENT);
+}
+
+export function getLegacyLandingContent() {
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) {
-      saveLandingContent(DEFAULT_LANDING_CONTENT, false);
-      return DEFAULT_LANDING_CONTENT;
-    }
-    const parsed = JSON.parse(raw);
-    // Deep merge với default để đảm bảo không bị thiếu key mới nếu có cập nhật schema
-    return {
-      ...DEFAULT_LANDING_CONTENT,
-      ...parsed,
-      heroBanner: { ...DEFAULT_LANDING_CONTENT.heroBanner, ...(parsed.heroBanner || {}) },
-      whyUs: { ...DEFAULT_LANDING_CONTENT.whyUs, ...(parsed.whyUs || {}) },
-      coursesSection: {
-        ...DEFAULT_LANDING_CONTENT.coursesSection,
-        ...(parsed.coursesSection || {}),
-        sportsList: parsed.coursesSection?.sportsList || DEFAULT_LANDING_CONTENT.coursesSection.sportsList
-      },
-      facilitiesSection: {
-        ...DEFAULT_LANDING_CONTENT.facilitiesSection,
-        ...(parsed.facilitiesSection || {}),
-        facilitiesList: parsed.facilitiesSection?.facilitiesList || DEFAULT_LANDING_CONTENT.facilitiesSection.facilitiesList
-      },
-      zonesLayout: { ...DEFAULT_LANDING_CONTENT.zonesLayout, ...(parsed.zonesLayout || {}) },
-      ctaAndFooter: { ...DEFAULT_LANDING_CONTENT.ctaAndFooter, ...(parsed.ctaAndFooter || {}) }
-    };
-  } catch (err) {
-    console.error('Lỗi khi đọc nội dung Landing Page:', err);
-    return DEFAULT_LANDING_CONTENT;
-  }
+    const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
+    return raw ? mergeContent(DEFAULT_LANDING_CONTENT, JSON.parse(raw)) : null;
+  } catch { return null; }
 }
 
-/**
- * Lưu toàn bộ nội dung trang chủ vào LocalStorage và phát sự kiện đồng bộ
- */
-export function saveLandingContent(content, notify = true) {
+export async function loadLandingContent({ signal } = {}) {
+  const response = await apiRequest('landing-content', { signal, token: null });
+  publishedContent = mergeContent(DEFAULT_LANDING_CONTENT, response?.content);
+  return { content: getLandingContent(), hasPublishedContent: response?.content != null };
+}
+
+function notifyPublishedContent() {
+  window.dispatchEvent(new CustomEvent(LANDING_CONTENT_CHANGE_EVENT, { detail: getLandingContent() }));
+  // This is only a refresh signal for other tabs; a storage failure cannot undo a successful API save.
+  try { localStorage.setItem(UPDATE_STORAGE_KEY, `${Date.now()}-${Math.random()}`); } catch { /* optional */ }
+}
+
+export async function saveLandingContent(content) {
+  const response = await apiRequest('landing-content', { method: 'PUT', body: { content } });
+  publishedContent = mergeContent(DEFAULT_LANDING_CONTENT, response.content);
+  notifyPublishedContent();
+  return getLandingContent();
+}
+
+export async function resetLandingContentToDefault() {
+  return saveLandingContent(getDefaultLandingContent());
+}
+
+export function getLandingPreviewContent() {
+  const query = (window.location.hash || '').split('?')[1] || '';
+  if (new URLSearchParams(query).get('preview') !== '1') return null;
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(content));
-    if (notify) {
-      window.dispatchEvent(new CustomEvent(LANDING_CONTENT_CHANGE_EVENT, { detail: content }));
-    }
-    return true;
-  } catch (err) {
-    console.error('Lỗi khi lưu nội dung Landing Page:', err);
-    return false;
+    const raw = sessionStorage.getItem(PREVIEW_STORAGE_KEY);
+    return raw ? mergeContent(DEFAULT_LANDING_CONTENT, JSON.parse(raw)) : null;
+  } catch { return null; }
+}
+
+export function openLandingPreview(content) {
+  const previewWindow = window.open('about:blank', '_blank');
+  if (!previewWindow) throw new Error('Trình duyệt đã chặn tab xem trước. Vui lòng cho phép mở tab mới.');
+  try {
+    previewWindow.opener = null;
+    previewWindow.sessionStorage.setItem(PREVIEW_STORAGE_KEY, JSON.stringify(content));
+    previewWindow.location.replace(new URL('#/?preview=1', window.location.href).href);
+  } catch (error) {
+    previewWindow.close();
+    throw error;
   }
 }
 
-/**
- * Bật/Tắt trạng thái hiển thị của một môn học (Ẩn / Hiện)
- */
-export function toggleSportVisibility(sportId, isVisible) {
-  const content = getLandingContent();
-  const sports = content.coursesSection.sportsList.map(sport => {
-    if (sport.id === sportId) {
-      return { ...sport, isVisible };
-    }
-    return sport;
-  });
-  content.coursesSection.sportsList = sports;
-  saveLandingContent(content);
-  return content;
-}
-
-/**
- * Bật/Tắt trạng thái hiển thị của một cụm sân (Ẩn / Hiện)
- */
-export function toggleFacilityVisibility(facilityId, isVisible) {
-  const content = getLandingContent();
-  const facilities = content.facilitiesSection.facilitiesList.map(fac => {
-    if (fac.id === facilityId) {
-      return { ...fac, isVisible };
-    }
-    return fac;
-  });
-  content.facilitiesSection.facilitiesList = facilities;
-  saveLandingContent(content);
-  return content;
-}
-
-/**
- * Cập nhật một thẻ môn học
- */
-export function updateSport(sportId, updatedData) {
-  const content = getLandingContent();
-  const index = content.coursesSection.sportsList.findIndex(s => s.id === sportId);
-  if (index !== -1) {
-    content.coursesSection.sportsList[index] = {
-      ...content.coursesSection.sportsList[index],
-      ...updatedData
-    };
-    saveLandingContent(content);
-  }
-  return content;
-}
-
-/**
- * Thêm mới một thẻ môn học
- */
-export function addSport(newSport) {
-  const content = getLandingContent();
-  content.coursesSection.sportsList.push({
-    ...newSport,
-    id: newSport.id || `sport-${Date.now()}`,
-    isVisible: true
-  });
-  saveLandingContent(content);
-  return content;
-}
-
-/**
- * Xóa một thẻ môn học
- */
-export function deleteSport(sportId) {
-  const content = getLandingContent();
-  content.coursesSection.sportsList = content.coursesSection.sportsList.filter(s => s.id !== sportId);
-  saveLandingContent(content);
-  return content;
-}
-
-/**
- * Cập nhật một thẻ cụm sân
- */
-export function updateFacility(facilityId, updatedData) {
-  const content = getLandingContent();
-  const index = content.facilitiesSection.facilitiesList.findIndex(f => f.id === facilityId);
-  if (index !== -1) {
-    content.facilitiesSection.facilitiesList[index] = {
-      ...content.facilitiesSection.facilitiesList[index],
-      ...updatedData
-    };
-    saveLandingContent(content);
-  }
-  return content;
-}
-
-/**
- * Thêm mới một thẻ cụm sân
- */
-export function addFacility(newFacility) {
-  const content = getLandingContent();
-  content.facilitiesSection.facilitiesList.push({
-    ...newFacility,
-    id: newFacility.id || `room-${Date.now()}`,
-    isVisible: true
-  });
-  saveLandingContent(content);
-  return content;
-}
-
-/**
- * Xóa một thẻ cụm sân
- */
-export function deleteFacility(facilityId) {
-  const content = getLandingContent();
-  content.facilitiesSection.facilitiesList = content.facilitiesSection.facilitiesList.filter(f => f.id !== facilityId);
-  saveLandingContent(content);
-  return content;
-}
-
-/**
- * Khôi phục toàn bộ nội dung về mặc định
- */
-export function resetLandingContentToDefault() {
-  saveLandingContent(DEFAULT_LANDING_CONTENT);
-  return DEFAULT_LANDING_CONTENT;
+export function subscribeLandingContentRefresh(refresh) {
+  const onStorage = event => { if (event.key === UPDATE_STORAGE_KEY) refresh(); };
+  window.addEventListener('storage', onStorage);
+  window.addEventListener('focus', refresh);
+  return () => {
+    window.removeEventListener('storage', onStorage);
+    window.removeEventListener('focus', refresh);
+  };
 }

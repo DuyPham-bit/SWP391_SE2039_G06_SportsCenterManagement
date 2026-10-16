@@ -19,15 +19,18 @@ public class GoogleDriveService
     private readonly SportsCenterDbContext _dbContext;
     private readonly IConfiguration _configuration;
     private readonly ILogger<GoogleDriveService> _logger;
+    private readonly string _storageRootPath;
 
     public GoogleDriveService(
         SportsCenterDbContext dbContext,
         IConfiguration configuration,
-        ILogger<GoogleDriveService> logger)
+        ILogger<GoogleDriveService> logger,
+        string storageRootPath)
     {
         _dbContext = dbContext;
         _configuration = configuration;
         _logger = logger;
+        _storageRootPath = storageRootPath;
     }
 
     public string ResolveCredentialsPath()
@@ -52,7 +55,7 @@ public class GoogleDriveService
         return credentialsPath;
     }
 
-    private DriveService CreateDriveService()
+    protected virtual DriveService CreateDriveService()
     {
         var authMode = _configuration["GoogleDrive:AuthMode"] ?? "ServiceAccount";
 
@@ -118,21 +121,7 @@ public class GoogleDriveService
         long? currentUserId,
         CancellationToken cancellationToken)
     {
-        var webRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot");
-        if (!Directory.Exists(webRoot))
-        {
-            var apiSubdir = Path.Combine(Directory.GetCurrentDirectory(), "SportsCenterManagement.API", "wwwroot");
-            if (Directory.Exists(apiSubdir))
-            {
-                webRoot = apiSubdir;
-            }
-            else
-            {
-                Directory.CreateDirectory(webRoot);
-            }
-        }
-
-        var uploadsDir = Path.Combine(webRoot, "uploads");
+        var uploadsDir = Path.Combine(_storageRootPath, "uploads");
         if (!Directory.Exists(uploadsDir))
         {
             Directory.CreateDirectory(uploadsDir);
@@ -188,10 +177,10 @@ public class GoogleDriveService
         long? currentUserId = null,
         CancellationToken cancellationToken = default)
     {
-        if (fileStream == null || fileStream.Length == 0)
-        {
-            throw new FlowException(400, "Tệp tải lên không được rỗng.");
-        }
+        var validated = await ImageUploadValidator.ValidateAsync(fileStream, fileName, mimeType, cancellationToken);
+        fileName = validated.FileName;
+        mimeType = validated.MimeType;
+        fileSize = fileStream.Length;
 
         var storageProvider = _configuration["GoogleDrive:StorageProvider"] ?? "GoogleDrive";
         if (string.Equals(storageProvider, "Local", StringComparison.OrdinalIgnoreCase))
@@ -202,13 +191,8 @@ public class GoogleDriveService
 
         try
         {
-            var driveService = CreateDriveService();
-
-            var folderId = _configuration["GoogleDrive:FolderId"];
-            if (string.IsNullOrWhiteSpace(folderId) || folderId == "YOUR_GOOGLE_DRIVE_FOLDER_ID")
-            {
-                folderId = "1nRmC1FaHiICnhfvfPHKGHc3iBZJLl01R"; 
-            }
+            using var driveService = CreateDriveService();
+            var folderId = GetFolderId();
 
             _logger.LogInformation(">>> Đang tải file lên thư mục Google Drive ID: '{FolderId}'", folderId);
 
@@ -250,9 +234,10 @@ public class GoogleDriveService
                 permReq.SupportsAllDrives = true;
                 await permReq.ExecuteAsync(cancellationToken);
             }
-            catch (Exception ex)
+            catch (Exception ex) when (ex is not OperationCanceledException)
             {
-                _logger.LogWarning(ex, "Không thể mở quyền xem công khai cho file {FileId}: {Message}", fileId, ex.Message);
+                _logger.LogWarning(ex, "Không thể mở quyền xem công khai cho file {FileId}", fileId);
+                throw new FlowException(502, "Không thể cấp quyền xem ảnh Google Drive.");
             }
 
             // Định dạng URL ảnh công khai từ Google Usercontent theo ID
@@ -285,17 +270,17 @@ public class GoogleDriveService
                 driveFile.ThumbnailLink ?? publicUrl
             );
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
             _logger.LogError(ex, "Upload lên Google Drive thất bại: {Error}. Đang tự động lưu file cục bộ (Local Fallback)...", ex.Message);
             try
             {
                 return await SaveLocalFileAsync(fileStream, fileName, mimeType, fileSize, currentUserId, cancellationToken);
             }
-            catch (Exception localEx)
+            catch (Exception localEx) when (localEx is not OperationCanceledException)
             {
                 _logger.LogError(localEx, "Lưu file cục bộ cũng thất bại: {Error}", localEx.Message);
-                throw new FlowException(500, $"Tải file lên Google Drive thất bại: {ex.Message}");
+                throw new FlowException(500, "Không thể lưu ảnh. Vui lòng thử lại hoặc liên hệ quản trị viên.");
             }
         }
     }
@@ -303,140 +288,88 @@ public class GoogleDriveService
     /// <summary>
     /// Lấy danh sách ảnh trực tiếp từ thư mục Google Drive đã cấu hình, đồng thời đồng bộ vào DB
     /// </summary>
+    private string GetFolderId()
+    {
+        var folderId = _configuration["GoogleDrive:FolderId"]?.Trim();
+        if (string.IsNullOrWhiteSpace(folderId) || folderId == "YOUR_GOOGLE_DRIVE_FOLDER_ID")
+            throw new FlowException(503, "Chưa cấu hình thư mục Google Drive.");
+        return folderId;
+    }
+
+    private async Task<List<Google.Apis.Drive.v3.Data.File>> ReadDriveImagesAsync(CancellationToken ct)
+    {
+        var folderId = GetFolderId();
+        using var driveService = CreateDriveService();
+        var request = driveService.Files.List();
+        request.SupportsAllDrives = true;
+        request.IncludeItemsFromAllDrives = true;
+        request.PageSize = 100;
+        request.Fields = "nextPageToken,incompleteSearch,files(id,name,mimeType,size,createdTime,webViewLink,thumbnailLink)";
+        request.Q = $"'{folderId.Replace("'", "\\'")}' in parents and trashed = false";
+        var files = new List<Google.Apis.Drive.v3.Data.File>();
+        var pageTokens = new HashSet<string>();
+        do
+        {
+            var response = await request.ExecuteAsync(ct);
+            if (response.IncompleteSearch == true) throw new FlowException(502, "Google Drive trả về danh sách chưa đầy đủ.");
+            if (response.Files is not null) files.AddRange(response.Files.Where(IsSupportedDriveImage));
+            request.PageToken = response.NextPageToken;
+            if (!string.IsNullOrEmpty(request.PageToken) && !pageTokens.Add(request.PageToken))
+                throw new FlowException(502, "Google Drive không thể tải trang ảnh kế tiếp.");
+        } while (!string.IsNullOrEmpty(request.PageToken));
+        return files.DistinctBy(f => f.Id).ToList();
+    }
+
     public async Task<List<UploadMediaResultDto>> GetDriveFolderImagesAsync(CancellationToken cancellationToken = default)
     {
-        var results = new List<UploadMediaResultDto>();
-        var folderId = _configuration["GoogleDrive:FolderId"]?.Trim();
+        var dbList = await _dbContext.UploadedMedias.OrderByDescending(m => m.CreatedAt).ToListAsync(cancellationToken);
+        if (string.Equals(_configuration["GoogleDrive:StorageProvider"], "Local", StringComparison.OrdinalIgnoreCase))
+            return dbList.Select(ToDto).ToList();
 
+        List<Google.Apis.Drive.v3.Data.File> files;
         try
         {
-            var driveService = CreateDriveService();
-            var request = driveService.Files.List();
-            request.SupportsAllDrives = true;
-            request.PageSize = 100;
-            request.Fields = "files(id, name, mimeType, size, createdTime, webViewLink, thumbnailLink)";
-
-            if (!string.IsNullOrWhiteSpace(folderId) && folderId != "YOUR_GOOGLE_DRIVE_FOLDER_ID")
-            {
-                request.Q = $"'{folderId}' in parents and trashed = false";
-            }
-            else
-            {
-                request.Q = "trashed = false and mimeType contains 'image/'";
-            }
-
-            var response = await request.ExecuteAsync(cancellationToken);
-            if (response.Files != null && response.Files.Count > 0)
-            {
-                var imageFiles = response.Files.Where(f =>
-                    (f.MimeType != null && f.MimeType.StartsWith("image/")) ||
-                    IsImageFile(f.Name)
-                ).ToList();
-
-                var existingDbItems = await _dbContext.UploadedMedias.ToListAsync(cancellationToken);
-                var existingByFileId = existingDbItems.ToDictionary(x => x.DriveFileId, x => x);
-                bool hasNewEntities = false;
-
-                foreach (var file in imageFiles)
-                {
-                    var publicUrl = $"https://lh3.googleusercontent.com/d/{file.Id}";
-                    var thumbUrl = file.ThumbnailLink ?? publicUrl;
-
-                    if (!existingByFileId.TryGetValue(file.Id, out var dbEntity))
-                    {
-                        dbEntity = new UploadedMedia
-                        {
-                            DriveFileId = file.Id,
-                            FileName = file.Name ?? "drive_image.jpg",
-                            MimeType = file.MimeType ?? "image/jpeg",
-                            FileSize = file.Size,
-                            FileUrl = publicUrl,
-                            WebViewLink = file.WebViewLink,
-                            CreatedAt = file.CreatedTimeDateTimeOffset?.UtcDateTime ?? DateTime.UtcNow
-                        };
-                        _dbContext.UploadedMedias.Add(dbEntity);
-                        existingByFileId[file.Id] = dbEntity;
-                        hasNewEntities = true;
-                    }
-
-                    results.Add(new UploadMediaResultDto(
-                        dbEntity.Id,
-                        file.Id,
-                        publicUrl,
-                        file.Name ?? "Google Drive Image",
-                        file.MimeType ?? "image/jpeg",
-                        file.Size,
-                        file.CreatedTimeDateTimeOffset?.UtcDateTime ?? DateTime.UtcNow,
-                        thumbUrl
-                    ));
-                }
-
-                if (hasNewEntities)
-                {
-                    try
-                    {
-                        await _dbContext.SaveChangesAsync(cancellationToken);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogWarning(ex, "Lỗi khi lưu đồng bộ file từ Google Drive vào DB: {Message}", ex.Message);
-                    }
-                }
-            }
+            // Obtain a complete snapshot before changing any database metadata.
+            files = await ReadDriveImagesAsync(cancellationToken);
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
-            _logger.LogError(ex, "Lỗi khi lấy danh sách file từ Google Drive API: {Message}", ex.Message);
+            _logger.LogWarning(ex, "Không thể đồng bộ Google Drive. Giữ nguyên metadata và dùng thư viện đã lưu.");
+            return dbList.Select(ToDto).ToList();
         }
 
-        // Lấy danh sách từ DB để bổ sung các file local hoặc dọn dẹp các file Drive đã bị xóa
-        var dbList = await _dbContext.UploadedMedias
-            .OrderByDescending(m => m.CreatedAt)
-            .ToListAsync(cancellationToken);
-
-        var existingIds = results.Select(r => r.FileId).ToHashSet();
-        var staleItems = new List<UploadedMedia>();
-
-        foreach (var m in dbList)
+        var byFileId = dbList.GroupBy(m => m.DriveFileId).ToDictionary(g => g.Key, g => g.First());
+        var results = new List<UploadMediaResultDto>();
+        foreach (var file in files)
         {
-            if (m.DriveFileId != null && m.DriveFileId.StartsWith("local_"))
+            if (!byFileId.TryGetValue(file.Id, out var entity))
             {
-                if (!existingIds.Contains(m.DriveFileId))
+                entity = new UploadedMedia
                 {
-                    results.Add(new UploadMediaResultDto(
-                        m.Id,
-                        m.DriveFileId,
-                        m.FileUrl,
-                        m.FileName,
-                        m.MimeType,
-                        m.FileSize,
-                        m.CreatedAt,
-                        m.FileUrl
-                    ));
-                }
+                    DriveFileId = file.Id,
+                    CreatedAt = file.CreatedTimeDateTimeOffset?.UtcDateTime ?? DateTime.UtcNow
+                };
+                _dbContext.UploadedMedias.Add(entity);
+                byFileId[file.Id] = entity;
             }
-            else if (results.Count > 0 && !existingIds.Contains(m.DriveFileId))
-            {
-                // File này từng được lưu nhưng không còn tồn tại trên Google Drive
-                staleItems.Add(m);
-            }
+            entity.FileName = file.Name ?? "drive_image.jpg";
+            entity.MimeType = ImageUploadValidator.GetMimeTypeForFileName(entity.FileName)!;
+            entity.FileSize = file.Size;
+            entity.FileUrl = $"https://lh3.googleusercontent.com/d/{file.Id}";
+            entity.WebViewLink = file.WebViewLink;
         }
-
-        if (staleItems.Count > 0)
-        {
-            try
-            {
-                _dbContext.UploadedMedias.RemoveRange(staleItems);
-                await _dbContext.SaveChangesAsync(cancellationToken);
-            }
-            catch (Exception ex)
-            {
-                _logger.LogWarning(ex, "Lỗi dọn dẹp {Count} bản ghi media đã bị xóa khỏi Google Drive: {Message}", staleItems.Count, ex.Message);
-            }
-        }
-
-        return results;
+        await _dbContext.SaveChangesAsync(cancellationToken);
+        foreach (var file in files) results.Add(ToDto(byFileId[file.Id], file.ThumbnailLink));
+        results.AddRange(dbList.Where(m => m.DriveFileId.StartsWith("local_", StringComparison.Ordinal)).Select(ToDto));
+        // Missing files are hidden after a successful snapshot. Metadata is retained for recovery/auditing.
+        return results.OrderByDescending(m => m.CreatedAt).ToList();
     }
+
+    private static UploadMediaResultDto ToDto(UploadedMedia media) => ToDto(media, null);
+
+    private static UploadMediaResultDto ToDto(UploadedMedia media, string? thumbnail) => new(
+        media.Id, media.DriveFileId, media.FileUrl, media.FileName, media.MimeType,
+        media.FileSize, media.CreatedAt, thumbnail ?? media.FileUrl);
 
     /// <summary>
     /// Kiểm tra trạng thái kết nối Google Drive API và quyền truy cập thư mục
@@ -444,6 +377,8 @@ public class GoogleDriveService
     public async Task<GoogleDriveStatusDto> GetStatusAsync(CancellationToken cancellationToken = default)
     {
         var folderId = _configuration["GoogleDrive:FolderId"]?.Trim() ?? "";
+        if (string.Equals(_configuration["GoogleDrive:StorageProvider"], "Local", StringComparison.OrdinalIgnoreCase))
+            return new GoogleDriveStatusDto(true, "", "", await _dbContext.UploadedMedias.CountAsync(cancellationToken), "Đang sử dụng thư viện ảnh trên máy chủ.");
         var authMode = _configuration["GoogleDrive:AuthMode"] ?? "ServiceAccount";
         string accountInfo = "";
 
@@ -467,22 +402,8 @@ public class GoogleDriveService
                 }
             }
 
-            var driveService = CreateDriveService();
-            var request = driveService.Files.List();
-            request.SupportsAllDrives = true;
-            request.PageSize = 100;
-            request.Fields = "files(id, name, mimeType)";
-            if (!string.IsNullOrWhiteSpace(folderId) && folderId != "YOUR_GOOGLE_DRIVE_FOLDER_ID")
-            {
-                request.Q = $"'{folderId}' in parents and trashed = false";
-            }
-            else
-            {
-                request.Q = "trashed = false and mimeType contains 'image/'";
-            }
-
-            var res = await request.ExecuteAsync(cancellationToken);
-            var imageCount = res.Files?.Count(f => (f.MimeType != null && f.MimeType.StartsWith("image/")) || IsImageFile(f.Name)) ?? 0;
+            var images = await ReadDriveImagesAsync(cancellationToken);
+            var imageCount = images.Count;
 
             return new GoogleDriveStatusDto(
                 IsConnected: true,
@@ -492,14 +413,15 @@ public class GoogleDriveService
                 Message: "Kết nối Google Drive API thành công. Thư mục đã sẵn sàng."
             );
         }
-        catch (Exception ex)
+        catch (Exception ex) when (ex is not OperationCanceledException)
         {
+            _logger.LogWarning(ex, "Không thể kiểm tra kết nối Google Drive.");
             return new GoogleDriveStatusDto(
                 IsConnected: false,
                 ServiceAccountEmail: accountInfo,
                 FolderId: folderId,
                 TotalImages: 0,
-                Message: $"Không thể kết nối Google Drive: {ex.Message}."
+                Message: "Không thể kết nối Google Drive. Đang dùng thư viện đã lưu; vui lòng kiểm tra cấu hình hoặc thử lại."
             );
         }
     }
@@ -522,10 +444,13 @@ public class GoogleDriveService
             .ToListAsync(cancellationToken);
     }
 
-    private static bool IsImageFile(string? fileName)
+    private static bool IsSupportedDriveImage(Google.Apis.Drive.v3.Data.File file)
     {
-        if (string.IsNullOrWhiteSpace(fileName)) return false;
-        var ext = Path.GetExtension(fileName).ToLowerInvariant();
-        return ext is ".png" or ".jpg" or ".jpeg" or ".webp" or ".gif" or ".bmp" or ".svg";
+        if (string.IsNullOrWhiteSpace(file.Name) || !ImageUploadValidator.IsSupportedFileName(file.Name)) return false;
+        // Drive can store AVIF as a generic binary file. Its supported extension still identifies a gallery candidate.
+        return string.IsNullOrWhiteSpace(file.MimeType) ||
+            file.MimeType.Equals("application/octet-stream", StringComparison.OrdinalIgnoreCase) ||
+            file.MimeType.Equals("binary/octet-stream", StringComparison.OrdinalIgnoreCase) ||
+            file.MimeType.StartsWith("image/", StringComparison.OrdinalIgnoreCase);
     }
 }

@@ -30,6 +30,7 @@ Backend/**/bin/
 Backend/**/obj/
 Backend/**/.vs/
 Backend/**/TestResults/
+Backend/**/App_Data/media/
 
 # Logs & temp
 *.log

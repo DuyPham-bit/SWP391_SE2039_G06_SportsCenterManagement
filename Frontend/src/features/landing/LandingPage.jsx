@@ -3,7 +3,7 @@ import { useAuth } from '../../context/AuthContext.js';
 import { SUPPORTED_SPORTS } from '../../services/sportsCatalog.js';
 import { FacilitiesSection } from './FacilitiesSection.js';
 import { SCMS_FACILITIES } from '../../services/facilitiesCatalog.js';
-import { getLandingContent, LANDING_CONTENT_CHANGE_EVENT } from '../../services/landingContentService.js';
+import { useLandingContent } from '../../hooks/useLandingContent.js';
 
 // Danh mục trang chủ và cơ sở tập luyện tương ứng cho từng môn.
 export const LANDING_SPORTS = SUPPORTED_SPORTS.map(sport => ({
@@ -219,7 +219,7 @@ export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '
 
 export function LandingPage() {
   const { isAuthenticated, role, logout } = useAuth();
-  const [landingContent, setLandingContent] = useState(() => getLandingContent());
+  const landingContent = useLandingContent();
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
   const [sportCarouselIndex, setSportCarouselIndex] = useState(0);
   const sportsCarouselRef = useRef(null);
@@ -239,16 +239,6 @@ export function LandingPage() {
   const closeTimerRef = useRef(null);
   const isManualScrollRef = useRef(false);
   const manualScrollTimerRef = useRef(null);
-
-  // Đồng bộ thời gian thực khi Manager chỉnh sửa nội dung
-  useEffect(() => {
-    const handleSync = (e) => {
-      if (e.detail) setLandingContent(e.detail);
-      else setLandingContent(getLandingContent());
-    };
-    window.addEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
-    return () => window.removeEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
-  }, []);
 
   // Danh sách các môn học (Chủ động ẩn/hiện bởi manager qua isVisible)
   const sportsList = landingContent.coursesSection?.sportsList || LANDING_SPORTS;

@@ -1,11 +1,11 @@
 import React, { useState, useMemo, useEffect, useRef } from 'react';
-import { getLandingContent, LANDING_CONTENT_CHANGE_EVENT } from '../../services/landingContentService.js';
+import { useLandingContent } from '../../hooks/useLandingContent.js';
 import { SCMS_FACILITIES } from '../../services/facilitiesCatalog.js';
 
 export { SCMS_FACILITIES };
 
 export function FacilitiesSection({ externalFacility = null, onModalClose = null } = {}) {
-  const [landingContent, setLandingContent] = useState(() => getLandingContent());
+  const landingContent = useLandingContent();
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFacility, setSelectedFacility] = useState(null);
@@ -17,15 +17,6 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const facilityCarouselRef = useRef(null);
   const isFacilityProgrammaticScrollRef = useRef(false);
   const facilityScrollTimeoutRef = useRef(null);
-
-  useEffect(() => {
-    const handleSync = (e) => {
-      if (e.detail) setLandingContent(e.detail);
-      else setLandingContent(getLandingContent());
-    };
-    window.addEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
-    return () => window.removeEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
-  }, []);
 
   const facilitiesList = landingContent.facilitiesSection?.facilitiesList || SCMS_FACILITIES;
   // Lọc chỉ những cụm sân có isVisible !== false (manager chủ động ẩn/hiện)

@@ -4,6 +4,10 @@ const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$
 // Memory belongs to this document, so another tab cannot replace its JWT.
 let accessToken = null;
 
+export function getApiUrl(path) {
+  return `${API_BASE_URL}/${path.replace(/^\/+/, '')}`;
+}
+
 export function getApiToken() {
   return accessToken;
 }
@@ -31,7 +35,7 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
 
   let response;
   try {
-    response = await fetch(`${API_BASE_URL}/${path.replace(/^\/+/, '')}`, {
+    response = await fetch(getApiUrl(path), {
       method,
       headers: requestHeaders,
       body: body === undefined ? undefined : JSON.stringify(body),

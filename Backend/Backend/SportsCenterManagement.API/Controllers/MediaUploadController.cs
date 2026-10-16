@@ -1,5 +1,6 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SportsCenterManagement.API.Filters;
 using SportsCenterManagement.BLL.DTOs.Media;
 using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.BLL.Services;
@@ -7,7 +8,8 @@ using SportsCenterManagement.BLL.Services;
 namespace SportsCenterManagement.API.Controllers;
 
 [Route("api/media")]
-[AllowAnonymous]
+[Authorize(Roles = "MANAGER,ADMIN,SYSTEMADMIN")]
+[FlowExceptionFilter]
 public class MediaUploadController : FlowControllerBase
 {
     private readonly GoogleDriveService _googleDriveService;
@@ -22,6 +24,7 @@ public class MediaUploadController : FlowControllerBase
     /// </summary>
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
+    [RequestSizeLimit(16 * 1024 * 1024)]
     [ProducesResponseType(typeof(UploadMediaResultDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<UploadMediaResultDto>> Upload(IFormFile? file, CancellationToken ct)
     {
@@ -40,7 +43,7 @@ public class MediaUploadController : FlowControllerBase
         var contentType = file.ContentType?.ToLowerInvariant() ?? "";
         if (!contentType.StartsWith("image/"))
         {
-            throw new FlowException(400, "Tệp tải lên phải là hình ảnh (PNG, JPG, JPEG, WEBP, GIF, SVG).");
+            throw new FlowException(400, "Tệp tải lên phải là hình ảnh (PNG, JPG, JPEG, WEBP, GIF, AVIF).");
         }
 
         using var stream = file.OpenReadStream();

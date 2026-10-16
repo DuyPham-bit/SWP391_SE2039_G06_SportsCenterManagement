@@ -9,6 +9,7 @@
     "test": "node --test tests/*.test.cjs",
     "test:payment:browser": "node tests/payment-checkout.browser.cjs",
     "test:manager:browser": "node tests/manager-merge.browser.cjs",
+    "test:landing:browser": "node tests/landing-content.browser.cjs",
     "test:api:live": "node tests/api-live.cjs",
     "test:api:proxy": "node tests/api-proxy.cjs",
     "build": "vite build",

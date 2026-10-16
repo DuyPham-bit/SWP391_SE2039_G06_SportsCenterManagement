@@ -4,7 +4,7 @@
  * Hỗ trợ tải tệp ảnh từ máy, thư viện ảnh đám mây thể thao chất lượng cao, và CDN link.
  */
 
-import { getApiToken } from './http.js';
+import { apiRequest, getApiToken, getApiUrl } from './http.js';
 
 // Bộ sưu tập ảnh thể thao đám mây chuẩn Olympic (Curated High-Res Cloud Sport Assets)
 export const CLOUD_SPORT_ASSETS = [
@@ -143,19 +143,7 @@ export const CLOUD_SPORT_ASSETS = [
  */
 export async function fetchDriveFiles() {
   try {
-    const token = getApiToken();
-    const headers = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
-
-    const response = await fetch('/api/media/drive-files', { headers });
-    if (!response.ok) {
-      const err = await response.json().catch(() => null);
-      throw new Error(err?.message || `Lỗi tải danh sách ảnh Google Drive (HTTP ${response.status})`);
-    }
-
-    const data = await response.json();
+    const data = await apiRequest('media/drive-files');
     return Array.isArray(data) ? data : [];
   } catch (error) {
     console.warn('Lỗi lấy danh sách ảnh Google Drive:', error);
@@ -168,11 +156,7 @@ export async function fetchDriveFiles() {
  */
 export async function fetchGoogleDriveStatus() {
   try {
-    const response = await fetch('/api/media/status');
-    if (!response.ok) {
-      return null;
-    }
-    return await response.json();
+    return await apiRequest('media/status');
   } catch (error) {
     console.warn('Lỗi kiểm tra Google Drive status:', error);
     return null;
@@ -188,8 +172,8 @@ export async function uploadMediaFileToCloud(file, allowLocalFallback = false) {
     throw new Error('Chưa chọn tệp');
   }
 
-  if (!file.type.startsWith('image/')) {
-    throw new Error('Vui lòng chọn tệp hình ảnh (JPEG, PNG, WEBP, SVG, v.v.)');
+  if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'].includes(file.type) || !/\.(png|jpe?g|webp|gif|avif)$/i.test(file.name)) {
+    throw new Error('Vui lòng chọn ảnh PNG, JPG/JPEG, WEBP, GIF hoặc AVIF. Không hỗ trợ SVG.');
   }
 
   // Giới hạn 15MB
@@ -207,7 +191,7 @@ export async function uploadMediaFileToCloud(file, allowLocalFallback = false) {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    const response = await fetch('/api/media/upload', {
+    const response = await fetch(getApiUrl('media/upload'), {
       method: 'POST',
       headers,
       body: formData
@@ -221,7 +205,7 @@ export async function uploadMediaFileToCloud(file, allowLocalFallback = false) {
         id: data.id,
         name: data.fileName || file.name,
         size: data.fileSize ? `${Math.round(data.fileSize / 1024)} KB` : `${Math.round(file.size / 1024)} KB`,
-        dimensions: 'Google Drive Cloud',
+        dimensions: data.fileId?.startsWith('local_') ? 'Thư viện máy chủ' : 'Google Drive Cloud',
         type: data.mimeType || file.type,
         uploadedAt: data.createdAt || new Date().toISOString()
       };

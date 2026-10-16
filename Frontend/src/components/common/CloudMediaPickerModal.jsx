@@ -282,7 +282,7 @@ export function CloudMediaPickerModal({
                     {driveStatus?.folderId?.includes('uploads') ? 'Ảnh Lưu Trữ Máy Chủ Cục Bộ' : 'Kho Ảnh Hệ Thống'}
                   </span>
                   <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
-                    {driveStatus?.folderId ? `Lưu tại: ${driveStatus.folderId}` : 'ID: 1nRmC1FaHiICnhfvfPHKGHc3iBZJLl01R'}
+                    {driveStatus?.folderId ? 'Ảnh dùng chung từ Google Drive' : 'Thư viện ảnh đã lưu trên máy chủ'}
                   </span>
                 </div>
                 <button
@@ -411,7 +411,7 @@ export function CloudMediaPickerModal({
               <label className="border-2 border-dashed border-slate-300 hover:border-red-500 rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer bg-slate-50 hover:bg-red-50/20 transition-all">
                 <input
                   type="file"
-                  accept="image/png, image/jpeg, image/webp, image/jpg, image/svg+xml"
+                  accept="image/png,image/jpeg,image/webp,image/gif,image/avif,.avif"
                   onChange={handleFileChange}
                   className="hidden"
                   disabled={uploadLoading}
@@ -420,21 +420,21 @@ export function CloudMediaPickerModal({
                   <span className="material-symbols-outlined text-[32px]">add_photo_alternate</span>
                 </div>
                 <span className="font-chivo text-sm font-bold text-slate-900 uppercase">
-                  Nhấp để tải tệp hoặc kéo thả vào đây
+                  Nhấp để chọn ảnh từ máy
                 </span>
                 <span className="text-xs text-slate-500 mt-1">
-                  Định dạng PNG, JPG, JPEG, WEBP, SVG (Tối đa 15MB)
+                  Định dạng PNG, JPG, JPEG, WEBP, GIF, AVIF (Tối đa 15MB)
                 </span>
                 <span className="mt-3 px-3 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200 text-[11px] font-bold flex items-center gap-1.5 shadow-sm">
                   <span className="material-symbols-outlined text-[16px] text-emerald-600">cloud_done</span>
-                  <span>Tự động tải lên Thư mục Google Drive &amp; lưu vào Database</span>
+                  <span>Ảnh được lưu vào thư viện chung</span>
                 </span>
               </label>
 
               {uploadLoading && (
                 <div className="text-center py-4 text-xs font-semibold text-slate-600 flex items-center justify-center gap-2">
                   <span className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
-                  <span>Đang tải lên Google Drive và xử lý liên kết CDN trực tiếp...</span>
+                  <span>Đang tải ảnh lên thư viện...</span>
                 </div>
               )}
 
@@ -442,10 +442,10 @@ export function CloudMediaPickerModal({
               <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs text-slate-600 space-y-1.5">
                 <div className="flex items-center gap-1.5 font-bold text-slate-800">
                   <span className="material-symbols-outlined text-[16px] text-blue-600">info</span>
-                  <span>Cơ chế tải lên Google Drive API:</span>
+                  <span>Lưu trữ hình ảnh:</span>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Tệp ảnh được gửi lên Backend C# (.NET 10), tải trực tiếp vào thư mục Google Drive của bạn (ID: <code className="font-mono bg-slate-200 px-1 py-0.5 rounded">1nRmC1FaHiICnhfvfPHKGHc3iBZJLl01R</code>), cấp quyền xem công khai và sinh link <code className="font-mono bg-slate-200 px-1 py-0.5 rounded">https://lh3.googleusercontent.com/d/[ID]</code> giúp ảnh tải siêu tốc không bị giới hạn quota.
+                  Ảnh được lưu vào thư viện dùng chung. Khi Google Drive tạm thời không khả dụng, hệ thống lưu ảnh trên máy chủ để bạn có thể tiếp tục sử dụng.
                 </p>
               </div>
             </div>

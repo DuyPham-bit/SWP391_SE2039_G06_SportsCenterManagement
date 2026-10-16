@@ -5,6 +5,8 @@ using Microsoft.OpenApi;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
 using Microsoft.AspNetCore.RateLimiting;
+using Microsoft.Extensions.FileProviders;
+using Microsoft.AspNetCore.StaticFiles;
 using SportsCenterManagement.API.Authentication;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.API.BackgroundServices;
@@ -84,7 +86,17 @@ builder.Services.AddScoped<MemberAiContextService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ClassReminderService>();
 builder.Services.AddHostedService<ClassReminderWorker>();
-builder.Services.AddScoped<GoogleDriveService>();
+builder.Services.AddScoped<LandingContentService>();
+var localMediaRoot = Path.GetFullPath(
+    builder.Configuration["GoogleDrive:LocalStoragePath"] ?? Path.Combine("App_Data", "media"),
+    builder.Environment.ContentRootPath);
+var localUploadsPath = Path.Combine(localMediaRoot, "uploads");
+Directory.CreateDirectory(localUploadsPath);
+builder.Services.AddScoped(provider => new GoogleDriveService(
+    provider.GetRequiredService<SportsCenterDbContext>(),
+    provider.GetRequiredService<IConfiguration>(),
+    provider.GetRequiredService<ILogger<GoogleDriveService>>(),
+    localMediaRoot));
 builder.Services.AddSingleton<GoogleTokenValidator>();
 builder.Services.AddHttpClient<GeminiService>(client => client.Timeout = TimeSpan.FromSeconds(45));
 builder.Services.AddRateLimiter(options =>
@@ -229,8 +241,31 @@ app.Use(async (context, next) =>
     }
 });
 
+app.Use(async (context, next) =>
+{
+    if (context.Request.Path.StartsWithSegments("/uploads") &&
+        !ImageUploadValidator.IsSupportedFileName(context.Request.Path.Value ?? ""))
+    {
+        context.Response.StatusCode = StatusCodes.Status404NotFound;
+        return;
+    }
+    await next();
+});
+var mediaContentTypes = new FileExtensionContentTypeProvider();
+mediaContentTypes.Mappings[".avif"] = "image/avif";
+app.UseStaticFiles(new StaticFileOptions
+{
+    FileProvider = new PhysicalFileProvider(localUploadsPath),
+    RequestPath = "/uploads",
+    ContentTypeProvider = mediaContentTypes,
+    OnPrepareResponse = context => context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff"
+});
 app.UseDefaultFiles();
-app.UseStaticFiles();
+app.UseStaticFiles(new StaticFileOptions
+{
+    ContentTypeProvider = mediaContentTypes,
+    OnPrepareResponse = context => context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff"
+});
 app.UseRouting();
 app.UseCors();
 app.Use(async (context, next) =>

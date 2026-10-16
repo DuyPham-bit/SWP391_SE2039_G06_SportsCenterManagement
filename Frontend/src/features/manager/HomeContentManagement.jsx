@@ -1,21 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import {
   getLandingContent,
+  getLegacyLandingContent,
+  loadLandingContent,
   saveLandingContent,
   resetLandingContentToDefault,
-  toggleSportVisibility,
-  toggleFacilityVisibility,
-  LANDING_CONTENT_CHANGE_EVENT
+  openLandingPreview
 } from '../../services/landingContentService.js';
 import { CloudMediaPickerModal } from '../../components/common/CloudMediaPickerModal.jsx';
 import { useToast } from '../../context/ToastContext.js';
 
 export function HomeContentManagement() {
-  const { addToast } = useToast();
+  const { showToast: addToast } = useToast();
   const [content, setContent] = useState(() => getLandingContent());
   const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'whyUs' | 'sports' | 'facilities' | 'zones' | 'footer'
   const [isDirty, setIsDirty] = useState(false);
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [loadError, setLoadError] = useState('');
+  const [reloadKey, setReloadKey] = useState(0);
 
   // States cho Modal chọn ảnh đám mây
   const [mediaPickerConfig, setMediaPickerConfig] = useState({
@@ -38,16 +42,25 @@ export function HomeContentManagement() {
   const [sportSearch, setSportSearch] = useState('');
   const [facilitySearch, setFacilitySearch] = useState('');
 
-  // Lắng nghe sự kiện nếu có thay đổi từ nơi khác
+  // Do not replace an unsaved draft with a background refresh.
   useEffect(() => {
-    const handleSync = (e) => {
-      if (e.detail) {
-        setContent(e.detail);
+    let active = true;
+    const controller = new AbortController();
+    setIsLoading(true);
+    setLoadError('');
+    loadLandingContent({ signal: controller.signal }).then(result => {
+      if (!active) return;
+      const legacy = !result.hasPublishedContent ? getLegacyLandingContent() : null;
+      setContent(legacy || result.content);
+      setIsDirty(Boolean(legacy));
+      if (legacy) {
+        addToast('Đã tải nội dung cũ trên trình duyệt thành bản nháp. Bấm Lưu để công bố cho mọi người.', 'info');
       }
-    };
-    window.addEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
-    return () => window.removeEventListener(LANDING_CONTENT_CHANGE_EVENT, handleSync);
-  }, []);
+    }).catch(error => {
+      if (active) setLoadError(error.message || 'Không thể tải nội dung trang chủ.');
+    }).finally(() => { if (active) setIsLoading(false); });
+    return () => { active = false; controller.abort(); };
+  }, [reloadKey]);
 
   // Đánh dấu có thay đổi
   const updateContentField = (section, key, value) => {
@@ -62,32 +75,41 @@ export function HomeContentManagement() {
   };
 
   // Lưu toàn bộ nội dung
-  const handleSaveAll = () => {
-    const success = saveLandingContent(content);
-    if (success) {
+  const handleSaveAll = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const saved = await saveLandingContent(content);
+      setContent(saved);
       setIsDirty(false);
       addToast('Đã lưu và đồng bộ toàn bộ nội dung Trang chủ thành công!', 'success');
-    } else {
-      addToast('Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.', 'error');
-    }
+    } catch (error) {
+      addToast(error.message || 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.', 'error');
+    } finally { setIsSaving(false); }
   };
 
   // Khôi phục mặc định
-  const handleResetDefault = () => {
-    const defaultData = resetLandingContentToDefault();
-    setContent(defaultData);
-    setIsDirty(false);
-    setIsResetConfirmOpen(false);
-    addToast('Đã khôi phục toàn bộ nội dung Trang chủ về chuẩn thiết kế ban đầu!', 'info');
+  const handleResetDefault = async () => {
+    if (isSaving) return;
+    setIsSaving(true);
+    try {
+      const defaultData = await resetLandingContentToDefault();
+      setContent(defaultData);
+      setIsDirty(false);
+      setIsResetConfirmOpen(false);
+      addToast('Đã khôi phục toàn bộ nội dung Trang chủ về chuẩn thiết kế ban đầu!', 'info');
+    } catch (error) {
+      addToast(error.message || 'Không thể khôi phục nội dung. Vui lòng thử lại.', 'error');
+    } finally { setIsSaving(false); }
   };
 
   // Xem trước trang chủ ở tab mới an toàn mà không làm thay đổi URL/hash của tab hiện tại
   const handlePreview = () => {
-    if (isDirty) {
-      saveLandingContent(content, false);
+    try {
+      openLandingPreview(content);
+    } catch (error) {
+      addToast(error.message || 'Không thể mở bản xem trước.', 'error');
     }
-    const previewUrl = new URL('#/', window.location.href).href;
-    window.open(previewUrl, '_blank', 'noopener,noreferrer');
   };
 
   // Mở Cloud Media Picker
@@ -230,8 +252,16 @@ export function HomeContentManagement() {
   const totalFacilities = content.facilitiesSection.facilitiesList.length;
   const visibleFacilities = content.facilitiesSection.facilitiesList.filter(f => f.isVisible !== false).length;
 
+  if (isLoading) return <div role="status" className="p-8 text-center">Đang tải nội dung trang chủ...</div>;
+  if (loadError) return (
+    <div role="alert" className="p-8 rounded-xl bg-red-50 text-red-800 space-y-4">
+      <p>{loadError}</p>
+      <button type="button" onClick={() => setReloadKey(value => value + 1)} className="px-4 py-2 border rounded-lg">Thử lại</button>
+    </div>
+  );
+
   return (
-    <div className="space-y-6 pb-20 font-inter">
+    <fieldset disabled={isSaving} aria-busy={isSaving} className="space-y-6 pb-20 font-inter min-w-0">
       {/* 1. TOP HEADER BANNER */}
       <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-6 sm:p-8 border border-slate-700/60 shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-red-600/20 to-transparent pointer-events-none" />
@@ -467,7 +497,7 @@ export function HomeContentManagement() {
                     value={metric.value}
                     onChange={(e) => {
                       const updated = [...content.heroBanner.metrics];
-                      updated[idx].value = e.target.value;
+                      updated[idx] = { ...updated[idx], value: e.target.value };
                       updateContentField('heroBanner', 'metrics', updated);
                     }}
                     className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm font-black text-red-600 text-center"
@@ -477,7 +507,7 @@ export function HomeContentManagement() {
                     value={metric.label}
                     onChange={(e) => {
                       const updated = [...content.heroBanner.metrics];
-                      updated[idx].label = e.target.value;
+                      updated[idx] = { ...updated[idx], label: e.target.value };
                       updateContentField('heroBanner', 'metrics', updated);
                     }}
                     className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] font-bold text-slate-700 text-center uppercase"
@@ -545,7 +575,7 @@ export function HomeContentManagement() {
                         value={feat.title}
                         onChange={(e) => {
                           const updated = [...content.whyUs.features];
-                          updated[idx].title = e.target.value;
+                          updated[idx] = { ...updated[idx], title: e.target.value };
                           updateContentField('whyUs', 'features', updated);
                         }}
                         className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold"
@@ -556,7 +586,7 @@ export function HomeContentManagement() {
                       value={feat.description}
                       onChange={(e) => {
                         const updated = [...content.whyUs.features];
-                        updated[idx].description = e.target.value;
+                        updated[idx] = { ...updated[idx], description: e.target.value };
                         updateContentField('whyUs', 'features', updated);
                       }}
                       className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-[11px] leading-relaxed"
@@ -586,7 +616,7 @@ export function HomeContentManagement() {
                         value={st.number}
                         onChange={(e) => {
                           const updated = [...content.whyUs.stats];
-                          updated[idx].number = Number(e.target.value);
+                          updated[idx] = { ...updated[idx], number: Number(e.target.value) };
                           updateContentField('whyUs', 'stats', updated);
                         }}
                         className="w-2/3 px-2 py-1 rounded bg-white text-slate-900 font-chivo font-black text-lg text-center"
@@ -597,7 +627,7 @@ export function HomeContentManagement() {
                         placeholder="Hậu tố"
                         onChange={(e) => {
                           const updated = [...content.whyUs.stats];
-                          updated[idx].suffix = e.target.value;
+                          updated[idx] = { ...updated[idx], suffix: e.target.value };
                           updateContentField('whyUs', 'stats', updated);
                         }}
                         className="w-1/3 px-2 py-1 rounded bg-white text-slate-900 font-bold text-xs text-center"
@@ -608,7 +638,7 @@ export function HomeContentManagement() {
                       value={st.title}
                       onChange={(e) => {
                         const updated = [...content.whyUs.stats];
-                        updated[idx].title = e.target.value;
+                        updated[idx] = { ...updated[idx], title: e.target.value };
                         updateContentField('whyUs', 'stats', updated);
                       }}
                       className="w-full px-2 py-1 rounded bg-white/20 border border-white/30 text-white text-xs font-extrabold uppercase"
@@ -618,7 +648,7 @@ export function HomeContentManagement() {
                       value={st.subtitle}
                       onChange={(e) => {
                         const updated = [...content.whyUs.stats];
-                        updated[idx].subtitle = e.target.value;
+                        updated[idx] = { ...updated[idx], subtitle: e.target.value };
                         updateContentField('whyUs', 'stats', updated);
                       }}
                       className="w-full px-2 py-1 rounded bg-white/10 border border-white/20 text-white/90 text-[11px]"
@@ -903,7 +933,7 @@ export function HomeContentManagement() {
                     value={fm.value}
                     onChange={(e) => {
                       const updated = [...content.facilitiesSection.metrics];
-                      updated[idx].value = e.target.value;
+                      updated[idx] = { ...updated[idx], value: e.target.value };
                       updateContentField('facilitiesSection', 'metrics', updated);
                     }}
                     className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 font-chivo text-sm font-black text-slate-900 text-center"
@@ -913,7 +943,7 @@ export function HomeContentManagement() {
                     value={fm.label}
                     onChange={(e) => {
                       const updated = [...content.facilitiesSection.metrics];
-                      updated[idx].label = e.target.value;
+                      updated[idx] = { ...updated[idx], label: e.target.value };
                       updateContentField('facilitiesSection', 'metrics', updated);
                     }}
                     className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-600 text-center uppercase"
@@ -1089,7 +1119,7 @@ export function HomeContentManagement() {
                       value={sa.text}
                       onChange={(e) => {
                         const updated = [...content.zonesLayout.serviceAmenities];
-                        updated[idx].text = e.target.value;
+                        updated[idx] = { ...updated[idx], text: e.target.value };
                         updateContentField('zonesLayout', 'serviceAmenities', updated);
                       }}
                       className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs"
@@ -1111,7 +1141,7 @@ export function HomeContentManagement() {
                       value={zn.name}
                       onChange={(e) => {
                         const updated = [...content.zonesLayout.zones];
-                        updated[idx].name = e.target.value;
+                        updated[idx] = { ...updated[idx], name: e.target.value };
                         updateContentField('zonesLayout', 'zones', updated);
                       }}
                       className="flex-1 px-3 py-1 bg-white/10 rounded border border-white/20 text-xs font-bold text-white uppercase"
@@ -1125,7 +1155,7 @@ export function HomeContentManagement() {
                         value={it}
                         onChange={(e) => {
                           const updated = [...content.zonesLayout.zones];
-                          updated[idx].items[itIdx] = e.target.value;
+                          updated[idx] = { ...updated[idx], items: updated[idx].items.map((item, index) => index === itIdx ? e.target.value : item) };
                           updateContentField('zonesLayout', 'zones', updated);
                         }}
                         className="w-full px-2.5 py-1 bg-white/5 rounded border border-white/10 text-[11px] text-slate-300"
@@ -1660,6 +1690,6 @@ export function HomeContentManagement() {
           }
         }}
       />
-    </div>
+    </fieldset>
   );
 }
