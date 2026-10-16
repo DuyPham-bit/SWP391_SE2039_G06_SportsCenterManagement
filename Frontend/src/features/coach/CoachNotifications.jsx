@@ -393,133 +393,118 @@ export function CoachNotifications() {
   if (loading) return <LoadingSpinner text="Đang tải danh sách thông báo..." />;
 
   return (
-    <div className="space-y-6">
-      {/* 1. TOP HEADER BANNER */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-slate-800">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-chivo text-xs uppercase tracking-widest text-red-500 font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              CHUYÊN MÔN & KẾT NỐI HỌC VIÊN
-            </span>
-          </div>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-[28px] text-red-500">campaign</span>
-            Gửi Bài Tập & Thông Báo Cho Học Viên
+    <div className="space-y-5">
+      {/* 1. TOP HEADER - TINH GỌN, HIỆN ĐẠI */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
+        <div>
+          <h1 className="font-chivo text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
+            <span className="material-symbols-outlined text-[24px] text-red-600">campaign</span>
+            <span>Gửi Bài Tập & Thông Báo Cho Học Viên</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-            Giao bài tập về nhà, nhắc lịch tập theo lớp hoặc gửi nhận xét & góp ý kỹ thuật riêng 1-1 tới từng học viên.
+          <p className="text-xs text-slate-500 mt-0.5">
+            Giao bài tập về nhà theo lớp hoặc gửi nhận xét & góp ý kỹ thuật riêng 1-1 tới từng học viên.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0 flex-wrap">
-          <button
-            onClick={() => {
-              setTitle('');
-              setContent('');
-              setTargetType('MEMBER');
-              setSelectedMemberId(null);
-              setModalOpen(true);
-            }}
-            disabled={!classes.length || Boolean(error)}
-            className="px-4 py-3 bg-purple-600 hover:bg-purple-700 active:scale-[0.98] text-white font-chivo text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-purple-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="material-symbols-outlined text-[19px]">person</span>
-            <span>Gửi Riêng 1-1</span>
-          </button>
-
-          <button
-            onClick={() => {
-              setTitle('');
-              setContent('');
-              setTargetType('CLASS');
-              setModalOpen(true);
-            }}
-            disabled={!classes.length || Boolean(error)}
-            className="px-5 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 active:scale-[0.98] text-white font-chivo text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-red-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-          >
-            <span className="material-symbols-outlined text-[20px]">post_add</span>
-            <span>Soạn Thông Báo Mới</span>
-          </button>
-        </div>
+        <button
+          type="button"
+          onClick={() => {
+            setTitle('');
+            setContent('');
+            setModalOpen(true);
+          }}
+          disabled={!classes.length || Boolean(error)}
+          className="px-4 py-2.5 bg-red-600 hover:bg-red-700 active:scale-[0.98] text-white font-chivo text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-xs transition-all flex items-center gap-1.5 self-start sm:self-auto cursor-pointer shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <span className="material-symbols-outlined text-[18px]">add_circle</span>
+          <span>Soạn Thông Báo Mới</span>
+        </button>
       </div>
 
-      {/* 2. KPI STAT CARDS */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-        {/* Card 1: Sent announcements */}
+      {/* 2. KPI STAT CARDS - ĐỒNG BỘ NỀN TRẮNG, TINH TẾ, KHÔNG RỐI MẮT */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        {/* Card 1: Tổng đã gửi */}
         <button
           type="button"
           onClick={() => {
             setActiveTab('SENT');
             setSelectedClassFilter('ALL');
           }}
-          className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer bg-white ${
             activeTab === 'SENT' && selectedClassFilter === 'ALL'
-              ? 'bg-slate-900 text-white border-slate-900 shadow-md ring-2 ring-red-500/50'
-              : 'bg-white text-slate-800 border-slate-200 hover:border-slate-300 hover:shadow-xs'
+              ? 'border-slate-800 ring-2 ring-slate-800/15 shadow-xs'
+              : 'border-slate-200 hover:border-slate-300 hover:shadow-2xs'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider opacity-80">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <span>Đã gửi học viên</span>
-            <span className="material-symbols-outlined text-[18px]">outbox</span>
+            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[16px]">outbox</span>
+            </div>
           </div>
-          <div className="font-chivo text-2xl font-black mt-2">
+          <div className="font-chivo text-2xl font-black text-slate-900 mt-1">
             {stats.totalSent}
           </div>
         </button>
 
-        {/* Card 2: Total recipients */}
-        <div className="p-4 rounded-xl border border-red-200 bg-red-50/60 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-red-800">
+        {/* Card 2: Lượt học viên nhận */}
+        <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <span>Lượt học viên nhận</span>
-            <span className="material-symbols-outlined text-[18px] text-red-600">groups</span>
+            <div className="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[16px]">groups</span>
+            </div>
           </div>
-          <div className="font-chivo text-2xl font-black text-red-900 mt-2">
+          <div className="font-chivo text-2xl font-black text-slate-900 mt-1">
             {stats.totalRecipients}
           </div>
         </div>
 
-        {/* Card 3: 1-on-1 sent */}
+        {/* Card 3: Gửi riêng 1-1 */}
         <button
           type="button"
           onClick={() => {
             setActiveTab('SENT');
             setSelectedClassFilter(selectedClassFilter === 'MEMBER' ? 'ALL' : 'MEMBER');
           }}
-          className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer bg-white ${
             activeTab === 'SENT' && selectedClassFilter === 'MEMBER'
-              ? 'bg-purple-900 text-white border-purple-900 shadow-md ring-2 ring-purple-400'
-              : 'bg-purple-50/70 text-purple-900 border-purple-200 hover:border-purple-300 hover:shadow-xs'
+              ? 'border-purple-600 ring-2 ring-purple-600/20 shadow-xs'
+              : 'border-slate-200 hover:border-slate-300 hover:shadow-2xs'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider opacity-90">
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
             <span>Gửi riêng 1-1</span>
-            <span className="material-symbols-outlined text-[18px]">person</span>
+            <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[16px]">person</span>
+            </div>
           </div>
-          <div className="font-chivo text-2xl font-black mt-2">
-            {stats.oneOnOneCount} <span className="text-xs font-normal opacity-80">tin nhắn</span>
+          <div className="font-chivo text-2xl font-black text-slate-900 mt-1">
+            {stats.oneOnOneCount} <span className="text-xs font-normal text-slate-400">tin nhắn</span>
           </div>
         </button>
 
-        {/* Card 4: Inbox */}
+        {/* Card 4: Hộp thư đến */}
         <button
           type="button"
           onClick={() => setActiveTab('INBOX')}
-          className={`p-4 rounded-xl border text-left transition-all cursor-pointer ${
+          className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer bg-white ${
             activeTab === 'INBOX'
-              ? 'bg-sky-700 text-white border-sky-700 shadow-md ring-2 ring-sky-400'
-              : 'bg-sky-50/60 text-sky-900 border-sky-200 hover:border-sky-300 hover:shadow-xs'
+              ? 'border-sky-600 ring-2 ring-sky-600/20 shadow-xs'
+              : 'border-slate-200 hover:border-slate-300 hover:shadow-2xs'
           }`}
         >
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider opacity-90">
-            <span className="flex items-center gap-1.5">
-              {stats.inboxUnread > 0 && <span className="w-2 h-2 rounded-full bg-sky-400 animate-ping" />}
+          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
+            <span className="flex items-center gap-1">
+              {stats.inboxUnread > 0 && <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />}
               Hộp thư đến
             </span>
-            <span className="material-symbols-outlined text-[18px]">notifications_active</span>
+            <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[16px]">notifications</span>
+            </div>
           </div>
-          <div className="font-chivo text-2xl font-black mt-2">
-            {stats.inboxUnread} <span className="text-xs font-normal opacity-80">chưa đọc</span>
+          <div className="font-chivo text-2xl font-black text-slate-900 mt-1">
+            {stats.inboxUnread} <span className="text-xs font-normal text-slate-400">chưa đọc</span>
           </div>
         </button>
       </div>
@@ -531,29 +516,29 @@ export function CoachNotifications() {
         <button
           type="button"
           onClick={() => setActiveTab('SENT')}
-          className={`px-4 py-2.5 rounded-xl font-chivo text-xs sm:text-sm font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-3.5 py-2 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'SENT'
               ? 'bg-slate-900 text-white shadow-xs'
               : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          <span className="material-symbols-outlined text-[18px]">send</span>
+          <span className="material-symbols-outlined text-[16px]">send</span>
           <span>Bài tập & Thông báo đã gửi ({notifications.length})</span>
         </button>
 
         <button
           type="button"
           onClick={() => setActiveTab('INBOX')}
-          className={`px-4 py-2.5 rounded-xl font-chivo text-xs sm:text-sm font-bold uppercase tracking-wider transition-all flex items-center gap-2 cursor-pointer ${
+          className={`px-3.5 py-2 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
             activeTab === 'INBOX'
               ? 'bg-slate-900 text-white shadow-xs'
               : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'
           }`}
         >
-          <span className="material-symbols-outlined text-[18px]">inbox</span>
+          <span className="material-symbols-outlined text-[16px]">inbox</span>
           <span>Hộp thư đến của tôi</span>
           {stats.inboxUnread > 0 && (
-            <span className="px-2 py-0.2 rounded-full text-[10px] font-black bg-red-600 text-white animate-pulse">
+            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-red-600 text-white">
               {stats.inboxUnread}
             </span>
           )}
