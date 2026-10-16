@@ -129,6 +129,10 @@ export function CoachNotifications() {
   const [selectedClassFilter, setSelectedClassFilter] = useState('ALL');
   const [selectedTypeFilter, setSelectedTypeFilter] = useState('ALL');
 
+  // Chế độ xem & Thẻ đang chọn (Master-Detail)
+  const [viewMode, setViewMode] = useState('split'); // 'split' (chia đôi) | 'grid' (lưới thẻ)
+  const [selectedNotifId, setSelectedNotifId] = useState(null);
+
   // Modal State
   const [modalOpen, setModalOpen] = useState(false);
   const [targetType, setTargetType] = useState('CLASS'); // 'CLASS' | 'MEMBER' | 'ALL'
@@ -390,20 +394,39 @@ export function CoachNotifications() {
     return { totalSent, totalRecipients, oneOnOneCount, classesCount, inboxUnread };
   }, [notifications, classes, inbox]);
 
+  // Tự động chọn tin nhắn đầu tiên khi danh sách thay đổi
+  useEffect(() => {
+    if (filteredNotifications.length > 0) {
+      if (!selectedNotifId || !filteredNotifications.some(n => n.id === selectedNotifId)) {
+        setSelectedNotifId(filteredNotifications[0].id);
+      }
+    } else {
+      setSelectedNotifId(null);
+    }
+  }, [filteredNotifications, selectedNotifId]);
+
+  const selectedNotif = useMemo(() => {
+    return filteredNotifications.find(n => n.id === selectedNotifId) || filteredNotifications[0] || null;
+  }, [filteredNotifications, selectedNotifId]);
+
   if (loading) return <LoadingSpinner text="Đang tải danh sách thông báo..." />;
 
   return (
-    <div className="space-y-5">
-      {/* 1. TOP HEADER - TINH GỌN, HIỆN ĐẠI */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-slate-200">
-        <div>
-          <h1 className="font-chivo text-xl sm:text-2xl font-black text-slate-900 tracking-tight flex items-center gap-2">
-            <span className="material-symbols-outlined text-[24px] text-red-600">campaign</span>
-            <span>Gửi Bài Tập & Thông Báo Cho Học Viên</span>
-          </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
-            Giao bài tập về nhà theo lớp hoặc gửi nhận xét & góp ý kỹ thuật riêng 1-1 tới từng học viên.
-          </p>
+    <div className="space-y-4">
+      {/* 1. TOP HEADER BANNER - TINH GỌN, SANG TRỌNG */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2.5 border-b border-slate-200">
+        <div className="flex items-center gap-2.5">
+          <div className="w-9 h-9 rounded-xl bg-red-50 text-red-600 flex items-center justify-center shrink-0 shadow-2xs">
+            <span className="material-symbols-outlined text-[22px]">campaign</span>
+          </div>
+          <div>
+            <h1 className="font-chivo text-xl sm:text-2xl font-black text-slate-900 tracking-tight">
+              Gửi Bài Tập & Thông Báo Cho Học Viên
+            </h1>
+            <p className="text-xs text-slate-500">
+              Giao bài tập về nhà theo lớp hoặc gửi nhận xét & góp ý kỹ thuật riêng 1-1 tới từng học viên.
+            </p>
+          </div>
         </div>
 
         <button
@@ -421,231 +444,237 @@ export function CoachNotifications() {
         </button>
       </div>
 
-      {/* 2. KPI STAT CARDS - ĐỒNG BỘ NỀN TRẮNG, TINH TẾ, KHÔNG RỐI MẮT */}
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {/* Card 1: Tổng đã gửi */}
-        <button
-          type="button"
+      {/* 2. KPI METRICS TILES - GỌN GÀNG, ĐỒNG BỘ NỀN TRẮNG */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-2.5">
+        {/* Tile 1: Tổng đã gửi */}
+        <div
           onClick={() => {
             setActiveTab('SENT');
             setSelectedClassFilter('ALL');
           }}
-          className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer bg-white ${
+          className={`p-3 rounded-xl border transition-all cursor-pointer bg-white flex items-center justify-between shadow-2xs ${
             activeTab === 'SENT' && selectedClassFilter === 'ALL'
-              ? 'border-slate-800 ring-2 ring-slate-800/15 shadow-xs'
-              : 'border-slate-200 hover:border-slate-300 hover:shadow-2xs'
+              ? 'border-slate-800 ring-2 ring-slate-800/15'
+              : 'border-slate-200 hover:border-slate-300'
           }`}
         >
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            <span>Đã gửi học viên</span>
-            <div className="w-7 h-7 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px]">outbox</span>
+          <div>
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Đã gửi học viên</div>
+            <div className="font-chivo text-xl font-black text-slate-900 mt-0.5">
+              {stats.totalSent} <span className="text-xs font-normal text-slate-400">bản tin</span>
             </div>
           </div>
-          <div className="font-chivo text-2xl font-black text-slate-900 mt-1">
-            {stats.totalSent}
-          </div>
-        </button>
-
-        {/* Card 2: Lượt học viên nhận */}
-        <div className="p-3.5 rounded-xl border border-slate-200 bg-white shadow-2xs">
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            <span>Lượt học viên nhận</span>
-            <div className="w-7 h-7 rounded-lg bg-red-50 text-red-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px]">groups</span>
-            </div>
-          </div>
-          <div className="font-chivo text-2xl font-black text-slate-900 mt-1">
-            {stats.totalRecipients}
+          <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[18px]">outbox</span>
           </div>
         </div>
 
-        {/* Card 3: Gửi riêng 1-1 */}
-        <button
-          type="button"
+        {/* Tile 2: Lượt học viên nhận */}
+        <div className="p-3 rounded-xl border border-slate-200 bg-white shadow-2xs flex items-center justify-between">
+          <div>
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Lượt học viên nhận</div>
+            <div className="font-chivo text-xl font-black text-slate-900 mt-0.5">
+              {stats.totalRecipients} <span className="text-xs font-normal text-slate-400">lượt tiếp cận</span>
+            </div>
+          </div>
+          <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[18px]">groups</span>
+          </div>
+        </div>
+
+        {/* Tile 3: Gửi riêng 1-1 */}
+        <div
           onClick={() => {
             setActiveTab('SENT');
             setSelectedClassFilter(selectedClassFilter === 'MEMBER' ? 'ALL' : 'MEMBER');
           }}
-          className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer bg-white ${
+          className={`p-3 rounded-xl border transition-all cursor-pointer bg-white flex items-center justify-between shadow-2xs ${
             activeTab === 'SENT' && selectedClassFilter === 'MEMBER'
-              ? 'border-purple-600 ring-2 ring-purple-600/20 shadow-xs'
-              : 'border-slate-200 hover:border-slate-300 hover:shadow-2xs'
+              ? 'border-purple-600 ring-2 ring-purple-600/20'
+              : 'border-slate-200 hover:border-slate-300'
           }`}
         >
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            <span>Gửi riêng 1-1</span>
-            <div className="w-7 h-7 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px]">person</span>
+          <div>
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <span>Gửi riêng 1-1</span>
+              {selectedClassFilter === 'MEMBER' && <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />}
+            </div>
+            <div className="font-chivo text-xl font-black text-slate-900 mt-0.5">
+              {stats.oneOnOneCount} <span className="text-xs font-normal text-slate-400">tin nhắn</span>
             </div>
           </div>
-          <div className="font-chivo text-2xl font-black text-slate-900 mt-1">
-            {stats.oneOnOneCount} <span className="text-xs font-normal text-slate-400">tin nhắn</span>
+          <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[18px]">person</span>
           </div>
-        </button>
+        </div>
 
-        {/* Card 4: Hộp thư đến */}
-        <button
-          type="button"
+        {/* Tile 4: Hộp thư đến */}
+        <div
           onClick={() => setActiveTab('INBOX')}
-          className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer bg-white ${
+          className={`p-3 rounded-xl border transition-all cursor-pointer bg-white flex items-center justify-between shadow-2xs ${
             activeTab === 'INBOX'
-              ? 'border-sky-600 ring-2 ring-sky-600/20 shadow-xs'
-              : 'border-slate-200 hover:border-slate-300 hover:shadow-2xs'
+              ? 'border-sky-600 ring-2 ring-sky-600/20'
+              : 'border-slate-200 hover:border-slate-300'
           }`}
         >
-          <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-wider text-slate-500">
-            <span className="flex items-center gap-1">
-              {stats.inboxUnread > 0 && <span className="w-2 h-2 rounded-full bg-red-500 animate-ping" />}
-              Hộp thư đến
-            </span>
-            <div className="w-7 h-7 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center">
-              <span className="material-symbols-outlined text-[16px]">notifications</span>
+          <div>
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
+              <span className="flex items-center gap-1">
+                {stats.inboxUnread > 0 && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />}
+                Hộp thư đến
+              </span>
+            </div>
+            <div className="font-chivo text-xl font-black text-slate-900 mt-0.5">
+              {stats.inboxUnread} <span className="text-xs font-normal text-slate-400">chưa đọc</span>
             </div>
           </div>
-          <div className="font-chivo text-2xl font-black text-slate-900 mt-1">
-            {stats.inboxUnread} <span className="text-xs font-normal text-slate-400">chưa đọc</span>
+          <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
+            <span className="material-symbols-outlined text-[18px]">notifications</span>
           </div>
-        </button>
+        </div>
       </div>
 
       <CoachError message={error} retry={loadData} />
 
-      {/* 3. SEGMENTED TAB SWITCHER */}
-      <div className="flex items-center gap-2 border-b border-slate-200 pb-1">
-        <button
-          type="button"
-          onClick={() => setActiveTab('SENT')}
-          className={`px-3.5 py-2 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'SENT'
-              ? 'bg-slate-900 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[16px]">send</span>
-          <span>Bài tập & Thông báo đã gửi ({notifications.length})</span>
-        </button>
+      {/* 3. TOOLBAR ĐIỀU HƯỚNG & BỘ LỌC ĐA NĂNG */}
+      <div className="p-3 bg-white rounded-xl border border-slate-200 shadow-2xs space-y-2.5">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          {/* Segmented Tab Switcher */}
+          <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg self-start">
+            <button
+              type="button"
+              onClick={() => setActiveTab('SENT')}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'SENT' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">send</span>
+              <span>Đã gửi ({notifications.length})</span>
+            </button>
 
-        <button
-          type="button"
-          onClick={() => setActiveTab('INBOX')}
-          className={`px-3.5 py-2 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer ${
-            activeTab === 'INBOX'
-              ? 'bg-slate-900 text-white shadow-xs'
-              : 'bg-white text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-          }`}
-        >
-          <span className="material-symbols-outlined text-[16px]">inbox</span>
-          <span>Hộp thư đến của tôi</span>
-          {stats.inboxUnread > 0 && (
-            <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-red-600 text-white">
-              {stats.inboxUnread}
-            </span>
+            <button
+              type="button"
+              onClick={() => setActiveTab('INBOX')}
+              className={`px-3 py-1.5 rounded-md text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                activeTab === 'INBOX' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[16px]">inbox</span>
+              <span>Hộp thư đến</span>
+              {stats.inboxUnread > 0 && (
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-red-600 text-white">
+                  {stats.inboxUnread}
+                </span>
+              )}
+            </button>
+          </div>
+
+          {/* Chế độ xem: Chia đôi (Master-Detail) vs Lưới thẻ (Grid) */}
+          {activeTab === 'SENT' && (
+            <div className="flex items-center gap-1 bg-slate-100 p-1 rounded-lg self-start sm:self-auto">
+              <button
+                type="button"
+                onClick={() => setViewMode('split')}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'split' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Chế độ chia đôi màn hình: Danh sách bên trái, đọc nội dung bên phải (dễ quan sát nhất)"
+              >
+                <span className="material-symbols-outlined text-[16px]">vertical_split</span>
+                <span>Chia đôi (Dễ đọc)</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setViewMode('grid')}
+                className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
+                  viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
+                }`}
+                title="Chế độ lưới thẻ 2 cột"
+              >
+                <span className="material-symbols-outlined text-[16px]">grid_view</span>
+                <span>Lưới thẻ</span>
+              </button>
+            </div>
           )}
-        </button>
+        </div>
+
+        {/* Hàng tìm kiếm & lọc khi ở tab Đã gửi */}
+        {activeTab === 'SENT' && (
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-2 pt-1 border-t border-slate-100 text-xs">
+            {/* Ô tìm kiếm */}
+            <div className="sm:col-span-5 relative">
+              <span className="material-symbols-outlined absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400 text-[16px]">
+                search
+              </span>
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                placeholder="Tìm tiêu đề, nội dung, học viên..."
+                className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium placeholder-slate-400"
+              />
+              {searchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setSearchQuery('')}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[14px]">close</span>
+                </button>
+              )}
+            </div>
+
+            {/* Lọc đối tượng gửi */}
+            <div className="sm:col-span-4">
+              <select
+                value={selectedClassFilter}
+                onChange={e => setSelectedClassFilter(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium cursor-pointer"
+              >
+                <option value="ALL">🎯 Tất cả đối tượng gửi</option>
+                <option value="MEMBER">👤 Gửi riêng 1-1 (Từng học viên)</option>
+                <option value="ENTIRE">👥 Toàn bộ học viên của HLV</option>
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>
+                    Lớp: {c.name} ({c.sportName})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Lọc thể loại */}
+            <div className="sm:col-span-3">
+              <select
+                value={selectedTypeFilter}
+                onChange={e => setSelectedTypeFilter(e.target.value)}
+                className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium cursor-pointer"
+              >
+                <option value="ALL">🏷️ Tất cả chủ đề</option>
+                <option value="PERSONAL_FEEDBACK">🎯 Góp ý 1-1 cá nhân</option>
+                <option value="HOMEWORK">🏋️ Bài tập về nhà</option>
+                <option value="REMINDER">⏰ Nhắc lịch học</option>
+                <option value="SCHEDULE_CHANGE">📢 Thay đổi ca dạy</option>
+                <option value="NUTRITION">🥗 Dinh dưỡng & Phục hồi</option>
+              </select>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* 4. MAIN CONTENT ACCORDING TO ACTIVE TAB */}
+      {/* 4. MAIN CONTENT AREA */}
 
       {/* --- TAB 1: BÀI TẬP & THÔNG BÁO ĐÃ GỬI --- */}
       {activeTab === 'SENT' && (
-        <div className="space-y-4">
-          {/* Filter Bar */}
-          <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-xs space-y-3">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
-              {/* Search Input */}
-              <div className="relative sm:col-span-1">
-                <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
-                  search
-                </span>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  placeholder="Tìm tiêu đề, nội dung bài tập, học viên..."
-                  className="w-full pl-9 pr-8 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium"
-                />
-                {searchQuery && (
-                  <button
-                    type="button"
-                    onClick={() => setSearchQuery('')}
-                    className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 p-0.5 cursor-pointer"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">close</span>
-                  </button>
-                )}
-              </div>
-
-              {/* Class & Member Target Filter Dropdown */}
-              <div>
-                <select
-                  value={selectedClassFilter}
-                  onChange={e => setSelectedClassFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium cursor-pointer"
-                >
-                  <option value="ALL">🎯 Tất cả đối tượng gửi</option>
-                  <option value="MEMBER">👤 Gửi riêng 1-1 (Từng học viên)</option>
-                  <option value="ENTIRE">👥 Toàn bộ học viên của HLV</option>
-                  {classes.map(c => (
-                    <option key={c.id} value={c.id}>
-                      Lớp: {c.name} ({c.sportName})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Type Filter Dropdown */}
-              <div>
-                <select
-                  value={selectedTypeFilter}
-                  onChange={e => setSelectedTypeFilter(e.target.value)}
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium cursor-pointer"
-                >
-                  <option value="ALL">🏷️ Tất cả chủ đề</option>
-                  <option value="PERSONAL_FEEDBACK">🎯 Góp ý 1-1 cá nhân</option>
-                  <option value="HOMEWORK">🏋️ Bài tập về nhà</option>
-                  <option value="REMINDER">⏰ Nhắc lịch học</option>
-                  <option value="SCHEDULE_CHANGE">📢 Thay đổi ca dạy</option>
-                  <option value="NUTRITION">🥗 Dinh dưỡng & Phục hồi</option>
-                </select>
-              </div>
-            </div>
-
-            {/* Quick Status / Reset */}
-            {(searchQuery || selectedClassFilter !== 'ALL' || selectedTypeFilter !== 'ALL') && (
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs text-slate-500">
-                <span>
-                  Đang lọc hiển thị <strong>{filteredNotifications.length}</strong> / {notifications.length} thông báo
-                  {selectedClassFilter === 'MEMBER' && (
-                    <span className="ml-1 text-purple-700 font-bold">(Đang lọc tin gửi riêng 1-1)</span>
-                  )}
-                </span>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedClassFilter('ALL');
-                    setSelectedTypeFilter('ALL');
-                  }}
-                  className="text-red-600 hover:text-red-700 font-bold flex items-center gap-1 cursor-pointer"
-                >
-                  <span className="material-symbols-outlined text-[14px]">filter_alt_off</span>
-                  Xóa bộ lọc
-                </button>
-              </div>
-            )}
-          </div>
-
-          {/* Cards Feed */}
+        <>
           {filteredNotifications.length === 0 ? (
-            <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 max-w-xl mx-auto space-y-3 shadow-xs">
-              <div className="w-14 h-14 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center mx-auto shadow-xs">
-                <span className="material-symbols-outlined text-[32px]">campaign</span>
+            <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 max-w-md mx-auto space-y-3 shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center mx-auto shadow-xs">
+                <span className="material-symbols-outlined text-[28px]">campaign</span>
               </div>
-              <h3 className="font-chivo text-base font-bold text-slate-900">
+              <h3 className="font-chivo text-sm font-bold text-slate-900">
                 {notifications.length === 0 ? 'Chưa Có Thông Báo Hoặc Bài Tập Nào' : 'Không Tìm Thấy Thông Báo Phù Hợp'}
               </h3>
-              <p className="text-xs text-slate-500 max-w-sm mx-auto leading-relaxed">
+              <p className="text-xs text-slate-500 leading-relaxed">
                 {notifications.length === 0
                   ? 'Hãy soạn bài tập về nhà đầu tiên hoặc gửi nhận xét riêng cho từng học viên.'
                   : 'Thử thay đổi từ khóa tìm kiếm hoặc chọn bộ lọc đối tượng khác.'}
@@ -656,115 +685,194 @@ export function CoachNotifications() {
                   onClick={() => {
                     setTitle('');
                     setContent('');
-                    setTargetType('CLASS');
                     setModalOpen(true);
                   }}
-                  className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+                  className="mt-2 inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
                 >
-                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
+                  <span className="material-symbols-outlined text-[15px]">add_circle</span>
                   <span>Soạn thông báo ngay</span>
                 </button>
               )}
             </div>
-          ) : (
-            <div className="space-y-4">
-              {filteredNotifications.map(notif => {
-                const detected = detectType(notif.title, notif.content);
-                const isOneOnOne = notif.recipientCount === 1 || notif.target?.includes('Học viên:');
+          ) : viewMode === 'split' ? (
+            /* --- CHẾ ĐỘ 1: MASTER-DETAIL SPLIT VIEW (DỄ QUAN SÁT NHẤT) --- */
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
+              {/* CỘT TRÁI (5/12): Danh sách các bản tin thu nhỏ, cuộn mượt */}
+              <div className="lg:col-span-5 space-y-2 max-h-[620px] overflow-y-auto pr-1">
+                <div className="text-[11px] font-bold text-slate-400 px-1 uppercase tracking-wider flex items-center justify-between">
+                  <span>Danh sách ({filteredNotifications.length})</span>
+                  <span>Bấm để xem chi tiết bên phải</span>
+                </div>
 
-                return (
-                  <article
-                    key={notif.id}
-                    className={`bg-white rounded-2xl border border-slate-200 p-5 sm:p-6 shadow-xs hover:shadow-md transition-all space-y-3.5 border-l-4 ${
-                      isOneOnOne ? 'border-l-purple-600 ring-1 ring-purple-100' : detected.stripe
-                    }`}
-                  >
-                    {/* Top Row: Icon, Title, Badges, Time */}
-                    <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-3 pb-3 border-b border-slate-100">
-                      <div className="flex items-start gap-3 min-w-0">
-                        <div className={`w-10 h-10 rounded-xl ${isOneOnOne ? 'bg-purple-100 text-purple-700' : detected.iconBg} flex items-center justify-center shrink-0 shadow-2xs`}>
-                          <span className="material-symbols-outlined text-[20px]">
-                            {isOneOnOne ? 'person' : detected.icon}
+                {filteredNotifications.map(notif => {
+                  const detected = detectType(notif.title, notif.content);
+                  const isOneOnOne = notif.recipientCount === 1 || notif.target?.includes('Học viên:');
+                  const isSelected = selectedNotif?.id === notif.id;
+
+                  return (
+                    <div
+                      key={notif.id}
+                      onClick={() => setSelectedNotifId(notif.id)}
+                      className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
+                        isSelected
+                          ? 'bg-red-50/70 border-red-400 shadow-xs ring-1 ring-red-500/20 border-l-4 border-l-red-600'
+                          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
+                      }`}
+                    >
+                      {/* Dòng 1: Badges + Ngày giờ */}
+                      <div className="flex items-center justify-between gap-1.5 mb-1">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {isOneOnOne ? (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-black px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">
+                              <span className="material-symbols-outlined text-[11px]">person</span>
+                              <span>1-1</span>
+                            </span>
+                          ) : null}
+                          <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded border ${detected.badgeClass}`}>
+                            {detected.label}
                           </span>
                         </div>
-                        <div className="min-w-0 space-y-1">
-                          <div className="flex items-center gap-2 flex-wrap">
-                            {isOneOnOne ? (
-                              <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2.5 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200 shadow-2xs">
-                                <span className="material-symbols-outlined text-[13px]">person</span>
-                                <span>GỬI RIÊNG 1-1</span>
-                              </span>
-                            ) : null}
+                        <span className="text-[10px] text-slate-400 font-mono">
+                          {formatMemberDateTime(notif.createdAt)}
+                        </span>
+                      </div>
 
-                            <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border ${detected.badgeClass}`}>
-                              {detected.label}
+                      {/* Tiêu đề */}
+                      <h4 className="font-chivo font-black text-slate-900 text-xs sm:text-sm line-clamp-1 leading-snug">
+                        {notif.title}
+                      </h4>
+
+                      {/* Đoạn trích nội dung */}
+                      <p className="text-xs text-slate-500 line-clamp-2 mt-1 leading-relaxed">
+                        {notif.content}
+                      </p>
+
+                      {/* Dòng đáy: Đối tượng nhận + số lượng */}
+                      <div className="flex items-center justify-between pt-1.5 mt-2 border-t border-slate-100 text-[11px] text-slate-500">
+                        <span className="flex items-center gap-1 truncate max-w-[210px] font-medium text-slate-700">
+                          <span className="material-symbols-outlined text-[13px] text-slate-400">
+                            {isOneOnOne ? 'account_circle' : 'school'}
+                          </span>
+                          <span className="truncate">{notif.target}</span>
+                        </span>
+                        <span className="shrink-0 font-mono text-[10px] text-slate-400">
+                          {notif.recipientCount} người
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* CỘT PHẢI (7/12): Chi tiết thông báo đang chọn (Sticky, đọc sướng mắt) */}
+              <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200 p-5 shadow-xs space-y-4 sticky top-4">
+                {selectedNotif ? (
+                  <>
+                    {/* Header thông báo */}
+                    <div className="space-y-2 pb-3 border-b border-slate-100">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          {selectedNotif.recipientCount === 1 || selectedNotif.target?.includes('Học viên:') ? (
+                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-purple-100 text-purple-800 border border-purple-200">
+                              <span className="material-symbols-outlined text-[13px]">person</span>
+                              <span>GỬI RIÊNG 1-1</span>
                             </span>
+                          ) : null}
 
-                            <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
-                              <span className="material-symbols-outlined text-[13px]">
-                                {isOneOnOne ? 'account_circle' : 'school'}
-                              </span>
-                              <span>{notif.target}</span>
-                            </span>
+                          <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${detectType(selectedNotif.title, selectedNotif.content).badgeClass}`}>
+                            {detectType(selectedNotif.title, selectedNotif.content).label}
+                          </span>
 
-                            <span className={`inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full border ${
-                              isOneOnOne ? 'bg-purple-50 text-purple-800 border-purple-200' : 'bg-emerald-50 text-emerald-800 border-emerald-200'
-                            }`}>
-                              <span className="material-symbols-outlined text-[13px]">
-                                {isOneOnOne ? 'person' : 'groups'}
-                              </span>
-                              <span>{notif.recipientCount} người nhận</span>
-                            </span>
-                          </div>
+                          <span className="inline-flex items-center gap-1 text-[11px] font-bold px-2 py-0.5 rounded-full bg-slate-100 text-slate-700 border border-slate-200">
+                            <span className="material-symbols-outlined text-[13px]">groups</span>
+                            <span>{selectedNotif.recipientCount} người nhận</span>
+                          </span>
+                        </div>
 
-                          <h3 className="font-chivo font-black text-slate-900 text-base sm:text-lg break-words leading-snug">
-                            {notif.title}
-                          </h3>
+                        <div className="text-right text-xs text-slate-400 font-mono flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">schedule</span>
+                          <span>{formatMemberDateTime(selectedNotif.createdAt)}</span>
                         </div>
                       </div>
 
-                      <div className="text-right text-xs text-slate-400 font-mono flex items-center gap-1 shrink-0 self-start">
-                        <span className="material-symbols-outlined text-[14px]">schedule</span>
-                        <span>{formatMemberDateTime(notif.createdAt)}</span>
-                      </div>
+                      <h2 className="font-chivo font-black text-slate-900 text-base sm:text-lg break-words leading-snug">
+                        {selectedNotif.title}
+                      </h2>
                     </div>
 
-                    {/* Content Box */}
-                    <div className="p-4 rounded-xl bg-slate-50/70 border border-slate-100 text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words">
-                      {notif.content}
-                    </div>
-
-                    {/* Bottom Action Strip */}
-                    <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-xs">
-                      <div className="text-slate-400 text-[11px]">
-                        ID Thông báo: <span className="font-mono">#{notif.id}</span>
+                    {/* Thẻ đối tượng nhận chi tiết */}
+                    <div className="p-3 rounded-xl bg-slate-50/80 border border-slate-200/80 flex flex-wrap items-center justify-between gap-2.5">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className={`w-9 h-9 rounded-full flex items-center justify-center font-black text-xs shrink-0 shadow-2xs ${
+                          selectedNotif.recipientCount === 1 || selectedNotif.target?.includes('Học viên:')
+                            ? 'bg-purple-600 text-white'
+                            : 'bg-slate-800 text-white'
+                        }`}>
+                          <span className="material-symbols-outlined text-[18px]">
+                            {selectedNotif.recipientCount === 1 || selectedNotif.target?.includes('Học viên:') ? 'person' : 'school'}
+                          </span>
+                        </div>
+                        <div className="min-w-0">
+                          <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                            Người nhận
+                          </div>
+                          <div className="text-xs sm:text-sm font-bold text-slate-800 truncate">
+                            {selectedNotif.target}
+                          </div>
+                        </div>
                       </div>
 
-                      <div className="flex items-center gap-2 ml-auto flex-wrap">
-                        {isOneOnOne && (
+                      {/* Phím tắt tương tác */}
+                      <div className="flex items-center gap-1.5">
+                        {(selectedNotif.recipientCount === 1 || selectedNotif.target?.includes('Học viên:')) ? (
                           <button
                             type="button"
                             onClick={() => {
                               setTitle('[Phản hồi bổ sung] ');
                               setContent('');
                               setTargetType('MEMBER');
-                              const match = allMembers.find(m => notif.target?.includes(m.fullName) || (m.memberCode && notif.target?.includes(m.memberCode)));
+                              const match = allMembers.find(m => selectedNotif.target?.includes(m.fullName) || (m.memberCode && selectedNotif.target?.includes(m.memberCode)));
                               if (match) setSelectedMemberId(match.id);
                               setModalOpen(true);
                             }}
-                            className="px-3 py-1.5 rounded-lg bg-purple-50 hover:bg-purple-100 text-purple-700 border border-purple-200 font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                            title="Gửi tiếp tin nhắn riêng tới học viên này"
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-purple-100 hover:bg-purple-200 text-purple-800 transition-colors flex items-center gap-1 cursor-pointer"
                           >
                             <span className="material-symbols-outlined text-[15px]">send</span>
                             <span>Gửi tiếp cho bạn này</span>
                           </button>
-                        )}
+                        ) : selectedNotif.classId ? (
+                          <a
+                            href={`#/coach/members?classId=${selectedNotif.classId}`}
+                            className="px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-200 hover:bg-slate-300 text-slate-800 transition-colors flex items-center gap-1 cursor-pointer"
+                          >
+                            <span className="material-symbols-outlined text-[15px]">group</span>
+                            <span>Xem danh sách lớp</span>
+                          </a>
+                        ) : null}
+                      </div>
+                    </div>
 
+                    {/* Hộp nội dung đầy đủ */}
+                    <div className="space-y-1">
+                      <div className="text-[11px] font-bold uppercase tracking-wider text-slate-400">
+                        Nội dung chi tiết:
+                      </div>
+                      <div className="p-4 rounded-xl bg-slate-50 border border-slate-200/80 text-slate-800 text-xs sm:text-sm leading-relaxed whitespace-pre-wrap break-words min-h-[140px]">
+                        {selectedNotif.content}
+                      </div>
+                    </div>
+
+                    {/* Dải công cụ dưới cùng */}
+                    <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 text-xs">
+                      <span className="text-slate-400 font-mono text-[11px]">
+                        ID: #{selectedNotif.id}
+                      </span>
+
+                      <div className="flex items-center gap-2 ml-auto">
                         <button
                           type="button"
-                          onClick={() => handleCopyContent(notif.content)}
+                          onClick={() => handleCopyContent(selectedNotif.content)}
                           className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                          title="Sao chép nội dung bài tập"
                         >
                           <span className="material-symbols-outlined text-[15px]">content_copy</span>
                           <span>Sao chép</span>
@@ -772,23 +880,93 @@ export function CoachNotifications() {
 
                         <button
                           type="button"
-                          onClick={() => handleDuplicate(notif)}
+                          onClick={() => handleDuplicate(selectedNotif)}
                           className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold transition-colors flex items-center gap-1 cursor-pointer"
-                          title="Soạn tiếp thông báo tương tự"
                         >
                           <span className="material-symbols-outlined text-[15px]">edit_note</span>
                           <span>Soạn tương tự</span>
                         </button>
+                      </div>
+                    </div>
+                  </>
+                ) : (
+                  <div className="py-12 text-center text-slate-400 text-xs">
+                    Chọn một thông báo ở cột bên trái để xem nội dung
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : (
+            /* --- CHẾ ĐỘ 2: LƯỚI THẺ 2 CỘT (BENTO GRID - GỌN GÀNG) --- */
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
+              {filteredNotifications.map(notif => {
+                const detected = detectType(notif.title, notif.content);
+                const isOneOnOne = notif.recipientCount === 1 || notif.target?.includes('Học viên:');
 
-                        {notif.classId && (
-                          <a
-                            href={`#/coach/members?classId=${notif.classId}`}
-                            className="px-3.5 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white font-bold transition-colors flex items-center gap-1 cursor-pointer shadow-xs"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">group</span>
-                            <span>Danh sách lớp</span>
-                          </a>
-                        )}
+                return (
+                  <article
+                    key={notif.id}
+                    className={`bg-white rounded-xl border border-slate-200 p-4 shadow-2xs hover:shadow-sm transition-all flex flex-col justify-between space-y-3 border-l-4 ${
+                      isOneOnOne ? 'border-l-purple-600' : detected.stripe
+                    }`}
+                  >
+                    <div className="space-y-2">
+                      {/* Dòng 1: Icon, Badges, Time */}
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="flex items-center gap-1.5 flex-wrap">
+                          {isOneOnOne && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-black px-1.5 py-0.2 rounded bg-purple-100 text-purple-800">
+                              <span className="material-symbols-outlined text-[11px]">person</span>
+                              <span>1-1</span>
+                            </span>
+                          )}
+                          <span className={`inline-flex items-center gap-0.5 text-[10px] font-bold px-1.5 py-0.2 rounded border ${detected.badgeClass}`}>
+                            {detected.label}
+                          </span>
+                        </div>
+                        <span className="text-[10px] text-slate-400 font-mono shrink-0">
+                          {formatMemberDateTime(notif.createdAt)}
+                        </span>
+                      </div>
+
+                      {/* Tiêu đề */}
+                      <h3 className="font-chivo font-black text-slate-900 text-sm line-clamp-1">
+                        {notif.title}
+                      </h3>
+
+                      {/* Đối tượng nhận */}
+                      <div className="flex items-center gap-1 text-[11px] text-slate-600 truncate">
+                        <span className="material-symbols-outlined text-[14px] text-slate-400">
+                          {isOneOnOne ? 'account_circle' : 'school'}
+                        </span>
+                        <span className="truncate font-medium">{notif.target}</span>
+                        <span className="text-slate-400">• {notif.recipientCount} người</span>
+                      </div>
+
+                      {/* Nội dung thu gọn 3 dòng */}
+                      <div className="p-2.5 rounded-lg bg-slate-50 border border-slate-100 text-slate-700 text-xs line-clamp-3 leading-relaxed">
+                        {notif.content}
+                      </div>
+                    </div>
+
+                    {/* Dải nút hành động */}
+                    <div className="flex items-center justify-between pt-2 border-t border-slate-100 text-xs">
+                      <span className="font-mono text-[10px] text-slate-400">#{notif.id}</span>
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          type="button"
+                          onClick={() => handleCopyContent(notif.content)}
+                          className="px-2 py-1 rounded text-[11px] font-bold border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
+                        >
+                          Sao chép
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleDuplicate(notif)}
+                          className="px-2 py-1 rounded text-[11px] font-bold border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors cursor-pointer"
+                        >
+                          Soạn tương tự
+                        </button>
                       </div>
                     </div>
                   </article>
@@ -796,7 +974,7 @@ export function CoachNotifications() {
               })}
             </div>
           )}
-        </div>
+        </>
       )}
 
       {/* --- TAB 2: HỘP THƯ ĐẾN CỦA TÔI --- */}
