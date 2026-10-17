@@ -37,7 +37,12 @@ export const coachApi = {
     apiRequest('coaches/me/sessions/'+sessionId+'/attendance', { method: 'PUT', body: records }),
   getNotifications: () => apiRequest('coaches/me/notifications'),
   sendNotification: data => apiRequest('coaches/me/notifications', {
-    method: 'POST', body: { classId: data.classId ? Number(data.classId) : null, title: data.title, content: data.content }
+    method: 'POST', body: {
+      classId: data.classId ? Number(data.classId) : null,
+      memberId: data.memberId ? Number(data.memberId) : null,
+      title: data.title,
+      content: data.content
+    }
   }),
   getAIRecommendation: data => apiRequest('ai/recommendations', {
     method: 'POST', body: {
