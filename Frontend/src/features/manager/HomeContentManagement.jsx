@@ -1177,7 +1177,7 @@ export function HomeContentManagement() {
               Khu Vực 6: Banner Kêu Gọi Sự Kiện &amp; Chân Trang Footer (Ảnh 8)
             </h2>
             <p className="text-xs text-slate-500 mt-0.5">
-              Cập nhật banner đỏ kêu gọi đặt sân giải đấu, số hotline liên hệ, email, địa chỉ và thời gian hoạt động.
+              Cập nhật banner đỏ kêu gọi đặt sân giải đấu, số hotline liên hệ, email, Zalo, Facebook, địa chỉ và thời gian hoạt động.
             </p>
           </div>
 
@@ -1252,6 +1252,39 @@ export function HomeContentManagement() {
                     className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
                   />
                 </div>
+              </div>
+
+              <div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label htmlFor="footer-zalo-phone" className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Số điện thoại Zalo:</label>
+                    <input
+                      id="footer-zalo-phone"
+                      type="tel"
+                      autoComplete="tel"
+                      value={content.ctaAndFooter.contactZaloPhone}
+                      onChange={(e) => updateContentField('ctaAndFooter', 'contactZaloPhone', e.target.value)}
+                      placeholder="0901 234 567"
+                      aria-describedby="footer-social-links-help"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                    />
+                  </div>
+                  <div>
+                    <label htmlFor="footer-facebook-url" className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Liên kết Facebook:</label>
+                    <input
+                      id="footer-facebook-url"
+                      type="url"
+                      value={content.ctaAndFooter.contactFacebookUrl}
+                      onChange={(e) => updateContentField('ctaAndFooter', 'contactFacebookUrl', e.target.value)}
+                      placeholder="https://www.facebook.com/..."
+                      aria-describedby="footer-social-links-help"
+                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                    />
+                  </div>
+                </div>
+                <p id="footer-social-links-help" className="mt-1.5 text-[11px] text-slate-500">
+                  Zalo: nhập số điện thoại 10 chữ số hoặc đầu số +84. Facebook: nhập đường dẫn HTTP/HTTPS. Để trống để ẩn liên hệ tương ứng trên trang chủ.
+                </p>
               </div>
 
               <div>

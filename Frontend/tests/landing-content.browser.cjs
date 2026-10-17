@@ -192,6 +192,62 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
     await click(manager, label); await delay(100);
   }
   checks.push('All six editor tabs render without JavaScript errors.');
+
+  const zaloPhone = '0901234567';
+  const zaloLabel = `Zalo: ${zaloPhone}`;
+  const zaloUrl = 'https://zalo.me/0901234567';
+  const facebookUrl = 'https://www.facebook.com/scms-test-center';
+  await setInput(manager, `document.querySelector('#footer-zalo-phone')`, ' +84 901 234 567 ');
+  await setInput(manager, `document.querySelector('#footer-facebook-url')`, facebookUrl);
+  await click(manager, 'Xem Trước Trang Chủ');
+  let contactPreviewId;
+  await until('contact preview opened', async () => {
+    contactPreviewId = (await cdp.send('Target.getTargets')).targetInfos.find(target => target.url.includes('#/?preview=1') && target.targetId !== previewId)?.targetId;
+    return Boolean(contactPreviewId);
+  });
+  const contactPreview = await attach(contactPreviewId);
+  const footerLink = label => `[...document.querySelectorAll('footer a')].find(link => link.textContent.trim() === ${JSON.stringify(label)})`;
+  await until('contact preview rendered', () => evaluate(contactPreview, `Boolean(${footerLink(zaloLabel)}) && Boolean(${footerLink('Facebook')})`));
+  assert.equal(published.ctaAndFooter.contactZaloPhone, '');
+  checks.push('Contact links appear in the draft preview without publishing.');
+
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('contact links saved', () => published.ctaAndFooter.contactZaloPhone === zaloPhone && published.ctaAndFooter.contactFacebookUrl === facebookUrl);
+  await cdp.send('Page.reload', {}, visitor);
+  await until('visitor sees contact links', () => evaluate(visitor, `Boolean(${footerLink(zaloLabel)}) && Boolean(${footerLink('Facebook')})`));
+  for (const [label, url] of [[zaloLabel, zaloUrl], ['Facebook', facebookUrl]]) {
+    assert.deepEqual(await evaluate(visitor, `(() => { const link = ${footerLink(label)}; return { href: link.href, target: link.target, rel: link.rel }; })()`), { href: url, target: '_blank', rel: 'noopener noreferrer' });
+  }
+  await evaluate(manager, `location.hash = '#/manager/dashboard'`);
+  await until('manager leaves editor', () => evaluate(manager, `!document.querySelector('main fieldset')`));
+  await evaluate(manager, `location.hash = '#/manager/home-content'`);
+  await until('editor reloads', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && Boolean(${titleInput(originalTitle)})`));
+  await click(manager, '6. Banner Kêu Gọi & Footer');
+  assert.equal(await evaluate(manager, `document.querySelector('#footer-zalo-phone').value`), zaloPhone);
+  assert.equal(await evaluate(manager, `document.querySelector('#footer-facebook-url').value`), facebookUrl);
+  checks.push('Both contact links persist after reopening the editor and reloading an independent visitor.');
+
+  const savesBeforeInvalidLink = saves;
+  await setInput(manager, `document.querySelector('#footer-zalo-phone')`, '090abc1234');
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('invalid Zalo phone rejected', () => evaluate(manager, `document.querySelector('[role=alert]')?.textContent.includes('Số điện thoại Zalo')`));
+  assert.equal(saves, savesBeforeInvalidLink);
+  assert.equal(published.ctaAndFooter.contactZaloPhone, zaloPhone);
+  await setInput(manager, `document.querySelector('#footer-zalo-phone')`, zaloPhone);
+  await setInput(manager, `document.querySelector('#footer-facebook-url')`, 'javascript:alert(1)');
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('invalid contact URL rejected', () => evaluate(manager, `document.querySelector('[role=alert]')?.textContent.includes('Facebook')`));
+  assert.equal(saves, savesBeforeInvalidLink);
+  assert.equal(published.ctaAndFooter.contactFacebookUrl, facebookUrl);
+  await setInput(manager, `document.querySelector('#footer-zalo-phone')`, '');
+  await setInput(manager, `document.querySelector('#footer-facebook-url')`, '');
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('empty contact links saved', () => published.ctaAndFooter.contactZaloPhone === '' && published.ctaAndFooter.contactFacebookUrl === '');
+  await cdp.send('Page.reload', {}, visitor);
+  await until('visitor loaded after clearing links', () => evaluate(visitor, `Boolean(document.querySelector('footer'))`));
+  assert.equal(await evaluate(visitor, `Boolean(${footerLink(zaloLabel)}) || Boolean(${footerLink('Facebook')})`), false);
+  checks.push('Invalid Zalo phones and Facebook URLs cannot publish; clearing them hides the corresponding contacts.');
+
   await click(manager, '1. Hero Banner');
   await click(manager, 'Tải/Đổi Ảnh');
   await until('all gallery images rendered', () => evaluate(manager, `document.querySelectorAll('p[title^="photo-"]').length === 7`));

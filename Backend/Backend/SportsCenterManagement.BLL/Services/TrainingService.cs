@@ -251,11 +251,18 @@ public sealed class TrainingService(SportsCenterDbContext db)
             if (!classIds.Contains(request.ClassId.Value)) throw new InvalidOperationException("Bạn không được phụ trách lớp này.") { Data = { ["StatusCode"] = 403 } };
             classIds = [request.ClassId.Value];
         }
-        var recipientIds = await db.MemberProfiles.Where(m => db.SessionBookings.Any(b => b.MemberId == m.Id &&
+        var recipientQuery = db.MemberProfiles.Where(m => db.SessionBookings.Any(b => b.MemberId == m.Id &&
             b.Status == "Booked" && db.ClassSessions.Any(s => s.Id == b.SessionId && classIds.Contains(s.ClassId))) ||
             db.ClassEnrollments.Any(e => e.MemberId == m.Id && classIds.Contains(e.ClassId) &&
                 (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")))
-            .Where(m => db.Users.Any(u => u.Id == m.UserId && u.Status == "Active")).Select(m => m.UserId).ToArrayAsync(ct);
+            .Where(m => db.Users.Any(u => u.Id == m.UserId && u.Status == "Active"));
+
+        if (request.MemberId.HasValue)
+        {
+            recipientQuery = recipientQuery.Where(m => m.Id == request.MemberId.Value);
+        }
+
+        var recipientIds = await recipientQuery.Select(m => m.UserId).Distinct().ToArrayAsync(ct);
         if (recipientIds.Length == 0) throw new InvalidOperationException("Không có học viên để nhận thông báo.") { Data = { ["StatusCode"] = 409 } };
         await FlowNotificationWriter.CreateAsync(db, userId, recipientIds, request.Title.Trim(), request.Content.Trim(), "CoachMessage", ct);
         AddAudit(userId, coach.CenterId, "COACH_NOTIFICATION_SENT", "Notification");
