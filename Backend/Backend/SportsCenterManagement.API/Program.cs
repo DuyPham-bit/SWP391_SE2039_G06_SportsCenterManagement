@@ -69,6 +69,8 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 // Flow 2 Services
 builder.Services.AddScoped<IClassManagementService, ClassManagementService>();
+builder.Services.AddScoped<ISportManagementService, SportManagementService>();
+builder.Services.AddScoped<ICoachAssignmentQueryService, CoachAssignmentQueryService>();
 builder.Services.AddScoped<IClassScheduleQueryService, ClassScheduleQueryService>();
 builder.Services.AddScoped<ISessionBookingService, SessionBookingService>();
 builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();

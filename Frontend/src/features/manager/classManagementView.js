@@ -50,6 +50,11 @@ export function validateClassForm(form) {
   return '';
 }
 
+export function resumeClassDraftAfterSportCreation(returnContext, createdSport) {
+  if (!returnContext?.draft || !(Number(createdSport?.id) > 0)) return null;
+  return { ...returnContext.draft, sportId: Number(createdSport.id) };
+}
+
 export function validateScheduleForm(form) {
   if (!form.startDate || !form.endDate) return 'Vui lòng chọn đầy đủ khoảng ngày.';
   if (form.endDate < form.startDate) return 'Ngày kết thúc không được trước ngày bắt đầu.';

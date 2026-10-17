@@ -5,7 +5,8 @@ import { Modal } from '../../components/common/Modal.js';
 import { useToast } from '../../context/ToastContext.js';
 import { formatMemberDate, formatMemberDateTime } from '../member/memberOverview.js';
 import { buildMemberUpdatePayload, getSubscriptionPresentation, normalizeSubscriptionHistory,
-  formatMembershipPrice, formatMembershipDuration } from './memberManagementView.js';
+  formatMembershipPrice, formatMembershipDuration, sortMembersByVietnameseGivenName,
+  summarizeSubscriptionHistory } from './memberManagementView.js';
 
 // Color palette gradients for member initials
 const AVATAR_GRADIENTS = [
@@ -74,7 +75,7 @@ export function MemberManagement() {
     let active = true;
     setLoading(true);
     setError('');
-    memberApi.getCenterMembers(filter.query, filter.page)
+    memberApi.getCenterMembers(filter.query, filter.page, sortBy)
       .then(value => {
         if (active) setData(value);
       })
@@ -85,7 +86,7 @@ export function MemberManagement() {
         if (active) setLoading(false);
       });
     return () => { active = false; };
-  }, [filter, revision]);
+  }, [filter, revision, sortBy]);
 
   // Derived KPI statistics
   const stats = useMemo(() => {
@@ -116,9 +117,9 @@ export function MemberManagement() {
     }
 
     if (sortBy === 'NAME_ASC') {
-      list.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || '', 'vi'));
+      list = sortMembersByVietnameseGivenName(list, 'asc');
     } else if (sortBy === 'NAME_DESC') {
-      list.sort((a, b) => (b.fullName || '').localeCompare(a.fullName || '', 'vi'));
+      list = sortMembersByVietnameseGivenName(list, 'desc');
     } else if (sortBy === 'EXPIRY') {
       list.sort((a, b) => (a.packageExpiry || '9999').localeCompare(b.packageExpiry || '9999'));
     }
@@ -254,6 +255,7 @@ export function MemberManagement() {
   };
 
   const totalPages = Math.max(1, Math.ceil(data.totalCount / data.pageSize));
+  const subscriptionSummary = summarizeSubscriptionHistory(subscriptions);
 
   return (
     <div className="space-y-6">
@@ -408,8 +410,8 @@ export function MemberManagement() {
                 className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer"
               >
                 <option value="DEFAULT">Sắp xếp: Mặc định</option>
-                <option value="NAME_ASC">Họ tên: A → Z</option>
-                <option value="NAME_DESC">Họ tên: Z → A</option>
+                <option value="NAME_ASC">Tên: A → Z</option>
+                <option value="NAME_DESC">Tên: Z → A</option>
                 <option value="EXPIRY">Hạn gói gần nhất</option>
               </select>
             </div>
@@ -823,18 +825,23 @@ export function MemberManagement() {
             </div>
 
             <div>
-              <label className={labelClass}>Email liên hệ *</label>
-              <input
-                className={inputClass}
-                name="email"
-                type="email"
-                readOnly={Boolean(modal?.row)}
-                required
-                maxLength={150}
-                placeholder="email@domain.com"
-                value={form.email || ''}
-                onChange={handleFormChange}
-              />
+              <label className={labelClass}>Email đăng nhập *</label>
+              <div className="relative">
+                <input
+                  className={`${inputClass} ${modal?.row ? 'pr-10 bg-slate-100 text-slate-500 cursor-not-allowed border-slate-200 focus:ring-0 focus:border-slate-200 focus:bg-slate-100' : ''}`}
+                  name="email"
+                  type="email"
+                  readOnly={Boolean(modal?.row)}
+                  aria-readonly={Boolean(modal?.row)}
+                  required
+                  maxLength={150}
+                  placeholder="email@domain.com"
+                  value={form.email || ''}
+                  onChange={handleFormChange}
+                />
+                {modal?.row && <span className="material-symbols-outlined absolute right-3 top-2.5 text-[18px] text-slate-400" aria-hidden="true">lock</span>}
+              </div>
+              {modal?.row && <span className="text-[11px] text-slate-500 mt-1.5 flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">info</span>Email định danh tài khoản, không thể thay đổi tại đây.</span>}
             </div>
 
             <div>
@@ -1074,9 +1081,7 @@ export function MemberManagement() {
       >
         <div className="space-y-4">
           <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="text-xs text-slate-500">
-              Tổng số gói từng đăng ký: <strong className="text-slate-800">{subscriptions.length}</strong>
-            </div>
+            <div className="text-xs text-slate-500">Theo dõi toàn bộ vòng đời gói tập của hội viên.</div>
             {modal?.row && (
               <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
                 {modal.row.memberCode}
@@ -1092,47 +1097,42 @@ export function MemberManagement() {
               <button type="button" className="mt-2 font-bold underline" onClick={() => openSubscriptions(modal.row)}>Thử lại</button>
             </div>
           ) : subscriptions.length > 0 ? (
-            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-              {subscriptions.map(s => {
+            <>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2" aria-label="Tổng hợp lịch sử gói">
+                <div className="rounded-xl border border-slate-200 bg-slate-50 p-3 text-center"><strong className="block text-lg font-black text-slate-900">{subscriptionSummary.total}</strong><span className="text-[10px] font-bold uppercase tracking-wider text-slate-500">Tổng gói</span></div>
+                <div className="rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-center"><strong className="block text-lg font-black text-emerald-700">{subscriptionSummary.active}</strong><span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700">Hiệu lực</span></div>
+                <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-center"><strong className="block text-lg font-black text-amber-700">{subscriptionSummary.pending}</strong><span className="text-[10px] font-bold uppercase tracking-wider text-amber-700">Sắp tới / chờ</span></div>
+                <div className="rounded-xl border border-slate-200 bg-slate-100 p-3 text-center"><strong className="block text-lg font-black text-slate-700">{subscriptionSummary.finished}</strong><span className="text-[10px] font-bold uppercase tracking-wider text-slate-600">Đã kết thúc</span></div>
+              </div>
+              <div className="relative space-y-3 max-h-[430px] overflow-y-auto pr-1 before:absolute before:left-[19px] before:top-5 before:bottom-5 before:w-px before:bg-slate-200">
+              {subscriptions.map((s, index) => {
                 const status = getSubscriptionPresentation(s.status);
                 return (
                   <article
                     key={s.subscriptionId}
-                    className="p-4 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors bg-white shadow-sm space-y-2"
+                    className="relative pl-12"
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-red-600 text-[18px]">
-                          workspace_premium
-                        </span>
-                        <h4 className="font-bold text-sm text-slate-900">{s.packageName || 'Gói chưa có tên'}</h4>
+                    <span className={`absolute left-0 top-3 z-10 w-10 h-10 rounded-full border flex items-center justify-center material-symbols-outlined text-[18px] ${status.className}`}>{status.icon}</span>
+                    <div className="p-4 rounded-xl border border-slate-200 hover:border-red-200 transition-colors bg-white shadow-sm space-y-3">
+                      <div className="flex flex-wrap items-start justify-between gap-2">
+                        <div><p className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Lần đăng ký #{subscriptions.length - index}</p><h4 className="font-bold text-sm text-slate-900 mt-0.5">{s.packageName || 'Gói chưa có tên'}</h4></div>
+                        <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-lg border text-[10px] font-bold tracking-wider ${status.className}`}><span className="material-symbols-outlined text-[13px]">{status.icon}</span>{status.label}</span>
                       </div>
-                      <span className={`px-2 py-0.5 rounded border text-[10px] font-bold tracking-wider ${status.className}`}>
-                        {status.label}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
-                      <span className="font-bold text-slate-900">
-                        {formatMembershipPrice(s.price)}
-                      </span>
-                      <span>·</span>
-                      <span>Thời hạn: <strong>{formatMembershipDuration(s.durationDays)}</strong></span>
-                      <span>·</span>
-                      <span className="text-slate-500">
-                        Hiệu lực: {s.startDate ? formatMemberDate(s.startDate) : 'Chưa kích hoạt'} – {s.endDate ? formatMemberDate(s.endDate) : 'Chưa có'}
-                      </span>
-                    </div>
-
-                    {s.createdAt && (
-                      <div className="text-[11px] text-slate-400">
-                        Ngày tạo giao dịch: {formatMemberDateTime(s.createdAt)}
+                      <div className="grid grid-cols-2 gap-2">
+                        <div className="rounded-lg bg-slate-50 border border-slate-100 p-2.5"><span className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">Bắt đầu</span><strong className="block text-xs text-slate-800 mt-0.5">{s.startDate ? formatMemberDate(s.startDate) : 'Chưa kích hoạt'}</strong></div>
+                        <div className="rounded-lg bg-slate-50 border border-slate-100 p-2.5"><span className="block text-[10px] uppercase tracking-wider text-slate-400 font-bold">Kết thúc</span><strong className="block text-xs text-slate-800 mt-0.5">{s.endDate ? formatMemberDate(s.endDate) : 'Chưa xác định'}</strong></div>
                       </div>
-                    )}
+                      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+                        <span className="font-black text-red-600">{formatMembershipPrice(s.price)}</span>
+                        <span className="text-slate-500">Thời hạn: <strong className="text-slate-800">{formatMembershipDuration(s.durationDays)}</strong></span>
+                      </div>
+                      {s.createdAt && <div className="pt-2 border-t border-slate-100 text-[11px] text-slate-400 flex items-center gap-1"><span className="material-symbols-outlined text-[13px]">schedule</span>Giao dịch tạo lúc {formatMemberDateTime(s.createdAt)}</div>}
+                    </div>
                   </article>
                 );
               })}
-            </div>
+              </div>
+            </>
           ) : (
             <div className="py-12 text-center text-slate-400 space-y-2">
               <span className="material-symbols-outlined text-4xl text-slate-300">receipt_long</span>

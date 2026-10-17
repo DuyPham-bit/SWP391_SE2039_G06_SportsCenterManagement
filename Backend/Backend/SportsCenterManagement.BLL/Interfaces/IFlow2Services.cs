@@ -24,6 +24,22 @@ public interface IClassManagementService
     Task<ClassScheduleResponse> CancelScheduleAsync(long actorUserId, long classId, long scheduleId, CancellationToken cancellationToken = default);
 }
 
+/// <summary>Manages the sport catalog used by classes and coach specialties at a center.</summary>
+public interface ISportManagementService
+{
+    Task<IReadOnlyList<ManagedSportResponse>> GetActiveAsync(long centerId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<ManagedSportResponse>> GetAllAsync(long centerId, CancellationToken cancellationToken = default);
+    Task<ManagedSportResponse> CreateAsync(long actorUserId, long centerId, SaveSportRequest request, CancellationToken cancellationToken = default);
+    Task<ManagedSportResponse> UpdateAsync(long actorUserId, long centerId, long sportId, SaveSportRequest request, CancellationToken cancellationToken = default);
+}
+
+/// <summary>Provides active coaches and their current teaching slots for manager assignment decisions.</summary>
+public interface ICoachAssignmentQueryService
+{
+    Task<IReadOnlyList<CoachAssignmentCandidateResponse>> GetCandidatesAsync(
+        long centerId, CancellationToken cancellationToken = default);
+}
+
 /// <summary>UC-42 View Class Schedules (member) and UC-30 View Teaching Schedule (coach).</summary>
 public interface IClassScheduleQueryService
 {

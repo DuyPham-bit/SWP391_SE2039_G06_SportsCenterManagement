@@ -158,7 +158,7 @@ function mapSession(item) {
     dayOfWeek,
     timeSlot: `${String(item.startTime || '').slice(0, 5)} - ${String(item.endTime || '').slice(0, 5)}`,
     coachId: item.coachId,
-    coachName: item.coachName || 'Chưa phân công',
+    coachName: item.coachName || 'Chưa có Coach',
     roomId: item.roomId,
     roomName: item.roomName || (item.roomId ? `Phòng #${item.roomId}` : 'Chưa phân công'),
     enrolledCount: item.bookedCount || 0,
@@ -181,7 +181,7 @@ function mapBooking(item) {
     timeSlot: `${String(item.startTime || '').slice(0, 5)} - ${String(item.endTime || '').slice(0, 5)}`,
     sessionStatus: item.sessionStatus ? String(item.sessionStatus).toUpperCase() : null,
     roomName: item.roomName || 'Chưa phân công phòng',
-    coachName: item.coachName || 'Chưa phân công HLV',
+    coachName: item.coachName || 'Chưa có Coach',
     coachSpecialization: item.coachSpecialization || null,
     attendanceStatus: item.attendanceStatus ? String(item.attendanceStatus).toUpperCase() : null,
     attendanceNote: item.attendanceNote || null,
@@ -344,12 +344,20 @@ function mapStaff(item) {
 }
 
 export const staffApi = {
-  async getAll() {
-    const first = await apiRequest(`centers/${centerId()}/staff?page=1&pageSize=100`);
+  async getAll(sortBy = 'DEFAULT') {
+    const params = new URLSearchParams({ page: '1', pageSize: '100' });
+    if (sortBy === 'NAME_ASC' || sortBy === 'NAME_DESC') {
+      params.set('sortBy', 'givenName');
+      params.set('sortDirection', sortBy === 'NAME_DESC' ? 'desc' : 'asc');
+    } else if (sortBy === 'ROLE') {
+      params.set('sortBy', 'role');
+    }
+    const first = await apiRequest(`centers/${centerId()}/staff?${params}`);
     const items = [...asArray(first)];
     let previous = first;
     for (let page = 2; Array.isArray(first) ? asArray(previous).length === 100 : page <= Math.ceil((first.totalCount || 0) / (first.pageSize || 100)); page++) {
-      previous = await apiRequest(`centers/${centerId()}/staff?page=${page}&pageSize=100`);
+      params.set('page', String(page));
+      previous = await apiRequest(`centers/${centerId()}/staff?${params}`);
       items.push(...asArray(previous));
     }
     return items.map(mapStaff);
@@ -690,8 +698,12 @@ export const receptionApi = {
 };
 
 export const memberApi = {
-  async getCenterMembers(query = '', page = 1) {
+  async getCenterMembers(query = '', page = 1, sortBy = 'DEFAULT') {
     const params = new URLSearchParams({ query: query.trim(), page: String(page), pageSize: '20' });
+    if (sortBy === 'NAME_ASC' || sortBy === 'NAME_DESC') {
+      params.set('sortBy', 'givenName');
+      params.set('sortDirection', sortBy === 'NAME_DESC' ? 'desc' : 'asc');
+    }
     return apiRequest(`centers/${centerId()}/members?${params}`);
   },
 
@@ -705,16 +717,18 @@ export const memberApi = {
 
   async subscribeOnline({ packageId, paymentMethod = 'VNPAY', invoiceNumber, cancelPendingIfAny }) {
     const provider = {
-      VNPAY: 'create-vnpay-url',
-      MOMO: 'create-momo-url'
+      VNPAY: { endpoint: 'create-vnpay-url', bankCode: null },
+      VNPAY_QR: { endpoint: 'create-vnpay-url', bankCode: 'VNPAYQR' },
+      MOMO: { endpoint: 'create-momo-url', bankCode: null }
     }[paymentMethod];
     if (!provider) throw new Error('Cổng thanh toán không được hỗ trợ.');
-    return apiRequest(`payments/${provider}`, {
+    return apiRequest(`payments/${provider.endpoint}`, {
       method: 'POST',
       headers: { 'Idempotency-Key': createIdempotencyKey() },
       body: {
         packageId: Number(packageId),
         invoiceNumber: invoiceNumber || null,
+        bankCode: provider.bankCode,
         cancelPendingIfAny: !!cancelPendingIfAny
       }
     });
@@ -774,171 +788,82 @@ export const reportApi = {
       throw new Error('Chọn khoảng ngày hợp lệ, tối đa 366 ngày, nhóm theo ngày hoặc tháng.');
     }
     const query = new URLSearchParams({ from, to, groupBy, centerId: String(centerId()) });
-    const checkinQuery = new URLSearchParams({ from: today, to: today });
-    const [revenue, sportRevenue, membership, classes, sessionItems, checkins, rawRooms, rawClasses] = await Promise.all([
+    const checkinQuery = new URLSearchParams({ from: today, to: today, centerId: String(centerId()) });
+    const [revenue, sportRevenue, membership, classes, operations, checkins] = await Promise.all([
       apiRequest(`reports/revenue?${query}`),
       apiRequest(`reports/revenue-by-sport?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
       apiRequest(`reports/membership?${query}`),
       apiRequest(`reports/classes?${query}`),
-      loadSessionsBetween(from, to),
-      apiRequest(`reports/checkins?${checkinQuery}`),
-      apiRequest(`centers/${centerId()}/rooms`).catch(() => []),
-      apiRequest(`centers/${centerId()}/classes/all`).catch(() => [])
+      apiRequest(`reports/operations?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
+      apiRequest(`reports/checkins?${checkinQuery}`)
     ]);
-    const capacity = sessionItems.reduce((sum, item) => sum + (item.capacity || 0), 0);
-    const booked = sessionItems.reduce((sum, item) => sum + (item.bookedCount || 0), 0);
     const activeBookingCount = Object.entries(classes.currentStatusCounts || {})
       .filter(([status]) => /book|confirm|wait/i.test(status))
       .reduce((sum, [, count]) => sum + Number(count || 0), 0);
-
-    const roomsList = asArray(rawRooms);
-    const classesList = asArray(rawClasses);
-    const roomMap = new Map(roomsList.map(r => [r.id, r]));
-    const classDefMap = new Map(classesList.map(c => [c.id, c]));
-
-    // 1. Seed classes stats
-    const classStatsMap = new Map();
-    for (const c of classesList) {
-      classStatsMap.set(c.id, {
-        id: c.id,
-        name: c.name,
-        sportName: c.sportName,
-        coachName: c.coachName || 'Chưa gán HLV',
-        roomName: c.roomName || roomMap.get(c.roomId)?.name || 'Chưa gán sân',
-        sessionsCount: 0,
-        booked: 0,
-        capacity: 0,
-        occupancyRate: 0
-      });
-    }
-
-    // 2. Seed room stats
-    const roomStatsMap = new Map();
-    for (const r of roomsList) {
-      roomStatsMap.set(r.id, {
-        id: r.id,
-        name: r.name,
-        type: r.type || 'Sân/Phòng',
-        location: r.location || '',
-        unitCapacity: r.capacity || 0,
-        sessionsCount: 0,
-        booked: 0,
-        capacity: 0,
-        occupancyRate: 0,
-        classes: new Set()
-      });
-    }
-
-    // 3. Seed sport stats
-    const sportStatsMap = new Map();
-
-    for (const s of sessionItems) {
-      // Class
-      let cStat = classStatsMap.get(s.classId);
-      if (!cStat) {
-        cStat = {
-          id: s.classId,
-          name: s.className,
-          sportName: s.sportName,
-          coachName: s.coachName || 'Chưa gán HLV',
-          roomName: (roomMap.get(s.roomId)?.name) || 'Chưa gán sân',
-          sessionsCount: 0,
-          booked: 0,
-          capacity: 0,
-          occupancyRate: 0
-        };
-        classStatsMap.set(s.classId, cStat);
-      }
-      cStat.sessionsCount += 1;
-      cStat.booked += (s.bookedCount || 0);
-      cStat.capacity += (s.capacity || 0);
-
-      // Room
-      const targetRoomId = s.roomId || classDefMap.get(s.classId)?.roomId;
-      if (targetRoomId) {
-        let rStat = roomStatsMap.get(targetRoomId);
-        if (!rStat) {
-          rStat = {
-            id: targetRoomId,
-            name: `Phòng ${targetRoomId}`,
-            type: 'Sân/Phòng',
-            location: '',
-            unitCapacity: s.capacity || 0,
-            sessionsCount: 0,
-            booked: 0,
-            capacity: 0,
-            occupancyRate: 0,
-            classes: new Set()
-          };
-          roomStatsMap.set(targetRoomId, rStat);
-        }
-        rStat.sessionsCount += 1;
-        rStat.booked += (s.bookedCount || 0);
-        rStat.capacity += (s.capacity || 0);
-        if (s.className) rStat.classes.add(s.className);
-      }
-
-      // Sport
-      const sportName = s.sportName || 'Khác';
-      let spStat = sportStatsMap.get(sportName);
-      if (!spStat) {
-        spStat = {
-          name: sportName,
-          booked: 0,
-          capacity: 0,
-          sessionsCount: 0,
-          classes: new Set()
-        };
-        sportStatsMap.set(sportName, spStat);
-      }
-      spStat.booked += (s.bookedCount || 0);
-      spStat.capacity += (s.capacity || 0);
-      spStat.sessionsCount += 1;
-      if (s.className) spStat.classes.add(s.className);
-    }
-
-    const totalBookedAll = [...sportStatsMap.values()].reduce((sum, sp) => sum + sp.booked, 0);
-
-    const topClasses = [...classStatsMap.values()]
-      .map(c => ({
-        ...c,
-        occupancyRate: c.capacity > 0 ? Math.round((c.booked / c.capacity) * 100) : 0
-      }))
-      .sort((a, b) => b.booked - a.booked || b.occupancyRate - a.occupancyRate || b.sessionsCount - a.sessionsCount);
-
-    const topRooms = [...roomStatsMap.values()]
-      .map(r => ({
-        ...r,
-        classesCount: r.classes.size,
-        classesList: [...r.classes],
-        occupancyRate: r.capacity > 0 ? Math.round((r.booked / r.capacity) * 100) : 0
-      }))
-      .sort((a, b) => b.booked - a.booked || b.sessionsCount - a.sessionsCount || b.occupancyRate - a.occupancyRate);
-
-    const topSports = [...sportStatsMap.values()]
-      .map(sp => ({
-        name: sp.name,
-        booked: sp.booked,
-        capacity: sp.capacity,
-        sessionsCount: sp.sessionsCount,
-        classesCount: sp.classes.size,
-        percentage: sp.capacity > 0 ? Math.round((sp.booked / sp.capacity) * 100) : 0,
-        share: totalBookedAll > 0 ? Math.round((sp.booked / totalBookedAll) * 100) : 0
-      }))
-      .sort((a, b) => b.booked - a.booked || b.percentage - a.percentage);
+    const topClasses = asArray(operations.classes).map(item => ({
+      ...item,
+      coachName: item.coachName || 'Chưa có Coach',
+      roomName: item.roomName || 'Chưa có phòng'
+    }));
+    const topRooms = asArray(operations.rooms).map(item => ({
+      ...item,
+      type: item.type || 'Sân/Phòng',
+      location: item.location || '',
+      classesList: item.classNames || []
+    }));
+    const topSports = asArray(operations.sports).map(item => ({
+      ...item,
+      percentage: item.occupancyRate,
+      share: item.bookingShare
+    }));
+    const topCoaches = asArray(operations.coaches).map(item => ({
+      id: item.id,
+      fullName: item.fullName,
+      coachCode: item.coachCode || '',
+      specialization: item.specialization || 'Chưa cập nhật',
+      status: item.status || 'Active',
+      classesCount: item.classesCount || 0,
+      sessionsCount: item.sessionsCount || 0,
+      booked: item.booked || 0,
+      capacity: item.capacity || 0,
+      occupancyRate: item.occupancyRate || 0
+    }));
+    const membershipPackages = asArray(membership.packages).map(item => ({
+      id: item.id,
+      name: item.name,
+      price: item.price || 0,
+      durationDays: item.durationDays || 0,
+      activeSubscribers: item.activeSubscribers || 0,
+      soldInPeriod: item.soldInPeriod || 0,
+      revenueInPeriod: item.revenueInPeriod || 0
+    }));
 
     return {
       from, to, groupBy,
       totalMembers: membership.totalMembers,
       activeMembers: membership.activeMembers,
       newMembers: membership.newMembers,
+      expiredMembers: membership.expiredMembers || 0,
+      inactiveMembers: membership.inactiveMembers || 0,
+      membershipPackages,
       membershipPeriods: membership.periods || [],
       classStatusCounts: classes.currentStatusCounts || {},
       classPeriods: classes.periods || [],
-      totalClasses: sessionItems.length,
+      totalStaff: operations.totalStaff || 0,
+      activeStaff: operations.activeStaff || 0,
+      managerCount: operations.managerCount || 0,
+      coachCount: operations.coachCount || 0,
+      receptionistCount: operations.receptionistCount || 0,
+      classCatalogCount: operations.totalClasses || 0,
+      activeClasses: operations.activeClasses || 0,
+      totalRooms: operations.totalRooms || 0,
+      activeRooms: operations.activeRooms || 0,
+      totalClasses: operations.sessionsCount || 0,
       totalBookings: activeBookingCount,
       todayCheckins: checkins.count,
-      occupancyRate: capacity ? Math.round((booked / capacity) * 100) : 0,
+      bookedSeats: operations.bookedSeats || 0,
+      capacitySeats: operations.capacitySeats || 0,
+      occupancyRate: Number(operations.occupancyRate || 0),
       netRevenue: revenue.net,
       monthlyRevenue: revenue.net,
       grossRevenue: revenue.gross,
@@ -957,11 +882,13 @@ export const reportApi = {
       topSports,
       topClasses,
       topRooms,
+      topCoaches,
       highlights: {
         mostPopularClass: topClasses[0] || null,
         mostPopularSport: topSports[0] || null,
         highestRevenueSport: (sportRevenue.sports || []).find(item => item.sportId != null) || null,
-        mostBookedRoom: topRooms[0] || null
+        mostBookedRoom: topRooms[0] || null,
+        topCoach: topCoaches[0] || null
       }
     };
   }

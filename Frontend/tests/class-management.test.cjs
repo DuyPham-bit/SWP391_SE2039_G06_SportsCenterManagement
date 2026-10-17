@@ -9,7 +9,7 @@ function loadHelpers() {
     .replaceAll('export const ', 'const ')
     .replaceAll('export function ', 'function ');
   const context = vm.createContext({ Intl });
-  vm.runInContext(`${source}\nglobalThis.helpers = { CLASS_STATUS, WEEK_DAYS, splitAndSortClasses, filterClasses, groupSchedulesByDay, effectiveScheduleRoom, validateClassForm, validateScheduleForm };`, context);
+  vm.runInContext(`${source}\nglobalThis.helpers = { CLASS_STATUS, WEEK_DAYS, splitAndSortClasses, filterClasses, groupSchedulesByDay, effectiveScheduleRoom, validateClassForm, resumeClassDraftAfterSportCreation, validateScheduleForm };`, context);
   return context.helpers;
 }
 
@@ -62,4 +62,30 @@ test('form validation rejects invalid unhappy cases before calling the API', () 
   assert.match(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '09:00', endTime: '09:00' }), /Giờ kết thúc/);
   assert.equal(validateClassForm({ name: 'A', sportId: 1, capacity: 10, durationMinutes: 60 }), '');
   assert.equal(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '08:00', endTime: '09:00' }), '');
+});
+
+test('creating a sport from the class form preserves the draft and selects the new sport', () => {
+  const { resumeClassDraftAfterSportCreation } = loadHelpers();
+  const draft = { name: 'Lớp Pickleball sáng', capacity: 18, sportId: 1, description: 'Giữ nguyên' };
+  const context = { draft, row: null };
+
+  const resumed = resumeClassDraftAfterSportCreation(context, { id: 27, name: 'Pickleball' });
+
+  assert.deepEqual(JSON.parse(JSON.stringify(resumed)), {
+    name: 'Lớp Pickleball sáng', capacity: 18, sportId: 27, description: 'Giữ nguyên'
+  });
+  assert.deepEqual(draft, { name: 'Lớp Pickleball sáng', capacity: 18, sportId: 1, description: 'Giữ nguyên' });
+  assert.equal(resumeClassDraftAfterSportCreation(context, { name: 'Thiếu mã' }), null);
+  assert.equal(resumeClassDraftAfterSportCreation(null, { id: 27 }), null);
+});
+
+test('sport business rules live in the BLL service instead of the API controller', () => {
+  const controller = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.API/Controllers/ClassResourcesController.cs'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.BLL/Services/SportManagementService.cs'), 'utf8');
+  assert.match(controller, /ISportManagementService sportManagementService/);
+  assert.match(controller, /sportManagementService\.CreateAsync/);
+  assert.doesNotMatch(controller, /private static void ValidateSport/);
+  assert.match(service, /IsolationLevel\.Serializable/);
+  assert.match(service, /Tên bộ môn đã tồn tại trong danh mục của trung tâm/);
+  assert.match(service, /Bộ môn đang có lớp hoạt động/);
 });

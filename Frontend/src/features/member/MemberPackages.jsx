@@ -8,6 +8,12 @@ import { formatMemberDate } from './memberOverview.js';
 
 const { useState, useEffect, useRef } = React;
 
+const PAYMENT_METHODS = [
+  { id: 'VNPAY', label: 'VNPay', icon: 'credit_card' },
+  { id: 'VNPAY_QR', label: 'VNPay QR', icon: 'qr_code_2' },
+  { id: 'MOMO', label: 'MoMo', icon: 'account_balance_wallet' }
+];
+
 export function MemberPackages() {
   const { currentUser, refreshUser } = useAuth();
   const { showSuccess, showError, showInfo, showWarning } = useToast();
@@ -342,22 +348,22 @@ export function MemberPackages() {
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-2">
                 Chọn cổng thanh toán *
               </label>
-              <div className="grid grid-cols-2 gap-2">
-                {['VNPAY', 'MOMO'].map(m => (
+              <div className="grid grid-cols-3 gap-2">
+                {PAYMENT_METHODS.map(method => (
                   <button
-                    key={m}
+                    key={method.id}
                     type="button"
-                    onClick={() => setPaymentMethod(m)}
+                    onClick={() => setPaymentMethod(method.id)}
                     className={`p-3 rounded-xl border text-xs font-chivo font-bold uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 ${
-                      paymentMethod === m
+                      paymentMethod === method.id
                         ? 'bg-red-600 text-white border-red-600 shadow-md'
                         : 'border-slate-200 text-slate-700 hover:bg-slate-50'
                     }`}
                   >
                     <span className="material-symbols-outlined text-[20px]">
-                      {m === 'MOMO' ? 'account_balance_wallet' : 'credit_card'}
+                      {method.icon}
                     </span>
-                    <span>{m}</span>
+                    <span>{method.label}</span>
                   </button>
                 ))}
               </div>

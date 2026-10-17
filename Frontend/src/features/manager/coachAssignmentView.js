@@ -43,3 +43,39 @@ export function coachWorkload(coaches = [], classes = []) {
   })).sort((left, right) => left.primaryClassCount - right.primaryClassCount
     || String(left.fullName || '').localeCompare(String(right.fullName || ''), 'vi-VN'));
 }
+
+const dateRangesOverlap = (left, right) => {
+  const leftStart = left?.startDate || '0001-01-01';
+  const leftEnd = left?.endDate || '9999-12-31';
+  const rightStart = right?.startDate || '0001-01-01';
+  const rightEnd = right?.endDate || '9999-12-31';
+  return leftStart <= rightEnd && rightStart <= leftEnd;
+};
+
+const timesOverlap = (left, right) =>
+  String(left?.startTime || '') < String(right?.endTime || '')
+  && String(right?.startTime || '') < String(left?.endTime || '');
+
+export function getCoachAvailability(coach, targetSchedules = [], targetClassId) {
+  if (!targetSchedules.length) return { status: 'UNKNOWN', conflicts: [] };
+  const teachingSlots = Array.isArray(coach?.teachingSlots) ? coach.teachingSlots : [];
+  const conflicts = teachingSlots.filter(slot => String(slot.classId) !== String(targetClassId))
+    .filter(slot => targetSchedules.some(target => Number(slot.dayOfWeek) === Number(target.dayOfWeek)
+      && dateRangesOverlap(slot, target) && timesOverlap(slot, target)));
+  return { status: conflicts.length ? 'BUSY' : 'AVAILABLE', conflicts };
+}
+
+export function filterCoachCandidates(coaches = [], classRow, targetSchedules = [], query = '', availability = 'ALL') {
+  const needle = normalize(query);
+  return coaches.map(coach => ({
+    ...coach,
+    compatible: isCoachCompatible(coach, classRow),
+    availability: getCoachAvailability(coach, targetSchedules, classRow?.id)
+  })).filter(coach => !needle || [coach.fullName, coach.coachCode, coach.specialization, coach.certification]
+    .some(value => normalize(value).includes(needle)))
+    .filter(coach => availability === 'ALL' || coach.availability.status === availability)
+    .sort((left, right) => Number(right.compatible) - Number(left.compatible)
+      || Number(left.availability.status === 'BUSY') - Number(right.availability.status === 'BUSY')
+      || Number(left.primaryClassCount || 0) - Number(right.primaryClassCount || 0)
+      || String(left.fullName || '').localeCompare(String(right.fullName || ''), 'vi-VN'));
+}

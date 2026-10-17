@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
 import { formatMemberDate } from '../member/memberOverview.js';
+import { sortStaffForManagement } from './staffManagementView.js';
 
 // Configuration for roles, colors, and badges
 const ROLE_CONFIG = {
@@ -220,16 +221,7 @@ export function StaffManagement() {
       );
     }
 
-    // Sorting
-    if (sortBy === 'NAME_ASC') {
-      list.sort((a, b) => (a.fullName || '').localeCompare(b.fullName || '', 'vi'));
-    } else if (sortBy === 'NAME_DESC') {
-      list.sort((a, b) => (b.fullName || '').localeCompare(a.fullName || '', 'vi'));
-    } else if (sortBy === 'ROLE') {
-      list.sort((a, b) => (a.role || '').localeCompare(b.role || ''));
-    }
-
-    return list;
+    return sortStaffForManagement(list, sortBy);
   }, [staffList, roleFilter, statusFilter, searchQuery, sortBy]);
 
   // Open Create Modal
@@ -567,8 +559,8 @@ export function StaffManagement() {
                 className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer"
               >
                 <option value="DEFAULT">Sắp xếp: Mặc định</option>
-                <option value="NAME_ASC">Họ tên: A → Z</option>
-                <option value="NAME_DESC">Họ tên: Z → A</option>
+                <option value="NAME_ASC">Tên: A → Z</option>
+                <option value="NAME_DESC">Tên: Z → A</option>
                 <option value="ROLE">Theo vai trò</option>
               </select>
             </div>

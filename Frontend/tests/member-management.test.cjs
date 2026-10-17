@@ -16,7 +16,10 @@ function loadHelpers() {
     formatMembershipDuration,
     formatMembershipDate,
     formatMembershipDateTime,
-    normalizeSubscriptionHistory
+    normalizeSubscriptionHistory,
+    getVietnameseGivenName,
+    sortMembersByVietnameseGivenName,
+    summarizeSubscriptionHistory
   };`, context);
   return context.helpers;
 }
@@ -71,4 +74,43 @@ test('history formatting handles missing data and keeps newest subscriptions fir
   assert.equal(formatMembershipDateTime('not-a-date'), 'Chưa xác định');
   assert.equal(formatMembershipDuration(0), 'Chưa xác định');
   assert.equal(formatMembershipPrice(null), 'Chưa có thông tin');
+});
+
+test('member name sorting uses the Vietnamese given name and keeps missing names last', () => {
+  const { getVietnameseGivenName, sortMembersByVietnameseGivenName } = loadHelpers();
+  const members = [
+    { memberId: 1, fullName: 'Trần Thị Bình' },
+    { memberId: 2, fullName: '  Nguyễn   Văn An ' },
+    { memberId: 3, fullName: 'Lê Hoàng Dũng' },
+    { memberId: 4, fullName: null },
+    { memberId: 5, fullName: 'Phạm Anh An' }
+  ];
+
+  assert.equal(getVietnameseGivenName('  Nguyễn   Văn An '), 'An');
+  assert.deepEqual(Array.from(sortMembersByVietnameseGivenName(members, 'asc'), item => item.memberId), [2, 5, 1, 3, 4]);
+  assert.deepEqual(Array.from(sortMembersByVietnameseGivenName(members, 'desc'), item => item.memberId), [3, 1, 5, 2, 4]);
+  assert.deepEqual(members.map(item => item.memberId), [1, 2, 3, 4, 5]);
+  assert.deepEqual(Array.from(sortMembersByVietnameseGivenName(null)), []);
+});
+
+test('subscription summary separates active, upcoming, and finished states', () => {
+  const { summarizeSubscriptionHistory } = loadHelpers();
+  const summary = summarizeSubscriptionHistory([
+    { status: 'Active' }, { status: 'PendingPayment' }, { status: 'Scheduled' },
+    { status: 'Expired' }, { status: 'Cancelled' }, { status: null }
+  ]);
+
+  assert.deepEqual(JSON.parse(JSON.stringify(summary)), { total: 6, active: 1, pending: 2, finished: 3 });
+  assert.deepEqual(JSON.parse(JSON.stringify(summarizeSubscriptionHistory(null))), { total: 0, active: 0, pending: 0, finished: 0 });
+});
+
+test('manager member update contract rejects email at the API boundary', () => {
+  const requestSource = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.BLL/DTOs/Members/Requests.cs'), 'utf8');
+  const managerRequest = requestSource.slice(
+    requestSource.indexOf('UpdateMemberAtCenterRequest'),
+    requestSource.indexOf('SetMemberStatusRequest')
+  );
+
+  assert.match(requestSource, /JsonUnmappedMemberHandling\(JsonUnmappedMemberHandling\.Disallow\)/);
+  assert.doesNotMatch(managerRequest, /Email/);
 });

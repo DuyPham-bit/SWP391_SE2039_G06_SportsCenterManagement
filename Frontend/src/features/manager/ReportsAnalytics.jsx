@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { reportApi } from '../../services/api.js';
-import { createReportCsv } from '../../services/reportExport.js';
+import { createReportWorkbook, createReportCsv } from '../../services/reportExport.js';
 import { StatCard } from '../../components/common/StatCard.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -48,11 +48,15 @@ export function ReportsAnalytics() {
   const [revision, setRevision] = useState(0);
 
   // Table filters
-  const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | sports | rooms | logs
+  const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | coaches | packages | sports | rooms | logs
   const [classSearch, setClassSearch] = useState('');
   const [classSportFilter, setClassSportFilter] = useState('ALL');
   const [classSortBy, setClassSortBy] = useState('booked'); // booked | occupancy | sessions
   const [roomSortBy, setRoomSortBy] = useState('booked'); // booked | sessions | occupancy
+  const [coachSearch, setCoachSearch] = useState('');
+  const [coachSortBy, setCoachSortBy] = useState('booked'); // booked | sessions | occupancy
+  const [packageSearch, setPackageSearch] = useState('');
+  const [packageSortBy, setPackageSortBy] = useState('revenue'); // revenue | sold | active
 
   useEffect(() => {
     let active = true;
@@ -70,10 +74,25 @@ export function ReportsAnalytics() {
 
   const exportReport = () => {
     try {
+      const url = URL.createObjectURL(new Blob([createReportWorkbook(metrics, period)], { type: 'application/vnd.ms-excel;charset=utf-8' }));
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `SCMS-BaoCao-DoanhThu-VanHanh-${period}.xls`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (e) {
+      showError(e);
+    }
+  };
+
+  const exportCsv = () => {
+    try {
       const url = URL.createObjectURL(new Blob([createReportCsv(metrics, period)], { type: 'text/csv;charset=utf-8' }));
       const link = document.createElement('a');
       link.href = url;
-      link.download = `SCMS-BaoCao-ChiTiet-${period}.csv`;
+      link.download = `SCMS-BaoCao-DoanhThu-VanHanh-${period}.csv`;
       document.body.appendChild(link);
       link.click();
       link.remove();
@@ -109,6 +128,50 @@ export function ReportsAnalytics() {
     });
   }, [metrics?.topRooms, roomSortBy]);
 
+  // Filtered and sorted coaches
+  const processedCoaches = useMemo(() => {
+    if (!metrics?.topCoaches) return [];
+    return metrics.topCoaches
+      .filter(c => {
+        if (!coachSearch) return true;
+        const q = coachSearch.toLowerCase();
+        return c.fullName.toLowerCase().includes(q) ||
+          (c.coachCode && c.coachCode.toLowerCase().includes(q)) ||
+          (c.specialization && c.specialization.toLowerCase().includes(q));
+      })
+      .sort((a, b) => {
+        if (coachSortBy === 'occupancy') return b.occupancyRate - a.occupancyRate || b.booked - a.booked;
+        if (coachSortBy === 'sessions') return b.sessionsCount - a.sessionsCount || b.booked - a.booked;
+        return b.booked - a.booked || b.sessionsCount - a.sessionsCount;
+      });
+  }, [metrics?.topCoaches, coachSearch, coachSortBy]);
+
+  // Filtered and sorted membership packages
+  const processedPackages = useMemo(() => {
+    if (!metrics?.membershipPackages) return [];
+    const totalPkgRev = metrics.membershipPackages.reduce((sum, p) => sum + (p.revenueInPeriod || 0), 0) || 1;
+    return metrics.membershipPackages
+      .filter(p => !packageSearch || p.name.toLowerCase().includes(packageSearch.toLowerCase()))
+      .map(p => ({
+        ...p,
+        share: Math.round(((p.revenueInPeriod || 0) / totalPkgRev) * 100)
+      }))
+      .sort((a, b) => {
+        if (packageSortBy === 'sold') return b.soldInPeriod - a.soldInPeriod || b.revenueInPeriod - a.revenueInPeriod;
+        if (packageSortBy === 'active') return b.activeSubscribers - a.activeSubscribers || b.revenueInPeriod - a.revenueInPeriod;
+        return b.revenueInPeriod - a.revenueInPeriod || b.soldInPeriod - a.soldInPeriod;
+      });
+  }, [metrics?.membershipPackages, packageSearch, packageSortBy]);
+
+  // Operational alerts
+  const highLoadClasses = useMemo(() => {
+    return (metrics?.topClasses || []).filter(c => c.occupancyRate >= 80 && c.booked > 0);
+  }, [metrics?.topClasses]);
+
+  const lowLoadClasses = useMemo(() => {
+    return (metrics?.topClasses || []).filter(c => c.occupancyRate < 40 && c.sessionsCount > 0);
+  }, [metrics?.topClasses]);
+
   const revenue = metrics?.revenuePeriods || [];
   const membership = metrics?.membershipPeriods || [];
   const events = metrics?.classPeriods || [];
@@ -119,6 +182,7 @@ export function ReportsAnalytics() {
   const topSport = highlights.mostPopularSport;
   const topRevenueSport = highlights.highestRevenueSport;
   const topRoom = highlights.mostBookedRoom;
+  const topCoach = highlights.topCoach || metrics?.topCoaches?.[0];
 
   return (
     <div className="space-y-6 pb-12">
@@ -134,17 +198,27 @@ export function ReportsAnalytics() {
             </span>
           </div>
           <p className="text-sm text-slate-500 mt-1">
-            Tổng hợp biểu đồ thống kê trực quan, thị phần bộ môn và hiệu suất vận hành toàn trung tâm.
+            Tổng hợp đối soát doanh thu, cơ cấu hội viên, năng suất huấn luyện viên và hiệu suất vận hành toàn trung tâm.
           </p>
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2.5">
           <button
-            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold transition-all shadow-sm disabled:opacity-50"
+            className="flex items-center gap-2 px-3.5 py-2.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-bold transition-all border border-slate-300 disabled:opacity-50"
+            disabled={loading || !metrics}
+            onClick={exportCsv}
+            title="Xuất file CSV chuẩn UTF-8 chứa đầy đủ bảng đối soát doanh thu, nhân sự và học viên"
+          >
+            <span className="material-symbols-outlined text-[18px] text-emerald-600">table</span>
+            Xuất Dữ Liệu CSV (.CSV)
+          </button>
+          <button
+            className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-all shadow-sm disabled:opacity-50"
             disabled={loading || !metrics}
             onClick={exportReport}
+            title="Xuất bảng tính Excel chuyên nghiệp có định dạng màu sắc và kẻ bảng"
           >
-            <span className="material-symbols-outlined text-[18px]">download</span>
-            Xuất Báo Cáo Chi Tiết (.CSV)
+            <span className="material-symbols-outlined text-[18px] text-emerald-400">table_view</span>
+            Xuất Báo Cáo Excel (.XLS)
           </button>
         </div>
       </div>
@@ -247,32 +321,72 @@ export function ReportsAnalytics() {
             <StatCard
               title="Doanh thu thuần"
               value={`${Number(metrics.netRevenue || 0).toLocaleString('vi-VN')}đ`}
-              subtitle={`Thu ${Number(metrics.grossRevenue || 0).toLocaleString('vi-VN')}đ · hoàn ${Number(metrics.refundedRevenue || 0).toLocaleString('vi-VN')}đ`}
+              subtitle={`Thu: ${Number(metrics.grossRevenue || 0).toLocaleString('vi-VN')}đ · Hoàn: ${Number(metrics.refundedRevenue || 0).toLocaleString('vi-VN')}đ`}
               icon="payments"
               color="red"
             />
             <StatCard
-              title="Tổng thành viên"
-              value={metrics.totalMembers}
-              subtitle={`Gói hiệu lực hôm nay: ${metrics.activeMembers}`}
+              title="Học viên & Hội viên"
+              value={`${metrics.activeMembers || 0} / ${metrics.totalMembers || 0}`}
+              subtitle={`Gói hiệu lực · ${metrics.expiredMembers || 0} hết hạn · +${metrics.newMembers || 0} mới`}
               icon="group"
               color="slate"
             />
             <StatCard
-              title="Thành viên mới"
-              value={metrics.newMembers}
-              subtitle="Đăng ký tài khoản trong kỳ"
-              icon="person_add"
+              title="Đội ngũ nhân sự"
+              value={`${metrics.activeStaff || 0} / ${metrics.totalStaff || 0}`}
+              subtitle={`${metrics.coachCount || 0} HLV · ${metrics.receptionistCount || 0} lễ tân · ${metrics.managerCount || 0} quản lý`}
+              icon="badge"
               color="slate"
             />
             <StatCard
-              title="Check-in hôm nay"
-              value={metrics.todayCheckins}
-              subtitle="Cập nhật theo thời gian thực"
+              title="Check-in & Lấp đầy"
+              value={`${metrics.todayCheckins || 0} lượt`}
+              subtitle={`Hôm nay · Tỷ lệ lấp đầy lớp: ${metrics.occupancyRate || 0}%`}
               icon="fact_check"
               color="red"
             />
           </div>
+
+          {/* 3a. NGUỒN LỰC NHÂN SỰ, HỌC VIÊN & CƠ SỞ VẬT CHẤT */}
+          <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+              <div>
+                <h2 className="text-base font-black text-slate-900 flex items-center gap-2">
+                  <span className="material-symbols-outlined text-slate-700 text-[20px]">hub</span>
+                  Thống Kê Nguồn Lực Nhân Sự, Hội Viên & Hạ Tầng
+                </h2>
+                <p className="text-xs text-slate-500">Số liệu thời gian thực hỗ trợ ban quản lý phân bổ ca kíp và kiểm soát nguồn lực.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200">
+                  {metrics.activeStaff}/{metrics.totalStaff} nhân viên đang làm việc
+                </span>
+                <span className="text-xs font-semibold px-2.5 py-1 rounded-lg bg-blue-50 text-blue-800 border border-blue-200">
+                  {metrics.activeMembers}/{metrics.totalMembers} hội viên có gói
+                </span>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-3 md:grid-cols-4 lg:grid-cols-8">
+              {[
+                ['Nhân sự tổng', metrics.totalStaff, `${metrics.activeStaff} làm việc`, 'badge', 'text-slate-800'],
+                ['Huấn luyện viên', metrics.coachCount, 'Giảng dạy', 'sports', 'text-red-600'],
+                ['Lễ tân & CSKH', metrics.receptionistCount, 'Tiếp đón', 'support_agent', 'text-blue-600'],
+                ['Quản lý', metrics.managerCount, 'Điều hành', 'manage_accounts', 'text-purple-600'],
+                ['HV có gói', metrics.activeMembers, `Tổng ${metrics.totalMembers} HV`, 'card_membership', 'text-emerald-600'],
+                ['HV hết hạn', metrics.expiredMembers || 0, 'Cần gia hạn', 'person_off', 'text-amber-600'],
+                ['Lớp học', metrics.activeClasses, `Tổng ${metrics.classCatalogCount} lớp`, 'school', 'text-indigo-600'],
+                ['Sân & Phòng', metrics.activeRooms, `Tổng ${metrics.totalRooms} phòng`, 'meeting_room', 'text-teal-600']
+              ].map(([label, value, note, icon, iconColor]) => (
+                <div key={label} className="rounded-xl border border-slate-200 bg-slate-50/80 p-3 hover:bg-white hover:shadow-xs transition-all">
+                  <span className={`material-symbols-outlined text-[20px] ${iconColor}`}>{icon}</span>
+                  <div className="mt-1 text-xl font-black text-slate-900">{value || 0}</div>
+                  <div className="text-xs font-bold text-slate-700 truncate">{label}</div>
+                  <div className="mt-0.5 text-[10px] text-slate-500 truncate">{note}</div>
+                </div>
+              ))}
+            </div>
+          </section>
 
           {/* 3b. INLINE CURRENT CLASS STATUS STRIP */}
           <div className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs flex flex-wrap items-center justify-between gap-3 text-xs">
@@ -296,133 +410,170 @@ export function ReportsAnalytics() {
             </div>
           </div>
 
-          {/* 4. 🏆 BỘ 3 QUÁN QUÂN HOẠT ĐỘNG (TOP OPERATIONAL PERFORMERS) */}
-          <div className="bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 rounded-2xl p-6 text-white shadow-xl relative overflow-hidden border border-slate-700/60">
-            <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-white/10 pb-4">
+          {/* 4. CHỈ SỐ VẬN HÀNH TRỌNG YẾU (4 TRỤ CỘT TRUNG TÂM) */}
+          <div className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-slate-200 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-amber-400/20 border border-amber-400/30 flex items-center justify-center text-amber-300">
-                  <span className="material-symbols-outlined text-[24px]">emoji_events</span>
+                <div className="w-10 h-10 rounded-xl bg-red-50 border border-red-200 flex items-center justify-center text-red-600">
+                  <span className="material-symbols-outlined text-[24px]">speed</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-black tracking-tight font-chivo text-white flex items-center gap-2">
-                    BỘ 3 DẪN ĐẦU TRUNG TÂM
-                    <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded bg-amber-400/20 text-amber-300 border border-amber-400/30">
-                      TOP PERFORMERS
-                    </span>
+                  <h2 className="text-lg font-black tracking-tight font-chivo text-slate-900 flex items-center gap-2">
+                    Chỉ Số Vận Hành Trọng Yếu Trong Kỳ
                   </h2>
-                  <p className="text-xs text-slate-300">
-                    Phân tích từ {metrics.from} đến {metrics.to} · Tổng {metrics.totalClasses} ca học đã phân bổ
+                  <p className="text-xs text-slate-500">
+                    Dữ liệu hoạt động thực tế từ {metrics.from} đến {metrics.to} · {metrics.totalClasses} ca học đã tổ chức
                   </p>
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-xs font-semibold text-slate-400">Tỷ lệ lấp đầy trung tâm</span>
-                <p className="text-xl font-black text-emerald-400">{metrics.occupancyRate}%</p>
+                <span className="text-xs font-semibold text-slate-500">Tỷ lệ lấp đầy toàn trung tâm</span>
+                <p className="text-xl font-black text-slate-900">{metrics.occupancyRate}%</p>
               </div>
             </div>
 
-            <div className="grid md:grid-cols-3 gap-4">
-              {/* Top 1 Lớp học */}
-              <div className="bg-white/5 hover:bg-white/10 transition-all rounded-xl p-4 border border-white/10 flex flex-col justify-between">
+            <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-4">
+              {/* Pillar 1: Lớp học hàng đầu */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1">
-                      🥇 LỚP HỌC ĐẶT NHIỀU NHẤT
+                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[16px] text-red-600">fitness_center</span>
+                      Lớp học đông nhất
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-500/20 text-red-300 border border-red-500/30">
-                      TOP 1 CLASS
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-red-50 text-red-700 border border-red-200">
+                      Theo lượt đặt
                     </span>
                   </div>
-                  <h3 className="font-bold text-base text-white line-clamp-1">
+                  <h3 className="font-bold text-base text-slate-900 line-clamp-1" title={topClass?.name}>
                     {topClass ? topClass.name : 'Chưa có lớp'}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-300">
-                    <span className="font-semibold text-amber-200">{topClass?.sportName || 'N/A'}</span>
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
+                    <span className="font-semibold text-slate-700">{topClass?.sportName || 'N/A'}</span>
                     <span>•</span>
                     <span className="truncate">{topClass?.roomName || 'N/A'}</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-slate-400">Lượt đặt / Sức chứa</span>
-                    <p className="text-sm font-bold text-white">
+                    <span className="text-slate-500">Đã đặt / Sức chứa</span>
+                    <p className="text-sm font-bold text-slate-900">
                       {topClass ? `${topClass.booked} / ${topClass.capacity} chỗ` : '0/0'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-slate-400">Tỷ lệ lấp đầy</span>
-                    <p className="text-sm font-bold text-emerald-300">
+                    <span className="text-slate-500">Tỷ lệ lấp đầy</span>
+                    <p className="text-sm font-bold text-emerald-700">
                       {topClass ? `${topClass.occupancyRate}%` : '0%'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Top 1 doanh thu bộ môn */}
-              <div className="bg-white/5 hover:bg-white/10 transition-all rounded-xl p-4 border border-white/10 flex flex-col justify-between">
+              {/* Pillar 2: Doanh thu bộ môn */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1">
-                      🥇 BỘ MÔN DOANH THU CAO NHẤT
+                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[16px] text-sky-600">monetization_on</span>
+                      Bộ môn doanh thu số 1
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                      TOP 1 SPORT
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-sky-50 text-sky-700 border border-sky-200">
+                      Theo doanh thu
                     </span>
                   </div>
-                  <h3 className="font-bold text-base text-white line-clamp-1">
+                  <h3 className="font-bold text-base text-slate-900 line-clamp-1" title={topRevenueSport?.sportName}>
                     {topRevenueSport ? topRevenueSport.sportName : 'Chưa có doanh thu'}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-300">
-                    <span>Tỷ trọng doanh thu: <strong className="text-sky-300">{topRevenueSport?.share || 0}%</strong></span>
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
+                    <span>Tỷ trọng doanh thu: <strong className="text-sky-700 font-bold">{topRevenueSport?.share || 0}%</strong></span>
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-slate-400">Doanh thu thuần</span>
-                    <p className="text-sm font-bold text-white">
+                    <span className="text-slate-500">Doanh thu thuần</span>
+                    <p className="text-sm font-bold text-slate-900">
                       {topRevenueSport ? `${Number(topRevenueSport.net || 0).toLocaleString('vi-VN')}đ` : '0đ'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-slate-400">Đã hoàn tiền</span>
-                    <p className="text-sm font-bold text-sky-300">
+                    <span className="text-slate-500">Hoàn tiền</span>
+                    <p className="text-sm font-bold text-slate-600">
                       {topRevenueSport ? `${Number(topRevenueSport.refunds || 0).toLocaleString('vi-VN')}đ` : '0đ'}
                     </p>
                   </div>
                 </div>
               </div>
 
-              {/* Top 1 Sân / Phòng */}
-              <div className="bg-white/5 hover:bg-white/10 transition-all rounded-xl p-4 border border-white/10 flex flex-col justify-between">
+              {/* Pillar 3: HLV dẫn đầu khối lượng */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-amber-300 flex items-center gap-1">
-                      🥇 SÂN / PHÒNG TẢI CAO NHẤT
+                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[16px] text-amber-600">sports_martial_arts</span>
+                      HLV năng suất nhất
                     </span>
-                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      TOP 1 COURT
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-50 text-amber-800 border border-amber-200">
+                      Theo học viên dạy
                     </span>
                   </div>
-                  <h3 className="font-bold text-base text-white line-clamp-1">
+                  <h3 className="font-bold text-base text-slate-900 line-clamp-1" title={topCoach?.fullName || topCoach?.coachName}>
+                    {topCoach ? (topCoach.fullName || topCoach.coachName) : 'Chưa có HLV'}
+                  </h3>
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
+                    <span className="font-semibold text-slate-700">{topCoach?.specialization || topCoach?.specialty || 'Huấn luyện viên'}</span>
+                    <span>•</span>
+                    <span>{topCoach?.classesCount || 0} lớp</span>
+                  </div>
+                </div>
+                <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
+                  <div>
+                    <span className="text-slate-500">Ca dạy / Học viên</span>
+                    <p className="text-sm font-bold text-slate-900">
+                      {topCoach ? `${topCoach.sessionsCount} ca · ${topCoach.totalStudents ?? topCoach.booked ?? 0} HV` : '0 ca'}
+                    </p>
+                  </div>
+                  <div className="text-right">
+                    <span className="text-slate-500">Lấp đầy lớp</span>
+                    <p className="text-sm font-bold text-amber-700">
+                      {topCoach ? `${topCoach.occupancyRate || 0}%` : '0%'}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Pillar 4: Sân / Phòng hoạt động nhiều nhất */}
+              <div className="rounded-xl border border-slate-200 bg-slate-50 p-4 flex flex-col justify-between">
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <span className="text-xs font-bold text-slate-600 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[16px] text-emerald-600">stadium</span>
+                      Sân/phòng dùng nhiều nhất
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[11px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                      Theo lượt sử dụng
+                    </span>
+                  </div>
+                  <h3 className="font-bold text-base text-slate-900 line-clamp-1" title={topRoom?.name}>
                     {topRoom ? topRoom.name : 'Chưa có sân'}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-300">
-                    <span>{topRoom?.type || 'Sân'}</span>
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500">
+                    <span>{topRoom?.type || 'Sân/Phòng'}</span>
                     <span>•</span>
                     <span className="truncate">{topRoom?.location || 'Trung tâm'}</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                <div className="mt-4 pt-3 border-t border-slate-200 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-slate-400">Ca học đã tổ chức</span>
-                    <p className="text-sm font-bold text-white">
-                      {topRoom ? `${topRoom.sessionsCount} ca` : '0'}
+                    <span className="text-slate-500">Ca học / Lượt khách</span>
+                    <p className="text-sm font-bold text-slate-900">
+                      {topRoom ? `${topRoom.sessionsCount} ca · ${topRoom.booked} lượt` : '0'}
                     </p>
                   </div>
                   <div className="text-right">
-                    <span className="text-slate-400">Lượt khách tiếp nhận</span>
-                    <p className="text-sm font-bold text-emerald-300">
-                      {topRoom ? `${topRoom.booked} lượt` : '0'}
+                    <span className="text-slate-500">Tỷ lệ khai thác</span>
+                    <p className="text-sm font-bold text-emerald-700">
+                      {topRoom ? `${topRoom.occupancyRate || 0}%` : '0%'}
                     </p>
                   </div>
                 </div>
@@ -553,34 +704,113 @@ export function ReportsAnalytics() {
             </div>
           </div>
 
-          {/* 6. 💡 BẢNG KHUYẾN NGHỊ VẬN HÀNH THÔNG MINH (OPERATIONAL INSIGHTS) */}
-          <div className="bg-amber-50/70 border border-amber-200 rounded-2xl p-5 shadow-sm space-y-3">
-            <div className="flex items-center gap-2 text-amber-900 font-chivo font-black text-base">
-              <span className="material-symbols-outlined text-amber-600 text-[22px]">lightbulb</span>
-              Khuyến Nghị Vận Hành & Tối Ưu Doanh Thu
+          {/* 6. MA TRẬN CẢNH BÁO TẢI VẬN HÀNH & HÀNH ĐỘNG QUẢN LÝ */}
+          <div className="bg-slate-900 text-white rounded-2xl p-5 shadow-sm space-y-4">
+            <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-800 pb-3">
+              <div className="flex items-center gap-2 font-chivo font-black text-base text-white">
+                <span className="material-symbols-outlined text-amber-400 text-[22px]">notification_important</span>
+                Ma Trận Cảnh Báo Tải Vận Hành & Khuyến Nghị Tác Vụ Quản Lý
+              </div>
+              <span className="text-xs px-2.5 py-1 rounded-full bg-slate-800 text-slate-300 border border-slate-700">
+                Phân tích định lượng dựa trên dữ liệu thực tế
+              </span>
             </div>
-            <div className="grid md:grid-cols-3 gap-4 text-xs text-amber-950">
-              <div className="bg-white/80 p-3.5 rounded-xl border border-amber-200/60 shadow-xs">
-                <span className="font-bold text-amber-900 block mb-1">
-                  1. Mở rộng khung giờ Lớp & Sân Quán quân:
-                </span>
-                Lớp <strong className="text-slate-900">{topClass?.name || 'Top 1'}</strong> tại <strong className="text-slate-900">{topRoom?.name || 'Sân Top 1'}</strong> đang có tần suất đặt cao nhất ({topClass?.booked || 0} lượt). Khuyến nghị bổ sung thêm ca tập cuối tuần hoặc giờ cao điểm buổi tối.
+
+            <div className="grid md:grid-cols-3 gap-4 text-xs">
+              {/* Alert 1: Lớp tải cao */}
+              <div className="bg-slate-800/90 p-4 rounded-xl border border-red-500/30 flex flex-col justify-between space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-red-400 flex items-center gap-1.5 text-xs">
+                      <span className="material-symbols-outlined text-[16px]">warning</span>
+                      Cảnh báo tải cao (≥ 80% công suất)
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-red-950/80 text-red-300 border border-red-800">
+                      {highLoadClasses.length} lớp
+                    </span>
+                  </div>
+                  {highLoadClasses.length > 0 ? (
+                    <div className="space-y-1.5 mt-2">
+                      {highLoadClasses.slice(0, 3).map(c => (
+                        <div key={c.id || c.name} className="bg-slate-900/60 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between">
+                          <span className="font-semibold text-slate-200 truncate pr-2">{c.name}</span>
+                          <span className="text-red-400 font-bold whitespace-nowrap">{c.occupancyRate}% ({c.booked}/{c.capacity})</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 mt-2">
+                      Tất cả các lớp hiện tại đang vận hành trong ngưỡng an toàn, không có tình trạng quá tải hoặc nghẽn chỗ.
+                    </p>
+                  )}
+                </div>
+                <div className="pt-2.5 border-t border-slate-700/70 text-[11px] text-slate-300">
+                  <strong className="text-amber-400">Tác vụ đề xuất:</strong> {highLoadClasses.length > 0 ? 'Mở thêm khung giờ ca học mới hoặc chuyển đổi sang phòng tập quy mô lớn hơn.' : 'Duy trì lịch tập hiện tại và theo dõi tiếp danh sách chờ.'}
+                </div>
               </div>
-              <div className="bg-white/80 p-3.5 rounded-xl border border-amber-200/60 shadow-xs">
-                <span className="font-bold text-amber-900 block mb-1">
-                  2. Cân bằng thị phần bộ môn:
-                </span>
-                {topSport
-                  ? <>Bộ môn <strong className="text-slate-900">{topSport.name}</strong> chiếm <strong className="text-red-600">{topSport.share || 0}%</strong> tổng lượt đặt chỗ. So sánh với các bộ môn còn lại trước khi điều chỉnh lịch hoặc chương trình quảng bá.</>
-                  : 'Chưa đủ dữ liệu đặt chỗ để đưa ra khuyến nghị theo bộ môn.'}
+
+              {/* Alert 2: Lớp tải thấp */}
+              <div className="bg-slate-800/90 p-4 rounded-xl border border-amber-500/30 flex flex-col justify-between space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-amber-400 flex items-center gap-1.5 text-xs">
+                      <span className="material-symbols-outlined text-[16px]">trending_down</span>
+                      Cảnh báo dưới tải (&lt; 40% công suất)
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-950/80 text-amber-300 border border-amber-800">
+                      {lowLoadClasses.length} lớp
+                    </span>
+                  </div>
+                  {lowLoadClasses.length > 0 ? (
+                    <div className="space-y-1.5 mt-2">
+                      {lowLoadClasses.slice(0, 3).map(c => (
+                        <div key={c.id || c.name} className="bg-slate-900/60 p-2 rounded-lg border border-slate-700/60 flex items-center justify-between">
+                          <span className="font-semibold text-slate-200 truncate pr-2">{c.name}</span>
+                          <span className="text-amber-400 font-bold whitespace-nowrap">{c.occupancyRate}% ({c.booked}/{c.capacity})</span>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <p className="text-slate-400 mt-2">
+                      Tỷ lệ đăng ký tất cả các lớp đang mở đều đạt từ 40% trở lên, tối ưu chi phí giảng viên và điện năng.
+                    </p>
+                  )}
+                </div>
+                <div className="pt-2.5 border-t border-slate-700/70 text-[11px] text-slate-300">
+                  <strong className="text-amber-400">Tác vụ đề xuất:</strong> {lowLoadClasses.length > 0 ? 'Phối hợp chạy ưu đãi trải nghiệm học thử, ghép ca học hoặc khảo sát lại khung giờ thuận tiện.' : 'Các lớp duy trì hiệu suất ổn định.'}
+                </div>
               </div>
-              <div className="bg-white/80 p-3.5 rounded-xl border border-amber-200/60 shadow-xs">
-                <span className="font-bold text-amber-900 block mb-1">
-                  3. Tối ưu sân có nhiều khung giờ trống:
-                </span>
-                {processedRooms.length
-                  ? <>Khu vực <strong>{processedRooms[processedRooms.length - 1]?.name}</strong> có lượng sử dụng thấp nhất trong dữ liệu kỳ này. Cần đối chiếu khung giờ trước khi mở thêm ưu đãi.</>
-                  : 'Chưa đủ dữ liệu sân/phòng để đưa ra khuyến nghị.'}
+
+              {/* Alert 3: Khai thác hạ tầng & Giữ chân hội viên */}
+              <div className="bg-slate-800/90 p-4 rounded-xl border border-blue-500/30 flex flex-col justify-between space-y-3">
+                <div>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-blue-400 flex items-center gap-1.5 text-xs">
+                      <span className="material-symbols-outlined text-[16px]">domain</span>
+                      Hạ tầng sân bãi & Gia hạn hội viên
+                    </span>
+                    <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-950/80 text-blue-300 border border-blue-800">
+                      Vận hành
+                    </span>
+                  </div>
+                  <div className="space-y-2 mt-2">
+                    <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-700/60">
+                      <span className="text-slate-400 text-[11px] block">Sân/Phòng thấp điểm nhất:</span>
+                      <strong className="text-slate-200">
+                        {processedRooms.length ? `${processedRooms[processedRooms.length - 1]?.name} (${processedRooms[processedRooms.length - 1]?.occupancyRate}% khai thác · ${processedRooms[processedRooms.length - 1]?.sessionsCount} ca)` : 'Chưa có dữ liệu'}
+                      </strong>
+                    </div>
+                    <div className="bg-slate-900/60 p-2 rounded-lg border border-slate-700/60">
+                      <span className="text-slate-400 text-[11px] block">Hội viên đã hết hạn gói:</span>
+                      <strong className="text-amber-400">
+                        {metrics.expiredMembers || 0} hội viên cần chăm sóc gia hạn
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+                <div className="pt-2.5 border-t border-slate-700/70 text-[11px] text-slate-300">
+                  <strong className="text-amber-400">Tác vụ đề xuất:</strong> Mở bán ca thuê sân tự do vào các khung giờ trống và phân công lễ tân liên hệ gia hạn hội viên.
+                </div>
               </div>
             </div>
           </div>
@@ -594,7 +824,7 @@ export function ReportsAnalytics() {
                   BẢNG TRA CỨU CHI TIẾT VẬN HÀNH
                 </h2>
                 <p className="text-xs text-slate-500">
-                  Tra cứu chi tiết từng lớp học, bộ môn, sân bãi và nhật ký sự kiện.
+                  Tra cứu chi tiết từng lớp học, huấn luyện viên, gói hội viên, bộ môn, sân bãi và nhật ký sự kiện.
                 </p>
               </div>
 
@@ -602,6 +832,8 @@ export function ReportsAnalytics() {
               <div className="flex flex-wrap gap-2">
                 {[
                   ['classes', '🏅 Bảng Lớp học'],
+                  ['coaches', '👨‍🏫 Năng Suất HLV'],
+                  ['packages', '💳 Gói Tập & Hội Viên'],
                   ['sports', '🥋 Danh sách Bộ môn'],
                   ['rooms', '🏟️ Bảng Sân & Phòng'],
                   ['logs', '📋 Lịch sử & Đăng ký']
@@ -785,7 +1017,316 @@ export function ReportsAnalytics() {
               </section>
             )}
 
-            {/* TABLE TAB 2: DANH SÁCH BỘ MÔN */}
+            {/* TABLE TAB 2: NĂNG SUẤT HUẤN LUYỆN VIÊN */}
+            {activeTableTab === 'coaches' && (
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      Chi tiết năng suất và khối lượng giảng dạy của Huấn luyện viên
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Đo lường số ca dạy, lượng học viên phục vụ và tỷ lệ lấp đầy lớp của từng HLV trong kỳ.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Search box */}
+                    <div className="relative">
+                      <span className="material-symbols-outlined absolute left-2.5 top-2 text-slate-400 text-[18px]">
+                        search
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm theo tên HLV, môn..."
+                        value={coachSearch}
+                        onChange={e => setCoachSearch(e.target.value)}
+                        className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                    </div>
+
+                    {/* Sort selector */}
+                    <select
+                      className="text-xs font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none"
+                      value={coachSortBy}
+                      onChange={e => setCoachSortBy(e.target.value)}
+                    >
+                      <option value="booked">Sắp xếp: Lượt HV tiếp nhận</option>
+                      <option value="sessions">Sắp xếp: Số ca dạy nhiều nhất</option>
+                      <option value="occupancy">Sắp xếp: % Lấp đầy lớp cao nhất</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Coaches Table */}
+                <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-600 font-chivo text-xs uppercase tracking-wider border-b border-slate-200">
+                        <th className="py-3 px-3 w-14 text-center">Hạng</th>
+                        <th className="py-3 px-4">Huấn Luyện Viên</th>
+                        <th className="py-3 px-4">Chuyên Môn</th>
+                        <th className="py-3 px-3 text-center">Số lớp quản lý</th>
+                        <th className="py-3 px-3 text-center">Ca dạy trong kỳ</th>
+                        <th className="py-3 px-4 text-center">Học viên tiếp nhận / Chỗ</th>
+                        <th className="py-3 px-4 w-44">Tỷ lệ lấp đầy lớp</th>
+                        <th className="py-3 px-3 text-center">Tình trạng tải</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {processedCoaches.length ? processedCoaches.map((c, idx) => {
+                        const isTop1 = idx === 0 && coachSortBy === 'booked' && !coachSearch;
+                        const isTop2 = idx === 1 && coachSortBy === 'booked' && !coachSearch;
+                        const isTop3 = idx === 2 && coachSortBy === 'booked' && !coachSearch;
+
+                        let badgeRank = `#${idx + 1}`;
+                        let badgeRankColor = 'bg-slate-100 text-slate-600 border-slate-200';
+                        if (isTop1) { badgeRank = '🥇 #1'; badgeRankColor = 'bg-amber-100 text-amber-900 border-amber-300 font-bold'; }
+                        else if (isTop2) { badgeRank = '🥈 #2'; badgeRankColor = 'bg-slate-200 text-slate-800 border-slate-300 font-bold'; }
+                        else if (isTop3) { badgeRank = '🥉 #3'; badgeRankColor = 'bg-amber-50 text-amber-800 border-amber-200 font-bold'; }
+
+                        const studentsCount = c.totalStudents ?? c.booked ?? 0;
+                        const capacityCount = c.capacity || c.totalCapacity || 0;
+
+                        return (
+                          <tr key={c.coachId || c.fullName} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-3 text-center">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs border ${badgeRankColor}`}>
+                                {badgeRank}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">
+                              <div className="flex items-center gap-2.5">
+                                <div className="w-8 h-8 rounded-full bg-red-50 border border-red-200 text-red-600 flex items-center justify-center font-black text-xs">
+                                  {(c.fullName || c.coachName || 'HLV').slice(0, 2).toUpperCase()}
+                                </div>
+                                <div>
+                                  <div className="text-slate-900">{c.fullName || c.coachName}</div>
+                                  {c.coachCode && (
+                                    <span className="text-[10px] text-slate-400 font-medium">{c.coachCode}</span>
+                                  )}
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                <span className="material-symbols-outlined text-[14px] text-slate-500">sports</span>
+                                {c.specialization || c.specialty || 'Huấn luyện'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                              {c.classesCount || 0} lớp
+                            </td>
+                            <td className="py-3 px-3 text-center font-bold text-slate-900">
+                              {c.sessionsCount || 0} ca
+                            </td>
+                            <td className="py-3 px-4 text-center">
+                              <span className="font-black text-slate-900 text-base">{studentsCount}</span>
+                              <span className="text-xs text-slate-400"> / {capacityCount} chỗ</span>
+                            </td>
+                            <td className="py-3 px-4">
+                              <div className="space-y-1">
+                                <div className="flex justify-between text-xs font-bold">
+                                  <span className={c.occupancyRate >= 20 ? 'text-emerald-600' : 'text-slate-600'}>
+                                    {c.occupancyRate}%
+                                  </span>
+                                  <span className="text-[11px] text-slate-400 font-normal">
+                                    {capacityCount ? `${studentsCount}/${capacityCount}` : '0/0'}
+                                  </span>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-2 overflow-hidden">
+                                  <div
+                                    className={`h-2 rounded-full transition-all duration-500 ${
+                                      c.occupancyRate >= 20
+                                        ? 'bg-emerald-500'
+                                        : c.occupancyRate >= 10
+                                        ? 'bg-blue-500'
+                                        : 'bg-slate-400'
+                                    }`}
+                                    style={{ width: `${Math.min(100, c.occupancyRate)}%` }}
+                                  />
+                                </div>
+                              </div>
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              {c.sessionsCount >= 10 ? (
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                  🔥 Lịch dày
+                                </span>
+                              ) : c.sessionsCount >= 3 ? (
+                                <span className="px-2 py-0.5 rounded text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                                  ✅ Ổn định
+                                </span>
+                              ) : (
+                                <span className="px-2 py-0.5 rounded text-xs font-semibold bg-slate-100 text-slate-600 border border-slate-200">
+                                  ⚠️ Nhận thêm ca
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr>
+                          <td colSpan={8} className="py-8 text-center text-slate-400 text-xs">
+                            Không có dữ liệu huấn luyện viên nào thỏa mãn điều kiện lọc.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* TABLE TAB 3: GÓI TẬP & HỘI VIÊN */}
+            {activeTableTab === 'packages' && (
+              <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900 text-sm">
+                      Thống kê hiệu quả các Gói Hội Viên & Đăng ký
+                    </h3>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      Đo lường doanh số bán, số lượng hội viên đang sở hữu và tỷ trọng doanh thu từng gói.
+                    </p>
+                  </div>
+
+                  <div className="flex flex-wrap items-center gap-2">
+                    {/* Search box */}
+                    <div className="relative">
+                      <span className="material-symbols-outlined absolute left-2.5 top-2 text-slate-400 text-[18px]">
+                        search
+                      </span>
+                      <input
+                        type="text"
+                        placeholder="Tìm tên gói tập..."
+                        value={packageSearch}
+                        onChange={e => setPackageSearch(e.target.value)}
+                        className="pl-8 pr-3 py-1.5 text-xs rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-500"
+                      />
+                    </div>
+
+                    {/* Sort selector */}
+                    <select
+                      className="text-xs font-medium border border-slate-200 rounded-lg px-2.5 py-1.5 bg-white focus:outline-none"
+                      value={packageSortBy}
+                      onChange={e => setPackageSortBy(e.target.value)}
+                    >
+                      <option value="revenue">Sắp xếp: Doanh thu cao nhất</option>
+                      <option value="sold">Sắp xếp: Số lượt mua mới</option>
+                      <option value="active">Sắp xếp: Số HV đang kích hoạt</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Package Quick Stats Strip */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 bg-slate-50 p-3.5 rounded-xl border border-slate-200 text-xs">
+                  <div>
+                    <span className="text-slate-500 block">Tổng gói mở bán</span>
+                    <strong className="text-base font-black text-slate-900">{processedPackages.length} gói</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Hội viên có gói hiệu lực</span>
+                    <strong className="text-base font-black text-emerald-700">{metrics.activeMembers || 0} hội viên</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Hội viên đã hết hạn</span>
+                    <strong className="text-base font-black text-amber-700">{metrics.expiredMembers || 0} hội viên</strong>
+                  </div>
+                  <div>
+                    <span className="text-slate-500 block">Doanh thu gói trong kỳ</span>
+                    <strong className="text-base font-black text-slate-900">
+                      {Number(processedPackages.reduce((sum, p) => sum + (p.revenueInPeriod || 0), 0)).toLocaleString('vi-VN')}đ
+                    </strong>
+                  </div>
+                </div>
+
+                {/* Packages Table */}
+                <div className="overflow-x-auto border border-slate-100 rounded-xl">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 text-slate-600 font-chivo text-xs uppercase tracking-wider border-b border-slate-200">
+                        <th className="py-3 px-3 w-14 text-center">Hạng</th>
+                        <th className="py-3 px-4">Tên Gói Hội Viên</th>
+                        <th className="py-3 px-4">Bộ Môn</th>
+                        <th className="py-3 px-3 text-center">Thời Hạn</th>
+                        <th className="py-3 px-4 text-right">Đơn Giá</th>
+                        <th className="py-3 px-3 text-center">HV Đang Dùng</th>
+                        <th className="py-3 px-3 text-center">Mua Mới Trong Kỳ</th>
+                        <th className="py-3 px-4 text-right">Doanh Thu Thuần</th>
+                        <th className="py-3 px-3 text-center">Tỷ Trọng</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100">
+                      {processedPackages.length ? processedPackages.map((pkg, idx) => {
+                        const sportStyle = getSportStyle(pkg.sportName);
+                        const isTop1 = idx === 0 && packageSortBy === 'revenue' && !packageSearch;
+                        const isTop2 = idx === 1 && packageSortBy === 'revenue' && !packageSearch;
+                        const isTop3 = idx === 2 && packageSortBy === 'revenue' && !packageSearch;
+
+                        let badgeRank = `#${idx + 1}`;
+                        let badgeRankColor = 'bg-slate-100 text-slate-600 border-slate-200';
+                        if (isTop1) { badgeRank = '🥇 #1'; badgeRankColor = 'bg-amber-100 text-amber-900 border-amber-300 font-bold'; }
+                        else if (isTop2) { badgeRank = '🥈 #2'; badgeRankColor = 'bg-slate-200 text-slate-800 border-slate-300 font-bold'; }
+                        else if (isTop3) { badgeRank = '🥉 #3'; badgeRankColor = 'bg-amber-50 text-amber-800 border-amber-200 font-bold'; }
+
+                        return (
+                          <tr key={pkg.packageId || pkg.name} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3 px-3 text-center">
+                              <span className={`inline-block px-2 py-0.5 rounded text-xs border ${badgeRankColor}`}>
+                                {badgeRank}
+                              </span>
+                            </td>
+                            <td className="py-3 px-4 font-bold text-slate-900">
+                              <div className="flex items-center gap-2">
+                                <span className="material-symbols-outlined text-slate-400 text-[18px]">card_membership</span>
+                                <span>{pkg.name}</span>
+                              </div>
+                            </td>
+                            <td className="py-3 px-4">
+                              <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-lg text-xs font-semibold border ${sportStyle.bg}`}>
+                                <span className="material-symbols-outlined text-[13px]">{sportStyle.icon}</span>
+                                {pkg.sportName || 'Toàn năng'}
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-center font-semibold text-slate-700">
+                              {pkg.durationMonths ? `${pkg.durationMonths} tháng` : 'Theo buổi'}
+                            </td>
+                            <td className="py-3 px-4 text-right font-medium text-slate-700">
+                              {Number(pkg.price || 0).toLocaleString('vi-VN')}đ
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className="font-bold text-slate-900 px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 text-xs">
+                                {pkg.activeSubscribers || 0} HV
+                              </span>
+                            </td>
+                            <td className="py-3 px-3 text-center font-black text-slate-900">
+                              +{pkg.soldInPeriod || 0}
+                            </td>
+                            <td className="py-3 px-4 text-right font-black text-slate-900">
+                              {Number(pkg.revenueInPeriod || 0).toLocaleString('vi-VN')}đ
+                            </td>
+                            <td className="py-3 px-3 text-center">
+                              <span className="font-bold text-xs text-sky-700">
+                                {pkg.share || 0}%
+                              </span>
+                            </td>
+                          </tr>
+                        );
+                      }) : (
+                        <tr>
+                          <td colSpan={9} className="py-8 text-center text-slate-400 text-xs">
+                            Không có dữ liệu gói hội viên nào phù hợp với bộ lọc.
+                          </td>
+                        </tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* TABLE TAB 4: DANH SÁCH BỘ MÔN */}
             {activeTableTab === 'sports' && (
               <section className="bg-white border border-slate-200/90 rounded-2xl p-5 shadow-sm space-y-4">
                 <h3 className="font-bold text-slate-900 text-sm">

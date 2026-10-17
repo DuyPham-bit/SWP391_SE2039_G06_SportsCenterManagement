@@ -1,0 +1,35 @@
+
+0/ Bảng quản lý trực quan hơn, dễ nhìn, dễ theo dõi hơn
+
+1/ Quản lý thành viên
+Lỗi: Khi sửa hồ sơ của các thành viên, sửa luôn được email (fix: ẩn đi, hiện nhưng ko sửa được)
+Lỗi: Trong mục Lịch sử gói của các thành viên, hiện các thông tin chưa trực quan, fix lại trực quan hơn
+Phần sắp xếp theo họ tên chưa hợp lý, phải xếp theo tên chứ kh phải theo họ
+
+2/ Quản lý nhân viên
+Khi khoá nhân viên nào, thì các nhân viên bị khóa phải ở cuối danh sách
+Phần sắp xếp theo họ tên chưa hợp lý, phải xếp theo tên chứ kh phải theo họ
+Khi sửa thông tin của chính Manager hoặc khoá Tài khoản Manager trong role Manager, thay vì đang báo lỗi “Yêu cầu API thất bại” thì đổi thành câu báo lỗi khác
+
+
+3/ Lớp, Bộ môn & Phòng
+Ví dụ muốn tạo thêm môn thì sao? Phải vào tạo nhân viên, xong tạo thêm môn mới. Sau đó mới tạo lớp với chuyên môn đó hả? Chưa rõ ràng
+
+4/ Phân công HLV 
+Huấn luyện viên mẫu là ai? Xoá đi, không có HLV thì để “Chưa có Coach”. Không dùng HLV Mẫu nữa.
+Nếu Manager kh biết lịch dạy của coach thì khó mà biết coach nào đang có lịch trùng để phân vào class khác. Cho tôi giải pháp khác để dễ dàng phân giáo viên vào lớp
+Filter cho box tìm Coach khi giao việc
+
+5/ Báo cáo thống kê
+Sửa lại phần báo cáo TOP PERFORMERS  kiểu khác, hiện tại AI quá
+Gợi ý và thêm những gì liên quan đến báo cáo cân thiết để manager quản lý trung tâm (tự thêm nếu cần thiết. LƯU Ý ĐỒNG BỘ CẢ FE, BE, NHẤT LẠI TRUY VẤN SQL CHO ĐÚNG). 
+Chức năng xuất csv xuất bản doan thu đẹp, kh chỉ mỗi text đơn thuần
+Báo cáo số lượng nhân viên, học viên…
+6/ Phân quyền
+Tại sao phân quyền theo user, mà user manager lại phân quyền cho chính mình được? Bất hợp lý, manager có cả mục thêm quyền như: Quản lý nhân sự? Phân công HLV? trong khi nó là mặc định của manager rồi mà?
+Bỏ các thuật ngữ role trong db như “view_teaching_schedule”,... đi
+7/ Có thêm phần thêm thông báo. Chia ra thông báo theo role. Cập nhật đúng cấu trúc cả BE và FE
+
+8/ Audit (Bỏ phần giá trị trước sau)
+9/ Tiếp nhận yêu cầu hỗ trợ
+Manager là người xử lý yêu cầu hỗ trợ mà? Sao lại có phần Tạo yêu cầu mới? Xoá phần đó đi. Manager chỉ tiếp nhận xử lý các yêu cầu thôi. Chú ý logic gửi yêu cầu cho các role khác, cả BE và FE.

@@ -7,6 +7,7 @@ using MembersRequests = SportsCenterManagement.BLL.DTOs.Members.Requests;
 using MembersResponses = SportsCenterManagement.BLL.DTOs.Members.Responses;
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.BLL.Interfaces;
+using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 
@@ -190,13 +191,19 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         string query,
         int page,
         int pageSize,
+        string sortBy,
+        string sortDirection,
         CancellationToken cancellationToken = default)
     {
         var term = query.Trim();
+        var normalizedSort = sortBy.Trim().ToLowerInvariant();
+        var normalizedDirection = sortDirection.Trim().ToLowerInvariant();
         if (centerId <= 0 || (term.Length > 0 && term.Length < 2) || query.Length > 100
-            || page is < 1 or > 1_000_000 || pageSize is < 1 or > 50)
+            || page is < 1 or > 1_000_000 || pageSize is < 1 or > 50
+            || normalizedSort is not ("default" or "givenname")
+            || normalizedDirection is not ("asc" or "desc"))
         {
-            throw new ValidationException("Từ khóa cần từ 2 đến 100 ký tự; page từ 1 và pageSize từ 1 đến 50.");
+            throw new ValidationException("Từ khóa cần từ 2 đến 100 ký tự; page từ 1, pageSize từ 1 đến 50; kiểu sắp xếp không hợp lệ.");
         }
         if (term.Length == 0)
             await EnsureCenterManagerAsync(actorUserId, centerId, cancellationToken);
@@ -211,12 +218,30 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
                       || profile.FullName.Contains(term)
                       || user.Email.Contains(term)
                       || (user.Phone != null && user.Phone.Contains(term)))
-            orderby user.Status == "Active" ? 0 : 1, profile.FullName, profile.Id
-            select new MembersResponses.MemberProfileResponse(profile.Id, user.Id, profile.MemberCode, user.Username,
-                user.Email, user.Phone, profile.FullName, profile.DateOfBirth, profile.Gender,
-                profile.Address, profile.CreatedAt, user.Status);
+            let normalizedName = profile.FullName.Trim()
+            let reversedName = SportsCenterDbContext.Reverse(normalizedName)
+            let separatorIndex = reversedName.IndexOf(" ")
+            let givenName = separatorIndex < 0
+                ? normalizedName
+                : SportsCenterDbContext.Reverse(reversedName.Substring(0, separatorIndex))
+            select new
+            {
+                StatusOrder = user.Status == "Active" ? 0 : 1,
+                GivenName = givenName,
+                FullName = profile.FullName,
+                ProfileId = profile.Id,
+                Response = new MembersResponses.MemberProfileResponse(profile.Id, user.Id, profile.MemberCode, user.Username,
+                    user.Email, user.Phone, profile.FullName, profile.DateOfBirth, profile.Gender,
+                    profile.Address, profile.CreatedAt, user.Status)
+            };
         var totalCount = await matches.CountAsync(cancellationToken);
-        var items = await matches.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        var ordered = normalizedSort == "givenname"
+            ? normalizedDirection == "desc"
+                ? matches.OrderBy(item => item.StatusOrder).ThenByDescending(item => item.GivenName).ThenByDescending(item => item.FullName).ThenBy(item => item.ProfileId)
+                : matches.OrderBy(item => item.StatusOrder).ThenBy(item => item.GivenName).ThenBy(item => item.FullName).ThenBy(item => item.ProfileId)
+            : matches.OrderBy(item => item.StatusOrder).ThenBy(item => item.FullName).ThenBy(item => item.ProfileId);
+        var items = await ordered.Select(item => item.Response)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
         var enriched = await EnrichMemberSubscriptionsAsync(items, cancellationToken);
         return new MembersResponses.PagedResponse<MembersResponses.MemberProfileResponse>(enriched, page, pageSize, totalCount);
     }

@@ -5,7 +5,8 @@ import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
 import {
-  coachWorkload, filterAndSortAssignmentClasses, isCoachCompatible
+  coachWorkload, filterAndSortAssignmentClasses, filterCoachCandidates,
+  getCoachAvailability, isCoachCompatible
 } from './coachAssignmentView.js';
 
 // Visual Sport Theme Mapping
@@ -88,6 +89,9 @@ function getInitials(name = '') {
   return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
 }
 
+const WEEKDAYS = ['Chủ nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+const shortTime = value => String(value || '').slice(0, 5);
+
 export function CoachAssignment() {
   const { showSuccess, showError } = useToast();
   const [classes, setClasses] = useState([]);
@@ -108,6 +112,10 @@ export function CoachAssignment() {
   const [selectedCoachId, setSelectedCoachId] = useState('');
   const [assigning, setAssigning] = useState(false);
   const [assignError, setAssignError] = useState(null);
+  const [classSchedules, setClassSchedules] = useState([]);
+  const [scheduleLoading, setScheduleLoading] = useState(false);
+  const [coachQuery, setCoachQuery] = useState('');
+  const [coachAvailabilityFilter, setCoachAvailabilityFilter] = useState('ALL');
 
   const loadData = async (isManualRefresh = false) => {
     if (isManualRefresh) setRefreshing(true);
@@ -132,13 +140,31 @@ export function CoachAssignment() {
   };
   useEffect(() => { loadData(); }, []);
 
-  const openAssignModal = cls => {
-    const compatible = coaches.filter(coach => isCoachCompatible(coach, cls));
-    const currentIsCompatible = compatible.some(coach => String(coach.id) === String(cls.coachId));
+  const openAssignModal = async cls => {
     setSelectedClass(cls);
-    setSelectedCoachId(currentIsCompatible ? String(cls.coachId) : String(compatible[0]?.id || ''));
+    setSelectedCoachId('');
     setAssignError(null);
+    setClassSchedules([]);
+    setCoachQuery('');
+    setCoachAvailabilityFilter('ALL');
     setModalOpen(true);
+    setScheduleLoading(true);
+    try {
+      const schedules = await classApi.getSchedules(cls.id);
+      const activeSchedules = (schedules || []).filter(item => String(item.status).toLowerCase() === 'active');
+      setClassSchedules(activeSchedules);
+      const candidates = filterCoachCandidates(coaches, cls, activeSchedules);
+      const current = candidates.find(coach => String(coach.id) === String(cls.coachId) && coach.compatible);
+      const suggested = candidates.find(coach => coach.compatible && coach.availability.status !== 'BUSY');
+      setSelectedCoachId(String(current?.id || suggested?.id || ''));
+    } catch (err) {
+      setAssignError({
+        ...err,
+        message: err.message || 'Không tải được lịch lớp để đối chiếu Coach. Vui lòng thử lại.'
+      });
+    } finally {
+      setScheduleLoading(false);
+    }
   };
 
   const handleConfirmAssign = async event => {
@@ -148,6 +174,12 @@ export function CoachAssignment() {
     }
     if (String(selectedCoachId) === String(selectedClass.coachId)) {
       setAssignError({ message: 'HLV này đang phụ trách lớp. Hãy chọn một HLV khác để thay đổi.' });
+      return;
+    }
+    const selectedAvailability = getCoachAvailability(
+      coaches.find(coach => String(coach.id) === String(selectedCoachId)), classSchedules, selectedClass.id);
+    if (selectedAvailability.status === 'BUSY') {
+      setAssignError({ message: 'Coach đang trùng lịch với lớp khác. Hãy chọn Coach có trạng thái “Phù hợp lịch”.' });
       return;
     }
     setAssigning(true); setAssignError(null);
@@ -236,6 +268,16 @@ export function CoachAssignment() {
       return matchesQuery && matchesSport && matchesStatus;
     });
   }, [classes, coaches, searchQuery, selectedSportFilter, selectedStatusFilter]);
+
+  const coachCandidates = useMemo(() => selectedClass
+    ? filterCoachCandidates(coaches, selectedClass, classSchedules, coachQuery, coachAvailabilityFilter)
+    : [], [coaches, selectedClass, classSchedules, coachQuery, coachAvailabilityFilter]);
+
+  const selectedCandidate = useMemo(() => coachCandidates
+    .find(coach => String(coach.id) === String(selectedCoachId))
+    || (selectedClass ? filterCoachCandidates(coaches, selectedClass, classSchedules)
+      .find(coach => String(coach.id) === String(selectedCoachId)) : null),
+  [coachCandidates, coaches, selectedClass, classSchedules, selectedCoachId]);
 
   if (loading) {
     return (
@@ -458,7 +500,7 @@ export function CoachAssignment() {
               }`}
             >
               <span className="w-2 h-2 rounded-full bg-amber-500" />
-              <span>Chưa phân công</span>
+              <span>Chưa có Coach</span>
               <span className="text-[11px] px-1.5 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700">
                 {metrics.unassignedClasses}
               </span>
@@ -701,7 +743,7 @@ export function CoachAssignment() {
                       <div className="min-w-0 flex-1">
                         <h4 className="font-extrabold text-xs text-slate-900 truncate">
                           {cls.coachName || (
-                            <span className="text-amber-700 italic font-semibold">Chưa phân công huấn luyện viên</span>
+                            <span className="text-amber-700 italic font-semibold">Chưa có Coach</span>
                           )}
                         </h4>
                         {currentCoach?.specialization && (
@@ -828,7 +870,7 @@ export function CoachAssignment() {
                           </div>
                         ) : (
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                            Chưa phân công
+                            Chưa có Coach
                           </span>
                         )}
                       </td>
@@ -862,6 +904,7 @@ export function CoachAssignment() {
         isOpen={modalOpen}
         onClose={() => !assigning && setModalOpen(false)}
         title="Phân Công Huấn Luyện Viên Cho Lớp Học"
+        maxWidth="max-w-5xl"
       >
         {selectedClass && (
           <form onSubmit={handleConfirmAssign} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
@@ -885,60 +928,109 @@ export function CoachAssignment() {
               </div>
             </div>
 
-            {/* Coach Selection */}
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
-                Chọn Huấn luyện viên phụ trách <span className="text-rose-500">*</span>
-              </label>
-              <select
-                value={selectedCoachId}
-                onChange={(e) => {
-                  setSelectedCoachId(e.target.value);
-                  setAssignError(null);
-                }}
-                className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white"
-              >
-                {coaches.map((c) => (
-                  <option key={c.id} value={c.id} disabled={!isCoachCompatible(c, selectedClass)}>
-                    {c.fullName} ({c.specialization || 'Chưa cập nhật chuyên môn'}{c.certification ? ` · ${c.certification}` : ''})
-                  </option>
-                ))}
-              </select>
-            </div>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1.35fr)_minmax(280px,0.65fr)]">
+              <section className="space-y-3">
+                <div className="flex flex-col gap-2 sm:flex-row">
+                  <label className="relative flex-1">
+                    <span className="sr-only">Tìm Coach</span>
+                    <span className="material-symbols-outlined absolute left-3 top-2.5 text-[19px] text-slate-400">search</span>
+                    <input
+                      value={coachQuery}
+                      onChange={event => setCoachQuery(event.target.value)}
+                      placeholder="Tìm theo tên, mã, chuyên môn, chứng chỉ..."
+                      className="w-full rounded-xl border border-slate-300 py-2.5 pl-10 pr-3 text-sm focus:border-red-500 focus:outline-none focus:ring-2 focus:ring-red-500/15"
+                    />
+                  </label>
+                  <select
+                    aria-label="Lọc trạng thái lịch Coach"
+                    value={coachAvailabilityFilter}
+                    onChange={event => setCoachAvailabilityFilter(event.target.value)}
+                    className="rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm focus:border-red-500 focus:outline-none"
+                  >
+                    <option value="ALL">Tất cả trạng thái</option>
+                    <option value="AVAILABLE">Phù hợp lịch</option>
+                    <option value="BUSY">Đang trùng lịch</option>
+                    <option value="UNKNOWN">Chưa thể đối chiếu</option>
+                  </select>
+                </div>
 
-            {/* Match / Mismatch Assessment */}
-            {(() => {
-              const candidate = coaches.find((c) => String(c.id) === String(selectedCoachId));
-              if (!candidate) return null;
-              const isMatch = isCoachCompatible(candidate, selectedClass);
-
-              if (isMatch) {
-                return (
-                  <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 text-xs flex items-center gap-2.5">
-                    <span className="material-symbols-outlined text-[20px] text-emerald-600 shrink-0">verified</span>
-                    <div>
-                      <strong>Chuyên môn hoàn toàn phù hợp!</strong>
-                      <p className="text-[11px] text-emerald-700 mt-0.5">
-                        HLV <strong>{candidate.fullName}</strong> có chuyên môn "{candidate.specialization}" khớp với bộ môn "{selectedClass.sportName}".
-                      </p>
+                <div className="max-h-[360px] space-y-2 overflow-y-auto pr-1" aria-label="Danh sách Coach phù hợp">
+                  {scheduleLoading ? (
+                    <div className="rounded-xl border border-slate-200 p-6"><LoadingSpinner text="Đang đối chiếu lịch dạy..." /></div>
+                  ) : coachCandidates.length === 0 ? (
+                    <div className="rounded-xl border border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+                      Không có Coach phù hợp với bộ lọc hiện tại.
                     </div>
+                  ) : coachCandidates.map(coach => {
+                    const selected = String(coach.id) === String(selectedCoachId);
+                    const busy = coach.availability.status === 'BUSY';
+                    const unknown = coach.availability.status === 'UNKNOWN';
+                    const disabled = !coach.compatible || busy;
+                    return (
+                      <button
+                        type="button"
+                        key={coach.id}
+                        data-coach-id={coach.id}
+                        data-availability={coach.availability.status}
+                        disabled={disabled}
+                        onClick={() => { setSelectedCoachId(String(coach.id)); setAssignError(null); }}
+                        className={`w-full rounded-2xl border p-3 text-left transition ${selected
+                          ? 'border-red-500 bg-red-50 ring-2 ring-red-500/10'
+                          : disabled ? 'border-slate-200 bg-slate-50 opacity-70' : 'border-slate-200 bg-white hover:border-red-300 hover:shadow-sm'}`}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="flex min-w-0 items-center gap-3">
+                            <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-gradient-to-tr ${getAvatarGradient(coach.fullName)} text-xs font-extrabold text-white`}>
+                              {getInitials(coach.fullName)}
+                            </div>
+                            <div className="min-w-0">
+                              <div className="truncate text-sm font-bold text-slate-900">{coach.fullName}</div>
+                              <div className="truncate text-xs text-slate-500">{coach.coachCode} · {coach.specialization || 'Chưa cập nhật chuyên môn'}</div>
+                            </div>
+                          </div>
+                          <span className={`shrink-0 rounded-full px-2 py-1 text-[10px] font-bold ${!coach.compatible
+                            ? 'bg-slate-200 text-slate-600' : busy ? 'bg-rose-100 text-rose-700'
+                              : unknown ? 'bg-amber-100 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>
+                            {!coach.compatible ? 'Khác chuyên môn' : busy ? 'Trùng lịch' : unknown ? 'Chưa có lịch lớp' : 'Phù hợp lịch'}
+                          </span>
+                        </div>
+                        <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-slate-600">
+                          <span>{coach.primaryClassCount || 0} lớp đang phụ trách</span>
+                          <span>{coach.teachingSlots?.length || 0} ca dạy sắp tới</span>
+                          {busy && <span className="font-semibold text-rose-700">Trùng: {coach.availability.conflicts.map(item => item.className).join(', ')}</span>}
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </section>
+
+              <aside className="rounded-2xl border border-slate-200 bg-slate-50 p-4">
+                <h4 className="flex items-center gap-2 text-sm font-bold text-slate-900">
+                  <span className="material-symbols-outlined text-[19px] text-red-600">calendar_clock</span>
+                  Lịch cần đối chiếu
+                </h4>
+                <div className="mt-3 space-y-2">
+                  {classSchedules.length ? classSchedules.map(schedule => (
+                    <div key={schedule.id} className="rounded-xl border border-slate-200 bg-white px-3 py-2 text-xs">
+                      <strong>{WEEKDAYS[Number(schedule.dayOfWeek)] || `Thứ ${schedule.dayOfWeek}`}</strong>
+                      <span className="ml-2 text-slate-600">{shortTime(schedule.startTime)}–{shortTime(schedule.endTime)}</span>
+                    </div>
+                  )) : (
+                    <p className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs text-amber-800">
+                      Lớp chưa có lịch học. Có thể phân công theo chuyên môn, nhưng chưa thể dự báo trùng ca.
+                    </p>
+                  )}
+                </div>
+                {selectedCandidate && (
+                  <div className="mt-4 border-t border-slate-200 pt-4">
+                    <p className="text-[11px] font-bold uppercase tracking-wider text-slate-500">Coach đã chọn</p>
+                    <p className="mt-1 text-sm font-bold text-slate-900">{selectedCandidate.fullName}</p>
+                    <p className="mt-1 text-xs text-slate-600">{selectedCandidate.certification || 'Chưa cập nhật chứng chỉ'}</p>
                   </div>
-                );
-              }
-
-              if (isMatch === false) {
-                return (
-                  <BusinessAlert
-                    type="warning"
-                    title="Cảnh báo lệch chuyên môn huấn luyện"
-                    message={`HLV ${candidate.fullName} có chuyên môn chính là "${candidate.specialization}", khác với bộ môn "${selectedClass.sportName}" của lớp học này.`}
-                    proposedHandling="Quản lý cần đối chiếu chứng chỉ phụ hoặc năng lực thực tế của HLV trước khi phê duyệt để đảm bảo chất lượng đào tạo đạt chuẩn Olympic."
-                  />
-                );
-              }
-
-              return null;
-            })()}
+                )}
+              </aside>
+            </div>
 
             {/* Error / Conflict Alert */}
             {assignError && (
@@ -970,7 +1062,9 @@ export function CoachAssignment() {
               </button>
               <button
                 type="submit"
-                disabled={assigning || !selectedCoachId || String(selectedCoachId) === String(selectedClass?.coachId)}
+                disabled={assigning || scheduleLoading || !selectedCoachId
+                  || !selectedCandidate?.compatible || selectedCandidate?.availability.status === 'BUSY'
+                  || String(selectedCoachId) === String(selectedClass?.coachId)}
                 className="inline-flex items-center gap-2 px-5 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-md shadow-red-600/20 transition active:scale-95 disabled:opacity-50"
               >
                 <span className="material-symbols-outlined text-[16px]">check</span>

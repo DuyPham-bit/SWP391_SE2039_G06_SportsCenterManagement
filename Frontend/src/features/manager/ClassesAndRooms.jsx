@@ -5,7 +5,7 @@ import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import {
   CLASS_STATUS, WEEK_DAYS, effectiveScheduleRoom, filterClasses, groupSchedulesByDay,
-  splitAndSortClasses, validateClassForm, validateScheduleForm
+  resumeClassDraftAfterSportCreation, splitAndSortClasses, validateClassForm, validateScheduleForm
 } from './classManagementView.js';
 
 // Visual Sport Theme Mapping
@@ -204,6 +204,7 @@ export function ClassesAndRooms() {
   };
 
   const openSportModal = (row = null) => {
+    setFormError('');
     if (row) {
       setForm({
         name: row.name || '',
@@ -218,6 +219,23 @@ export function ClassesAndRooms() {
       });
     }
     setModal({ type: 'sport', row });
+  };
+
+  const openSportFromClass = () => {
+    const returnToClass = { draft: { ...form }, row: modal?.row || null };
+    setFormError('');
+    setForm({ name: '', description: '', status: 'Active' });
+    setModal({ type: 'sport', row: null, returnToClass });
+  };
+
+  const closeSportModal = () => {
+    if (modal?.returnToClass) {
+      setForm(modal.returnToClass.draft);
+      setFormError('');
+      setModal({ type: 'class', row: modal.returnToClass.row });
+      return;
+    }
+    setModal(null);
   };
 
   const openScheduleModal = async (classRow) => {
@@ -293,7 +311,14 @@ export function ClassesAndRooms() {
         if (modal.row) {
           await classApi.updateSport(modal.row.id, body);
         } else {
-          await classApi.createSport(body);
+          const createdSport = await classApi.createSport(body);
+          if (modal.returnToClass) {
+            const resumedDraft = resumeClassDraftAfterSportCreation(modal.returnToClass, createdSport);
+            if (!resumedDraft) throw new Error('Bộ môn đã tạo nhưng phản hồi không có mã bộ môn hợp lệ. Vui lòng tải lại dữ liệu.');
+            setForm(resumedDraft);
+            setModal({ type: 'class', row: modal.returnToClass.row });
+            return;
+          }
         }
       } else if (modal.type === 'room') {
         const body = {
@@ -334,7 +359,11 @@ export function ClassesAndRooms() {
         return; // Keep modal open for schedule additions
       }
       setModal(null);
-    }, modal.type === 'schedule' ? 'Lưu lịch học thành công!' : 'Đã lưu thay đổi thành công!');
+    }, modal.type === 'schedule'
+      ? 'Lưu lịch học thành công!'
+      : modal.type === 'sport' && !modal.row
+        ? `Đã tạo bộ môn "${form.name.trim()}" và sẵn sàng để mở lớp.`
+        : 'Đã lưu thay đổi thành công!');
   };
 
   // Publish Class
@@ -911,7 +940,7 @@ export function ClassesAndRooms() {
                         </span>
                         <span className="font-semibold text-slate-800">
                           {cls.coachName || (
-                            <span className="text-amber-600 italic">Chưa phân công</span>
+                            <span className="text-amber-600 italic">Chưa có Coach</span>
                           )}
                         </span>
                       </div>
@@ -1180,7 +1209,7 @@ export function ClassesAndRooms() {
                           <div className="font-bold text-slate-900">{cls.name}</div>
                           <div className="text-xs text-slate-500 flex items-center gap-1 mt-0.5">
                             <span className="material-symbols-outlined text-[14px] text-slate-400">person</span>
-                            HLV: {cls.coachName || 'Chưa phân công'}
+                            HLV: {cls.coachName || 'Chưa có Coach'}
                           </div>
                         </td>
                         <td className="py-3.5 px-4">
@@ -1378,183 +1407,189 @@ export function ClassesAndRooms() {
         isOpen={modal?.type === 'class'}
         onClose={() => !busy && setModal(null)}
         title={modal?.row ? `Chỉnh sửa lớp: ${modal.row.name}` : 'Mở Lớp Đào Tạo Mới'}
+        maxWidth="max-w-4xl"
       >
-        <form onSubmit={handleSaveModal} className="space-y-4 max-h-[75vh] overflow-y-auto pr-1">
-          {formError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
-          <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700">
-              Tên lớp đào tạo <span className="text-rose-500">*</span>
-            </label>
-            <input
-              type="text"
-              name="name"
-              required
-              maxLength={100}
-              placeholder="VD: Bơi sải Kỹ thuật Olympic K02"
-              value={form.name || ''}
-              onChange={handleFormChange}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-            />
+        <form onSubmit={handleSaveModal} className="-mx-1 max-h-[78vh] overflow-y-auto px-1">
+          <div className="space-y-4 pb-1">
+            {!modal?.row && (
+              <div className="flex items-start gap-3 rounded-2xl border border-red-100 bg-red-50/70 p-4">
+                <span className="material-symbols-outlined mt-0.5 text-[22px] text-red-600">info</span>
+                <div>
+                  <p className="text-sm font-bold text-slate-900">Tạo thông tin lớp trước, bổ sung lịch học sau</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-600">
+                    Chỉ các trường có dấu <span className="font-bold text-red-600">*</span> là bắt buộc. Lớp mới được lưu ở trạng thái bản nháp để bạn kiểm tra trước khi công bố.
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {formError && (
+              <div role="alert" className="flex items-start gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-700">
+                <span className="material-symbols-outlined text-[18px]">error</span>
+                <span>{formError}</span>
+              </div>
+            )}
+
+            <section aria-labelledby="class-basic-heading" className="rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-5">
+              <div className="mb-4 flex items-center justify-between gap-3 border-b border-slate-100 pb-3">
+                <div className="flex items-center gap-3">
+                  <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-red-600 text-sm font-black text-white">1</span>
+                  <div>
+                    <h3 id="class-basic-heading" className="text-sm font-bold text-slate-900">Thông tin lớp</h3>
+                    <p className="text-[11px] text-slate-500">Tên, bộ môn và trình độ phù hợp</p>
+                  </div>
+                </div>
+                <span className="rounded-full bg-red-50 px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-red-700">Bắt buộc</span>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                <div className="md:col-span-3">
+                  <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                    Tên lớp đào tạo <span className="text-red-600">*</span>
+                  </label>
+                  <input type="text" name="name" required maxLength={100}
+                    placeholder="Ví dụ: Bơi sải cơ bản K02"
+                    value={form.name || ''} onChange={handleFormChange}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/20" />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                    Bộ môn thể thao <span className="text-red-600">*</span>
+                  </label>
+                  <div className="flex flex-col gap-2 sm:flex-row">
+                    <select name="sportId" required value={form.sportId || ''} onChange={handleFormChange}
+                      className="min-w-0 flex-1 rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/20">
+                      <option value="">Chọn bộ môn cho lớp</option>
+                      {data.sports.filter((sport) => sport.status === 'Active').map((sport) => (
+                        <option key={sport.id} value={sport.id}>{sport.name}</option>
+                      ))}
+                    </select>
+                    <button type="button" onClick={openSportFromClass} disabled={busy}
+                      className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-xl border border-amber-300 bg-amber-50 px-3.5 py-2.5 text-xs font-bold text-amber-800 transition hover:bg-amber-100 disabled:opacity-50">
+                      <span className="material-symbols-outlined text-[17px]">add_circle</span>
+                      Tạo bộ môn mới
+                    </button>
+                  </div>
+                  <p className="mt-1.5 text-[11px] text-slate-500">Không thấy bộ môn cần dùng? Tạo mới ngay mà không mất dữ liệu đang nhập.</p>
+                  {!data.sports.some((sport) => sport.status === 'Active') && (
+                    <p role="alert" className="mt-2 rounded-lg border border-amber-200 bg-amber-50 p-2 text-[11px] text-amber-800">
+                      Chưa có bộ môn đang sử dụng. Hãy tạo bộ môn trước khi lưu lớp.
+                    </p>
+                  )}
+                </div>
+
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-700">Cấp độ đào tạo</label>
+                  <select name="level" value={form.level || 'Cơ bản'} onChange={handleFormChange}
+                    className="w-full rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/20">
+                    <option value="Cơ bản">Cơ bản</option>
+                    <option value="Trung cấp">Trung cấp</option>
+                    <option value="Nâng cao">Nâng cao</option>
+                    <option value="Mọi cấp độ">Mọi cấp độ</option>
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <section aria-labelledby="class-operation-heading" className="rounded-2xl border border-slate-200 bg-slate-50/70 p-4 sm:p-5">
+              <div className="mb-4 flex items-center gap-3 border-b border-slate-200 pb-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-slate-800 text-sm font-black text-white">2</span>
+                <div>
+                  <h3 id="class-operation-heading" className="text-sm font-bold text-slate-900">Thiết lập vận hành</h3>
+                  <p className="text-[11px] text-slate-500">Sức chứa, thời lượng và nguồn lực phụ trách</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                    Sức chứa tối đa <span className="text-red-600">*</span>
+                  </label>
+                  <div className="relative">
+                    <input type="number" name="capacity" min="1" max="500" required
+                      value={form.capacity || 20} onChange={handleFormChange}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-20 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20" />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">học viên</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-slate-700">
+                    Thời lượng mỗi ca <span className="text-red-600">*</span>
+                  </label>
+                  <div className="relative">
+                    <input type="number" name="durationMinutes" min="15" max="300" required
+                      value={form.durationMinutes || 60} onChange={handleFormChange}
+                      className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 pr-16 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20" />
+                    <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-slate-400">phút</span>
+                  </div>
+                </div>
+                <div>
+                  <label className="mb-1.5 flex items-center justify-between gap-2 text-xs font-bold text-slate-700">
+                    <span>Phòng tập mặc định</span><span className="font-medium text-slate-400">Không bắt buộc</span>
+                  </label>
+                  <select name="roomId" value={form.roomId || ''} onChange={handleFormChange}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20">
+                    <option value="">Chưa xếp phòng</option>
+                    {data.rooms.filter((room) => room.status === 'Active').map((room) => (
+                      <option key={room.id} value={room.id}>{room.name} · {room.capacity} chỗ</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="mb-1.5 flex items-center justify-between gap-2 text-xs font-bold text-slate-700">
+                    <span>Huấn luyện viên</span><span className="font-medium text-slate-400">Có thể phân sau</span>
+                  </label>
+                  <select name="coachId" value={form.coachId || ''} onChange={handleFormChange}
+                    className="w-full rounded-xl border border-slate-300 bg-white px-3.5 py-2.5 text-sm focus:border-red-500 focus:ring-2 focus:ring-red-500/20">
+                    <option value="">Chưa có Coach</option>
+                    {data.coaches.map((coach) => (
+                      <option key={coach.id} value={coach.id}>{coach.fullName}{coach.specialization ? ` · ${coach.specialization}` : ''}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+            </section>
+
+            <section aria-labelledby="class-policy-heading" className="rounded-2xl border border-slate-200 bg-white p-4 sm:p-5">
+              <div className="mb-4 flex items-center gap-3 border-b border-slate-100 pb-3">
+                <span className="flex h-8 w-8 items-center justify-center rounded-xl bg-amber-500 text-sm font-black text-white">3</span>
+                <div>
+                  <h3 id="class-policy-heading" className="text-sm font-bold text-slate-900">Mô tả & chính sách đăng ký</h3>
+                  <p className="text-[11px] text-slate-500">Thông tin giúp hội viên hiểu lớp trước khi đăng ký</p>
+                </div>
+              </div>
+              <label className="mb-1.5 block text-xs font-bold text-slate-700">Mô tả lớp học</label>
+              <textarea name="description" rows="3" maxLength={500}
+                placeholder="Mục tiêu lớp học, kỹ năng đạt được, trang bị cần chuẩn bị..."
+                value={form.description || ''} onChange={handleFormChange}
+                className="w-full resize-y rounded-xl border border-slate-300 bg-slate-50 px-3.5 py-2.5 text-sm focus:border-red-500 focus:bg-white focus:ring-2 focus:ring-red-500/20" />
+              <label className="mt-3 flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 p-3.5 transition hover:border-slate-300">
+                <input type="checkbox" name="allowWaitlist" checked={form.allowWaitlist !== false}
+                  onChange={handleFormChange} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-red-600 focus:ring-red-500" />
+                <span>
+                  <span className="block text-xs font-bold text-slate-800">Cho phép danh sách chờ khi lớp đủ chỗ</span>
+                  <span className="mt-0.5 block text-[11px] leading-4 text-slate-500">Hội viên có thể vào hàng chờ và được xử lý khi có chỗ trống.</span>
+                </span>
+              </label>
+            </section>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Bộ môn thể thao <span className="text-rose-500">*</span>
-              </label>
-              <select
-                name="sportId"
-                required
-                value={form.sportId || ''}
-                onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-              >
-                <option value="">Chọn bộ môn thể thao</option>
-                {data.sports
-                  .filter((s) => s.status === 'Active')
-                  .map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name}
-                    </option>
-                  ))}
-              </select>
+          <div className="sticky bottom-0 mt-4 flex flex-col-reverse gap-3 border-t border-slate-200 bg-white/95 py-3 backdrop-blur sm:flex-row sm:items-center sm:justify-between">
+            <p className="text-[11px] text-slate-500">
+              <span className="font-bold text-slate-700">{modal?.row ? 'Cập nhật lớp' : 'Lưu bản nháp'}</span> · Lịch học được quản lý sau khi lưu.
+            </p>
+            <div className="flex items-center justify-end gap-2.5">
+              <button type="button" disabled={busy} onClick={() => setModal(null)}
+                className="rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-sm font-semibold text-slate-700 transition hover:bg-slate-50 disabled:opacity-50">
+                Hủy bỏ
+              </button>
+              <button type="submit" disabled={busy}
+                className="inline-flex items-center gap-2 rounded-xl bg-red-600 px-5 py-2.5 text-sm font-bold text-white shadow-md shadow-red-600/20 transition hover:bg-red-700 disabled:opacity-50">
+                <span className={`material-symbols-outlined text-[18px] ${busy ? 'animate-spin' : ''}`}>{busy ? 'progress_activity' : 'save'}</span>
+                <span>{busy ? 'Đang lưu...' : modal?.row ? 'Lưu thay đổi' : 'Tạo lớp bản nháp'}</span>
+              </button>
             </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Cấp độ đào tạo
-              </label>
-              <select
-                name="level"
-                value={form.level || 'Cơ bản'}
-                onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-              >
-                <option value="Cơ bản">Cơ bản (Người mới bắt đầu)</option>
-                <option value="Trung cấp">Trung cấp</option>
-                <option value="Nâng cao">Nâng cao (Chuyên sâu)</option>
-                <option value="Mọi cấp độ">Mọi cấp độ (All Levels)</option>
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Phòng tập mặc định
-              </label>
-              <select
-                name="roomId"
-                value={form.roomId || ''}
-                onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-              >
-                <option value="">Chọn phòng tập / Sân bãi</option>
-                {data.rooms
-                  .filter((r) => r.status === 'Active')
-                  .map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} ({r.type || 'Sức chứa'}: {r.capacity})
-                    </option>
-                  ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Huấn luyện viên phụ trách
-              </label>
-              <select
-                name="coachId"
-                value={form.coachId || ''}
-                onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-              >
-                <option value="">Chưa phân công HLV ngay</option>
-                {data.coaches.map((c) => (
-                  <option key={c.id} value={c.id}>
-                    {c.fullName} {c.specialization ? `(${c.specialization})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Sức chứa tối đa (Học viên) <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="capacity"
-                min="1"
-                max="500"
-                required
-                value={form.capacity || 20}
-                onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-semibold text-slate-700 mb-1">
-                Thời lượng ca học (Phút) <span className="text-rose-500">*</span>
-              </label>
-              <input
-                type="number"
-                name="durationMinutes"
-                min="15"
-                max="300"
-                required
-                value={form.durationMinutes || 60}
-                onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Mô tả chi tiết & Giáo trình khóa học
-            </label>
-            <textarea
-              name="description"
-              rows="3"
-              maxLength={500}
-              placeholder="Nhập mục tiêu khóa học, kỹ năng đạt được, trang bị cần chuẩn bị..."
-              value={form.description || ''}
-              onChange={handleFormChange}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-            />
-          </div>
-
-          <div className="p-3 bg-slate-50 rounded-xl border border-slate-200">
-            <label className="flex items-center gap-2 cursor-pointer text-xs font-semibold text-slate-700">
-              <input
-                type="checkbox"
-                name="allowWaitlist"
-                checked={form.allowWaitlist !== false}
-                onChange={handleFormChange}
-                className="w-4 h-4 text-red-600 rounded border-slate-300 focus:ring-red-500"
-              />
-              <span>Cho phép hội viên đăng ký hàng chờ (Waitlist) khi lớp đầy chỗ</span>
-            </label>
-          </div>
-
-          <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
-            <button
-              type="button"
-              disabled={busy}
-              onClick={() => setModal(null)}
-              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition"
-            >
-              Hủy bỏ
-            </button>
-            <button
-              type="submit"
-              disabled={busy}
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-xl transition shadow shadow-red-600/20 disabled:opacity-50"
-            >
-              <span className="material-symbols-outlined text-[18px]">save</span>
-              <span>{busy ? 'Đang lưu...' : modal?.row ? 'Lưu thay đổi lớp' : 'Tạo lớp đào tạo'}</span>
-            </button>
           </div>
         </form>
       </Modal>
@@ -1653,10 +1688,16 @@ export function ClassesAndRooms() {
       {/* Modal: Create / Edit Sport */}
       <Modal
         isOpen={modal?.type === 'sport'}
-        onClose={() => !busy && setModal(null)}
-        title={modal?.row ? `Chỉnh sửa bộ môn: ${modal.row.name}` : 'Thêm Bộ Môn Thể Thao Mới'}
+        onClose={() => !busy && closeSportModal()}
+        title={modal?.row ? `Chỉnh sửa bộ môn: ${modal.row.name}` : modal?.returnToClass ? 'Tạo Bộ Môn Để Tiếp Tục Mở Lớp' : 'Thêm Bộ Môn Thể Thao Mới'}
       >
         <form onSubmit={handleSaveModal} className="space-y-4">
+          {modal?.returnToClass && (
+            <div className="rounded-xl border border-amber-200 bg-amber-50 p-3 text-xs leading-5 text-amber-900">
+              Sau khi tạo thành công, hệ thống sẽ quay lại form mở lớp, giữ nguyên dữ liệu đã nhập và tự chọn bộ môn mới.
+            </div>
+          )}
+          {formError && <p role="alert" className="rounded-xl bg-red-50 p-3 text-sm text-red-700">{formError}</p>}
           <div>
             <label className="block text-xs font-semibold text-slate-700 mb-1">
               Tên bộ môn thể thao <span className="text-rose-500">*</span>
@@ -1688,29 +1729,36 @@ export function ClassesAndRooms() {
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 mb-1">
-              Trạng thái sử dụng
-            </label>
-            <select
-              name="status"
-              value={form.status || 'Active'}
-              onChange={handleFormChange}
-              className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
-            >
-              <option value="Active">Đang sử dụng (Active)</option>
-              <option value="Inactive">Ngừng sử dụng (Inactive)</option>
-            </select>
-          </div>
+          {modal?.returnToClass ? (
+            <div className="flex items-center gap-2 rounded-xl border border-emerald-200 bg-emerald-50 p-3 text-xs text-emerald-800">
+              <span className="material-symbols-outlined text-[18px]">check_circle</span>
+              Bộ môn sẽ được tạo ở trạng thái <strong>Đang sử dụng</strong> để có thể chọn ngay cho lớp.
+            </div>
+          ) : (
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 mb-1">
+                Trạng thái sử dụng
+              </label>
+              <select
+                name="status"
+                value={form.status || 'Active'}
+                onChange={handleFormChange}
+                className="w-full p-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500"
+              >
+                <option value="Active">Đang sử dụng (Active)</option>
+                <option value="Inactive">Ngừng sử dụng (Inactive)</option>
+              </select>
+            </div>
+          )}
 
           <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
             <button
               type="button"
               disabled={busy}
-              onClick={() => setModal(null)}
+              onClick={closeSportModal}
               className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-sm font-semibold rounded-xl transition"
             >
-              Hủy bỏ
+              {modal?.returnToClass ? 'Quay lại form lớp' : 'Hủy bỏ'}
             </button>
             <button
               type="submit"

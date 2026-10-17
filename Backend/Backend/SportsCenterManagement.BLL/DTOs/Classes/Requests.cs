@@ -57,6 +57,11 @@ namespace SportsCenterManagement.BLL.DTOs.Classes
 
     public sealed record CancelClassEnrollmentRequest(string? Reason);
 
+    public sealed record SaveSportRequest(
+        string Name,
+        string? Description,
+        string Status = "Active");
+
     public sealed record SessionScheduleQuery(
         long? SportId,
         long? CoachId,

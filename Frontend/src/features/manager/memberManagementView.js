@@ -35,6 +35,36 @@ export function buildMemberUpdatePayload(form = {}) {
   };
 }
 
+function normalizeMemberName(value) {
+  return String(value || '').trim().replace(/\s+/g, ' ');
+}
+
+export function getVietnameseGivenName(value) {
+  const normalized = normalizeMemberName(value);
+  if (!normalized) return '';
+  const parts = normalized.split(' ');
+  return parts[parts.length - 1];
+}
+
+export function sortMembersByVietnameseGivenName(value, direction = 'asc') {
+  if (!Array.isArray(value)) return [];
+  const multiplier = String(direction).toLowerCase() === 'desc' ? -1 : 1;
+  const collator = new Intl.Collator('vi', { sensitivity: 'base', numeric: true });
+  return [...value].sort((left, right) => {
+    const leftName = normalizeMemberName(left?.fullName);
+    const rightName = normalizeMemberName(right?.fullName);
+    const leftGivenName = getVietnameseGivenName(leftName);
+    const rightGivenName = getVietnameseGivenName(rightName);
+    if (!leftGivenName && rightGivenName) return 1;
+    if (leftGivenName && !rightGivenName) return -1;
+    const givenNameOrder = collator.compare(leftGivenName, rightGivenName);
+    if (givenNameOrder) return givenNameOrder * multiplier;
+    const fullNameOrder = collator.compare(leftName, rightName);
+    if (fullNameOrder) return fullNameOrder * multiplier;
+    return Number(left?.memberId || 0) - Number(right?.memberId || 0);
+  });
+}
+
 export function getAccountPresentation(status) {
   const normalized = String(status || '').trim().toUpperCase();
   if (normalized === 'ACTIVE') return { ...ACCOUNT_STATES.ACTIVE, isActive: true };
@@ -100,4 +130,16 @@ export function normalizeSubscriptionHistory(value) {
   return [...value].sort((left, right) =>
     timestamp(right) - timestamp(left)
       || Number(right?.subscriptionId || 0) - Number(left?.subscriptionId || 0));
+}
+
+export function summarizeSubscriptionHistory(value) {
+  const items = Array.isArray(value) ? value : [];
+  const summary = { total: items.length, active: 0, pending: 0, finished: 0 };
+  for (const item of items) {
+    const status = String(item?.status || '').replace(/[^a-z]/gi, '').toUpperCase();
+    if (status === 'ACTIVE') summary.active += 1;
+    else if (['PENDING', 'PENDINGPAYMENT', 'SCHEDULED'].includes(status)) summary.pending += 1;
+    else summary.finished += 1;
+  }
+  return summary;
 }

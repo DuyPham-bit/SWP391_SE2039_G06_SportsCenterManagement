@@ -6,7 +6,7 @@ const { test } = require('node:test');
 
 function loadCreateReportCsv() {
   const source = fs.readFileSync(path.join(__dirname, '../src/services/reportExport.js'), 'utf8')
-    .replace('export function createReportCsv', 'function createReportCsv');
+    .replace(/^export\s+/gm, '');
   const context = vm.createContext({ Date });
   vm.runInContext(`${source}\nglobalThis.createReportCsv = createReportCsv;`, context);
   return context.createReportCsv;

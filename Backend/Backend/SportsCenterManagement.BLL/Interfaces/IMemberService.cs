@@ -17,6 +17,8 @@ public interface IMemberService
         string query,
         int page,
         int pageSize,
+        string sortBy,
+        string sortDirection,
         CancellationToken cancellationToken = default);
     Task<MembersResponses.MemberProfileResponse> CreateAtCenterAsync(long actorUserId, long centerId, AuthRequests.RegisterRequest request, CancellationToken cancellationToken = default);
     Task<IReadOnlyList<MembersResponses.MemberSubscriptionResponse>> GetSubscriptionsAsync(long actorUserId, long memberId, CancellationToken cancellationToken = default);
