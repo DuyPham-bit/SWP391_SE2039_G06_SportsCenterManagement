@@ -145,6 +145,7 @@ public static class DbInitializer
         if (!seedDemoData)
         {
             if (demoRequested) await MarkDemoInitializedAsync(context);
+            if (demoRequested) await EnsureCoachProfessionalDefaultsAsync(context);
             await EnsureAuthAndReceptionPermissionsAsync(context);
             return;
         }
@@ -388,8 +389,96 @@ public static class DbInitializer
         }
 
         await SeedDemoClassesMembersAndPlansAsync(context, demoCenter);
+        await EnsureCoachProfessionalDefaultsAsync(context);
         await MarkDemoInitializedAsync(context);
         await EnsureAuthAndReceptionPermissionsAsync(context);
+    }
+
+    private static async Task EnsureCoachProfessionalDefaultsAsync(SportsCenterDbContext context)
+    {
+        var center = await context.Centers.OrderBy(x => x.Id).FirstOrDefaultAsync();
+        if (center is null) return;
+        var coachRole = await context.Roles.FirstOrDefaultAsync(x => x.Name == RoleNames.Coach);
+        if (coachRole is not null)
+        {
+            var peerUser = await context.Users.FirstOrDefaultAsync(x => x.Username == "coach02");
+            if (peerUser is null)
+            {
+                peerUser = new User
+                {
+                    RoleId = coachRole.Id,
+                    Username = "coach02",
+                    Email = "coach02@scms.vn",
+                    PasswordHash = HashPassword("Coach@123456"),
+                    Phone = "0900000022",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow
+                };
+                context.Users.Add(peerUser);
+                await context.SaveChangesAsync();
+            }
+            if (!await context.CoachProfiles.AnyAsync(x => x.UserId == peerUser.Id))
+            {
+                context.CoachProfiles.Add(new CoachProfile
+                {
+                    UserId = peerUser.Id,
+                    CenterId = center.Id,
+                    CoachCode = "COACH-PRO-02",
+                    FullName = "Huấn luyện viên dự phòng",
+                    Specialization = "Thể lực tổng quát & hỗ trợ ca",
+                    Certification = "Huấn luyện viên cấp 1",
+                    ExperienceYears = 3,
+                    Bio = "HLV dự phòng dùng cho quy trình đổi ca và phối hợp vận hành.",
+                    HireDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow
+                });
+                await context.SaveChangesAsync();
+            }
+        }
+        var resources = new (string Name, string Type, string Location, int? Capacity)[]
+        {
+            ("Khu PT chức năng", "TrainingZone", "Tầng 2", 8),
+            ("Võ đài Boxing", "BoxingRing", "Tầng 2", 6),
+            ("Máy Pilates Reformer #1", "PilatesMachine", "Studio tầng 3", 1),
+            ("Khung Yoga bay #1", "AerialYogaRig", "Studio tầng 3", 2),
+            ("Bộ cáp đa năng", "Equipment", "Phòng Gym", 2)
+        };
+        foreach (var item in resources)
+            if (!await context.FacilityResources.AnyAsync(x => x.CenterId == center.Id && x.Name == item.Name))
+                context.FacilityResources.Add(new FacilityResource { CenterId = center.Id, Name = item.Name,
+                    ResourceType = item.Type, Location = item.Location, Capacity = item.Capacity,
+                    Status = "Available", CreatedAt = DateTime.UtcNow });
+        await context.SaveChangesAsync();
+
+        var sports = await context.Sports.Where(x => x.CenterId == center.Id && x.Status == "Active").ToListAsync();
+        var exerciseNames = new (string Name, string Muscle, string Level, string Instruction)[]
+        {
+            ("Barbell Back Squat", "Chân & Core", "Intermediate", "Giữ lưng trung lập, gối theo hướng mũi chân, xuống có kiểm soát."),
+            ("Romanian Deadlift", "Gân kheo & Mông", "Intermediate", "Đẩy hông ra sau, thanh đòn sát chân, không gù lưng."),
+            ("Push-up chuẩn", "Ngực & Tay sau", "Beginner", "Siết core, thân người thành một đường thẳng, hạ ngực có kiểm soát."),
+            ("Zone 2 Cardio", "Tim mạch", "Beginner", "Duy trì nhịp tim 60-70% tối đa trong 30-45 phút."),
+            ("Hip Flexor Stretch", "Giãn cơ hông", "Beginner", "Giữ khung chậu trung lập, thở chậm, mỗi bên 30-45 giây."),
+            ("Boxing Jab-Cross", "Toàn thân", "Intermediate", "Giữ cằm thấp, xoay hông và thu tay về vị trí phòng thủ.")
+        };
+        var defaultSport = sports.FirstOrDefault();
+        foreach (var item in exerciseNames)
+            if (!await context.Exercises.AnyAsync(x => x.Name == item.Name && (x.CenterId == null || x.CenterId == center.Id)))
+                context.Exercises.Add(new Exercise { CenterId = center.Id, SportId = defaultSport?.Id, Name = item.Name,
+                    MuscleGroup = item.Muscle, DifficultyLevel = item.Level, Instructions = item.Instruction,
+                    Description = "Bài tập chuẩn trong thư viện trung tâm", Status = "Active", CreatedAt = DateTime.UtcNow });
+
+        var managerUser = await (from staff in context.StaffProfiles join user in context.Users on staff.UserId equals user.Id
+            where staff.CenterId == center.Id && staff.Status == "Active" select user).FirstOrDefaultAsync();
+        var coaches = await context.CoachProfiles.Where(x => x.CenterId == center.Id && x.Status == "Active").ToListAsync();
+        if (managerUser is not null)
+            foreach (var coach in coaches)
+                if (!await context.CoachCompensationPolicies.AnyAsync(x => x.CoachId == coach.Id && x.Status == "Active"))
+                    context.CoachCompensationPolicies.Add(new CoachCompensationPolicy { CoachId = coach.Id,
+                        MonthlyBaseSalary = 8_000_000, CommissionPerSession = 100_000, SalesCommissionPercent = 5,
+                        TargetSessions = 60, TargetSales = 30_000_000, EffectiveFrom = DateOnly.FromDateTime(DateTime.UtcNow),
+                        Status = "Active", UpdatedBy = managerUser.Id, UpdatedAt = DateTime.UtcNow });
+        await context.SaveChangesAsync();
     }
 
     private static async Task MarkDemoInitializedAsync(SportsCenterDbContext context)

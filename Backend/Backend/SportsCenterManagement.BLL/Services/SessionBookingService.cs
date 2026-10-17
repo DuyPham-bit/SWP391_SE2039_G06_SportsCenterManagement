@@ -90,6 +90,8 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
         AuditLogWriter.Add(unitOfWork, actorUserId ?? currentUserId, cls.CenterId, "BOOK_SESSION", "ClassSession", sessionId);
         await NotifyMemberAsync(actorUserId ?? currentUserId, member.Id, session, cls,
             "Đặt lớp thành công", "Bạn đã được xác nhận chỗ học", "BookingConfirmed", cancellationToken);
+        await NotifyCoachesAsync(actorUserId ?? currentUserId, member.FullName, session, cls,
+            "Học viên đặt lịch", "đã đặt buổi học", "CoachBookingCreated", cancellationToken);
         await SaveAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return new BookSessionResult(true, false, ToResponse(booking, session, cls), null, "Đặt lịch thành công.");
@@ -132,6 +134,9 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
         await NotifyMemberAsync(actorUserId ?? currentUserId, member.Id, session, cls,
             "Đã hủy đặt lớp", late ? "Bạn đã hủy muộn; buổi học vẫn được tính là đã tham gia" : "Chỗ học của bạn đã được hủy",
             "BookingCancelled", cancellationToken);
+        await NotifyCoachesAsync(actorUserId ?? currentUserId, member.FullName, session, cls,
+            "Học viên hủy lịch", late ? "đã hủy muộn buổi học" : "đã hủy buổi học",
+            "CoachBookingCancelled", cancellationToken);
         await SaveAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
@@ -398,6 +403,9 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
             entry.Status = FlowStatuses.WaitlistPromoted;
             await NotifyMemberAsync(actorUserId, candidate.Id, session, cls, "Đã có chỗ học từ danh sách chờ",
                 "Bạn đã được tự động xác nhận chỗ học từ danh sách chờ", "WaitlistPromoted", ct);
+            await NotifyCoachesAsync(actorUserId, candidate.FullName, session, cls,
+                "Học viên được nhận từ danh sách chờ", "đã được tự động xác nhận chỗ học",
+                "CoachWaitlistPromoted", ct);
             return candidate.Id;
         }
 
@@ -410,6 +418,52 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
         string title, string message, string type, CancellationToken ct) =>
         FlowNotificationWriter.CreateForMemberAsync(Db, actorUserId, memberId, title,
             $"{message}: {cls.Name}, ngày {session.SessionDate:dd/MM/yyyy} lúc {session.StartTime:HH:mm}.", type, ct);
+
+    private async Task NotifyCoachesAsync(long actorUserId, string memberName, ClassSession session, ClassEntity cls,
+        string title, string action, string type, CancellationToken ct)
+    {
+        var coachUserIds = await Db.CoachProfiles
+            .Where(coach => coach.Status == "Active" &&
+                (coach.Id == session.CoachId || Db.ClassCoaches.Any(link =>
+                    link.ClassId == session.ClassId && link.CoachId == coach.Id)))
+            .Select(coach => coach.UserId).Distinct().ToArrayAsync(ct);
+        if (coachUserIds.Length == 0) return;
+
+        var now = DateTime.UtcNow;
+        var notification = new Notification
+        {
+            SenderId = actorUserId,
+            Title = title,
+            Message = $"{memberName} {action}: {cls.Name}, ngày {session.SessionDate:dd/MM/yyyy} lúc {session.StartTime:HH:mm}.",
+            NotificationType = type,
+            CreatedAt = now
+        };
+        await Db.Notifications.AddAsync(notification, ct);
+        await SaveAsync(ct);
+
+        Db.UserNotifications.AddRange(coachUserIds.Select(userId => new UserNotification
+        {
+            NotificationId = notification.Id,
+            UserId = userId,
+            IsRead = false,
+            CreatedAt = now
+        }));
+        var channels = new[] { "InApp", "Email", "SMS", "Push" };
+        Db.CommunicationDeliveries.AddRange(coachUserIds.SelectMany(userId => channels.Select(channel =>
+            new CommunicationDelivery
+            {
+                NotificationId = notification.Id,
+                RecipientUserId = userId,
+                Channel = channel,
+                Status = channel == "InApp" ? "Delivered" : "Queued",
+                ProviderMessage = channel == "InApp"
+                    ? "Đã giao trong ứng dụng"
+                    : "Đang chờ cấu hình cổng gửi bên ngoài",
+                CreatedAt = now,
+                SentAt = channel == "InApp" ? now : null
+            })));
+        await SaveAsync(ct);
+    }
 
     private async Task<MemberProfile> GetMemberAsync(long userId, CancellationToken ct) =>
         await Db.MemberProfiles.SingleOrDefaultAsync(m => m.UserId == userId, ct)

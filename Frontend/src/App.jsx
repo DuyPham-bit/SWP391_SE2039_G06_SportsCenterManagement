@@ -38,6 +38,8 @@ const TrainingPlan = lazy(() => import('./features/coach/TrainingPlan.js').then(
 const WorkoutProgress = lazy(() => import('./features/coach/WorkoutProgress.js').then(m => ({ default: m.WorkoutProgress })));
 const CoachNotifications = lazy(() => import('./features/coach/CoachNotifications.js').then(m => ({ default: m.CoachNotifications })));
 const AIRecommendation = lazy(() => import('./features/coach/AIRecommendation.js').then(m => ({ default: m.AIRecommendation })));
+const CoachProfessionalHub = lazy(() => import('./features/coach/CoachProfessionalHub.jsx').then(m => ({ default: m.CoachProfessionalHub })));
+const ManagerCoachOperations = lazy(() => import('./features/manager/ManagerCoachOperations.jsx').then(m => ({ default: m.ManagerCoachOperations })));
 
 // Member Pages (Lazy Loaded)
 const MemberDashboard = lazy(() => import('./features/member/MemberDashboard.js').then(m => ({ default: m.MemberDashboard })));
@@ -49,6 +51,7 @@ const MyAttendance = lazy(() => import('./features/member/MyAttendance.jsx').the
 const MemberNotifications = lazy(() => import('./features/member/MemberNotifications.jsx').then(m => ({ default: m.MemberNotifications })));
 const MemberAIAssistant = lazy(() => import('./features/member/MemberAIAssistant.js').then(m => ({ default: m.MemberAIAssistant })));
 const PaymentResult = lazy(() => import('./features/member/PaymentResult.js').then(m => ({ default: m.PaymentResult })));
+const MemberCoachPortal = lazy(() => import('./features/member/MemberCoachPortal.jsx').then(m => ({ default: m.MemberCoachPortal })));
 const MySupportRequests = lazy(() => import('./features/shared/MySupportRequests.jsx').then(m => ({ default: m.MySupportRequests })));
 
 function RouteFallback() {
@@ -189,6 +192,8 @@ function AppRouter() {
         return renderManagerRoute(AuditLogs, 'view_audit_logs');
       case '#/manager/home-content':
         return renderManagerRoute(HomeContentManagement, 'manage_landing_content');
+      case '#/manager/coach-operations':
+        return renderManagerRoute(ManagerCoachOperations, 'manage_coach_operations');
 
       // RECEPTIONIST ROUTES (4 chức năng)
       case '#/receptionist/dashboard':
@@ -226,6 +231,8 @@ function AppRouter() {
         return renderCoachRoute(CoachNotifications, 'view_teaching_schedule');
       case '#/coach/ai-recommendation':
         return renderCoachRoute(AIRecommendation, 'get_ai_recommendation');
+      case '#/coach/professional':
+        return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');
 
       // MEMBER ROUTES
       case '#/member/dashboard':
@@ -244,6 +251,8 @@ function AppRouter() {
         return renderMemberRoute(MemberNotifications);
       case '#/member/ai-assistant':
         return renderMemberRoute(MemberAIAssistant, 'ask_ai_assistant');
+      case '#/member/coach-portal':
+        return renderMemberRoute(MemberCoachPortal, 'use_coach_portal');
 
       // 404 NOT FOUND ROUTE
       default:

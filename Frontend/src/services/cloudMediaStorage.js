@@ -172,13 +172,14 @@ export async function uploadMediaFileToCloud(file, allowLocalFallback = false) {
     throw new Error('Chưa chọn tệp');
   }
 
-  if (!['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'].includes(file.type) || !/\.(png|jpe?g|webp|gif|avif)$/i.test(file.name)) {
-    throw new Error('Vui lòng chọn ảnh PNG, JPG/JPEG, WEBP, GIF hoặc AVIF. Không hỗ trợ SVG.');
+  const isImage = ['image/png', 'image/jpeg', 'image/webp', 'image/gif', 'image/avif'].includes(file.type) && /\.(png|jpe?g|webp|gif|avif)$/i.test(file.name);
+  const isVideo = ['video/mp4', 'video/webm'].includes(file.type) && /\.(mp4|webm)$/i.test(file.name);
+  if (!isImage && !isVideo) {
+    throw new Error('Vui lòng chọn ảnh PNG/JPG/WEBP/GIF/AVIF hoặc video MP4/WEBM.');
   }
 
-  // Giới hạn 15MB
-  if (file.size > 15 * 1024 * 1024) {
-    throw new Error('Kích thước ảnh tối đa là 15MB');
+  if (file.size > 50 * 1024 * 1024) {
+    throw new Error('Kích thước media tối đa là 50MB');
   }
 
   try {
@@ -216,7 +217,7 @@ export async function uploadMediaFileToCloud(file, allowLocalFallback = false) {
     throw new Error(errorMsg);
   } catch (backendError) {
     console.error('Backend Google Drive upload failed:', backendError);
-    if (allowLocalFallback) {
+    if (allowLocalFallback && isImage) {
       return processLocalImageFallback(file);
     }
     throw backendError;

@@ -6,7 +6,9 @@ public sealed record PlanExercise(
     [param: Required, StringLength(150)] string Name,
     [param: StringLength(30)] string? Sets,
     [param: StringLength(50)] string? Reps,
-    [param: StringLength(500)] string? Note);
+    [param: StringLength(500)] string? Note,
+    [param: Range(1, 52)] int? WeekNumber = null,
+    [param: StringLength(20)] string? DayOfWeek = null);
 
 public sealed record SaveTrainingPlanRequest(
     [param: Range(1, long.MaxValue)] long ClassId,

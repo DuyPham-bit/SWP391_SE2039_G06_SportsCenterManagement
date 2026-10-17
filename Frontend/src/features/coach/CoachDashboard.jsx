@@ -6,6 +6,7 @@ import { CoachError, useTeachingSessions } from './CoachShared.js';
 import { sessionTime } from './coachOverview.js';
 
 const links = [
+  ['professional', 'workspace_premium', 'Coach Professional Hub'],
   ['schedule', 'calendar_month', 'Lịch dạy'], ['members', 'group', 'Hồ sơ học viên'],
   ['training-plan', 'assignment', 'Giáo án'], ['progress', 'monitoring', 'Kết quả & nhận xét'],
   ['attendance', 'fact_check', 'Điểm danh'], ['notifications', 'campaign', 'Thông báo & bài tập'],
