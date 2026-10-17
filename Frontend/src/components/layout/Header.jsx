@@ -22,37 +22,38 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
   };
 
   return (
-    <header className="h-16 bg-white border-b border-slate-200 sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between shadow-sm">
-      {/* Left: Mobile Toggle & Center Breadcrumb */}
+    <header className="h-16 bg-[#1E2235] text-white border-b border-slate-800 sticky top-0 z-40 px-4 sm:px-6 flex items-center justify-between shadow-md">
+      {/* Left: Mobile Toggle & Brand Logo */}
       <div className="flex items-center gap-3">
         <button
           onClick={onToggleSidebar}
-          className="lg:hidden w-9 h-9 rounded-lg border border-slate-200 flex items-center justify-center text-slate-600 hover:bg-slate-100"
+          className="lg:hidden w-9 h-9 rounded-xl border border-slate-700 flex items-center justify-center text-slate-300 hover:bg-white/10 hover:text-white transition-colors"
         >
           <span className="material-symbols-outlined text-[22px]">menu</span>
         </button>
 
-        <a href="#/" className="flex items-center gap-2.5 group">
-          <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 text-white flex items-center justify-center shadow-md shadow-red-600/30 font-chivo font-black text-base transition-transform duration-300 group-hover:scale-105">
+        {/* Brand Logo Matching 100% User Reference */}
+        <a href="#/" aria-label="SCMS Olympic Sports Arena - Trang chủ" className="flex items-center gap-3 group text-decoration-none">
+          <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-[var(--primary-color)] via-[#A8DADC] to-[var(--custom-btn-bg-color)] text-white flex items-center justify-center shadow-md font-sans font-bold text-xl transition-transform duration-300 group-hover:scale-105 shrink-0">
             S
           </div>
           <div className="hidden sm:flex flex-col">
             <div className="flex items-center gap-1.5">
-              <span className="font-chivo font-black text-sm tracking-tight text-slate-900 leading-none">
+              <span className="font-sans font-bold text-lg tracking-tight text-white leading-none">
                 SCMS
               </span>
-              <span className="text-[9px] px-1 py-0.2 rounded bg-red-600/10 text-red-600 font-extrabold uppercase border border-red-500/20">
-                PRO
+              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--primary-color)]/20 text-[#A8DADC] font-bold uppercase border border-[var(--primary-color)]/40 leading-none">
+                OLYMPIC
               </span>
             </div>
-            <span className="text-[9px] font-bold text-slate-500 tracking-[0.16em] uppercase mt-0.5 leading-none">
+            <span className="text-[9px] font-bold text-[var(--custom-btn-bg-color)]/90 tracking-[0.2em] uppercase mt-1 leading-none">
               Olympic Sports Arena
             </span>
           </div>
         </a>
 
         {/* Live System Indicator */}
-        <div className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-xs font-semibold text-slate-600 ml-3">
+        <div className="hidden md:inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-xs font-semibold text-slate-200 border border-white/10 ml-4">
           <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
           <span>Hệ thống trực tuyến</span>
         </div>
@@ -70,10 +71,10 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
         <div className="relative">
           <button
             onClick={() => setShowUserMenu(!showUserMenu)}
-            className="flex items-center gap-2 p-1 pl-2 rounded-lg hover:bg-slate-100 transition-colors border border-transparent hover:border-slate-200"
+            className="flex items-center gap-2 p-1.5 pl-2.5 rounded-xl hover:bg-white/10 transition-colors border border-transparent hover:border-slate-700"
           >
             <div className="text-right hidden sm:block">
-              <div className="text-xs font-bold text-slate-800 leading-tight">
+              <div className="text-xs font-bold text-white leading-tight">
                 {currentUser?.fullName || 'Người dùng'}
               </div>
               <div className="text-[10px] text-slate-400 font-medium">
@@ -83,57 +84,61 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
             <img
               src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
               alt="Avatar"
-              className="w-9 h-9 rounded-full object-cover border-2 border-red-600 shadow-sm"
+              className="w-9 h-9 rounded-full object-cover border-2 border-[#81B29A] shadow-sm"
             />
           </button>
 
           {showUserMenu && (
             <div
-              className="absolute right-0 mt-2 w-56 bg-white rounded-xl shadow-xl border border-slate-200 py-1.5 z-50"
+              className="absolute right-0 mt-2 w-60 bg-[#232538] text-white rounded-2xl shadow-2xl border border-slate-700 py-2 z-50"
               onMouseLeave={() => setShowUserMenu(false)}
             >
-              <div className="px-4 py-2 border-b border-slate-100">
-                <p className="text-xs font-bold text-slate-900">{currentUser?.fullName}</p>
-                <p className="text-[11px] text-slate-500 truncate">{currentUser?.email}</p>
-                <p className="text-[10px] text-red-600 font-bold uppercase mt-1">{getRoleLabel(role)}</p>
+              <div className="px-4 py-2.5 border-b border-slate-700">
+                <p className="text-xs font-bold text-white">{currentUser?.fullName}</p>
+                <p className="text-[11px] text-slate-400 truncate mt-0.5">{currentUser?.email}</p>
+                <p className="text-[10px] text-[#81B29A] font-bold uppercase mt-1 tracking-wider">{getRoleLabel(role)}</p>
               </div>
 
-              <button
-                onClick={() => { setShowUserMenu(false); onOpenProfile(); }}
-                className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[18px] text-slate-400">person</span>
-                <span>Hồ sơ & Đổi mật khẩu</span>
-              </button>
-
-              <a
-                href="#/"
-                className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
-              >
-                <span className="material-symbols-outlined text-[18px] text-slate-400">home</span>
-                <span>Trang chủ Landing Page</span>
-              </a>
-
-              {(role === 'MEMBER' || role === 'COACH') && (
-                <a
-                  href={role === 'COACH' ? '#/coach/support' : '#/member/support'}
-                  onClick={() => setShowUserMenu(false)}
-                  className="w-full text-left px-4 py-2 text-xs text-slate-700 hover:bg-slate-50 flex items-center gap-2"
+              <div className="p-1 space-y-0.5">
+                <button
+                  onClick={() => { setShowUserMenu(false); onOpenProfile(); }}
+                  className="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-white/10 rounded-lg flex items-center gap-2.5 transition-colors"
                 >
-                  <span className="material-symbols-outlined text-[18px] text-red-500">support_agent</span>
-                  <span>Gửi yêu cầu hỗ trợ</span>
+                  <span className="material-symbols-outlined text-[18px] text-slate-400">person</span>
+                  <span>Hồ sơ & Đổi mật khẩu</span>
+                </button>
+
+                <a
+                  href="#/"
+                  className="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-white/10 rounded-lg flex items-center gap-2.5 transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-slate-400">home</span>
+                  <span>Trang chủ Landing Page</span>
                 </a>
-              )}
 
-              <div className="border-t border-slate-100 my-1" />
+                {(role === 'MEMBER' || role === 'COACH') && (
+                  <a
+                    href={role === 'COACH' ? '#/coach/support' : '#/member/support'}
+                    onClick={() => setShowUserMenu(false)}
+                    className="w-full text-left px-3.5 py-2 text-xs text-slate-200 hover:bg-white/10 rounded-lg flex items-center gap-2.5 transition-colors"
+                  >
+                    <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">support_agent</span>
+                    <span>Gửi yêu cầu hỗ trợ</span>
+                  </a>
+                )}
+              </div>
 
-              <button
-                onClick={() => { setShowUserMenu(false); logout(); window.location.hash = '#/login'; }}
-                className="w-full text-left px-4 py-2 text-xs text-red-600 hover:bg-red-50 flex items-center gap-2 font-semibold"
-              >
-                <span className="material-symbols-outlined text-[18px]">logout</span>
-                <span>Đăng xuất</span>
-              </button>
+              <div className="border-t border-slate-700 my-1" />
+
+              <div className="p-1">
+                <button
+                  onClick={() => { setShowUserMenu(false); logout(); window.location.hash = '#/login'; }}
+                  className="w-full text-left px-3.5 py-2 text-xs text-rose-400 hover:bg-rose-500/10 rounded-lg flex items-center gap-2.5 font-bold transition-colors"
+                >
+                  <span className="material-symbols-outlined text-[18px]">logout</span>
+                  <span>Đăng xuất</span>
+                </button>
+              </div>
             </div>
           )}
         </div>

@@ -303,19 +303,19 @@ export function MySupportRequests() {
   return (
     <div className="space-y-6 pb-12 font-lexend">
       {/* 1. Olympic Hero Masterpiece Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-slate-950 via-slate-900 to-zinc-950 text-white p-6 sm:p-8 border border-slate-800 shadow-xl overflow-hidden">
+      <div className="relative rounded-3xl bg-gradient-to-br from-[#32354D] via-[#2B2D42] to-[#1E2235] text-white p-6 sm:p-8 border border-white/10 shadow-xl overflow-hidden">
         {/* Glow ambient background accents */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-amber-500/10 rounded-full blur-3xl pointer-events-none" />
+        <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 bg-[#81B29A]/15 rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-[#F2CC8F]/15 rounded-full blur-3xl" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/20 border border-red-500/30 text-red-400 text-xs font-chivo font-bold uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(242,204,143,0.15)] border border-[rgba(242,204,143,0.3)] text-[#F2CC8F] text-xs font-bold uppercase tracking-wider">
+              <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
               <span>{isCoach ? 'KÊNH HỖ TRỢ HUẤN LUYỆN VIÊN SCMS' : 'TRUNG TÂM HỖ TRỢ HỘI VIÊN SCMS'}</span>
             </div>
-            <h1 className="font-chivo text-2xl sm:text-3xl font-black text-white tracking-tight">
-              Yêu Cầu Hỗ Trợ & Khiếu Nại
+            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+              Yêu Cầu Hỗ Trợ &amp; Khiếu Nại
             </h1>
             <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
               {isCoach
@@ -334,7 +334,7 @@ export function MySupportRequests() {
                 setCreatePriority('Normal');
                 setCreating(true);
               }}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-chivo font-black text-xs uppercase tracking-wider shadow-lg shadow-red-950/40 transition-all transform hover:scale-[1.02] active:scale-[0.98]"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
               <span className="material-symbols-outlined text-[20px]">add_circle</span>
               <span>Gửi Yêu Cầu Hỗ Trợ</span>
@@ -524,7 +524,7 @@ export function MySupportRequests() {
               setCreateError('');
               setCreating(true);
             }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-chivo font-bold text-xs uppercase tracking-wider transition-colors shadow-sm"
+            className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
             <span>Tạo yêu cầu đầu tiên</span>
@@ -757,7 +757,7 @@ export function MySupportRequests() {
                         <div className="flex items-center justify-between border-b border-slate-200/60 pb-2 mb-2">
                           <div className="flex items-center gap-2">
                             <div className={`w-7 h-7 rounded-full flex items-center justify-center font-bold text-xs ${
-                              isStaff ? 'bg-red-600 text-white' : 'bg-slate-700 text-white'
+                              isStaff ? 'bg-[#3D405B] text-[#F2CC8F]' : 'bg-slate-700 text-white'
                             }`}>
                               <span className="material-symbols-outlined text-[16px]">
                                 {isStaff ? 'support_agent' : 'person'}
@@ -812,7 +812,7 @@ export function MySupportRequests() {
                   <button
                     type="submit"
                     disabled={submittingReply || !replyMessage.trim()}
-                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-chivo font-bold text-xs uppercase tracking-wider disabled:opacity-50 shadow-sm"
+                    className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider disabled:opacity-50 shadow-sm cursor-pointer"
                   >
                     {submittingReply ? (
                       <>
@@ -889,7 +889,7 @@ export function MySupportRequests() {
                     onClick={() => handlePresetClick(preset)}
                     className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
                       isSelected
-                        ? 'bg-red-600 text-white border-red-600 shadow-sm'
+                        ? 'bg-[#3D405B] text-[#F2CC8F] border-[#3D405B] shadow-sm'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
                     }`}
                   >
@@ -1005,7 +1005,7 @@ export function MySupportRequests() {
             <button
               type="submit"
               disabled={submittingCreate || !createSubject.trim() || !createDescription.trim()}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-chivo font-black text-xs uppercase tracking-wider disabled:opacity-50 shadow-md shadow-red-950/20 transition-all"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider disabled:opacity-50 shadow-md transition-all cursor-pointer"
             >
               {submittingCreate ? (
                 <>

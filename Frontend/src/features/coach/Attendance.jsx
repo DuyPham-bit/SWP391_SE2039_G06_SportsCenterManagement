@@ -17,6 +17,7 @@ export function Attendance() {
   const [version, setVersion] = useState(0);
   const [saving, setSaving] = useState(false);
   const session = schedule.sessions.find(s => s.id === Number(selectedId)) || schedule.sessions[0];
+
   useEffect(() => {
     let active = true;
     setMembers([]); setRecords({}); setError('');
@@ -29,7 +30,9 @@ export function Attendance() {
     }).catch(e => { if (active) setError(e); }).finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
   }, [session?.id, version]);
+
   const change = (id, field, value) => setRecords(prev => ({ ...prev, [id]: { ...prev[id], [field]: value } }));
+
   const save = async () => {
     if (!canAttendSession(session) || saving) return;
     const payload = Object.values(records);
@@ -41,28 +44,172 @@ export function Attendance() {
     } catch (e) { showError(e); }
     finally { setSaving(false); }
   };
-  return <div className="space-y-5">
-    <h1 className="text-2xl font-black">Điểm Danh Lớp Học Thể Thao</h1>
-    <CoachPeriod schedule={schedule} /><CoachError message={schedule.error} retry={schedule.reload} />
-    <label className="block text-sm font-semibold">Chọn ca dạy
-      <select aria-label="Chọn ca dạy" disabled={saving || schedule.loading} className={coachInput} value={session?.id || ''} onChange={e => setSelectedId(Number(e.target.value))}>
-        {!schedule.sessions.length && <option value="">Chưa có ca dạy trong khoảng ngày</option>}
-        {schedule.sessions.map(s => <option key={s.id} value={s.id}>{s.name} · {s.sessionDate} · {s.timeSlot} · {s.roomName}{s.status === 'CANCELLED' ? ' (Đã hủy)' : ''}</option>)}
-      </select>
-    </label>
-    {session && !canAttendSession(session) && <p className="p-3 bg-amber-50 text-amber-900 rounded-xl text-sm">Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.</p>}
-    <CoachError message={error} retry={() => setVersion(v => v + 1)} />
-    {loading || schedule.loading ? <p>Đang tải danh sách điểm danh...</p> : !error && !schedule.error && session && !members.length ? <p>Chưa có học viên đặt chỗ cho buổi học này.</p> : null}
-    {!loading && !schedule.loading && !error && !schedule.error && <div className="space-y-3">
-      <div className="flex flex-wrap gap-3 text-xs">{Object.entries(statuses).map(([key, name]) => <span key={key}>{name}: <strong>{Object.values(records).filter(r => r.status === key).length}</strong></span>)}</div>
-      {members.map(m => <article key={m.memberId} className="bg-white border rounded-xl p-4 grid md:grid-cols-3 gap-3 items-center">
-        <div><h2 className="font-bold">{m.memberName}</h2><p className="text-xs text-slate-500">{m.memberCode} · {m.phone || 'Chưa có số điện thoại'}</p></div>
-        <select aria-label={'Điểm danh ' + m.memberName} className={coachInput} disabled={saving || !canAttendSession(session)} value={records[m.memberId]?.status || ''} onChange={e => change(m.memberId, 'status', e.target.value)}>
-          <option value="">Chưa điểm danh</option>{Object.entries(statuses).map(([key, name]) => <option key={key} value={key}>{name}</option>)}
-        </select>
-        <input aria-label={'Ghi chú ' + m.memberName} className={coachInput} maxLength={500} placeholder="Ghi chú điểm danh" disabled={saving || !canAttendSession(session)} value={records[m.memberId]?.note || ''} onChange={e => change(m.memberId, 'note', e.target.value)} />
-      </article>)}
-      {members.length > 0 && <button onClick={save} disabled={saving || !canAttendSession(session)} className="px-5 py-2 rounded-lg bg-red-600 text-white disabled:opacity-50">{saving ? 'Đang lưu...' : 'Lưu Kết Quả Điểm Danh'}</button>}
-    </div>}
-  </div>;
+
+  return (
+    <div className="space-y-6">
+      {/* 1. Header Banner */}
+      <div>
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30 text-xs font-bold uppercase tracking-wider mb-2">
+          <span className="w-2 h-2 rounded-full bg-[#81B29A]" />
+          <span>Điểm danh ca dạy</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E2235] tracking-tight">
+          Điểm Danh Lớp Học Thể Thao
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+          Ghi nhận tình trạng hiện diện của từng học viên theo ca dạy, cập nhật trực tiếp vào hệ thống Olympic Arena.
+        </p>
+      </div>
+
+      {/* 2. Date Filter & Errors */}
+      <CoachPeriod schedule={schedule} />
+      <CoachError message={schedule.error} retry={schedule.reload} />
+
+      {/* 3. Session Selection Card */}
+      <div className="bg-white p-5 rounded-[20px] border border-slate-200/90 shadow-xs space-y-3">
+        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+          Chọn ca dạy cần điểm danh
+          <select
+            aria-label="Chọn ca dạy"
+            disabled={saving || schedule.loading}
+            className={`${coachInput} mt-1.5 font-semibold text-slate-800`}
+            value={session?.id || ''}
+            onChange={e => setSelectedId(Number(e.target.value))}
+          >
+            {!schedule.sessions.length && <option value="">Chưa có ca dạy trong khoảng ngày</option>}
+            {schedule.sessions.map(s => (
+              <option key={s.id} value={s.id}>
+                {s.name} · {s.sessionDate} · {s.timeSlot} · {s.roomName}
+                {s.status === 'CANCELLED' ? ' (Đã hủy)' : ''}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        {session && (
+          <div className="flex flex-wrap items-center gap-3 pt-2 text-xs text-slate-600 border-t border-slate-100">
+            <span className="inline-flex items-center gap-1 font-bold text-[#1E2235]">
+              <span className="material-symbols-outlined text-[16px] text-[#81B29A]">sports_score</span>
+              {session.name}
+            </span>
+            <span>·</span>
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[15px] text-[#F2CC8F]">schedule</span>
+              {session.sessionDate} ({session.timeSlot})
+            </span>
+            <span>·</span>
+            <span className="inline-flex items-center gap-1">
+              <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
+              {session.roomName || 'Cụm sân Olympic'}
+            </span>
+          </div>
+        )}
+      </div>
+
+      {session && !canAttendSession(session) && (
+        <div className="p-4 bg-amber-50/80 border border-amber-200 text-amber-900 rounded-2xl text-xs sm:text-sm flex items-center gap-2.5">
+          <span className="material-symbols-outlined text-amber-600 text-[20px] shrink-0">info</span>
+          <span>Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.</span>
+        </div>
+      )}
+
+      <CoachError message={error} retry={() => setVersion(v => v + 1)} />
+
+      {loading || schedule.loading ? (
+        <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/90 text-sm text-slate-500">
+          <span className="inline-block w-4 h-4 border-2 border-[#81B29A] border-t-transparent rounded-full animate-spin mr-2" />
+          Đang tải danh sách học viên điểm danh...
+        </div>
+      ) : !error && !schedule.error && session && !members.length ? (
+        <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-300 text-sm text-slate-500">
+          Chưa có học viên nào đặt chỗ cho buổi học này.
+        </div>
+      ) : null}
+
+      {/* 4. Attendance Members List */}
+      {!loading && !schedule.loading && !error && !schedule.error && (
+        <div className="space-y-4">
+          {/* Status summary pills */}
+          <div className="flex flex-wrap gap-2.5">
+            {Object.entries(statuses).map(([key, name]) => {
+              const count = Object.values(records).filter(r => r.status === key).length;
+              let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
+              if (key === 'PRESENT') badgeColor = 'bg-[#81B29A]/15 text-[#2D6A4F] border-[#81B29A]/30';
+              if (key === 'ABSENT') badgeColor = 'bg-[#E07A5F]/15 text-[#9C3E26] border-[#E07A5F]/30';
+              if (key === 'LATE') badgeColor = 'bg-[#F2CC8F]/25 text-[#92400E] border-[#F2CC8F]/50';
+              if (key === 'EXCUSED') badgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+
+              return (
+                <div key={key} className={`px-3 py-1.5 rounded-full border text-xs font-semibold flex items-center gap-1.5 ${badgeColor}`}>
+                  <span>{name}:</span>
+                  <strong className="font-bold">{count}</strong>
+                </div>
+              );
+            })}
+          </div>
+
+          <div className="space-y-3">
+            {members.map(m => (
+              <article
+                key={m.memberId}
+                className="bg-white border border-slate-200/90 hover:border-[#81B29A]/50 rounded-[20px] p-4 sm:p-5 shadow-xs transition-all grid md:grid-cols-3 gap-3.5 items-center"
+              >
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-full bg-[#1E2235] text-[#F2CC8F] font-bold text-sm flex items-center justify-center shrink-0">
+                    {m.memberName?.[0]?.toUpperCase() || 'H'}
+                  </div>
+                  <div>
+                    <h2 className="font-bold text-slate-900 text-sm">{m.memberName}</h2>
+                    <p className="text-xs text-slate-500 mt-0.5">
+                      <span className="font-bold text-[#2D6A4F]">{m.memberCode}</span> · {m.phone || 'Chưa có SĐT'}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <select
+                    aria-label={'Điểm danh ' + m.memberName}
+                    className={coachInput}
+                    disabled={saving || !canAttendSession(session)}
+                    value={records[m.memberId]?.status || ''}
+                    onChange={e => change(m.memberId, 'status', e.target.value)}
+                  >
+                    <option value="">Chưa điểm danh</option>
+                    {Object.entries(statuses).map(([key, name]) => (
+                      <option key={key} value={key}>{name}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <input
+                    aria-label={'Ghi chú ' + m.memberName}
+                    className={coachInput}
+                    maxLength={500}
+                    placeholder="Ghi chú đánh giá / biểu hiện"
+                    disabled={saving || !canAttendSession(session)}
+                    value={records[m.memberId]?.note || ''}
+                    onChange={e => change(m.memberId, 'note', e.target.value)}
+                  />
+                </div>
+              </article>
+            ))}
+          </div>
+
+          {members.length > 0 && (
+            <div className="pt-2 flex justify-end">
+              <button
+                onClick={save}
+                disabled={saving || !canAttendSession(session)}
+                className="px-6 py-2.5 rounded-full bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[18px]">fact_check</span>
+                <span>{saving ? 'Đang lưu...' : 'Lưu Kết Quả Điểm Danh'}</span>
+              </button>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
 }

@@ -7,8 +7,8 @@ export function openPaymentCheckout(onReturn) {
     window.location.origin,
     new URL(import.meta.env.VITE_API_BASE_URL || '/api', window.location.origin).origin
   ]);
-  if (['localhost', '127.0.0.1'].includes(window.location.hostname) && ['3004', '54162'].includes(window.location.port)) {
-    for (const port of ['3004', '54162']) {
+  if (['localhost', '127.0.0.1'].includes(window.location.hostname) && ['3003', '3004', '54162'].includes(window.location.port)) {
+    for (const port of ['3003', '3004', '54162']) {
       allowedOrigins.add(`${window.location.protocol}//${window.location.hostname}:${port}`);
     }
   }

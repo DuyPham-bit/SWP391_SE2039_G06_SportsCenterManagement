@@ -96,7 +96,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onResetSuccess }) {
               placeholder="vidu@scms.vn"
               value={email}
               onChange={e => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+              className="w-full px-3.5 py-2.5 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
@@ -104,14 +104,14 @@ export function ForgotPasswordModal({ isOpen, onClose, onResetSuccess }) {
             <button
               type="button"
               onClick={onClose}
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600"
+              className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600"
             >
               Hủy
             </button>
             <button
               type="submit"
               disabled={loading}
-              className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors"
+              className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-full bg-[var(--custom-btn-bg-color)] hover:bg-[var(--custom-btn-bg-hover-color)] text-[var(--secondary-color)] hover:text-white shadow-md transition-colors"
             >
               {loading ? 'Đang gửi mã...' : 'Nhận Mã Xác Thực'}
             </button>
@@ -136,7 +136,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onResetSuccess }) {
               placeholder="Nhập mã OTP"
               value={otp}
               onChange={e => setOtp(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-center font-chivo text-lg tracking-widest rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+              className="w-full px-3.5 py-2.5 text-center font-dm-sans text-lg tracking-widest rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
@@ -151,7 +151,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onResetSuccess }) {
               placeholder="Tối thiểu 6 ký tự"
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+              className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
@@ -166,7 +166,7 @@ export function ForgotPasswordModal({ isOpen, onClose, onResetSuccess }) {
               placeholder="Khớp với mật khẩu mới ở trên"
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+              className="w-full px-3.5 py-2 text-sm rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
@@ -182,14 +182,14 @@ export function ForgotPasswordModal({ isOpen, onClose, onResetSuccess }) {
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600"
+                className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-full border border-slate-200 hover:bg-slate-50 text-slate-600"
               >
                 Đóng
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors"
+                className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-full bg-[var(--custom-btn-bg-color)] hover:bg-[var(--custom-btn-bg-hover-color)] text-[var(--secondary-color)] hover:text-white shadow-md transition-colors"
               >
                 {loading ? 'Đang cập nhật...' : 'Xác Nhận Đổi Mật Khẩu'}
               </button>

@@ -228,12 +228,12 @@ export function LoginPage() {
     <button
       type="submit"
       disabled={isSubmitting}
-      className="w-full min-h-10 sm:min-h-11 py-2.5 px-4 inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-red-600 via-red-500 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white font-chivo text-sm font-bold shadow-lg shadow-red-600/25 hover:shadow-red-600/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-wait transition-all duration-200 group"
+      className="w-full min-h-11 sm:min-h-12 py-3 px-6 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--custom-btn-bg-color)] hover:bg-[var(--custom-btn-bg-hover-color)] text-[var(--secondary-color)] hover:text-white font-dm-sans text-sm font-bold shadow-md shadow-[#F2CC8F]/25 hover:shadow-lg hover:shadow-[#E07A5F]/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-wait transition-all duration-200 group"
     >
-      {isSubmitting && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
+      {isSubmitting && <span className="w-4 h-4 border-2 border-[var(--secondary-color)]/40 border-t-[var(--secondary-color)] rounded-full animate-spin" aria-hidden="true" />}
       <span>{isSubmitting ? (isRegister ? 'Đang kích hoạt tài khoản...' : 'Đang đăng nhập...') : (isRegister ? 'Tạo tài khoản hội viên' : 'Đăng nhập vào SCMS')}</span>
       {!isSubmitting && (
-        <span className="material-symbols-outlined text-[18px] group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">
+        <span className="material-symbols-outlined text-[19px] group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">
           arrow_forward
         </span>
       )}
@@ -241,63 +241,63 @@ export function LoginPage() {
   );
 
   return (
-    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-[#080d1a] font-lexend text-slate-900 lg:overflow-hidden select-text">
+    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-[#FAF9F6] font-dm-sans text-slate-900 lg:overflow-hidden select-text">
       {/* ========================================================
           CỘT TRÁI: SHOWCASE THỂ THAO ĐỈNH CAO (Cinematic Athletic Hero)
           ======================================================== */}
-      <aside className="hidden lg:flex lg:w-[48%] xl:w-[50%] 2xl:w-[52%] h-full relative overflow-hidden bg-slate-950 text-white flex-col justify-between p-8 sm:p-10 xl:p-12 select-none shrink-0 border-r border-white/5">
+      <aside className="hidden lg:flex lg:w-[48%] xl:w-[50%] 2xl:w-[52%] h-full relative overflow-hidden bg-[#2D3047] text-white flex-col justify-between p-8 sm:p-10 xl:p-12 select-none shrink-0 border-r border-white/5">
         <img
           alt="Sports Arena"
           loading="lazy"
           decoding="async"
-          className="absolute inset-0 object-cover w-full h-full opacity-40 scale-105 transition-transform duration-1000 ease-out hover:scale-100"
+          className="absolute inset-0 object-cover w-full h-full opacity-35 scale-105 transition-transform duration-1000 ease-out hover:scale-100"
           src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=800&auto=format&fit=crop"
         />
-        {/* Gradient mờ ảo đa tầng */}
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-slate-950/80 to-slate-950/40" />
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(225,29,72,0.28),transparent_60%)]" />
-        <div className="absolute inset-0 dynamic-typo-grid opacity-30" />
+        {/* Gradient mờ ảo Tiya Slate Navy & Sage */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#27293D] via-[#3D405B]/85 to-[#3D405B]/50" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,rgba(129,178,154,0.3),transparent_60%)]" />
+        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_bottom_left,rgba(242,204,143,0.18),transparent_60%)]" />
 
         {/* Thanh Header thương hiệu góc trên bên trái */}
         <div className="relative z-10 flex items-center justify-between gap-4">
           <a href="#/" className="flex items-center gap-3.5 group">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 text-white flex items-center justify-center shadow-lg shadow-red-600/40 font-chivo font-black text-xl tracking-tight transition-transform duration-300 group-hover:scale-105">
+            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[var(--primary-color)] via-[#A8DADC] to-[var(--custom-btn-bg-color)] text-white flex items-center justify-center shadow-lg shadow-[var(--primary-color)]/30 font-dm-sans font-bold text-xl tracking-tight transition-transform duration-300 group-hover:scale-105">
               S
             </div>
             <div className="flex flex-col">
               <div className="flex items-center gap-1.5">
-                <span className="font-chivo font-black text-xl tracking-tight text-white leading-none">SCMS</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-red-600/20 text-red-400 font-extrabold uppercase border border-red-500/30">PRO</span>
+                <span className="font-dm-sans font-bold text-xl tracking-tight text-white leading-none">SCMS</span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--primary-color)]/20 text-[#A8DADC] font-bold uppercase border border-[var(--primary-color)]/40">OLYMPIC</span>
               </div>
-              <span className="text-[10px] font-bold text-slate-400 tracking-[0.2em] uppercase mt-1">Olympic Sports Arena</span>
+              <span className="text-[10px] font-bold text-[var(--custom-btn-bg-color)]/80 tracking-[0.2em] uppercase mt-1">Olympic Sports Arena</span>
             </div>
           </a>
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold uppercase tracking-wider text-slate-200 shadow-sm">
-            <span className="w-2 h-2 rounded-full bg-emerald-400 pulse-live shadow-[0_0_8px_rgba(52,211,153,0.8)]" aria-hidden="true" />
+            <span className="w-2 h-2 rounded-full bg-[var(--primary-color)] animate-pulse shadow-[0_0_8px_rgba(129,178,154,0.8)]" aria-hidden="true" />
             <span>Sân tập mở cửa 24/7</span>
           </div>
         </div>
 
-        {/* Khối trung tâm: Headline nghệ thuật & Thẻ kính nổi (Glassmorphism Cards) */}
+        {/* Khối trung tâm: Headline nghệ thuật & Thẻ kính nổi */}
         <div className="relative z-10 py-4 max-w-xl">
-          <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.25em] text-rose-400 mb-2">
-            <span className="w-4 h-0.5 bg-rose-500 inline-block" />
+          <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--custom-btn-bg-color)] mb-2">
+            <span className="w-4 h-0.5 bg-[var(--custom-btn-bg-color)] inline-block" />
             <span>Khởi đầu bứt phá</span>
           </div>
 
-          <h2 className="font-chivo text-3xl sm:text-4xl xl:text-5xl font-black leading-[1.15] tracking-tight text-white">
+          <h2 className="font-dm-sans text-3xl sm:text-4xl xl:text-5xl font-bold leading-[1.15] tracking-tight text-white">
             {isRegister ? (
               <>
                 Hành trình mới, <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-rose-200 to-rose-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[var(--custom-btn-bg-color)] to-[var(--primary-color)]">
                   phiên bản khỏe hơn.
                 </span>
               </>
             ) : (
               <>
                 Tập luyện hôm nay, <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-rose-200 to-rose-400">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[var(--custom-btn-bg-color)] to-[#F4A261]">
                   bứt phá mỗi ngày.
                 </span>
               </>
@@ -308,23 +308,23 @@ export function LoginPage() {
             Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.
           </p>
 
-          {/* 2 Thẻ kính Frosted Glass Cards nghệ thuật */}
+          {/* 2 Thẻ kính Frosted Glass Cards */}
           <div className="grid sm:grid-cols-2 gap-3 mt-6">
             <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm hover:bg-white/15 transition-colors">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-amber-500 to-red-600 flex items-center justify-center text-white shadow-sm shrink-0">
+                <span className="w-8 h-8 rounded-xl bg-[var(--custom-btn-bg-color)]/25 text-[var(--custom-btn-bg-color)] flex items-center justify-center shadow-sm shrink-0">
                   <span className="material-symbols-outlined text-[18px]">bolt</span>
                 </span>
                 <div>
                   <h4 className="text-xs font-bold text-white tracking-wide">Đặt chỗ trong 30s</h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5">Giữ sân & lớp học 7 ngày</p>
+                  <p className="text-[11px] text-slate-300 mt-0.5">Giữ sân &amp; lớp học 7 ngày</p>
                 </div>
               </div>
             </div>
 
             <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm hover:bg-white/15 transition-colors">
               <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-gradient-to-br from-rose-500 to-red-700 flex items-center justify-center text-white shadow-sm shrink-0">
+                <span className="w-8 h-8 rounded-xl bg-[var(--primary-color)]/25 text-[var(--primary-color)] flex items-center justify-center shadow-sm shrink-0">
                   <span className="material-symbols-outlined text-[18px]">verified</span>
                 </span>
                 <div>
@@ -336,26 +336,26 @@ export function LoginPage() {
           </div>
         </div>
 
-        {/* Footer Cột trái: Thống kê số liệu đẳng cấp */}
+        {/* Footer Cột trái: Thống kê số liệu */}
         <div className="relative z-10 border-t border-white/10 pt-4 flex items-center justify-between gap-6">
           <div className="flex gap-8 sm:gap-10">
             <div>
-              <div className="font-chivo text-2xl sm:text-3xl font-black text-white tracking-tight">09</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">09</div>
               <div className="text-[11px] text-slate-400 font-medium mt-0.5">Bộ môn thi đấu</div>
             </div>
             <div>
-              <div className="font-chivo text-2xl sm:text-3xl font-black text-white tracking-tight">09</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">09</div>
               <div className="text-[11px] text-slate-400 font-medium mt-0.5">Khu tập luyện</div>
             </div>
             <div>
-              <div className="font-chivo text-2xl sm:text-3xl font-black text-rose-400 tracking-tight">2.5K+</div>
-              <div className="text-[11px] text-slate-400 font-medium mt-0.5">Hội viên актив</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-[var(--custom-btn-bg-color)] tracking-tight">2.5K+</div>
+              <div className="text-[11px] text-slate-400 font-medium mt-0.5">Hội viên active</div>
             </div>
           </div>
 
           <a
             href="#khoa-hoc"
-            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-white transition-colors group"
+            className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-300 hover:text-[var(--custom-btn-bg-color)] transition-colors group"
           >
             <span>Khám phá</span>
             <span className="material-symbols-outlined text-[17px] group-hover:translate-x-1 transition-transform" aria-hidden="true">
@@ -366,25 +366,25 @@ export function LoginPage() {
       </aside>
 
       {/* ========================================================
-          CỘT PHẢI: FORM AUTHENTICATION SANG TRỌNG & NGHỆ THUẬT
+          CỘT PHẢI: FORM AUTHENTICATION SANG TRỌNG TIYA STYLE
           ======================================================== */}
       <section
         aria-labelledby="auth-heading"
-        className="flex-1 h-full flex flex-col justify-between overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-10 bg-gradient-to-b from-slate-50 via-white to-slate-50/80 relative"
+        className="flex-1 h-full flex flex-col justify-between overflow-y-auto p-4 sm:p-6 lg:p-8 xl:p-10 bg-gradient-to-b from-[#FAF8F5] via-white to-[#F4F1DE]/30 relative"
       >
         {/* Đèn ánh sáng nền mờ ảo nghệ thuật phía sau Form */}
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] bg-rose-500/[0.04] rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[420px] h-[420px] bg-[var(--primary-color)]/[0.08] rounded-full blur-3xl pointer-events-none" />
 
         {/* Thanh điều hướng góc trên */}
         <div className="flex items-center justify-between w-full shrink-0 mb-1 z-10">
           <a href="#/" aria-label="SCMS Olympic Sports Arena - Trang chủ" className="lg:hidden flex items-center gap-2.5 group">
-            <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-red-600 via-rose-500 to-amber-500 text-white flex items-center justify-center shadow-md shadow-red-600/30 font-chivo font-black text-base transition-transform duration-300 group-hover:scale-105">
+            <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[var(--primary-color)] via-[#A8DADC] to-[var(--custom-btn-bg-color)] text-white flex items-center justify-center shadow-md font-dm-sans font-bold text-base transition-transform duration-300 group-hover:scale-105">
               S
             </span>
             <span className="flex flex-col">
               <span className="flex items-center gap-1.5">
-                <span className="font-chivo font-black text-sm leading-none text-slate-900">SCMS</span>
-                <span className="text-[9px] px-1 py-0.2 rounded bg-red-600/10 text-red-600 font-extrabold uppercase border border-red-500/20">PRO</span>
+                <span className="font-dm-sans font-bold text-sm leading-none text-slate-900">SCMS</span>
+                <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--primary-color)]/20 text-[var(--primary-color)] font-bold uppercase border border-[var(--primary-color)]/30">OLYMPIC</span>
               </span>
               <span className="text-[9px] font-bold text-slate-500 tracking-[0.16em] uppercase mt-0.5 leading-none">Olympic Sports Arena</span>
             </span>
@@ -392,7 +392,7 @@ export function LoginPage() {
 
           <a
             href="#/"
-            className="inline-flex items-center gap-1.5 py-1.5 px-3 rounded-full text-xs font-semibold text-slate-600 hover:text-red-600 hover:bg-red-50/80 border border-slate-200/80 hover:border-red-200 bg-white shadow-sm ml-auto transition-all duration-150"
+            className="inline-flex items-center gap-1.5 py-1.5 px-3.5 rounded-full text-xs font-semibold text-slate-600 hover:text-[var(--primary-color)] hover:bg-[var(--primary-color)]/10 border border-slate-200/80 hover:border-[var(--primary-color)]/40 bg-white shadow-sm ml-auto transition-all duration-150"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
             <span>Về trang chủ</span>
@@ -401,8 +401,8 @@ export function LoginPage() {
 
         {/* Khung Auth Card cao cấp nổi bật giữa màn hình */}
         <div className="my-auto py-2 sm:py-3 w-full max-w-[430px] mx-auto z-10">
-          <div className="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 shadow-[0_12px_40px_-10px_rgba(15,23,42,0.07)] p-6 sm:p-7 transition-all duration-200">
-            {/* Tab chuyển đổi Đăng nhập / Đăng ký hiện đại */}
+          <div className="bg-white/95 backdrop-blur-xl rounded-3xl border border-slate-200/90 shadow-[0_15px_45px_-10px_rgba(61,64,91,0.08)] p-6 sm:p-7 transition-all duration-200">
+            {/* Tab chuyển đổi Đăng nhập / Đăng ký Tiya Style */}
             <div className="flex gap-1 rounded-2xl bg-slate-100 p-1 mb-3.5 sm:mb-4 border border-slate-200/60" role="group" aria-label="Chọn đăng nhập hoặc đăng ký">
               {[{ id: 'login', label: 'Đăng nhập' }, { id: 'register', label: 'Đăng ký' }].map(tab => {
                 const isActive = activeTab === tab.id;
@@ -414,13 +414,13 @@ export function LoginPage() {
                     disabled={isSubmitting}
                     onClick={() => handleTabChange(tab.id)}
                     className={
-                      'flex-1 min-h-9 sm:min-h-10 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60 ' +
+                      'flex-1 min-h-9 sm:min-h-10 rounded-xl text-xs sm:text-sm font-bold transition-all duration-200 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] disabled:opacity-60 ' +
                       (isActive
-                        ? 'bg-white text-slate-900 shadow-sm border border-slate-200/60 font-black'
+                        ? 'bg-white text-[var(--secondary-color)] shadow-sm border border-slate-200/60 font-bold'
                         : 'text-slate-500 hover:text-slate-800 font-medium')
                     }
                   >
-                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-red-600 inline-block" />}
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary-color)] inline-block" />}
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -429,9 +429,9 @@ export function LoginPage() {
 
             {/* Tiêu đề & Lời chào thân thiện */}
             <div className="mb-3.5 sm:mb-4">
-              <h1 id="auth-heading" className="font-chivo text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-tight flex items-center gap-1.5">
+              <h1 id="auth-heading" className="font-dm-sans text-xl sm:text-2xl font-bold text-[var(--secondary-color)] tracking-tight leading-tight flex items-center gap-1.5">
                 <span>{isRegister ? 'Gia nhập SCMS' : 'Chào mừng trở lại!'}</span>
-                <span className="text-rose-600 text-lg sm:text-xl">{isRegister ? '⚡' : '👋'}</span>
+                <span className="text-lg sm:text-xl">{isRegister ? '⚡' : '👋'}</span>
               </h1>
               <p className="text-xs text-slate-500 mt-1 leading-snug line-clamp-2">
                 {isRegister
@@ -452,7 +452,7 @@ export function LoginPage() {
                   type="button"
                   disabled={isSubmitting || googleLoading}
                   onClick={() => setShowGoogleModal(true)}
-                  className="w-full min-h-10 sm:min-h-10.5 px-3 py-2 inline-flex items-center justify-center gap-2.5 border border-slate-200 hover:border-slate-300 rounded-xl bg-white text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60 transition-all active:scale-[0.99] cursor-pointer"
+                  className="w-full min-h-10 sm:min-h-10.5 px-3 py-2 inline-flex items-center justify-center gap-2.5 border border-slate-200 hover:border-slate-300 rounded-xl bg-white text-xs sm:text-sm font-semibold text-slate-700 hover:bg-slate-50 shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] disabled:opacity-60 transition-all active:scale-[0.99] cursor-pointer"
                 >
                   <svg className="w-5 h-5 shrink-0" style={{ width: '20px', height: '20px', minWidth: '20px', minHeight: '20px' }} viewBox="0 0 24 24" aria-hidden="true">
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
@@ -465,8 +465,8 @@ export function LoginPage() {
               )}
 
               {googleLoading && (
-                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-rose-600 mt-1.5 animate-pulse">
-                  <svg className="animate-spin h-3.5 w-3.5 text-rose-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-[var(--primary-color)] mt-1.5 animate-pulse">
+                  <svg className="animate-spin h-3.5 w-3.5 text-[var(--primary-color)]" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -496,10 +496,10 @@ export function LoginPage() {
                   <AuthField key="login-password" id="login-password" label="Mật khẩu" type="password" autoComplete="current-password" placeholder="Nhập mật khẩu của bạn" required value={loginPassword} error={fieldErrors['login-password']} onChange={event => updateField('login-password', event.target.value, setLoginPassword)} />
                   <div className="flex flex-wrap items-center justify-between gap-2 text-xs pt-0.5">
                     <label className="inline-flex items-center gap-1.5 text-slate-600 cursor-pointer select-none">
-                      <input type="checkbox" checked={rememberEmail} onChange={event => { setRememberEmail(event.target.checked); if (!event.target.checked) saveRememberedEmail(''); }} className="w-3.5 h-3.5 accent-red-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" />
+                      <input type="checkbox" checked={rememberEmail} onChange={event => { setRememberEmail(event.target.checked); if (!event.target.checked) saveRememberedEmail(''); }} className="w-3.5 h-3.5 accent-[var(--primary-color)] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]" />
                       <span className="font-medium text-slate-600">Ghi nhớ email</span>
                     </label>
-                    <button type="button" onClick={() => setShowForgotPassword(true)} className="font-semibold text-red-600 hover:text-red-700 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500">
+                    <button type="button" onClick={() => setShowForgotPassword(true)} className="font-semibold text-[var(--primary-color)] hover:text-[#52796F] hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]">
                       Quên mật khẩu?
                     </button>
                   </div>
@@ -522,7 +522,7 @@ export function LoginPage() {
                   </div>
                   <div>
                     <label htmlFor="register-agree" className="flex items-start gap-2 text-[11px] leading-4 text-slate-600 cursor-pointer select-none">
-                      <input id="register-agree" type="checkbox" required checked={regAgree} aria-invalid={Boolean(fieldErrors['register-agree'])} aria-describedby={fieldErrors['register-agree'] ? 'register-agree-error' : undefined} onChange={event => updateField('register-agree', event.target.checked, setRegAgree)} className="w-3.5 h-3.5 shrink-0 mt-0.5 accent-red-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" />
+                      <input id="register-agree" type="checkbox" required checked={regAgree} aria-invalid={Boolean(fieldErrors['register-agree'])} aria-describedby={fieldErrors['register-agree'] ? 'register-agree-error' : undefined} onChange={event => updateField('register-agree', event.target.checked, setRegAgree)} className="w-3.5 h-3.5 shrink-0 mt-0.5 accent-[var(--primary-color)] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]" />
                       <span>Tôi xác nhận thông tin là chính xác và đồng ý tạo tài khoản hội viên SCMS.</span>
                     </label>
                     {fieldErrors['register-agree'] && <p id="register-agree-error" className="text-[11px] text-red-600 leading-4 mt-0.5">{fieldErrors['register-agree']}</p>}
@@ -541,7 +541,7 @@ export function LoginPage() {
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => handleTabChange(isRegister ? 'login' : 'register')}
-                className="font-bold text-red-600 hover:text-red-700 underline-offset-4 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60"
+                className="font-bold text-[var(--primary-color)] hover:text-[#52796F] underline-offset-4 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] disabled:opacity-60"
               >
                 {isRegister ? 'Đăng nhập ngay' : 'Đăng ký hội viên'}
               </button>
@@ -553,7 +553,7 @@ export function LoginPage() {
         <div className="text-[11px] text-slate-400 text-center shrink-0 py-1 leading-5 z-10 flex items-center justify-center gap-3">
           <span>
             Hỗ trợ 24/7:{' '}
-            <a href="tel:0859859367" className="font-semibold text-slate-600 hover:text-red-600 transition-colors rounded">
+            <a href="tel:0859859367" className="font-semibold text-slate-600 hover:text-[var(--primary-color)] transition-colors rounded">
               0859 859 367
             </a>
           </span>

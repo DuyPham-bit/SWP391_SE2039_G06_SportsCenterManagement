@@ -2,6 +2,7 @@ import React from 'react';
 import ReactDOM from 'react-dom/client';
 import App from './App.jsx';
 import './styles/theme.css';
+import './styles/tiya-theme.css';
 
 // Gán React và ReactDOM lên window để hỗ trợ tất cả các component dùng cú pháp:
 // const { useState, useEffect } = React;

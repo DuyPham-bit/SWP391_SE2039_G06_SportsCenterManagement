@@ -23,12 +23,12 @@ export function Badge({ children, variant = 'primary', size = 'md' }) {
       case 'RECEPTIONIST':
         return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'COACH':
-        return 'bg-orange-50 text-orange-700 border-orange-200';
+        return 'bg-[#81B29A]/15 text-[#2D6A4F] border-[#81B29A]/40 font-bold';
       case 'MEMBER':
         return 'bg-slate-100 text-slate-700 border-slate-200';
       case 'primary':
       default:
-        return 'bg-red-50 text-red-600 border-red-200';
+        return 'bg-[#F2CC8F]/25 text-[#92400E] border-[#F2CC8F]/50';
     }
   };
 
@@ -42,36 +42,54 @@ export function Badge({ children, variant = 'primary', size = 'md' }) {
 }
 
 export function StatCard({ title, value, subtitle, icon, trend, color = 'red' }) {
-  const isRed = color === 'red';
+  const isGoldOrRed = color === 'red' || color === 'gold';
+  const isSage = color === 'green' || color === 'sage';
+
+  let cardStyle = 'bg-gradient-to-br from-[#32354D] via-[#2B2D42] to-[#1E2235] text-white border border-white/10 shadow-md';
+  let iconBoxStyle = 'bg-white/10 text-[#F2CC8F]';
+  let titleStyle = 'text-slate-300';
+  let valueStyle = 'text-white';
+  let subStyle = 'text-slate-300';
+
+  if (isGoldOrRed) {
+    cardStyle = 'bg-gradient-to-br from-[#FFFDF9] via-[#FAF6ED] to-[#F5ECE0] text-[#1E2235] border border-[#F2CC8F]/60 shadow-sm';
+    iconBoxStyle = 'bg-[#F2CC8F]/30 text-[#92400E]';
+    titleStyle = 'text-[#78350F]';
+    valueStyle = 'text-[#1E2235]';
+    subStyle = 'text-[#92400E]';
+  } else if (isSage) {
+    cardStyle = 'bg-gradient-to-br from-[#FCFDFD] via-[#F2F7F4] to-[#E8F2EC] text-[#1E2235] border border-[#81B29A]/50 shadow-sm';
+    iconBoxStyle = 'bg-[#81B29A]/20 text-[#2D6A4F]';
+    titleStyle = 'text-[#2D6A4F]';
+    valueStyle = 'text-[#1E2235]';
+    subStyle = 'text-[#2D6A4F]';
+  }
+
   return (
-    <div className={`p-6 rounded-xl relative overflow-hidden transition-all duration-300 hover:-translate-y-1 shadow-md ${
-      isRed
-        ? 'bg-red-600 text-white shadow-red-600/20'
-        : 'bg-slate-900 text-white shadow-slate-900/20 border border-slate-800'
-    }`}>
+    <div className={`p-6 rounded-[20px] relative overflow-hidden transition-all duration-300 hover:-translate-y-1 group ${cardStyle}`}>
       {/* Background Icon Silhouette */}
-      <div className="absolute -right-4 -bottom-4 text-white/10 pointer-events-none">
+      <div className="absolute -right-4 -bottom-4 opacity-5 pointer-events-none">
         <span className="material-symbols-outlined text-[90px]">{icon}</span>
       </div>
 
       <div className="relative z-10">
         <div className="flex items-center justify-between">
-          <span className="font-chivo text-xs uppercase tracking-widest font-bold text-white/80">
+          <span className={`font-sans text-xs uppercase tracking-widest font-bold ${titleStyle}`}>
             {title}
           </span>
-          <div className="w-8 h-8 rounded-lg bg-white/15 flex items-center justify-center text-white">
+          <div className={`w-10 h-10 rounded-xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-xs ${iconBoxStyle}`}>
             <span className="material-symbols-outlined text-[20px]">{icon}</span>
           </div>
         </div>
 
-        <div className="font-chivo text-3xl font-black mt-3 tracking-tight">
+        <div className={`font-sans text-3xl sm:text-4xl font-extrabold mt-3 tracking-tight ${valueStyle}`}>
           {value}
         </div>
 
         {(subtitle || trend) && (
-          <div className="flex items-center gap-2 mt-2 text-xs text-white/80 font-medium">
+          <div className={`flex items-center gap-2 mt-2 text-xs font-medium ${subStyle}`}>
             {trend && (
-              <span className="px-1.5 py-0.5 rounded bg-white/20 font-bold text-white">
+              <span className="px-1.5 py-0.5 rounded-full bg-white/20 font-bold">
                 {trend}
               </span>
             )}

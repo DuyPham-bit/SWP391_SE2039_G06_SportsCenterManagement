@@ -62,9 +62,19 @@ export function AIRecommendation() {
     } catch (err) { setError(err); }
     finally { setBusy(false); }
   };
-  return <div className="space-y-5">
-    <h1 className="text-2xl font-black">Trợ Lý AI Đề Xuất Giáo Án Thể Lực</h1>
-    <p className="text-sm text-slate-500">Gợi ý dựa trên mục tiêu, trình độ, thể trạng và tối đa 10 kết quả gần nhất trong lớp đang chọn.</p>
+  return <div className="space-y-6">
+    <div>
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30 text-xs font-bold uppercase tracking-wider mb-2">
+        <span className="w-2 h-2 rounded-full bg-[#81B29A]" />
+        <span>Gợi ý thông minh</span>
+      </div>
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E2235] tracking-tight">
+        Trợ Lý AI Đề Xuất Giáo Án Thể Lực
+      </h1>
+      <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+        Gợi ý phác đồ rèn luyện dựa trên mục tiêu, trình độ, thể trạng và tối đa 10 kết quả gần nhất trong lớp bạn đang chọn.
+      </p>
+    </div>
     <CoachError message={loadError} retry={load} />
     {loading ? <p>Đang tải lớp phụ trách...</p> : !loadError && <div className="grid lg:grid-cols-2 gap-5 items-start">
       <form onSubmit={generate} className="bg-white border rounded-2xl p-5 space-y-4">
@@ -81,7 +91,7 @@ export function AIRecommendation() {
             <p className="font-semibold">Ngữ cảnh đã lưu: {context.recentHistory.length} kết quả gần nhất</p>
             <p>Mục tiêu hồ sơ: {context.fitnessGoal || 'Chưa cập nhật'}</p>
             <p>Trình độ: {context.fitnessLevel || 'Chưa cập nhật'}</p>
-            {context.recentHistory.length ? <details><summary className="cursor-pointer text-red-600">Xem lịch sử dùng cho gợi ý</summary>
+            {context.recentHistory.length ? <details><summary className="cursor-pointer text-[#3D405B] hover:text-[#E07A5F] font-bold transition-colors">Xem lịch sử dùng cho gợi ý</summary>
               <ul className="mt-2 space-y-2">{context.recentHistory.map((h, i) => <li key={i} className="border-t pt-2 break-words">
                 <strong>{h.date}</strong><p className="whitespace-pre-wrap">{h.workoutResult}</p>{h.coachFeedback && <p>Nhận xét: {h.coachFeedback}</p>}
               </li>)}</ul>
@@ -90,7 +100,10 @@ export function AIRecommendation() {
           <label className="block text-xs font-bold">Mục tiêu tập luyện *<input aria-label="Mục tiêu AI" required maxLength={500} className={coachInput} value={goal} onChange={e => setGoal(e.target.value)} /></label>
           <label className="block text-xs font-bold">Trình độ hiện tại *<input aria-label="Trình độ AI" required maxLength={50} className={coachInput} placeholder="Nhập trình độ đã đánh giá" value={level} onChange={e => setLevel(e.target.value)} /></label>
           <label className="block text-xs font-bold">Lưu ý thể trạng / điều chỉnh<textarea aria-label="Lưu ý AI" maxLength={1000} rows={3} className={coachInput} value={notes} onChange={e => setNotes(e.target.value)} /></label>
-          <button disabled={!member || !context || contextLoading} className="w-full px-4 py-3 rounded-xl bg-red-600 text-white disabled:opacity-50">{busy ? 'Đang xử lý...' : 'Tạo gợi ý AI'}</button>
+          <button disabled={!member || !context || contextLoading} className="w-full px-5 py-3 rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">psychology</span>
+            <span>{busy ? 'Đang xử lý...' : 'Tạo gợi ý AI'}</span>
+          </button>
         </fieldset>
       </form>
       <section className="bg-white p-5 border rounded-2xl space-y-4">
@@ -110,7 +123,10 @@ export function AIRecommendation() {
             <h4 className="font-bold">{i + 1}. {ex.name}</h4><p>{ex.sets} × {ex.reps}</p><p>{ex.note}</p>
           </article>)}
           <p className="p-3 bg-amber-50 text-amber-900 text-sm rounded-xl">{result.coachReviewNote}</p>
-          <button disabled={busy} onClick={apply} className="w-full p-3 bg-red-600 rounded-xl text-white disabled:opacity-50">Đã xem xét — Lưu thành giáo án cá nhân</button>
+          <button disabled={busy} onClick={apply} className="w-full p-3 bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider rounded-xl shadow-sm hover:shadow-md transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2">
+            <span className="material-symbols-outlined text-[18px]">assignment_turned_in</span>
+            <span>Đã xem xét — Lưu thành giáo án cá nhân</span>
+          </button>
         </>}
       </section>
     </div>}

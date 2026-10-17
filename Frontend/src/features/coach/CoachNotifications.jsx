@@ -413,25 +413,26 @@ export function CoachNotifications() {
 
   return (
     <div className="space-y-5">
-      {/* 1. TOP HEADER BANNER (Giống chuẩn Lịch Giảng Dạy) */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-slate-800">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-chivo text-xs uppercase tracking-widest text-red-500 font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              CHUYÊN MÔN & KẾT NỐI HỌC VIÊN
-            </span>
+      {/* 1. TOP HEADER BANNER */}
+      <div className="rounded-[24px] bg-gradient-to-br from-[#32354D] via-[#2B2D42] to-[#1E2235] text-white p-6 sm:p-8 relative overflow-hidden border border-white/10 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
+
+        <div className="space-y-1 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[rgba(242,204,143,0.15)] text-[#F2CC8F] text-[11px] font-bold uppercase tracking-widest border border-[rgba(242,204,143,0.3)] mb-2">
+            <span className="w-2 h-2 rounded-full bg-[#F2CC8F] animate-pulse" />
+            Chuyên môn &amp; Kết nối học viên
           </div>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-[28px] text-red-500">campaign</span>
-            Gửi Bài Tập & Thông Báo Cho Học Viên
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[28px] text-[#F2CC8F]">campaign</span>
+            Gửi Bài Tập &amp; Thông Báo Cho Học Viên
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
-            Giao bài tập về nhà theo lớp hoặc gửi nhận xét & góp ý kỹ thuật riêng 1-1 tới từng học viên.
+          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+            Giao bài tập về nhà theo lớp hoặc gửi nhận xét &amp; góp ý kỹ thuật riêng 1-1 tới từng học viên.
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0">
+        <div className="flex items-center gap-2.5 self-start md:self-auto shrink-0 relative z-10">
           <button
             type="button"
             onClick={() => {
@@ -440,9 +441,9 @@ export function CoachNotifications() {
               setModalOpen(true);
             }}
             disabled={!classes.length || Boolean(error)}
-            className="px-5 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 active:scale-[0.98] text-white font-chivo text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-lg shadow-red-600/30 transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="px-5 py-3 bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white border border-[#F2CC8F]/30 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            <span className="material-symbols-outlined text-[20px]">add_circle</span>
+            <span className="material-symbols-outlined text-[20px] text-[#F2CC8F]">add_circle</span>
             <span>Soạn Thông Báo Mới</span>
           </button>
         </div>
@@ -481,7 +482,7 @@ export function CoachNotifications() {
               {stats.totalRecipients} <span className="text-xs font-normal text-slate-400">lượt tiếp cận</span>
             </div>
           </div>
-          <div className="w-8 h-8 rounded-lg bg-red-50 text-red-600 flex items-center justify-center shrink-0">
+          <div className="w-8 h-8 rounded-lg bg-[#81B29A]/15 text-[#2D6A4F] flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-[18px]">groups</span>
           </div>
         </div>
@@ -566,7 +567,7 @@ export function CoachNotifications() {
               <span className="material-symbols-outlined text-[16px]">inbox</span>
               <span>Hộp thư đến</span>
               {stats.inboxUnread > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-red-600 text-white">
+                <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-[#E07A5F] text-white">
                   {stats.inboxUnread}
                 </span>
               )}
@@ -672,7 +673,7 @@ export function CoachNotifications() {
         <>
           {filteredNotifications.length === 0 ? (
             <div className="p-10 text-center bg-white rounded-2xl border border-slate-200 max-w-md mx-auto space-y-3 shadow-xs">
-              <div className="w-12 h-12 rounded-xl bg-red-50 text-red-600 flex items-center justify-center mx-auto shadow-xs">
+              <div className="w-12 h-12 rounded-xl bg-[#81B29A]/15 text-[#2D6A4F] flex items-center justify-center mx-auto shadow-xs">
                 <span className="material-symbols-outlined text-[28px]">campaign</span>
               </div>
               <h3 className="font-chivo text-sm font-bold text-slate-900">
@@ -719,7 +720,7 @@ export function CoachNotifications() {
                       onClick={() => setSelectedNotifId(notif.id)}
                       className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative ${
                         isSelected
-                          ? 'bg-red-50/70 border-red-400 shadow-xs ring-1 ring-red-500/20 border-l-4 border-l-red-600'
+                          ? 'bg-[#81B29A]/10 border-[#81B29A]/40 shadow-xs ring-1 ring-[#81B29A]/20 border-l-4 border-l-[#81B29A]'
                           : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50/50 shadow-2xs'
                       }`}
                     >
@@ -1313,10 +1314,10 @@ export function CoachNotifications() {
             <button
               type="submit"
               disabled={sending}
-              className={`px-5 py-2.5 rounded-xl text-white text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 active:scale-[0.98] ${
+              className={`px-5 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all shadow-md disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer flex items-center gap-1.5 active:scale-[0.98] ${
                 targetType === 'MEMBER'
-                  ? 'bg-purple-600 hover:bg-purple-700 shadow-purple-600/20'
-                  : 'bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-700 hover:to-rose-700 shadow-red-600/20'
+                  ? 'bg-purple-600 hover:bg-purple-700 text-white shadow-purple-600/20'
+                  : 'bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white shadow-sm hover:shadow-md'
               }`}
             >
               {sending ? (

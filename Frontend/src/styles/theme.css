@@ -3,8 +3,8 @@
   html, body {
     margin: 0;
     padding: 0;
-    background-color: #f8f9ff;
-    color: #0b1c30;
+    background-color: #FAF8F5;
+    color: #1E2235;
     font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -82,11 +82,11 @@
 }
 
 .athletic-shadow {
-  box-shadow: 0 4px 0 #0f172a;
+  box-shadow: 0 4px 0 #1E2235;
 }
 
 .athletic-shadow-red {
-  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.25);
+  box-shadow: 0 4px 14px rgba(242, 204, 143, 0.35);
 }
 
 /* Pulse badge */
@@ -104,7 +104,7 @@
 }
 
 .glow-red {
-  box-shadow: 0 10px 25px -5px rgba(227, 22, 45, 0.4);
+  box-shadow: 0 10px 25px -5px rgba(242, 204, 143, 0.4);
 }
 
 .dynamic-typo-grid {

@@ -40,16 +40,42 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [showFacilityPicker, setShowFacilityPicker] = useState(false);
 
   const categories = useMemo(() => [
-    { id: 'all', label: `Tất cả (${visibleFacilities.length} cụm sân)`, icon: 'grid_view' },
-    { id: 'team-sports', label: 'Sân bóng & Vợt', icon: 'sports_soccer' },
-    { id: 'aquatics', label: 'Bơi lội', icon: 'pool' },
-    { id: 'fitness', label: 'Gym, Yoga & Pilates', icon: 'fitness_center' },
-    { id: 'combat-studio', label: 'Võ thuật & Boxing', icon: 'sports_mma' }
-  ], [visibleFacilities.length]);
+    {
+      id: 'all',
+      label: 'Tất cả',
+      count: visibleFacilities.length,
+      icon: 'grid_view'
+    },
+    {
+      id: 'team-sports',
+      label: 'Bóng & Vợt',
+      count: visibleFacilities.filter(f => f.category === 'team-sports').length,
+      icon: 'sports_tennis'
+    },
+    {
+      id: 'aquatics',
+      label: 'Bơi lội',
+      count: visibleFacilities.filter(f => f.category === 'aquatics').length,
+      icon: 'pool'
+    },
+    {
+      id: 'fitness',
+      label: 'Sức bền',
+      count: visibleFacilities.filter(f => f.category === 'fitness').length,
+      icon: 'fitness_center'
+    },
+    {
+      id: 'combat-studio',
+      label: 'Đối kháng',
+      count: visibleFacilities.filter(f => f.category === 'combat-studio' || f.category === 'martial-arts').length,
+      icon: 'sports_mma'
+    }
+  ], [visibleFacilities]);
 
   const filteredFacilities = useMemo(() => {
     return visibleFacilities.filter(fac => {
-      const matchCat = activeCategory === 'all' || fac.category === activeCategory;
+      const matchCat = activeCategory === 'all' || fac.category === activeCategory ||
+        (activeCategory === 'combat-studio' && (fac.category === 'combat-studio' || fac.category === 'martial-arts'));
       const matchSearch = !searchQuery.trim() || 
         fac.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         fac.location.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -185,128 +211,175 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     setSubmitted(true);
   };
 
-  const renderFacilityCard = (fac, isCarousel = false) => (
-    <div
-      key={fac.id}
-      data-facility-carousel-item={isCarousel ? true : undefined}
-      className={`bg-white rounded-2xl border border-slate-200/90 shadow-sm hover:shadow-2xl hover:border-red-500/40 hover:-translate-y-1.5 transition-all duration-300 flex flex-col overflow-hidden group ${
-        isCarousel ? 'w-[86vw] sm:w-[390px] lg:w-[420px] xl:w-[440px] shrink-0 snap-start h-full' : ''
-      }`}
-    >
-      {/* Visual Header with Photography */}
-      <div className="relative aspect-[16/10] w-full overflow-hidden bg-slate-950">
-        <img
-          src={fac.image}
-          alt={fac.name}
-          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-          loading="lazy"
-        />
-        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/85 via-slate-950/20 to-transparent" />
-        
-        {/* Certification Badge */}
-        <span className={`absolute left-3.5 top-3.5 px-3 py-1 rounded-full text-white text-[11px] font-chivo font-black tracking-wider uppercase shadow-md ${fac.badgeColor}`}>
-          {fac.badge}
-        </span>
+  const FACILITY_RATINGS = {
+    'room-01': { rating: '4.9', count: '128' },
+    'room-02': { rating: '4.8', count: '310' },
+    'room-03': { rating: '4.9', count: '280' },
+    'room-04': { rating: '4.8', count: '190' },
+    'room-05': { rating: '5.0', count: '240' },
+    'room-06': { rating: '4.9', count: '155' },
+    'room-07': { rating: '4.9', count: '165' },
+    'room-08': { rating: '4.8', count: '142' },
+    'room-09': { rating: '4.8', count: '110' }
+  };
 
-        {/* Zone Tag */}
-        <span className="absolute right-3.5 top-3.5 px-2.5 py-1 rounded-full bg-slate-950/75 backdrop-blur-md text-slate-200 text-[11px] font-semibold flex items-center gap-1 border border-white/10">
-          <span className="material-symbols-outlined text-[14px] text-red-500">pin_drop</span>
-          <span>{fac.location}</span>
-        </span>
+  const FACILITY_HIGHLIGHTS = {
+    'room-01': 'Kiện tướng Bơi lội Quốc Gia',
+    'room-02': 'Cựu Cầu Thủ Chuyên Nghiệp',
+    'room-03': 'HLV Liên đoàn Cầu Lông Cấp 1',
+    'room-04': 'VĐV Bóng Rổ Giải Quốc Gia',
+    'room-05': 'Master Trainer Thể Hình',
+    'room-06': 'Võ Sư Đai Đen Quốc Tế',
+    'room-07': 'Giảng viên Yoga Quốc Tế',
+    'room-08': 'HLV Pickleball Chuẩn PPR',
+    'room-09': 'HLV Bóng Bàn Cấp 1'
+  };
 
-        {/* Live Status Chip & Capacity */}
-        <div className="absolute left-3.5 bottom-3 right-3.5 flex items-center justify-between text-white text-xs">
-          <div className="flex items-center gap-1.5 font-medium drop-shadow">
-            <span className="material-symbols-outlined text-[16px] text-red-400">group</span>
-            <span>Sức chứa: <strong>{fac.capacity}</strong></span>
+  const getFacilityCategoryMeta = (fac) => {
+    if (fac.id === 'room-02') {
+      return { label: 'Bóng & Vợt', icon: 'sports_soccer' };
+    }
+    if (fac.id === 'room-03') {
+      return { label: 'Bóng & Vợt', icon: 'sports_tennis' };
+    }
+    if (fac.id === 'room-04') {
+      return { label: 'Bóng & Vợt', icon: 'sports_basketball' };
+    }
+    if (fac.id === 'room-08' || fac.id === 'room-09') {
+      return { label: 'Bóng & Vợt', icon: 'sports_tennis' };
+    }
+    if (fac.category === 'aquatics') {
+      return { label: 'Bơi lội', icon: 'pool' };
+    }
+    if (fac.category === 'fitness') {
+      return { label: 'Sức bền', icon: 'fitness_center' };
+    }
+    if (fac.category === 'combat-studio' || fac.category === 'martial-arts') {
+      return { label: 'Đối kháng', icon: 'sports_mma' };
+    }
+    return { label: 'Thể thao', icon: 'sports' };
+  };
+
+  const getFacilityShortPrice = (fac) => {
+    if (!fac.priceRate) return 'Từ 50.000đ/giờ';
+    const first = fac.priceRate.split('•')[0].trim();
+    return first.replace(/\s*-\s*[0-9.,]+đ/, '');
+  };
+
+  const renderFacilityCard = (fac, isCarousel = false) => {
+    const ratingData = FACILITY_RATINGS[fac.id] || { rating: '4.9', count: '150' };
+    const catMeta = getFacilityCategoryMeta(fac);
+    const displayPrice = getFacilityShortPrice(fac);
+    const highlightSpec = FACILITY_HIGHLIGHTS[fac.id] || fac.specs?.[0]?.value || fac.capacity;
+
+    return (
+      <div
+        key={fac.id}
+        data-facility-carousel-item={isCarousel ? true : undefined}
+        style={{
+          width: 'clamp(300px, 85vw, 410px)',
+          flexShrink: 0,
+          scrollSnapAlign: 'start',
+          display: 'flex',
+          flexDirection: 'column'
+        }}
+      >
+        <div
+          id={`facility-card-${fac.id}`}
+          onClick={() => handleOpenModal(fac, 'rent')}
+          className="tiya-course-card"
+        >
+          {/* Card Image Area */}
+          <div className="tiya-course-card__image-wrap">
+            <img src={fac.image || fac.secondaryImage} alt={fac.name} loading="lazy" />
+
+            {/* Top Bar Badges */}
+            <div style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 2 }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(0,0,0,0.65)', color: 'var(--white-color)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{catMeta.icon}</span>
+                {catMeta.label}
+              </span>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(129,178,154,0.9)', color: 'var(--white-color)', fontSize: '10px', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
+                {fac.badge || 'Tiêu chuẩn'}
+              </span>
+            </div>
+
+            {/* Bottom Right Price Pill */}
+            <div style={{ position: 'absolute', bottom: '10px', right: '12px', padding: '4px 12px', borderRadius: '8px', background: 'rgba(0,0,0,0.7)', color: 'var(--custom-btn-bg-color)', fontSize: '12px', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
+              {displayPrice}
+            </div>
           </div>
-          <span className="inline-flex items-center gap-1 text-[11px] bg-emerald-950/80 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded font-semibold backdrop-blur-sm">
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-            Mở cửa
-          </span>
-        </div>
-      </div>
 
-      {/* Card Content */}
-      <div className="p-6 flex-1 flex flex-col justify-between">
-        <div>
-          {/* Facility Name & Price Rate */}
-          <div className="flex items-start justify-between gap-2">
-            <h3 className="font-chivo text-lg font-black text-slate-900 group-hover:text-red-600 transition-colors leading-snug">
-              {fac.name}
-            </h3>
-          </div>
+          {/* Card Body */}
+          <div className="tiya-course-card__body">
+            {/* Title & Rating */}
+            <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '8px', marginBottom: '6px', minHeight: '30px' }}>
+              <h3 className="tiya-course-card__title" style={{ margin: 0, fontSize: '18px' }}>{fac.name}</h3>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '3px', fontSize: '12px', fontWeight: 700, color: 'var(--custom-btn-bg-hover-color)', flexShrink: 0 }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '14px', color: 'var(--custom-btn-bg-color)' }}>star</span>
+                {ratingData.rating}
+                <span style={{ fontSize: '10px', color: 'var(--p-color)' }}>({ratingData.count})</span>
+              </span>
+            </div>
 
-          <div className="text-xs text-red-600 font-bold mt-1.5 flex items-center gap-1">
-            <span className="material-symbols-outlined text-[15px]">payments</span>
-            <span>{fac.priceRate}</span>
-          </div>
+            {/* Location */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '12px', fontWeight: 600, color: 'var(--primary-color)', marginBottom: '10px', minHeight: '20px' }}>
+              <span className="material-symbols-outlined" style={{ fontSize: '15px', flexShrink: 0 }}>location_on</span>
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fac.location}</span>
+            </div>
 
-          {/* Highlights pill */}
-          <div className="text-xs font-medium text-slate-700 bg-slate-50 border border-slate-200/80 rounded-lg p-2.5 mt-3 leading-relaxed">
-            <strong className="text-red-600 font-semibold block mb-0.5">Đặc điểm nổi bật:</strong>
-            {fac.highlights}
-          </div>
+            {/* Description */}
+            <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--p-color)', marginBottom: '14px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '42px' }}>
+              {fac.highlights || fac.description}
+            </p>
 
-          <p className="text-xs text-slate-600 mt-3 line-clamp-3 leading-relaxed">
-            {fac.description}
-          </p>
-
-          {/* Key Technical Specs Chips */}
-          <div className="grid grid-cols-2 gap-1.5 mt-4 pt-3 border-t border-slate-100">
-            {fac.specs.slice(0, 2).map((s, idx) => (
-              <div key={idx} className="bg-slate-50/80 rounded px-2 py-1 text-[11px]">
-                <span className="text-slate-400 block text-[10px] uppercase font-bold">{s.label}</span>
-                <span className="text-slate-800 font-semibold truncate block">{s.value}</span>
+            {/* 2 Specs / Info Chips */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '16px', fontSize: '11px', color: 'var(--p-color)', minHeight: '36px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 8px', background: '#F9FAFB', borderRadius: '6px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '15px', color: 'var(--primary-color)' }}>sports</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{highlightSpec}</span>
               </div>
-            ))}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 8px', background: '#F9FAFB', borderRadius: '6px' }}>
+                <span className="material-symbols-outlined" style={{ fontSize: '15px', color: 'var(--custom-btn-bg-color)' }}>schedule</span>
+                <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{fac.openHours ? fac.openHours.replace('hàng ngày', '').trim() : '06:00 - 22:00'}</span>
+              </div>
+            </div>
+
+            {/* Action Button */}
+            <button
+              type="button"
+              className="custom-border-btn"
+              style={{ width: '100%', justifyContent: 'center' }}
+              onClick={(e) => { e.stopPropagation(); handleOpenModal(fac, 'rent'); }}
+            >
+              Xem Chi Tiết &amp; Đặt Lịch
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>arrow_forward</span>
+            </button>
           </div>
         </div>
-
-        {/* Action Buttons */}
-        <div className="mt-5 pt-4 border-t border-slate-100 flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => handleOpenModal(fac, 'rent')}
-            className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-bold uppercase rounded-lg shadow-sm transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-          >
-            <span className="material-symbols-outlined text-[16px]">calendar_today</span>
-            <span>Đặt Thuê Sân</span>
-          </button>
-
-          <button
-            type="button"
-            onClick={() => handleOpenModal(fac, 'specs')}
-            className="px-3.5 py-2.5 rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-700 font-chivo text-xs font-bold uppercase transition-colors flex items-center gap-1 cursor-pointer"
-            title="Xem thông số kỹ thuật &amp; Tiện ích sân"
-          >
-            <span className="material-symbols-outlined text-[17px]">info</span>
-            <span>Chi tiết</span>
-          </button>
-        </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   return (
-    <section id="co-so-vat-chat" className="w-full bg-slate-50 text-slate-900 font-inter min-h-screen py-24 px-6 sm:px-10 md:px-14 lg:px-20 relative overflow-hidden flex flex-col justify-center">
+    <section id="co-so-vat-chat" className="w-full bg-white text-slate-900 font-sans min-h-screen pt-20 pb-0 px-6 sm:px-10 md:px-14 lg:px-20 relative overflow-hidden flex flex-col justify-center">
       
       {/* Decorative ambient elements */}
-      <div className="pointer-events-none absolute -top-40 -right-40 w-96 h-96 bg-red-500/5 rounded-full blur-3xl" />
-      <div className="pointer-events-none absolute top-1/2 -left-40 w-96 h-96 bg-blue-500/5 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute -top-40 -right-40 w-96 h-96 bg-[var(--primary-color)]/5 rounded-full blur-3xl" />
+      <div className="pointer-events-none absolute top-1/2 -left-40 w-96 h-96 bg-[var(--custom-btn-bg-color)]/5 rounded-full blur-3xl" />
 
-      <div className="w-full max-w-[1720px] mx-auto relative z-10">
+      <div className="w-full max-w-[1360px] mx-auto relative z-10">
         
         {/* SECTION HEADER: BẢN SẮC THỂ THAO SCMS TIÊU CHUẨN */}
-        <div className="text-center max-w-3xl mx-auto mb-12">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-red-100 text-red-700 text-xs font-chivo font-black uppercase tracking-widest mb-4">
-            <span className="w-2 h-2 rounded-full bg-red-600 animate-pulse" />
+        <div className="text-center max-w-3xl mx-auto mb-12 tiya-reveal">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[rgba(129,178,154,0.15)] text-[var(--primary-color)] text-xs font-sans font-bold uppercase tracking-widest mb-4 border border-[rgba(129,178,154,0.4)]">
+            <span className="w-2 h-2 rounded-full bg-[var(--primary-color)] animate-pulse" />
             {landingContent.facilitiesSection?.badge || 'HẠ TẦNG THỂ THAO TIÊU CHUẨN'}
           </div>
-          <h2 className="font-chivo text-3xl sm:text-4xl lg:text-5xl font-black uppercase text-slate-900 tracking-tight leading-tight">
+          <h2 className="font-sans text-3xl sm:text-4xl lg:text-5xl font-bold uppercase text-slate-900 tracking-tight leading-tight">
             {landingContent.facilitiesSection?.title || 'HỆ THỐNG CƠ SỞ VẬT CHẤT TIỆN NGHI & CHẤT LƯỢNG'}
           </h2>
-          <p className="font-inter text-slate-600 text-sm sm:text-base mt-4 leading-relaxed">
+          <p className="font-sans text-slate-600 text-sm sm:text-base mt-4 leading-relaxed">
             {landingContent.facilitiesSection?.description || `Khu liên hợp thể thao rộng rãi, sạch đẹp với ${visibleFacilities.length} cụm sân bãi và phòng tập dành cho các bộ môn chuẩn Olympic.`}
           </p>
         </div>
@@ -320,20 +393,20 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             { icon: 'cleaning_services', value: '100%', label: 'Vệ sinh & Bảo trì định kỳ' }
           ]).map((metric, idx) => {
             const colors = [
-              { bg: 'bg-red-50', text: 'text-red-600' },
-              { bg: 'bg-blue-50', text: 'text-blue-600' },
-              { bg: 'bg-emerald-50', text: 'text-emerald-600' },
-              { bg: 'bg-amber-50', text: 'text-amber-600' }
+              { bg: 'bg-[#81B29A]/15', text: 'text-[var(--primary-color)]' },
+              { bg: 'bg-[#F2CC8F]/30', text: 'text-[#3D405B]' },
+              { bg: 'bg-[#3D405B]/10', text: 'text-[#3D405B]' },
+              { bg: 'bg-[#81B29A]/15', text: 'text-[var(--primary-color)]' }
             ];
             const color = colors[idx % colors.length];
 
             return (
-              <div key={metric.id || idx} className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group">
+              <div key={metric.id || idx} className={`bg-white p-6 rounded-[20px] border border-slate-200/90 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group tiya-reveal tiya-delay-${idx + 1}`}>
                 <div className={`w-12 h-12 rounded-xl ${color.bg} ${color.text} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
                   <span className="material-symbols-outlined text-[28px]">{metric.icon || 'domain'}</span>
                 </div>
                 <div>
-                  <div className="font-chivo text-2xl sm:text-3xl font-black text-slate-900">{metric.value}</div>
+                  <div className="font-sans text-2xl sm:text-3xl font-bold text-slate-900">{metric.value}</div>
                   <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">{metric.label}</div>
                 </div>
               </div>
@@ -341,54 +414,57 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           })}
         </div>
 
-        {/* SEARCH & CATEGORY FILTER BAR */}
-        <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200 shadow-sm mb-10 flex flex-col md:flex-row items-center justify-between gap-4">
-          
-          {/* Category Tabs */}
-          <div className="flex flex-wrap items-center gap-2 w-full md:w-auto">
-            {categories.map(cat => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider flex items-center gap-1.5 transition-all ${
-                  activeCategory === cat.id
-                    ? 'bg-red-600 text-white shadow-md shadow-red-600/30'
-                    : 'bg-slate-100 text-slate-700 hover:text-red-600 hover:bg-slate-200'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[17px]">{cat.icon}</span>
-                <span>{cat.label}</span>
-              </button>
-            ))}
-          </div>
+        {/* Category Filter Tabs (Tiya Pill Style matching Image 1) */}
+        <div className="courses-filter-tabs" style={{ marginBottom: '20px' }}>
+          {categories.map(cat => (
+            <button
+              key={cat.id}
+              onClick={() => setActiveCategory(cat.id)}
+              className={`courses-filter-tab ${activeCategory === cat.id ? 'active' : ''}`}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>{cat.icon}</span>
+              {cat.label}
+              <span className="courses-filter-tab__count">{cat.count}</span>
+            </button>
+          ))}
+        </div>
 
-          {/* Quick Search Field */}
-          <div className="relative w-full md:w-72">
-            <span className="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-[18px]">
-              search
-            </span>
-            <input
-              type="text"
-              placeholder="Tìm theo tên sân, môn tập..."
-              value={searchQuery}
-              onChange={e => setSearchQuery(e.target.value)}
-              className="w-full pl-9 pr-3 py-2 text-xs font-medium rounded-xl border border-slate-200 bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-600"
-            />
-            {searchQuery && (
-              <button
-                onClick={() => setSearchQuery('')}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
-              >
-                <span className="material-symbols-outlined text-[16px]">close</span>
-              </button>
-            )}
-          </div>
+        {/* Sleek Search Pill */}
+        <div style={{ maxWidth: '420px', margin: '0 auto 28px', position: 'relative' }}>
+          <span className="material-symbols-outlined" style={{ position: 'absolute', left: '16px', top: '50%', transform: 'translateY(-50%)', color: '#94A3B8', fontSize: '18px' }}>
+            search
+          </span>
+          <input
+            type="text"
+            placeholder="Tìm theo tên sân, môn tập..."
+            value={searchQuery}
+            onChange={e => setSearchQuery(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 40px 10px 44px',
+              borderRadius: '100px',
+              border: '1px solid rgba(0,0,0,0.1)',
+              background: 'var(--white-color)',
+              fontSize: '13px',
+              boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
+              outline: 'none'
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              style={{ position: 'absolute', right: '14px', top: '50%', transform: 'translateY(-50%)', border: 'none', background: 'transparent', color: '#94A3B8', cursor: 'pointer' }}
+            >
+              <span className="material-symbols-outlined" style={{ fontSize: '16px' }}>close</span>
+            </button>
+          )}
         </div>
 
         {/* RESULTS COUNT & STATUS */}
         <div className="flex items-center justify-between mb-6 text-xs text-slate-500 font-semibold px-1">
           <div>
-            Hiển thị <strong>{filteredFacilities.length}</strong> / {SCMS_FACILITIES.length} cụm sân và phòng chức năng
+            Hiển thị <strong>{filteredFacilities.length}</strong> / {visibleFacilities.length} cụm sân và phòng chức năng
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
@@ -403,8 +479,9 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             <h3 className="font-chivo text-lg font-bold text-slate-700">Không tìm thấy cụm sân phù hợp</h3>
             <p className="text-xs text-slate-500 mt-1">Hãy thử tìm với từ khóa khác như "bơi lội", "bóng đá", "cầu lông", hoặc chọn mục Tất cả.</p>
             <button
+              type="button"
               onClick={() => { setActiveCategory('all'); setSearchQuery(''); }}
-              className="mt-4 px-4 py-2 bg-red-600 text-white text-xs font-bold uppercase rounded-lg font-chivo cursor-pointer hover:bg-red-700 transition-colors"
+              className="mt-4 px-5 py-2.5 bg-[var(--primary-color)] text-white text-xs font-bold uppercase rounded-full cursor-pointer hover:opacity-90 transition-opacity"
             >
               Xem tất cả
             </button>
@@ -415,25 +492,40 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             <div
               ref={facilityCarouselRef}
               onScroll={handleFacilityScroll}
-              className="flex gap-6 overflow-x-auto scroll-smooth snap-x snap-mandatory pb-6 pt-2 px-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+              style={{
+                display: 'flex',
+                gap: '24px',
+                overflowX: 'auto',
+                scrollBehavior: 'smooth',
+                scrollSnapType: 'x mandatory',
+                paddingBottom: '20px',
+                paddingTop: '4px',
+                msOverflowStyle: 'none',
+                scrollbarWidth: 'none'
+              }}
             >
               {filteredFacilities.map(fac => renderFacilityCard(fac, true))}
             </div>
 
             {/* Carousel Bottom Interactive Indicator Dots */}
             {filteredFacilities.length > 1 && (
-              <div className="flex items-center justify-center gap-2 pt-2">
+              <div className="tiya-carousel-dots" style={{ display: 'flex', justifyContent: 'center', gap: '8px', paddingTop: '16px' }}>
                 {filteredFacilities.map((fac, idx) => (
                   <button
                     key={fac.id}
                     type="button"
                     onClick={() => handleScrollFacilityToIndex(idx)}
                     aria-label={`Chuyển tới cụm sân ${idx + 1}: ${fac.name}`}
-                    className={`h-2.5 rounded-full transition-all duration-300 cursor-pointer ${
-                      facilityCarouselIndex === idx
-                        ? 'w-8 bg-red-600 shadow-md shadow-red-600/30'
-                        : 'w-2.5 bg-slate-300 hover:bg-slate-400'
-                    }`}
+                    className={`tiya-carousel-dot ${facilityCarouselIndex === idx ? 'active' : ''}`}
+                    style={{
+                      height: '8px',
+                      borderRadius: '100px',
+                      border: 'none',
+                      cursor: 'pointer',
+                      transition: 'all 0.3s ease',
+                      width: facilityCarouselIndex === idx ? '36px' : '8px',
+                      background: facilityCarouselIndex === idx ? 'var(--primary-color)' : 'rgba(0,0,0,0.15)'
+                    }}
                   />
                 ))}
               </div>
@@ -442,31 +534,31 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         )}
 
         {/* CAMPUS ARCHITECTURE & ZONE DIRECTORY (SƠ ĐỒ PHÂN BỐ KHU VỰC) */}
-        <div className="bg-slate-900 text-white rounded-3xl p-8 sm:p-12 border border-slate-800 shadow-2xl relative overflow-hidden mb-16">
-          <div className="pointer-events-none absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-red-600/10 blur-3xl" />
+        <div className="tiya-campus-directory tiya-reveal--scale">
+          <div className="pointer-events-none absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-[var(--primary-color)]/10 blur-3xl" />
           
           <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
             <div className="lg:col-span-5">
-              <span className="text-red-500 font-chivo text-xs font-black uppercase tracking-widest block mb-2">
+              <span className="tiya-campus-directory__badge">
                 {landingContent.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN'}
               </span>
-              <h3 className="font-chivo text-2xl sm:text-3xl font-black uppercase text-white leading-tight">
+              <h3 className="tiya-campus-directory__title">
                 {landingContent.zonesLayout?.title || 'SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN'}
               </h3>
-              <p className="text-slate-300 text-xs sm:text-sm mt-3 leading-relaxed">
+              <p className="tiya-campus-directory__desc">
                 {landingContent.zonesLayout?.description || `${visibleFacilities.length} cụm sân bãi và phòng tập được quy hoạch gọn gàng, lối đi thông thoáng, biển báo chỉ dẫn rõ ràng.`}
               </p>
 
               {/* Added Service Amenities */}
-              <div className="mt-6 space-y-3">
+              <div className="space-y-2.5">
                 {(landingContent.zonesLayout?.serviceAmenities || [
                   { icon: 'badge', text: 'Tủ cất đồ cá nhân có chìa khóa an toàn, thuận tiện sử dụng' },
                   { icon: 'shower', text: 'Phòng thay đồ và khu vực tắm tráng nóng lạnh sạch sẽ' },
                   { icon: 'local_cafe', text: 'Quầy căn-tin nước giải khát, nước khoáng phục vụ nhanh' },
                   { icon: 'medical_services', text: 'Tủ thuốc y tế và dụng cụ sơ cứu ban đầu luôn sẵn sàng' }
                 ]).map((amenity, idx) => (
-                  <div key={amenity.id || idx} className="flex items-center gap-3 text-xs text-slate-300">
-                    <span className="material-symbols-outlined text-red-500 text-[20px]">{amenity.icon}</span>
+                  <div key={amenity.id || idx} className="tiya-campus-amenity-item">
+                    <span className="material-symbols-outlined">{amenity.icon}</span>
                     <span>{amenity.text}</span>
                   </div>
                 ))}
@@ -480,37 +572,37 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   id: 'zone-a',
                   name: 'Khu A: Bơi Lội, Gym & Fitness',
                   icon: 'pool',
-                  color: 'text-red-400',
+                  color: '#F87171',
                   items: ['Tầng 1: Bể bơi 4 mùa 25m trong nhà nước ấm', 'Tầng 2: Phòng tập Gym & Fitness', 'Tầng 3: Khu thay đồ & tắm tráng nóng lạnh']
                 },
                 {
                   id: 'zone-b',
                   name: 'Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn',
                   icon: 'sports_basketball',
-                  color: 'text-blue-400',
+                  color: '#60A5FA',
                   items: ['Tầng 1: Sân bóng rổ tiêu chuẩn phong trào có mái che', 'Tầng 2: Cụm 4 sân cầu lông thảm cao su chống trượt', 'Tầng 3: Khu bóng bàn trong nhà với 4 bàn tập']
                 },
                 {
                   id: 'zone-c',
                   name: 'Khu C: Võ Thuật, Boxing, Yoga & Pilates',
                   icon: 'self_improvement',
-                  color: 'text-purple-400',
+                  color: '#C084FC',
                   items: ['Tầng 1: Phòng tập võ thuật & Boxing, thảm và bao cát', 'Tầng 3: Phòng tập Yoga & Pilates, khu thảm và máy Reformer', 'Tủ đồ cá nhân và khu thay đồ phục vụ học viên']
                 },
                 {
                   id: 'zone-d',
                   name: 'Khu Ngoài Trời: Bóng Đá & Pickleball',
                   icon: 'stadium',
-                  color: 'text-emerald-400',
+                  color: '#34D399',
                   items: ['Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)', 'Cụm 4 sân Pickleball, có lưới riêng và vạch khu vực bếp', 'Dàn đèn pha LED chiếu sáng ban đêm rõ nét']
                 }
               ]).map((zone, idx) => (
-                <div key={zone.id || idx} className="p-4 rounded-xl bg-white/5 border border-white/10 hover:border-red-500/50 transition-colors">
-                  <div className={`flex items-center gap-2 ${zone.color || 'text-red-400'} font-chivo text-xs font-bold uppercase mb-1.5`}>
-                    <span className="material-symbols-outlined text-[18px]">{zone.icon}</span>
+                <div key={zone.id || idx} className="tiya-zone-card">
+                  <div className="tiya-zone-card__header" style={{ color: zone.color || '#F87171' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{zone.icon}</span>
                     <span>{zone.name}</span>
                   </div>
-                  <ul className="text-xs text-slate-300 space-y-1">
+                  <ul className="tiya-zone-card__list">
                     {(zone.items || []).map((item, itemIdx) => (
                       <li key={itemIdx}>• {item}</li>
                     ))}
@@ -521,16 +613,16 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           </div>
         </div>
 
-        {/* CALL TO ACTION: RENTAL & EVENT BANNER */}
-        <div className="bg-gradient-to-r from-red-600 via-red-600 to-red-700 text-white rounded-3xl p-8 sm:p-12 shadow-xl flex flex-col lg:flex-row items-center justify-between gap-8">
+        {/* CALL TO ACTION: RENTAL & EVENT BANNER (Tiya Slate Navy & Gold) */}
+        <div className="tiya-rental-banner tiya-reveal flex flex-col lg:flex-row items-center justify-between gap-8">
           <div className="max-w-2xl">
-            <span className="inline-block px-3 py-1 rounded bg-black/20 text-white font-chivo text-[11px] font-black uppercase tracking-wider mb-2">
+            <span className="tiya-rental-banner__badge">
               {landingContent.ctaAndFooter?.ctaBadge || 'DÀNH CHO ĐỘI NHÓM & TỔ CHỨC SỰ KIỆN'}
             </span>
-            <h3 className="font-chivo text-2xl sm:text-3xl font-black uppercase text-white">
+            <h3 className="tiya-rental-banner__title">
               {landingContent.ctaAndFooter?.ctaTitle || 'Liên Hệ Đặt Thuê Sân Tập & Tổ Chức Giải Đấu'}
             </h3>
-            <p className="text-white/90 text-xs sm:text-sm mt-2 leading-relaxed">
+            <p className="tiya-rental-banner__desc">
               {landingContent.ctaAndFooter?.ctaDescription || 'Bạn đang tìm sân tập thường xuyên cho đội nhóm hoặc cần thuê sân tổ chức giao lưu, giải đấu phong trào? Hãy liên hệ ngay với chúng tôi để chọn khung giờ đẹp và nhận mức giá ưu đãi nhất.'}
             </p>
           </div>
@@ -539,39 +631,46 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             <button
               type="button"
               onClick={() => handleOpenModal(visibleFacilities[0] || SCMS_FACILITIES[0], 'rent')}
-              className="w-full sm:w-auto px-7 py-3.5 bg-white hover:bg-slate-100 text-red-600 font-chivo text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-transform hover:-translate-y-0.5 flex items-center justify-center gap-2 cursor-pointer"
+              className="tiya-rental-banner__btn-primary w-full sm:w-auto"
             >
-              <span className="material-symbols-outlined text-[19px]">calendar_today</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '19px' }}>calendar_today</span>
               <span>{landingContent.ctaAndFooter?.ctaPrimaryText || 'Đặt Thuê Cụm Sân Ngay'}</span>
             </button>
             <a
               href={landingContent.ctaAndFooter?.ctaSecondaryLink || '#/login'}
-              className="w-full sm:w-auto px-6 py-3.5 bg-red-900/40 hover:bg-red-900 text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl border border-white/20 transition-colors flex items-center justify-center gap-2"
+              className="tiya-rental-banner__btn-secondary w-full sm:w-auto"
             >
               <span>{landingContent.ctaAndFooter?.ctaSecondaryText || 'Xem Bảng Giá Gói Tập'}</span>
-              <span className="material-symbols-outlined text-[17px]">arrow_forward</span>
+              <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>arrow_forward</span>
             </a>
           </div>
         </div>
 
       </div>
 
-      {/* DETAIL & BOOKING MODAL */}
+      {/* DETAIL & BOOKING MODAL (Tiya Design System) */}
       {selectedFacility && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col">
+        <div
+          className="tiya-modal-backdrop"
+          onClick={e => {
+            if (e.target === e.currentTarget) handleCloseModal();
+          }}
+        >
+          <div className="tiya-modal-container" onClick={e => e.stopPropagation()}>
             
-            {/* Modal Header */}
-            <div className="p-5 sm:p-6 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shrink-0">
-                  <span className="material-symbols-outlined text-[22px]">domain</span>
-                </span>
-                <div>
-                  <span className="font-chivo text-[10px] font-black uppercase tracking-widest text-red-400 block">
-                    {selectedFacility.location} • {selectedFacility.badge}
+            {/* Modal Header (Tiya Slate Navy & Gold Accent) */}
+            <div className="tiya-modal-header">
+              <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                <div className="tiya-modal-header__icon-box">
+                  <span className="material-symbols-outlined" style={{ fontSize: '24px' }}>
+                    {getFacilityCategoryMeta(selectedFacility).icon || 'domain'}
                   </span>
-                  <h3 className="font-chivo text-lg sm:text-xl font-black uppercase text-white leading-tight mt-0.5">
+                </div>
+                <div>
+                  <span className="tiya-modal-header__badge">
+                    {selectedFacility.location} • {selectedFacility.badge || 'TIÊU CHUẨN'}
+                  </span>
+                  <h3 className="tiya-modal-title">
                     {selectedFacility.name}
                   </h3>
                 </div>
@@ -579,136 +678,129 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
               <button
                 type="button"
                 onClick={handleCloseModal}
-                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition-colors"
-                title="Đóng modal"
+                className="tiya-modal-close-btn"
+                title="Đóng cửa sổ"
+                aria-label="Đóng cửa sổ"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '20px' }}>close</span>
               </button>
             </div>
 
-            {/* Modal Navigation Tabs */}
-            <div className="flex items-center bg-slate-100 border-b border-slate-200 px-6 shrink-0">
+            {/* Modal Navigation Tabs (Tiya Pill / Underline Tabs) */}
+            <div className="tiya-modal-tabs">
               <button
+                type="button"
                 onClick={() => setActiveModalTab('booking')}
-                className={`py-3 px-4 font-chivo text-xs font-bold uppercase border-b-2 flex items-center gap-1.5 transition-colors ${
-                  activeModalTab === 'booking'
-                    ? 'border-red-600 text-red-600 bg-white'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
+                className={`tiya-modal-tab ${activeModalTab === 'booking' ? 'active' : ''}`}
               >
-                <span className="material-symbols-outlined text-[16px]">edit_calendar</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>edit_calendar</span>
                 <span>Đặt thuê cụm sân</span>
               </button>
               <button
+                type="button"
                 onClick={() => setActiveModalTab('specs')}
-                className={`py-3 px-4 font-chivo text-xs font-bold uppercase border-b-2 flex items-center gap-1.5 transition-colors ${
-                  activeModalTab === 'specs'
-                    ? 'border-red-600 text-red-600 bg-white'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
+                className={`tiya-modal-tab ${activeModalTab === 'specs' ? 'active' : ''}`}
               >
-                <span className="material-symbols-outlined text-[16px]">straighten</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>straighten</span>
                 <span>Thông số &amp; Tiện ích</span>
               </button>
               <button
+                type="button"
                 onClick={() => setActiveModalTab('photos')}
-                className={`py-3 px-4 font-chivo text-xs font-bold uppercase border-b-2 flex items-center gap-1.5 transition-colors ${
-                  activeModalTab === 'photos'
-                    ? 'border-red-600 text-red-600 bg-white'
-                    : 'border-transparent text-slate-600 hover:text-slate-900'
-                }`}
+                className={`tiya-modal-tab ${activeModalTab === 'photos' ? 'active' : ''}`}
               >
-                <span className="material-symbols-outlined text-[16px]">photo_library</span>
+                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>photo_library</span>
                 <span>Hình ảnh thực tế</span>
               </button>
             </div>
 
             {/* Modal Body */}
-            <div className="p-6 overflow-y-auto space-y-6 flex-1">
+            <div className="tiya-modal-body">
               {submitted ? (
-                <div className="p-8 rounded-2xl bg-emerald-50 border-2 border-emerald-500 text-emerald-950 text-center space-y-3">
-                  <div className="w-16 h-16 rounded-full bg-emerald-600 text-white flex items-center justify-center mx-auto shadow-md">
-                    <span className="material-symbols-outlined text-3xl">check</span>
+                /* SUCCESS CELEBRATION */
+                <div style={{ padding: '36px 24px', textAlign: 'center', background: '#FAF8F5', borderRadius: '16px', border: '2px solid var(--primary-color)' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', background: 'var(--primary-color)', color: 'var(--white-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 16px', boxShadow: '0 8px 20px rgba(129, 178, 154, 0.35)' }}>
+                    <span className="material-symbols-outlined" style={{ fontSize: '32px' }}>check</span>
                   </div>
-                  <h4 className="font-chivo text-xl font-black text-emerald-900 uppercase">
+                  <h4 style={{ fontFamily: 'var(--body-font-family)', fontSize: '20px', fontWeight: 700, color: 'var(--secondary-color)', textTransform: 'uppercase', marginBottom: '8px' }}>
                     Gửi Yêu Cầu Đặt Thuê Sân Thành Công!
                   </h4>
-                  <p className="text-xs text-emerald-800 leading-relaxed max-w-md mx-auto">
+                  <p style={{ fontSize: '13px', color: '#475569', lineHeight: 1.6, maxWidth: '460px', margin: '0 auto 20px' }}>
                     Cảm ơn <strong>{formState.fullName}</strong>! Nhân viên phụ trách cụm sân <strong>{selectedFacility.name}</strong> sẽ liên hệ trực tiếp qua số <strong>{formState.phone}</strong> trong thời gian sớm nhất để xác nhận giờ tập và hỗ trợ nhận sân.
                   </p>
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={handleCloseModal}
-                      className="px-6 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-chivo text-xs font-bold uppercase rounded-lg shadow transition-colors"
-                    >
-                      Hoàn Tất &amp; Đóng
-                    </button>
-                  </div>
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="tiya-modal-btn-submit"
+                    style={{ display: 'inline-flex', margin: '0 auto' }}
+                  >
+                    <span>Hoàn Tất &amp; Đóng</span>
+                    <span className="material-symbols-outlined" style={{ fontSize: '17px' }}>done</span>
+                  </button>
                 </div>
               ) : activeModalTab === 'specs' ? (
                 /* SPECS & AMENITIES TAB */
-                <div className="space-y-5">
-                  <div className="bg-slate-50 p-4 rounded-xl border border-slate-200">
-                    <h4 className="font-chivo text-xs font-bold uppercase text-slate-900 mb-3 flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-red-600 text-[18px]">verified</span>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div className="tiya-spec-section">
+                    <div className="tiya-spec-section__title">
+                      <span className="material-symbols-outlined">verified</span>
                       <span>Thông số kỹ thuật &amp; Tiêu chuẩn sân</span>
-                    </h4>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
+                    </div>
+                    <div className="tiya-spec-grid">
                       {selectedFacility.specs.map((spec, sIdx) => (
-                        <div key={sIdx} className="p-2.5 rounded-lg bg-white border border-slate-200">
-                          <span className="text-slate-400 block text-[10px] uppercase font-bold">{spec.label}</span>
-                          <strong className="text-slate-800 font-semibold">{spec.value}</strong>
+                        <div key={sIdx} className="tiya-spec-item">
+                          <span className="tiya-spec-item__label">{spec.label}</span>
+                          <strong className="tiya-spec-item__val">{spec.value}</strong>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div>
-                    <h4 className="font-chivo text-xs font-bold uppercase text-slate-900 mb-2.5 flex items-center gap-1.5">
-                      <span className="material-symbols-outlined text-red-600 text-[18px]">check_circle</span>
+                  <div className="tiya-spec-section" style={{ marginBottom: 0 }}>
+                    <div className="tiya-spec-section__title">
+                      <span className="material-symbols-outlined">check_circle</span>
                       <span>Tiện ích dịch vụ tích hợp sẵn</span>
-                    </h4>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    </div>
+                    <div className="tiya-amenity-grid">
                       {selectedFacility.amenities.map((amenity, aIdx) => (
-                        <div key={aIdx} className="flex items-center gap-2 p-2.5 rounded-lg bg-slate-50 border border-slate-200 text-xs text-slate-700 font-medium">
-                          <span className="material-symbols-outlined text-emerald-600 text-[18px]">done</span>
+                        <div key={aIdx} className="tiya-amenity-item">
+                          <span className="material-symbols-outlined">done</span>
                           <span>{amenity}</span>
                         </div>
                       ))}
                     </div>
                   </div>
 
-                  <div className="p-4 rounded-xl bg-red-50 border border-red-200/80 text-xs text-red-900">
-                    <strong className="block font-bold mb-1">Mức giá tham khảo:</strong>
+                  <div className="tiya-price-callout">
+                    <strong>Mức giá tham khảo: </strong>
                     <span>{selectedFacility.priceRate}. Hội viên sở hữu gói tập tháng hoặc thẻ hội viên được hưởng ưu đãi giảm giá khi thuê sân.</span>
                   </div>
                 </div>
               ) : activeModalTab === 'photos' ? (
                 /* PHOTOS GALLERY TAB */
-                <div className="space-y-4">
-                  <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
                     <img
                       src={selectedFacility.image}
                       alt={selectedFacility.name}
-                      className="w-full h-64 object-cover"
+                      style={{ width: '100%', height: '240px', objectFit: 'cover', display: 'block' }}
                     />
-                    <div className="p-3 bg-slate-900 text-white text-xs font-medium flex items-center justify-between">
-                      <span>Góc máy toàn cảnh - {selectedFacility.name}</span>
-                      <span className="text-slate-400 text-[11px]">{selectedFacility.location}</span>
+                    <div style={{ padding: '12px 18px', background: 'var(--secondary-color)', color: 'var(--white-color)', fontSize: '12.5px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>Góc máy toàn cảnh — {selectedFacility.name}</span>
+                      <span style={{ color: 'var(--custom-btn-bg-color)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>{selectedFacility.location}</span>
                     </div>
                   </div>
 
                   {selectedFacility.secondaryImage && (
-                    <div className="rounded-xl overflow-hidden border border-slate-200 shadow-sm">
+                    <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #E2E8F0', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
                       <img
                         src={selectedFacility.secondaryImage}
                         alt={`${selectedFacility.name} chi tiết`}
-                        className="w-full h-56 object-cover"
+                        style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }}
                       />
-                      <div className="p-3 bg-slate-900 text-white text-xs font-medium flex items-center justify-between">
-                        <span>Chi tiết mặt sàn &amp; không gian tập luyện</span>
-                        <span className="text-slate-400 text-[11px]">Thực tế tại trung tâm</span>
+                      <div style={{ padding: '12px 18px', background: 'var(--secondary-color)', color: 'var(--white-color)', fontSize: '12.5px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>Chi tiết mặt sàn &amp; trang thiết bị</span>
+                        <span style={{ color: 'var(--primary-color)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>Thực tế SCMS</span>
                       </div>
                     </div>
                   )}
@@ -717,34 +809,39 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 /* BOOKING & TOUR FORM TAB */
                 <>
                   {/* Quick Card Summary */}
-                  <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl">
-                    <div className="flex items-start sm:items-center gap-3">
+                  <div className="tiya-modal-summary-card">
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                       <img
                         src={selectedFacility.image}
                         alt={selectedFacility.name}
-                        className="w-12 h-12 sm:w-16 sm:h-16 rounded-lg object-cover shrink-0"
+                        className="tiya-modal-summary-card__img"
                       />
-                      <div className="text-xs flex-1 min-w-0">
-                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                          <strong className="text-slate-900 block font-bold">{selectedFacility.name}</strong>
+                      <div style={{ flex: 1, minWidth: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', flexWrap: 'wrap' }}>
+                          <strong className="tiya-modal-summary-card__title">{selectedFacility.name}</strong>
                           <button
                             type="button"
                             onClick={() => setShowFacilityPicker(prev => !prev)}
                             aria-expanded={showFacilityPicker}
                             aria-controls="booking-facility-picker"
-                            className="self-start sm:self-auto shrink-0 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg border border-red-200 bg-white text-red-600 text-[11px] font-bold hover:bg-red-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 transition-colors"
+                            className="tiya-modal-pill-btn"
                           >
-                            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">swap_horiz</span>
+                            <span className="material-symbols-outlined" style={{ fontSize: '15px' }}>swap_horiz</span>
                             <span>Đổi sân</span>
                           </button>
                         </div>
-                        <span className="text-slate-500 block mt-0.5">{selectedFacility.location} • Giờ mở cửa: {selectedFacility.openHours}</span>
-                        <span className="text-red-600 font-semibold block mt-0.5">{selectedFacility.priceRate}</span>
+                        <div className="tiya-modal-summary-card__meta">
+                          {selectedFacility.location} • Giờ mở cửa: {selectedFacility.openHours}
+                        </div>
+                        <div className="tiya-modal-summary-card__price">
+                          {selectedFacility.priceRate}
+                        </div>
                       </div>
                     </div>
+
                     {showFacilityPicker && (
-                      <div id="booking-facility-picker" className="mt-3 pt-3 border-t border-slate-200">
-                        <label htmlFor="booking-facility" className="block text-xs font-bold text-slate-700 mb-1.5">
+                      <div id="booking-facility-picker" style={{ marginTop: '12px', paddingTop: '12px', borderTop: '1px solid rgba(61, 64, 91, 0.1)' }}>
+                        <label htmlFor="booking-facility" className="tiya-form-label">
                           Chọn sân hoặc phòng tập muốn đặt
                         </label>
                         <select
@@ -752,7 +849,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                           autoFocus
                           value={selectedFacility.id}
                           onChange={e => handleChangeFacility(e.target.value)}
-                          className="w-full min-w-0 px-3 py-2 text-xs rounded-lg border border-slate-300 bg-white text-slate-900 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600"
+                          className="tiya-form-select"
                         >
                           {SCMS_FACILITIES.map(facility => (
                             <option key={facility.id} value={facility.id}>
@@ -764,24 +861,22 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                     )}
                   </div>
 
-                  {/* Form */}
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-red-600 text-[20px]">calendar_month</span>
-                        <span className="text-xs font-chivo font-black uppercase tracking-wider text-slate-900">
-                          Phiếu Đăng Ký Đặt Thuê Cụm Sân
-                        </span>
+                  {/* Booking Form */}
+                  <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                    <div className="tiya-modal-form-header">
+                      <div className="tiya-modal-form-title">
+                        <span className="material-symbols-outlined">calendar_month</span>
+                        <span>Phiếu Đăng Ký Đặt Thuê Cụm Sân</span>
                       </div>
-                      <span className="text-[11px] text-slate-500 font-medium">
+                      <span className="tiya-modal-form-subtitle">
                         Giữ chỗ &amp; xác nhận nhanh qua điện thoại
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                          Họ và tên người liên hệ *
+                        <label className="tiya-form-label">
+                          Họ và tên người liên hệ <span className="req">*</span>
                         </label>
                         <input
                           type="text"
@@ -789,12 +884,12 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                           placeholder="Nguyễn Văn A"
                           value={formState.fullName}
                           onChange={e => setFormState({ ...formState, fullName: e.target.value })}
-                          className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                          className="tiya-form-input"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                          Số điện thoại liên hệ *
+                        <label className="tiya-form-label">
+                          Số điện thoại liên hệ <span className="req">*</span>
                         </label>
                         <input
                           type="tel"
@@ -802,26 +897,26 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                           placeholder="0912 345 678"
                           value={formState.phone}
                           onChange={e => setFormState({ ...formState, phone: e.target.value })}
-                          className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                          className="tiya-form-input"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                          Email (để nhận hóa đơn &amp; xác nhận)
+                        <label className="tiya-form-label">
+                          Email (nhận hóa đơn &amp; xác nhận)
                         </label>
                         <input
                           type="email"
                           placeholder="vidu@scms.vn"
                           value={formState.email}
                           onChange={e => setFormState({ ...formState, email: e.target.value })}
-                          className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                          className="tiya-form-input"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                        <label className="tiya-form-label">
                           Đơn vị / Doanh nghiệp / CLB
                         </label>
                         <input
@@ -829,32 +924,32 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                           placeholder="Tập thể lớp / Công ty ABC..."
                           value={formState.organization}
                           onChange={e => setFormState({ ...formState, organization: e.target.value })}
-                          className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                          className="tiya-form-input"
                         />
                       </div>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '12px' }}>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-                          Ngày dự kiến *
+                        <label className="tiya-form-label">
+                          Ngày dự kiến <span className="req">*</span>
                         </label>
                         <input
                           type="date"
                           required
                           value={formState.expectedDate}
                           onChange={e => setFormState({ ...formState, expectedDate: e.target.value })}
-                          className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                          className="tiya-form-input"
                         />
                       </div>
                       <div>
-                        <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                        <label className="tiya-form-label">
                           Khung giờ mong muốn
                         </label>
                         <select
                           value={formState.timeSlot}
                           onChange={e => setFormState({ ...formState, timeSlot: e.target.value })}
-                          className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                          className="tiya-form-select"
                         >
                           <option value="Sáng sớm (05:30 - 08:00)">Buổi sáng sớm (05:30 - 08:00)</option>
                           <option value="Sáng (08:00 - 11:30)">Buổi sáng (08:00 - 11:30)</option>
@@ -865,12 +960,12 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                       </div>
                     </div>
 
-                    {/* Dịch vụ bổ trợ (Optional Extra Services) */}
+                    {/* Dịch vụ bổ trợ (Extra Services) */}
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">
+                      <label className="tiya-form-label">
                         Dịch vụ bổ trợ mong muốn:
                       </label>
-                      <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="tiya-service-grid">
                         {[
                           'Nước uống đóng chai',
                           'Áo bib phân đội',
@@ -878,22 +973,28 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                           'Bóng tập thể thao',
                           'Loa mic di động',
                           'Bảng lật điểm số tay'
-                        ].map((srv, idx) => (
-                          <label key={idx} className="flex items-center gap-2 p-2 rounded bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100">
-                            <input
-                              type="checkbox"
-                              checked={formState.extraServices.includes(srv)}
-                              onChange={() => handleToggleExtraService(srv)}
-                              className="accent-red-600"
-                            />
-                            <span className="text-slate-700">{srv}</span>
-                          </label>
-                        ))}
+                        ].map((srv, idx) => {
+                          const isChecked = formState.extraServices.includes(srv);
+                          return (
+                            <label
+                              key={idx}
+                              className={`tiya-service-card ${isChecked ? 'is-checked' : ''}`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={isChecked}
+                                onChange={() => handleToggleExtraService(srv)}
+                              />
+                              <span>{srv}</span>
+                            </label>
+                          );
+                        })}
                       </div>
                     </div>
 
+                    {/* Ghi chú */}
                     <div>
-                      <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
+                      <label className="tiya-form-label">
                         Ghi chú yêu cầu cụ thể
                       </label>
                       <textarea
@@ -901,23 +1002,24 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                         placeholder="Số lượng người tham gia dự kiến, yêu cầu về bảng điểm, nước uống hoặc thời gian bàn giao..."
                         value={formState.notes}
                         onChange={e => setFormState({ ...formState, notes: e.target.value })}
-                        className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white resize-none"
+                        className="tiya-form-textarea"
                       />
                     </div>
 
-                    <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
+                    {/* Modal Footer Buttons */}
+                    <div className="tiya-modal-footer">
                       <button
                         type="button"
                         onClick={handleCloseModal}
-                        className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600"
+                        className="tiya-modal-btn-cancel"
                       >
                         Đóng
                       </button>
                       <button
                         type="submit"
-                        className="px-6 py-2.5 text-xs font-bold uppercase tracking-wider rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors flex items-center gap-1.5"
+                        className="tiya-modal-btn-submit"
                       >
-                        <span className="material-symbols-outlined text-[16px]">send</span>
+                        <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>send</span>
                         <span>Xác Nhận Đặt Thuê Sân</span>
                       </button>
                     </div>
