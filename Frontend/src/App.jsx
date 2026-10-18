@@ -1,6 +1,7 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { AuthProvider, useAuth } from './context/AuthContext.js';
 import { ToastProvider } from './context/ToastContext.js';
+import { LanguageProvider } from './context/LanguageContext.jsx';
 import { ProtectedRoute, RoleGuard } from './components/auth/RoleGuard.js';
 import { AppLayout } from './components/layout/AppLayout.js';
 
@@ -295,10 +296,12 @@ function AppRouter() {
 
 export default function App() {
   return (
-    <ToastProvider>
-      <AuthProvider>
-        <AppRouter />
-      </AuthProvider>
-    </ToastProvider>
+    <LanguageProvider>
+      <ToastProvider>
+        <AuthProvider>
+          <AppRouter />
+        </AuthProvider>
+      </ToastProvider>
+    </LanguageProvider>
   );
 }

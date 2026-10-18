@@ -1,47 +1,51 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { getDynamicNavItems } from '../../services/permissions.js';
 
 export function Sidebar({ isOpen, onClose, currentPath }) {
   const { role, logout } = useAuth();
+  const { language } = useLanguage();
   const [expandedGroups, setExpandedGroups] = useState({});
 
-  // Cấu hình các nhóm danh mục đồng bộ 100% giao diện FPT University / FAP Portal
+  const isEn = language === 'en';
+
+  // Cấu hình các nhóm danh mục đồng bộ đa ngôn ngữ (Tiếng Việt & English)
   const getFptMenuSections = () => {
     const normalizedRole = String(role || '').toUpperCase();
 
     if (normalizedRole === 'MEMBER') {
       return [
         {
-          category: 'HỌC TẬP',
+          category: isEn ? 'TRAINING & SCHEDULE' : 'HỌC TẬP',
           items: [
             {
               id: 'member_schedule_group',
-              label: 'Lịch học',
+              label: isEn ? 'Class Schedule' : 'Lịch học',
               icon: 'calendar_month',
               subItems: [
-                { label: 'Thời khóa biểu', path: '#/member/schedule' },
-                { label: 'Lớp đã đặt & Hủy', path: '#/member/bookings' }
+                { label: isEn ? 'Timetable' : 'Thời khóa biểu', path: '#/member/schedule' },
+                { label: isEn ? 'Booked & Cancelled' : 'Lớp đã đặt & Hủy', path: '#/member/bookings' }
               ]
             },
             {
               id: 'member_reports_group',
-              label: 'Báo cáo học tập',
+              label: isEn ? 'Learning Reports' : 'Báo cáo học tập',
               icon: 'fact_check',
               subItems: [
-                { label: 'Báo cáo điểm danh', path: '#/member/attendance' },
-                { label: 'Giáo án & Tiến độ', path: '#/member/progress' }
+                { label: isEn ? 'Attendance Report' : 'Báo cáo điểm danh', path: '#/member/attendance' },
+                { label: isEn ? 'Syllabus & Progress' : 'Giáo án & Tiến độ', path: '#/member/progress' }
               ]
             },
             {
               id: 'member_coach_portal',
-              label: 'Tương tác với HLV',
+              label: isEn ? 'Coach Interaction' : 'Tương tác với HLV',
               icon: 'connect_without_contact',
               path: '#/member/coach-portal'
             },
             {
               id: 'member_ai_assistant',
-              label: 'Trợ lý thể thao AI',
+              label: isEn ? 'AI Sports Assistant' : 'Trợ lý thể thao AI',
               icon: 'smart_toy',
               path: '#/member/ai-assistant',
               isPopup: true
@@ -49,34 +53,34 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
           ]
         },
         {
-          category: 'ĐƠN TỪ',
+          category: isEn ? 'REQUESTS & FORMS' : 'ĐƠN TỪ',
           items: [
             {
               id: 'member_support',
-              label: 'Yêu cầu hỗ trợ & Đơn từ',
+              label: isEn ? 'Support Requests & Forms' : 'Yêu cầu hỗ trợ & Đơn từ',
               icon: 'support_agent',
               path: '#/member/support'
             },
             {
               id: 'member_notifications',
-              label: 'Tin tức & Thông báo',
+              label: isEn ? 'News & Announcements' : 'Tin tức & Thông báo',
               icon: 'notifications',
               path: '#/member/notifications'
             }
           ]
         },
         {
-          category: 'TÀI CHÍNH',
+          category: isEn ? 'FINANCE & BILLING' : 'TÀI CHÍNH',
           items: [
             {
               id: 'member_packages',
-              label: 'Gói tập & Thanh toán',
+              label: isEn ? 'Packages & Billing' : 'Gói tập & Thanh toán',
               icon: 'credit_card',
               path: '#/member/packages'
             },
             {
               id: 'member_payment_result',
-              label: 'Lịch sử giao dịch',
+              label: isEn ? 'Transaction History' : 'Lịch sử giao dịch',
               icon: 'receipt_long',
               path: '#/payment-result'
             }
@@ -88,32 +92,32 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
     if (normalizedRole === 'COACH') {
       return [
         {
-          category: 'GIẢNG DẠY',
+          category: isEn ? 'COACHING' : 'GIẢNG DẠY',
           items: [
             {
               id: 'coach_dashboard',
-              label: 'Tổng quan giảng viên',
+              label: isEn ? 'Coach Overview' : 'Tổng quan giảng viên',
               icon: 'sports',
               path: '#/coach/dashboard'
             },
             {
               id: 'coach_teaching_group',
-              label: 'Lịch dạy & Điểm danh',
+              label: isEn ? 'Teaching & Attendance' : 'Lịch dạy & Điểm danh',
               icon: 'calendar_month',
               subItems: [
-                { label: 'Lịch giảng dạy', path: '#/coach/schedule' },
-                { label: 'Báo cáo điểm danh', path: '#/coach/attendance' },
-                { label: 'Danh sách học viên', path: '#/coach/members' }
+                { label: isEn ? 'Teaching Schedule' : 'Lịch giảng dạy', path: '#/coach/schedule' },
+                { label: isEn ? 'Attendance Report' : 'Báo cáo điểm danh', path: '#/coach/attendance' },
+                { label: isEn ? 'Student List' : 'Danh sách học viên', path: '#/coach/members' }
               ]
             },
             {
               id: 'coach_plans_group',
-              label: 'Giáo án & Chuyên môn',
+              label: isEn ? 'Lesson Plans & Training' : 'Giáo án & Chuyên môn',
               icon: 'fitness_center',
               subItems: [
-                { label: 'Tạo giáo án rèn luyện', path: '#/coach/training-plan' },
-                { label: 'Ghi nhận tiến độ', path: '#/coach/progress' },
-                { label: 'Gợi ý giáo án AI', path: '#/coach/ai-recommendation' }
+                { label: isEn ? 'Create Lesson Plans' : 'Tạo giáo án rèn luyện', path: '#/coach/training-plan' },
+                { label: isEn ? 'Track Progress' : 'Ghi nhận tiến độ', path: '#/coach/progress' },
+                { label: isEn ? 'AI Lesson Recommendations' : 'Gợi ý giáo án AI', path: '#/coach/ai-recommendation' }
               ]
             },
             {
@@ -125,17 +129,17 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
           ]
         },
         {
-          category: 'ĐƠN TỪ & THÔNG BÁO',
+          category: isEn ? 'REQUESTS & NOTICES' : 'ĐƠN TỪ & THÔNG BÁO',
           items: [
             {
               id: 'coach_notifications',
-              label: 'Gửi bài tập / Thông báo',
+              label: isEn ? 'Send Exercises / Notices' : 'Gửi bài tập / Thông báo',
               icon: 'outgoing_mail',
               path: '#/coach/notifications'
             },
             {
               id: 'coach_support',
-              label: 'Yêu cầu hỗ trợ',
+              label: isEn ? 'Support Requests' : 'Yêu cầu hỗ trợ',
               icon: 'support_agent',
               path: '#/coach/support'
             }
@@ -147,46 +151,46 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
     if (normalizedRole === 'RECEPTIONIST') {
       return [
         {
-          category: 'QUẦY LỄ TÂN',
+          category: isEn ? 'FRONT DESK' : 'QUẦY LỄ TÂN',
           items: [
             {
               id: 'rec_dashboard',
-              label: 'Tổng quan ca trực',
+              label: isEn ? 'Shift Overview' : 'Tổng quan ca trực',
               icon: 'countertops',
               path: '#/receptionist/dashboard'
             }
           ]
         },
         {
-          category: 'NGHIỆP VỤ HỘI VIÊN',
+          category: isEn ? 'MEMBER SERVICES' : 'NGHIỆP VỤ HỘI VIÊN',
           items: [
             {
               id: 'rec_members_group',
-              label: 'Hội viên & Đặt chỗ',
+              label: isEn ? 'Members & Bookings' : 'Hội viên & Đặt chỗ',
               icon: 'person_search',
               subItems: [
-                { label: 'Tra cứu hội viên', path: '#/receptionist/lookup' },
-                { label: 'Check-in vào sân', path: '#/receptionist/check-in' },
-                { label: 'Đặt / Hủy chỗ tại quầy', path: '#/receptionist/bookings' }
+                { label: isEn ? 'Member Lookup' : 'Tra cứu hội viên', path: '#/receptionist/lookup' },
+                { label: isEn ? 'Court Check-in' : 'Check-in vào sân', path: '#/receptionist/check-in' },
+                { label: isEn ? 'Counter Booking / Cancel' : 'Đặt / Hủy chỗ tại quầy', path: '#/receptionist/bookings' }
               ]
             }
           ]
         },
         {
-          category: 'TÀI CHÍNH & HỖ TRỢ',
+          category: isEn ? 'FINANCE & SUPPORT' : 'TÀI CHÍNH & HỖ TRỢ',
           items: [
             {
               id: 'rec_billing_group',
-              label: 'Thu ngân & Hóa đơn',
+              label: isEn ? 'Cashier & Invoices' : 'Thu ngân & Hóa đơn',
               icon: 'point_of_sale',
               subItems: [
-                { label: 'ĐK / Gia hạn tại quầy', path: '#/receptionist/counter-register' },
-                { label: 'Hóa đơn & Thu tiền', path: '#/receptionist/invoices' }
+                { label: isEn ? 'Counter Sign-up / Renewal' : 'ĐK / Gia hạn tại quầy', path: '#/receptionist/counter-register' },
+                { label: isEn ? 'Invoices & Billing' : 'Hóa đơn & Thu tiền', path: '#/receptionist/invoices' }
               ]
             },
             {
               id: 'rec_support',
-              label: 'Tiếp nhận hỗ trợ',
+              label: isEn ? 'Receive Support Requests' : 'Tiếp nhận hỗ trợ',
               icon: 'support_agent',
               path: '#/receptionist/support'
             }
@@ -198,71 +202,65 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
     // MANAGER / ADMIN / SYSTEMADMIN
     return [
       {
-        category: 'TỔNG QUAN',
+        category: isEn ? 'OVERVIEW' : 'TỔNG QUAN',
         items: [
           {
             id: 'mgr_dashboard',
-            label: 'Bảng quản trị hệ thống',
+            label: isEn ? 'Admin Dashboard' : 'Bảng quản trị hệ thống',
             icon: 'dashboard',
             path: '#/manager/dashboard'
           }
         ]
       },
       {
-        category: 'VẬN HÀNH & HỘI VIÊN',
+        category: isEn ? 'OPERATIONS & MEMBERS' : 'VẬN HÀNH & HỘI VIÊN',
         items: [
           {
             id: 'mgr_operation_group',
-            label: 'Quản lý vận hành',
+            label: isEn ? 'Operations Management' : 'Quản lý vận hành',
             icon: 'sports_score',
             subItems: [
-              { label: 'Quản lý thành viên', path: '#/manager/members' },
-              { label: 'Lớp, bộ môn & phòng', path: '#/manager/classes-rooms' },
-              { label: 'Gói tập hội viên', path: '#/manager/packages' },
-              { label: 'Phân công HLV', path: '#/manager/coach-assignment' },
-              { label: 'Vận hành đội ngũ HLV', path: '#/manager/coach-operations' },
-              { label: 'Nội dung trang chủ', path: '#/manager/home-content' }
+              { label: isEn ? 'Member Management' : 'Quản lý thành viên', path: '#/manager/members' },
+              { label: isEn ? 'Classes, Sports & Courts' : 'Lớp, bộ môn & phòng', path: '#/manager/classes-rooms' },
+              { label: isEn ? 'Membership Packages' : 'Gói tập hội viên', path: '#/manager/packages' },
+              { label: isEn ? 'Coach Assignment' : 'Phân công HLV', path: '#/manager/coach-assignment' },
+              { label: isEn ? 'Coach Operations' : 'Vận hành đội ngũ HLV', path: '#/manager/coach-operations' },
+              { label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', path: '#/manager/home-content' }
             ]
           }
         ]
       },
       {
-        category: 'NHÂN SỰ & PHÂN QUYỀN',
+        category: isEn ? 'HR & PERMISSIONS' : 'NHÂN SỰ & PHÂN QUYỀN',
         items: [
           {
             id: 'mgr_staff',
-            label: 'Quản lý nhân sự',
+            label: isEn ? 'Staff Management' : 'Quản lý nhân sự',
             icon: 'badge',
             path: '#/manager/staff'
           },
           {
             id: 'mgr_roles',
-            label: 'Vai trò & Phân quyền',
+            label: isEn ? 'Roles & Permissions' : 'Vai trò & Phân quyền',
             icon: 'admin_panel_settings',
             path: '#/manager/roles-permissions'
           }
         ]
       },
       {
-        category: 'BÁO CÁO & BẢO MẬT',
+        category: isEn ? 'REPORTS & AUDIT' : 'BÁO CÁO & BẢO MẬT',
         items: [
           {
             id: 'mgr_reports',
-            label: 'Báo cáo & Thống kê',
+            label: isEn ? 'Reports & Statistics' : 'Báo cáo & Thống kê',
             icon: 'analytics',
             path: '#/manager/reports'
           },
           {
             id: 'mgr_audit',
-            label: 'Nhật ký Audit Logs',
+            label: isEn ? 'Audit Logs' : 'Nhật ký Audit Logs',
             icon: 'history',
             path: '#/manager/audit-logs'
-          },
-          {
-            id: 'mgr_support',
-            label: 'Tiếp nhận yêu cầu hỗ trợ',
-            icon: 'support_agent',
-            path: '#/receptionist/support'
           }
         ]
       }
@@ -271,24 +269,27 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
 
   const sections = getFptMenuSections();
 
-  // Tự động mở group chứa URL hiện tại
+  // Tự động mở menu cha nếu có menu con đang active theo đường dẫn hiện tại
   useEffect(() => {
-    const nextState = { ...expandedGroups };
     sections.forEach(sec => {
-      sec.items.forEach(item => {
+      sec.items?.forEach(item => {
         if (item.subItems) {
-          const hasActiveChild = item.subItems.some(sub => currentPath === sub.path || currentPath?.startsWith(sub.path));
+          const hasActiveChild = item.subItems.some(sub =>
+            currentPath === sub.path || (currentPath?.startsWith(sub.path) && sub.path !== '#/manager/dashboard')
+          );
           if (hasActiveChild) {
-            nextState[item.id] = true;
+            setExpandedGroups(prev => ({ ...prev, [item.id]: true }));
           }
         }
       });
     });
-    setExpandedGroups(nextState);
-  }, [currentPath, role]);
+  }, [currentPath]);
 
   const toggleGroup = (id) => {
-    setExpandedGroups(prev => ({ ...prev, [id]: !prev[id] }));
+    setExpandedGroups(prev => ({
+      ...prev,
+      [id]: !prev[id]
+    }));
   };
 
   return (
@@ -296,33 +297,35 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
       {/* Mobile Backdrop */}
       {isOpen && (
         <div
-          className="fixed inset-0 bg-slate-900/40 backdrop-blur-2xs z-40 lg:hidden"
           onClick={onClose}
+          className="fixed inset-0 bg-slate-900/40 backdrop-blur-xs z-40 lg:hidden transition-opacity"
+          aria-hidden="true"
         />
       )}
 
-      {/* FPT University Theme Sidebar Panel */}
+      {/* Sidebar Container */}
       <aside
-        className={`fixed top-16 bottom-0 left-0 z-40 w-64 bg-white text-slate-700 flex flex-col border-r border-slate-200 transition-transform duration-300 ease-in-out lg:translate-x-0 ${
-          isOpen ? 'translate-x-0' : '-translate-x-full'
+        className={`fixed top-16 left-0 bottom-0 w-64 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-40 flex flex-col transition-transform duration-300 ease-in-out lg:translate-x-0 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         }`}
       >
-        {/* Navigation Section List */}
-        <div className="flex-1 overflow-y-auto py-3 px-3 space-y-4">
-          {sections.map((section, sIdx) => (
-            <div key={sIdx} className="space-y-1">
-              {/* Category Header (e.g. HỌC TẬP, ĐƠN TỪ, TÀI CHÍNH) */}
-              <div className="px-3 pt-2 pb-1 text-[11px] font-bold tracking-wider text-[#1A3B8B] uppercase">
+        {/* Navigation Menu Body */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-6">
+          {sections.map((section, idx) => (
+            <div key={idx} className="space-y-1">
+              {/* Category Header */}
+              <div className="px-3 py-1.5 text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-wider">
                 {section.category}
               </div>
 
-              {/* Items in this category */}
+              {/* Menu Items */}
               {section.items.map((item) => {
-                // Trường hợp 1: Nhóm có menu con (Expandable Submenu)
-                if (item.subItems) {
-                  const isExpanded = Boolean(expandedGroups[item.id]);
-                  const hasActiveChild = item.subItems.some(
-                    sub => currentPath === sub.path || (currentPath?.startsWith(sub.path) && sub.path !== '#/manager/dashboard')
+                // Trường hợp 1: Có Sub-Items (Accordion Dropdown)
+                if (item.subItems && item.subItems.length > 0) {
+                  const isExpanded = expandedGroups[item.id] !== false;
+                  const isAnyChildActive = item.subItems.some(sub =>
+                    currentPath === sub.path ||
+                    (currentPath?.startsWith(sub.path) && sub.path !== '#/manager/dashboard')
                   );
 
                   return (
@@ -331,40 +334,45 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
                         type="button"
                         onClick={() => toggleGroup(item.id)}
                         className={`w-full flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors cursor-pointer ${
-                          hasActiveChild ? 'text-[#1A3B8B] bg-blue-50/50' : 'text-slate-700 hover:bg-slate-50 hover:text-[#1A3B8B]'
+                          isAnyChildActive
+                            ? 'text-[#1A3B8B] dark:text-blue-400 bg-blue-50/50 dark:bg-blue-900/20'
+                            : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3B8B] dark:hover:text-blue-400'
                         }`}
                       >
-                        <div className="flex items-center gap-2.5">
-                          <span className={`material-symbols-outlined text-[19px] shrink-0 ${hasActiveChild ? 'text-[#1A3B8B]' : 'text-slate-400'}`}>
+                        <div className="flex items-center gap-2.5 truncate">
+                          <span className={`material-symbols-outlined text-[19px] shrink-0 ${isAnyChildActive ? 'text-[#1A3B8B] dark:text-blue-400' : 'text-slate-400'}`}>
                             {item.icon}
                           </span>
                           <span className="truncate">{item.label}</span>
                         </div>
-                        <span className="material-symbols-outlined text-[16px] text-slate-400 transition-transform duration-200">
-                          {isExpanded ? 'keyboard_arrow_down' : 'keyboard_arrow_right'}
+
+                        <span className={`material-symbols-outlined text-[16px] text-slate-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`}>
+                          expand_more
                         </span>
                       </button>
 
-                      {/* Expanded Submenu Items */}
+                      {/* Accordion Submenu Children */}
                       {isExpanded && (
-                        <div className="pl-6 space-y-0.5">
-                          {item.subItems.map((sub, subIdx) => {
-                            const isSubActive =
+                        <div className="pl-7 pr-1 py-0.5 space-y-0.5">
+                          {item.subItems.map((sub, sIdx) => {
+                            const isChildActive =
                               currentPath === sub.path ||
                               (currentPath?.startsWith(sub.path) && sub.path !== '#/manager/dashboard');
 
                             return (
                               <a
-                                key={subIdx}
+                                key={sIdx}
                                 href={sub.path}
                                 onClick={onClose}
-                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs transition-colors ${
-                                  isSubActive
-                                    ? 'bg-[#EBF2FC] text-[#1A3B8B] font-bold shadow-2xs'
-                                    : 'text-slate-600 hover:text-[#1A3B8B] hover:bg-slate-50 font-medium'
+                                className={`flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium transition-colors ${
+                                  isChildActive
+                                    ? 'bg-[#EBF2FC] dark:bg-blue-900/40 text-[#1A3B8B] dark:text-blue-300 font-bold'
+                                    : 'text-slate-600 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-white'
                                 }`}
                               >
-                                <span className={`text-[12px] leading-none ${isSubActive ? 'text-[#1A3B8B] font-black' : 'text-slate-400'}`}>•</span>
+                                <span className={`text-[10px] ${isChildActive ? 'text-[#1A3B8B] dark:text-blue-300' : 'text-slate-300 dark:text-slate-600'}`}>
+                                  •
+                                </span>
                                 <span className="truncate">{sub.label}</span>
                               </a>
                             );
@@ -375,7 +383,7 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
                   );
                 }
 
-                // Trường hợp 2: Mục đơn lẻ (Single Nav Item)
+                // Trường hợp 2: Link Trực Tiếp Đơn Lẻ
                 const isActive =
                   currentPath === item.path ||
                   (currentPath?.startsWith(item.path) && item.path !== '#/manager/dashboard');
@@ -395,19 +403,19 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
                     }}
                     className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
                       isActive
-                        ? 'bg-[#EBF2FC] text-[#1A3B8B] font-bold shadow-2xs'
-                        : 'text-slate-700 hover:bg-slate-50 hover:text-[#1A3B8B]'
+                        ? 'bg-[#EBF2FC] dark:bg-blue-900/40 text-[#1A3B8B] dark:text-blue-300 font-bold shadow-2xs'
+                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3B8B] dark:hover:text-blue-400'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 truncate">
-                      <span className={`material-symbols-outlined text-[19px] shrink-0 ${isActive ? 'text-[#1A3B8B]' : 'text-slate-400'}`}>
+                      <span className={`material-symbols-outlined text-[19px] shrink-0 ${isActive ? 'text-[#1A3B8B] dark:text-blue-400' : 'text-slate-400'}`}>
                         {item.icon}
                       </span>
                       <span className="truncate">{item.label}</span>
                     </div>
 
                     {item.isPopup && (
-                      <span className="px-1.5 py-0.2 rounded bg-red-50 text-red-600 text-[9px] font-bold uppercase border border-red-200">
+                      <span className="px-1.5 py-0.2 rounded bg-red-50 dark:bg-red-950/40 text-red-600 dark:text-red-400 text-[9px] font-bold uppercase border border-red-200 dark:border-red-800">
                         AI
                       </span>
                     )}
@@ -419,20 +427,22 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
         </div>
 
         {/* Sidebar Footer: SCMS Status & Logout */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/70">
-          <div className="p-2 rounded-xl bg-white border border-slate-200 flex items-center justify-between shadow-2xs">
+        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
+          <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-2xs">
             <div className="flex items-center gap-2">
-              <span className="material-symbols-outlined text-[#1A3B8B] text-[18px]">verified</span>
+              <span className="material-symbols-outlined text-[#1A3B8B] dark:text-blue-400 text-[18px]">verified</span>
               <div className="flex flex-col">
-                <span className="text-[11px] font-bold text-slate-800 leading-tight">Olympic Arena</span>
-                <span className="text-[9px] text-slate-400">Tiêu chuẩn SCMS</span>
+                <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">Olympic Arena</span>
+                <span className="text-[9px] text-slate-400 dark:text-slate-500">
+                  {isEn ? 'SCMS Standard' : 'Tiêu chuẩn SCMS'}
+                </span>
               </div>
             </div>
             <button
               type="button"
               onClick={() => { logout(); window.location.hash = '#/login'; }}
-              className="text-slate-400 hover:text-rose-600 p-1 transition-colors"
-              title="Đăng xuất"
+              className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 transition-colors cursor-pointer"
+              title={isEn ? 'Sign Out' : 'Đăng xuất'}
             >
               <span className="material-symbols-outlined text-[18px]">logout</span>
             </button>

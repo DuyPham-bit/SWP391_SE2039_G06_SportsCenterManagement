@@ -234,3 +234,88 @@
 .animate-modal-entrance {
   animation: modalEntrance 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
+
+/* ─────────────────────────────────────────────────────────────
+   DARK MODE THEME SYSTEM (Kích hoạt khi toggle Moon / Sun)
+───────────────────────────────────────────────────────────── */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark, html.dark body {
+  background-color: #0b1120 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark header {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+  color: #f9fafb !important;
+}
+
+html.dark aside {
+  background-color: #111827 !important;
+  border-color: #1f2937 !important;
+  color: #e5e7eb !important;
+}
+
+html.dark .fpt-card,
+html.dark .bg-white {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #9ca3af !important;
+}
+
+html.dark .text-slate-400 {
+  color: #6b7280 !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-\[\#F8FAFC\],
+html.dark .bg-\[\#F4F6FA\] {
+  background-color: #0f172a !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-100 {
+  border-color: #334155 !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #334155 !important;
+}
+
+html.dark footer {
+  background-color: #0f172a !important;
+  border-color: #1f2937 !important;
+  color: #9ca3af !important;
+}
+
+html.dark .bg-\[\#EBF2FC\] {
+  background-color: rgba(30, 58, 138, 0.5) !important;
+  color: #bfdbfe !important;
+}
+
+html.dark .text-\[\#1A3B8B\] {
+  color: #60a5fa !important;
+}
