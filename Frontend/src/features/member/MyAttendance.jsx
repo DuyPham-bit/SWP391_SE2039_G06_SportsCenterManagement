@@ -191,41 +191,41 @@ export function MyAttendance() {
     return map;
   }, [filteredRecords]);
 
-  // Render Badge trạng thái chuyên cần với màu sắc nhận diện cao
+  // Render Badge trạng thái chuyên cần chuẩn FPT FAP Portal
   const renderAttendanceBadge = (status) => {
     switch (status) {
       case 'PRESENT':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-200">
-            <span className="material-symbols-outlined text-[15px]">check_circle</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#E8F8EE] text-[#15803D]">
+            <span className="w-2 h-2 rounded-full bg-[#16A34A]"></span>
             <span>Có mặt</span>
           </span>
         );
       case 'LATE':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black uppercase bg-amber-100 text-amber-800 border border-amber-200">
-            <span className="material-symbols-outlined text-[15px]">schedule</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF6E6] text-[#D97706]">
+            <span className="w-2 h-2 rounded-full bg-[#D97706]"></span>
             <span>Đi muộn</span>
           </span>
         );
       case 'ABSENT':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black uppercase bg-rose-100 text-rose-800 border border-rose-200">
-            <span className="material-symbols-outlined text-[15px]">cancel</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEE2E2] text-[#DC2626]">
+            <span className="w-2 h-2 rounded-full bg-[#DC2626]"></span>
             <span>Vắng mặt</span>
           </span>
         );
       case 'EXCUSED':
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black uppercase bg-blue-100 text-blue-800 border border-blue-200">
-            <span className="material-symbols-outlined text-[15px]">event_available</span>
-            <span>Vắng có phép</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#EEF4FE] text-[#1E40AF]">
+            <span className="w-2 h-2 rounded-full bg-[#2563EB]"></span>
+            <span>Có phép</span>
           </span>
         );
       default:
         return (
-          <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-black uppercase bg-slate-100 text-slate-700 border border-slate-200">
-            <span className="material-symbols-outlined text-[15px]">pending</span>
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-[#FEF6E6] text-[#D97706]">
+            <span className="w-2 h-2 rounded-full bg-[#D97706]"></span>
             <span>Chưa điểm danh</span>
           </span>
         );

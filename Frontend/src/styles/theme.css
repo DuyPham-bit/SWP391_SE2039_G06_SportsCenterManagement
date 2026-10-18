@@ -1,11 +1,25 @@
-/* Apex Athletic Arena Custom Theme Styles */
+/* FPT Education / FAP Portal Theme Styles */
 @layer base {
+  :root {
+    --primary-color: #1A3B8B;
+    --primary-hover: #142F70;
+    --fpt-blue: #1A3B8B;
+    --fpt-blue-light: #EBF2FC;
+    --fpt-orange: #F26522;
+    --fpt-green: #008744;
+    --bg-page: #F4F6FA;
+    --bg-card: #FFFFFF;
+    --text-primary: #1E293B;
+    --text-secondary: #64748B;
+    --border-color: #E2E8F0;
+  }
+
   html, body {
     margin: 0;
     padding: 0;
-    background-color: #FAF8F5;
-    color: #1E2235;
-    font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif;
+    background-color: #F4F6FA;
+    color: #1E293B;
+    font-family: 'Inter', 'Lexend', system-ui, -apple-system, sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -16,12 +30,8 @@
   }
 }
 
-.font-chivo {
-  font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif !important;
-}
-
-.font-inter {
-  font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif !important;
+.font-chivo, .font-inter, .font-lexend {
+  font-family: 'Inter', 'Lexend', system-ui, -apple-system, sans-serif !important;
 }
 
 /* Material Symbols Outlined & Material Icons normalization */
@@ -54,73 +64,166 @@
 
 ::-webkit-scrollbar-thumb {
   background: #cbd5e1;
-  border-radius: 3px;
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
 
-/* Glassmorphism Accents */
-.glass-panel {
-  background: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(226, 232, 240, 0.8);
+/* FPT Portal Component Tokens */
+.fpt-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
-.glass-panel-dark {
-  background: rgba(15, 23, 42, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+.fpt-card-header {
+  border-bottom: 1px solid #f1f5f9;
+  padding: 1rem 1.25rem;
 }
 
-/* Athletic Brutalism Accents */
-.athletic-border {
-  border: 1px solid #e2e8f0;
+/* Buttons */
+.fpt-btn-primary {
+  background-color: #1A3B8B;
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(26, 59, 139, 0.2);
 }
 
-.athletic-shadow {
-  box-shadow: 0 4px 0 #1E2235;
+.fpt-btn-primary:hover {
+  background-color: #142F70;
 }
 
-.athletic-shadow-red {
-  box-shadow: 0 4px 14px rgba(242, 204, 143, 0.35);
+.fpt-btn-secondary {
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
 }
 
-/* Pulse badge */
-@keyframes scms-pulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.5; transform: scale(1.1); }
+.fpt-btn-secondary:hover {
+  background-color: #f8fafc;
 }
 
-.pulse-live {
-  animation: scms-pulse 2s infinite ease-in-out;
+/* Status Badges */
+.fpt-badge-present {
+  background-color: #E8F8EE;
+  color: #15803D;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.font-lexend {
-  font-family: 'Lexend', 'Inter', system-ui, -apple-system, sans-serif !important;
+.fpt-badge-present::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #16A34A;
 }
 
-.glow-red {
-  box-shadow: 0 10px 25px -5px rgba(242, 204, 143, 0.4);
+.fpt-badge-pending {
+  background-color: #FEF6E6;
+  color: #D97706;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.dynamic-typo-grid {
-  background-size: 32px 32px;
-  background-image: 
-    linear-gradient(to right, rgba(255, 255, 255, 0.05) 1px, transparent 1px),
-    linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
+.fpt-badge-pending::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #D97706;
 }
 
-/* Trang chủ SCMS (#/) - Thiết kế giao diện phong cách Olympic hiện đại */
+.fpt-badge-absent {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fpt-badge-absent::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #DC2626;
+}
+
+/* Pills */
+.fpt-pill-date {
+  background-color: #EEF4FE;
+  color: #1E40AF;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fpt-pill-time {
+  background-color: #FFF1EB;
+  color: #EA580C;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fpt-info-box {
+  background-color: #EFF6FF;
+  border: 1px solid #DBEAFE;
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #1E40AF;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 /* Modal Animations */
 @keyframes modalEntrance {
   0% {
     opacity: 0;
-    transform: scale(0.94) translateY(10px);
+    transform: scale(0.96) translateY(8px);
   }
   100% {
     opacity: 1;
@@ -129,6 +232,5 @@
 }
 
 .animate-modal-entrance {
-  animation: modalEntrance 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalEntrance 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
-

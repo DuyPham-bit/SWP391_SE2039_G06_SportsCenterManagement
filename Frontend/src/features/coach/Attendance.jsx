@@ -49,15 +49,15 @@ export function Attendance() {
     <div className="space-y-6">
       {/* 1. Header Banner */}
       <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30 text-xs font-bold uppercase tracking-wider mb-2">
-          <span className="w-2 h-2 rounded-full bg-[#81B29A]" />
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#1A3B8B] border border-blue-200 text-xs font-bold uppercase tracking-wider mb-2">
+          <span className="w-2 h-2 rounded-full bg-[#1A3B8B]" />
           <span>Điểm danh ca dạy</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E2235] tracking-tight">
-          Điểm Danh Lớp Học Thể Thao
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+          Báo Cáo Điểm Danh Ca Dạy
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
-          Ghi nhận tình trạng hiện diện của từng học viên theo ca dạy, cập nhật trực tiếp vào hệ thống Olympic Arena.
+          Ghi nhận tình trạng hiện diện của từng học viên theo ca dạy, cập nhật trực tiếp vào hệ thống quản lý SCMS.
         </p>
       </div>
 
@@ -155,13 +155,13 @@ export function Attendance() {
                 className="bg-white border border-slate-200/90 hover:border-[#81B29A]/50 rounded-[20px] p-4 sm:p-5 shadow-xs transition-all grid md:grid-cols-3 gap-3.5 items-center"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-[#1E2235] text-[#F2CC8F] font-bold text-sm flex items-center justify-center shrink-0">
+                  <div className="w-10 h-10 rounded-full bg-[#1A3B8B] text-white font-bold text-sm flex items-center justify-center shrink-0">
                     {m.memberName?.[0]?.toUpperCase() || 'H'}
                   </div>
                   <div>
                     <h2 className="font-bold text-slate-900 text-sm">{m.memberName}</h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      <span className="font-bold text-[#2D6A4F]">{m.memberCode}</span> · {m.phone || 'Chưa có SĐT'}
+                      <span className="font-bold text-[#1A3B8B]">{m.memberCode}</span> · {m.phone || 'Chưa có SĐT'}
                     </p>
                   </div>
                 </div>
@@ -201,7 +201,7 @@ export function Attendance() {
               <button
                 onClick={save}
                 disabled={saving || !canAttendSession(session)}
-                className="px-6 py-2.5 rounded-full bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white text-xs font-bold uppercase tracking-wider shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
+                className="px-5 py-2.5 rounded-lg bg-[#1A3B8B] hover:bg-[#142F70] text-white text-xs font-semibold shadow-xs hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">fact_check</span>
                 <span>{saving ? 'Đang lưu...' : 'Lưu Kết Quả Điểm Danh'}</span>
