@@ -297,19 +297,21 @@ export function CoachDashboard() {
       ───────────────────────────────────────────────────────────── */}
       <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-[#e5e7eb]">
         {[
-          { id: 'schedule', label: isEn ? 'Schedule & Leave' : 'Lịch & Nghỉ phép', icon: 'calendar_today', path: '#/coach/schedule' },
-          { id: 'students', label: isEn ? 'PT Students' : 'Học viên PT', icon: 'group', path: '#/coach/members' },
-          { id: 'kpi', label: isEn ? 'Salary & KPI' : 'Lương & KPI', icon: 'monitoring', path: '#/coach/professional' },
-          { id: 'plans', label: isEn ? 'Plans & Nutrition' : 'Giáo án & Dinh dưỡng', icon: 'fitness_center', path: '#/coach/training-plan' },
-          { id: 'resources', label: isEn ? 'Resources & Equipment' : 'Tài nguyên & Thiết bị', icon: 'inventory_2', path: '#/coach/professional' },
+          { id: 'schedule', label: isEn ? 'Today Sessions' : 'Lịch ca giảng', icon: 'schedule', path: '#/coach/dashboard' },
+          { id: 'attendance', label: isEn ? 'Attendance' : 'Báo cáo điểm danh', icon: 'fact_check', path: '#/coach/attendance' },
+          { id: 'students', label: isEn ? 'Student Profiles' : 'Danh sách học viên', icon: 'group', path: '#/coach/members' },
+          { id: 'plans', label: isEn ? 'Workout Plans' : 'Giáo án rèn luyện', icon: 'fitness_center', path: '#/coach/training-plan' },
+          { id: 'ai', label: isEn ? 'AI Suggestions' : 'Gợi ý AI', icon: 'smart_toy', path: '#/coach/ai-recommendation' },
+          { id: 'kpi', label: isEn ? 'Salary & KPI' : 'Lương & KPI', icon: 'payments', path: '#/coach/professional' },
+          { id: 'support', label: isEn ? 'Leave & Requests' : 'Đơn từ & Nghỉ phép', icon: 'support_agent', path: '#/coach/support' },
         ].map((tab) => {
           const isTabActive = activeTab === tab.id;
           return (
-            <button
+            <a
               key={tab.id}
-              type="button"
+              href={tab.path}
               onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full transition-all duration-200 cursor-pointer whitespace-nowrap ${
+              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full transition-all duration-200 cursor-pointer whitespace-nowrap text-decoration-none ${
                 isTabActive
                   ? 'bg-[#1e3a8a] text-white shadow-[0_2px_8px_rgba(30,58,138,0.25)]'
                   : 'text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9]'
@@ -317,7 +319,7 @@ export function CoachDashboard() {
             >
               <span className="material-symbols-outlined text-[15px]">{tab.icon}</span>
               <span>{tab.label}</span>
-            </button>
+            </a>
           );
         })}
       </div>
