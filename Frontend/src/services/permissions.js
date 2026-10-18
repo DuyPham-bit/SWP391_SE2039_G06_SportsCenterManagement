@@ -305,8 +305,17 @@ export function getPermissionsForRole(role) {
       return overrides.effectiveCapabilities;
     }
   }
-  if (String(user?.role || '').toUpperCase() === normalized && Array.isArray(user?.capabilities)) return user.capabilities;
-  return [];
+
+  // Lấy các quyền cơ bản mặc định của vai trò từ ma trận SYSTEM_CAPABILITIES
+  const defaultCapsForRole = SYSTEM_CAPABILITIES
+    .filter(c => String(c.defaultRole || '').toUpperCase() === normalized)
+    .map(c => c.id);
+
+  if (String(user?.role || '').toUpperCase() === normalized && Array.isArray(user?.capabilities)) {
+    // Kết hợp quyền backend cấp và quyền mặc định của vai trò để không bị sót manage_coach_workspace
+    return Array.from(new Set([...defaultCapsForRole, ...user.capabilities]));
+  }
+  return defaultCapsForRole;
 }
 
 // Helper to check if a role or user has a specific capability
