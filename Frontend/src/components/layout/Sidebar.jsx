@@ -101,20 +101,18 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
               path: '#/coach/dashboard'
             },
             {
-              id: 'coach_schedule',
-              label: isEn ? 'Teaching Schedule' : 'Lịch giảng dạy',
+              id: 'coach_schedule_group',
+              label: isEn ? 'Schedule & Leave' : 'Lịch & Nghỉ phép',
               icon: 'calendar_month',
-              path: '#/coach/schedule'
-            },
-            {
-              id: 'coach_attendance',
-              label: isEn ? 'Attendance Report' : 'Báo cáo điểm danh',
-              icon: 'fact_check',
-              path: '#/coach/attendance'
+              subItems: [
+                { label: isEn ? 'Teaching Schedule' : 'Lịch giảng dạy', path: '#/coach/schedule' },
+                { label: isEn ? 'Attendance Report' : 'Báo cáo điểm danh', path: '#/coach/attendance' },
+                { label: isEn ? 'Leave Requests' : 'Xin nghỉ phép', path: '#/coach/support' }
+              ]
             },
             {
               id: 'coach_members',
-              label: isEn ? 'Student Profiles' : 'Danh sách học viên',
+              label: isEn ? 'Students' : 'Học viên',
               icon: 'group',
               path: '#/coach/members'
             }
@@ -124,45 +122,37 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
           category: isEn ? 'PROFESSIONAL' : 'CHUYÊN MÔN',
           items: [
             {
-              id: 'coach_training_plan',
-              label: isEn ? 'Workout Plans' : 'Giáo án rèn luyện',
+              id: 'coach_plans_group',
+              label: isEn ? 'Lesson Plans & Nutrition' : 'Giáo án & Dinh dưỡng',
               icon: 'fitness_center',
-              path: '#/coach/training-plan'
-            },
-            {
-              id: 'coach_progress',
-              label: isEn ? 'Track Progress' : 'Ghi nhận tiến độ',
-              icon: 'monitoring',
-              path: '#/coach/progress'
-            },
-            {
-              id: 'coach_ai_recommendation',
-              label: isEn ? 'AI Suggestions' : 'Gợi ý giáo án AI',
-              icon: 'smart_toy',
-              path: '#/coach/ai-recommendation'
+              subItems: [
+                { label: isEn ? 'Create Workout Plans' : 'Tạo giáo án rèn luyện', path: '#/coach/training-plan' },
+                { label: isEn ? 'Track Progress' : 'Ghi nhận tiến độ', path: '#/coach/progress' },
+                { label: isEn ? 'AI Suggestions' : 'Gợi ý AI', path: '#/coach/ai-recommendation' }
+              ]
             }
           ]
         },
         {
-          category: isEn ? 'OPERATIONS & NOTICES' : 'VẬN HÀNH & ĐƠN TỪ',
+          category: isEn ? 'OPERATIONS & FINANCE' : 'TƯƠNG TÁC & VẬN HÀNH',
           items: [
             {
-              id: 'coach_salary_kpi',
-              label: isEn ? 'Salary & KPI' : 'Lương & KPI',
-              icon: 'payments',
-              path: '#/coach/professional'
-            },
-            {
               id: 'coach_notifications',
-              label: isEn ? 'Notices & Chat' : 'Thông báo & Tương tác',
-              icon: 'campaign',
+              label: isEn ? 'Interaction & Chat' : 'Tương tác & Chat',
+              icon: 'forum',
               path: '#/coach/notifications'
             },
             {
-              id: 'coach_support',
-              label: isEn ? 'Leave & Support Requests' : 'Đơn từ & Xin nghỉ phép',
-              icon: 'support_agent',
-              path: '#/coach/support'
+              id: 'coach_salary_kpi',
+              label: isEn ? 'KPI & Income' : 'KPI & Thu nhập',
+              icon: 'monitoring',
+              path: '#/coach/professional'
+            },
+            {
+              id: 'coach_resources',
+              label: isEn ? 'Resources & Equipment' : 'Tài nguyên & Thiết bị',
+              icon: 'inventory_2',
+              path: '#/coach/professional'
             }
           ]
         }

@@ -15,8 +15,6 @@ export function CoachDashboard() {
   const [loading, setLoading] = useState(true);
   const schedule = useTeachingSessions();
 
-  // Tabs điều hướng ngang dạng Pill
-  const [activeTab, setActiveTab] = useState('schedule'); // 'schedule' | 'students' | 'kpi' | 'plans' | 'resources'
   // Bộ lọc Ngày/Tuần/Tháng liền kề
   const [filterPeriod, setFilterPeriod] = useState('day'); // 'day' | 'week' | 'month'
 
@@ -293,39 +291,7 @@ export function CoachDashboard() {
       <CoachError message={error} retry={load} />
 
       {/* ─────────────────────────────────────────────────────────────
-          2. HÀNG TABS ĐIỀU HƯỚNG NGANG DẠNG "PILL"
-      ───────────────────────────────────────────────────────────── */}
-      <div className="flex items-center gap-2 overflow-x-auto pb-1 border-b border-[#e5e7eb]">
-        {[
-          { id: 'schedule', label: isEn ? 'Today Sessions' : 'Lịch ca giảng', icon: 'schedule', path: '#/coach/dashboard' },
-          { id: 'attendance', label: isEn ? 'Attendance' : 'Báo cáo điểm danh', icon: 'fact_check', path: '#/coach/attendance' },
-          { id: 'students', label: isEn ? 'Student Profiles' : 'Danh sách học viên', icon: 'group', path: '#/coach/members' },
-          { id: 'plans', label: isEn ? 'Workout Plans' : 'Giáo án rèn luyện', icon: 'fitness_center', path: '#/coach/training-plan' },
-          { id: 'ai', label: isEn ? 'AI Suggestions' : 'Gợi ý AI', icon: 'smart_toy', path: '#/coach/ai-recommendation' },
-          { id: 'kpi', label: isEn ? 'Salary & KPI' : 'Lương & KPI', icon: 'payments', path: '#/coach/professional' },
-          { id: 'support', label: isEn ? 'Leave & Requests' : 'Đơn từ & Nghỉ phép', icon: 'support_agent', path: '#/coach/support' },
-        ].map((tab) => {
-          const isTabActive = activeTab === tab.id;
-          return (
-            <a
-              key={tab.id}
-              href={tab.path}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-2 px-4 py-2 text-xs font-semibold rounded-full transition-all duration-200 cursor-pointer whitespace-nowrap text-decoration-none ${
-                isTabActive
-                  ? 'bg-[#1e3a8a] text-white shadow-[0_2px_8px_rgba(30,58,138,0.25)]'
-                  : 'text-[#64748b] hover:text-[#0f172a] hover:bg-[#f1f5f9]'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[15px]">{tab.icon}</span>
-              <span>{tab.label}</span>
-            </a>
-          );
-        })}
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          3. BỐ CỤC 2 CỘT (Cột trái 65% - Cột phải 35%)
+          2. BỐ CỤC 2 CỘT (Cột trái 65% - Cột phải 35%)
       ───────────────────────────────────────────────────────────── */}
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
