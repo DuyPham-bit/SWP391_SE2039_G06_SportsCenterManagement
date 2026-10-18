@@ -92,38 +92,63 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
     if (normalizedRole === 'COACH') {
       return [
         {
-          category: isEn ? 'COACHING' : 'GIẢNG DẠY',
+          category: isEn ? 'TEACHING & STUDENTS' : 'GIẢNG DẠY & HỌC VIÊN',
           items: [
             {
               id: 'coach_dashboard',
-              label: isEn ? 'Coach Overview' : 'Tổng quan giảng viên',
-              icon: 'sports',
+              label: isEn ? 'Coach Overview' : 'Tổng quan HLV',
+              icon: 'dashboard',
               path: '#/coach/dashboard'
             },
             {
-              id: 'coach_teaching_group',
-              label: isEn ? 'Teaching & Attendance' : 'Lịch dạy & Điểm danh',
+              id: 'coach_schedule_group',
+              label: isEn ? 'Schedule & Attendance' : 'Lịch & Điểm danh',
               icon: 'calendar_month',
               subItems: [
                 { label: isEn ? 'Teaching Schedule' : 'Lịch giảng dạy', path: '#/coach/schedule' },
                 { label: isEn ? 'Attendance Report' : 'Báo cáo điểm danh', path: '#/coach/attendance' },
-                { label: isEn ? 'Student List' : 'Danh sách học viên', path: '#/coach/members' }
+                { label: isEn ? 'Leave Request' : 'Xin nghỉ phép', path: '#/coach/support' }
               ]
             },
+            {
+              id: 'coach_students_group',
+              label: isEn ? 'Student Management' : 'Quản lý Học viên',
+              icon: 'group',
+              subItems: [
+                { label: isEn ? 'Student Profiles' : 'Hồ sơ học viên PT', path: '#/coach/members' },
+                { label: isEn ? 'Interaction & Chat' : 'Tương tác & Chat', path: '#/coach/notifications' }
+              ]
+            }
+          ]
+        },
+        {
+          category: isEn ? 'PROFESSIONAL' : 'CHUYÊN MÔN',
+          items: [
             {
               id: 'coach_plans_group',
-              label: isEn ? 'Lesson Plans & Training' : 'Giáo án & Chuyên môn',
+              label: isEn ? 'Lesson Plans & Nutrition' : 'Giáo án & Dinh dưỡng',
               icon: 'fitness_center',
               subItems: [
-                { label: isEn ? 'Create Lesson Plans' : 'Tạo giáo án rèn luyện', path: '#/coach/training-plan' },
+                { label: isEn ? 'Create Workout Plans' : 'Tạo giáo án rèn luyện', path: '#/coach/training-plan' },
                 { label: isEn ? 'Track Progress' : 'Ghi nhận tiến độ', path: '#/coach/progress' },
-                { label: isEn ? 'AI Lesson Recommendations' : 'Gợi ý giáo án AI', path: '#/coach/ai-recommendation' }
+                { label: isEn ? 'AI Suggestions' : 'Gợi ý AI', path: '#/coach/ai-recommendation' }
               ]
+            }
+          ]
+        },
+        {
+          category: isEn ? 'PERSONAL & OPERATIONS' : 'CÁ NHÂN & VẬN HÀNH',
+          items: [
+            {
+              id: 'coach_salary_kpi',
+              label: isEn ? 'Salary & KPI' : 'Lương & KPI',
+              icon: 'monitoring',
+              path: '#/coach/professional'
             },
             {
-              id: 'coach_hub',
-              label: 'Coach Professional Hub',
-              icon: 'workspace_premium',
+              id: 'coach_resources',
+              label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị',
+              icon: 'inventory_2',
               path: '#/coach/professional'
             }
           ]
@@ -133,8 +158,8 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
           items: [
             {
               id: 'coach_notifications',
-              label: isEn ? 'Send Exercises / Notices' : 'Gửi bài tập / Thông báo',
-              icon: 'outgoing_mail',
+              label: isEn ? 'Send Notices / Workouts' : 'Gửi thông báo',
+              icon: 'campaign',
               path: '#/coach/notifications'
             },
             {
@@ -401,10 +426,10 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
                         onClose?.();
                       }
                     }}
-                    className={`flex items-center justify-between px-3 py-2 rounded-lg text-xs font-semibold transition-colors ${
+                    className={`flex items-center justify-between px-3 py-2 rounded-[8px] text-xs transition-colors ${
                       isActive
-                        ? 'bg-[#EBF2FC] dark:bg-blue-900/40 text-[#1A3B8B] dark:text-blue-300 font-bold shadow-2xs'
-                        : 'text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1A3B8B] dark:hover:text-blue-400'
+                        ? 'bg-[#f1f5f9] dark:bg-slate-800 text-[#1e3a8a] dark:text-blue-400 font-bold shadow-2xs'
+                        : 'text-slate-700 dark:text-slate-300 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 hover:text-[#1e3a8a] dark:hover:text-blue-400'
                     }`}
                   >
                     <div className="flex items-center gap-2.5 truncate">
