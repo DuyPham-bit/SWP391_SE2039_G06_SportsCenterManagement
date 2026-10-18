@@ -75,19 +75,21 @@ export function CoachProfessionalHub() {
   const { language } = useLanguage();
   const isEn = language === 'en';
 
-  const [tab, setTab] = useState('schedule');
+  const getInitialTab = () => {
+    const hash = window.location.hash || '';
+    if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) return 'facilities';
+    return 'performance';
+  };
+
+  const [tab, setTab] = useState(getInitialTab);
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [error, setError] = useState('');
 
   const tabsConfig = [
-    { id: 'schedule', icon: 'calendar_month', label: isEn ? 'Schedule & Leaves' : 'Lịch & Nghỉ phép' },
-    { id: 'clients', icon: 'clinical_notes', label: isEn ? 'Enrolled Students' : 'Học viên' },
-    { id: 'programs', icon: 'fitness_center', label: isEn ? 'Plans & Nutrition' : 'Giáo án & Dinh dưỡng' },
-    { id: 'communication', icon: 'forum', label: isEn ? 'Interaction & Chat' : 'Tương tác & Chat' },
     { id: 'performance', icon: 'monitoring', label: isEn ? 'KPI & Income' : 'KPI & Thu nhập' },
-    { id: 'facilities', icon: 'sports_gymnastics', label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị' }
+    { id: 'facilities', icon: 'inventory_2', label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị' }
   ];
 
   const load = async () => {
@@ -105,6 +107,16 @@ export function CoachProfessionalHub() {
 
   useEffect(() => {
     load();
+    const handleHash = () => {
+      const hash = window.location.hash || '';
+      if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) {
+        setTab('facilities');
+      } else if (hash.includes('tab=performance') || hash.includes('tab=kpi')) {
+        setTab('performance');
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
   const act = async (fn, successMsg) => {

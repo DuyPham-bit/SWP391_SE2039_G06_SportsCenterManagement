@@ -42,6 +42,10 @@ export function AppLayout({ children, currentPath }) {
       '#/coach/progress': 'nav.coach_progress',
       '#/coach/notifications': 'nav.coach_notifications',
       '#/coach/ai-recommendation': 'nav.coach_ai_recommendation',
+      '#/coach/salary-kpi': 'nav.coach_salary_kpi',
+      '#/coach/kpi': 'nav.coach_salary_kpi',
+      '#/coach/resources': 'nav.coach_resources',
+      '#/coach/equipment': 'nav.coach_resources',
       '#/coach/professional': 'nav.coach_professional',
       '#/coach/support': 'nav.coach_support',
       // Manager

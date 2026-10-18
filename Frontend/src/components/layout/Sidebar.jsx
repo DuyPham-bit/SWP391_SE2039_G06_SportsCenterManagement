@@ -146,13 +146,13 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
               id: 'coach_salary_kpi',
               label: isEn ? 'KPI & Income' : 'KPI & Thu nhập',
               icon: 'monitoring',
-              path: '#/coach/professional'
+              path: '#/coach/salary-kpi'
             },
             {
               id: 'coach_resources',
               label: isEn ? 'Resources & Equipment' : 'Tài nguyên & Thiết bị',
               icon: 'inventory_2',
-              path: '#/coach/professional'
+              path: '#/coach/resources'
             }
           ]
         }
