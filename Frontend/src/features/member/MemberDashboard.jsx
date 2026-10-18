@@ -314,8 +314,9 @@ export function MemberDashboard() {
             title: 'Trợ lý Thể Thao AI',
             subtitle: 'Hỏi đáp giáo án & dinh dưỡng',
             color: 'from-fuchsia-600 to-pink-600',
-            badge: 'AI 24/7',
-            badgeColor: 'bg-fuchsia-50 text-fuchsia-700'
+            badge: 'Popup 24/7',
+            badgeColor: 'bg-fuchsia-50 text-fuchsia-700',
+            isAiPopup: true
           }
         ]
       : []),
@@ -485,6 +486,12 @@ export function MemberDashboard() {
             <a
               key={item.href}
               href={item.href}
+              onClick={(e) => {
+                if (item.isAiPopup) {
+                  e.preventDefault();
+                  window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
+                }
+              }}
               className="group relative p-3.5 bg-white hover:bg-slate-50/80 border border-slate-200/90 hover:border-red-300 rounded-2xl shadow-sm hover:shadow-md transition-all duration-200 flex flex-col justify-between active:scale-[0.98]"
             >
               <div className="flex items-start justify-between">
