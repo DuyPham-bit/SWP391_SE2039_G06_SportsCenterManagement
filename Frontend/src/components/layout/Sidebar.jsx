@@ -92,39 +92,66 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
     if (normalizedRole === 'COACH') {
       return [
         {
-          category: isEn ? 'COACHING' : 'GIẢNG DẠY',
+          category: isEn ? 'TEACHING & STUDENTS' : 'GIẢNG DẠY & HỌC VIÊN',
           items: [
             {
               id: 'coach_dashboard',
-              label: isEn ? 'Coach Overview' : 'Tổng quan giảng viên',
-              icon: 'sports',
+              label: isEn ? 'Coach Overview' : 'Tổng quan HLV',
+              icon: 'dashboard',
               path: '#/coach/dashboard'
             },
             {
-              id: 'coach_teaching_group',
-              label: isEn ? 'Teaching & Attendance' : 'Lịch dạy & Điểm danh',
+              id: 'coach_schedule_group',
+              label: isEn ? 'Schedule & Attendance' : 'Lịch & Điểm danh',
               icon: 'calendar_month',
               subItems: [
                 { label: isEn ? 'Teaching Schedule' : 'Lịch giảng dạy', path: '#/coach/schedule' },
                 { label: isEn ? 'Attendance Report' : 'Báo cáo điểm danh', path: '#/coach/attendance' },
-                { label: isEn ? 'Student List' : 'Danh sách học viên', path: '#/coach/members' }
+                { label: isEn ? 'Leave Request' : 'Xin nghỉ phép', path: '#/coach/support?type=leave' }
               ]
             },
             {
+              id: 'coach_members_group',
+              label: isEn ? 'Student Management' : 'Quản lý Học viên',
+              icon: 'groups',
+              subItems: [
+                { label: isEn ? 'Student Profiles' : 'Hồ sơ học viên', path: '#/coach/members' },
+                { label: isEn ? 'Chat & Interaction' : 'Tương tác & Chat', path: '#/coach/notifications' }
+              ]
+            }
+          ]
+        },
+        {
+          category: isEn ? 'PROFESSIONAL' : 'CHUYÊN MÔN',
+          items: [
+            {
               id: 'coach_plans_group',
-              label: isEn ? 'Lesson Plans & Training' : 'Giáo án & Chuyên môn',
+              label: isEn ? 'Lesson Plans & Nutrition' : 'Giáo án & Dinh dưỡng',
               icon: 'fitness_center',
               subItems: [
                 { label: isEn ? 'Create Lesson Plans' : 'Tạo giáo án rèn luyện', path: '#/coach/training-plan' },
+                { label: isEn ? 'Nutrition Menu' : 'Thực đơn dinh dưỡng', path: '#/coach/training-plan?tab=nutrition' },
                 { label: isEn ? 'Track Progress' : 'Ghi nhận tiến độ', path: '#/coach/progress' },
-                { label: isEn ? 'AI Lesson Recommendations' : 'Gợi ý giáo án AI', path: '#/coach/ai-recommendation' }
+                { label: isEn ? 'AI Recommendations' : 'Gợi ý AI', path: '#/coach/ai-recommendation' }
               ]
+            }
+          ]
+        },
+        {
+          category: isEn ? 'PERSONAL & OPERATIONS' : 'CÁ NHÂN & VẬN HÀNH',
+          items: [
+            {
+              id: 'coach_kpi',
+              label: isEn ? 'Salary & KPI' : 'Lương & KPI',
+              icon: 'trending_up',
+              path: '#/coach/professional?tab=kpi',
+              badge: 'A+'
             },
             {
-              id: 'coach_hub',
-              label: 'Coach Professional Hub',
-              icon: 'workspace_premium',
-              path: '#/coach/professional'
+              id: 'coach_resources',
+              label: isEn ? 'Resources & Equipment' : 'Tài nguyên & Thiết bị',
+              icon: 'inventory_2',
+              path: '#/coach/professional?tab=facilities'
             }
           ]
         },
@@ -134,7 +161,7 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
             {
               id: 'coach_notifications',
               label: isEn ? 'Send Exercises / Notices' : 'Gửi bài tập / Thông báo',
-              icon: 'outgoing_mail',
+              icon: 'send',
               path: '#/coach/notifications'
             },
             {
