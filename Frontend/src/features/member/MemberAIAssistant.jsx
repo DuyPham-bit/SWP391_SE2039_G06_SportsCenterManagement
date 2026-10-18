@@ -317,9 +317,9 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                 window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
                 showSuccess('Đã mở Trợ lý AI dạng popup ở góc phải màn hình!');
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold rounded-xl transition duration-150 shadow-md shadow-red-950/40 active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white border border-[#81B29A]/40 text-xs font-bold rounded-xl transition duration-150 shadow-md active:scale-95 cursor-pointer font-sans"
             >
-              <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+              <span className="material-symbols-outlined text-[16px] text-[#81B29A]">open_in_new</span>
               <span>Mở Popup góc màn hình</span>
             </button>
 
