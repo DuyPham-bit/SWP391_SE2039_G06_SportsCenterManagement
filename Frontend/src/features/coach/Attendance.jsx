@@ -1,12 +1,21 @@
 import React, { useState, useEffect } from 'react';
 import { coachApi } from '../../services/api.js';
-import { useToast } from '../../context/ToastContext.js';
-import { CoachError, CoachPeriod, coachInput, useTeachingSessions } from './CoachShared.js';
+import { useToast } from '../../context/ToastContext.jsx';
+import { CoachError, CoachPeriod, coachInput, useTeachingSessions } from './CoachShared.jsx';
 import { canAttendSession } from './coachOverview.js';
-
-const statuses = { PRESENT: 'Có mặt', ABSENT: 'Vắng mặt', LATE: 'Đến muộn', EXCUSED: 'Vắng có phép' };
+import { useLanguage } from '../../context/LanguageContext.jsx';
 
 export function Attendance() {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
+  const statuses = {
+    PRESENT: isEn ? 'Present' : 'Có mặt',
+    ABSENT: isEn ? 'Absent' : 'Vắng mặt',
+    LATE: isEn ? 'Late' : 'Đến muộn',
+    EXCUSED: isEn ? 'Excused' : 'Vắng có phép'
+  };
+
   const schedule = useTeachingSessions(30, new URLSearchParams(window.location.hash.split('?')[1]).get('date'));
   const { showSuccess, showError } = useToast();
   const [selectedId, setSelectedId] = useState(Number(new URLSearchParams(window.location.hash.split('?')[1]).get('sessionId')) || '');
@@ -36,13 +45,20 @@ export function Attendance() {
   const save = async () => {
     if (!canAttendSession(session) || saving) return;
     const payload = Object.values(records);
-    if (payload.some(r => !r.status)) { showError('Chọn trạng thái cho từng học viên trước khi lưu.'); return; }
+    if (payload.some(r => !r.status)) {
+      showError(isEn ? 'Please select attendance status for each student before saving.' : 'Chọn trạng thái cho từng học viên trước khi lưu.');
+      return;
+    }
     setSaving(true);
     try {
       await coachApi.takeAttendance(session.id, null, null, null, payload);
-      showSuccess('Đã lưu kết quả điểm danh.'); setVersion(v => v + 1);
-    } catch (e) { showError(e); }
-    finally { setSaving(false); }
+      showSuccess(isEn ? 'Attendance results saved successfully.' : 'Đã lưu kết quả điểm danh.');
+      setVersion(v => v + 1);
+    } catch (e) {
+      showError(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (
@@ -51,13 +67,15 @@ export function Attendance() {
       <div>
         <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-[#1A3B8B] border border-blue-200 text-xs font-bold uppercase tracking-wider mb-2">
           <span className="w-2 h-2 rounded-full bg-[#1A3B8B]" />
-          <span>Điểm danh ca dạy</span>
+          <span>{isEn ? 'Session Attendance' : 'Điểm danh ca dạy'}</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          Báo Cáo Điểm Danh Ca Dạy
+          {isEn ? 'Session Attendance Tracking' : 'Báo Cáo Điểm Danh Ca Dạy'}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
-          Ghi nhận tình trạng hiện diện của từng học viên theo ca dạy, cập nhật trực tiếp vào hệ thống quản lý SCMS.
+          {isEn
+            ? 'Record student attendance per teaching session, updating directly to the SCMS management system.'
+            : 'Ghi nhận tình trạng hiện diện của từng học viên theo ca dạy, cập nhật trực tiếp vào hệ thống quản lý SCMS.'}
         </p>
       </div>
 
@@ -68,19 +86,21 @@ export function Attendance() {
       {/* 3. Session Selection Card */}
       <div className="bg-white p-5 rounded-[20px] border border-slate-200/90 shadow-xs space-y-3">
         <label className="block text-xs font-bold uppercase tracking-wider text-slate-700">
-          Chọn ca dạy cần điểm danh
+          {isEn ? 'Select teaching session for attendance' : 'Chọn ca dạy cần điểm danh'}
           <select
-            aria-label="Chọn ca dạy"
+            aria-label={isEn ? 'Select session' : 'Chọn ca dạy'}
             disabled={saving || schedule.loading}
             className={`${coachInput} mt-1.5 font-semibold text-slate-800`}
             value={session?.id || ''}
             onChange={e => setSelectedId(Number(e.target.value))}
           >
-            {!schedule.sessions.length && <option value="">Chưa có ca dạy trong khoảng ngày</option>}
+            {!schedule.sessions.length && (
+              <option value="">{isEn ? 'No sessions in date range' : 'Chưa có ca dạy trong khoảng ngày'}</option>
+            )}
             {schedule.sessions.map(s => (
               <option key={s.id} value={s.id}>
                 {s.name} · {s.sessionDate} · {s.timeSlot} · {s.roomName}
-                {s.status === 'CANCELLED' ? ' (Đã hủy)' : ''}
+                {s.status === 'CANCELLED' ? (isEn ? ' (Cancelled)' : ' (Đã hủy)') : ''}
               </option>
             ))}
           </select>
@@ -100,7 +120,7 @@ export function Attendance() {
             <span>·</span>
             <span className="inline-flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px] text-slate-400">location_on</span>
-              {session.roomName || 'Cụm sân Olympic'}
+              {session.roomName || (isEn ? 'Olympic Facility' : 'Cụm sân Olympic')}
             </span>
           </div>
         )}
@@ -109,7 +129,11 @@ export function Attendance() {
       {session && !canAttendSession(session) && (
         <div className="p-4 bg-amber-50/80 border border-amber-200 text-amber-900 rounded-2xl text-xs sm:text-sm flex items-center gap-2.5">
           <span className="material-symbols-outlined text-amber-600 text-[20px] shrink-0">info</span>
-          <span>Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.</span>
+          <span>
+            {isEn
+              ? 'Attendance can only be recorded once the session has started and is not cancelled.'
+              : 'Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.'}
+          </span>
         </div>
       )}
 
@@ -118,11 +142,11 @@ export function Attendance() {
       {loading || schedule.loading ? (
         <div className="p-12 text-center bg-white rounded-2xl border border-slate-200/90 text-sm text-slate-500">
           <span className="inline-block w-4 h-4 border-2 border-[#81B29A] border-t-transparent rounded-full animate-spin mr-2" />
-          Đang tải danh sách học viên điểm danh...
+          {isEn ? 'Loading student attendance roster...' : 'Đang tải danh sách học viên điểm danh...'}
         </div>
       ) : !error && !schedule.error && session && !members.length ? (
         <div className="p-12 text-center bg-white rounded-2xl border border-dashed border-slate-300 text-sm text-slate-500">
-          Chưa có học viên nào đặt chỗ cho buổi học này.
+          {isEn ? 'No students have booked for this session yet.' : 'Chưa có học viên nào đặt chỗ cho buổi học này.'}
         </div>
       ) : null}
 
@@ -161,20 +185,20 @@ export function Attendance() {
                   <div>
                     <h2 className="font-bold text-slate-900 text-sm">{m.memberName}</h2>
                     <p className="text-xs text-slate-500 mt-0.5">
-                      <span className="font-bold text-[#1A3B8B]">{m.memberCode}</span> · {m.phone || 'Chưa có SĐT'}
+                      <span className="font-bold text-[#1A3B8B]">{m.memberCode}</span> · {m.phone || (isEn ? 'No phone' : 'Chưa có SĐT')}
                     </p>
                   </div>
                 </div>
 
                 <div>
                   <select
-                    aria-label={'Điểm danh ' + m.memberName}
+                    aria-label={(isEn ? 'Attendance for ' : 'Điểm danh ') + m.memberName}
                     className={coachInput}
                     disabled={saving || !canAttendSession(session)}
                     value={records[m.memberId]?.status || ''}
                     onChange={e => change(m.memberId, 'status', e.target.value)}
                   >
-                    <option value="">Chưa điểm danh</option>
+                    <option value="">{isEn ? 'Not recorded yet' : 'Chưa điểm danh'}</option>
                     {Object.entries(statuses).map(([key, name]) => (
                       <option key={key} value={key}>{name}</option>
                     ))}
@@ -183,10 +207,10 @@ export function Attendance() {
 
                 <div>
                   <input
-                    aria-label={'Ghi chú ' + m.memberName}
+                    aria-label={(isEn ? 'Notes for ' : 'Ghi chú ') + m.memberName}
                     className={coachInput}
                     maxLength={500}
-                    placeholder="Ghi chú đánh giá / biểu hiện"
+                    placeholder={isEn ? 'Performance / behavioral notes' : 'Ghi chú đánh giá / biểu hiện'}
                     disabled={saving || !canAttendSession(session)}
                     value={records[m.memberId]?.note || ''}
                     onChange={e => change(m.memberId, 'note', e.target.value)}
@@ -204,7 +228,7 @@ export function Attendance() {
                 className="px-5 py-2.5 rounded-lg bg-[#1A3B8B] hover:bg-[#142F70] text-white text-xs font-semibold shadow-xs hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">fact_check</span>
-                <span>{saving ? 'Đang lưu...' : 'Lưu Kết Quả Điểm Danh'}</span>
+                <span>{saving ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save Attendance Results' : 'Lưu Kết Quả Điểm Danh')}</span>
               </button>
             </div>
           )}
