@@ -405,7 +405,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
   return (
     <>
-      {/* 1. Floating Launch Bubble (When Closed) */}
+      {/* 1. Floating Launch Bubble (When Closed) - Ultra-compact Circular FAB */}
       {!isOpen && (
         <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 animate-in fade-in zoom-in-95 duration-300">
           <button
@@ -416,69 +416,68 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               setUnreadCount(0);
             }}
             aria-label="Mở Trợ lý Thể thao AI SCMS"
-            title="Nhấn để trò chuyện cùng Trợ lý Thể thao AI SCMS 24/7"
-            className="group relative flex items-center gap-3 p-2.5 sm:px-4 sm:py-3 rounded-full bg-[#1E2235] text-white border border-[#81B29A]/50 shadow-xl hover:shadow-2xl hover:border-[#81B29A] transition-all duration-300 active:scale-95 cursor-pointer font-sans"
+            className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#1E2235] text-white border border-[#81B29A]/60 shadow-xl hover:shadow-2xl hover:border-[#81B29A] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer font-sans"
           >
             {/* Outer pulsating glow ring */}
-            <span className="absolute -inset-0.5 rounded-full bg-gradient-to-r from-[#81B29A] via-[#F2CC8F] to-[#81B29A] opacity-35 blur-sm group-hover:opacity-75 transition duration-300 animate-pulse pointer-events-none" />
+            <span className="absolute -inset-0.5 rounded-full bg-gradient-to-tr from-[#81B29A] via-[#F2CC8F] to-[#81B29A] opacity-30 blur-sm group-hover:opacity-75 transition duration-300 animate-pulse pointer-events-none" />
 
-            {/* Inner Content */}
-            <div className="relative z-10 flex items-center gap-2.5">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-[#3D405B] border border-[#81B29A]/60 flex items-center justify-center text-[#81B29A] shadow-sm shrink-0">
-                <span className="material-symbols-outlined text-[20px] sm:text-[22px] group-hover:rotate-12 transition-transform duration-300">
-                  smart_toy
-                </span>
-              </div>
-
-              <div className="hidden sm:flex flex-col text-left">
-                <div className="flex items-center gap-1.5 leading-none">
-                  <span className="font-sans font-bold text-xs uppercase tracking-wider text-white">
-                    Trợ Lý AI SCMS
-                  </span>
-                  <span className="px-1.5 py-0.5 rounded-full bg-[#F2CC8F] text-[#1E2235] text-[9px] font-black uppercase tracking-wider">
-                    PRO
-                  </span>
-                </div>
-                <span className="text-[10px] text-slate-300 font-medium mt-1 leading-none flex items-center gap-1">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#81B29A] animate-pulse" />
-                  Hỏi đáp lịch & bài tập 24/7
-                </span>
-              </div>
+            {/* Inner Icon */}
+            <div className="relative z-10 w-full h-full rounded-full flex items-center justify-center text-[#81B29A] group-hover:text-[#F2CC8F] transition-colors">
+              <span className="material-symbols-outlined text-[24px] sm:text-[26px] group-hover:rotate-12 transition-transform duration-300">
+                smart_toy
+              </span>
             </div>
+
+            {/* Online Green Pulse Indicator */}
+            <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-[#81B29A] border-2 border-[#1E2235] shadow-sm flex items-center justify-center z-20">
+              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
+            </span>
 
             {/* Unread Message Pill Badge */}
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 px-2 py-0.5 rounded-full bg-[#E07A5F] text-white text-[10px] font-bold shadow-md animate-bounce">
+              <span className="absolute -top-1 -right-1 px-1.5 min-w-[20px] h-5 rounded-full bg-[#E07A5F] text-white text-[10px] font-bold shadow-md flex items-center justify-center animate-bounce z-20">
                 {unreadCount}
               </span>
             )}
+
+            {/* Sleek Tooltip on hover (appears to the left) */}
+            <div className="hidden sm:flex absolute right-full mr-3 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E2235]/95 backdrop-blur-md border border-[#81B29A]/40 text-white text-xs font-semibold whitespace-nowrap shadow-xl opacity-0 translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
+              <span>Trợ Lý AI SCMS</span>
+              <span className="px-1.5 py-0.5 rounded bg-[#F2CC8F] text-[#1E2235] text-[9px] font-black uppercase tracking-wider">
+                PRO
+              </span>
+            </div>
           </button>
         </div>
       )}
 
       {/* 2. Minimized Bar State */}
       {isOpen && isMinimized && (
-        <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 animate-in fade-in slide-in-from-bottom-2 duration-200">
-          <div className="flex items-center gap-3 px-4 py-3 rounded-2xl bg-[#1E2235] text-white border border-[#81B29A]/50 shadow-2xl font-sans">
-            <div className="w-8 h-8 rounded-xl bg-[#3D405B] flex items-center justify-center text-[#81B29A] shrink-0 border border-[#81B29A]/40">
-              <span className="material-symbols-outlined text-[18px]">smart_toy</span>
-            </div>
-            <div className="flex flex-col text-left cursor-pointer" onClick={() => setIsMinimized(false)}>
+        <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 animate-in fade-in zoom-in-95 duration-200">
+          <div className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-[#1E2235] text-white border border-[#81B29A]/50 shadow-2xl font-sans">
+            <button
+              type="button"
+              onClick={() => setIsMinimized(false)}
+              className="flex items-center gap-2 text-left cursor-pointer hover:opacity-90 transition"
+              title="Nhấn để mở lại Trợ lý AI"
+            >
+              <div className="w-7 h-7 rounded-full bg-[#3D405B] flex items-center justify-center text-[#81B29A] shrink-0 border border-[#81B29A]/40">
+                <span className="material-symbols-outlined text-[16px]">smart_toy</span>
+              </div>
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                Trợ Lý AI SCMS
-                <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
+                AI SCMS
+                <span className="w-1.5 h-1.5 rounded-full bg-[#81B29A] animate-pulse" />
               </span>
-              <span className="text-[10px] text-[#A8DADC]">Cuộc trò chuyện đang mở</span>
-            </div>
+            </button>
 
-            <div className="flex items-center gap-1 ml-2">
+            <div className="flex items-center gap-0.5 border-l border-slate-700/80 pl-1.5">
               <button
                 type="button"
                 onClick={() => setIsMinimized(false)}
-                title="Phóng to cửa sổ"
-                className="p-1.5 rounded-lg text-slate-300 hover:text-[#F2CC8F] hover:bg-white/10 transition cursor-pointer"
+                title="Mở rộng"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-300 hover:text-[#F2CC8F] hover:bg-white/10 transition cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[18px]">open_in_full</span>
+                <span className="material-symbols-outlined text-[16px]">open_in_full</span>
               </button>
               <button
                 type="button"
@@ -487,9 +486,9 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                   setIsOpen(false);
                 }}
                 title="Đóng"
-                className="p-1.5 rounded-lg text-slate-400 hover:text-[#E07A5F] hover:bg-white/10 transition cursor-pointer"
+                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-[#E07A5F] hover:bg-white/10 transition cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[18px]">close</span>
+                <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
             </div>
           </div>
