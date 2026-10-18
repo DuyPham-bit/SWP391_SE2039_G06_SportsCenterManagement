@@ -84,9 +84,19 @@ export function WorkoutProgress() {
     } catch (err) { showError(err); }
     finally { setSaving(false); }
   };
-  return <div className="space-y-5">
-    <h1 className="text-2xl font-black">Kết Quả & Tiến Độ Tập Luyện</h1>
-    <p className="text-sm text-slate-500">Ghi kết quả theo buổi đã kết thúc; theo dõi chỉ số và nhận xét trong từng lớp.</p>
+  return <div className="space-y-6">
+    <div>
+      <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30 text-xs font-bold uppercase tracking-wider mb-2">
+        <span className="w-2 h-2 rounded-full bg-[#81B29A]" />
+        <span>Tiến độ &amp; Đánh giá</span>
+      </div>
+      <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E2235] tracking-tight">
+        Kết Quả &amp; Tiến Độ Tập Luyện
+      </h1>
+      <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
+        Ghi nhận kết quả sau buổi tập đã kết thúc; theo dõi sự cải thiện thể lực và gửi phản hồi kỹ thuật trực tiếp cho học viên.
+      </p>
+    </div>
     <CoachError message={error} retry={load} />
     {loading ? <p>Đang tải lớp và kết quả...</p> : !error && <>
       <div className="grid sm:grid-cols-2 gap-4 p-4 bg-white border rounded-xl">
@@ -109,7 +119,10 @@ export function WorkoutProgress() {
       <section className="space-y-3">
         <h2 className="font-bold">Chọn khoảng ngày của buổi tập cần ghi kết quả</h2>
         <CoachPeriod schedule={schedule} /><CoachError message={schedule.error} retry={schedule.reload} />
-        <button onClick={open} disabled={!member || !sessions.length || schedule.loading || Boolean(schedule.error)} className="px-4 py-2 rounded-lg bg-red-600 text-white disabled:opacity-50">Ghi kết quả sau buổi tập</button>
+        <button onClick={open} disabled={!member || !sessions.length || schedule.loading || Boolean(schedule.error)} className="px-5 py-2.5 rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all flex items-center gap-2 disabled:opacity-50 cursor-pointer">
+          <span className="material-symbols-outlined text-[18px]">edit_note</span>
+          <span>Ghi kết quả sau buổi tập</span>
+        </button>
         {!schedule.loading && !schedule.error && !sessions.length && <p className="text-sm text-slate-500">Chưa có buổi tập đã kết thúc trong khoảng ngày này.</p>}
       </section>
       <section className="space-y-3">
@@ -135,7 +148,9 @@ export function WorkoutProgress() {
         </label>)}</div>
         <label className="block text-xs font-bold">Kết quả bài tập *<textarea aria-label="Kết quả bài tập" className={coachInput} required maxLength={1000} rows={3} value={form.workoutResult} onChange={e => change('workoutResult', e.target.value)} /></label>
         <label className="block text-xs font-bold">Nhận xét & đánh giá tiến độ<textarea aria-label="Nhận xét tiến độ" className={coachInput} maxLength={1000} rows={3} value={form.coachFeedback} onChange={e => change('coachFeedback', e.target.value)} /></label>
-        <button disabled={saving || !session} className="px-4 py-2 rounded-lg bg-red-600 text-white disabled:opacity-50">{saving ? 'Đang lưu...' : 'Lưu Kết Quả'}</button>
+        <button disabled={saving || !session} className="px-5 py-2.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all disabled:opacity-50 cursor-pointer">
+          {saving ? 'Đang lưu...' : 'Lưu Kết Quả'}
+        </button>
       </form>
     </Modal>
   </div>;

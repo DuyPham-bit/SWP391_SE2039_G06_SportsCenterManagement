@@ -1,0 +1,1995 @@
+/*
+ * TIYA GOLF CLUB THEME — 100% REPLICA ADAPTATION FOR SCMS OLYMPIC ARENA
+ * Faithful conversion of TemplateMo 587 Tiya Golf Club (Bootstrap 5) to React/Pure CSS
+ * Preserves 100% of user content, forms, APIs, and navigation links.
+ */
+
+/* ─────────────────────────────────────────────────────────────
+   GOOGLE FONTS — DM Sans (Tiya Original) + Bebas Neue
+───────────────────────────────────────────────────────────── */
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Bebas+Neue&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
+
+/* ─────────────────────────────────────────────────────────────
+   TIYA DESIGN TOKENS (100% Tiya Golf Club Variables)
+───────────────────────────────────────────────────────────── */
+:root {
+  --white-color:               #ffffff;
+  --primary-color:             #81B29A; /* Tiya Sage Green */
+  --secondary-color:           #3D405B; /* Tiya Dark Slate Navy */
+  --section-bg-color:          #F4F1DE; /* Tiya Warm Cream */
+  --custom-btn-bg-color:       #F2CC8F; /* Tiya Gold Accent */
+  --custom-btn-bg-hover-color: #E07A5F; /* Tiya Terracotta Coral */
+  --dark-color:                #000000;
+  --p-color:                   #717275; /* Tiya Muted Text */
+  --link-hover-color:          #E07A5F;
+  --scms-red:                  #DC2626;
+
+  --body-font-family:          'DM Sans', sans-serif;
+  --headline-font-family:      'Bebas Neue', 'DM Sans', sans-serif;
+
+  --h1-font-size:              42px;
+  --h2-font-size:              36px;
+  --h3-font-size:              28px;
+  --h4-font-size:              24px;
+  --h5-font-size:              22px;
+  --h6-font-size:              20px;
+  --p-font-size:               18px;
+  --menu-font-size:            16px;
+  --btn-font-size:             14px;
+
+  --border-radius-large:       100px;
+  --border-radius-medium:      20px;
+  --border-radius-small:       10px;
+
+  --font-weight-normal:        400;
+  --font-weight-medium:        500;
+  --font-weight-bold:          700;
+  --tiya-section-pad:          100px;
+}
+
+/* Base Body */
+.tiya-page {
+  background-color: var(--white-color);
+  font-family: var(--body-font-family);
+  color: var(--p-color);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+.tiya-page ::selection {
+  background-color: var(--primary-color);
+  color: var(--white-color);
+}
+
+.tiya-page h1,
+.tiya-page h2,
+.tiya-page h3,
+.tiya-page h4,
+.tiya-page h5,
+.tiya-page h6 {
+  color: var(--dark-color);
+  font-weight: var(--font-weight-medium);
+  letter-spacing: -1px;
+}
+
+.tiya-page h1 { font-size: var(--h1-font-size); font-weight: var(--font-weight-bold); }
+.tiya-page h2 { font-size: var(--h2-font-size); font-weight: var(--font-weight-bold); }
+.tiya-page h3 { font-size: var(--h3-font-size); }
+.tiya-page h4 { font-size: var(--h4-font-size); }
+.tiya-page h5 { font-size: var(--h5-font-size); }
+.tiya-page h6 { font-size: var(--h6-font-size); }
+.tiya-page p  { color: var(--p-color); font-size: var(--p-font-size); line-height: 1.7; }
+.tiya-page strong, .tiya-page b { font-weight: var(--font-weight-bold); color: var(--dark-color); }
+
+/* ─────────────────────────────────────────────────────────────
+   CUSTOM BUTTONS (Tiya 100% Rules)
+───────────────────────────────────────────────────────────── */
+.custom-btn {
+  background: var(--custom-btn-bg-color);
+  border: 2px solid transparent;
+  border-radius: var(--border-radius-large);
+  color: var(--white-color);
+  font-size: var(--btn-font-size);
+  font-weight: var(--font-weight-bold);
+  line-height: normal;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  padding: 12px 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.custom-btn:hover {
+  background: var(--custom-btn-bg-hover-color);
+  color: var(--white-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(224, 122, 95, 0.35);
+}
+
+.custom-border-btn {
+  background: transparent;
+  border: 2px solid var(--custom-btn-bg-color);
+  color: var(--custom-btn-bg-color);
+  border-radius: var(--border-radius-large);
+  font-size: var(--btn-font-size);
+  font-weight: var(--font-weight-bold);
+  padding: 10px 22px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  text-decoration: none;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  white-space: nowrap;
+}
+
+.custom-border-btn:hover {
+  background: var(--custom-btn-bg-color);
+  border-color: transparent;
+  color: var(--white-color);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(242, 204, 143, 0.35);
+}
+
+.custom-btn-bg-white {
+  background: transparent;
+  border: 2px solid var(--white-color);
+  color: var(--white-color);
+  border-radius: var(--border-radius-large);
+  padding: 10px 22px;
+  font-size: var(--btn-font-size);
+  font-weight: var(--font-weight-bold);
+  transition: all 0.3s;
+}
+
+.custom-btn-bg-white:hover {
+  background: var(--white-color);
+  color: var(--secondary-color);
+}
+
+.custom-btn-group {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.custom-btn-group .link {
+  color: var(--white-color);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color 0.3s;
+  font-size: 15px;
+}
+
+.custom-btn-group .link:hover {
+  color: var(--link-hover-color);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   NAVIGATION BAR (Tiya Header)
+───────────────────────────────────────────────────────────── */
+.tiya-navbar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  padding: 18px 0;
+  transition: background-color 0.35s ease, padding 0.35s ease, box-shadow 0.35s ease, backdrop-filter 0.35s ease;
+  background: linear-gradient(180deg, rgba(15, 23, 42, 0.75) 0%, rgba(15, 23, 42, 0) 100%);
+}
+
+.tiya-navbar.is-sticky,
+.tiya-navbar.scrolled {
+  background: rgba(30, 41, 59, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+  padding: 12px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.tiya-navbar__container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.tiya-brand {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--white-color);
+}
+
+.tiya-brand-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: linear-gradient(135deg, var(--scms-red) 0%, var(--custom-btn-bg-hover-color) 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white-color);
+  font-weight: 900;
+  font-size: 20px;
+  box-shadow: 0 4px 14px rgba(220, 38, 38, 0.35);
+  flex-shrink: 0;
+  transition: transform 0.3s;
+}
+
+.tiya-brand:hover .tiya-brand-icon {
+  transform: scale(1.05) rotate(-2deg);
+}
+
+.tiya-brand-text {
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  color: var(--white-color);
+  line-height: 1.1;
+}
+
+.tiya-brand-text small {
+  display: block;
+  font-size: 10px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 500;
+  margin-top: 2px;
+}
+
+.tiya-nav-menu {
+  display: flex;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  gap: 6px;
+}
+
+.tiya-nav-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 8px 16px;
+  border-radius: var(--border-radius-large);
+  color: var(--white-color);
+  font-size: var(--menu-font-size);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: color 0.25s, background-color 0.25s;
+  white-space: nowrap;
+}
+
+.tiya-nav-link:hover,
+.tiya-nav-link.active {
+  color: var(--custom-btn-bg-color);
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.tiya-dropdown {
+  position: relative;
+}
+
+.tiya-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 10px);
+  left: 0;
+  min-width: 260px;
+  background: var(--white-color);
+  border-radius: var(--border-radius-small);
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.175);
+  padding: 12px 0;
+  z-index: 200;
+  animation: tiyaDropIn 0.2s ease;
+}
+
+@keyframes tiyaDropIn {
+  from { opacity: 0; transform: translateY(-8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.tiya-dropdown-menu::before {
+  content: "";
+  position: absolute;
+  top: -8px;
+  left: 20px;
+  border-left: 10px solid transparent;
+  border-right: 10px solid transparent;
+  border-bottom: 10px solid var(--white-color);
+}
+
+.tiya-dropdown-item {
+  display: block;
+  padding: 8px 20px;
+  font-size: 14px;
+  color: var(--p-color);
+  font-weight: var(--font-weight-medium);
+  text-decoration: none;
+  background: none;
+  border: none;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  transition: color 0.2s, background-color 0.2s;
+}
+
+.tiya-dropdown-item:hover,
+.tiya-dropdown-item.active {
+  color: var(--link-hover-color);
+  background-color: rgba(242, 204, 143, 0.1);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   HERO SECTION (Balanced, Even Video Hero with Cinematic Overlay)
+───────────────────────────────────────────────────────────── */
+.hero-section {
+  position: relative;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #0b1120;
+  overflow: hidden;
+  padding-top: 145px;
+  padding-bottom: 85px;
+  margin-bottom: -1px;
+}
+
+.hero-section .section-overlay {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  background: linear-gradient(
+    180deg,
+    rgba(15, 23, 42, 0.45) 0%,
+    rgba(15, 23, 42, 0.15) 35%,
+    rgba(15, 23, 42, 0.25) 65%,
+    rgba(15, 23, 42, 0.55) 100%
+  );
+  z-index: 2;
+  pointer-events: none;
+}
+
+.hero-section .hero-video-bg {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  z-index: 1;
+}
+
+/* Hero Waves */
+.hero-top-wave {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: clamp(140px, 12vw, 190px);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.hero-bottom-wave {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: clamp(65px, 6vw, 95px);
+  z-index: 3;
+  pointer-events: none;
+}
+
+.hero-section .hero-container {
+  position: relative;
+  z-index: 4;
+  width: 100%;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.hero-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 18px;
+  background: rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  border-radius: var(--border-radius-large);
+  color: var(--white-color);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+}
+
+.hero-badge-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--custom-btn-bg-hover-color);
+  animation: tiyaPulse 2s infinite;
+}
+
+@keyframes tiyaPulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.5; transform: scale(1.2); }
+}
+
+.hero-section .hero-title {
+  font-family: var(--headline-font-family);
+  font-size: clamp(40px, 6vw, 76px);
+  color: #ffffff !important;
+  line-height: 1.05;
+  text-transform: uppercase;
+  margin-bottom: 20px;
+  letter-spacing: 0.02em;
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.85);
+}
+
+.hero-section .hero-desc {
+  font-size: clamp(16px, 2vw, 19px);
+  color: #ffffff !important;
+  text-shadow: 0 2px 14px rgba(0, 0, 0, 0.95);
+  font-weight: 500;
+  line-height: 1.65;
+  max-width: 720px;
+  margin-bottom: 30px;
+}
+
+/* Animated Headline 3D Rotate */
+.cd-headline {
+  display: inline-block;
+  position: relative;
+}
+
+.cd-headline.rotate-1 .cd-words-wrapper {
+  perspective: 350px;
+  -webkit-perspective: 350px;
+  display: inline-block;
+  position: relative;
+  text-align: left;
+}
+
+.cd-words-wrapper b {
+  color: var(--white-color);
+  display: inline-block;
+  position: absolute;
+  white-space: nowrap;
+  left: 0;
+  top: 0;
+  opacity: 0;
+  transform-origin: 50% 100%;
+}
+
+.cd-words-wrapper b.is-visible {
+  position: relative;
+  opacity: 1;
+  color: var(--white-color);
+  text-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
+  animation: cd-rotate-1-in 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.cd-words-wrapper b.is-hidden {
+  opacity: 0;
+  animation: cd-rotate-1-out 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+@keyframes cd-rotate-1-in {
+  0% { transform: rotateX(180deg); opacity: 0; }
+  35% { transform: rotateX(120deg); opacity: 0; }
+  65% { opacity: 0.2; }
+  100% { transform: rotateX(360deg); opacity: 1; }
+}
+
+@keyframes cd-rotate-1-out {
+  0% { transform: rotateX(0deg); opacity: 1; }
+  35% { transform: rotateX(-40deg); opacity: 0.8; }
+  65% { opacity: 0; }
+  100% { transform: rotateX(180deg); opacity: 0; }
+}
+
+/* Metrics Strip */
+.tiya-metrics-strip {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  background: rgba(15, 23, 42, 0.55);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: var(--border-radius-medium);
+  overflow: hidden;
+  margin-top: 36px;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.4);
+}
+
+.tiya-metrics-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 20px 16px;
+  border-right: 1px solid rgba(255, 255, 255, 0.12);
+  text-align: center;
+}
+
+.tiya-metrics-item:last-child {
+  border-right: none;
+}
+
+.tiya-metrics-value {
+  font-family: var(--headline-font-family);
+  font-size: 38px;
+  color: var(--custom-btn-bg-color);
+  line-height: 1;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.tiya-metrics-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.15em;
+  color: rgba(255, 255, 255, 0.88);
+  margin-top: 6px;
+}
+
+.tiya-hero__scroll-cue {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: rgba(255, 255, 255, 0.9);
+  text-shadow: 0 2px 8px rgba(0, 0, 0, 0.8);
+  font-size: 13px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: all 0.25s;
+}
+
+.tiya-hero__scroll-cue:hover {
+  color: var(--custom-btn-bg-color);
+  transform: translateY(2px);
+}
+
+.hero-sound-btn {
+  position: absolute;
+  bottom: 24px;
+  right: 24px;
+  z-index: 10;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  background: rgba(15, 23, 42, 0.7);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: var(--border-radius-large);
+  color: var(--white-color);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
+  transition: all 0.25s ease;
+}
+
+.hero-sound-btn:hover {
+  background: rgba(15, 23, 42, 0.95);
+  transform: translateY(-2px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.45);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   ABOUT SECTION (Tiya .about-section .section-padding)
+   Pure White Background (#ffffff)
+───────────────────────────────────────────────────────────── */
+.about-section {
+  background-color: var(--white-color);
+  padding: 100px 0 90px;
+  position: relative;
+}
+
+.about-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.about-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  background: rgba(129, 178, 154, 0.15);
+  border: 1px solid rgba(129, 178, 154, 0.4);
+  border-radius: var(--border-radius-large);
+  color: var(--primary-color);
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-bottom: 16px;
+}
+
+.about-title {
+  font-size: var(--h2-font-size);
+  font-weight: var(--font-weight-bold);
+  color: var(--dark-color);
+  line-height: 1.25;
+  letter-spacing: -1px;
+  margin-bottom: 18px;
+}
+
+.about-desc {
+  font-size: 17px;
+  line-height: 1.7;
+  color: var(--p-color);
+  margin-bottom: 28px;
+}
+
+.about-feature-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+  padding: 18px 20px;
+  background: var(--white-color);
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: var(--border-radius-medium);
+  margin-bottom: 14px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.02);
+  transition: border-color 0.25s, box-shadow 0.25s, transform 0.25s;
+}
+
+.about-feature-item:hover {
+  border-color: var(--primary-color);
+  box-shadow: 0 6px 20px rgba(129, 178, 154, 0.2);
+  transform: translateY(-2px);
+}
+
+.about-feature-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white-color);
+  flex-shrink: 0;
+}
+
+.about-feature-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--dark-color);
+  margin-bottom: 4px;
+}
+
+.about-feature-desc {
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--p-color);
+  margin: 0;
+}
+
+/* Stat Cards in About */
+.about-stat-card {
+  background: linear-gradient(135deg, var(--secondary-color) 0%, #2a2d47 100%);
+  border-radius: var(--border-radius-medium);
+  padding: 30px 20px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  min-height: 180px;
+  justify-content: center;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.3s;
+}
+
+.about-stat-card:hover {
+  transform: translateY(-6px);
+}
+
+.about-stat-card__bg-icon {
+  position: absolute;
+  bottom: -10px;
+  right: -8px;
+  opacity: 0.08;
+  color: white;
+  pointer-events: none;
+}
+
+.about-stat-card__icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--white-color);
+  margin-bottom: 10px;
+}
+
+.about-stat-card__number {
+  font-family: var(--headline-font-family);
+  font-size: 48px;
+  color: var(--custom-btn-bg-color);
+  line-height: 1;
+}
+
+.about-stat-card__title {
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--white-color);
+  margin-top: 8px;
+}
+
+.about-stat-card__sub {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.7);
+  margin-top: 4px;
+}
+
+/* Trust Strip in About */
+.tiya-trust-strip {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  background: var(--section-bg-color);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: var(--border-radius-medium);
+  padding: 16px 20px;
+  margin-top: 16px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.03);
+}
+
+.tiya-trust-strip__badge {
+  background: var(--primary-color);
+  color: var(--white-color);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  padding: 6px 14px;
+  border-radius: var(--border-radius-large);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SECTION BG IMAGE (Tiya Signature Frosted Glass Block with Waves)
+   Matches the exact screenshot provided by the user
+───────────────────────────────────────────────────────────── */
+.section-bg-image {
+  background-image: url('/section-bg.jpg');
+  background-repeat: no-repeat;
+  background-size: cover;
+  background-position: center;
+  position: relative;
+  overflow: hidden;
+  margin-bottom: -1px;
+}
+
+/* Top wave for section-bg-image */
+.section-bg-image-top-wave {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  margin-bottom: -2px;
+}
+
+/* Bottom wave for section-bg-image */
+.section-bg-image-bottom-wave {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  transform: rotate(180deg);
+  margin-top: -2px;
+}
+
+.section-bg-image-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 30px 24px 50px;
+  position: relative;
+  z-index: 3;
+}
+
+/* The exact Frosted Glass Block from Tiya Golf Club (matches 100% user screenshot) */
+.section-bg-image-block {
+  backdrop-filter: blur(5px) saturate(180%);
+  -webkit-backdrop-filter: blur(5px) saturate(180%);
+  background-color: rgba(255, 255, 255, 0.78);
+  border-radius: var(--border-radius-medium);
+  border: 1px solid rgba(209, 213, 219, 0.4);
+  padding: 48px;
+  max-width: 620px;
+  box-shadow: 0 15px 45px rgba(0, 0, 0, 0.12);
+}
+
+.section-bg-image-block h2 {
+  font-size: var(--h2-font-size);
+  font-weight: var(--font-weight-bold);
+  color: var(--dark-color);
+  margin-bottom: 14px;
+  line-height: 1.25;
+}
+
+.section-bg-image-block p {
+  color: var(--p-color);
+  font-size: 16px;
+  line-height: 1.7;
+  margin-bottom: 24px;
+}
+
+.section-bg-image-block .input-group {
+  background-color: var(--white-color);
+  border-radius: var(--border-radius-large);
+  padding: 8px 10px 8px 18px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.08);
+}
+
+.section-bg-image-block .input-group-text {
+  background-color: transparent;
+  border: 0;
+  color: var(--p-color);
+  padding: 0;
+  font-size: 22px;
+  display: flex;
+  align-items: center;
+}
+
+.section-bg-image-block input {
+  border: 0;
+  box-shadow: none;
+  outline: none;
+  flex: 1;
+  font-size: 15px;
+  color: var(--dark-color);
+  background: transparent;
+  min-width: 0;
+}
+
+.section-bg-image-block button {
+  background-color: var(--custom-btn-bg-color); /* #F2CC8F - Exact Gold Accent from screenshot */
+  border: 0;
+  border-radius: var(--border-radius-large) !important;
+  color: var(--white-color);
+  padding: 12px 28px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.3s;
+  white-space: nowrap;
+}
+
+.section-bg-image-block button:hover {
+  background-color: var(--custom-btn-bg-hover-color); /* #E07A5F - Exact Hover from Tiya */
+  box-shadow: 0 6px 20px rgba(224, 122, 95, 0.35);
+  transform: translateY(-2px);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   COURSES SECTION (Tiya Warm Cream #F4F1DE Background)
+───────────────────────────────────────────────────────────── */
+.courses-section {
+  background-color: var(--section-bg-color);
+  padding: 110px 0 130px;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Bottom wave of courses flowing into Facilities */
+.courses-bottom-wave {
+  position: absolute;
+  bottom: -1px;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: auto;
+  z-index: 2;
+  pointer-events: none;
+}
+
+.courses-container {
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 24px;
+  position: relative;
+  z-index: 3;
+}
+
+.courses-section-header {
+  text-align: center;
+  max-width: 860px;
+  margin: 0 auto 40px;
+}
+
+.courses-title {
+  font-size: clamp(32px, 4vw, 44px);
+  font-weight: var(--font-weight-bold);
+  color: var(--dark-color);
+  margin-bottom: 12px;
+}
+
+.courses-title span {
+  color: var(--primary-color);
+}
+
+.courses-desc {
+  font-size: 16px;
+  color: var(--p-color);
+  line-height: 1.65;
+  margin-bottom: 24px;
+}
+
+/* Filter pills on light cream */
+.courses-filter-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  margin-bottom: 36px;
+}
+
+.courses-filter-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 22px;
+  border-radius: var(--border-radius-large);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: var(--white-color);
+  color: var(--p-color);
+  cursor: pointer;
+  transition: all 0.25s;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+}
+
+.courses-filter-tab:hover {
+  color: var(--dark-color);
+  border-color: var(--primary-color);
+  transform: translateY(-1px);
+}
+
+.courses-filter-tab.active {
+  background: var(--primary-color);
+  border-color: var(--primary-color);
+  color: var(--white-color);
+  box-shadow: 0 4px 16px rgba(129, 178, 154, 0.35);
+}
+
+.courses-filter-tab__count {
+  font-size: 10px;
+  padding: 2px 8px;
+  border-radius: var(--border-radius-large);
+  background: rgba(0, 0, 0, 0.08);
+  font-weight: 800;
+}
+
+.courses-filter-tab.active .courses-filter-tab__count {
+  background: rgba(255, 255, 255, 0.25);
+  color: var(--white-color);
+}
+
+/* Tiya Style Sport Card (White on Cream) */
+.tiya-course-card {
+  background: var(--white-color);
+  border-radius: var(--border-radius-medium);
+  overflow: hidden;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  transition: transform 0.35s cubic-bezier(0.25, 0.8, 0.25, 1), box-shadow 0.35s ease, border-color 0.3s;
+  cursor: pointer;
+}
+
+.tiya-course-card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.12);
+  border-color: var(--primary-color);
+}
+
+.tiya-course-card__image-wrap {
+  position: relative;
+  height: 220px;
+  overflow: hidden;
+}
+
+.tiya-course-card__image-wrap img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s ease;
+}
+
+.tiya-course-card:hover .tiya-course-card__image-wrap img {
+  transform: scale(1.15);
+}
+
+.tiya-course-card__body {
+  padding: 22px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.tiya-course-card__title {
+  font-size: 20px;
+  font-weight: 700;
+  color: var(--dark-color);
+  margin-bottom: 6px;
+  transition: color 0.25s;
+}
+
+.tiya-course-card:hover .tiya-course-card__title {
+  color: var(--primary-color);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FACILITIES SECTION (Pure White Background #ffffff)
+───────────────────────────────────────────────────────────── */
+.facilities-section-wrapper {
+  background-color: var(--white-color);
+  padding: 0;
+  position: relative;
+}
+
+/* Wave flowing from facilities into the Slate Navy footer */
+.facilities-bottom-wave {
+  display: block;
+  width: 100%;
+  height: clamp(170px, 15vw, 255px);
+  margin-top: 16px;
+  margin-bottom: -2px;
+  z-index: 2;
+  pointer-events: none;
+}
+
+/* Organic breathing animation for waves across landing page */
+@keyframes tiyaWaveBreathe {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-4px);
+  }
+}
+
+.hero-bottom-wave,
+.courses-bottom-wave,
+.facilities-bottom-wave,
+.site-footer-wave {
+  animation: tiyaWaveBreathe 8s ease-in-out infinite alternate;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   FOOTER (Tiya .site-footer with Bottom SVG Wave)
+───────────────────────────────────────────────────────────── */
+.site-footer {
+  background-color: var(--secondary-color);
+  position: relative;
+  padding-top: 24px;
+  padding-bottom: clamp(75px, 6.5vw, 110px);
+  color: rgba(255, 255, 255, 0.7);
+  overflow: hidden;
+}
+
+.site-footer .footer-container {
+  position: relative;
+  z-index: 5;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 0 24px 20px;
+}
+
+.site-footer-wave {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  width: 100%;
+  height: clamp(60px, 5.5vw, 90px);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.site-footer-title {
+  color: var(--custom-btn-bg-color);
+  font-size: 14px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  margin-bottom: 20px;
+}
+
+.footer-link {
+  color: rgba(255, 255, 255, 0.75);
+  text-decoration: none;
+  font-size: 14px;
+  transition: color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.footer-link:hover {
+  color: var(--custom-btn-bg-color);
+}
+
+.footer-hours-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 10px;
+  font-size: 14px;
+}
+
+.footer-hours-row:last-child {
+  border-bottom: none;
+}
+
+.footer-hours-value {
+  font-weight: 700;
+  color: var(--white-color);
+}
+
+/* Social icons */
+.social-icon {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  gap: 8px;
+}
+
+.social-icon-link {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: var(--border-radius-large);
+  color: var(--white-color);
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+  transition: background 0.25s, color 0.25s;
+}
+
+.social-icon-link:hover {
+  background: var(--primary-color);
+  color: var(--white-color);
+}
+
+/* ─────────────────────────────────────────────────────────────
+   MODAL (Tiya Offcanvas & Dialogs)
+───────────────────────────────────────────────────────────── */
+/* ─────────────────────────────────────────────────────────────
+   MODAL (Tiya Offcanvas & Dialogs)
+───────────────────────────────────────────────────────────── */
+.tiya-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  background: rgba(15, 23, 42, 0.78);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  animation: tiyaFadeIn 0.25s ease-out;
+}
+
+.tiya-modal-container {
+  width: 100%;
+  max-width: 680px;
+  max-height: 90vh;
+  overflow: hidden;
+  border-radius: var(--border-radius-medium);
+  background: var(--white-color);
+  box-shadow: 0 25px 70px rgba(0, 0, 0, 0.35), 0 0 0 1px rgba(0, 0, 0, 0.05);
+  display: flex;
+  flex-direction: column;
+  animation: tiyaModalIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes tiyaModalIn {
+  from { opacity: 0; transform: scale(0.94) translateY(18px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+
+@keyframes tiyaFadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+/* Modal Header */
+.tiya-modal-header {
+  background: var(--secondary-color);
+  color: var(--white-color);
+  padding: 18px 24px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  flex-shrink: 0;
+}
+
+.tiya-modal-header__icon-box {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  background: rgba(129, 178, 154, 0.2);
+  color: var(--primary-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.tiya-modal-header__badge {
+  font-family: var(--body-font-family);
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--custom-btn-bg-color);
+  display: block;
+}
+
+.tiya-modal-header h3,
+.tiya-modal-title {
+  color: var(--white-color) !important;
+  font-family: var(--body-font-family) !important;
+  font-size: 19px !important;
+  font-weight: 700 !important;
+  letter-spacing: -0.01em !important;
+  line-height: 1.3 !important;
+  margin: 2px 0 0 !important;
+  text-transform: uppercase;
+}
+
+.tiya-modal-close-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--white-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.tiya-modal-close-btn:hover {
+  background: rgba(255, 255, 255, 0.25);
+  transform: rotate(90deg);
+  color: var(--white-color);
+}
+
+/* Modal Tabs Navigation */
+.tiya-modal-tabs {
+  display: flex;
+  align-items: center;
+  background: #F8FAFC;
+  border-bottom: 1px solid #E2E8F0;
+  padding: 0 16px;
+  flex-shrink: 0;
+  gap: 4px;
+  overflow-x: auto;
+}
+
+.tiya-modal-tab {
+  padding: 13px 18px;
+  font-family: var(--body-font-family);
+  font-size: 12.5px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #64748B;
+  background: transparent;
+  border: none;
+  border-bottom: 2.5px solid transparent;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.tiya-modal-tab:hover {
+  color: var(--secondary-color);
+}
+
+.tiya-modal-tab.active {
+  color: var(--primary-color);
+  font-weight: 700;
+  border-bottom-color: var(--primary-color);
+  background: var(--white-color);
+}
+
+/* Modal Body */
+.tiya-modal-body {
+  padding: 22px 24px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Facility Quick Summary Card */
+.tiya-modal-summary-card {
+  padding: 14px 16px;
+  background: #FAF8F5;
+  border: 1px solid rgba(61, 64, 91, 0.12);
+  border-radius: 14px;
+  margin-bottom: 20px;
+}
+
+.tiya-modal-summary-card__img {
+  width: 60px;
+  height: 60px;
+  border-radius: 10px;
+  object-fit: cover;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.tiya-modal-summary-card__title {
+  color: var(--secondary-color);
+  font-size: 15px;
+  font-weight: 700;
+  margin-bottom: 2px;
+}
+
+.tiya-modal-summary-card__meta {
+  color: var(--p-color);
+  font-size: 12px;
+  margin-bottom: 4px;
+}
+
+.tiya-modal-summary-card__price {
+  color: #92400E;
+  background: #FEF3C7;
+  padding: 2px 8px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  display: inline-block;
+}
+
+.tiya-modal-pill-btn {
+  border: 1.5px solid var(--primary-color);
+  color: var(--primary-color);
+  background: var(--white-color);
+  border-radius: var(--border-radius-large);
+  padding: 4px 14px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.tiya-modal-pill-btn:hover {
+  background: var(--primary-color);
+  color: var(--white-color);
+}
+
+/* Form Section Header */
+.tiya-modal-form-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #F1F5F9;
+  margin-bottom: 16px;
+}
+
+.tiya-modal-form-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--body-font-family);
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--secondary-color);
+}
+
+.tiya-modal-form-title .material-symbols-outlined {
+  color: var(--primary-color);
+  font-size: 20px;
+}
+
+.tiya-modal-form-subtitle {
+  font-size: 11.5px;
+  color: #64748B;
+  font-weight: 500;
+}
+
+/* Form Controls */
+.tiya-form-group {
+  margin-bottom: 14px;
+}
+
+.tiya-form-label {
+  display: block;
+  font-size: 11.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #475569;
+  margin-bottom: 6px;
+}
+
+.tiya-form-label .req {
+  color: var(--custom-btn-bg-hover-color);
+  margin-left: 2px;
+}
+
+.tiya-form-input,
+.tiya-form-select,
+.tiya-form-textarea {
+  width: 100%;
+  padding: 9px 14px;
+  font-family: var(--body-font-family);
+  font-size: 13.5px;
+  color: #1E293B;
+  background: var(--white-color);
+  border: 1.5px solid #CBD5E1;
+  border-radius: 10px;
+  transition: all 0.2s ease;
+  outline: none;
+}
+
+.tiya-form-input:focus,
+.tiya-form-select:focus,
+.tiya-form-textarea:focus {
+  border-color: var(--primary-color);
+  box-shadow: 0 0 0 3px rgba(129, 178, 154, 0.2);
+}
+
+.tiya-form-input::placeholder,
+.tiya-form-textarea::placeholder {
+  color: #94A3B8;
+}
+
+/* Extra Services Checkboxes */
+.tiya-service-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+.tiya-service-card {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1.5px solid #E2E8F0;
+  background: #F8FAFC;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 12px;
+  color: #475569;
+  user-select: none;
+}
+
+.tiya-service-card:hover {
+  background: #F1F5F9;
+  border-color: #CBD5E1;
+}
+
+.tiya-service-card.is-checked {
+  background: rgba(129, 178, 154, 0.12);
+  border-color: var(--primary-color);
+  color: #1E293B;
+  font-weight: 600;
+}
+
+.tiya-service-card input[type="checkbox"] {
+  accent-color: var(--primary-color);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+/* Modal Footer Buttons */
+.tiya-modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  gap: 12px;
+  padding-top: 16px;
+  margin-top: 16px;
+  border-top: 1px solid #E2E8F0;
+}
+
+.tiya-modal-btn-cancel {
+  padding: 9px 22px;
+  font-family: var(--body-font-family);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--border-radius-large);
+  border: 1.5px solid #CBD5E1;
+  color: #64748B;
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tiya-modal-btn-cancel:hover {
+  border-color: #94A3B8;
+  color: #1E293B;
+  background: #F8FAFC;
+}
+
+.tiya-modal-btn-submit {
+  padding: 9px 24px;
+  font-family: var(--body-font-family);
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  border-radius: var(--border-radius-large);
+  border: 2px solid transparent;
+  background: var(--custom-btn-bg-color);
+  color: var(--secondary-color);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 14px rgba(242, 204, 143, 0.35);
+  transition: all 0.25s ease;
+}
+
+.tiya-modal-btn-submit:hover {
+  background: var(--custom-btn-bg-hover-color);
+  color: var(--white-color);
+  transform: translateY(-1px);
+  box-shadow: 0 6px 18px rgba(224, 122, 95, 0.35);
+}
+
+/* Specs Tab Styles */
+.tiya-spec-section {
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 14px;
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.tiya-spec-section__title {
+  font-size: 12.5px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--secondary-color);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.tiya-spec-section__title .material-symbols-outlined {
+  color: var(--primary-color);
+  font-size: 18px;
+}
+
+.tiya-spec-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+}
+
+.tiya-spec-item {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: var(--white-color);
+  border: 1px solid #E2E8F0;
+}
+
+.tiya-spec-item__label {
+  display: block;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #64748B;
+  letter-spacing: 0.05em;
+}
+
+.tiya-spec-item__val {
+  display: block;
+  font-size: 13px;
+  font-weight: 700;
+  color: #1E293B;
+  margin-top: 2px;
+}
+
+.tiya-amenity-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 8px;
+}
+
+.tiya-amenity-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  font-size: 12.5px;
+  color: #334155;
+  font-weight: 500;
+}
+
+.tiya-amenity-item .material-symbols-outlined {
+  color: var(--primary-color);
+  font-size: 18px;
+}
+
+.tiya-price-callout {
+  padding: 14px 16px;
+  border-radius: 12px;
+  background: rgba(242, 204, 143, 0.18);
+  border: 1px solid rgba(242, 204, 143, 0.6);
+  color: #78350F;
+  font-size: 12.5px;
+  line-height: 1.5;
+}
+
+.tiya-price-callout strong {
+  color: #92400E;
+  font-weight: 700;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SCROLL REVEAL OBSERVER
+───────────────────────────────────────────────────────────── */
+.tiya-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition: opacity 0.75s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.75s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.tiya-reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.tiya-reveal--scale {
+  opacity: 0;
+  transform: scale(0.94) translateY(14px);
+  transition: opacity 0.75s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.75s cubic-bezier(0.2, 0.8, 0.2, 1);
+  will-change: opacity, transform;
+}
+
+.tiya-reveal--scale.is-visible {
+  opacity: 1;
+  transform: scale(1) translateY(0);
+}
+
+.tiya-delay-1 { transition-delay: 0.1s; }
+.tiya-delay-2 { transition-delay: 0.2s; }
+.tiya-delay-3 { transition-delay: 0.3s; }
+.tiya-delay-4 { transition-delay: 0.4s; }
+
+/* ─────────────────────────────────────────────────────────────
+   RESPONSIVE DESIGN (Tiya CSS Breakpoints)
+───────────────────────────────────────────────────────────── */
+@media screen and (max-width: 991px) {
+  .hero-section {
+    padding-top: 100px;
+    padding-bottom: 100px;
+  }
+  .tiya-nav-menu {
+    display: none;
+  }
+  .section-bg-image-block {
+    padding: 30px;
+  }
+  .site-footer {
+    padding-bottom: 120px;
+  }
+}
+
+@media screen and (max-width: 480px) {
+  .section-bg-image-block {
+    padding: 24px;
+  }
+  .custom-btn {
+    font-size: 12px;
+    padding: 8px 16px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
+   CAMPUS ARCHITECTURE & ZONE DIRECTORY (HIGH CONTRAST & READABILITY)
+───────────────────────────────────────────────────────────── */
+.tiya-campus-directory {
+  background: linear-gradient(145deg, #32354d 0%, #25283c 100%) !important;
+  color: #ffffff !important;
+  border-radius: 24px;
+  padding: 44px 48px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.tiya-campus-directory__badge {
+  color: #F2CC8F !important;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  display: block;
+  margin-bottom: 10px;
+}
+
+.tiya-campus-directory__title {
+  color: #ffffff !important;
+  font-size: clamp(24px, 3vw, 32px) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.02em !important;
+  text-transform: uppercase;
+  line-height: 1.25 !important;
+  margin-bottom: 14px !important;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+}
+
+.tiya-campus-directory__desc {
+  color: rgba(255, 255, 255, 0.88) !important;
+  font-size: 14.5px !important;
+  line-height: 1.65 !important;
+  margin-bottom: 24px !important;
+}
+
+.tiya-campus-amenity-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 9px 14px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: #ffffff !important;
+  font-size: 13.5px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+}
+
+.tiya-campus-amenity-item:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: rgba(242, 204, 143, 0.35);
+}
+
+.tiya-campus-amenity-item .material-symbols-outlined {
+  color: #81B29A;
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.tiya-campus-amenity-item span:last-child {
+  color: rgba(255, 255, 255, 0.95) !important;
+}
+
+.tiya-zone-card {
+  padding: 18px 20px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: all 0.25s ease;
+}
+
+.tiya-zone-card:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(242, 204, 143, 0.45);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+}
+
+.tiya-zone-card__header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  letter-spacing: 0.04em;
+}
+
+.tiya-zone-card__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.tiya-zone-card__list li {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 12.5px;
+  line-height: 1.55;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   RENTAL & EVENT CTA BANNER (HIGH CONTRAST & READABILITY)
+───────────────────────────────────────────────────────────── */
+.tiya-rental-banner {
+  background: linear-gradient(135deg, #32354d 0%, #1e2133 100%) !important;
+  color: #ffffff !important;
+  border-radius: 24px;
+  padding: 44px 48px;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.32);
+  margin-bottom: 0 !important;
+}
+
+.tiya-rental-banner__badge {
+  display: inline-block;
+  padding: 6px 16px;
+  border-radius: 100px;
+  background: rgba(242, 204, 143, 0.15);
+  border: 1px solid rgba(242, 204, 143, 0.35);
+  color: #F2CC8F !important;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 14px;
+}
+
+.tiya-rental-banner__title {
+  color: #ffffff !important;
+  font-size: clamp(24px, 3vw, 32px) !important;
+  font-weight: 800 !important;
+  letter-spacing: -0.5px !important;
+  text-transform: uppercase;
+  line-height: 1.25 !important;
+  margin-bottom: 12px !important;
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.45);
+}
+
+.tiya-rental-banner__desc {
+  color: rgba(255, 255, 255, 0.9) !important;
+  font-size: 14.5px !important;
+  line-height: 1.65 !important;
+  max-width: 620px;
+}
+
+.tiya-rental-banner__btn-primary {
+  background: #F2CC8F !important;
+  color: #1E2235 !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 14px 28px !important;
+  border-radius: 100px !important;
+  border: none !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  transition: all 0.25s ease;
+  box-shadow: 0 8px 20px rgba(242, 204, 143, 0.35);
+  white-space: nowrap;
+}
+
+.tiya-rental-banner__btn-primary:hover {
+  background: #E07A5F !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+  box-shadow: 0 10px 24px rgba(224, 122, 95, 0.45);
+}
+
+.tiya-rental-banner__btn-secondary {
+  background: transparent !important;
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  font-size: 13px !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 12px 26px !important;
+  border-radius: 100px !important;
+  border: 2px solid rgba(255, 255, 255, 0.5) !important;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-decoration: none;
+  transition: all 0.25s ease;
+  white-space: nowrap;
+}
+
+.tiya-rental-banner__btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.15) !important;
+  border-color: #ffffff !important;
+  color: #ffffff !important;
+  transform: translateY(-2px);
+}
+
+/* Global Safeguard for Dark Containers in Tiya Page */
+.tiya-page [class*="bg-[#3D405B]"] h1,
+.tiya-page [class*="bg-[#3D405B]"] h2,
+.tiya-page [class*="bg-[#3D405B]"] h3,
+.tiya-page [class*="bg-[#3D405B]"] h4,
+.tiya-page [class*="bg-[#3D405B]"] p,
+.tiya-page [class*="bg-[#3D405B]"] span,
+.tiya-page [class*="bg-[#3D405B]"] li,
+.tiya-page [class*="bg-gradient-to"] h1,
+.tiya-page [class*="bg-gradient-to"] h2,
+.tiya-page [class*="bg-gradient-to"] h3,
+.tiya-page [class*="bg-gradient-to"] h4,
+.tiya-page [class*="bg-gradient-to"] p,
+.tiya-page [class*="bg-gradient-to"] span,
+.tiya-page [class*="bg-gradient-to"] li {
+  color: #ffffff;
+}
+

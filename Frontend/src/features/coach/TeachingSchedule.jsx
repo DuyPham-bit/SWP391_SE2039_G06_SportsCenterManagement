@@ -304,30 +304,31 @@ export function TeachingSchedule() {
   return (
     <div className="space-y-6">
       {/* 1. TOP HEADER BANNER */}
-      <div className="p-6 rounded-2xl bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-slate-800">
-        <div className="space-y-1">
-          <div className="flex items-center gap-2">
-            <span className="font-chivo text-xs uppercase tracking-widest text-red-500 font-bold flex items-center gap-1.5">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              CHUYÊN MÔN & ĐÀO TẠO HUẤN LUYỆN VIÊN
-            </span>
+      <div className="rounded-[24px] bg-gradient-to-br from-[#32354D] via-[#2B2D42] to-[#1E2235] text-white p-6 sm:p-8 relative overflow-hidden border border-white/10 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
+
+        <div className="space-y-1 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[rgba(242,204,143,0.15)] text-[#F2CC8F] text-[11px] font-bold uppercase tracking-widest border border-[rgba(242,204,143,0.3)] mb-2">
+            <span className="w-2 h-2 rounded-full bg-[#F2CC8F] animate-pulse" />
+            Lịch giảng dạy chuyên môn
           </div>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-[28px] text-red-500">calendar_month</span>
+          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[28px] text-[#F2CC8F]">calendar_month</span>
             Lịch Giảng Dạy Của Huấn Luyện Viên
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl">
+          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
             Theo dõi các ca dạy, sĩ số học viên và thực hiện điểm danh lớp học được phân công theo chuẩn thể thao Olympic.
           </p>
         </div>
 
-        <div className="flex items-center gap-2 shrink-0">
+        <div className="flex items-center gap-2 shrink-0 relative z-10">
           <button
             type="button"
             onClick={() => setShowPeriodConfig(!showPeriodConfig)}
-            className="px-3.5 py-2 rounded-xl border border-slate-700 bg-slate-800/80 hover:bg-slate-700 text-slate-200 text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+            className="px-4 py-2.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-sm"
           >
-            <span className="material-symbols-outlined text-[16px]">date_range</span>
+            <span className="material-symbols-outlined text-[16px] text-[#F2CC8F]">date_range</span>
             <span>Khoảng ngày ({schedule.from} → {schedule.to})</span>
             <span className="material-symbols-outlined text-[16px]">
               {showPeriodConfig ? 'expand_less' : 'expand_more'}
@@ -411,12 +412,12 @@ export function TeachingSchedule() {
           </div>
         </div>
 
-        <div className="p-4 rounded-xl border border-red-200 bg-red-50/60 shadow-xs">
-          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-red-800">
+        <div className="p-4 rounded-xl border border-[#F2CC8F]/60 bg-[#FFFDF9] shadow-xs">
+          <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#92400E]">
             <span>Lượt học viên</span>
-            <span className="material-symbols-outlined text-[18px] text-red-600">group</span>
+            <span className="material-symbols-outlined text-[18px] text-[#D97706]">group</span>
           </div>
-          <div className="font-chivo text-2xl font-black text-red-900 mt-2">
+          <div className="font-chivo text-2xl font-black text-[#1E2235] mt-2">
             {stats.totalEnrolled}
           </div>
         </div>
@@ -587,15 +588,15 @@ export function TeachingSchedule() {
                 type="button"
                 key={s.name}
                 onClick={() => setSelectedSport(s.name)}
-                className={`px-2.5 py-1 rounded-lg text-xs font-bold font-chivo flex items-center gap-1.5 transition-all border cursor-pointer ${
+                className={`px-2.5 py-1 rounded-lg text-xs font-bold flex items-center gap-1.5 transition-all border cursor-pointer ${
                   isSelected
-                    ? 'bg-red-600 text-white border-red-600 shadow-xs'
+                    ? 'bg-[#3D405B] text-[#F2CC8F] border-[#3D405B] shadow-xs'
                     : `bg-white ${theme.text} ${theme.border} hover:bg-slate-50`
                 }`}
               >
-                <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : theme.dot}`} />
+                <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-[#F2CC8F]' : theme.dot}`} />
                 <span>{s.name}</span>
-                <span className={`text-[10px] px-1 rounded ${isSelected ? 'bg-red-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
+                <span className={`text-[10px] px-1 rounded ${isSelected ? 'bg-[#F2CC8F] text-[#1E2235]' : 'bg-slate-100 text-slate-600'}`}>
                   {s.count}
                 </span>
               </button>
@@ -607,7 +608,7 @@ export function TeachingSchedule() {
       {/* Loading feedback */}
       {schedule.loading && (
         <div role="status" className="p-12 text-center bg-white rounded-2xl border border-slate-200 space-y-2">
-          <span className="material-symbols-outlined text-red-600 text-[32px] animate-spin">
+          <span className="material-symbols-outlined text-[#81B29A] text-[32px] animate-spin">
             progress_activity
           </span>
           <p className="text-sm font-semibold text-slate-700">Đang tải lịch giảng dạy của huấn luyện viên...</p>
@@ -641,9 +642,9 @@ export function TeachingSchedule() {
                       </span>
                       <div className="mt-1 flex items-center justify-center gap-1">
                         <span
-                          className={`w-7 h-7 rounded-full flex items-center justify-center font-chivo text-sm font-black transition-all ${
+                          className={`w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold transition-all ${
                             isToday
-                              ? 'bg-red-600 text-white shadow-xs'
+                              ? 'bg-[#3D405B] text-[#F2CC8F] shadow-xs'
                               : 'text-slate-900'
                           }`}
                         >
@@ -673,7 +674,7 @@ export function TeachingSchedule() {
                     <div
                       key={dayStr}
                       className={`p-2.5 space-y-2.5 transition-colors ${
-                        isToday ? 'bg-red-50/20' : ''
+                        isToday ? 'bg-[#81B29A]/10' : ''
                       }`}
                     >
                       {/* Tiêu đề ngày trên mobile nhỏ */}
@@ -704,7 +705,7 @@ export function TeachingSchedule() {
                               {/* Time & Sport Tag */}
                               <div className="flex items-center justify-between gap-1">
                                 <span className="font-bold text-[11px] text-slate-900 flex items-center gap-1">
-                                  <span className="material-symbols-outlined text-[14px] text-red-600">schedule</span>
+                                  <span className="material-symbols-outlined text-[14px] text-[#F2CC8F]">schedule</span>
                                   <span>{s.timeSlot}</span>
                                 </span>
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${theme.badge}`}>
@@ -755,7 +756,7 @@ export function TeachingSchedule() {
                                 <a
                                   href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
                                   onClick={e => e.stopPropagation()}
-                                  className="text-red-600 hover:text-red-700 flex items-center gap-0.5 hover:underline"
+                                  className="text-[#3D405B] hover:text-[#E07A5F] flex items-center gap-0.5 hover:underline font-semibold"
                                 >
                                   <span className="material-symbols-outlined text-[13px]">how_to_reg</span>
                                   <span>Điểm danh</span>
@@ -811,7 +812,7 @@ export function TeachingSchedule() {
                           <span
                             className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
                               isToday
-                                ? 'bg-red-600 text-white font-black'
+                                ? 'bg-[#3D405B] text-[#F2CC8F] font-black'
                                 : isCurrentMonth
                                 ? 'text-slate-900'
                                 : 'text-slate-400'
@@ -862,7 +863,7 @@ export function TeachingSchedule() {
               <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
                 <div className="flex items-center justify-between pb-2 border-b border-slate-100">
                   <h3 className="font-chivo font-black text-sm text-slate-900 uppercase tracking-wide flex items-center gap-2">
-                    <span className="material-symbols-outlined text-red-600 text-[18px]">event</span>
+                    <span className="material-symbols-outlined text-[#F2CC8F] text-[18px]">event</span>
                     <span>Ca dạy ngày: {selectedCalendarDate} ({(sessionsByDate.get(selectedCalendarDate) || []).length} ca)</span>
                   </h3>
                   <span className="text-xs text-slate-400">Nhấp vào ca dạy để xem thông tin hoặc điểm danh</span>
@@ -907,7 +908,7 @@ export function TeachingSchedule() {
                               <a
                                 href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
                                 onClick={e => e.stopPropagation()}
-                                className="text-red-600 hover:underline"
+                                className="text-[#3D405B] hover:text-[#E07A5F] hover:underline"
                               >
                                 Điểm danh →
                               </a>
@@ -942,7 +943,7 @@ export function TeachingSchedule() {
                         <span
                           className={`px-3 py-1 rounded-lg text-xs font-black uppercase tracking-wider ${
                             isToday
-                              ? 'bg-red-600 text-white shadow-xs'
+                              ? 'bg-[#3D405B] text-[#F2CC8F] shadow-xs'
                               : 'bg-slate-900 text-white'
                           }`}
                         >
@@ -1004,7 +1005,7 @@ export function TeachingSchedule() {
                                   <a
                                     href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
                                     onClick={e => e.stopPropagation()}
-                                    className="px-3.5 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold transition-colors shadow-xs"
+                                    className="px-3.5 py-1.5 rounded-lg bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold transition-colors shadow-xs"
                                   >
                                     Điểm danh
                                   </a>
@@ -1059,7 +1060,7 @@ export function TeachingSchedule() {
 
                           <div className="space-y-1.5 text-xs text-slate-600">
                             <p className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[16px] text-red-600">calendar_today</span>
+                              <span className="material-symbols-outlined text-[16px] text-[#81B29A]">calendar_today</span>
                               <strong>{s.dayOfWeek} · {s.sessionDate}</strong>
                             </p>
                             <p className="flex items-center gap-1.5">
@@ -1100,7 +1101,7 @@ export function TeachingSchedule() {
                           <a
                             href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
                             onClick={e => e.stopPropagation()}
-                            className="px-3.5 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white transition-colors flex items-center gap-1 shadow-xs"
+                            className="px-3.5 py-1.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white transition-colors flex items-center gap-1 shadow-xs font-bold"
                           >
                             <span className="material-symbols-outlined text-[15px]">how_to_reg</span>
                             <span>Điểm danh</span>
@@ -1199,7 +1200,7 @@ export function TeachingSchedule() {
 
               <a
                 href={`#/coach/attendance?sessionId=${activeSession.id}&date=${activeSession.sessionDate}`}
-                className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-bold transition-all shadow-md shadow-red-600/20 flex items-center gap-1.5"
+                className="px-4 py-2.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white text-xs font-bold transition-all shadow-md shadow-[#F2CC8F]/20 flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
                 <span>Điểm danh ca dạy này</span>

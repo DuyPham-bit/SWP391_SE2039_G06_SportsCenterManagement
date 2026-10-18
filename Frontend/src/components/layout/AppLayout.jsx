@@ -13,7 +13,7 @@ export function AppLayout({ children, currentPath }) {
   const isMemberArea = role === 'MEMBER' || (currentPath && currentPath.startsWith('#/member'));
 
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col font-inter">
+    <div className="min-h-screen bg-[#FAF8F5] flex flex-col font-sans">
       {/* Top Header */}
       <Header
         onOpenProfile={() => setProfileModalOpen(true)}
@@ -38,19 +38,19 @@ export function AppLayout({ children, currentPath }) {
           <footer className="py-4 px-6 border-t border-slate-200 bg-white text-center text-xs text-slate-500 flex flex-col sm:flex-row items-center justify-between gap-2">
             <span>© 2026 Sports Center Management System (SCMS) - Chuẩn Olympic.</span>
             <div className="flex items-center gap-4 text-[11px] font-medium text-slate-600">
-              <a href="#/" className="hover:text-red-600">Trang chủ Landing</a>
+              <a href="#/" className="hover:text-[#E07A5F] transition-colors">Trang chủ Landing</a>
               <span className="text-slate-300">|</span>
               {isMemberArea ? (
                 <button
                   type="button"
                   onClick={() => openMemberAIChat()}
-                  className="hover:text-red-600 inline-flex items-center gap-1 font-semibold text-slate-700"
+                  className="hover:text-[#E07A5F] inline-flex items-center gap-1 font-semibold text-slate-700 transition-colors"
                 >
-                  <span className="material-symbols-outlined text-[13px] text-red-500">smart_toy</span>
+                  <span className="material-symbols-outlined text-[13px] text-[#E07A5F]">smart_toy</span>
                   <span>Hỏi đáp AI (Popup)</span>
                 </button>
               ) : (
-                <a href="#/member/ai-assistant" className="hover:text-red-600">Hỏi đáp AI</a>
+                <a href="#/member/ai-assistant" className="hover:text-[#E07A5F] transition-colors">Hỏi đáp AI</a>
               )}
               <span className="text-slate-300">|</span>
               <span className="text-slate-400">Phiên bản 1.0.0</span>

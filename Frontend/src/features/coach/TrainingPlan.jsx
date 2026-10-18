@@ -165,20 +165,21 @@ export function TrainingPlan() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <span className="font-chivo text-xs font-bold uppercase tracking-wider text-red-600">
-            CREATE TRAINING PLAN
-          </span>
-          <h1 className="font-chivo text-2xl font-black text-slate-900 tracking-tight">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30 text-xs font-bold uppercase tracking-wider mb-2">
+            <span className="w-2 h-2 rounded-full bg-[#81B29A]" />
+            <span>Giáo án thể lực</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E2235] tracking-tight">
             Thiết Lập Giáo Án Huấn Luyện Thể Lực
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5">
+          <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
             Xây dựng phác đồ rèn luyện cá nhân hóa theo từng lớp học và học viên do bạn trực tiếp giảng dạy.
           </p>
         </div>
 
         <button
           onClick={handleOpenCreateModal}
-          className="px-4 py-2.5 bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-lg shadow-md transition-all flex items-center gap-2 self-start sm:self-auto"
+          className="px-5 py-2.5 bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white border border-[#F2CC8F]/30 text-xs font-bold uppercase tracking-wider rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 self-start sm:self-auto cursor-pointer"
         >
           <span className="material-symbols-outlined text-[18px]">add_task</span>
           <span>Soạn Giáo Án Mới</span>
@@ -206,9 +207,9 @@ export function TrainingPlan() {
               <button
                 key={c.id}
                 onClick={() => setSelectedFilterClass(c.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo tracking-wider transition-all ${
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold tracking-wider transition-all ${
                   selectedFilterClass === c.id
-                    ? 'bg-red-600 text-white shadow-xs'
+                    ? 'bg-[#3D405B] text-[#F2CC8F] shadow-xs'
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
@@ -251,7 +252,7 @@ export function TrainingPlan() {
                         Lớp: {plan.className}
                       </span>
                     )}
-                    <span className="text-[10px] font-bold text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-100">
+                    <span className="text-[10px] font-bold text-[#2D6A4F] bg-[#81B29A]/15 px-2 py-0.5 rounded border border-[#81B29A]/30">
                       {plan.sportName || 'Thể thao'}
                     </span>
                   </div>
@@ -268,7 +269,7 @@ export function TrainingPlan() {
                   </span>
                   <button
                     onClick={() => handleDeletePlan(plan.id, plan.title)}
-                    className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 transition-colors"
+                    className="p-1.5 text-slate-400 hover:text-[#E07A5F] rounded-lg hover:bg-[#E07A5F]/10 transition-colors cursor-pointer"
                     title="Xóa giáo án này"
                   >
                     <span className="material-symbols-outlined text-[18px]">delete</span>
@@ -333,7 +334,7 @@ export function TrainingPlan() {
               <select
                 value={selectedClassId}
                 onChange={e => handleClassChange(e.target.value)}
-                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white font-semibold text-slate-900"
+                className="w-full px-3.5 py-2.5 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white font-semibold text-slate-900"
               >
                 {coachClasses.map(c => (
                   <option key={c.id} value={c.id}>
@@ -364,7 +365,7 @@ export function TrainingPlan() {
                 placeholder="VD: Tối ưu sải bơi 50m & Tăng cơ"
                 value={title}
                 onChange={e => setTitle(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
               />
             </div>
 
@@ -378,7 +379,7 @@ export function TrainingPlan() {
                 placeholder="VD: Cải thiện sức bền, tăng 1kg cơ bắp"
                 value={goal}
                 onChange={e => setGoal(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
               />
             </div>
           </div>
@@ -393,7 +394,7 @@ export function TrainingPlan() {
                 type="date"
                 value={startDate}
                 onChange={e => setStartDate(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
               />
             </div>
             <div>
@@ -404,7 +405,7 @@ export function TrainingPlan() {
                 type="date"
                 value={endDate}
                 onChange={e => setEndDate(e.target.value)}
-                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
               />
             </div>
           </div>
@@ -418,7 +419,7 @@ export function TrainingPlan() {
               <button
                 type="button"
                 onClick={handleAddExercise}
-                className="text-xs font-bold text-red-600 hover:text-red-700 flex items-center gap-1"
+                className="text-xs font-bold text-[#2D6A4F] hover:text-[#1E2235] flex items-center gap-1 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">add</span>
                 <span>Thêm bài tập</span>
@@ -488,10 +489,10 @@ export function TrainingPlan() {
             <button
               type="submit"
               disabled={saving || !selectedClassId}
-              className={`px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg text-white shadow-md transition-colors flex items-center gap-1.5 ${
+              className={`px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-xl text-[#1E2235] hover:text-white shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer ${
                 saving || !selectedClassId
-                  ? 'bg-slate-400 cursor-not-allowed'
-                  : 'bg-red-600 hover:bg-red-700'
+                  ? 'bg-slate-300 text-slate-500 cursor-not-allowed'
+                  : 'bg-[#F2CC8F] hover:bg-[#E07A5F]'
               }`}
             >
               {saving ? (

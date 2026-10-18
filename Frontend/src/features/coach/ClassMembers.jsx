@@ -228,7 +228,7 @@ export function ClassMembers() {
     },
     {
       header: 'Mã Thẻ',
-      render: (row) => <span className="font-chivo font-bold text-red-600">{row.memberCode}</span>
+      render: (row) => <span className="font-bold text-[#1E2235] bg-[#81B29A]/15 px-2 py-0.5 rounded-md border border-[#81B29A]/30 text-xs">{row.memberCode}</span>
     },
     {
       header: 'Số Điện Thoại',
@@ -236,7 +236,7 @@ export function ClassMembers() {
     },
     {
       header: 'Hồ sơ',
-      render: row => <button onClick={() => setProfile(row)} className="text-red-600 font-semibold text-xs underline">Xem hồ sơ</button>
+      render: row => <button onClick={() => setProfile(row)} className="text-[#3D405B] hover:text-[#E07A5F] font-semibold text-xs underline transition-colors cursor-pointer">Xem hồ sơ</button>
     },
     {
       header: 'Giáo Án Riêng (⭐)',
@@ -284,7 +284,7 @@ export function ClassMembers() {
         <div className="flex items-center gap-2">
           <a
             href="#/coach/progress"
-            className="px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold font-chivo uppercase tracking-wider transition-colors flex items-center gap-1"
+            className="px-3 py-1.5 rounded-lg bg-[#81B29A]/15 hover:bg-[#81B29A]/25 text-[#2D6A4F] text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1"
           >
             <span className="material-symbols-outlined text-[15px]">monitor_heart</span>
             <span>Ghi Chỉ Số</span>
@@ -300,13 +300,14 @@ export function ClassMembers() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <span className="font-chivo text-xs font-bold uppercase tracking-wider text-red-600">
-          MANAGE CLASS MEMBERS
-        </span>
-        <h1 className="font-chivo text-2xl font-black text-slate-900 tracking-tight">
+        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30 text-xs font-bold uppercase tracking-wider mb-2">
+          <span className="w-2 h-2 rounded-full bg-[#81B29A]" />
+          <span>Quản lý học viên</span>
+        </div>
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E2235] tracking-tight">
           Danh Sách Học Viên Theo Lớp Học
         </h1>
-        <p className="text-xs text-slate-500 mt-0.5">
+        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
           Theo dõi hồ sơ học viên theo từng lớp bạn đảm nhiệm và thiết lập giáo án riêng (⭐) cho học viên có thể chất đặc biệt.
         </p>
       </div>
@@ -327,7 +328,7 @@ export function ClassMembers() {
             <select
               value={selectedClassId}
               onChange={e => setSelectedClassId(Number(e.target.value))}
-              className="px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white font-semibold text-slate-900"
+              className="px-3.5 py-2 text-sm rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white font-semibold text-slate-900"
             >
               {classes.map(cls => (
                 <option key={cls.id} value={cls.id}>
@@ -340,7 +341,7 @@ export function ClassMembers() {
 
         {selectedClass && (
           <div className="flex items-center gap-3 text-xs flex-wrap">
-            <span className="text-slate-500">Sĩ số: <strong className="text-red-600 font-bold">{members.length} / {selectedClass.capacity}</strong></span>
+            <span className="text-slate-500">Sĩ số: <strong className="text-[#1E2235] font-bold">{members.length} / {selectedClass.capacity}</strong></span>
             <span className="text-slate-300">|</span>
             <span className="text-amber-700 font-medium flex items-center gap-1">
               <span className="material-symbols-outlined text-[15px] text-amber-500 fill-amber-500">star</span>
@@ -404,7 +405,7 @@ export function ClassMembers() {
                 <div>
                   <div className="font-bold text-slate-900 text-sm flex items-center gap-1.5">
                     <span>{activeMember.memberName}</span>
-                    <span className="font-chivo text-xs text-red-600">({activeMember.memberCode})</span>
+                    <span className="text-xs font-bold text-[#2D6A4F]">({activeMember.memberCode})</span>
                     {existingPlanId && (
                       <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-200 text-amber-900 flex items-center gap-0.5">
                         <span className="material-symbols-outlined text-[12px] text-amber-700">star</span>
@@ -563,7 +564,7 @@ export function ClassMembers() {
                   type="button"
                   disabled={deleting}
                   onClick={handleDeletePersonalPlan}
-                  className="px-3.5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg text-red-600 hover:bg-red-50 border border-red-200 transition-colors flex items-center gap-1"
+                  className="px-3.5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg text-[#E07A5F] hover:bg-[#E07A5F]/10 border border-[#E07A5F]/30 transition-colors flex items-center gap-1 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">star_border</span>
                   <span>{deleting ? 'Đang huỷ...' : 'Huỷ giáo án riêng (Về sao rỗng)'}</span>
@@ -576,14 +577,14 @@ export function ClassMembers() {
                 <button
                   type="button"
                   onClick={() => setModalOpen(false)}
-                  className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600"
+                  className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200 hover:bg-slate-50 text-slate-600 cursor-pointer"
                 >
                   Đóng
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg text-slate-900 bg-amber-400 hover:bg-amber-500 shadow-md transition-all flex items-center gap-1.5 font-chivo"
+                  className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-xl text-[#1E2235] hover:text-white bg-[#F2CC8F] hover:bg-[#E07A5F] shadow-sm hover:shadow-md transition-all flex items-center gap-1.5 cursor-pointer"
                 >
                   {saving ? (
                     <>
@@ -592,7 +593,7 @@ export function ClassMembers() {
                     </>
                   ) : (
                     <>
-                      <span className="material-symbols-outlined text-[18px] text-slate-900">star</span>
+                      <span className="material-symbols-outlined text-[18px]">star</span>
                       <span>Lưu &amp; Kích Hoạt Giáo Án Riêng</span>
                     </>
                   )}

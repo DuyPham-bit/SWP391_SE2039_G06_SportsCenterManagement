@@ -42,7 +42,7 @@ export function Table({
                   setSearchTerm(e.target.value);
                   setCurrentPage(1);
                 }}
-                className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
+                className="w-full pl-9 pr-4 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
               />
             </div>
           ) : <div />}
@@ -122,7 +122,7 @@ export function Table({
 export function LoadingSpinner({ text = 'Đang tải dữ liệu...' }) {
   return (
     <div className="flex flex-col items-center justify-center p-12 gap-3">
-      <div className="w-10 h-10 border-4 border-slate-200 border-t-red-600 rounded-full animate-spin" />
+      <div className="w-10 h-10 border-4 border-slate-200 border-t-[#81B29A] rounded-full animate-spin" />
       <span className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{text}</span>
     </div>
   );
