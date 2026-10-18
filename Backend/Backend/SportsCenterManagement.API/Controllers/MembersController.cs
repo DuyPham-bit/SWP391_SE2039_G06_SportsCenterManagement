@@ -39,10 +39,12 @@ public sealed class MembersController(IMemberService memberService, ICoreFlowSer
         [FromQuery] string? query,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
+        [FromQuery] string sortBy = "default",
+        [FromQuery] string sortDirection = "asc",
         CancellationToken cancellationToken = default)
     {
         return await Run(async () => Ok(await memberService.SearchAtCenterAsync(
-            GetUserId(), centerId, query ?? string.Empty, page, pageSize, cancellationToken)));
+            GetUserId(), centerId, query ?? string.Empty, page, pageSize, sortBy, sortDirection, cancellationToken)));
     }
 
     [HttpPost("centers/{centerId:long}/members")]

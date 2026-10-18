@@ -2,6 +2,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Authorization;
+using SportsCenterManagement.BLL.DTOs.Classes;
+using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 using Microsoft.AspNetCore.Mvc.Filters;
@@ -9,7 +11,10 @@ using Microsoft.AspNetCore.Mvc.Filters;
 namespace SportsCenterManagement.API.Controllers;
 
 [Authorize(Roles = "MANAGER,ADMIN")]
-public sealed class ClassResourcesController(SportsCenterDbContext db) : FlowControllerBase, IAsyncActionFilter
+public sealed class ClassResourcesController(
+    SportsCenterDbContext db,
+    ISportManagementService sportManagementService,
+    ICoachAssignmentQueryService coachAssignmentQueryService) : FlowControllerBase, IAsyncActionFilter
 {
     [HttpGet("centers/{centerId:long}/classes/all")]
     public async Task<IActionResult> Classes(long centerId, CancellationToken ct)
@@ -34,83 +39,36 @@ public sealed class ClassResourcesController(SportsCenterDbContext db) : FlowCon
     public async Task<IActionResult> Sports(long centerId, CancellationToken ct)
     {
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
-        return Ok(await db.Sports.Where(s => (s.CenterId == null || s.CenterId == centerId) && s.Status == "Active")
-            .OrderBy(s => s.Name).Select(s => new { s.Id, s.Name, s.Description }).ToListAsync(ct));
+        return Ok(await sportManagementService.GetActiveAsync(centerId, ct));
     }
 
     [HttpGet("centers/{centerId:long}/coaches")]
     public async Task<IActionResult> Coaches(long centerId, CancellationToken ct)
     {
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
-        return Ok(await (from coach in db.CoachProfiles join user in db.Users on coach.UserId equals user.Id
-            where coach.CenterId == centerId && coach.Status == "Active" && user.Status == "Active"
-            orderby coach.FullName
-            select new { coach.Id, coach.UserId, coach.FullName, coach.Specialization, coach.Certification,
-                SportIds = db.CoachSports.Where(item => item.CoachId == coach.Id).Select(item => item.SportId).ToArray() }).ToListAsync(ct));
+        return Ok(await coachAssignmentQueryService.GetCandidatesAsync(centerId, ct));
     }
 
     [HttpGet("centers/{centerId:long}/sports/all")]
     public async Task<IActionResult> AllSports(long centerId, CancellationToken ct)
     {
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
-        return Ok(await db.Sports.Where(s => s.CenterId == null || s.CenterId == centerId)
-            .OrderBy(s => s.Name).Select(s => new { s.Id, s.Name, s.Description, s.Status,
-                IsShared = s.CenterId == null }).ToListAsync(ct));
+        return Ok(await sportManagementService.GetAllAsync(centerId, ct));
     }
 
-    public sealed record SportRequest(string Name, string? Description, string Status = "Active");
-
     [HttpPost("centers/{centerId:long}/sports")]
-    public async Task<IActionResult> CreateSport(long centerId, SportRequest request, CancellationToken ct)
+    public async Task<IActionResult> CreateSport(long centerId, SaveSportRequest request, CancellationToken ct)
     {
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
-        ValidateSport(request);
-        await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
-        await EnsureSportNameAvailable(centerId, null, request.Name.Trim(), ct);
-        var sport = new Sport { CenterId = centerId, Name = request.Name.Trim(),
-            Description = request.Description?.Trim(), Status = request.Status };
-        db.Sports.Add(sport);
-        await db.SaveChangesAsync(ct);
-        db.AuditLogs.Add(new AuditLog { UserId = CurrentUserId, CenterId = centerId, Action = "SPORT.CREATED",
-            EntityType = "Sport", EntityId = sport.Id, NewValues = System.Text.Json.JsonSerializer.Serialize(request), CreatedAt = DateTime.UtcNow });
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        return StatusCode(201, new { sport.Id, sport.Name, sport.Description, sport.Status, IsShared = false });
+        return StatusCode(StatusCodes.Status201Created,
+            await sportManagementService.CreateAsync(CurrentUserId, centerId, request, ct));
     }
 
     [HttpPut("centers/{centerId:long}/sports/{sportId:long}")]
-    public async Task<IActionResult> UpdateSport(long centerId, long sportId, SportRequest request, CancellationToken ct)
+    public async Task<IActionResult> UpdateSport(long centerId, long sportId, SaveSportRequest request, CancellationToken ct)
     {
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
-        ValidateSport(request);
-        await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
-        var sport = await db.Sports.SingleOrDefaultAsync(s => s.Id == sportId && s.CenterId == centerId, ct)
-            ?? throw new InvalidOperationException("Chỉ được sửa bộ môn riêng của trung tâm này.") { Data = { ["StatusCode"] = 404 } };
-        await EnsureSportNameAvailable(centerId, sportId, request.Name.Trim(), ct);
-        if (request.Status != "Active" && await db.Classes.AnyAsync(c => c.SportId == sportId
-            && c.Status != "Cancelled" && c.Status != "Completed", ct))
-            throw new InvalidOperationException("Bộ môn đang có lớp hoạt động; cần đóng các lớp trước khi ngừng sử dụng.") { Data = { ["StatusCode"] = 409 } };
-        var before = new { sport.Name, sport.Description, sport.Status };
-        sport.Name = request.Name.Trim(); sport.Description = request.Description?.Trim(); sport.Status = request.Status;
-        db.AuditLogs.Add(new AuditLog { UserId = CurrentUserId, CenterId = centerId, Action = "SPORT.UPDATED",
-            EntityType = "Sport", EntityId = sport.Id, OldValues = System.Text.Json.JsonSerializer.Serialize(before),
-            NewValues = System.Text.Json.JsonSerializer.Serialize(request), CreatedAt = DateTime.UtcNow });
-        await db.SaveChangesAsync(ct);
-        await tx.CommitAsync(ct);
-        return Ok(new { sport.Id, sport.Name, sport.Description, sport.Status, IsShared = false });
-    }
-
-    private async Task EnsureSportNameAvailable(long centerId, long? sportId, string name, CancellationToken ct)
-    {
-        if (await db.Sports.AnyAsync(s => s.Id != sportId && (s.CenterId == centerId || s.CenterId == null)
-            && s.Name == name, ct)) throw new InvalidOperationException("Tên bộ môn đã tồn tại.") { Data = { ["StatusCode"] = 409 } };
-    }
-
-    private static void ValidateSport(SportRequest request)
-    {
-        if (string.IsNullOrWhiteSpace(request.Name) || request.Name.Trim().Length > 100
-            || request.Description?.Length > 500 || request.Status is not ("Active" or "Inactive"))
-            throw new InvalidOperationException("Tên bộ môn bắt buộc, tối đa 100 ký tự; mô tả tối đa 500; trạng thái Active hoặc Inactive.") { Data = { ["StatusCode"] = 400 } };
+        return Ok(await sportManagementService.UpdateAsync(CurrentUserId, centerId, sportId, request, ct));
     }
 
     [HttpGet("centers/{centerId:long}/rooms")]

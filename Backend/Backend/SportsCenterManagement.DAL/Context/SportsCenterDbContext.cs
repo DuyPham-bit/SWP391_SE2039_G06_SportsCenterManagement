@@ -7,6 +7,8 @@ namespace SportsCenterManagement.DAL.Context;
 public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext> options)
     : DbContext(options)
 {
+    public static string Reverse(string value) => throw new NotSupportedException("Chỉ dùng trong truy vấn LINQ được dịch sang SQL.");
+
     public DbSet<Role> Roles => Set<Role>();
     public DbSet<Permission> Permissions => Set<Permission>();
     public DbSet<RolePermission> RolePermissions => Set<RolePermission>();
@@ -68,6 +70,10 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
+
+        modelBuilder.HasDbFunction(typeof(SportsCenterDbContext).GetMethod(nameof(Reverse), new[] { typeof(string) })!)
+            .HasName("REVERSE")
+            .IsBuiltIn();
 
         modelBuilder.HasDefaultSchema("dbo");
         modelBuilder.Entity<User>().HasIndex(entity => entity.GoogleSubject).IsUnique()

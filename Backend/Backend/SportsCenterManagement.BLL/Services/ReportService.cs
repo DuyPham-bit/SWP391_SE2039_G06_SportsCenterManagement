@@ -128,17 +128,52 @@ public sealed class ReportService(
         var timeZone = GetReportTimeZone();
         var (startUtc, endUtc) = GetUtcRange(from, to, timeZone);
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
-        var centerMembers = await _unitOfWork.Context.MemberProfiles.AsNoTracking()
+        var db = _unitOfWork.Context;
+
+        var centerMembers = await db.MemberProfiles.AsNoTracking()
             .Where(profile => profile.CenterId == centerId)
             .Select(profile => new { profile.Id, profile.CreatedAt })
             .ToListAsync(cancellationToken);
         var totalMembers = centerMembers.Count;
-        var activeMembers = await (
-            from subscription in _unitOfWork.Context.MemberSubscriptions
-            join package in _unitOfWork.Context.MembershipPackages on subscription.PackageId equals package.Id
-            where package.CenterId == centerId && subscription.Status == "Active" &&
-                  subscription.StartDate <= today && subscription.EndDate >= today
-            select subscription.MemberId).Distinct().CountAsync(cancellationToken);
+
+        var packages = await db.MembershipPackages.AsNoTracking()
+            .Where(p => p.CenterId == centerId)
+            .Select(p => new { p.Id, p.Name, p.Price, p.DurationDays })
+            .ToListAsync(cancellationToken);
+
+        var subs = await (
+            from subscription in db.MemberSubscriptions.AsNoTracking()
+            join package in db.MembershipPackages.AsNoTracking() on subscription.PackageId equals package.Id
+            where package.CenterId == centerId
+            select new {
+                subscription.Id,
+                subscription.MemberId,
+                subscription.PackageId,
+                subscription.StartDate,
+                subscription.EndDate,
+                subscription.Price,
+                subscription.Status,
+                subscription.CreatedAt
+            }).ToListAsync(cancellationToken);
+
+        var activeMemberIds = subs
+            .Where(s => s.Status == "Active" && s.StartDate <= today && s.EndDate >= today)
+            .Select(s => s.MemberId).ToHashSet();
+        var activeMembers = activeMemberIds.Count;
+
+        var allSubMemberIds = subs.Select(s => s.MemberId).ToHashSet();
+        var expiredMembers = allSubMemberIds.Count(m => !activeMemberIds.Contains(m));
+        var inactiveMembers = Math.Max(0, totalMembers - activeMembers);
+
+        var packageStats = packages.Select(pkg =>
+        {
+            var pkgSubs = subs.Where(s => s.PackageId == pkg.Id).ToArray();
+            var activeSubscribers = pkgSubs.Count(s => s.Status == "Active" && s.StartDate <= today && s.EndDate >= today);
+            var soldInPeriod = pkgSubs.Count(s => s.CreatedAt >= startUtc && s.CreatedAt < endUtc);
+            var revenueInPeriod = pkgSubs.Where(s => s.CreatedAt >= startUtc && s.CreatedAt < endUtc).Sum(s => s.Price);
+            return new MembershipPackageStatsItem(pkg.Id, pkg.Name, pkg.Price, pkg.DurationDays, activeSubscribers, soldInPeriod, revenueInPeriod);
+        }).OrderByDescending(p => p.SoldInPeriod).ThenByDescending(p => p.RevenueInPeriod).ToArray();
+
         var newMemberRows = centerMembers
             .Where(row => row.CreatedAt >= startUtc && row.CreatedAt < endUtc)
             .ToArray();
@@ -152,7 +187,7 @@ public sealed class ReportService(
 
         return new MembershipReportResponse(
             centerId, from, to, timeZone.Id, totalMembers, activeMembers,
-            newMemberRows.Length, periods);
+            newMemberRows.Length, periods, expiredMembers, inactiveMembers, packageStats);
     }
 
     public async Task<ClassEnrollmentReportResponse> GetClassEnrollmentReportAsync(
@@ -220,6 +255,178 @@ public sealed class ReportService(
 
         return new ClassEnrollmentReportResponse(
             centerId, from, to, timeZone.Id, groupBy.Trim().ToLowerInvariant(), currentStatusCounts, periods);
+    }
+
+    public async Task<OperationsReportResponse> GetOperationsReportAsync(
+        long centerId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken = default)
+    {
+        ValidateRequest(from, to, "day");
+        await EnsureCenterExistsAsync(centerId, cancellationToken);
+        var db = _unitOfWork.Context;
+
+        var staffRows = await (from profile in db.StaffProfiles.AsNoTracking()
+            join user in db.Users.AsNoTracking() on profile.UserId equals user.Id
+            join role in db.Roles.AsNoTracking() on user.RoleId equals role.Id
+            where profile.CenterId == centerId
+            select new { user.Id, Role = role.Name, ProfileStatus = profile.Status, UserStatus = user.Status })
+            .ToListAsync(cancellationToken);
+        var coachRows = await (from profile in db.CoachProfiles.AsNoTracking()
+            join user in db.Users.AsNoTracking() on profile.UserId equals user.Id
+            join role in db.Roles.AsNoTracking() on user.RoleId equals role.Id
+            where profile.CenterId == centerId
+            select new { user.Id, Role = role.Name, ProfileStatus = profile.Status, UserStatus = user.Status })
+            .ToListAsync(cancellationToken);
+        var personnel = staffRows.Concat(coachRows).GroupBy(row => row.Id).Select(group => group.First()).ToArray();
+        var isActive = (string profileStatus, string userStatus) =>
+            profileStatus.Equals("Active", StringComparison.OrdinalIgnoreCase)
+            && userStatus.Equals("Active", StringComparison.OrdinalIgnoreCase);
+
+        var classCounts = await db.Classes.AsNoTracking().Where(item => item.CenterId == centerId)
+            .GroupBy(_ => 1).Select(group => new
+            {
+                Total = group.Count(),
+                Active = group.Count(item => item.Status != "Cancelled" && item.Status != "Completed")
+            }).SingleOrDefaultAsync(cancellationToken);
+        var roomCounts = await db.Rooms.AsNoTracking().Where(item => item.CenterId == centerId)
+            .GroupBy(_ => 1).Select(group => new
+            {
+                Total = group.Count(),
+                Active = group.Count(item => item.Status == "Active")
+            }).SingleOrDefaultAsync(cancellationToken);
+
+        var centerRooms = await db.Rooms.AsNoTracking()
+            .Where(r => r.CenterId == centerId)
+            .ToListAsync(cancellationToken);
+        var roomMap = centerRooms.ToDictionary(r => r.Id, r => r);
+
+        var centerClasses = await (from cls in db.Classes.AsNoTracking()
+            join sport in db.Sports.AsNoTracking() on cls.SportId equals sport.Id
+            where cls.CenterId == centerId
+            select new { cls.Id, cls.Name, cls.Capacity, cls.Status, cls.RoomId, SportId = sport.Id, SportName = sport.Name })
+            .ToDictionaryAsync(c => c.Id, cancellationToken);
+
+        var classIds = centerClasses.Keys.ToArray();
+
+        var primaryCoaches = await (from assignment in db.ClassCoaches.AsNoTracking()
+            join coach in db.CoachProfiles.AsNoTracking() on assignment.CoachId equals coach.Id
+            where classIds.Contains(assignment.ClassId) && assignment.IsPrimary
+            select new { assignment.ClassId, coach.Id, coach.FullName })
+            .ToDictionaryAsync(c => c.ClassId, cancellationToken);
+
+        var allCoaches = await (from coach in db.CoachProfiles.AsNoTracking()
+            where coach.CenterId == centerId
+            select new { coach.Id, coach.FullName, coach.CoachCode, coach.Specialization, coach.Status })
+            .ToListAsync(cancellationToken);
+        var coachMap = allCoaches.ToDictionary(c => c.Id, c => c);
+
+        var rawSessions = await db.ClassSessions.AsNoTracking()
+            .Where(session => classIds.Contains(session.ClassId) && session.SessionDate >= @from && session.SessionDate <= to
+                && session.SessionStatus != "Cancelled")
+            .ToListAsync(cancellationToken);
+
+        var sessionIds = rawSessions.Select(s => s.Id).ToArray();
+        var bookingsCountBySession = await db.SessionBookings.AsNoTracking()
+            .Where(booking => sessionIds.Contains(booking.SessionId) && booking.Status == "Booked")
+            .GroupBy(booking => booking.SessionId)
+            .Select(g => new { SessionId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(item => item.SessionId, item => item.Count, cancellationToken);
+
+        var sessionRows = rawSessions.Select(session =>
+        {
+            var cls = centerClasses[session.ClassId];
+            var roomId = session.RoomId ?? cls.RoomId;
+            var room = roomId.HasValue && roomMap.TryGetValue(roomId.Value, out var rm) ? rm : null;
+            var coachId = session.CoachId ?? (primaryCoaches.TryGetValue(session.ClassId, out var pc) ? pc.Id : (long?)null);
+            var coachName = coachId.HasValue && coachMap.TryGetValue(coachId.Value, out var cInfo) ? cInfo.FullName : "Chưa có Coach";
+            var booked = bookingsCountBySession.GetValueOrDefault(session.Id, 0);
+
+            return new
+            {
+                SessionId = session.Id,
+                ClassId = cls.Id,
+                ClassName = cls.Name,
+                SportId = cls.SportId,
+                SportName = cls.SportName,
+                RoomId = room?.Id,
+                RoomName = room?.Name,
+                RoomType = room?.RoomType,
+                RoomLocation = room?.LocationDescription,
+                RoomCapacity = room?.Capacity ?? 0,
+                CoachId = coachId,
+                CoachName = coachName,
+                Capacity = cls.Capacity,
+                Booked = booked
+            };
+        }).ToArray();
+
+        static decimal Rate(int booked, int capacity) => capacity > 0
+            ? decimal.Round((decimal)booked / capacity * 100, 2) : 0;
+        var totalBooked = sessionRows.Sum(row => row.Booked);
+        var totalCapacity = sessionRows.Sum(row => row.Capacity);
+
+        var classRows = sessionRows.GroupBy(row => new
+            { row.ClassId, row.ClassName, row.SportName, row.CoachName, row.RoomName })
+            .Select(group => new OperationalClassItem(
+                group.Key.ClassId, group.Key.ClassName, group.Key.SportName, group.Key.CoachName, group.Key.RoomName,
+                group.Count(), group.Sum(row => row.Booked), group.Sum(row => row.Capacity),
+                Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity))))
+            .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
+            .ToArray();
+
+        var sportRows = sessionRows.GroupBy(row => new { row.SportId, row.SportName })
+            .Select(group => new OperationalSportItem(
+                group.Key.SportId, group.Key.SportName, group.Count(), group.Select(row => row.ClassId).Distinct().Count(),
+                group.Sum(row => row.Booked), group.Sum(row => row.Capacity),
+                Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity)),
+                totalBooked > 0 ? decimal.Round((decimal)group.Sum(row => row.Booked) / totalBooked * 100, 2) : 0))
+            .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
+            .ToArray();
+
+        var roomRows = sessionRows.Where(row => row.RoomId.HasValue)
+            .GroupBy(row => new { Id = row.RoomId!.Value, row.RoomName, row.RoomType, row.RoomLocation, row.RoomCapacity })
+            .Select(group => new OperationalRoomItem(
+                group.Key.Id, group.Key.RoomName!, group.Key.RoomType, group.Key.RoomLocation, group.Key.RoomCapacity,
+                group.Count(), group.Select(row => row.ClassId).Distinct().Count(), group.Sum(row => row.Booked),
+                group.Sum(row => row.Capacity), Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity)),
+                group.Select(row => row.ClassName).Distinct().OrderBy(name => name).ToArray()))
+            .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
+            .ToArray();
+
+        var coachItems = allCoaches.Select(coach =>
+        {
+            var cSessions = sessionRows.Where(s => s.CoachId == coach.Id).ToArray();
+            var cClassesCount = cSessions.Select(s => s.ClassId).Distinct().Count();
+            var sCount = cSessions.Length;
+            var booked = cSessions.Sum(s => s.Booked);
+            var cap = cSessions.Sum(s => s.Capacity);
+            return new OperationalCoachItem(
+                coach.Id,
+                coach.FullName,
+                coach.CoachCode,
+                coach.Specialization,
+                coach.Status,
+                cClassesCount,
+                sCount,
+                booked,
+                cap,
+                Rate(booked, cap)
+            );
+        }).OrderByDescending(c => c.Booked).ThenByDescending(c => c.SessionsCount).ToArray();
+
+        return new OperationsReportResponse(
+            centerId, from, to,
+            personnel.Length,
+            personnel.Count(row => isActive(row.ProfileStatus, row.UserStatus)),
+            personnel.Count(row => row.Role.Equals("Manager", StringComparison.OrdinalIgnoreCase)),
+            personnel.Count(row => row.Role.Equals("Coach", StringComparison.OrdinalIgnoreCase)),
+            personnel.Count(row => row.Role.Equals("Receptionist", StringComparison.OrdinalIgnoreCase)),
+            classCounts?.Total ?? 0, classCounts?.Active ?? 0,
+            roomCounts?.Total ?? 0, roomCounts?.Active ?? 0,
+            sessionRows.Length, totalBooked, totalCapacity, Rate(totalBooked, totalCapacity),
+            classRows, sportRows, roomRows, coachItems);
     }
 
     private async Task EnsureCenterExistsAsync(long centerId, CancellationToken cancellationToken)

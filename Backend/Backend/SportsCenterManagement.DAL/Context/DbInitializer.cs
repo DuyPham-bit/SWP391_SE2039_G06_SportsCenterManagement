@@ -245,44 +245,25 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        // 5b. Tạo tài khoản Huấn luyện viên (Coach) mặc định nếu chưa có
-        if (coachRole != null && !await context.Users.AnyAsync(u => u.Username == "coach01"))
+        // Demo coaches are intentionally not seeded. Managers create real coach accounts through staff management.
+        // Retire the legacy demo account only when its full seed signature still matches, preserving edited accounts.
+        var legacyCoachUser = await context.Users.FirstOrDefaultAsync(user =>
+            user.Username == "coach01" && user.Email == "coach01@sportscenter.vn" && user.Phone == "0900000004");
+        if (legacyCoachUser != null)
         {
-            var coachUser = new User
+            var legacyCoach = await context.CoachProfiles.FirstOrDefaultAsync(coach => coach.UserId == legacyCoachUser.Id);
+            if (legacyCoach != null)
             {
-                RoleId = coachRole.Id,
-                Username = "coach01",
-                Email = "coach01@sportscenter.vn",
-                PasswordHash = HashPassword("Coach@123456"),
-                Phone = "0900000004",
-                Status = "Active",
-                CreatedAt = DateTime.UtcNow
-            };
-            await context.Users.AddAsync(coachUser);
-            await context.SaveChangesAsync();
-
-            var coachProfile = new CoachProfile
-            {
-                UserId = coachUser.Id,
-                CenterId = demoCenter.Id,
-                CoachCode = $"CCH-{coachUser.Id:D5}",
-                FullName = "Huấn luyện viên mẫu",
-                Specialization = "Gym & Fitness, Bơi lội",
-                Certification = "NASM-CPT, Huấn luyện viên cấp 1",
-                ExperienceYears = 5,
-                Bio = "HLV giàu kinh nghiệm hỗ trợ cá nhân hóa bài tập",
-                Status = "Active",
-                CreatedAt = DateTime.UtcNow
-            };
-            await context.CoachProfiles.AddAsync(coachProfile);
-            await context.SaveChangesAsync();
-            var demoSportIds = await context.Sports
-                .Where(sport => (sport.CenterId == null || sport.CenterId == demoCenter.Id)
-                    && (sport.Name == "Gym & Fitness" || sport.Name == "Bơi lội"))
-                .Select(sport => sport.Id).ToListAsync();
-            await context.CoachSports.AddRangeAsync(demoSportIds.Select(sportId =>
-                new CoachSport { CoachId = coachProfile.Id, SportId = sportId }));
-            await context.SaveChangesAsync();
+                legacyCoach.Status = "Inactive";
+                legacyCoachUser.Status = "Inactive";
+                context.ClassCoaches.RemoveRange(context.ClassCoaches.Where(link => link.CoachId == legacyCoach.Id));
+                var futureSessions = await context.ClassSessions
+                    .Where(session => session.CoachId == legacyCoach.Id
+                        && session.SessionDate >= DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7)))
+                    .ToListAsync();
+                futureSessions.ForEach(session => session.CoachId = null);
+                await context.SaveChangesAsync();
+            }
         }
 
         // 6. Tạo tài khoản Member mẫu và MemberProfile nếu chưa có
@@ -756,8 +737,6 @@ public static class DbInitializer
     private static async Task SeedDemoClassesMembersAndPlansAsync(SportsCenterDbContext context, Center demoCenter)
     {
         var memberRole = await context.Roles.FirstAsync(r => r.Name == "Member");
-        var coachUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "coach01");
-        var coachProfile = coachUser != null ? await context.CoachProfiles.FirstOrDefaultAsync(c => c.UserId == coachUser.Id) : null;
         var activePkg = await context.MembershipPackages.FirstOrDefaultAsync(p => p.CenterId == demoCenter.Id && p.Status == "Active")
                         ?? await context.MembershipPackages.FirstOrDefaultAsync(p => p.Status == "Active");
 
@@ -770,8 +749,6 @@ public static class DbInitializer
             ("member04", "member04@sportscenter.vn", "0900000009", "MEM-00004", "Trần Thị Mai Anh", "Nữ", new DateOnly(2000, 5, 18), "Quận 3, TP.HCM", "Cải thiện nhịp tim và bơi lội", "Intermediate", 165, 54),
             ("member05", "member05@sportscenter.vn", "0900000010", "MEM-00005", "Vũ Đức Thắng", "Nam", new DateOnly(1997, 9, 5), "Quận 7, TP.HCM", "Phát triển thể lực và phản xạ boxing", "Intermediate", 172, 68)
         };
-
-        var memberProfilesList = new List<MemberProfile>();
 
         foreach (var m in memberDefs)
         {
@@ -813,8 +790,6 @@ public static class DbInitializer
                 await context.MemberProfiles.AddAsync(profile);
                 await context.SaveChangesAsync();
             }
-
-            memberProfilesList.Add(profile);
 
             if (activePkg != null && !await context.MemberSubscriptions.AnyAsync(s => s.MemberId == profile.Id && s.Status == "Active"))
             {
@@ -928,22 +903,6 @@ public static class DbInitializer
                 await context.SaveChangesAsync();
             }
             classesMap[c.Name] = cls;
-
-            // Assign Coach
-            if (coachProfile != null)
-            {
-                if (!await context.ClassCoaches.AnyAsync(cc => cc.ClassId == cls.Id && cc.CoachId == coachProfile.Id))
-                {
-                    await context.ClassCoaches.AddAsync(new ClassCoach
-                    {
-                        ClassId = cls.Id,
-                        CoachId = coachProfile.Id,
-                        AssignedDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
-                        IsPrimary = true
-                    });
-                    await context.SaveChangesAsync();
-                }
-            }
         }
 
         // 5. Seed Class Schedules
@@ -1007,7 +966,7 @@ public static class DbInitializer
                         ClassId = sched.ClassId,
                         ScheduleId = sched.Id,
                         RoomId = sched.RoomId,
-                        CoachId = coachProfile?.Id,
+                        CoachId = null,
                         SessionDate = sessionDate,
                         StartTime = sched.StartTime,
                         EndTime = sched.EndTime,
@@ -1019,44 +978,6 @@ public static class DbInitializer
             }
         }
         await context.SaveChangesAsync();
-
-        // 7. Seed 5 Training Plans (Lessons)
-        if (coachProfile != null && memberProfilesList.Count >= 5)
-        {
-            var planDefs = new (string Name, string ClassName, int MemberIndex, string PlanType, string Goal, string Description)[]
-            {
-                ("Giáo án Hoàn thiện kỹ thuật bơi sải & Nhịp thở Olympic", "Bơi sải Kỹ thuật Olympic K01", 3, "Class", "Tối ưu nhịp thở 2 bên, vươn sải tay xa, hoàn thành 500m bơi liên tục", "Giáo trình 8 tuần rèn luyện cơ tay sau, nhóm cơ liên sườn và kiểm soát nhịp thở dưới nước"),
-                ("Giáo án Tăng phì đại cơ thân trên Hypertrophy Chu kỳ 1", "Gym Tăng cơ Tối đa (Hypertrophy)", 0, "Personal", "Tăng 2kg khối lượng cơ nạc thân trên, cải thiện Bench Press lên 80kg", "Lịch tập chia nhóm cơ Push/Pull, tập trung Bench Press, Overhead Press, Barbell Row và Dips"),
-                ("Giáo án Yoga Trị liệu Cột sống & Mở khớp hông", "Yoga Phục hồi & Trị liệu Cột sống", 1, "Class", "Giải tỏa căng thẳng vùng thắt lưng, cải thiện tư thế đứng và độ dẻo dai khớp hông", "Các chuỗi động tác Cat-Cow, Pigeon Pose, Cobra Pose và các bài thở Pranayama phục hồi"),
-                ("Giáo án Bộ chân di chuyển & Đập cầu góc hẹp Smash", "Cầu lông Nâng cao Tấn công & Di chuyển", 2, "Personal", "Nâng cao tốc độ hồi sân, tăng lực phát bóng và đập cầu chính xác góc lưới", "Bài tập bước di chuyển 6 góc sân, bài tập cổ tay với vợt nặng, thực chiến phản xạ giao cầu"),
-                ("Giáo án Footwork né đòn & Tổ hợp đòn đấm 1-2-3 Boxing", "Boxing & Kickfit Đốt mỡ Cường độ cao", 4, "Personal", "Đốt cháy 600 kcal/buổi, hoàn thiện combo đòn Jab - Cross - Lead Hook uy lực", "Khởi động nhảy dây, đấm gió Shadow Boxing, bài tập né đòn Slip-Roll và đánh pad cường độ HIIT")
-            };
-
-            foreach (var pd in planDefs)
-            {
-                var cls = classesMap[pd.ClassName];
-                var member = memberProfilesList[pd.MemberIndex];
-
-                if (!await context.TrainingPlans.AnyAsync(tp => tp.Name == pd.Name))
-                {
-                    await context.TrainingPlans.AddAsync(new TrainingPlan
-                    {
-                        MemberId = member.Id,
-                        ClassId = cls.Id,
-                        CoachId = coachProfile.Id,
-                        Name = pd.Name,
-                        Description = pd.Description,
-                        Goal = pd.Goal,
-                        StartDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(-10)),
-                        EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddDays(50)),
-                        PlanType = pd.PlanType,
-                        Status = "Active",
-                        CreatedAt = DateTime.UtcNow
-                    });
-                }
-            }
-            await context.SaveChangesAsync();
-        }
     }
 
     private static async Task BaselineLegacySchemaAsync(SportsCenterDbContext context)

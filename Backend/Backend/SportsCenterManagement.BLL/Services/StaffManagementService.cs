@@ -7,6 +7,7 @@ using StaffResponses = SportsCenterManagement.BLL.DTOs.Staff.Responses;
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Authorization;
+using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 
@@ -20,17 +21,23 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         string? query,
         int page,
         int pageSize,
+        string sortBy,
+        string sortDirection,
         CancellationToken cancellationToken = default)
     {
         await EnsureCanManageStaffAsync(actorUserId, centerId, cancellationToken, allowReadOnlyManager: true);
+        var normalizedSort = sortBy.Trim().ToLowerInvariant();
+        var normalizedDirection = sortDirection.Trim().ToLowerInvariant();
         if (page is < 1 or > 1_000_000 || pageSize is < 1 or > 100
-            || query?.Trim().Length > 100)
+            || query?.Trim().Length > 100
+            || normalizedSort is not ("default" or "givenname" or "role")
+            || normalizedDirection is not ("asc" or "desc"))
         {
-            throw new ValidationException("Page cần từ 1; pageSize từ 1 đến 100; từ khóa tối đa 100 ký tự.");
+            throw new ValidationException("Page cần từ 1; pageSize từ 1 đến 100; từ khóa tối đa 100 ký tự; kiểu sắp xếp không hợp lệ.");
         }
 
         var term = query?.Trim();
-        var rows = await (
+        var matches =
             from staff in unitOfWork.Context.StaffProfiles.AsNoTracking()
             join user in unitOfWork.Context.Users.AsNoTracking() on staff.UserId equals user.Id
             join role in unitOfWork.Context.Roles.AsNoTracking() on user.RoleId equals role.Id
@@ -43,8 +50,34 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
                       || staff.FullName.Contains(term)
                       || user.Username.Contains(term)
                       || user.Email.Contains(term))
-            orderby staff.FullName, staff.Id
-            select new { Staff = staff, User = user, RoleName = role.Name, Coach = coach })
+            let normalizedName = staff.FullName.Trim()
+            let reversedName = SportsCenterDbContext.Reverse(normalizedName)
+            let separatorIndex = reversedName.IndexOf(" ")
+            let givenName = separatorIndex < 0
+                ? normalizedName
+                : SportsCenterDbContext.Reverse(reversedName.Substring(0, separatorIndex))
+            select new
+            {
+                StatusOrder = user.Status == "Active" ? 0 : 1,
+                GivenName = givenName,
+                Staff = staff,
+                User = user,
+                RoleName = role.Name,
+                Coach = coach
+            };
+        var ordered = normalizedSort switch
+        {
+            "givenname" when normalizedDirection == "desc" => matches.OrderBy(item => item.StatusOrder)
+                .ThenByDescending(item => item.GivenName).ThenByDescending(item => item.Staff.FullName).ThenBy(item => item.Staff.Id),
+            "givenname" => matches.OrderBy(item => item.StatusOrder)
+                .ThenBy(item => item.GivenName).ThenBy(item => item.Staff.FullName).ThenBy(item => item.Staff.Id),
+            "role" when normalizedDirection == "desc" => matches.OrderBy(item => item.StatusOrder)
+                .ThenByDescending(item => item.RoleName).ThenBy(item => item.GivenName).ThenBy(item => item.Staff.Id),
+            "role" => matches.OrderBy(item => item.StatusOrder)
+                .ThenBy(item => item.RoleName).ThenBy(item => item.GivenName).ThenBy(item => item.Staff.Id),
+            _ => matches.OrderBy(item => item.StatusOrder).ThenBy(item => item.Staff.FullName).ThenBy(item => item.Staff.Id)
+        };
+        var rows = await ordered
             .Skip((page - 1) * pageSize)
             .Take(pageSize)
             .ToListAsync(cancellationToken);
@@ -230,6 +263,23 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         await using var transaction = await unitOfWork.Context.Database.BeginTransactionAsync(
             IsolationLevel.Serializable, cancellationToken);
         await EnsureCanManageStaffAsync(actorUserId, centerId, cancellationToken, allowReadOnlyManager: false);
+        var actor = await unitOfWork.Repository<User>().GetByIdAsync(actorUserId, cancellationToken)
+            ?? throw new UnauthorizedAccessException("Không có quyền thao tác.");
+        var actorRole = await unitOfWork.Repository<Role>().GetByIdAsync(actor.RoleId, cancellationToken);
+        if (actorUserId == staffUserId && actorRole?.Name == RoleNames.Manager)
+        {
+            var message = request.Status == "Disabled"
+                ? "Bạn không thể khóa tài khoản Manager đang đăng nhập. Hãy nhờ một Manager khác thực hiện."
+                : "Bạn không thể sửa thông tin Manager đang đăng nhập tại màn hình Quản lý nhân viên. Hãy dùng Hồ sơ cá nhân hoặc nhờ một Manager khác thực hiện.";
+            throw new InvalidOperationException(message)
+            {
+                Data =
+                {
+                    ["StatusCode"] = 409,
+                    ["Code"] = request.Status == "Disabled" ? "STAFF-SELF-LOCK" : "STAFF-SELF-EDIT"
+                }
+            };
+        }
         var staff = await unitOfWork.Context.StaffProfiles.SingleOrDefaultAsync(
             item => item.UserId == staffUserId && item.CenterId == centerId, cancellationToken)
             ?? throw new KeyNotFoundException("Không tìm thấy nhân sự tại trung tâm này.");
@@ -237,9 +287,6 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
             ?? throw new KeyNotFoundException("Không tìm thấy tài khoản.");
         var role = await unitOfWork.Repository<Role>().GetByIdAsync(user.RoleId, cancellationToken)
             ?? throw new InvalidOperationException("Role của tài khoản không hợp lệ.");
-        var actor = await unitOfWork.Repository<User>().GetByIdAsync(actorUserId, cancellationToken)
-            ?? throw new UnauthorizedAccessException("Không có quyền thao tác.");
-        var actorRole = await unitOfWork.Repository<Role>().GetByIdAsync(actor.RoleId, cancellationToken);
         if (actorRole?.Name == RoleNames.Manager && role.Name == RoleNames.Manager)
         {
             throw new UnauthorizedAccessException("Manager không được sửa tài khoản Manager khác.");
