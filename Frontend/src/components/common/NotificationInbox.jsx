@@ -21,7 +21,7 @@ const SAMPLE_NOTIFICATIONS = [
   {
     id: 'sample-3',
     title: 'Hội viên đăng ký gia hạn',
-    content: 'Hội viên SE190363 vừa hoàn tất gia hạn Gói tập VIP 12 tháng tại Cơ sở TP. Hồ Chí Minh.',
+    content: 'Hội viên SC-8829 vừa hoàn tất gia hạn Gói tập VIP 12 tháng tại Cơ sở TP. Hồ Chí Minh.',
     createdAt: new Date(Date.now() - 1000 * 60 * 60 * 18).toISOString(),
     isRead: true
   }

@@ -109,7 +109,8 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
         document.fullscreenElement ||
         document.webkitFullscreenElement ||
         document.mozFullScreenElement ||
-        document.msFullscreenElement
+        document.msFullscreenElement ||
+        document.body.classList.contains('scms-simulated-fullscreen')
       );
       setIsFullscreen(isCurrentlyFull);
     };
@@ -119,11 +120,20 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
     document.addEventListener('mozfullscreenchange', handleFullscreenChange);
     document.addEventListener('MSFullscreenChange', handleFullscreenChange);
 
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && document.body.classList.contains('scms-simulated-fullscreen')) {
+        document.body.classList.remove('scms-simulated-fullscreen');
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
       document.removeEventListener('mozfullscreenchange', handleFullscreenChange);
       document.removeEventListener('MSFullscreenChange', handleFullscreenChange);
+      window.removeEventListener('keydown', handleKeyDown);
     };
   }, []);
 
@@ -172,42 +182,61 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
   };
 
   // Handler bật / tắt Toàn màn hình
-  const handleToggleFullscreen = async () => {
-    try {
-      const isCurrentlyFull = Boolean(
-        document.fullscreenElement ||
-        document.webkitFullscreenElement ||
-        document.mozFullScreenElement ||
-        document.msFullscreenElement
-      );
+  const handleToggleFullscreen = () => {
+    const isCurrentlyFull = Boolean(
+      document.fullscreenElement ||
+      document.webkitFullscreenElement ||
+      document.mozFullScreenElement ||
+      document.msFullscreenElement ||
+      document.body.classList.contains('scms-simulated-fullscreen')
+    );
 
-      if (!isCurrentlyFull) {
-        const el = document.documentElement;
-        if (el.requestFullscreen) {
-          await el.requestFullscreen();
-        } else if (el.webkitRequestFullscreen) {
-          await el.webkitRequestFullscreen();
-        } else if (el.mozRequestFullScreen) {
-          await el.mozRequestFullScreen();
-        } else if (el.msRequestFullscreen) {
-          await el.msRequestFullscreen();
+    if (!isCurrentlyFull) {
+      const el = document.documentElement;
+      let nativeRequested = false;
+
+      const reqFn = el.requestFullscreen || el.webkitRequestFullscreen || el.mozRequestFullScreen || el.msRequestFullscreen;
+      if (reqFn) {
+        try {
+          const res = reqFn.call(el);
+          if (res && typeof res.then === 'function') {
+            res.then(() => {
+              setIsFullscreen(true);
+            }).catch((err) => {
+              console.warn('Native requestFullscreen denied, activating simulated fullscreen:', err);
+              document.body.classList.add('scms-simulated-fullscreen');
+              setIsFullscreen(true);
+            });
+            nativeRequested = true;
+          } else {
+            setIsFullscreen(true);
+            nativeRequested = true;
+          }
+        } catch (e) {
+          console.warn('Native fullscreen call threw:', e);
         }
-        if (showSuccess) showSuccess(language === 'vi' ? 'Đã mở chế độ Toàn màn hình ⛶' : 'Fullscreen enabled ⛶');
-      } else {
-        if (document.exitFullscreen) {
-          await document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          await document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-          await document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          await document.msExitFullscreen();
-        }
-        if (showInfo) showInfo(language === 'vi' ? 'Đã thoát chế độ Toàn màn hình' : 'Exited fullscreen');
       }
-    } catch (err) {
-      console.warn('Fullscreen error:', err);
-      if (showWarning) showWarning(language === 'vi' ? 'Trình duyệt chặn mở toàn màn hình tự động.' : 'Browser blocked fullscreen request.');
+
+      if (!nativeRequested) {
+        document.body.classList.add('scms-simulated-fullscreen');
+        setIsFullscreen(true);
+      }
+      if (showSuccess) showSuccess(language === 'vi' ? 'Đã mở chế độ Toàn màn hình ⛶' : 'Fullscreen enabled ⛶');
+    } else {
+      document.body.classList.remove('scms-simulated-fullscreen');
+      const exitFn = document.exitFullscreen || document.webkitExitFullscreen || document.mozCancelFullScreen || document.msExitFullscreen;
+      if (exitFn && (document.fullscreenElement || document.webkitFullscreenElement || document.mozFullScreenElement || document.msFullscreenElement)) {
+        try {
+          const res = exitFn.call(document);
+          if (res && typeof res.then === 'function') {
+            res.catch((err) => console.warn('exitFullscreen rejected:', err));
+          }
+        } catch (e) {
+          console.warn('exitFullscreen threw:', e);
+        }
+      }
+      setIsFullscreen(false);
+      if (showInfo) showInfo(language === 'vi' ? 'Đã thoát chế độ Toàn màn hình' : 'Exited fullscreen');
     }
   };
 
@@ -216,16 +245,18 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
     return t(`role.${normalized}`, r);
   };
 
-  // Trích xuất 2 chữ cái đầu viết tắt cho Avatar (Ví dụ: Huỳnh Nhật Huy -> HH)
+  // Trích xuất 2 chữ cái đầu viết tắt cho Avatar (Ví dụ: Huấn luyện viên 01 -> HV)
   const getUserInitials = (name) => {
-    if (!name) return 'HH';
-    const parts = name.trim().split(/\s+/);
+    if (!name) return 'HV';
+    // Bỏ qua các từ là số (ví dụ: '01', '02', '123') để lấy đúng chữ cái đầu của tên
+    const parts = name.trim().split(/\s+/).filter(w => !/^\d+$/.test(w));
+    if (parts.length === 0) return 'SC';
     if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  const displayName = currentUser?.fullName || 'Huỳnh Nhật Huy';
-  const displayCode = currentUser?.username || 'SE190363';
+  const displayName = currentUser?.fullName || (role === 'COACH' ? (language === 'vi' ? 'Huấn luyện viên 01' : 'Coach 01') : 'Huỳnh Nhật Huy');
+  const roleLabel = getRoleLabel(role);
   const userInitials = getUserInitials(displayName);
 
   const branchDisplayName = language === 'en' ? SINGLE_BRANCH.nameEn : SINGLE_BRANCH.nameVi;
@@ -442,8 +473,8 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
               <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[140px]">
                 {displayName}
               </div>
-              <div className="text-[11px] text-slate-400 dark:text-slate-400 font-medium tracking-wide">
-                {displayCode}
+              <div className="text-[11px] text-[#1A3B8B] dark:text-blue-400 font-bold tracking-wide">
+                {roleLabel}
               </div>
             </div>
           </button>
@@ -455,10 +486,10 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
               <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
                 <p className="text-xs font-bold text-slate-900 dark:text-white">{displayName}</p>
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                  {currentUser?.email || `${displayCode.toLowerCase()}@sportscenter.vn`}
+                  {currentUser?.email || (currentUser?.username && !currentUser.username.startsWith('SE') ? `${currentUser.username.toLowerCase()}@sportscenter.vn` : 'coach@sportscenter.vn')}
                 </p>
                 <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/60 text-[#1A3B8B] dark:text-blue-300 text-[10px] font-bold border border-blue-100 dark:border-blue-800">
-                  {getRoleLabel(role)}
+                  {roleLabel}
                 </span>
               </div>
 
