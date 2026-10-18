@@ -44,6 +44,16 @@ export const SYSTEM_CAPABILITIES = [
     defaultRole: 'MANAGER'
   },
   {
+    id: 'manage_coach_operations',
+    label: 'Vận hành đội ngũ HLV',
+    desc: 'Duyệt nghỉ phép, cấu hình KPI/hoa hồng, tài nguyên và bảo trì thiết bị',
+    path: '#/manager/coach-operations',
+    icon: 'manage_accounts',
+    category: 'VẬN HÀNH & NHÂN SỰ',
+    targetScreenName: 'Vận Hành Đội Ngũ HLV',
+    defaultRole: 'MANAGER'
+  },
+  {
     id: 'manage_landing_content',
     label: 'QUẢN LÝ NỘI DUNG TRANG CHỦ & ĐA PHƯƠNG TIỆN',
     desc: 'Tùy biến nội dung landing page, môn học, cụm sân bãi và hình ảnh đám mây',
@@ -167,6 +177,16 @@ export const SYSTEM_CAPABILITIES = [
     targetScreenName: 'Yêu Cầu Hỗ Trợ',
     defaultRole: 'COACH'
   },
+  {
+    id: 'manage_coach_workspace',
+    label: 'Không gian HLV chuyên nghiệp',
+    desc: 'Lịch PT, hồ sơ sức khỏe, bài tập, dinh dưỡng, chat, KPI và tài nguyên',
+    path: '#/coach/professional',
+    icon: 'workspace_premium',
+    category: 'HUẤN LUYỆN VIÊN',
+    targetScreenName: 'Coach Professional Hub',
+    defaultRole: 'COACH'
+  },
 
   // 4. Hội viên
   {
@@ -217,6 +237,16 @@ export const SYSTEM_CAPABILITIES = [
     icon: 'support_agent',
     category: 'HỘI VIÊN & ĐẶT CHỖ',
     targetScreenName: 'Yêu Cầu Hỗ Trợ',
+    defaultRole: 'MEMBER'
+  },
+  {
+    id: 'use_coach_portal',
+    label: 'Tương tác với HLV',
+    desc: 'Xác nhận lịch PT, check-in bài tập, nhật ký dinh dưỡng, chat và đánh giá',
+    path: '#/member/coach-portal',
+    icon: 'connect_without_contact',
+    category: 'HỘI VIÊN & ĐẶT CHỖ',
+    targetScreenName: 'Cổng Tương Tác HLV',
     defaultRole: 'MEMBER'
   }
 ];
@@ -317,6 +347,7 @@ export function getDynamicNavItems(role) {
       if (perms.includes('manage_packages')) items.push({ path: '#/manager/packages', icon: 'card_membership', label: 'Gói Tập Hội Viên' });
       if (perms.includes('manage_classes')) items.push({ path: '#/manager/classes-rooms', icon: 'sports_score', label: 'Lớp, Bộ Môn & Phòng' });
       if (perms.includes('assign_coach')) items.push({ path: '#/manager/coach-assignment', icon: 'assignment_ind', label: 'Phân Công HLV' });
+      if (perms.includes('manage_coach_operations')) items.push({ path: '#/manager/coach-operations', icon: 'manage_accounts', label: 'Vận Hành Đội Ngũ HLV' });
       items.push({ path: '#/manager/home-content', icon: 'dashboard_customize', label: 'QUẢN LÝ NỘI DUNG TRANG CHỦ & ĐA PHƯƠNG TIỆN' });
 
       items.push({ label: 'BÁO CÁO & BẢO MẬT', isHeader: true });
@@ -372,6 +403,9 @@ export function getDynamicNavItems(role) {
         items.push({ path: '#/coach/schedule', icon: 'calendar_month', label: 'Lịch Giảng Dạy' });
         items.push({ path: '#/coach/members', icon: 'group', label: 'Danh Sách Học Viên' });
       }
+      if (perms.includes('manage_coach_workspace')) {
+        items.push({ path: '#/coach/professional', icon: 'workspace_premium', label: 'Coach Professional Hub' });
+      }
       if (perms.includes('take_attendance')) {
         items.push({ path: '#/coach/attendance', icon: 'fact_check', label: 'Điểm Danh Lớp' });
       }
@@ -395,7 +429,7 @@ export function getDynamicNavItems(role) {
       items.push({ path: '#/coach/support', icon: 'support_agent', label: 'Yêu Cầu Hỗ Trợ' });
 
       // Add extra granted permissions if assigned by Manager
-      const defaultCoachCapIds = ['view_teaching_schedule', 'view_class_members', 'create_training_plan', 'record_workout_progress', 'take_attendance', 'send_coach_notifications', 'get_ai_recommendation', 'coach_support'];
+      const defaultCoachCapIds = ['view_teaching_schedule', 'view_class_members', 'create_training_plan', 'record_workout_progress', 'take_attendance', 'send_coach_notifications', 'get_ai_recommendation', 'coach_support', 'manage_coach_workspace'];
       const extraCaps = perms.filter(capId => !defaultCoachCapIds.includes(capId));
 
       if (extraCaps.length > 0) {
@@ -427,6 +461,7 @@ export function getDynamicNavItems(role) {
 
       items.push({ label: 'RÈN LUYỆN & HỖ TRỢ', isHeader: true });
       if (perms.includes('view_my_progress')) items.push({ path: '#/member/progress', icon: 'stacked_line_chart', label: 'Giáo Án, Tiến Độ & Nhận Xét' });
+      if (perms.includes('use_coach_portal')) items.push({ path: '#/member/coach-portal', icon: 'connect_without_contact', label: 'Tương Tác Với HLV' });
       items.push({ path: '#/member/notifications', icon: 'notifications', label: 'Thông Báo Của Tôi' });
       items.push({ path: '#/member/support', icon: 'support_agent', label: 'Yêu Cầu Hỗ Trợ' });
 

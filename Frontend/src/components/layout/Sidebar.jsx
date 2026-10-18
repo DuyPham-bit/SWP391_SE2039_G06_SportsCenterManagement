@@ -48,11 +48,21 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
 
             const isActive = currentPath === item.path || (currentPath.startsWith(item.path) && item.path !== '#/manager/dashboard');
 
+            const isAIAssistant = item.path === '#/member/ai-assistant';
+
             return (
               <a
                 key={idx}
                 href={item.path}
-                onClick={onClose}
+                onClick={(e) => {
+                  if (isAIAssistant) {
+                    e.preventDefault();
+                    window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
+                    onClose?.();
+                  } else {
+                    onClose?.();
+                  }
+                }}
                 className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold tracking-wide transition-all ${isActive
                     ? 'bg-[#3D405B] text-[#F2CC8F] shadow-sm border-l-4 border-[#F2CC8F]'
                     : 'text-slate-300 hover:bg-white/5 hover:text-white'
@@ -62,6 +72,11 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
                   {item.icon}
                 </span>
                 <span className="truncate">{item.label}</span>
+                {isAIAssistant && (
+                  <span className="ml-auto px-1.5 py-0.2 rounded bg-[#81B29A]/20 text-[#81B29A] text-[9px] font-bold uppercase border border-[#81B29A]/30">
+                    Popup
+                  </span>
+                )}
               </a>
             );
           })}

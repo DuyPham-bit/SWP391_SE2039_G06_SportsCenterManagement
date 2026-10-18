@@ -82,10 +82,12 @@ builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ICheckinService, CheckinService>();
 builder.Services.AddScoped<SupportRequestService>();
 builder.Services.AddScoped<TrainingService>();
+builder.Services.AddScoped<CoachProfessionalService>();
 builder.Services.AddScoped<MemberAiContextService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ClassReminderService>();
 builder.Services.AddHostedService<ClassReminderWorker>();
+builder.Services.AddHostedService<CommunicationDeliveryWorker>();
 builder.Services.AddScoped<LandingContentService>();
 var localMediaRoot = Path.GetFullPath(
     builder.Configuration["GoogleDrive:LocalStoragePath"] ?? Path.Combine("App_Data", "media"),

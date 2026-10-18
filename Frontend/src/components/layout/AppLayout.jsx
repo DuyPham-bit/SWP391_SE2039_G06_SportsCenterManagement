@@ -1,12 +1,16 @@
+import React, { useState } from 'react';
 import { Header } from './Header.js';
 import { Sidebar } from './Sidebar.js';
 import { ProfileModal } from '../../features/auth/ProfileModal.js';
-
-const { useState } = React;
+import { useAuth } from '../../context/AuthContext.js';
+import { MemberAIChatPopup, openMemberAIChat } from '../../features/member/MemberAIChatPopup.jsx';
 
 export function AppLayout({ children, currentPath }) {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const { role } = useAuth();
+
+  const isMemberArea = role === 'MEMBER' || (currentPath && currentPath.startsWith('#/member'));
 
   return (
     <div className="min-h-screen bg-[#FAF8F5] flex flex-col font-sans">
@@ -36,13 +40,27 @@ export function AppLayout({ children, currentPath }) {
             <div className="flex items-center gap-4 text-[11px] font-medium text-slate-600">
               <a href="#/" className="hover:text-[#E07A5F] transition-colors">Trang chủ Landing</a>
               <span className="text-slate-300">|</span>
-              <a href="#/member/ai-assistant" className="hover:text-[#E07A5F] transition-colors">Hỏi đáp AI</a>
+              {isMemberArea ? (
+                <button
+                  type="button"
+                  onClick={() => openMemberAIChat()}
+                  className="hover:text-[#E07A5F] transition-colors inline-flex items-center gap-1 font-semibold text-slate-700"
+                >
+                  <span className="material-symbols-outlined text-[13px] text-[#81B29A]">smart_toy</span>
+                  <span>Hỏi đáp AI (Popup)</span>
+                </button>
+              ) : (
+                <a href="#/member/ai-assistant" className="hover:text-[#E07A5F] transition-colors">Hỏi đáp AI</a>
+              )}
               <span className="text-slate-300">|</span>
               <span className="text-slate-400">Phiên bản 1.0.0</span>
             </div>
           </footer>
         </main>
       </div>
+
+      {/* Floating AI Chat Popup Widget for Members */}
+      {isMemberArea && <MemberAIChatPopup />}
 
       {/* User Profile & Password Modal */}
       <ProfileModal
@@ -52,3 +70,4 @@ export function AppLayout({ children, currentPath }) {
     </div>
   );
 }
+

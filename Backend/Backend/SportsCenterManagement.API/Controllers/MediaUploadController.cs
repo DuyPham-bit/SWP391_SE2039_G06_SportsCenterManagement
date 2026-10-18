@@ -8,7 +8,7 @@ using SportsCenterManagement.BLL.Services;
 namespace SportsCenterManagement.API.Controllers;
 
 [Route("api/media")]
-[Authorize(Roles = "MANAGER,ADMIN,SYSTEMADMIN")]
+[Authorize(Roles = "COACH,MANAGER,ADMIN,SYSTEMADMIN")]
 [FlowExceptionFilter]
 public class MediaUploadController : FlowControllerBase
 {
@@ -24,7 +24,7 @@ public class MediaUploadController : FlowControllerBase
     /// </summary>
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(16 * 1024 * 1024)]
+    [RequestSizeLimit(52 * 1024 * 1024)]
     [ProducesResponseType(typeof(UploadMediaResultDto), StatusCodes.Status200OK)]
     public async Task<ActionResult<UploadMediaResultDto>> Upload(IFormFile? file, CancellationToken ct)
     {
@@ -33,17 +33,17 @@ public class MediaUploadController : FlowControllerBase
             throw new FlowException(400, "Vui lòng chọn tệp hình ảnh để tải lên.");
         }
 
-        // Kiểm tra dung lượng tối đa 15MB
-        if (file.Length > 15 * 1024 * 1024)
+        // Ảnh hoặc video hướng dẫn, tối đa 50MB.
+        if (file.Length > ImageUploadValidator.MaxFileSize)
         {
-            throw new FlowException(400, "Dung lượng ảnh tối đa là 15MB.");
+            throw new FlowException(400, "Dung lượng media tối đa là 50MB.");
         }
 
         // Kiểm tra content-type
         var contentType = file.ContentType?.ToLowerInvariant() ?? "";
-        if (!contentType.StartsWith("image/"))
+        if (!contentType.StartsWith("image/") && contentType is not ("video/mp4" or "video/webm"))
         {
-            throw new FlowException(400, "Tệp tải lên phải là hình ảnh (PNG, JPG, JPEG, WEBP, GIF, AVIF).");
+            throw new FlowException(400, "Chỉ hỗ trợ ảnh hoặc video MP4/WEBM.");
         }
 
         using var stream = file.OpenReadStream();

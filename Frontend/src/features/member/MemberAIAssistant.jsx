@@ -312,6 +312,18 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
             </div>
 
             <button
+              type="button"
+              onClick={() => {
+                window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
+                showSuccess('Đã mở Trợ lý AI dạng popup ở góc phải màn hình!');
+              }}
+              className="inline-flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white text-xs font-bold rounded-xl transition duration-150 shadow-md shadow-red-950/40 active:scale-95"
+            >
+              <span className="material-symbols-outlined text-[16px]">open_in_new</span>
+              <span>Mở Popup góc màn hình</span>
+            </button>
+
+            <button
               onClick={handleResetChat}
               disabled={isAsking}
               className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition duration-150 backdrop-blur-sm active:scale-95 disabled:opacity-50"

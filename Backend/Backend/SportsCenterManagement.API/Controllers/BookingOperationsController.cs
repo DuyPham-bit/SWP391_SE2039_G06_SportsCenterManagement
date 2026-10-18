@@ -100,7 +100,12 @@ public sealed class BookingOperationsController(SportsCenterDbContext db, ISessi
         await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         await EnsureCoach(sessionId, ct);
         var session = await db.ClassSessions.SingleAsync(s => s.Id == sessionId, ct);
-        if (session.SessionStatus == "Cancelled" || session.SessionDate.ToDateTime(session.StartTime) > DateTime.UtcNow.AddHours(7))
+        var vietnamNow = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).DateTime;
+        if (string.Equals(session.SessionStatus, "Cancelled", StringComparison.OrdinalIgnoreCase))
+            throw new InvalidOperationException("Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.") { Data = { ["StatusCode"] = 409 } };
+        if (session.SessionDate < DateOnly.FromDateTime(vietnamNow))
+            throw new InvalidOperationException("Buổi học đã qua ngày nên không thể sửa điểm danh.") { Data = { ["StatusCode"] = 409 } };
+        if (session.SessionDate.ToDateTime(session.StartTime) > vietnamNow)
             throw new InvalidOperationException("Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.") { Data = { ["StatusCode"] = 409 } };
         var ids = records.Select(r => r.MemberId).ToArray();
         var eligible = await db.SessionBookings.Where(b => b.SessionId == sessionId && b.Status == "Booked" && ids.Contains(b.MemberId)).Select(b => b.MemberId).ToListAsync(ct);

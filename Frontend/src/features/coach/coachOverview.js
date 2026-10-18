@@ -11,8 +11,16 @@ export function canRecordSession(session, now = new Date()) {
   return Boolean(session) && session.status !== 'CANCELLED' && sessionTime(session, true) <= now.getTime();
 }
 
+export function attendanceRestriction(session, now = new Date()) {
+  if (!session) return 'NO_SESSION';
+  if (session.status === 'CANCELLED') return 'CANCELLED';
+  if (session.sessionDate < coachDate(0, now)) return 'PAST_DATE';
+  if (sessionTime(session) > now.getTime()) return 'NOT_STARTED';
+  return null;
+}
+
 export function canAttendSession(session, now = new Date()) {
-  return Boolean(session) && session.status !== 'CANCELLED' && sessionTime(session) <= now.getTime();
+  return attendanceRestriction(session, now) === null;
 }
 
 export function metricChanges(records) {

@@ -6,12 +6,12 @@ namespace SportsCenterManagement.BLL.Services;
 
 public static class ImageUploadValidator
 {
-    public const long MaxFileSize = 15 * 1024 * 1024;
+    public const long MaxFileSize = 50 * 1024 * 1024;
 
     public static string? GetMimeTypeForFileName(string name) => Path.GetExtension(name).ToLowerInvariant() switch
     {
         ".png" => "image/png", ".jpg" or ".jpeg" => "image/jpeg", ".gif" => "image/gif",
-        ".webp" => "image/webp", ".avif" => "image/avif", _ => null
+        ".webp" => "image/webp", ".avif" => "image/avif", ".mp4" => "video/mp4", ".webm" => "video/webm", _ => null
     };
 
     public static bool IsSupportedFileName(string name) => GetMimeTypeForFileName(name) is not null;
@@ -19,7 +19,7 @@ public static class ImageUploadValidator
     public static async Task<(string FileName, string MimeType)> ValidateAsync(Stream stream, string fileName, string mimeType, CancellationToken ct)
     {
         if (!stream.CanSeek || stream.Length == 0 || stream.Length > MaxFileSize)
-            throw new FlowException(400, "Ảnh phải có dung lượng từ 1 byte đến 15MB.");
+            throw new FlowException(400, "Tệp media phải có dung lượng từ 1 byte đến 50MB.");
 
         var header = new byte[(int)Math.Min(stream.Length, 4096)];
         stream.Position = 0;
@@ -32,13 +32,15 @@ public static class ImageUploadValidator
         else if (count >= 6 && Encoding.ASCII.GetString(header, 0, 6) is "GIF87a" or "GIF89a") detected = "image/gif";
         else if (count >= 12 && Encoding.ASCII.GetString(header, 0, 4) == "RIFF" && Encoding.ASCII.GetString(header, 8, 4) == "WEBP") detected = "image/webp";
         else if (HasAvifFileType(header.AsSpan(0, count), stream.Length)) detected = "image/avif";
+        else if (count >= 12 && Encoding.ASCII.GetString(header, 4, 4) == "ftyp") detected = "video/mp4";
+        else if (count >= 4 && header[0] == 0x1A && header[1] == 0x45 && header[2] == 0xDF && header[3] == 0xA3) detected = "video/webm";
 
         var expected = GetMimeTypeForFileName(fileName);
         if (detected is null || detected != expected || !string.Equals(detected, mimeType, StringComparison.OrdinalIgnoreCase))
-            throw new FlowException(400, "Chỉ hỗ trợ ảnh PNG, JPG/JPEG, GIF, WEBP, AVIF đúng định dạng. Không hỗ trợ SVG hoặc tệp giả mạo hình ảnh.");
+            throw new FlowException(400, "Chỉ hỗ trợ ảnh PNG, JPG/JPEG, GIF, WEBP, AVIF và video MP4/WEBM đúng định dạng.");
 
         var safeName = Path.GetFileName(fileName.Replace('\\', '/'));
-        if (safeName.Length > 500) throw new FlowException(400, "Tên tệp ảnh quá dài (tối đa 500 ký tự).");
+        if (safeName.Length > 500) throw new FlowException(400, "Tên tệp media quá dài (tối đa 500 ký tự).");
         return (safeName, detected);
     }
 
