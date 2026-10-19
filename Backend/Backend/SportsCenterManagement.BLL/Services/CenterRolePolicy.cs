@@ -14,9 +14,9 @@ public static class CenterRolePolicy
     public static string[] Capabilities(string role) => role.ToUpperInvariant() switch
     {
         "MEMBER" => ["book_class", "cancel_booking", "view_my_progress", "ask_ai_assistant", "use_coach_portal"],
-        "COACH" => ["view_teaching_schedule", "view_class_members", "create_training_plan", "record_workout_progress", "take_attendance", "send_coach_notifications", "get_ai_recommendation", "coach_support", "manage_coach_workspace"],
+        "COACH" => ["view_teaching_schedule", "take_attendance", "create_training_plan", "get_ai_recommendation", "manage_coach_workspace"],
         "RECEPTIONIST" => ["lookup_member", "register_counter_package", "checkin_member"],
-        "MANAGER" or "ADMIN" or "SYSTEMADMIN" => ["manage_staff", "manage_packages", "manage_classes", "assign_coach", "view_reports", "manage_roles", "view_audit_logs", "manage_landing_content", "manage_coach_operations", "manage_coach_workspace", "coach_support"],
+        "MANAGER" or "ADMIN" or "SYSTEMADMIN" => ["manage_staff", "manage_packages", "manage_classes", "assign_coach", "view_reports", "manage_roles", "view_audit_logs", "manage_landing_content", "manage_coach_operations"],
         _ => []
     };
 

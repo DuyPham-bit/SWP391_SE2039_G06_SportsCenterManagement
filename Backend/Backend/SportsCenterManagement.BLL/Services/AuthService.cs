@@ -189,7 +189,7 @@ public sealed class AuthService(IUnitOfWork unitOfWork) : IAuthService
             .Select(profile => (long?)profile.CenterId)
             .SingleOrDefaultAsync(cancellationToken);
 
-        return new AuthResponses.AuthenticatedUser(user.Id, user.Username, role.Name, centerId, user.Email);
+        return new AuthResponses.AuthenticatedUser(user.Id, user.Username, role.Name, centerId, user.Email, user.AuthVersion);
     }
 
     /// <summary>

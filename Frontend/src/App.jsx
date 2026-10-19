@@ -241,7 +241,7 @@ function AppRouter() {
       case '#/coach/equipment':
         return renderCoachRoute(CoachResources, 'manage_coach_workspace');
       case '#/coach/professional':
-        return renderCoachRoute(CoachSalaryKPI, 'manage_coach_workspace');
+        return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');
 
       // MEMBER ROUTES
       case '#/member/dashboard':

@@ -31,6 +31,7 @@ builder.Services.AddDbContext<SportsCenterDbContext>(options =>
 
 builder.Services.AddSingleton(jwtIssuer);
 builder.Services.AddScoped<JwtAccountValidator>();
+builder.Services.AddScoped<PasswordResetEmailSender>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.MapInboundClaims = false;
@@ -69,6 +70,8 @@ builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 
 // Flow 2 Services
 builder.Services.AddScoped<IClassManagementService, ClassManagementService>();
+builder.Services.AddScoped<ISportManagementService, SportManagementService>();
+builder.Services.AddScoped<ICoachAssignmentQueryService, CoachAssignmentQueryService>();
 builder.Services.AddScoped<IClassScheduleQueryService, ClassScheduleQueryService>();
 builder.Services.AddScoped<ISessionBookingService, SessionBookingService>();
 builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
@@ -104,6 +107,7 @@ builder.Services.AddHttpClient<GeminiService>(client => client.Timeout = TimeSpa
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    PasswordResetRateLimiting.Configure(options);
     options.AddPolicy("ai", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));

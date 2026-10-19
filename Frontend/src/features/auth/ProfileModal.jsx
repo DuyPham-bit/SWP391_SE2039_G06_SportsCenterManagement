@@ -100,7 +100,7 @@ export function ProfileModal({ isOpen, onClose }) {
           onClick={() => setActiveTab('profile')}
           className={`pb-2.5 px-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
             activeTab === 'profile'
-              ? 'border-[#1A3B8B] text-[#1A3B8B]'
+              ? 'border-[#81B29A] text-[#2D6A4F]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -110,7 +110,7 @@ export function ProfileModal({ isOpen, onClose }) {
           onClick={() => setActiveTab('password')}
           className={`pb-2.5 px-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
             activeTab === 'password'
-              ? 'border-[#1A3B8B] text-[#1A3B8B]'
+              ? 'border-[#81B29A] text-[#2D6A4F]'
               : 'border-transparent text-slate-500 hover:text-slate-800'
           }`}
         >
@@ -124,7 +124,7 @@ export function ProfileModal({ isOpen, onClose }) {
             <img
               src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}
               alt="Avatar"
-              className="w-16 h-16 rounded-full object-cover border-2 border-[#1A3B8B] shadow-xs"
+              className="w-16 h-16 rounded-full object-cover border-2 border-[#81B29A] shadow-xs"
             />
             <div>
               <div className="flex items-center gap-2">
@@ -133,7 +133,7 @@ export function ProfileModal({ isOpen, onClose }) {
               </div>
               <p className="text-xs text-slate-500 mt-0.5">{currentUser?.email}</p>
               {currentUser?.memberCode && (
-                <p className="text-[11px] font-semibold text-[#1A3B8B] mt-1">
+                <p className="text-[11px] font-semibold text-[#2D6A4F] mt-1">
                   {isEn ? `Member Code: ${currentUser.memberCode}` : `Mã thẻ: ${currentUser.memberCode}`}
                 </p>
               )}
@@ -161,7 +161,7 @@ export function ProfileModal({ isOpen, onClose }) {
               required
               value={fullName}
               onChange={e => setFullName(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1A3B8B] focus:border-[#1A3B8B] bg-white"
+              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
@@ -174,17 +174,17 @@ export function ProfileModal({ isOpen, onClose }) {
               value={phone}
               onChange={e => setPhone(e.target.value)}
               placeholder="0912 345 678"
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1A3B8B] focus:border-[#1A3B8B] bg-white"
+              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
           {currentUser?.packageName && (
-            <div className="p-3 rounded-lg bg-blue-50/60 border border-blue-100 flex items-center justify-between text-xs">
+            <div className="p-3 rounded-lg bg-[#81B29A]/10 border border-[#81B29A]/30 flex items-center justify-between text-xs">
               <div>
                 <span className="font-bold text-slate-800">
                   {isEn ? 'Current Package: ' : 'Gói tập hiện tại: '}
                 </span>
-                <span className="text-[#1A3B8B] font-semibold">{currentUser.packageName}</span>
+                <span className="text-[#2D6A4F] font-semibold">{currentUser.packageName}</span>
               </div>
               <Badge variant={currentUser.packageStatus}>{currentUser.packageStatus}</Badge>
             </div>
@@ -201,7 +201,7 @@ export function ProfileModal({ isOpen, onClose }) {
             <button
               type="submit"
               disabled={savingProfile}
-              className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-[#1A3B8B] hover:bg-[#142F70] text-white shadow-md transition-colors cursor-pointer"
+              className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white shadow-md transition-colors cursor-pointer"
             >
               {savingProfile ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save Changes' : 'Lưu Thay Đổi')}
             </button>
@@ -229,7 +229,7 @@ export function ProfileModal({ isOpen, onClose }) {
               placeholder={isEn ? "Enter current password (Default: password123)" : "Nhập mật khẩu đang dùng (Mặc định: password123)"}
               value={currentPassword}
               onChange={e => setCurrentPassword(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1A3B8B] focus:border-[#1A3B8B] bg-white"
+              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
@@ -244,7 +244,7 @@ export function ProfileModal({ isOpen, onClose }) {
               placeholder={isEn ? "At least 6 characters" : "Tối thiểu 6 ký tự"}
               value={newPassword}
               onChange={e => setNewPassword(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1A3B8B] focus:border-[#1A3B8B] bg-white"
+              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
@@ -259,7 +259,7 @@ export function ProfileModal({ isOpen, onClose }) {
               placeholder={isEn ? "Re-enter new password" : "Nhập lại mật khẩu mới"}
               value={confirmPassword}
               onChange={e => setConfirmPassword(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#1A3B8B] focus:border-[#1A3B8B] bg-white"
+              className="w-full px-3.5 py-2 text-sm rounded-lg border border-slate-200 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
             />
           </div>
 
@@ -274,7 +274,7 @@ export function ProfileModal({ isOpen, onClose }) {
             <button
               type="submit"
               disabled={savingPassword}
-              className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-[#1A3B8B] hover:bg-[#142F70] text-white shadow-md transition-colors cursor-pointer"
+              className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white shadow-md transition-colors cursor-pointer"
             >
               {savingPassword ? (isEn ? 'Updating...' : 'Đang cập nhật...') : (isEn ? 'Change Password' : 'Đổi Mật Khẩu')}
             </button>

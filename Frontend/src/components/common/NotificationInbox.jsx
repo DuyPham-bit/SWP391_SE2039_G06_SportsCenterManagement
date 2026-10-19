@@ -83,14 +83,14 @@ export function NotificationInbox() {
         onClick={toggle}
         aria-label="Thông báo"
         aria-expanded={open}
-        className="w-9 h-9 rounded-full bg-blue-50/80 hover:bg-blue-100 text-[#1A3B8B] dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-blue-400 flex items-center justify-center transition-colors relative border border-blue-100 dark:border-slate-700 shadow-2xs cursor-pointer"
+        className="w-9 h-9 rounded-full bg-[#81B29A]/15 hover:bg-[#81B29A]/25 text-[#2D6A4F] dark:bg-slate-800 dark:hover:bg-slate-700 dark:text-[#81B29A] flex items-center justify-center transition-colors relative border border-[#81B29A]/20 dark:border-slate-700 shadow-2xs cursor-pointer"
         title="Thông báo"
       >
         <span className="material-symbols-outlined text-[20px]">notifications</span>
         {unreadCount > 0 && (
           <span
             aria-label={`${unreadCount} thông báo chưa đọc`}
-            className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-red-500 ring-2 ring-white dark:ring-slate-900 animate-pulse"
+            className="absolute top-1.5 right-1.5 w-2.5 h-2.5 rounded-full bg-[#E07A5F] ring-2 ring-white dark:ring-slate-900 animate-pulse"
           />
         )}
       </button>
@@ -101,7 +101,7 @@ export function NotificationInbox() {
             <div className="flex items-center gap-2">
               <h2 className="font-bold text-sm text-slate-900 dark:text-white">Thông báo</h2>
               {unreadCount > 0 && (
-                <span className="px-2 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900/60 text-[#1A3B8B] dark:text-blue-300 text-[11px] font-bold">
+                <span className="px-2 py-0.5 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] text-[11px] font-bold">
                   {unreadCount} mới
                 </span>
               )}
@@ -110,7 +110,7 @@ export function NotificationInbox() {
               type="button"
               onClick={handleMarkAllRead}
               disabled={unreadCount === 0 || loading || readingAll || readingId !== null}
-              className="text-xs font-semibold text-[#1A3B8B] dark:text-blue-400 hover:underline disabled:opacity-40 transition-opacity cursor-pointer"
+              className="text-xs font-semibold text-[#2D6A4F] dark:text-[#81B29A] hover:text-[#E07A5F] hover:underline disabled:opacity-40 transition-opacity cursor-pointer"
             >
               {readingAll ? 'Đang lưu...' : 'Đọc tất cả'}
             </button>
@@ -129,7 +129,7 @@ export function NotificationInbox() {
                 className={`block w-full text-left rounded-xl p-3 transition-all cursor-pointer ${
                   item.isRead
                     ? 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700/60'
-                    : 'bg-[#EEF4FE] hover:bg-blue-100/70 dark:bg-blue-950/40 dark:hover:bg-blue-900/40 text-slate-900 dark:text-slate-100 border border-blue-200/80 dark:border-blue-800/50 shadow-2xs'
+                    : 'bg-[#81B29A]/10 hover:bg-[#81B29A]/20 dark:bg-[#81B29A]/15 dark:hover:bg-[#81B29A]/25 text-slate-900 dark:text-slate-100 border border-[#81B29A]/30 dark:border-[#81B29A]/30 shadow-2xs'
                 }`}
               >
                 <div className="flex items-start justify-between gap-2">
@@ -137,7 +137,7 @@ export function NotificationInbox() {
                     {item.title}
                   </span>
                   {!item.isRead && (
-                    <span className="w-2 h-2 rounded-full bg-blue-600 dark:bg-blue-400 shrink-0 mt-1" />
+                    <span className="w-2 h-2 rounded-full bg-[#81B29A] shrink-0 mt-1" />
                   )}
                 </div>
                 <span className="block text-xs whitespace-pre-wrap break-words mt-1 text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -155,7 +155,7 @@ export function NotificationInbox() {
               <a
                 href="#/member/notifications"
                 onClick={() => setOpen(false)}
-                className="block text-center text-xs font-semibold text-[#1A3B8B] dark:text-blue-400 hover:underline py-1"
+                className="block text-center text-xs font-semibold text-[#2D6A4F] dark:text-[#81B29A] hover:text-[#E07A5F] hover:underline py-1"
               >
                 Xem tất cả thông báo & Nhắc lịch →
               </a>

@@ -23,10 +23,10 @@ public sealed class ClassSchedulesController(IClassScheduleQueryService service)
         CancellationToken ct = default)
     {
         long? centerId = null;
-        if (User.IsInRole("MANAGER") || User.IsInRole("RECEPTIONIST"))
+        if (User.IsInRole("MEMBER") || User.IsInRole("MANAGER") || User.IsInRole("RECEPTIONIST"))
         {
             if (!long.TryParse(User.FindFirst("centerId")?.Value, out var assignedCenterId) || assignedCenterId <= 0)
-                throw new InvalidOperationException("Tài khoản nhân viên chưa được gán vào trung tâm hoạt động.") { Data = { ["StatusCode"] = 403 } };
+                throw new InvalidOperationException("Tài khoản chưa được gán vào trung tâm hoạt động.") { Data = { ["StatusCode"] = 403 } };
             centerId = assignedCenterId;
         }
 

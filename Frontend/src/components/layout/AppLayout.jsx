@@ -78,7 +78,7 @@ export function AppLayout({ children, currentPath }) {
   const breadcrumbTitle = getBreadcrumbTitle(currentPath);
 
   return (
-    <div className="min-h-screen bg-[#F4F6FA] dark:bg-slate-950 flex flex-col font-sans transition-colors">
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-slate-950 flex flex-col font-sans transition-colors">
       {/* Top Header */}
       <Header
         onOpenProfile={() => setProfileModalOpen(true)}
@@ -98,19 +98,19 @@ export function AppLayout({ children, currentPath }) {
           <div className="flex-1 p-3.5 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto">
             {/* FPT Portal Breadcrumb Bar */}
             <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4">
-              <span className="material-symbols-outlined text-[17px] text-slate-400">home</span>
-              <a href="#/" className="hover:text-[#1A3B8B] dark:hover:text-blue-400 transition-colors">
+              <span className="material-symbols-outlined text-[17px] text-[#81B29A]">home</span>
+              <a href="#/" className="hover:text-[#E07A5F] dark:hover:text-[#F2CC8F] transition-colors">
                 {t('nav.home', 'Trang chủ')}
               </a>
               <span className="text-slate-300 dark:text-slate-600">/</span>
-              <span className="font-bold text-slate-900 dark:text-white">{breadcrumbTitle}</span>
+              <span className="font-bold text-[#1E2235] dark:text-white">{breadcrumbTitle}</span>
             </div>
 
             {children}
           </div>
 
           {/* Theme Clean Footer */}
-          <footer className="py-3 px-6 bg-[#F4F6FA] dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 mt-auto transition-colors">
+          <footer className="py-3 px-6 bg-[#FAF8F5] dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 mt-auto transition-colors">
             <span>{t('footer.copyright', 'Bản quyền © 2026 SCMS - Sports Center Management System. Đã đăng ký bản quyền.')}</span>
             <div className="flex items-center gap-4 text-[11px] font-medium text-slate-500 dark:text-slate-400">
               <span>{t('footer.version', 'Phiên bản: 2.0.0.0')}</span>

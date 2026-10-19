@@ -7,6 +7,8 @@
   </PropertyGroup>
   <ItemGroup>
     <InternalsVisibleTo Include="SportsCenterManagement.Tests" />
+    <Content Remove="credentials.local.json" />
+    <None Include="credentials.local.json" CopyToOutputDirectory="Never" CopyToPublishDirectory="Never" />
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />

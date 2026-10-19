@@ -306,20 +306,6 @@ export function MemberDashboard() {
           }
         ]
       : []),
-    ...(canAskAI
-      ? [
-          {
-            href: '#/member/ai-assistant',
-            icon: 'smart_toy',
-            title: 'Trợ lý Thể Thao AI',
-            subtitle: 'Hỏi đáp giáo án & dinh dưỡng',
-            color: 'from-fuchsia-600 to-pink-600',
-            badge: 'Popup 24/7',
-            badgeColor: 'bg-fuchsia-50 text-fuchsia-700',
-            isAiPopup: true
-          }
-        ]
-      : []),
     {
       href: '#/member/notifications',
       icon: 'notifications',

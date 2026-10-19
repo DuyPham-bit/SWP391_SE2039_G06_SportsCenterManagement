@@ -10,6 +10,7 @@ using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.CoreFlows;
 using SportsCenterManagement.BLL.DTOs.Payments;
 using SportsCenterManagement.BLL.Interfaces;
+using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 
@@ -2075,6 +2076,13 @@ public sealed class PaymentService(
         DateTime now,
         CancellationToken cancellationToken)
     {
+        // Every cancellation path, including replacement checkout, must preserve collected money.
+        if (invoice.Status is not ("Issued" or "PartiallyPaid"))
+            throw BusinessException.Conflict("Chỉ có thể hủy hóa đơn ở trạng thái Issued hoặc PartiallyPaid.");
+        if (await _unitOfWork.Context.Payments.AnyAsync(
+                p => p.InvoiceId == invoice.Id && p.PaymentStatus == "Succeeded", cancellationToken))
+            throw BusinessException.Conflict("Hóa đơn đã có thanh toán thành công. Liên hệ nhân viên để được hỗ trợ.");
+
         invoice.Status = "Voided";
 
         // Void tất cả payment Pending của hóa đơn này
@@ -2102,9 +2110,46 @@ public sealed class PaymentService(
             }
         }
 
-        _unitOfWork.Context.AuditLogs.Add(CreateAudit(
+        var audit = CreateAudit(
             actorUserId, "Invoice.CancelledByMember", "Invoice", invoice.Id,
-            new { invoice.InvoiceNumber, reason = "Hủy hóa đơn chờ thanh toán." }, now));
+            new { invoice.InvoiceNumber, reason = "Hủy hóa đơn chờ thanh toán." }, now);
+        audit.CenterId = invoice.CenterId;
+        _unitOfWork.Context.AuditLogs.Add(audit);
+    }
+
+    private async Task EnsureCanCancelPendingAsync(long actorId, long memberId, long centerId, CancellationToken ct)
+    {
+        var actor = await (from user in _unitOfWork.Context.Users
+            join role in _unitOfWork.Context.Roles on user.RoleId equals role.Id
+            where user.Id == actorId && user.Status == "Active"
+                && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)
+            select new { user.RoleId, Role = role.Name }).SingleOrDefaultAsync(ct);
+        if (actor is null) throw BusinessException.Forbidden("Tài khoản không hoạt động.");
+
+        var owner = actor.Role == RoleNames.Member && await _unitOfWork.Context.MemberProfiles
+            .AnyAsync(m => m.Id == memberId && m.UserId == actorId, ct);
+        if (!owner)
+        {
+            if (actor.Role is not (RoleNames.Manager or RoleNames.Receptionist or RoleNames.SystemAdmin or "Admin"))
+                throw BusinessException.Forbidden("Bạn không có quyền hủy hóa đơn này.");
+            if (actor.Role is RoleNames.Manager or RoleNames.Receptionist &&
+                !await _unitOfWork.Context.StaffProfiles.AnyAsync(s => s.UserId == actorId
+                    && s.CenterId == centerId && s.Status == "Active", ct))
+                throw BusinessException.Forbidden("Hóa đơn không thuộc trung tâm bạn được phân công.");
+        }
+
+        var permission = owner ? PermissionCodes.PaymentSelfCreate : PermissionCodes.PaymentCenterCash;
+        if (!await (from grant in _unitOfWork.Context.RolePermissions
+                    join p in _unitOfWork.Context.Permissions on grant.PermissionId equals p.Id
+                    where grant.RoleId == actor.RoleId && p.Code == permission select p.Id).AnyAsync(ct))
+            throw BusinessException.Forbidden("Bạn không có quyền xử lý hóa đơn chờ thanh toán.");
+        if (actor.Role is RoleNames.Member or RoleNames.Receptionist)
+        {
+            var policy = await CenterRolePolicy.Read(_unitOfWork.Context, centerId, actor.RoleId, ct);
+            if (policy is not null && (!policy.PermissionCodes.Contains(permission)
+                || (!owner && !policy.CapabilityIds.Contains("register_counter_package"))))
+                throw BusinessException.Forbidden("Quyền xử lý thanh toán đã bị thu hồi tại trung tâm.");
+        }
     }
 
     /// <summary>
@@ -2123,29 +2168,7 @@ public sealed class PaymentService(
             .SingleOrDefaultAsync(i => i.InvoiceNumber == invoiceNumber, cancellationToken)
             ?? throw BusinessException.NotFound("Không tìm thấy hóa đơn.");
 
-        // Xác nhận hóa đơn thuộc đúng member đang đăng nhập hoặc nhân viên
-        var memberProfile = await _unitOfWork.Context.MemberProfiles
-            .SingleOrDefaultAsync(m => m.UserId == memberUserId, cancellationToken);
-
-        if (memberProfile != null && invoice.MemberId != memberProfile.Id)
-        {
-            var isStaff = await _unitOfWork.Context.StaffProfiles.AnyAsync(s => s.UserId == memberUserId, cancellationToken);
-            if (!isStaff)
-                throw BusinessException.Forbidden("Bạn không có quyền hủy hóa đơn này.");
-        }
-
-        // Không hủy nếu đã có payment thành công
-        if (await _unitOfWork.Context.Payments.AnyAsync(
-                p => p.InvoiceId == invoice.Id && p.PaymentStatus == "Succeeded", cancellationToken))
-        {
-            throw BusinessException.Conflict("Hóa đơn đã có thanh toán thành công. Liên hệ nhân viên để được hỗ trợ.");
-        }
-
-        if (invoice.Status is "Voided" or "Refunded" or "Paid")
-            throw BusinessException.Conflict($"Hóa đơn trạng thái '{invoice.Status}' không thể hủy.");
-
-        if (invoice.Status is not ("Issued" or "PartiallyPaid"))
-            throw BusinessException.Conflict($"Chỉ có thể hủy hóa đơn ở trạng thái Issued hoặc PartiallyPaid.");
+        await EnsureCanCancelPendingAsync(memberUserId, invoice.MemberId, invoice.CenterId, cancellationToken);
 
         var now = DateTime.UtcNow;
         await CancelPendingInvoiceCoreAsync(memberUserId, invoice, now, cancellationToken);
@@ -2170,48 +2193,15 @@ public sealed class PaymentService(
         long? targetMemberId = null,
         CancellationToken cancellationToken = default)
     {
-        long resolvedMemberId;
-        if (targetMemberId.HasValue && targetMemberId.Value > 0)
-        {
-            resolvedMemberId = targetMemberId.Value;
-        }
-        else
-        {
-            var memberProfile = await _unitOfWork.Context.MemberProfiles
-                .SingleOrDefaultAsync(m => m.UserId == memberUserId, cancellationToken);
-            if (memberProfile is null)
-            {
-                var isStaff = await _unitOfWork.Context.StaffProfiles.AnyAsync(s => s.UserId == memberUserId, cancellationToken);
-                if (!isStaff)
-                {
-                    throw BusinessException.NotFound("Không tìm thấy hồ sơ thành viên.");
-                }
-
-                var anyPending = await (
-                    from item in _unitOfWork.Context.InvoiceItems
-                    join invoice in _unitOfWork.Context.Invoices on item.InvoiceId equals invoice.Id
-                    join subscription in _unitOfWork.Context.MemberSubscriptions on item.SubscriptionId equals subscription.Id
-                    where item.PackageId == packageId && subscription.Status == "PendingPayment"
-                        && (invoice.Status == "Issued" || invoice.Status == "PartiallyPaid")
-                    orderby invoice.IssuedAt descending
-                    select invoice.MemberId
-                ).FirstOrDefaultAsync(cancellationToken);
-
-                if (anyPending == 0)
-                {
-                    return new PaymentResultResponse
-                    {
-                        Success = true,
-                        Message = "Không có hóa đơn chờ nào cho gói này."
-                    };
-                }
-                resolvedMemberId = anyPending;
-            }
-            else
-            {
-                resolvedMemberId = memberProfile.Id;
-            }
-        }
+        if (packageId <= 0 || targetMemberId is <= 0)
+            throw BusinessException.BadRequest("Mã gói và mã hội viên phải là số dương.");
+        var package = await _unitOfWork.Context.MembershipPackages
+            .SingleOrDefaultAsync(p => p.Id == packageId, cancellationToken)
+            ?? throw BusinessException.NotFound("Không tìm thấy gói tập.");
+        var resolvedMemberId = targetMemberId ?? await _unitOfWork.Context.MemberProfiles
+            .Where(m => m.UserId == memberUserId).Select(m => (long?)m.Id).SingleOrDefaultAsync(cancellationToken)
+            ?? throw BusinessException.BadRequest("Nhân viên cần chỉ định hội viên khi hủy đơn theo gói.");
+        await EnsureCanCancelPendingAsync(memberUserId, resolvedMemberId, package.CenterId, cancellationToken);
 
         var pendingInvoiceNumber = await FindOpenPendingInvoiceNumberAsync(resolvedMemberId, packageId, cancellationToken);
         if (pendingInvoiceNumber is null)
@@ -2250,9 +2240,11 @@ public sealed class PaymentService(
                         invoice.Id,
                         invoice.InvoiceNumber,
                         PackageId = package.Id,
-                        PackageName = package.Name,
-                        Amount = invoice.TotalAmount,
-                        DurationDays = package.DurationDays,
+                        PackageName = item.Description ?? package.Name,
+                        Amount = invoice.TotalAmount - (_unitOfWork.Context.Payments
+                            .Where(p => p.InvoiceId == invoice.Id && p.PaymentStatus == "Succeeded")
+                            .Sum(p => (decimal?)p.Amount) ?? 0m),
+                        DurationDays = subscription.DurationDays,
                         invoice.IssuedAt
                     };
 

@@ -7,10 +7,10 @@ import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { CoachError } from './CoachShared.jsx';
 import { calendarWindow, currency, localDateKey, mergeCoachCalendar, tdeeEstimate } from './coachProfessionalView.js';
 
-// Unified input and button styles in SCMS Olympic Blue design system
-const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#1A3B8B] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 outline-none transition-all shadow-2xs';
+// Unified input and button styles in SCMS Olympic Arena design system
+const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#81B29A] dark:focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 dark:focus:ring-[#81B29A]/30 outline-none transition-all shadow-2xs';
 const selectClass = `${inputClass} cursor-pointer`;
-const buttonPrimary = 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A3B8B] hover:bg-[#142F70] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+const buttonPrimary = 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 const buttonSecondary = 'inline-flex items-center justify-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3.5 py-2 text-xs sm:text-sm font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-750 shadow-2xs transition-all cursor-pointer disabled:opacity-50';
 
 function SectionCard({ title, icon, action, children, className = '' }) {
@@ -19,7 +19,7 @@ function SectionCard({ title, icon, action, children, className = '' }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700/60 pb-3">
         <div className="flex items-center gap-2.5">
           {icon && (
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#1A3B8B] dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#81B29A]/15 dark:bg-[#81B29A]/20 text-[#2D6A4F] dark:text-[#81B29A] flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-[19px]">{icon}</span>
             </div>
           )}
@@ -143,11 +143,13 @@ export function CoachProfessionalHub() {
 
   return (
     <div className="space-y-5 animate-fadeIn">
-      {/* 1. Header Banner in SCMS Olympic Blue Theme */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1A3B8B] via-[#1E40AF] to-[#2563EB] text-white p-5 sm:p-7 shadow-md">
+      {/* 1. Header Banner in SCMS Olympic Arena Theme */}
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#2B2D42] to-[#3D405B] text-white p-5 sm:p-7 shadow-md border border-white/10">
+        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-blue-100 text-xs font-bold uppercase tracking-wider backdrop-blur-xs border border-white/20 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#F2CC8F] text-xs font-bold uppercase tracking-wider backdrop-blur-xs border border-white/20 shadow-2xs">
               <span className="material-symbols-outlined text-[15px]">workspace_premium</span>
               {isEn ? 'Coach Professional Workspace' : 'Phân hệ chuyên môn HLV cao cấp'}
             </span>
@@ -167,7 +169,7 @@ export function CoachProfessionalHub() {
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
             {isEn ? `Command Hub · Coach ${coachName}` : `Trung tâm điều hành chuyên môn HLV ${coachName}`}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-blue-100/90 max-w-3xl leading-relaxed">
+          <p className="mt-1 text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
             {isEn
               ? 'Consolidated operational workspace: schedule management, student profiles, workout syllabus, nutrition plans, secure messaging, transparent KPI income, and facility assets.'
               : 'Quản lý toàn diện trên một luồng dữ liệu chuẩn hóa: Lịch dạy, hồ sơ học viên, giáo án & dinh dưỡng, tương tác bảo mật, thu nhập KPI minh bạch và tài nguyên sân bãi.'}
@@ -176,7 +178,7 @@ export function CoachProfessionalHub() {
           {/* Quick Stats Grid inside Hero Header */}
           <div className="mt-4 pt-4 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Active Students' : 'Học viên phụ trách'}
               </span>
               <span className="text-lg font-black text-white">
@@ -184,7 +186,7 @@ export function CoachProfessionalHub() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Monthly Sessions' : 'Buổi dạy tháng'}
               </span>
               <span className="text-lg font-black text-white">
@@ -192,7 +194,7 @@ export function CoachProfessionalHub() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Average Rating' : 'Đánh giá TB'}
               </span>
               <span className="text-lg font-black text-amber-300 flex items-center gap-1">
@@ -200,7 +202,7 @@ export function CoachProfessionalHub() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Estimated Income' : 'Thu nhập dự kiến'}
               </span>
               <span className="text-base sm:text-lg font-black text-emerald-300 truncate block">
@@ -226,7 +228,7 @@ export function CoachProfessionalHub() {
               onClick={() => setTab(id)}
               className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-[#1A3B8B] text-white shadow-xs'
+                  ? 'bg-[#1E2235] text-[#F2CC8F] shadow-xs'
                   : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100/80 dark:hover:bg-slate-700/60 hover:text-slate-900 dark:hover:text-white'
               }`}
             >
@@ -310,7 +312,7 @@ function ScheduleTab({ data, act, working, isEn }) {
                   onClick={() => setMode(x)}
                   className={`rounded-lg px-3 py-1.5 text-xs font-bold transition-all cursor-pointer ${
                     mode === x
-                      ? 'bg-white dark:bg-slate-800 text-[#1A3B8B] dark:text-blue-400 shadow-2xs'
+                      ? 'bg-white dark:bg-slate-800 text-[#2D6A4F] dark:text-[#81B29A] shadow-2xs'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-900'
                   }`}
                 >
@@ -340,11 +342,11 @@ function ScheduleTab({ data, act, working, isEn }) {
             <div className="grid gap-3 sm:grid-cols-2">
               {Object.entries(grouped).map(([date, items]) => (
                 <article key={date} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-750/40 p-3.5 space-y-2.5">
-                  <h3 className="text-xs font-bold text-[#1A3B8B] dark:text-blue-400 uppercase tracking-wider pb-1 border-b border-slate-200/60 dark:border-slate-700 flex items-center justify-between">
+                  <h3 className="text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A] uppercase tracking-wider pb-1 border-b border-slate-200/60 dark:border-slate-700 flex items-center justify-between">
                     <span>
                       {new Date(`${date}T00:00:00`).toLocaleDateString(isEn ? 'en-US' : 'vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' })}
                     </span>
-                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/50 text-[#1A3B8B] dark:text-blue-300 font-bold">
+                    <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] font-bold">
                       {items.length} {isEn ? 'events' : 'ca'}
                     </span>
                   </h3>
@@ -357,7 +359,7 @@ function ScheduleTab({ data, act, working, isEn }) {
                       >
                         <div className="flex items-start justify-between gap-2">
                           <span className="font-bold text-slate-900 dark:text-white">
-                            <span className="inline-block px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-950/60 text-[#1A3B8B] dark:text-blue-300 text-[11px] font-bold mr-1.5">
+                            <span className="inline-block px-1.5 py-0.5 rounded bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] text-[11px] font-bold mr-1.5">
                               {item.startLabel}
                             </span>
                             {item.title}
@@ -438,7 +440,7 @@ function ScheduleTab({ data, act, working, isEn }) {
                     </p>
                     <p className="text-slate-600 dark:text-slate-300 mt-1">{x.reason}</p>
                     {x.managerNote && (
-                      <p className="mt-1 text-[11px] text-[#1A3B8B] dark:text-blue-400 font-medium">
+                      <p className="mt-1 text-[11px] text-[#2D6A4F] dark:text-[#81B29A] font-medium">
                         {isEn ? 'Manager Note: ' : 'Phản hồi quản lý: '}{x.managerNote}
                       </p>
                     )}
@@ -606,7 +608,7 @@ function ClientsTab({ data, act, working, isEn }) {
                 onClick={() => setSelectedId(x.id)}
                 className={`w-full text-left p-3 rounded-xl border transition-all cursor-pointer ${
                   isSelected
-                    ? 'border-[#1A3B8B] dark:border-blue-500 bg-blue-50/60 dark:bg-blue-900/30 shadow-2xs'
+                    ? 'border-[#81B29A] dark:border-[#81B29A] bg-[#81B29A]/10 dark:bg-[#81B29A]/20 shadow-2xs'
                     : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-750'
                 }`}
               >
@@ -697,7 +699,7 @@ function ClientsTab({ data, act, working, isEn }) {
                       </span>
                       <div
                         title={isEn ? `Fat: ${x.bodyFatPercentage || '—'}% · Muscle: ${x.muscleMass || '—'}kg` : `Mỡ: ${x.bodyFatPercentage || '—'}% · Cơ: ${x.muscleMass || '—'}kg`}
-                        className="w-full max-w-9 rounded-t bg-gradient-to-t from-[#1A3B8B] to-blue-400 dark:from-blue-700 dark:to-blue-400 shadow-2xs transition-all hover:opacity-90"
+                        className="w-full max-w-9 rounded-t bg-gradient-to-t from-[#1E2235] to-[#81B29A] dark:from-[#2B2D42] dark:to-[#81B29A] shadow-2xs transition-all hover:opacity-90"
                         style={{ height: `${Math.max(16, Math.min(140, Number(x.weight || 0) * 1.6))}px` }}
                       />
                       <span className="text-[9px] text-slate-400 mt-1">{x.resultDate?.slice(5)}</span>
@@ -726,7 +728,7 @@ function ClientsTab({ data, act, working, isEn }) {
                     <div key={x.id} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-750 border border-slate-100 dark:border-slate-700 text-xs">
                       <div className="flex justify-between font-bold text-slate-900 dark:text-white">
                         <span>{x.title}</span>
-                        <span className="text-[10px] px-2 py-0.5 rounded bg-blue-50 dark:bg-blue-900/40 text-[#1A3B8B] dark:text-blue-300">
+                        <span className="text-[10px] px-2 py-0.5 rounded bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A]">
                           {x.recordType}
                         </span>
                       </div>
@@ -1066,7 +1068,7 @@ function ProgramsTab({ data, act, working, isEn }) {
                     <button
                       type="button"
                       onClick={() => addExerciseToPlan(x)}
-                      className="px-2.5 py-1 rounded-lg bg-[#1A3B8B] text-white font-bold text-xs hover:bg-[#142F70] cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg bg-[#1E2235] text-[#F2CC8F] hover:bg-[#2B2D42] font-bold text-xs cursor-pointer"
                     >
                       {isEn ? '+ Add' : '+ Thêm'}
                     </button>
@@ -1076,8 +1078,8 @@ function ProgramsTab({ data, act, working, isEn }) {
             </div>
 
             {/* Added exercises list */}
-            <div className="p-3.5 rounded-2xl border-2 border-dashed border-blue-200 dark:border-blue-900/60 bg-blue-50/30 dark:bg-blue-950/20 min-h-64">
-              <p className="text-xs font-bold uppercase text-[#1A3B8B] dark:text-blue-400 mb-3">
+            <div className="p-3.5 rounded-2xl border-2 border-dashed border-[#81B29A]/30 dark:border-[#81B29A]/30 bg-[#81B29A]/5 dark:bg-[#81B29A]/10 min-h-64">
+              <p className="text-xs font-bold uppercase text-[#2D6A4F] dark:text-[#81B29A] mb-3">
                 {isEn ? `Curated Exercise Schedule (${planExercises.length} items)` : `Lộ trình bài tập đã thêm (${planExercises.length} bài)`}
               </p>
               {!planExercises.length ? (
@@ -1318,12 +1320,12 @@ function CommunicationTab({ data, act, working, isEn }) {
                   key={x.id}
                   className={`max-w-[80%] rounded-2xl p-3 text-xs leading-relaxed ${
                     isCoach
-                      ? 'ml-auto bg-[#1A3B8B] text-white rounded-br-xs shadow-xs'
+                      ? 'ml-auto bg-[#1E2235] text-white rounded-br-xs shadow-xs'
                       : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-bl-xs shadow-2xs'
                   }`}
                 >
                   <p>{x.content}</p>
-                  <span className={`text-[10px] block mt-1 ${isCoach ? 'text-blue-200' : 'text-slate-400'}`}>
+                  <span className={`text-[10px] block mt-1 ${isCoach ? 'text-[#F2CC8F]' : 'text-slate-400'}`}>
                     {formatDate(x.createdAt, isEn)}
                   </span>
                 </div>
@@ -1339,7 +1341,7 @@ function CommunicationTab({ data, act, working, isEn }) {
               key={i}
               type="button"
               onClick={() => setInputMessage(pill)}
-              className="text-[11px] px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-blue-50 dark:hover:bg-blue-900/40 hover:text-[#1A3B8B] dark:hover:text-blue-300 shrink-0 transition-colors cursor-pointer"
+              className="text-[11px] px-2.5 py-1 rounded-full bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 hover:bg-[#81B29A]/15 dark:hover:bg-[#81B29A]/20 hover:text-[#2D6A4F] dark:hover:text-[#81B29A] shrink-0 transition-colors cursor-pointer"
             >
               {pill}
             </button>
@@ -1376,7 +1378,7 @@ function CommunicationTab({ data, act, working, isEn }) {
             <div className="grid grid-cols-2 gap-2 text-xs">
               {['InApp', 'Email', 'SMS', 'Push'].map((ch, idx) => (
                 <label key={ch} className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-750 cursor-pointer">
-                  <input name={ch} type="checkbox" defaultChecked={idx === 0} className="rounded text-[#1A3B8B]" />
+                  <input name={ch} type="checkbox" defaultChecked={idx === 0} className="rounded text-[#81B29A] focus:ring-[#81B29A]" />
                   <span>{ch}</span>
                 </label>
               ))}
@@ -1420,7 +1422,7 @@ function PerformanceTab({ data, isEn }) {
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xs">
           <span className="text-[10px] font-bold uppercase text-slate-400 block">{isEn ? 'Student Retention Rate' : 'Tỷ lệ giữ chân học viên'}</span>
-          <span className="text-2xl font-black text-[#1A3B8B] dark:text-blue-400 mt-1 block">
+          <span className="text-2xl font-black text-[#2D6A4F] dark:text-[#81B29A] mt-1 block">
             {k.retentionRate || 0}%
           </span>
           <span className="text-xs text-slate-500 mt-1 block">
@@ -1458,7 +1460,7 @@ function PerformanceTab({ data, isEn }) {
               </div>
               <div className="h-3 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#1A3B8B] dark:bg-blue-500 transition-all duration-500"
+                  className="h-full rounded-full bg-[#81B29A] transition-all duration-500"
                   style={{ width: `${sessionPercent}%` }}
                 />
               </div>

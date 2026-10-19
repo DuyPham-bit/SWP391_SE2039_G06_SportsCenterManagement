@@ -38,7 +38,6 @@ async function loadSessionsBetween(from, to) {
 }
 
 function mapMember(member) {
-  const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
   let expiryStr = null;
   if (member.packageExpiry) {
     expiryStr = typeof member.packageExpiry === 'string'
@@ -46,10 +45,7 @@ function mapMember(member) {
       : String(member.packageExpiry);
   }
 
-  let pkgStatus = (member.packageStatus || 'INACTIVE').toUpperCase();
-  if (pkgStatus === 'ACTIVE' && expiryStr && expiryStr < today) {
-    pkgStatus = 'EXPIRED';
-  }
+  const pkgStatus = (member.packageStatus || 'INACTIVE').toUpperCase();
 
   return {
     id: member.memberId,
@@ -79,21 +75,18 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
   const profile = await apiRequest('profile/me', { token });
   assertAuthVersion(version);
   let memberId = null;
-  let activeSubscription = null;
+  let memberProfile = null;
   let scheduledSubscriptions = [];
 
   if (String(profile.role).toUpperCase() === 'MEMBER') {
     const member = await apiRequest('members/me', { token });
     assertAuthVersion(version);
     memberId = member.memberId;
+    memberProfile = member;
     const subscriptions = await apiRequest(`members/${memberId}/subscriptions`, { token });
     assertAuthVersion(version);
-    const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
-    const activeSubs = asArray(subscriptions).filter(item => String(item.status).toUpperCase() === 'ACTIVE' && item.startDate && item.endDate && item.startDate <= today && item.endDate >= today);
-    activeSubs.sort((a, b) => (b.endDate || '').localeCompare(a.endDate || ''));
-    activeSubscription = activeSubs[0] || null;
     scheduledSubscriptions = asArray(subscriptions)
-      .filter(item => String(item.status).toUpperCase() === 'ACTIVE' && item.startDate > today && item.endDate >= item.startDate)
+      .filter(item => item.effectiveStatus === 'SCHEDULED')
       .sort((a, b) => a.startDate.localeCompare(b.startDate) || Number(a.subscriptionId) - Number(b.subscriptionId));
   }
 
@@ -111,10 +104,11 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
     memberCode: profile.memberCode,
     centerId: profile.centerId,
     createdAt: profile.createdAt,
-    packageId: activeSubscription?.packageId || null,
-    packageName: activeSubscription?.packageName || 'Chưa đăng ký gói tập',
-    packageExpiry: activeSubscription?.endDate || null,
-    packageStatus: activeSubscription ? 'ACTIVE' : 'INACTIVE',
+    packageId: memberProfile?.packageId || null,
+    packageName: memberProfile?.packageName || 'Chưa đăng ký gói tập',
+    packageExpiry: memberProfile?.packageExpiry || null,
+    packageStartDate: memberProfile?.packageStartDate || null,
+    packageStatus: memberProfile?.packageStatus || 'INACTIVE',
     scheduledSubscriptions,
     avatar: null
   };
@@ -230,12 +224,12 @@ export const authApi = {
     return apiRequest('auth/google/link', { method: 'POST', body: { idToken: credential, currentPassword } });
   },
 
-  async requestPasswordReset(email) {
-    return apiRequest('auth/request-password-reset', { method: 'POST', body: { email: email.trim() } });
+  async requestPasswordReset(email, { signal } = {}) {
+    return apiRequest('auth/request-password-reset', { method: 'POST', token: null, signal, body: { email: email.trim() } });
   },
 
-  async resetPassword(email, otp, newPassword) {
-    await apiRequest('auth/reset-password', { method: 'POST', body: { email: email.trim(), otp: otp.trim(), newPassword } });
+  async resetPassword(email, otp, newPassword, { signal } = {}) {
+    await apiRequest('auth/reset-password', { method: 'POST', token: null, signal, body: { email: email.trim(), otp: otp.trim(), newPassword } });
     return true;
   },
 
@@ -458,9 +452,9 @@ export const classApi = {
  async cancel(id) { return apiRequest('classes/'+id, { method: 'DELETE' }); },
  async restore(id) { return apiRequest('classes/'+id+'/restore', { method: 'POST' }); },
   async getAll() {
-    const today = new Date().toISOString().slice(0, 10);
-    const end = new Date();
-    end.setDate(end.getDate() + 90);
+    const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+    const end = new Date(`${today}T00:00:00Z`);
+    end.setUTCDate(end.getUTCDate() + 90);
     const query = new URLSearchParams({ from: today, to: end.toISOString().slice(0, 10), page: '1', pageSize: '100' });
     const isCoach = String(getAuthUser()?.role || '').toUpperCase() === 'COACH';
     const path = isCoach ? `coaches/me/teaching-schedule?from=${today}&to=${end.toISOString().slice(0, 10)}` : `class-sessions?${query}`;
@@ -775,16 +769,17 @@ export const reportApi = {
     }
     const query = new URLSearchParams({ from, to, groupBy, centerId: String(centerId()) });
     const checkinQuery = new URLSearchParams({ from: today, to: today });
-    const [revenue, sportRevenue, membership, classes, sessionItems, checkins, rawRooms, rawClasses] = await Promise.all([
+    const [revenue, sportRevenue, membership, classes, rawSessionItems, checkins, rawRooms, rawClasses] = await Promise.all([
       apiRequest(`reports/revenue?${query}`),
       apiRequest(`reports/revenue-by-sport?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
       apiRequest(`reports/membership?${query}`),
       apiRequest(`reports/classes?${query}`),
       loadSessionsBetween(from, to),
       apiRequest(`reports/checkins?${checkinQuery}`),
-      apiRequest(`centers/${centerId()}/rooms`).catch(() => []),
-      apiRequest(`centers/${centerId()}/classes/all`).catch(() => [])
+      apiRequest(`centers/${centerId()}/rooms`),
+      apiRequest(`centers/${centerId()}/classes/all`)
     ]);
+    const sessionItems = rawSessionItems.filter(item => String(item.sessionStatus).toUpperCase() !== 'CANCELLED');
     const capacity = sessionItems.reduce((sum, item) => sum + (item.capacity || 0), 0);
     const booked = sessionItems.reduce((sum, item) => sum + (item.bookedCount || 0), 0);
     const activeBookingCount = Object.entries(classes.currentStatusCounts || {})
@@ -818,8 +813,8 @@ export const reportApi = {
       roomStatsMap.set(r.id, {
         id: r.id,
         name: r.name,
-        type: r.type || 'Sân/Phòng',
-        location: r.location || '',
+        type: r.roomType || r.type || 'Sân/Phòng',
+        location: r.locationDescription || r.location || '',
         unitCapacity: r.capacity || 0,
         sessionsCount: 0,
         booked: 0,
@@ -975,7 +970,7 @@ export const systemApi = {
   async getAuditPage(page = 1) {
     const user = getAuthUser();
     const params = new URLSearchParams({ page: String(page), pageSize: '50' });
-    const isAdmin = String(user?.role || '').toUpperCase() === 'ADMIN';
+    const isAdmin = ['ADMIN', 'SYSTEMADMIN'].includes(String(user?.role || '').toUpperCase());
     const path = isAdmin
       ? `admin/audit-logs?${params}`
       : `centers/${centerId()}/audit-logs?${params}`;

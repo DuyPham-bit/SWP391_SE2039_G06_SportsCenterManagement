@@ -102,7 +102,7 @@ public class GoogleDriveService
                 throw new FlowException(500, $"Không tìm thấy tệp credentials.json xác thực Google Drive tại: {resolvedPath}. Vui lòng đặt file credentials.json trong thư mục API.");
             }
 
-            var credential = GoogleCredential.FromFile(resolvedPath)
+            var credential = CredentialFactory.FromFile(resolvedPath, JsonCredentialParameters.ServiceAccountCredentialType)
                 .CreateScoped(DriveService.ScopeConstants.Drive);
 
             return new DriveService(new BaseClientService.Initializer

@@ -21,16 +21,16 @@ export function Badge({ children, variant = 'primary', size = 'md' }) {
       case 'MANAGER':
       case 'SYSTEMADMIN':
       case 'ADMIN':
-        return 'bg-[#EEF4FE] text-[#1A3B8B] border-[#BFDBFE]';
+        return 'bg-[#81B29A]/15 text-[#2D6A4F] border-[#81B29A]/30 font-semibold';
       case 'RECEPTIONIST':
         return 'bg-purple-50 text-purple-700 border-purple-200';
       case 'COACH':
-        return 'bg-emerald-50 text-emerald-800 border-emerald-200 font-bold';
+        return 'bg-[#F2CC8F]/25 text-[#92400E] border-[#F2CC8F]/50 font-bold';
       case 'MEMBER':
         return 'bg-slate-100 text-slate-700 border-slate-200';
       case 'primary':
       default:
-        return 'bg-[#EBF2FC] text-[#1A3B8B] border-[#BFDBFE]';
+        return 'bg-[#81B29A]/15 text-[#2D6A4F] border-[#81B29A]/30';
     }
   };
 
@@ -50,7 +50,7 @@ export function StatCard({ title, value, subtitle, icon, trend, color = 'blue' }
         <span className="text-xs uppercase tracking-wider font-bold text-slate-500">
           {title}
         </span>
-        <div className="w-9 h-9 rounded-xl bg-blue-50 text-[#1A3B8B] flex items-center justify-center shadow-2xs">
+        <div className="w-9 h-9 rounded-xl bg-[#81B29A]/15 text-[#2D6A4F] flex items-center justify-center shadow-2xs">
           <span className="material-symbols-outlined text-[20px]">{icon}</span>
         </div>
       </div>

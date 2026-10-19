@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { NotificationInbox } from '../common/NotificationInbox.jsx';
+import { Logo } from '../common/Logo.jsx';
 
 // Thông tin cơ sở duy nhất của hệ thống trung tâm thể thao SCMS
 export const SINGLE_BRANCH = {
@@ -267,24 +268,7 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
       {/* Left: Brand Logo SCMS & Hamburger Toggle */}
       <div className="flex items-center gap-2 sm:gap-4">
         {/* SCMS Brand Logo */}
-        <a href="#/" aria-label="SCMS Sports Center - Trang chủ" className="flex items-center gap-2.5 group text-decoration-none">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-[#1A3B8B] to-[#2563EB] text-white flex items-center justify-center font-bold text-base shadow-xs shrink-0 tracking-tight">
-            S
-          </div>
-          <div className="flex flex-col">
-            <div className="flex items-center gap-1.5 leading-none">
-              <span className="text-[15px] font-black tracking-tight text-[#1A3B8B] dark:text-blue-400">
-                SCMS
-              </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-blue-50 dark:bg-blue-900/60 text-[#1A3B8B] dark:text-blue-300 font-bold uppercase border border-blue-100 dark:border-blue-800">
-                ARENA
-              </span>
-            </div>
-            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 tracking-wider uppercase mt-1 leading-none">
-              {t('header.brand_sub', 'TRUNG TÂM THỂ THAO')}
-            </span>
-          </div>
-        </a>
+        <Logo variant="auto" size="md" />
 
         {/* Sidebar Toggle Button */}
         <button
@@ -333,8 +317,8 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
               </div>
 
               <div className="mt-3 space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
-                <div className="p-2.5 rounded-xl bg-blue-50/70 dark:bg-blue-900/30 border border-blue-100 dark:border-blue-800/60">
-                  <p className="font-bold text-xs text-[#1A3B8B] dark:text-blue-300">
+                <div className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-slate-800/80 border border-[#81B29A]/30 dark:border-slate-700">
+                  <p className="font-bold text-xs text-[#1E2235] dark:text-emerald-300">
                     {language === 'en' ? 'SCMS Sports Center - Ho Chi Minh City' : 'Trung tâm Thể thao SCMS - TP. Hồ Chí Minh'}
                   </p>
                   <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
@@ -405,7 +389,7 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
                       onClick={() => handleSelectLang(lang.code)}
                       className={`w-full text-left px-3 py-2 rounded-xl transition-all flex items-center justify-between cursor-pointer ${
                         isSelected
-                          ? 'bg-blue-50 dark:bg-blue-900/40 text-[#1A3B8B] dark:text-blue-300 font-bold border border-blue-100 dark:border-blue-800/60'
+                          ? 'bg-[#81B29A]/15 dark:bg-emerald-900/40 text-[#2D6A4F] dark:text-emerald-300 font-bold border border-[#81B29A]/40 dark:border-emerald-800/60'
                           : 'hover:bg-slate-50 dark:hover:bg-slate-700/60 text-slate-700 dark:text-slate-200 border border-transparent font-medium'
                       }`}
                     >
@@ -414,7 +398,7 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
                         <span className="text-xs">{lang.nativeName}</span>
                       </div>
                       {isSelected && (
-                        <span className="material-symbols-outlined text-[18px] text-[#1A3B8B] dark:text-blue-400">
+                        <span className="material-symbols-outlined text-[18px] text-[#81B29A] dark:text-emerald-400">
                           check
                         </span>
                       )}
@@ -464,16 +448,24 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
             type="button"
             className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-slate-100/80 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer"
           >
-            {/* Blue Circle Avatar with Initials */}
-            <div className="w-9 h-9 rounded-full bg-[#1A3B8B] dark:bg-blue-600 text-white font-bold text-xs flex items-center justify-center shadow-xs shrink-0">
-              {userInitials}
-            </div>
+            {/* Squircle Avatar with Brand Pastel Gradient & White Initials (Synchronized with SCMS Logo) */}
+            {currentUser?.avatar ? (
+              <img
+                src={currentUser.avatar}
+                alt={displayName}
+                className="w-9 h-9 rounded-[11px] object-cover border border-[#81B29A]/40 shadow-xs shrink-0"
+              />
+            ) : (
+              <div className="w-9 h-9 rounded-[11px] bg-gradient-to-br from-[#81B29A] via-[#A8DADC] to-[#F2CC8F] text-white font-black text-xs flex items-center justify-center shadow-xs shrink-0 select-none ring-1 ring-white/60 dark:ring-slate-700">
+                <span className="drop-shadow-xs">{userInitials}</span>
+              </div>
+            )}
 
             <div className="text-left hidden md:block leading-tight">
               <div className="text-xs font-bold text-slate-800 dark:text-slate-100 truncate max-w-[140px]">
                 {displayName}
               </div>
-              <div className="text-[11px] text-[#1A3B8B] dark:text-blue-400 font-bold tracking-wide">
+              <div className="text-[11px] text-[#2D6A4F] dark:text-[#7ED6DF] font-bold tracking-wide">
                 {roleLabel}
               </div>
             </div>
@@ -483,21 +475,34 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
             <div
               className="absolute right-0 mt-2 w-64 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 py-2 z-50 animate-modal-entrance"
             >
-              <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700">
-                <p className="text-xs font-bold text-slate-900 dark:text-white">{displayName}</p>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
-                  {currentUser?.email || (currentUser?.username && !currentUser.username.startsWith('SE') ? `${currentUser.username.toLowerCase()}@sportscenter.vn` : 'coach@sportscenter.vn')}
-                </p>
-                <span className="inline-block mt-1.5 px-2 py-0.5 rounded-full bg-blue-50 dark:bg-blue-900/60 text-[#1A3B8B] dark:text-blue-300 text-[10px] font-bold border border-blue-100 dark:border-blue-800">
-                  {roleLabel}
-                </span>
+              <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-700 flex items-center gap-3">
+                {currentUser?.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={displayName}
+                    className="w-10 h-10 rounded-[12px] object-cover border border-[#81B29A]/40 shadow-xs shrink-0"
+                  />
+                ) : (
+                  <div className="w-10 h-10 rounded-[12px] bg-gradient-to-br from-[#81B29A] via-[#A8DADC] to-[#F2CC8F] text-white font-black text-sm flex items-center justify-center shadow-xs shrink-0 select-none ring-1 ring-white/60 dark:ring-slate-700">
+                    <span className="drop-shadow-xs">{userInitials}</span>
+                  </div>
+                )}
+                <div className="min-w-0">
+                  <p className="text-xs font-bold text-slate-900 dark:text-white truncate">{displayName}</p>
+                  <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate mt-0.5">
+                    {currentUser?.email || (currentUser?.username && !currentUser.username.startsWith('SE') ? `${currentUser.username.toLowerCase()}@sportscenter.vn` : 'coach@sportscenter.vn')}
+                  </p>
+                  <span className="inline-block mt-1 px-2 py-0.5 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] dark:bg-emerald-900/60 dark:text-emerald-300 text-[10px] font-bold border border-[#81B29A]/30">
+                    {roleLabel}
+                  </span>
+                </div>
               </div>
 
               <div className="p-1 space-y-0.5">
                 <button
                   type="button"
                   onClick={() => { setShowUserMenu(false); onOpenProfile(); }}
-                  className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-[#1A3B8B] dark:hover:text-blue-300 rounded-lg flex items-center gap-2.5 transition-colors font-medium cursor-pointer"
+                  className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-[#E07A5F] dark:hover:text-[#F2CC8F] rounded-lg flex items-center gap-2.5 transition-colors font-medium cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[18px] text-slate-400">person</span>
                   <span>{t('header.profile', 'Hồ sơ & Đổi mật khẩu')}</span>
@@ -506,7 +511,7 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
                 <a
                   href="#/"
                   onClick={() => setShowUserMenu(false)}
-                  className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-[#1A3B8B] dark:hover:text-blue-300 rounded-lg flex items-center gap-2.5 transition-colors font-medium"
+                  className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-[#E07A5F] dark:hover:text-[#F2CC8F] rounded-lg flex items-center gap-2.5 transition-colors font-medium"
                 >
                   <span className="material-symbols-outlined text-[18px] text-slate-400">home</span>
                   <span>{t('header.landing', 'Trang chủ Landing Page')}</span>
@@ -516,9 +521,9 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
                   <a
                     href={role === 'COACH' ? '#/coach/support' : '#/member/support'}
                     onClick={() => setShowUserMenu(false)}
-                    className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-[#1A3B8B] dark:hover:text-blue-300 rounded-lg flex items-center gap-2.5 transition-colors font-medium"
+                    className="w-full text-left px-3.5 py-2 text-xs text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 hover:text-[#E07A5F] dark:hover:text-[#F2CC8F] rounded-lg flex items-center gap-2.5 transition-colors font-medium"
                   >
-                    <span className="material-symbols-outlined text-[18px] text-[#F26522]">support_agent</span>
+                    <span className="material-symbols-outlined text-[18px] text-[#E07A5F]">support_agent</span>
                     <span>{t('header.support', 'Gửi yêu cầu hỗ trợ')}</span>
                   </a>
                 )}

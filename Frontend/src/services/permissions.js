@@ -295,27 +295,12 @@ export function getAllUserCustomOverrides(centerId) {
   return result;
 }
 
-// Helper to get active permissions of a role (with individual user override support)
+// Capabilities come only from the authenticated API response.
 export function getPermissionsForRole(role) {
   const normalized = String(role || '').toUpperCase();
   const user = getAuthUser();
-  if (user && user.centerId && user.id) {
-    const overrides = getUserCustomOverrides(user.centerId, user.id);
-    if (overrides && Array.isArray(overrides.effectiveCapabilities)) {
-      return overrides.effectiveCapabilities;
-    }
-  }
-
-  // Lấy các quyền cơ bản mặc định của vai trò từ ma trận SYSTEM_CAPABILITIES
-  const defaultCapsForRole = SYSTEM_CAPABILITIES
-    .filter(c => String(c.defaultRole || '').toUpperCase() === normalized)
-    .map(c => c.id);
-
-  if (String(user?.role || '').toUpperCase() === normalized && Array.isArray(user?.capabilities)) {
-    // Kết hợp quyền backend cấp và quyền mặc định của vai trò để không bị sót manage_coach_workspace
-    return Array.from(new Set([...defaultCapsForRole, ...user.capabilities]));
-  }
-  return defaultCapsForRole;
+  if (String(user?.role || '').toUpperCase() === normalized && Array.isArray(user?.capabilities)) return user.capabilities;
+  return [];
 }
 
 // Helper to check if a role or user has a specific capability
@@ -473,10 +458,6 @@ export function getDynamicNavItems(role) {
       if (perms.includes('use_coach_portal')) items.push({ path: '#/member/coach-portal', icon: 'connect_without_contact', label: 'Tương Tác Với HLV' });
       items.push({ path: '#/member/notifications', icon: 'notifications', label: 'Thông Báo Của Tôi' });
       items.push({ path: '#/member/support', icon: 'support_agent', label: 'Yêu Cầu Hỗ Trợ' });
-
-      if (perms.includes('ask_ai_assistant')) {
-        items.push({ path: '#/member/ai-assistant', icon: 'smart_toy', label: 'Trợ Lý Thể Thao AI' });
-      }
 
       // Add extra granted permissions if assigned by Manager
       const defaultMemberCapIds = ['view_packages', 'subscribe_package', 'view_schedules', 'book_class', 'cancel_booking', 'view_my_progress', 'ask_ai_assistant', 'member_support'];

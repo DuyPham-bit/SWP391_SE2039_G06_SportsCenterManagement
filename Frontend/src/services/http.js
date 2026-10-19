@@ -1,4 +1,4 @@
-import { beginAuthOperation, getAuthVersion, setAuthUser } from './authState.js';
+import { assertAuthVersion, beginAuthOperation, getAuthVersion, setAuthUser } from './authState.js';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
 const TOKEN_STORAGE_KEY = 'scms.auth.token.v1';
@@ -60,6 +60,7 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
       signal
     });
   } catch (cause) {
+    if (cause?.name === 'AbortError') throw cause;
     const error = new Error(`Chưa xác định kết quả: Mất kết nối mạng hoặc hết thời gian chờ tới backend (${API_BASE_URL}). Vui lòng kiểm tra trạng thái giao dịch trước khi thử lại.`);
     error.cause = cause;
     error.code = 'COMMON-01';
@@ -67,7 +68,10 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
     throw error;
   }
 
-  if (response.status === 204) return null;
+  if (response.status === 204) {
+    if (token) assertAuthVersion(authVersion);
+    return null;
+  }
 
   const contentType = response.headers.get('content-type') || '';
   const payload = contentType.includes('json')
@@ -113,5 +117,7 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
     throw error;
   }
 
+  // Account changes invalidate successful reads too, including delayed body parsing.
+  if (token) assertAuthVersion(authVersion);
   return payload;
 }

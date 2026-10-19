@@ -2249,6 +2249,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("datetime2")
                         .HasColumnName("expires_at");
 
+                    b.Property<int>("FailedAttempts")
+                        .HasColumnType("int")
+                        .HasColumnName("failed_attempts");
+
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(255)
@@ -3270,6 +3274,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("bigint");
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<int>("AuthVersion")
+                        .HasColumnType("int")
+                        .HasColumnName("auth_version");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")

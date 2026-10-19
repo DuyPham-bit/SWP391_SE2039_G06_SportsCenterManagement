@@ -31,4 +31,10 @@ public interface IReportService
         DateOnly to,
         string groupBy,
         CancellationToken cancellationToken = default);
+
+    Task<OperationsReportResponse> GetOperationsReportAsync(
+        long centerId,
+        DateOnly from,
+        DateOnly to,
+        CancellationToken cancellationToken = default);
 }

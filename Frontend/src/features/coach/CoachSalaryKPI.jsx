@@ -12,7 +12,7 @@ function SectionCard({ title, icon, action, children, className = '' }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700/60 pb-3">
         <div className="flex items-center gap-2.5">
           {icon && (
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#1A3B8B] dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#81B29A]/15 dark:bg-[#81B29A]/20 text-[#2D6A4F] dark:text-[#81B29A] flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-[19px]">{icon}</span>
             </div>
           )}
@@ -83,10 +83,12 @@ export function CoachSalaryKPI() {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* 1. Header Banner */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1A3B8B] via-[#1E40AF] to-[#2563EB] text-white p-5 sm:p-7 shadow-md">
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#2B2D42] to-[#3D405B] text-white p-5 sm:p-7 shadow-md border border-white/10">
+        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-blue-100 text-xs font-bold uppercase tracking-wider backdrop-blur-xs border border-white/20 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#F2CC8F] text-xs font-bold uppercase tracking-wider backdrop-blur-xs border border-white/20 shadow-2xs">
               <span className="material-symbols-outlined text-[15px]">monitoring</span>
               {isEn ? 'Coach Performance & Income' : 'KPI & Thu nhập Huấn luyện viên'}
             </span>
@@ -106,7 +108,7 @@ export function CoachSalaryKPI() {
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
             {isEn ? `Performance & Salary · Coach ${coachName}` : `KPI & Bảng kê thu nhập · HLV ${coachName}`}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-blue-100/90 max-w-3xl leading-relaxed">
+          <p className="mt-1 text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
             {isEn
               ? 'Transparent performance tracking: completed teaching hours, membership sales progress, commission breakdowns, and real-time student evaluation ratings.'
               : 'Theo dõi chỉ tiêu giảng dạy, doanh số, hoa hồng và bảng kê thu nhập minh bạch được tính toán tự động theo chính sách trung tâm.'}
@@ -115,7 +117,7 @@ export function CoachSalaryKPI() {
           {/* Quick Stats Grid inside Hero Header */}
           <div className="mt-4 pt-4 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-3">
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Monthly Sessions' : 'Buổi dạy trong tháng'}
               </span>
               <span className="text-lg font-black text-white">
@@ -123,7 +125,7 @@ export function CoachSalaryKPI() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'KPI Session Rate' : 'Tiến độ buổi dạy'}
               </span>
               <span className="text-lg font-black text-white">
@@ -131,7 +133,7 @@ export function CoachSalaryKPI() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Average Rating' : 'Đánh giá trung bình'}
               </span>
               <span className="text-lg font-black text-amber-300 flex items-center gap-1">
@@ -139,7 +141,7 @@ export function CoachSalaryKPI() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Estimated Income' : 'Thu nhập tạm tính'}
               </span>
               <span className="text-base sm:text-lg font-black text-emerald-300 truncate block">
@@ -168,7 +170,7 @@ export function CoachSalaryKPI() {
 
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xs">
           <span className="text-[10px] font-bold uppercase text-slate-400 block">{isEn ? 'Student Retention Rate' : 'Tỷ lệ giữ chân học viên'}</span>
-          <span className="text-2xl font-black text-[#1A3B8B] dark:text-blue-400 mt-1 block">
+          <span className="text-2xl font-black text-[#2D6A4F] dark:text-[#81B29A] mt-1 block">
             {k.retentionRate || 0}%
           </span>
           <span className="text-xs text-slate-500 mt-1 block">
@@ -206,7 +208,7 @@ export function CoachSalaryKPI() {
               </div>
               <div className="h-3 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
                 <div
-                  className="h-full rounded-full bg-[#1A3B8B] dark:bg-blue-500 transition-all duration-500"
+                  className="h-full rounded-full bg-[#81B29A] transition-all duration-500"
                   style={{ width: `${sessionPercent}%` }}
                 />
               </div>

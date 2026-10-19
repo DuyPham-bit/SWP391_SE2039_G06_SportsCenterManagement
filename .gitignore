@@ -9,6 +9,7 @@ dist/
 build/
 
 # Vite & Env
+credentials.local.json
 Frontend/.env.local
 Frontend/.env.*.local
 .env

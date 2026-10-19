@@ -6,9 +6,9 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { CoachError } from './CoachShared.jsx';
 
-const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#1A3B8B] dark:focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900/40 outline-none transition-all shadow-2xs';
+const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#81B29A] dark:focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 dark:focus:ring-[#81B29A]/30 outline-none transition-all shadow-2xs';
 const selectClass = `${inputClass} cursor-pointer`;
-const buttonPrimary = 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#1A3B8B] hover:bg-[#142F70] px-4 py-2.5 text-xs sm:text-sm font-bold text-white shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
+const buttonPrimary = 'inline-flex items-center justify-center gap-2 rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white px-4 py-2.5 text-xs sm:text-sm font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed';
 
 function SectionCard({ title, icon, action, children, className = '' }) {
   return (
@@ -16,7 +16,7 @@ function SectionCard({ title, icon, action, children, className = '' }) {
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 dark:border-slate-700/60 pb-3">
         <div className="flex items-center gap-2.5">
           {icon && (
-            <div className="w-8 h-8 rounded-lg bg-blue-50 dark:bg-blue-950/60 text-[#1A3B8B] dark:text-blue-400 flex items-center justify-center shrink-0">
+            <div className="w-8 h-8 rounded-lg bg-[#81B29A]/15 dark:bg-[#81B29A]/20 text-[#2D6A4F] dark:text-[#81B29A] flex items-center justify-center shrink-0">
               <span className="material-symbols-outlined text-[19px]">{icon}</span>
             </div>
           )}
@@ -167,10 +167,12 @@ export function CoachResources() {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* 1. Header Banner */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1A3B8B] via-[#1E40AF] to-[#2563EB] text-white p-5 sm:p-7 shadow-md">
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#2B2D42] to-[#3D405B] text-white p-5 sm:p-7 shadow-md border border-white/10">
+        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/15 text-blue-100 text-xs font-bold uppercase tracking-wider backdrop-blur-xs border border-white/20 shadow-2xs">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#F2CC8F] text-xs font-bold uppercase tracking-wider backdrop-blur-xs border border-white/20 shadow-2xs">
               <span className="material-symbols-outlined text-[15px]">inventory_2</span>
               {isEn ? 'Resources & Facilities Management' : 'Tài nguyên & Thiết bị Huấn luyện viên'}
             </span>
@@ -190,7 +192,7 @@ export function CoachResources() {
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
             {isEn ? 'Resources, Courts & Training Equipment' : 'Tài nguyên, Sân tập & Thiết bị chuyên dụng'}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-blue-100/90 max-w-3xl leading-relaxed">
+          <p className="mt-1 text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
             {isEn
               ? 'Schedule training courts, request specialized fitness equipment, and promptly report facility damage for immediate technician maintenance.'
               : 'Đăng ký phòng/sân tập phục vụ huấn luyện, mượn trang thiết bị và gửi cảnh báo sự cố kỹ thuật trực tiếp tới ban quản lý.'}
@@ -199,7 +201,7 @@ export function CoachResources() {
           {/* Quick Stats Grid inside Hero Header */}
           <div className="mt-4 pt-4 border-t border-white/15 grid grid-cols-2 sm:grid-cols-3 gap-3">
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Available Equipment & Courts' : 'Tài nguyên & Sân tập'}
               </span>
               <span className="text-lg font-black text-white">
@@ -207,7 +209,7 @@ export function CoachResources() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'My Active Bookings' : 'Lượt đặt của tôi'}
               </span>
               <span className="text-lg font-black text-emerald-300">
@@ -215,7 +217,7 @@ export function CoachResources() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-blue-200 block">
+              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
                 {isEn ? 'Reported Issues' : 'Sự cố đã báo cáo'}
               </span>
               <span className="text-lg font-black text-amber-300">

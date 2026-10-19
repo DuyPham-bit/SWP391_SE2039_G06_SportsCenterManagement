@@ -4,7 +4,7 @@ import { coachDate } from './coachOverview.js';
 import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
-export const coachInput = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-[#1A3B8B]/20 focus:border-[#1A3B8B] outline-none transition-all';
+export const coachInput = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-[#81B29A]/20 focus:border-[#81B29A] outline-none transition-all';
 
 export function CoachError({ message, retry }) {
   const { language } = useLanguage();
@@ -69,7 +69,7 @@ export function CoachPeriod({ schedule }) {
         {isEn ? "To Date" : "Đến ngày"}
         <input aria-label={isEn ? "To Date" : "Đến ngày"} type="date" required className={coachInput} value={schedule.to} onChange={e => schedule.setTo(e.target.value)} />
       </label>
-      <button disabled={schedule.loading} className="px-4 py-2 rounded-lg bg-[#1A3B8B] hover:bg-[#142F70] text-white font-semibold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer">
+      <button disabled={schedule.loading} className="px-4 py-2 rounded-lg bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white font-semibold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer">
         {schedule.loading ? (isEn ? "Loading..." : "Đang tải...") : (isEn ? "View Schedule" : "Xem lịch")}
       </button>
       <span className="text-xs text-slate-400 pb-2">
