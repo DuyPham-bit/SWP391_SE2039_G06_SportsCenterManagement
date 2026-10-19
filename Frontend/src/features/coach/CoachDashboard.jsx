@@ -102,7 +102,7 @@ export function CoachDashboard() {
       members: [
         { id: 'm2', name: 'Lê Hoàng Nam', status: 'Present', phone: '0988 111 222', note: '' },
         { id: 'm3', name: 'Nguyễn Thị Hoa', status: 'Present', phone: '0977 222 333', note: '' },
-        { id: 'm4', name: 'Trần Đình Trọng', status: 'Late', phone: '0966 333 444', note: 'Đi muộn 10p' },
+        { id: 'm4', name: 'Trần Đình Trọng', status: 'Present', phone: '0966 333 444', note: 'Đến muộn 10p' },
         { id: 'm5', name: 'Vũ Minh Tuấn', status: 'Absent', phone: '0944 555 666', note: 'Có phép' },
       ],
       attendanceDone: 8,
@@ -850,16 +850,14 @@ export function CoachDashboard() {
 
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        member.status === 'Present'
+                        member.status === 'Present' || member.status === 'Late'
                           ? 'bg-emerald-100 text-emerald-800'
-                          : member.status === 'Late'
-                          ? 'bg-amber-100 text-amber-800'
                           : member.status === 'Absent'
                           ? 'bg-rose-100 text-rose-800'
                           : 'bg-slate-200 text-slate-700'
                       }`}
                     >
-                      {member.status === 'Present' ? 'Có mặt' : member.status === 'Late' ? 'Đi muộn' : member.status === 'Absent' ? 'Vắng' : 'Chờ điểm danh'}
+                      {member.status === 'Present' || member.status === 'Late' ? 'Có mặt' : member.status === 'Absent' ? 'Vắng' : 'Chờ điểm danh'}
                     </span>
                   </div>
                 ))
@@ -912,66 +910,121 @@ export function CoachDashboard() {
               </button>
             </div>
 
-            <div className="space-y-2.5 max-h-72 overflow-y-auto pr-1">
+            <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
               {activeSession.members && activeSession.members.length > 0 ? (
-                activeSession.members.map((member, i) => (
-                  <div
-                    key={member.id || i}
-                    className="p-3 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between gap-2"
-                  >
-                    <div>
-                      <p className="font-bold text-slate-900 text-xs">{member.name}</p>
-                      <p className="text-[10px] text-slate-500">{activeSession.room}</p>
+                activeSession.members.map((member, i) => {
+                  const isPresent = member.status === 'Present' || member.status === 'Late';
+                  const isAbsent = member.status === 'Absent';
+                  const hasLateNote = (member.note || '').includes('Đến muộn');
+
+                  return (
+                    <div
+                      key={member.id || i}
+                      className="p-3 bg-slate-50 rounded-xl border border-slate-200 space-y-2"
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <div>
+                          <p className="font-bold text-slate-900 text-xs">{member.name}</p>
+                          <p className="text-[10px] text-slate-500">{activeSession.room}</p>
+                        </div>
+
+                        <div className="flex items-center gap-1.5 shrink-0">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              member.status = 'Present';
+                              setActiveSession({ ...activeSession });
+                            }}
+                            className={`px-3 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
+                              isPresent
+                                ? 'bg-emerald-600 text-white shadow-2xs'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {isEn ? 'Present' : 'Có mặt'}
+                          </button>
+
+                          <button
+                            type="button"
+                            onClick={() => {
+                              member.status = 'Absent';
+                              setActiveSession({ ...activeSession });
+                            }}
+                            className={`px-3 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
+                              isAbsent
+                                ? 'bg-rose-600 text-white shadow-2xs'
+                                : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
+                            }`}
+                          >
+                            {isEn ? 'Absent' : 'Vắng'}
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Ghi chú điểm danh & tích hợp Đến muộn */}
+                      <div className="flex items-center gap-1.5 pt-1.5 border-t border-slate-200/60">
+                        <input
+                          type="text"
+                          value={member.note || ''}
+                          onChange={(e) => {
+                            member.note = e.target.value;
+                            setActiveSession({ ...activeSession });
+                          }}
+                          placeholder={isEn ? "Attendance note (e.g. Late 10m)..." : "Ghi chú điểm danh (VD: Đến muộn 10p)..."}
+                          className="flex-1 text-[11px] px-2.5 py-1 bg-white rounded-lg border border-slate-200 focus:outline-none focus:border-blue-500 text-slate-800 placeholder-slate-400"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            member.status = 'Present';
+                            const current = member.note || '';
+                            if (current.includes('Đến muộn')) {
+                              member.note = current.replace(/Đến muộn(\s*\d+\s*(phút|p))?\.?,?\s*/gi, '').trim();
+                            } else {
+                              member.note = current ? `Đến muộn 15p. ${current}` : 'Đến muộn 15p';
+                            }
+                            setActiveSession({ ...activeSession });
+                          }}
+                          title={isEn ? "Mark present and note Late" : "Đánh dấu có mặt và ghi chú Đến muộn"}
+                          className={`px-2 py-1 rounded-lg text-[10px] font-bold border transition-colors flex items-center gap-0.5 shrink-0 cursor-pointer ${
+                            hasLateNote
+                              ? 'bg-amber-100 text-amber-800 border-amber-300 font-extrabold shadow-2xs'
+                              : 'bg-white hover:bg-amber-50 text-slate-600 hover:text-amber-800 border-slate-200'
+                          }`}
+                        >
+                          <span className="material-symbols-outlined text-[13px]">schedule</span>
+                          <span>+ Muộn</span>
+                        </button>
+                      </div>
+
+                      {/* Phím chọn nhanh số phút nếu đã ghi nhận Đến muộn */}
+                      {hasLateNote && (
+                        <div className="flex items-center gap-1 text-[10px] pl-1">
+                          <span className="text-slate-400 font-semibold">{isEn ? 'Late duration:' : 'Số phút:'}</span>
+                          {[5, 10, 15, 30].map(mins => (
+                            <button
+                              key={mins}
+                              type="button"
+                              onClick={() => {
+                                const cleaned = (member.note || '').replace(/Đến muộn(\s*\d+\s*(phút|p))?\.?,?\s*/gi, '').trim();
+                                member.note = cleaned ? `Đến muộn ${mins}p. ${cleaned}` : `Đến muộn ${mins}p`;
+                                member.status = 'Present';
+                                setActiveSession({ ...activeSession });
+                              }}
+                              className={`px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                                (member.note || '').includes(`${mins}p`)
+                                  ? 'bg-amber-200 text-amber-900 border-amber-400 font-bold'
+                                  : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+                              }`}
+                            >
+                              {mins}p
+                            </button>
+                          ))}
+                        </div>
+                      )}
                     </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          member.status = 'Present';
-                          setActiveSession({ ...activeSession });
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
-                          member.status === 'Present'
-                            ? 'bg-emerald-600 text-white shadow-2xs'
-                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        Có mặt
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          member.status = 'Late';
-                          setActiveSession({ ...activeSession });
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
-                          member.status === 'Late'
-                            ? 'bg-amber-500 text-white shadow-2xs'
-                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        Muộn
-                      </button>
-
-                      <button
-                        type="button"
-                        onClick={() => {
-                          member.status = 'Absent';
-                          setActiveSession({ ...activeSession });
-                        }}
-                        className={`px-2.5 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
-                          member.status === 'Absent'
-                            ? 'bg-rose-600 text-white shadow-2xs'
-                            : 'bg-white border border-slate-200 text-slate-700 hover:bg-slate-100'
-                        }`}
-                      >
-                        Vắng
-                      </button>
-                    </div>
-                  </div>
-                ))
+                  );
+                })
               ) : (
                 <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 flex items-center justify-between">
                   <div>
