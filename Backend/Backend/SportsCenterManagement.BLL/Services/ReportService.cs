@@ -73,6 +73,16 @@ public sealed class ReportService(
                  || (enrollment.SubscriptionId.HasValue && subscriptionIds.Contains(enrollment.SubscriptionId.Value)))
             select new { enrollment.Id, enrollment.SubscriptionId, SportId = sport.Id, SportName = sport.Name })
             .ToListAsync(cancellationToken);
+        var bookingSports = await (
+            from booking in _unitOfWork.Context.SessionBookings.AsNoTracking()
+            join session in _unitOfWork.Context.ClassSessions on booking.SessionId equals session.Id
+            join cls in _unitOfWork.Context.Classes on session.ClassId equals cls.Id
+            join sport in _unitOfWork.Context.Sports on cls.SportId equals sport.Id
+            where cls.CenterId == centerId && booking.SubscriptionId.HasValue
+                && subscriptionIds.Contains(booking.SubscriptionId.Value)
+                && (booking.Status == "Booked" || booking.Status == "CancelledLate")
+            select new { booking.SubscriptionId, SportId = sport.Id, SportName = sport.Name })
+            .Distinct().ToListAsync(cancellationToken);
 
         var buckets = new Dictionary<(long? Id, string Name), (decimal Gross, decimal Refunds)>();
         (long? Id, string Name)[] Targets(long invoiceId)
@@ -82,7 +92,9 @@ public sealed class ReportService(
             var subs = items.Where(item => item.SubscriptionId.HasValue).Select(item => item.SubscriptionId!.Value).ToHashSet();
             var sports = enrollmentSports.Where(item => directIds.Contains(item.Id)
                     || (item.SubscriptionId.HasValue && subs.Contains(item.SubscriptionId.Value)))
-                .Select(item => (item.SportId, item.SportName)).Distinct().ToArray();
+                .Select(item => (item.SportId, item.SportName))
+                .Concat(bookingSports.Where(item => subs.Contains(item.SubscriptionId!.Value))
+                    .Select(item => (item.SportId, item.SportName))).Distinct().ToArray();
             return sports.Length > 0 ? sports.Select(item => ((long?)item.SportId, item.SportName)).ToArray()
                 : new[] { ((long?)null, "Chưa phân bổ") };
         }
@@ -161,16 +173,39 @@ public sealed class ReportService(
             .Select(s => s.MemberId).ToHashSet();
         var activeMembers = activeMemberIds.Count;
 
-        var allSubMemberIds = subs.Select(s => s.MemberId).ToHashSet();
-        var expiredMembers = allSubMemberIds.Count(m => !activeMemberIds.Contains(m));
+        var expiredMembers = subs.Where(s => s.Status == "Expired" ||
+                (s.Status == "Active" && s.EndDate < today))
+            .Select(s => s.MemberId).Distinct().Count(m => !activeMemberIds.Contains(m));
         var inactiveMembers = Math.Max(0, totalMembers - activeMembers);
 
+        // Sales are recognized on full payment; revenue follows actual collections and refunds.
+        var sales = await (from item in db.InvoiceItems.AsNoTracking()
+            join invoice in db.Invoices on item.InvoiceId equals invoice.Id
+            where invoice.CenterId == centerId && item.PackageId.HasValue && item.SubscriptionId.HasValue
+                && invoice.PaidAt >= startUtc && invoice.PaidAt < endUtc
+            select new { PackageId = item.PackageId!.Value, item.SubscriptionId }).Distinct().ToListAsync(cancellationToken);
+        var collected = await (from payment in db.Payments.AsNoTracking()
+            join invoice in db.Invoices on payment.InvoiceId equals invoice.Id
+            join item in db.InvoiceItems on invoice.Id equals item.InvoiceId
+            where invoice.CenterId == centerId && item.PackageId.HasValue && invoice.Subtotal > 0
+                && payment.PaymentStatus == "Succeeded" && payment.PaidAt >= startUtc && payment.PaidAt < endUtc
+            select new { PackageId = item.PackageId!.Value, Amount = payment.Amount * item.Amount / invoice.Subtotal })
+            .ToListAsync(cancellationToken);
+        var refunded = await (from refund in db.PaymentRefunds.AsNoTracking()
+            join payment in db.Payments on refund.PaymentId equals payment.Id
+            join invoice in db.Invoices on payment.InvoiceId equals invoice.Id
+            join item in db.InvoiceItems on invoice.Id equals item.InvoiceId
+            where invoice.CenterId == centerId && item.PackageId.HasValue && invoice.Subtotal > 0
+                && refund.Status == "Succeeded" && refund.ProcessedAt >= startUtc && refund.ProcessedAt < endUtc
+            select new { PackageId = item.PackageId!.Value, Amount = refund.Amount * item.Amount / invoice.Subtotal })
+            .ToListAsync(cancellationToken);
         var packageStats = packages.Select(pkg =>
         {
             var pkgSubs = subs.Where(s => s.PackageId == pkg.Id).ToArray();
             var activeSubscribers = pkgSubs.Count(s => s.Status == "Active" && s.StartDate <= today && s.EndDate >= today);
-            var soldInPeriod = pkgSubs.Count(s => s.CreatedAt >= startUtc && s.CreatedAt < endUtc);
-            var revenueInPeriod = pkgSubs.Where(s => s.CreatedAt >= startUtc && s.CreatedAt < endUtc).Sum(s => s.Price);
+            var soldInPeriod = sales.Count(s => s.PackageId == pkg.Id);
+            var revenueInPeriod = decimal.Round(collected.Where(p => p.PackageId == pkg.Id).Sum(p => p.Amount)
+                - refunded.Where(p => p.PackageId == pkg.Id).Sum(p => p.Amount), 2);
             return new MembershipPackageStatsItem(pkg.Id, pkg.Name, pkg.Price, pkg.DurationDays, activeSubscribers, soldInPeriod, revenueInPeriod);
         }).OrderByDescending(p => p.SoldInPeriod).ThenByDescending(p => p.RevenueInPeriod).ToArray();
 
@@ -215,8 +250,15 @@ public sealed class ReportService(
             group item by item.Status into statusGroup
             select new { Status = statusGroup.Key, Count = statusGroup.Count() })
             .ToListAsync(cancellationToken);
+        var bookingCounts = await (
+            from booking in _unitOfWork.Context.SessionBookings
+            join session in _unitOfWork.Context.ClassSessions on booking.SessionId equals session.Id
+            join cls in _unitOfWork.Context.Classes on session.ClassId equals cls.Id
+            where cls.CenterId == centerId
+            group booking by booking.Status into statusGroup
+            select new { Status = statusGroup.Key, Count = statusGroup.Count() }).ToListAsync(cancellationToken);
 
-        var currentStatusCounts = enrollmentCounts.Concat(waitlistCounts)
+        var currentStatusCounts = enrollmentCounts.Concat(waitlistCounts).Concat(bookingCounts)
             .GroupBy(row => NormalizeStatus(row.Status), StringComparer.OrdinalIgnoreCase)
             .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
             .ToDictionary(group => group.Key, group => group.Sum(row => row.Count), StringComparer.OrdinalIgnoreCase);
@@ -236,9 +278,16 @@ public sealed class ReportService(
             where classEntity.CenterId == centerId && item.JoinedAt >= startUtc && item.JoinedAt < endUtc
             select new { item.Status, CreatedAtUtc = item.JoinedAt })
             .ToListAsync(cancellationToken);
+        var bookingEvents = await (
+            from booking in _unitOfWork.Context.SessionBookings
+            join session in _unitOfWork.Context.ClassSessions on booking.SessionId equals session.Id
+            join cls in _unitOfWork.Context.Classes on session.ClassId equals cls.Id
+            where cls.CenterId == centerId && booking.BookedAt >= startUtc && booking.BookedAt < endUtc
+            select new { booking.Status, CreatedAtUtc = booking.BookedAt }).ToListAsync(cancellationToken);
         var statusEvents = enrollmentEvents
             .Select(row => new StatusEvent(row.Status, row.CreatedAtUtc))
             .Concat(waitlistEvents.Select(row => new StatusEvent(row.Status, row.CreatedAtUtc)))
+            .Concat(bookingEvents.Select(row => new StatusEvent(row.Status, row.CreatedAtUtc)))
             .ToArray();
         var statusCountsByPeriod = statusEvents
             .GroupBy(row => PeriodFor(row.CreatedAtUtc, groupBy, timeZone))

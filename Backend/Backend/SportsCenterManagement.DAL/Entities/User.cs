@@ -24,6 +24,9 @@ public class User : Common.BaseEntity
     [Column("password_hash")]
     public string PasswordHash { get; set; } = null!;
 
+    [Column("auth_version")]
+    public int AuthVersion { get; set; }
+
     [MaxLength(20)]
     [Column("phone")]
     public string? Phone { get; set; }

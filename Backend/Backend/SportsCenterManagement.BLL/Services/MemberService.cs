@@ -272,6 +272,7 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
             await EnsureCenterStaffAsync(actorUserId, member.CenterId.Value, cancellationToken);
         }
 
+        var today = DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
         return await (
             from subscription in unitOfWork.Context.MemberSubscriptions.AsNoTracking()
             join package in unitOfWork.Context.MembershipPackages.AsNoTracking() on subscription.PackageId equals package.Id
@@ -279,7 +280,11 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
             orderby subscription.CreatedAt descending
             select new MembersResponses.MemberSubscriptionResponse(subscription.Id, package.Id, package.Name,
                 subscription.Price, subscription.DurationDays, subscription.StartDate,
-                subscription.EndDate, subscription.Status, subscription.CreatedAt))
+                subscription.EndDate, subscription.Status, subscription.CreatedAt,
+                subscription.Status != "Active" ? subscription.Status.ToUpper()
+                    : !subscription.StartDate.HasValue || !subscription.EndDate.HasValue ? "INACTIVE"
+                    : subscription.StartDate > today ? "SCHEDULED"
+                    : subscription.EndDate < today ? "EXPIRED" : "ACTIVE"))
             .ToListAsync(cancellationToken);
     }
 

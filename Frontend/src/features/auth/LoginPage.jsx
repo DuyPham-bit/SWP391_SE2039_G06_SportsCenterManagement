@@ -7,6 +7,7 @@ import { loadGoogleIdentity, googleClientId } from '../../services/googleIdentit
 import { AuthField } from './AuthField.js';
 import { ForgotPasswordModal } from './ForgotPasswordModal.js';
 import { GoogleLoginModal } from './GoogleLoginModal.js';
+import { Logo } from '../../components/common/Logo.jsx';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -260,18 +261,7 @@ export function LoginPage() {
 
         {/* Thanh Header thương hiệu góc trên bên trái */}
         <div className="relative z-10 flex items-center justify-between gap-4">
-          <a href="#/" className="flex items-center gap-3.5 group">
-            <div className="w-11 h-11 rounded-2xl bg-gradient-to-tr from-[var(--primary-color)] via-[#A8DADC] to-[var(--custom-btn-bg-color)] text-white flex items-center justify-center shadow-lg shadow-[var(--primary-color)]/30 font-dm-sans font-bold text-xl tracking-tight transition-transform duration-300 group-hover:scale-105">
-              S
-            </div>
-            <div className="flex flex-col">
-              <div className="flex items-center gap-1.5">
-                <span className="font-dm-sans font-bold text-xl tracking-tight text-white leading-none">SCMS</span>
-                <span className="text-[10px] px-1.5 py-0.5 rounded-md bg-[var(--primary-color)]/20 text-[#A8DADC] font-bold uppercase border border-[var(--primary-color)]/40">OLYMPIC</span>
-              </div>
-              <span className="text-[10px] font-bold text-[var(--custom-btn-bg-color)]/80 tracking-[0.2em] uppercase mt-1">Olympic Sports Arena</span>
-            </div>
-          </a>
+          <Logo variant="dark" size="lg" />
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold uppercase tracking-wider text-slate-200 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[var(--primary-color)] animate-pulse shadow-[0_0_8px_rgba(129,178,154,0.8)]" aria-hidden="true" />
@@ -377,18 +367,7 @@ export function LoginPage() {
 
         {/* Thanh điều hướng góc trên */}
         <div className="flex items-center justify-between w-full shrink-0 mb-1 z-10">
-          <a href="#/" aria-label="SCMS Olympic Sports Arena - Trang chủ" className="lg:hidden flex items-center gap-2.5 group">
-            <span className="w-8 h-8 rounded-xl bg-gradient-to-tr from-[var(--primary-color)] via-[#A8DADC] to-[var(--custom-btn-bg-color)] text-white flex items-center justify-center shadow-md font-dm-sans font-bold text-base transition-transform duration-300 group-hover:scale-105">
-              S
-            </span>
-            <span className="flex flex-col">
-              <span className="flex items-center gap-1.5">
-                <span className="font-dm-sans font-bold text-sm leading-none text-slate-900">SCMS</span>
-                <span className="text-[9px] px-1 py-0.2 rounded bg-[var(--primary-color)]/20 text-[var(--primary-color)] font-bold uppercase border border-[var(--primary-color)]/30">OLYMPIC</span>
-              </span>
-              <span className="text-[9px] font-bold text-slate-500 tracking-[0.16em] uppercase mt-0.5 leading-none">Olympic Sports Arena</span>
-            </span>
-          </a>
+          <Logo variant="light" size="sm" className="lg:hidden" />
 
           <a
             href="#/"

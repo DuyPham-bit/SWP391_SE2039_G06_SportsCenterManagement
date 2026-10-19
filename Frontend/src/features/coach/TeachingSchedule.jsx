@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { CoachError, useTeachingSessions, coachInput } from './CoachShared.js';
+import { CoachError, useTeachingSessions, coachInput } from './CoachShared.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 
 // --- TIỆN ÍCH NGÀY THÁNG VÀ LỊCH CHUẨN OLYMPIC ---
 
@@ -47,17 +48,17 @@ function getMonthCalendarGrid(year, month) {
   return grid;
 }
 
-// Bảng màu nhận diện thể thao 15 bộ môn Olympic (giống hệt lịch member)
-function getSportTheme(sportName = '') {
+// Bảng màu nhận diện thể thao 15 bộ môn Olympic (hỗ trợ song ngữ VI / EN)
+function getSportTheme(sportName = '', isEn = false) {
   const s = String(sportName).toLowerCase();
-  if (s.includes('bơi')) {
+  if (s.includes('bơi') || s.includes('swim')) {
     return {
       bg: 'bg-cyan-50/90 hover:bg-cyan-100/90',
       border: 'border-cyan-300',
       text: 'text-cyan-900',
       badge: 'bg-cyan-100 text-cyan-800 border-cyan-200',
       dot: 'bg-cyan-500',
-      tag: 'BƠI LỘI'
+      tag: isEn ? 'SWIMMING' : 'BƠI LỘI'
     };
   }
   if (s.includes('yoga') || s.includes('pilates')) {
@@ -70,14 +71,14 @@ function getSportTheme(sportName = '') {
       tag: 'YOGA & PILATES'
     };
   }
-  if (s.includes('cầu lông')) {
+  if (s.includes('cầu lông') || s.includes('badminton')) {
     return {
       bg: 'bg-emerald-50/90 hover:bg-emerald-100/90',
       border: 'border-emerald-300',
       text: 'text-emerald-900',
       badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
       dot: 'bg-emerald-500',
-      tag: 'CẦU LÔNG'
+      tag: isEn ? 'BADMINTON' : 'CẦU LÔNG'
     };
   }
   if (s.includes('gym') || s.includes('fitness')) {
@@ -90,34 +91,34 @@ function getSportTheme(sportName = '') {
       tag: 'GYM & FITNESS'
     };
   }
-  if (s.includes('boxing') || s.includes('võ') || s.includes('kickfit')) {
+  if (s.includes('boxing') || s.includes('võ') || s.includes('kickfit') || s.includes('martial')) {
     return {
       bg: 'bg-rose-50/90 hover:bg-rose-100/90',
       border: 'border-rose-300',
       text: 'text-rose-900',
       badge: 'bg-rose-100 text-rose-800 border-rose-200',
       dot: 'bg-rose-500',
-      tag: 'BOXING & VÕ THUẬT'
+      tag: isEn ? 'BOXING & MARTIAL ARTS' : 'BOXING & VÕ THUẬT'
     };
   }
-  if (s.includes('bóng rổ') || s.includes('bóng đá') || s.includes('bóng chuyền')) {
+  if (s.includes('bóng rổ') || s.includes('bóng đá') || s.includes('bóng chuyền') || s.includes('basketball') || s.includes('football')) {
     return {
       bg: 'bg-blue-50/90 hover:bg-blue-100/90',
       border: 'border-blue-300',
       text: 'text-blue-900',
       badge: 'bg-blue-100 text-blue-800 border-blue-200',
       dot: 'bg-blue-500',
-      tag: 'BÓNG & ĐỒNG ĐỘI'
+      tag: isEn ? 'BALL & TEAM SPORTS' : 'BÓNG & ĐỒNG ĐỘI'
     };
   }
-  if (s.includes('tennis') || s.includes('bóng bàn')) {
+  if (s.includes('tennis') || s.includes('bóng bàn') || s.includes('table tennis') || s.includes('pickleball')) {
     return {
       bg: 'bg-lime-50/90 hover:bg-lime-100/90',
       border: 'border-lime-300',
       text: 'text-lime-900',
       badge: 'bg-lime-100 text-lime-800 border-lime-200',
       dot: 'bg-lime-500',
-      tag: 'VỢT & BÓNG NHỎ'
+      tag: isEn ? 'RACKET SPORTS' : 'VỢT & BÓNG NHỎ'
     };
   }
   return {
@@ -126,35 +127,44 @@ function getSportTheme(sportName = '') {
     text: 'text-indigo-900',
     badge: 'bg-indigo-100 text-indigo-800 border-indigo-200',
     dot: 'bg-indigo-500',
-    tag: 'THỂ THAO OLYMPIC'
+    tag: isEn ? 'OLYMPIC SPORTS' : 'THỂ THAO OLYMPIC'
   };
 }
 
-const DAY_LABELS = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-const SHORT_DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const DAY_LABELS_VI = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+const DAY_LABELS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
 
-const STATUS_CONFIG = {
-  SCHEDULED: {
-    label: 'Đã lên lịch',
-    badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
-    dotClass: 'bg-sky-500',
-    icon: 'schedule'
-  },
-  COMPLETED: {
-    label: 'Đã kết thúc',
-    badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
-    dotClass: 'bg-emerald-500',
-    icon: 'task_alt'
-  },
-  CANCELLED: {
-    label: 'Đã hủy',
-    badgeClass: 'bg-red-50 text-red-700 border-red-200',
-    dotClass: 'bg-red-500',
-    icon: 'cancel'
-  }
-};
+const SHORT_DAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const SHORT_DAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function TeachingSchedule() {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
+  const DAY_LABELS = isEn ? DAY_LABELS_EN : DAY_LABELS_VI;
+  const SHORT_DAY_LABELS = isEn ? SHORT_DAY_LABELS_EN : SHORT_DAY_LABELS_VI;
+
+  const STATUS_CONFIG = useMemo(() => ({
+    SCHEDULED: {
+      label: isEn ? 'Scheduled' : 'Đã lên lịch',
+      badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
+      dotClass: 'bg-sky-500',
+      icon: 'schedule'
+    },
+    COMPLETED: {
+      label: isEn ? 'Completed' : 'Đã kết thúc',
+      badgeClass: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+      dotClass: 'bg-emerald-500',
+      icon: 'task_alt'
+    },
+    CANCELLED: {
+      label: isEn ? 'Cancelled' : 'Đã hủy',
+      badgeClass: 'bg-red-50 text-red-700 border-red-200',
+      dotClass: 'bg-red-500',
+      icon: 'cancel'
+    }
+  }), [isEn]);
+
   const schedule = useTeachingSessions(60);
 
   // Chế độ xem: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu) | 'grid' (Lưới thẻ)
@@ -220,6 +230,15 @@ export function TeachingSchedule() {
     setDetailModalOpen(true);
   };
 
+  // Format tên thứ của buổi dạy
+  const formatDayOfWeek = (sessionDate, fallbackDay) => {
+    if (sessionDate) {
+      const d = parseIsoDate(sessionDate);
+      return DAY_LABELS[d.getDay()];
+    }
+    return fallbackDay || '';
+  };
+
   // Lọc danh sách ca dạy
   const filteredSessions = useMemo(() => {
     return schedule.sessions.filter(s => {
@@ -275,22 +294,29 @@ export function TeachingSchedule() {
   // Tiêu đề khoảng thời gian hiển thị
   const periodTitle = useMemo(() => {
     if (viewMode === 'month') {
-      return `Tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
+      return isEn
+        ? currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })
+        : `Tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
     }
     const start = weekDays[0];
     const end = weekDays[6];
+    if (isEn) {
+      const startMonth = start.toLocaleString('en-US', { month: 'short' });
+      const endMonth = end.toLocaleString('en-US', { month: 'short' });
+      return `Week: ${start.getDate()} ${startMonth} - ${end.getDate()} ${endMonth}, ${end.getFullYear()}`;
+    }
     return `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
-  }, [viewMode, currentDate, weekDays]);
+  }, [viewMode, currentDate, weekDays, isEn]);
 
   // Danh sách các bộ môn có ca dạy kèm số lượng
   const availableSports = useMemo(() => {
     const map = new Map();
     schedule.sessions.forEach(s => {
-      const sp = s.sportName || 'Chưa phân loại';
+      const sp = s.sportName || (isEn ? 'Unclassified' : 'Chưa phân loại');
       map.set(sp, (map.get(sp) || 0) + 1);
     });
     return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
-  }, [schedule.sessions]);
+  }, [schedule.sessions, isEn]);
 
   // Thống kê nhanh KPI
   const stats = useMemo(() => {
@@ -311,14 +337,16 @@ export function TeachingSchedule() {
         <div className="space-y-1 relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[rgba(242,204,143,0.15)] text-[#F2CC8F] text-[11px] font-bold uppercase tracking-widest border border-[rgba(242,204,143,0.3)] mb-2">
             <span className="w-2 h-2 rounded-full bg-[#F2CC8F] animate-pulse" />
-            Lịch giảng dạy chuyên môn
+            {isEn ? 'Professional Teaching Schedule' : 'Lịch giảng dạy chuyên môn'}
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
             <span className="material-symbols-outlined text-[28px] text-[#F2CC8F]">calendar_month</span>
-            Lịch Giảng Dạy Của Huấn Luyện Viên
+            {isEn ? 'Coach Teaching Schedule' : 'Lịch Giảng Dạy Của Huấn Luyện Viên'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-            Theo dõi các ca dạy, sĩ số học viên và thực hiện điểm danh lớp học được phân công theo chuẩn thể thao Olympic.
+            {isEn
+              ? 'Track assigned teaching sessions, student enrollment, and take attendance according to Olympic sports standards.'
+              : 'Theo dõi các ca dạy, sĩ số học viên và thực hiện điểm danh lớp học được phân công theo chuẩn thể thao Olympic.'}
           </p>
         </div>
 
@@ -329,7 +357,9 @@ export function TeachingSchedule() {
             className="px-4 py-2.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-sm"
           >
             <span className="material-symbols-outlined text-[16px] text-[#F2CC8F]">date_range</span>
-            <span>Khoảng ngày ({schedule.from} → {schedule.to})</span>
+            <span>
+              {isEn ? `Date Range (${schedule.from} → ${schedule.to})` : `Khoảng ngày (${schedule.from} → ${schedule.to})`}
+            </span>
             <span className="material-symbols-outlined text-[16px]">
               {showPeriodConfig ? 'expand_less' : 'expand_more'}
             </span>
@@ -347,7 +377,7 @@ export function TeachingSchedule() {
           className="p-4 rounded-2xl border border-slate-200 bg-white shadow-sm flex flex-wrap items-end gap-3 text-xs animate-fadeIn"
         >
           <label className="font-semibold text-slate-700 space-y-1">
-            <span>Từ ngày:</span>
+            <span>{isEn ? 'From Date:' : 'Từ ngày:'}</span>
             <input
               type="date"
               required
@@ -357,7 +387,7 @@ export function TeachingSchedule() {
             />
           </label>
           <label className="font-semibold text-slate-700 space-y-1">
-            <span>Đến ngày:</span>
+            <span>{isEn ? 'To Date:' : 'Đến ngày:'}</span>
             <input
               type="date"
               required
@@ -371,9 +401,11 @@ export function TeachingSchedule() {
             disabled={schedule.loading}
             className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold transition-all shadow-xs cursor-pointer disabled:opacity-50"
           >
-            {schedule.loading ? 'Đang tải...' : 'Áp dụng khoảng ngày'}
+            {schedule.loading ? (isEn ? 'Loading...' : 'Đang tải...') : (isEn ? 'Apply Date Range' : 'Áp dụng khoảng ngày')}
           </button>
-          <span className="text-slate-500 self-center">Tối đa 92 ngày cho mỗi lần tải dữ liệu.</span>
+          <span className="text-slate-500 self-center">
+            {isEn ? 'Maximum 92 days per request.' : 'Tối đa 92 ngày cho mỗi lần tải dữ liệu.'}
+          </span>
         </form>
       )}
 
@@ -381,7 +413,7 @@ export function TeachingSchedule() {
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
         <div className="p-4 rounded-xl border border-slate-200 bg-white shadow-xs">
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-slate-500">
-            <span>Tổng ca dạy</span>
+            <span>{isEn ? 'Total Sessions' : 'Tổng ca dạy'}</span>
             <span className="material-symbols-outlined text-[18px] text-slate-400">fitness_center</span>
           </div>
           <div className="font-chivo text-2xl font-black text-slate-900 mt-2">
@@ -393,7 +425,7 @@ export function TeachingSchedule() {
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-sky-800">
             <span className="flex items-center gap-1.5">
               <span className="w-2 h-2 rounded-full bg-sky-500 animate-ping" />
-              Đã lên lịch
+              {isEn ? 'Scheduled' : 'Đã lên lịch'}
             </span>
             <span className="material-symbols-outlined text-[18px] text-sky-600">schedule</span>
           </div>
@@ -404,7 +436,7 @@ export function TeachingSchedule() {
 
         <div className="p-4 rounded-xl border border-emerald-200 bg-emerald-50/60 shadow-xs">
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-emerald-800">
-            <span>Đã kết thúc</span>
+            <span>{isEn ? 'Completed' : 'Đã kết thúc'}</span>
             <span className="material-symbols-outlined text-[18px] text-emerald-600">task_alt</span>
           </div>
           <div className="font-chivo text-2xl font-black text-emerald-900 mt-2">
@@ -414,7 +446,7 @@ export function TeachingSchedule() {
 
         <div className="p-4 rounded-xl border border-[#F2CC8F]/60 bg-[#FFFDF9] shadow-xs">
           <div className="flex items-center justify-between text-xs font-bold uppercase tracking-wider text-[#92400E]">
-            <span>Lượt học viên</span>
+            <span>{isEn ? 'Student Enrollments' : 'Lượt học viên'}</span>
             <span className="material-symbols-outlined text-[18px] text-[#D97706]">group</span>
           </div>
           <div className="font-chivo text-2xl font-black text-[#1E2235] mt-2">
@@ -435,7 +467,7 @@ export function TeachingSchedule() {
               type="button"
               onClick={handlePrev}
               className="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-700 transition-colors shadow-xs cursor-pointer"
-              title="Khoảng trước"
+              title={isEn ? 'Previous' : 'Khoảng trước'}
             >
               <span className="material-symbols-outlined text-[18px]">chevron_left</span>
             </button>
@@ -444,13 +476,13 @@ export function TeachingSchedule() {
               onClick={handleToday}
               className="px-3.5 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-800 transition-colors shadow-xs cursor-pointer"
             >
-              Hôm nay
+              {isEn ? 'Today' : 'Hôm nay'}
             </button>
             <button
               type="button"
               onClick={handleNext}
               className="w-9 h-9 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 flex items-center justify-center text-slate-700 transition-colors shadow-xs cursor-pointer"
-              title="Khoảng sau"
+              title={isEn ? 'Next' : 'Khoảng sau'}
             >
               <span className="material-symbols-outlined text-[18px]">chevron_right</span>
             </button>
@@ -470,7 +502,7 @@ export function TeachingSchedule() {
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">view_week</span>
-              <span>Lịch Tuần</span>
+              <span>{isEn ? 'Week View' : 'Lịch Tuần'}</span>
             </button>
             <button
               type="button"
@@ -480,7 +512,7 @@ export function TeachingSchedule() {
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">calendar_month</span>
-              <span>Lịch Tháng</span>
+              <span>{isEn ? 'Month View' : 'Lịch Tháng'}</span>
             </button>
             <button
               type="button"
@@ -490,7 +522,7 @@ export function TeachingSchedule() {
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">view_agenda</span>
-              <span>Lịch Biểu</span>
+              <span>{isEn ? 'Agenda' : 'Lịch Biểu'}</span>
             </button>
             <button
               type="button"
@@ -500,7 +532,7 @@ export function TeachingSchedule() {
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">grid_view</span>
-              <span>Lưới Thẻ</span>
+              <span>{isEn ? 'Grid View' : 'Lưới Thẻ'}</span>
             </button>
           </div>
         </div>
@@ -516,7 +548,7 @@ export function TeachingSchedule() {
               type="text"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
-              placeholder="Tìm tên lớp, phòng, bộ môn..."
+              placeholder={isEn ? 'Search class, room, sport...' : 'Tìm tên lớp, phòng, bộ môn...'}
               className="w-full pl-9 pr-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium"
             />
           </div>
@@ -528,10 +560,10 @@ export function TeachingSchedule() {
               onChange={e => setSelectedTimeSlot(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium cursor-pointer"
             >
-              <option value="ALL">⏰ Tất cả khung giờ</option>
-              <option value="MORNING">🌅 Ca Sáng (&lt; 12:00)</option>
-              <option value="AFTERNOON">☀️ Ca Chiều (12:00 - 17:00)</option>
-              <option value="EVENING">🌙 Ca Tối (&gt; 17:00)</option>
+              <option value="ALL">{isEn ? '⏰ All Time Slots' : '⏰ Tất cả khung giờ'}</option>
+              <option value="MORNING">{isEn ? '🌅 Morning (< 12:00)' : '🌅 Ca Sáng (< 12:00)'}</option>
+              <option value="AFTERNOON">{isEn ? '☀️ Afternoon (12:00 - 17:00)' : '☀️ Ca Chiều (12:00 - 17:00)'}</option>
+              <option value="EVENING">{isEn ? '🌙 Evening (> 17:00)' : '🌙 Ca Tối (> 17:00)'}</option>
             </select>
           </div>
 
@@ -542,10 +574,10 @@ export function TeachingSchedule() {
               onChange={e => setSelectedStatus(e.target.value)}
               className="w-full px-3 py-2 rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium cursor-pointer"
             >
-              <option value="ALL">🎯 Tất cả trạng thái</option>
-              <option value="SCHEDULED">🔵 Đã lên lịch</option>
-              <option value="COMPLETED">🟢 Đã kết thúc</option>
-              <option value="CANCELLED">🔴 Đã hủy</option>
+              <option value="ALL">{isEn ? '🎯 All Statuses' : '🎯 Tất cả trạng thái'}</option>
+              <option value="SCHEDULED">{isEn ? '🔵 Scheduled' : '🔵 Đã lên lịch'}</option>
+              <option value="COMPLETED">{isEn ? '🟢 Completed' : '🟢 Đã kết thúc'}</option>
+              <option value="CANCELLED">{isEn ? '🔴 Cancelled' : '🔴 Đã hủy'}</option>
             </select>
           </div>
 
@@ -568,7 +600,9 @@ export function TeachingSchedule() {
 
         {/* Row 3: Sport Filter Chips */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Bộ môn:</span>
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">
+            {isEn ? 'Sport:' : 'Bộ môn:'}
+          </span>
           <button
             type="button"
             onClick={() => setSelectedSport('ALL')}
@@ -578,10 +612,10 @@ export function TeachingSchedule() {
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            Tất cả ({schedule.sessions.length})
+            {isEn ? `All (${schedule.sessions.length})` : `Tất cả (${schedule.sessions.length})`}
           </button>
           {availableSports.map(s => {
-            const theme = getSportTheme(s.name);
+            const theme = getSportTheme(s.name, isEn);
             const isSelected = selectedSport === s.name;
             return (
               <button
@@ -611,7 +645,9 @@ export function TeachingSchedule() {
           <span className="material-symbols-outlined text-[#81B29A] text-[32px] animate-spin">
             progress_activity
           </span>
-          <p className="text-sm font-semibold text-slate-700">Đang tải lịch giảng dạy của huấn luyện viên...</p>
+          <p className="text-sm font-semibold text-slate-700">
+            {isEn ? 'Loading coach teaching schedule...' : 'Đang tải lịch giảng dạy của huấn luyện viên...'}
+          </p>
         </div>
       )}
 
@@ -637,7 +673,7 @@ export function TeachingSchedule() {
                         isSelected ? 'bg-red-50/60' : 'hover:bg-slate-100/60'
                       }`}
                     >
-                      <span className="text-[11px] font-bold uppercase text-slate-500 block">
+                      <span className="text-[11px] font-bold uppercase text-slate-500 block truncate">
                         {DAY_LABELS[day.getDay()]}
                       </span>
                       <div className="mt-1 flex items-center justify-center gap-1">
@@ -653,10 +689,10 @@ export function TeachingSchedule() {
                       </div>
                       {daySessionsCount > 0 ? (
                         <span className="inline-block mt-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-200/80 text-slate-700">
-                          {daySessionsCount} ca
+                          {daySessionsCount} {isEn ? (daySessionsCount === 1 ? 'session' : 'sessions') : 'ca'}
                         </span>
                       ) : (
-                        <span className="text-[10px] text-slate-400 block mt-1">Trống</span>
+                        <span className="text-[10px] text-slate-400 block mt-1">{isEn ? 'Free' : 'Trống'}</span>
                       )}
                     </div>
                   );
@@ -680,7 +716,9 @@ export function TeachingSchedule() {
                       {/* Tiêu đề ngày trên mobile nhỏ */}
                       <div className="md:hidden pb-1 border-b border-slate-200 flex justify-between items-center text-xs font-bold">
                         <span>{DAY_LABELS[day.getDay()]} ({dayStr})</span>
-                        <span className="text-slate-500">{daySessions.length} ca dạy</span>
+                        <span className="text-slate-500">
+                          {daySessions.length} {isEn ? (daySessions.length === 1 ? 'session' : 'sessions') : 'ca dạy'}
+                        </span>
                       </div>
 
                       {daySessions.length === 0 ? (
@@ -688,11 +726,11 @@ export function TeachingSchedule() {
                           <span className="material-symbols-outlined text-2xl text-slate-300 block mb-1">
                             event_busy
                           </span>
-                          <span>Không có ca</span>
+                          <span>{isEn ? 'No sessions' : 'Không có ca'}</span>
                         </div>
                       ) : (
                         daySessions.map(s => {
-                          const theme = getSportTheme(s.sportName);
+                          const theme = getSportTheme(s.sportName, isEn);
                           const statusInfo = STATUS_CONFIG[s.status] || STATUS_CONFIG.SCHEDULED;
                           const percent = s.capacity > 0 ? Math.min(100, Math.round((s.enrolledCount / s.capacity) * 100)) : 0;
 
@@ -709,7 +747,7 @@ export function TeachingSchedule() {
                                   <span>{s.timeSlot}</span>
                                 </span>
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${theme.badge}`}>
-                                  {s.sportName}
+                                  {theme.tag}
                                 </span>
                               </div>
 
@@ -727,7 +765,7 @@ export function TeachingSchedule() {
 
                                 <div className="flex items-center justify-between gap-1 pt-1 border-t border-black/5">
                                   <span className="font-bold text-slate-700">
-                                    {s.enrolledCount}/{s.capacity} HV
+                                    {s.enrolledCount}/{s.capacity} {isEn ? 'Students' : 'HV'}
                                   </span>
                                   <span className={`px-1.5 py-0.2 rounded-full text-[9px] font-bold border ${statusInfo.badgeClass}`}>
                                     {statusInfo.label}
@@ -751,7 +789,7 @@ export function TeachingSchedule() {
                                   className="text-slate-700 hover:text-slate-900 flex items-center gap-0.5 hover:underline"
                                 >
                                   <span className="material-symbols-outlined text-[13px]">group</span>
-                                  <span>Học viên</span>
+                                  <span>{isEn ? 'Students' : 'Học viên'}</span>
                                 </a>
                                 <a
                                   href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
@@ -759,7 +797,7 @@ export function TeachingSchedule() {
                                   className="text-[#3D405B] hover:text-[#E07A5F] flex items-center gap-0.5 hover:underline font-semibold"
                                 >
                                   <span className="material-symbols-outlined text-[13px]">how_to_reg</span>
-                                  <span>Điểm danh</span>
+                                  <span>{isEn ? 'Attendance' : 'Điểm danh'}</span>
                                 </a>
                               </div>
                             </div>
@@ -822,7 +860,7 @@ export function TeachingSchedule() {
                           </span>
                           {daySessions.length > 0 && (
                             <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1 rounded-full">
-                              {daySessions.length} ca
+                              {daySessions.length} {isEn ? 'sess.' : 'ca'}
                             </span>
                           )}
                         </div>
@@ -830,7 +868,7 @@ export function TeachingSchedule() {
                         {/* Session Chips */}
                         <div className="space-y-1 my-1">
                           {daySessions.slice(0, 2).map(s => {
-                            const theme = getSportTheme(s.sportName);
+                            const theme = getSportTheme(s.sportName, isEn);
                             return (
                               <div
                                 key={s.id}
@@ -847,7 +885,7 @@ export function TeachingSchedule() {
                           })}
                           {daySessions.length > 2 && (
                             <span className="text-[9px] font-bold text-slate-500 block text-right">
-                              +{daySessions.length - 2} ca nữa
+                              {isEn ? `+${daySessions.length - 2} more` : `+${daySessions.length - 2} ca nữa`}
                             </span>
                           )}
                         </div>
@@ -861,22 +899,30 @@ export function TeachingSchedule() {
 
               {/* Chi tiết ca dạy của ngày được chọn trong Tháng */}
               <div className="p-4 rounded-2xl bg-white border border-slate-200 shadow-sm space-y-3">
-                <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+                <div className="flex items-center justify-between pb-2 border-b border-slate-100 flex-wrap gap-2">
                   <h3 className="font-chivo font-black text-sm text-slate-900 uppercase tracking-wide flex items-center gap-2">
                     <span className="material-symbols-outlined text-[#F2CC8F] text-[18px]">event</span>
-                    <span>Ca dạy ngày: {selectedCalendarDate} ({(sessionsByDate.get(selectedCalendarDate) || []).length} ca)</span>
+                    <span>
+                      {isEn
+                        ? `Sessions on: ${selectedCalendarDate} (${(sessionsByDate.get(selectedCalendarDate) || []).length} sessions)`
+                        : `Ca dạy ngày: ${selectedCalendarDate} (${(sessionsByDate.get(selectedCalendarDate) || []).length} ca)`}
+                    </span>
                   </h3>
-                  <span className="text-xs text-slate-400">Nhấp vào ca dạy để xem thông tin hoặc điểm danh</span>
+                  <span className="text-xs text-slate-400">
+                    {isEn ? 'Click on a session to view details or record attendance' : 'Nhấp vào ca dạy để xem thông tin hoặc điểm danh'}
+                  </span>
                 </div>
 
                 {(sessionsByDate.get(selectedCalendarDate) || []).length === 0 ? (
                   <p className="text-xs text-slate-500 italic py-2">
-                    Không có ca dạy nào được phân công trong ngày này. Vui lòng chọn ngày khác trên lịch.
+                    {isEn
+                      ? 'No teaching sessions assigned for this date. Please pick another date on the calendar.'
+                      : 'Không có ca dạy nào được phân công trong ngày này. Vui lòng chọn ngày khác trên lịch.'}
                   </p>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                     {(sessionsByDate.get(selectedCalendarDate) || []).map(s => {
-                      const theme = getSportTheme(s.sportName);
+                      const theme = getSportTheme(s.sportName, isEn);
                       const statusInfo = STATUS_CONFIG[s.status] || STATUS_CONFIG.SCHEDULED;
 
                       return (
@@ -888,7 +934,7 @@ export function TeachingSchedule() {
                           <div>
                             <div className="flex justify-between items-center mb-1.5">
                               <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                                {s.sportName}
+                                {theme.tag}
                               </span>
                               <span className="font-bold text-slate-700">{s.timeSlot}</span>
                             </div>
@@ -896,7 +942,7 @@ export function TeachingSchedule() {
                               {s.name}
                             </h4>
                             <p className="text-[11px] text-slate-600 mt-1">
-                              Địa điểm: <strong>{s.roomName}</strong> · Sĩ số: <strong>{s.enrolledCount}/{s.capacity}</strong>
+                              {isEn ? 'Court / Room:' : 'Địa điểm:'} <strong>{s.roomName}</strong> · {isEn ? 'Enrolled:' : 'Sĩ số:'} <strong>{s.enrolledCount}/{s.capacity}</strong>
                             </p>
                           </div>
 
@@ -910,7 +956,7 @@ export function TeachingSchedule() {
                                 onClick={e => e.stopPropagation()}
                                 className="text-[#3D405B] hover:text-[#E07A5F] hover:underline"
                               >
-                                Điểm danh →
+                                {isEn ? 'Attendance →' : 'Điểm danh →'}
                               </a>
                             </div>
                           </div>
@@ -929,7 +975,7 @@ export function TeachingSchedule() {
               {Array.from(sessionsByDate.entries()).length === 0 ? (
                 <div className="p-12 text-center text-slate-400 text-xs">
                   <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">event_busy</span>
-                  <p>Không có ca dạy nào phù hợp với bộ lọc hiện tại.</p>
+                  <p>{isEn ? 'No teaching sessions found matching the current filters.' : 'Không có ca dạy nào phù hợp với bộ lọc hiện tại.'}</p>
                 </div>
               ) : (
                 Array.from(sessionsByDate.entries()).map(([dateStr, daySessions]) => {
@@ -950,14 +996,14 @@ export function TeachingSchedule() {
                           {DAY_LABELS[d.getDay()]} · {dateStr}
                         </span>
                         <span className="text-xs text-slate-500 font-bold">
-                          {daySessions.length} ca dạy phân công
+                          {daySessions.length} {isEn ? (daySessions.length === 1 ? 'assigned session' : 'assigned sessions') : 'ca dạy phân công'}
                         </span>
                       </div>
 
                       {/* Sessions Rows */}
                       <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-slate-50/20">
                         {daySessions.map(s => {
-                          const theme = getSportTheme(s.sportName);
+                          const theme = getSportTheme(s.sportName, isEn);
                           const statusInfo = STATUS_CONFIG[s.status] || STATUS_CONFIG.SCHEDULED;
 
                           return (
@@ -974,23 +1020,23 @@ export function TeachingSchedule() {
                                 <div className="space-y-1 min-w-0">
                                   <div className="flex items-center gap-2">
                                     <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                                      {s.sportName}
+                                      {theme.tag}
                                     </span>
                                     <h4 className="font-chivo font-black text-slate-900 text-sm truncate">
                                       {s.name}
                                     </h4>
                                   </div>
                                   <p className="text-slate-500 text-[11px]">
-                                    Phòng: <strong className="text-slate-800">{s.roomName}</strong> · Trạng thái: <strong className="text-slate-800">{statusInfo.label}</strong>
+                                    {isEn ? 'Room:' : 'Phòng:'} <strong className="text-slate-800">{s.roomName}</strong> · {isEn ? 'Status:' : 'Trạng thái:'} <strong className="text-slate-800">{statusInfo.label}</strong>
                                   </p>
                                 </div>
                               </div>
 
                               <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
                                 <div className="text-right">
-                                  <span className="text-[10px] text-slate-400 uppercase font-bold block">Sĩ số</span>
+                                  <span className="text-[10px] text-slate-400 uppercase font-bold block">{isEn ? 'Enrollment' : 'Sĩ số'}</span>
                                   <span className="font-chivo font-bold text-slate-900">
-                                    {s.enrolledCount}/{s.capacity} HV
+                                    {s.enrolledCount}/{s.capacity} {isEn ? 'Students' : 'HV'}
                                   </span>
                                 </div>
 
@@ -1000,14 +1046,14 @@ export function TeachingSchedule() {
                                     onClick={e => e.stopPropagation()}
                                     className="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-100 text-slate-700 font-bold transition-colors"
                                   >
-                                    Học viên
+                                    {isEn ? 'Students' : 'Học viên'}
                                   </a>
                                   <a
                                     href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
                                     onClick={e => e.stopPropagation()}
                                     className="px-3.5 py-1.5 rounded-lg bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold transition-colors shadow-xs"
                                   >
-                                    Điểm danh
+                                    {isEn ? 'Attendance' : 'Điểm danh'}
                                   </a>
                                 </div>
                               </div>
@@ -1028,14 +1074,15 @@ export function TeachingSchedule() {
               {filteredSessions.length === 0 ? (
                 <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">
                   <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">event_busy</span>
-                  <p>Không có ca dạy nào phù hợp với bộ lọc hiện tại.</p>
+                  <p>{isEn ? 'No teaching sessions found matching the current filters.' : 'Không có ca dạy nào phù hợp với bộ lọc hiện tại.'}</p>
                 </div>
               ) : (
                 <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {filteredSessions.map(s => {
-                    const theme = getSportTheme(s.sportName);
+                    const theme = getSportTheme(s.sportName, isEn);
                     const statusInfo = STATUS_CONFIG[s.status] || STATUS_CONFIG.SCHEDULED;
                     const percent = s.capacity > 0 ? Math.min(100, Math.round((s.enrolledCount / s.capacity) * 100)) : 0;
+                    const dayLabel = formatDayOfWeek(s.sessionDate, s.dayOfWeek);
 
                     return (
                       <article
@@ -1046,7 +1093,7 @@ export function TeachingSchedule() {
                         <div className="space-y-3">
                           <div className="flex items-center justify-between gap-2 text-xs">
                             <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                              {s.sportName}
+                              {theme.tag}
                             </span>
                             <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusInfo.badgeClass}`}>
                               <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
@@ -1061,7 +1108,7 @@ export function TeachingSchedule() {
                           <div className="space-y-1.5 text-xs text-slate-600">
                             <p className="flex items-center gap-1.5">
                               <span className="material-symbols-outlined text-[16px] text-[#81B29A]">calendar_today</span>
-                              <strong>{s.dayOfWeek} · {s.sessionDate}</strong>
+                              <strong>{dayLabel} · {s.sessionDate}</strong>
                             </p>
                             <p className="flex items-center gap-1.5">
                               <span className="material-symbols-outlined text-[16px] text-slate-400">schedule</span>
@@ -1076,7 +1123,11 @@ export function TeachingSchedule() {
                           {/* Enrollment bar */}
                           <div className="space-y-1 pt-1 border-t border-slate-100">
                             <div className="flex justify-between text-xs font-bold text-slate-700">
-                              <span>Đặt chỗ: {s.enrolledCount}/{s.capacity} học viên</span>
+                              <span>
+                                {isEn
+                                  ? `Bookings: ${s.enrolledCount}/${s.capacity} students`
+                                  : `Đặt chỗ: ${s.enrolledCount}/${s.capacity} học viên`}
+                              </span>
                               <span className="text-slate-500">{percent}%</span>
                             </div>
                             <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
@@ -1096,7 +1147,7 @@ export function TeachingSchedule() {
                             className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors flex items-center gap-1"
                           >
                             <span className="material-symbols-outlined text-[15px]">group</span>
-                            <span>Học viên</span>
+                            <span>{isEn ? 'Students' : 'Học viên'}</span>
                           </a>
                           <a
                             href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
@@ -1104,7 +1155,7 @@ export function TeachingSchedule() {
                             className="px-3.5 py-1.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white transition-colors flex items-center gap-1 shadow-xs font-bold"
                           >
                             <span className="material-symbols-outlined text-[15px]">how_to_reg</span>
-                            <span>Điểm danh</span>
+                            <span>{isEn ? 'Attendance' : 'Điểm danh'}</span>
                           </a>
                         </div>
                       </article>
@@ -1122,15 +1173,15 @@ export function TeachingSchedule() {
         <Modal
           isOpen={detailModalOpen}
           onClose={() => setDetailModalOpen(false)}
-          title="Chi tiết ca giảng dạy"
+          title={isEn ? 'Teaching Session Details' : 'Chi tiết ca giảng dạy'}
           maxWidth="max-w-lg"
         >
           <div className="space-y-5">
             {/* Modal Header Badge */}
             <div className="p-4 rounded-xl border border-slate-200 bg-slate-50/70 space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <span className={`px-2.5 py-1 rounded text-xs font-extrabold uppercase border ${getSportTheme(activeSession.sportName).badge}`}>
-                  {activeSession.sportName}
+                <span className={`px-2.5 py-1 rounded text-xs font-extrabold uppercase border ${getSportTheme(activeSession.sportName, isEn).badge}`}>
+                  {getSportTheme(activeSession.sportName, isEn).tag}
                 </span>
                 <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold border ${STATUS_CONFIG[activeSession.status]?.badgeClass}`}>
                   {STATUS_CONFIG[activeSession.status]?.label}
@@ -1144,30 +1195,40 @@ export function TeachingSchedule() {
             {/* Session Info Grid */}
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-1">
-                <span className="text-slate-400 uppercase font-bold text-[10px] block">Ngày giảng dạy</span>
-                <strong className="text-slate-900 text-sm">{activeSession.dayOfWeek}</strong>
+                <span className="text-slate-400 uppercase font-bold text-[10px] block">
+                  {isEn ? 'Session Date' : 'Ngày giảng dạy'}
+                </span>
+                <strong className="text-slate-900 text-sm">
+                  {formatDayOfWeek(activeSession.sessionDate, activeSession.dayOfWeek)}
+                </strong>
                 <p className="text-slate-600 font-mono">{activeSession.sessionDate}</p>
               </div>
 
               <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-1">
-                <span className="text-slate-400 uppercase font-bold text-[10px] block">Khung giờ</span>
+                <span className="text-slate-400 uppercase font-bold text-[10px] block">
+                  {isEn ? 'Time Slot' : 'Khung giờ'}
+                </span>
                 <strong className="text-slate-900 text-sm">{activeSession.timeSlot}</strong>
-                <p className="text-slate-600">Ca tiêu chuẩn</p>
+                <p className="text-slate-600">{isEn ? 'Standard Slot' : 'Ca tiêu chuẩn'}</p>
               </div>
 
               <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-1">
-                <span className="text-slate-400 uppercase font-bold text-[10px] block">Phòng / Sân bãi</span>
+                <span className="text-slate-400 uppercase font-bold text-[10px] block">
+                  {isEn ? 'Court / Room' : 'Phòng / Sân bãi'}
+                </span>
                 <strong className="text-slate-900 text-sm">{activeSession.roomName}</strong>
-                <p className="text-slate-600">Đã chốt lịch</p>
+                <p className="text-slate-600">{isEn ? 'Confirmed Schedule' : 'Đã chốt lịch'}</p>
               </div>
 
               <div className="p-3 rounded-xl border border-slate-200 bg-white space-y-1">
-                <span className="text-slate-400 uppercase font-bold text-[10px] block">Sĩ số học viên</span>
+                <span className="text-slate-400 uppercase font-bold text-[10px] block">
+                  {isEn ? 'Student Enrollment' : 'Sĩ số học viên'}
+                </span>
                 <strong className="text-slate-900 text-sm">
-                  {activeSession.enrolledCount} / {activeSession.capacity} HV
+                  {activeSession.enrolledCount} / {activeSession.capacity} {isEn ? 'Students' : 'HV'}
                 </strong>
                 <p className="text-slate-600 font-semibold">
-                  {activeSession.capacity > 0 ? Math.round((activeSession.enrolledCount / activeSession.capacity) * 100) : 0}% lấp đầy
+                  {activeSession.capacity > 0 ? Math.round((activeSession.enrolledCount / activeSession.capacity) * 100) : 0}% {isEn ? 'filled' : 'lấp đầy'}
                 </p>
               </div>
             </div>
@@ -1175,8 +1236,8 @@ export function TeachingSchedule() {
             {/* Progress bar */}
             <div className="space-y-1.5">
               <div className="flex justify-between text-xs font-bold text-slate-600">
-                <span>Tỷ lệ học viên đăng ký</span>
-                <span>{activeSession.enrolledCount}/{activeSession.capacity} chỗ</span>
+                <span>{isEn ? 'Enrollment Capacity' : 'Tỷ lệ học viên đăng ký'}</span>
+                <span>{activeSession.enrolledCount}/{activeSession.capacity} {isEn ? 'spots' : 'chỗ'}</span>
               </div>
               <div className="w-full bg-slate-200 rounded-full h-2 overflow-hidden">
                 <div
@@ -1195,7 +1256,7 @@ export function TeachingSchedule() {
                 className="px-4 py-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-800 text-xs font-bold transition-colors flex items-center gap-1.5"
               >
                 <span className="material-symbols-outlined text-[16px]">group</span>
-                <span>Xem danh sách học viên</span>
+                <span>{isEn ? 'View Student List' : 'Xem danh sách học viên'}</span>
               </a>
 
               <a
@@ -1203,7 +1264,7 @@ export function TeachingSchedule() {
                 className="px-4 py-2.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white text-xs font-bold transition-all shadow-md shadow-[#F2CC8F]/20 flex items-center gap-1.5 cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
-                <span>Điểm danh ca dạy này</span>
+                <span>{isEn ? 'Take Attendance for Session' : 'Điểm danh ca dạy này'}</span>
               </a>
             </div>
           </div>

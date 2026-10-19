@@ -98,7 +98,8 @@ public sealed record SessionScheduleItemResponse(
     int BookedCount,
     int AvailableSeats,
     bool IsBookable,
-    bool AllowWaitlist = true);
+    bool AllowWaitlist = true,
+    string? RoomName = null);
 
 public sealed record TeachingScheduleItemResponse(
     long SessionId,

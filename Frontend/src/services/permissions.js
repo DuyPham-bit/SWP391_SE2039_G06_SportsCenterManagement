@@ -251,6 +251,50 @@ export const SYSTEM_CAPABILITIES = [
   }
 ];
 
+// Per-user custom permission overrides
+export function getUserCustomOverrides(centerId, userId) {
+  if (!centerId || !userId) return null;
+  try {
+    const raw = localStorage.getItem(`scms_user_perm_override_${centerId}_${userId}`);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+export function saveUserCustomOverrides(centerId, userId, overrides) {
+  if (!centerId || !userId) return;
+  try {
+    if (!overrides) {
+      localStorage.removeItem(`scms_user_perm_override_${centerId}_${userId}`);
+    } else {
+      localStorage.setItem(`scms_user_perm_override_${centerId}_${userId}`, JSON.stringify(overrides));
+    }
+    window.dispatchEvent(new CustomEvent('SCMS_PERMISSIONS_CHANGED', { detail: { centerId, userId } }));
+  } catch (e) {
+    console.error('Failed to save user overrides', e);
+  }
+}
+
+export function getAllUserCustomOverrides(centerId) {
+  const result = {};
+  if (!centerId) return result;
+  try {
+    const prefix = `scms_user_perm_override_${centerId}_`;
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (key && key.startsWith(prefix)) {
+        const userId = key.replace(prefix, '');
+        const data = JSON.parse(localStorage.getItem(key));
+        if (data) result[userId] = data;
+      }
+    }
+  } catch (e) {
+    console.error('Failed to get all user overrides', e);
+  }
+  return result;
+}
+
 // Capabilities come only from the authenticated API response.
 export function getPermissionsForRole(role) {
   const normalized = String(role || '').toUpperCase();

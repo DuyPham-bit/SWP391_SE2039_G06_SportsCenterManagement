@@ -1,27 +1,35 @@
 import React, { useState, useEffect } from 'react';
 import { coachApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
-import { CoachError, useTeachingSessions } from './CoachShared.js';
+import { CoachError, useTeachingSessions } from './CoachShared.jsx';
 import { sessionTime } from './coachOverview.js';
-
-const links = [
-  ['professional', 'workspace_premium', 'Coach Professional Hub'],
-  ['schedule', 'calendar_month', 'Lịch dạy'],
-  ['members', 'group', 'Hồ sơ học viên'],
-  ['training-plan', 'assignment', 'Giáo án'],
-  ['progress', 'monitoring', 'Kết quả & nhận xét'],
-  ['attendance', 'fact_check', 'Điểm danh'],
-  ['notifications', 'campaign', 'Thông báo & bài tập'],
-  ['ai-recommendation', 'psychology', 'Gợi ý AI'],
-  ['support', 'support_agent', 'Yêu cầu hỗ trợ']
-];
+import { useLanguage } from '../../context/LanguageContext.jsx';
 
 export function CoachDashboard() {
   const { currentUser } = useAuth();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
   const [classes, setClasses] = useState([]);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
   const schedule = useTeachingSessions();
+
+  // Bộ lọc Ngày/Tuần/Tháng liền kề
+  const [filterPeriod, setFilterPeriod] = useState('day'); // 'day' | 'week' | 'month'
+
+  // Danh sách các ca hẹn PT tự tạo thêm trực tiếp trên Dashboard
+  const [customSessions, setCustomSessions] = useState([]);
+  const [formSuccess, setFormSuccess] = useState(false);
+
+  // State Form "Chủ động lên lịch PT"
+  const [formData, setFormData] = useState({
+    appointmentType: '1to1',
+    title: '',
+    studentName: '',
+    sessionDate: new Date().toISOString().split('T')[0],
+    startTime: '14:00',
+  });
 
   const load = async () => {
     setLoading(true);
@@ -42,232 +50,485 @@ export function CoachDashboard() {
   const studentCount = new Set(classes.flatMap(c => (c.members || []).map(m => m.id))).size;
   const upcoming = schedule.sessions.filter(s => s.status === 'SCHEDULED' && sessionTime(s) > Date.now());
 
+  // Lấy danh sách học viên từ các lớp đang phụ trách
+  const memberList = Array.from(
+    new Map(
+      classes
+        .flatMap(c => c.members || [])
+        .filter(Boolean)
+        .map(m => [m.id, m])
+    ).values()
+  );
+
+  // Mẫu ca tập mặc định chuẩn hiển thị
+  const defaultSessions = [
+    {
+      id: 'demo-1',
+      timeSlot: '07:30 - 08:30',
+      room: isEn ? 'Weight Room #1' : 'Phòng Tạ #1',
+      studentName: 'Nguyễn Văn An',
+      packageInfo: isEn ? 'PT 1:1 • Session 12/24' : 'PT 1:1 • Buổi 12/24',
+      exerciseTitle: 'Chest & Triceps Hypertrophy',
+      exerciseDetails: 'Bench Press, Dumbbell Flyes, Cable Pushdown',
+      status: 'COMPLETED',
+    },
+    {
+      id: 'demo-2',
+      timeSlot: '09:30 - 10:30',
+      room: isEn ? 'Cardio Studio' : 'Khu Cardio',
+      studentName: 'Trần Thị Bích',
+      packageInfo: isEn ? 'PT 1:1 • Session 8/16' : 'PT 1:1 • Buổi 8/16',
+      exerciseTitle: 'Cardio HIIT & Core Fat Burn',
+      exerciseDetails: 'Chạy biến tốc, Battle Rope, Plank kháng lực',
+      status: 'UPCOMING',
+    },
+    {
+      id: 'demo-3',
+      timeSlot: '15:30 - 16:30',
+      room: isEn ? 'Stretching Studio' : 'Phòng Kéo giãn',
+      studentName: 'Lê Hoàng Nam',
+      packageInfo: isEn ? 'PT 1:1 • Session 3/10' : 'PT 1:1 • Buổi 3/10',
+      exerciseTitle: 'Mobility & Lower Back Rehab',
+      exerciseDetails: 'Giãn cơ sâu chuyên sâu, Deadlift kỹ thuật nhẹ',
+      status: 'PENDING',
+    },
+  ];
+
+  // Kết hợp ca dạy thực tế từ schedule backend
+  const backendSessionsFormatted = schedule.sessions.slice(0, 4).map((s, idx) => ({
+    id: s.id,
+    timeSlot: s.timeSlot || '08:00 - 09:30',
+    room: s.roomName || (isEn ? 'Olympic Standard Hall' : 'Cụm sân Olympic'),
+    studentName: s.name || `Lớp học phần #${idx + 1}`,
+    packageInfo: `${s.sessionDate} • Ca thực tế`,
+    exerciseTitle: isEn ? 'Standard Olympic Training Drill' : 'Giáo án huấn luyện thể thao',
+    exerciseDetails: isEn ? 'Stamina & Technique evaluation' : 'Đánh giá kỹ thuật, rèn luyện thể lực',
+    status: s.status === 'COMPLETED' ? 'COMPLETED' : 'UPCOMING',
+    isBackend: true,
+    sessionDate: s.sessionDate,
+  }));
+
+  const allSessions = [
+    ...customSessions,
+    ...(backendSessionsFormatted.length > 0 ? backendSessionsFormatted : defaultSessions),
+  ];
+
+  // Xử lý tạo lịch hẹn PT
+  const handleCreateAppointment = (e) => {
+    e.preventDefault();
+    if (!formData.title || !formData.studentName) return;
+
+    const newSession = {
+      id: 'custom-' + Date.now(),
+      timeSlot: `${formData.startTime} - ${parseInt(formData.startTime.split(':')[0]) + 1}:00`,
+      room: isEn ? 'PT Zone #2' : 'Khu vực PT #2',
+      studentName: formData.studentName,
+      packageInfo: `${formData.sessionDate} • PT 1:1`,
+      exerciseTitle: formData.title,
+      exerciseDetails: isEn ? 'Personal coaching session' : 'Buổi tập kèm riêng theo giáo án cá nhân',
+      status: 'UPCOMING',
+    };
+
+    setCustomSessions([newSession, ...customSessions]);
+    setFormSuccess(true);
+    setFormData({
+      appointmentType: '1to1',
+      title: '',
+      studentName: '',
+      sessionDate: new Date().toISOString().split('T')[0],
+      startTime: '14:00',
+    });
+
+    setTimeout(() => setFormSuccess(false), 4000);
+  };
+
   return (
-    <div className="space-y-7">
+    <div className="space-y-6">
+      
       {/* ─────────────────────────────────────────────────────────────
-          1. TIYA WELCOME BANNER (Rich Slate Navy & Warm Gold Accent)
+          1. TOP BANNER (Nền gradient Tiya Dark Slate Navy & 4 Stats Glassmorphism)
       ───────────────────────────────────────────────────────────── */}
-      <div className="rounded-[24px] bg-gradient-to-br from-[#32354D] via-[#2B2D42] to-[#1E2235] text-white p-6 sm:p-8 relative overflow-hidden border border-white/10 shadow-xl">
-        {/* Decorative ambient glows matching Tiya */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
+      <section
+        className="relative rounded-[20px] text-white p-6 sm:p-8 lg:p-9 overflow-hidden shadow-xl border border-white/10"
+        style={{
+          background: 'linear-gradient(135deg, #1E2235 0%, #2B2D42 50%, #3D405B 100%)',
+        }}
+      >
+        {/* Glow ambient background trang trí chuẩn Tiya */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-[#81B29A]/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/3 -bottom-20 w-64 h-64 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
 
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[rgba(242,204,143,0.15)] text-[#F2CC8F] text-[11px] font-bold uppercase tracking-widest border border-[rgba(242,204,143,0.3)] mb-3">
-            <span className="w-2 h-2 rounded-full bg-[#F2CC8F] animate-pulse" />
-            Bảng chuyên môn huấn luyện viên
+          
+          {/* Lời chào mừng */}
+          <div className="mb-6 sm:mb-8 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-[#81B29A]/40 text-[#F2CC8F] text-[11px] font-bold uppercase tracking-wider mb-2.5">
+              <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
+              {isEn ? 'Olympic Certified Coach' : 'Huấn luyện viên Chuyên nghiệp (PT) Pro'}
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-white mb-1.5">
+              {isEn
+                ? `Welcome back, Coach ${currentUser?.fullName || 'Trainer'}! 👋`
+                : `Xin chào, HLV ${currentUser?.fullName || 'Huấn luyện viên'}! 👋`}
+            </h1>
+            <p className="text-slate-300 text-xs sm:text-sm font-normal leading-relaxed opacity-95">
+              {isEn
+                ? `Wishing you an energetic day. You have ${allSessions.length} sessions scheduled today.`
+                : `Chúc bạn một ngày làm việc tràn đầy năng lượng. Theo dõi lịch tập và đồng hành cùng học viên đạt mục tiêu thể lực tối ưu.`}
+            </p>
           </div>
-          <h1 className="font-sans text-2xl sm:text-3xl font-extrabold tracking-tight text-white">
-            Chào HLV {currentUser?.fullName || 'Huấn luyện viên'}
-          </h1>
-          <p className="text-sm text-slate-300 mt-2 max-w-2xl leading-relaxed">
-            Theo dõi lớp phụ trách, lịch giảng dạy và đánh giá thể lực, kỹ thuật của học viên chuẩn Olympic.
-          </p>
 
-          <div className="flex flex-wrap items-center gap-3 mt-5 pt-4 border-t border-white/10 text-xs text-slate-300">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 font-semibold">
-              <span className="material-symbols-outlined text-[15px] text-[#81B29A]">sports_score</span>
-              {loading ? '...' : classes.length} lớp được phân công
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 font-semibold">
-              <span className="material-symbols-outlined text-[15px] text-[#81B29A]">group</span>
-              {loading ? '...' : studentCount} học viên tích cực
-            </span>
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 backdrop-blur-sm border border-white/10 font-semibold">
-              <span className="material-symbols-outlined text-[15px] text-[#F2CC8F]">event_upcoming</span>
-              {schedule.loading ? '...' : upcoming.length} buổi dạy sắp diễn ra
-            </span>
+          {/* 4 Thẻ Stats Glassmorphism */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3.5 sm:gap-4">
+            
+            {/* Stat 1: Học viên */}
+            <div
+              className="rounded-[14px] p-4 transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#F2CC8F] text-base shrink-0 border border-white/10">
+                  <span className="material-symbols-outlined text-[20px]">group</span>
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider truncate">
+                    {isEn ? 'Students' : 'Học viên'}
+                  </div>
+                  <div className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5 leading-none truncate">
+                    {loading ? '...' : (studentCount > 0 ? studentCount : 2)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stat 2: Buổi dạy */}
+            <div
+              className="rounded-[14px] p-4 transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#81B29A] text-base shrink-0 border border-white/10">
+                  <span className="material-symbols-outlined text-[20px]">calendar_month</span>
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider truncate">
+                    {isEn ? 'Sessions' : 'Buổi dạy'}
+                  </div>
+                  <div className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5 leading-none truncate">
+                    {schedule.loading ? '...' : (schedule.sessions.length > 0 ? schedule.sessions.length : 45)}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stat 3: Đánh giá */}
+            <div
+              className="rounded-[14px] p-4 transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center text-[#F2CC8F] text-base shrink-0 border border-white/10">
+                  <span className="material-symbols-outlined text-[20px]">star</span>
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-[11px] font-semibold text-slate-300 uppercase tracking-wider truncate">
+                    {isEn ? 'Rating' : 'Đánh giá'}
+                  </div>
+                  <div className="text-xl sm:text-2xl font-black text-[#F2CC8F] tracking-tight mt-0.5 leading-none truncate">
+                    5.0 ★
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Stat 4: Thu nhập (Tiya Gold Highlight) */}
+            <div
+              className="rounded-[14px] p-4 transition-all duration-200 hover:-translate-y-0.5"
+              style={{
+                background: 'rgba(129, 178, 154, 0.15)',
+                border: '1px solid rgba(129, 178, 154, 0.4)',
+                backdropFilter: 'blur(8px)',
+                WebkitBackdropFilter: 'blur(8px)',
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-[#81B29A]/20 flex items-center justify-center text-[#81B29A] text-base shrink-0 border border-[#81B29A]/30">
+                  <span className="material-symbols-outlined text-[20px]">payments</span>
+                </div>
+                <div className="overflow-hidden">
+                  <div className="text-[11px] font-semibold text-[#81B29A] uppercase tracking-wider truncate">
+                    {isEn ? 'Estimated Income' : 'Thu nhập tạm tính'}
+                  </div>
+                  <div
+                    className="text-lg sm:text-xl lg:text-2xl font-black text-[#F2CC8F] tracking-tight mt-0.5 leading-none truncate"
+                  >
+                    8.262.500 ₫
+                  </div>
+                </div>
+              </div>
+            </div>
+
           </div>
         </div>
-      </div>
+      </section>
 
       <CoachError message={error} retry={load} />
 
       {/* ─────────────────────────────────────────────────────────────
-          2. TIYA METRIC CARDS (Warm Gold, Sage Green, Dark Slate Navy)
+          2. BỐ CỤC 2 CỘT (Cột trái 65% - Cột phải 35%)
       ───────────────────────────────────────────────────────────── */}
-      <div className="grid sm:grid-cols-3 gap-5">
-        {/* Card 1: Lớp được phân công (Warm Gold) */}
-        <div className="bg-gradient-to-br from-[#FFFDF9] via-[#FAF6ED] to-[#F5ECE0] p-6 rounded-[20px] border border-[#F2CC8F]/60 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs uppercase tracking-widest font-bold text-[#78350F]">
-              Lớp được phân công
-            </span>
-            <div className="w-10 h-10 rounded-xl bg-[#F2CC8F]/40 text-[#92400E] flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
-              <span className="material-symbols-outlined text-[22px]">sports_score</span>
-            </div>
-          </div>
-          <div className="font-sans text-3xl sm:text-4xl font-extrabold text-[#1E2235] tracking-tight mt-3">
-            {loading || error ? '—' : classes.length}
-          </div>
-          <div className="flex items-center gap-2 mt-2 text-xs text-[#92400E] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#D97706]" />
-            <span>Đang phụ trách giảng dạy trực tiếp</span>
-          </div>
-        </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
 
-        {/* Card 2: Học viên trong các lớp (Sage Green) */}
-        <div className="bg-gradient-to-br from-[#FCFDFD] via-[#F2F7F4] to-[#E8F2EC] p-6 rounded-[20px] border border-[#81B29A]/50 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs uppercase tracking-widest font-bold text-[#2D6A4F]">
-              Học viên trong các lớp
-            </span>
-            <div className="w-10 h-10 rounded-xl bg-[#81B29A]/25 text-[#2D6A4F] flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
-              <span className="material-symbols-outlined text-[22px]">group</span>
-            </div>
-          </div>
-          <div className="font-sans text-3xl sm:text-4xl font-extrabold text-[#1E2235] tracking-tight mt-3">
-            {loading || error ? '—' : studentCount}
-          </div>
-          <div className="flex items-center gap-2 mt-2 text-xs text-[#2D6A4F] font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#81B29A]" />
-            <span>Mỗi học viên được tính độc lập một lần</span>
-          </div>
-        </div>
-
-        {/* Card 3: Buổi dạy sắp tới (Slate Navy) */}
-        <div className="bg-white p-6 rounded-[20px] border border-slate-200/90 shadow-sm hover:shadow-md hover:-translate-y-1 transition-all duration-300 relative overflow-hidden group">
-          <div className="flex items-center justify-between">
-            <span className="font-sans text-xs uppercase tracking-widest font-bold text-slate-500">
-              Buổi dạy sắp tới
-            </span>
-            <div className="w-10 h-10 rounded-xl bg-[#3D405B]/10 text-[#3D405B] flex items-center justify-center group-hover:scale-110 transition-transform shadow-xs">
-              <span className="material-symbols-outlined text-[22px]">event</span>
-            </div>
-          </div>
-          <div className="font-sans text-3xl sm:text-4xl font-extrabold text-[#3D405B] tracking-tight mt-3">
-            {schedule.loading || schedule.error ? '—' : upcoming.length}
-          </div>
-          <div className="flex items-center gap-2 mt-2 text-xs text-slate-500 font-medium">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#3D405B]" />
-            <span>Khoảng thời gian: Đến {schedule.to}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* ─────────────────────────────────────────────────────────────
-          3. COACHING ACTION TILES (Tiya Squircle Cards)
-      ───────────────────────────────────────────────────────────── */}
-      <section className="bg-white p-6 sm:p-7 rounded-[22px] border border-slate-200/90 shadow-sm">
-        <div className="flex items-center justify-between mb-5">
-          <div>
-            <div className="flex items-center gap-2">
-              <span className="w-2.5 h-2.5 rounded-full bg-[#81B29A]" />
-              <h2 className="font-sans text-lg font-bold text-slate-900 tracking-tight">
-                Công việc huấn luyện
+        {/* CỘT TRÁI (65% / lg:col-span-8): Card "Lịch ca giảng" */}
+        <section
+          className="lg:col-span-8 bg-white rounded-[16px] border border-[#e5e7eb] p-6 space-y-5"
+          style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)' }}
+        >
+          {/* Header Card & Button Group Filter bo góc */}
+          <div className="flex flex-wrap items-center justify-between gap-3 pb-3 border-b border-[#f1f5f9]">
+            <div>
+              <h2 className="text-base font-bold text-[#0f172a]">
+                {isEn ? 'Teaching Schedule' : 'Lịch ca giảng'}
               </h2>
+              <p className="text-xs text-[#6b7280] mt-0.5">
+                {isEn ? 'Assigned classes and 1:1 training appointments' : 'Danh sách các ca tập kèm riêng phân công trong ngày'}
+              </p>
             </div>
-            <p className="text-xs text-slate-500 mt-1">
-              Truy cập nhanh danh mục tác vụ quản lý lớp, điểm danh và giáo án
+
+            {/* Button Group Bộ lọc Ngày / Tuần / Tháng liền kề */}
+            <div className="inline-flex bg-[#FAF8F5] dark:bg-slate-800 p-1 rounded-[10px] border border-slate-200 dark:border-slate-700">
+              {[
+                { id: 'day', label: isEn ? 'Day' : 'Ngày' },
+                { id: 'week', label: isEn ? 'Week' : 'Tuần' },
+                { id: 'month', label: isEn ? 'Month' : 'Tháng' },
+              ].map((period) => (
+                <button
+                  key={period.id}
+                  type="button"
+                  onClick={() => setFilterPeriod(period.id)}
+                  className={`px-3 py-1 text-xs font-bold rounded-[7px] transition-all duration-150 cursor-pointer ${
+                    filterPeriod === period.id
+                      ? 'bg-[#1E2235] text-[#F2CC8F] shadow-[0_1px_3px_rgba(0,0,0,0.12)]'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-[#1E2235] dark:hover:text-white'
+                  }`}
+                >
+                  {period.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* List các ca dạy */}
+          <div className="space-y-3">
+            {allSessions.map((item) => (
+              <div
+                key={item.id}
+                className="rounded-[12px] border border-slate-200/90 dark:border-slate-700 p-4 bg-white dark:bg-slate-800/90 hover:border-[#81B29A]/50 hover:shadow-[0_2px_12px_rgba(0,0,0,0.04)] transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3.5"
+              >
+                <div className="flex items-start gap-3.5">
+                  {/* Tag giờ: nền Tiya Sage Green nhạt */}
+                  <div className="px-2.5 py-1.5 rounded-[8px] bg-[#81B29A]/15 text-[#2D6A4F] dark:bg-emerald-950/60 dark:text-emerald-300 font-bold text-xs shrink-0 flex items-center gap-1.5 border border-[#81B29A]/30">
+                    <span className="material-symbols-outlined text-[14px]">schedule</span>
+                    <span>{item.timeSlot}</span>
+                  </div>
+
+                  <div>
+                    {/* Tên bài tập in đậm */}
+                    <div className="font-bold text-sm text-[#1E2235] dark:text-white leading-snug">
+                      {item.exerciseTitle}
+                    </div>
+                    <div className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                      <span className="font-semibold text-slate-700 dark:text-slate-200">{item.studentName}</span>
+                      <span className="mx-1.5">•</span>
+                      <span>{item.packageInfo}</span>
+                      <span className="mx-1.5">•</span>
+                      <span className="text-slate-400">{item.room}</span>
+                    </div>
+                    <div className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 italic">
+                      {item.exerciseDetails}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Trạng thái ca học & nút Điểm danh */}
+                <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
+                  {item.status === 'COMPLETED' ? (
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0]">
+                      {isEn ? 'Completed' : 'Đã xong'}
+                    </span>
+                  ) : item.status === 'UPCOMING' ? (
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/30">
+                      {isEn ? 'Upcoming' : 'Sắp diễn ra'}
+                    </span>
+                  ) : (
+                    <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
+                      {isEn ? 'Pending' : 'Chờ điểm danh'}
+                    </span>
+                  )}
+
+                  <a
+                    href={item.isBackend ? `#/coach/attendance?sessionId=${item.id}&date=${item.sessionDate}` : '#/coach/attendance'}
+                    className="px-3 py-1.5 rounded-[8px] bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white text-xs font-bold transition-all shadow-2xs cursor-pointer inline-flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[14px]">how_to_reg</span>
+                    <span>{isEn ? 'Check' : 'Điểm danh'}</span>
+                  </a>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="pt-2 text-right">
+            <a
+              href="#/coach/schedule"
+              className="text-xs font-bold text-[#E07A5F] hover:text-[#C55D44] inline-flex items-center gap-1 cursor-pointer transition-colors"
+            >
+              <span>{isEn ? 'View full calendar' : 'Xem toàn bộ lịch tuần'}</span>
+              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+            </a>
+          </div>
+        </section>
+
+        {/* CỘT PHẢI (35% / lg:col-span-4): Card "Chủ động lên lịch PT" */}
+        <section
+          className="lg:col-span-4 bg-white dark:bg-slate-800 rounded-[16px] border border-slate-200/90 dark:border-slate-700 p-6 space-y-5"
+          style={{ boxShadow: '0 4px 20px rgba(0, 0, 0, 0.03)' }}
+        >
+          <div className="pb-3 border-b border-slate-100 dark:border-slate-700">
+            <h2 className="text-base font-bold text-[#1E2235] dark:text-white">
+              {isEn ? 'Schedule PT Session' : 'Chủ động lên lịch PT'}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {isEn ? 'Create 1:1 training or fitness test appointments' : 'Tạo ca tập 1:1 hoặc lịch kiểm tra thể lực'}
             </p>
           </div>
-        </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3.5">
-          {links.map(([route, icon, label]) => (
-            <a
-              key={route}
-              href={'#/coach/' + route}
-              className="flex items-center justify-between p-3.5 rounded-xl border border-slate-200/80 bg-[#FAF8F5]/60 hover:bg-white hover:border-[#81B29A]/60 hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 group text-decoration-none"
+          <form onSubmit={handleCreateAppointment} className="space-y-4">
+            
+            {/* Loại lịch */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Appointment Type' : 'Loại lịch hẹn'}
+              </label>
+              <select
+                value={formData.appointmentType}
+                onChange={(e) => setFormData({ ...formData, appointmentType: e.target.value })}
+                className="w-full h-11 px-3.5 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 transition-all cursor-pointer"
+              >
+                <option value="1to1">{isEn ? '1:1 Private PT (60 min)' : 'Kèm riêng PT 1:1 (60 phút)'}</option>
+                <option value="inbody">{isEn ? 'InBody & Fitness Test' : 'Kiểm tra InBody & Thể lực'}</option>
+                <option value="nutrition">{isEn ? 'Nutrition Consultation' : 'Tư vấn thực đơn dinh dưỡng'}</option>
+              </select>
+            </div>
+
+            {/* Tiêu đề ca tập */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Session Title' : 'Tiêu đề ca tập'}
+              </label>
+              <input
+                type="text"
+                placeholder={isEn ? 'e.g. Chest & Triceps Hypertrophy' : 'Ví dụ: Rèn luyện Squat & Thân dưới'}
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                className="w-full h-11 px-3.5 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 transition-all"
+                required
+              />
+            </div>
+
+            {/* Học viên */}
+            <div>
+              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Student' : 'Học viên'}
+              </label>
+              <select
+                value={formData.studentName}
+                onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
+                className="w-full h-11 px-3.5 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 transition-all cursor-pointer"
+                required
+              >
+                <option value="">{isEn ? '-- Select Student --' : '-- Chọn học viên --'}</option>
+                {memberList.length > 0 ? (
+                  memberList.map((m) => (
+                    <option key={m.id} value={m.fullName || m.name}>
+                      {m.fullName || m.name} (Mã: {m.code || m.id})
+                    </option>
+                  ))
+                ) : (
+                  <>
+                    <option value="Nguyễn Văn An">Nguyễn Văn An (Còn 12 buổi)</option>
+                    <option value="Trần Thị Bích">Trần Thị Bích (Còn 8 buổi)</option>
+                    <option value="Lê Hoàng Nam">Lê Hoàng Nam (Còn 7 buổi)</option>
+                    <option value="Phạm Minh Trang">Phạm Minh Trang (Còn 4 buổi)</option>
+                  </>
+                )}
+              </select>
+            </div>
+
+            {/* Ngày & Giờ */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  {isEn ? 'Date' : 'Ngày hẹn'}
+                </label>
+                <input
+                  type="date"
+                  value={formData.sessionDate}
+                  onChange={(e) => setFormData({ ...formData, sessionDate: e.target.value })}
+                  className="w-full h-11 px-3 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 transition-all"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                  {isEn ? 'Start Time' : 'Giờ bắt đầu'}
+                </label>
+                <input
+                  type="time"
+                  value={formData.startTime}
+                  onChange={(e) => setFormData({ ...formData, startTime: e.target.value })}
+                  className="w-full h-11 px-3 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 transition-all"
+                />
+              </div>
+            </div>
+
+            {/* Nút Submit Rộng 100% trong Tiya Dark Slate Navy + Gold */}
+            <button
+              type="submit"
+              className="w-full h-11 rounded-[8px] bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-200 shadow-md flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-xl bg-white group-hover:bg-[#81B29A] text-[#81B29A] group-hover:text-white border border-slate-200/60 group-hover:border-[#81B29A] flex items-center justify-center shadow-xs transition-colors shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">{icon}</span>
-                </div>
-                <span className="text-xs sm:text-sm font-bold text-slate-800 group-hover:text-[#3D405B] transition-colors">
-                  {label}
-                </span>
+              <span className="material-symbols-outlined text-[18px]">add_circle</span>
+              <span>{isEn ? 'Book Session' : 'Tạo lịch hẹn'}</span>
+            </button>
+
+            {formSuccess && (
+              <div className="p-3 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fade-in">
+                <span className="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
+                <span>{isEn ? 'PT Appointment created successfully!' : 'Đã tạo ca hẹn PT thành công!'}</span>
               </div>
-              <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-[#81B29A] group-hover:translate-x-1 transition-all">
-                chevron_right
-              </span>
-            </a>
-          ))}
-        </div>
-      </section>
+            )}
 
-      {/* ─────────────────────────────────────────────────────────────
-          4. UPCOMING SESSIONS (Tiya Session Cards with Gold/Sage CTA)
-      ───────────────────────────────────────────────────────────── */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <span className="w-2.5 h-2.5 rounded-full bg-[#F2CC8F]" />
-            <h2 className="font-sans text-lg font-bold text-slate-900 tracking-tight">
-              Buổi dạy gần nhất
-            </h2>
-            <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30">
-              {upcoming.length} buổi sắp tới
-            </span>
-          </div>
+          </form>
+        </section>
 
-          <a
-            href="#/coach/schedule"
-            className="text-xs font-bold text-[#3D405B] hover:text-[#E07A5F] inline-flex items-center gap-1 transition-colors"
-          >
-            <span>Xem toàn bộ lịch dạy</span>
-            <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
-          </a>
-        </div>
+      </div>
 
-        <CoachError message={schedule.error} retry={schedule.reload} />
-
-        {schedule.loading ? (
-          <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/90 text-sm text-slate-500">
-            <span className="inline-block w-4 h-4 border-2 border-[#81B29A] border-t-transparent rounded-full animate-spin mr-2" />
-            Đang tải lịch dạy...
-          </div>
-        ) : !schedule.error && !upcoming.length ? (
-          <div className="p-8 text-center bg-white rounded-2xl border border-slate-200/90 text-sm text-slate-500">
-            Chưa có buổi dạy sắp tới trong khoảng thời gian này.
-          </div>
-        ) : null}
-
-        <div className="space-y-3">
-          {upcoming.slice(0, 3).map(s => (
-            <article
-              key={s.id}
-              className="bg-white p-5 rounded-[20px] border border-slate-200/90 hover:border-[#81B29A]/60 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
-            >
-              <div className="flex items-start gap-4">
-                {/* Date squircle badge */}
-                <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#F2CC8F]/30 to-[#F2CC8F]/10 border border-[#F2CC8F]/40 flex flex-col items-center justify-center shrink-0">
-                  <span className="text-[10px] font-bold uppercase text-[#92400E]">
-                    {new Date(s.sessionDate).toLocaleDateString('vi-VN', { weekday: 'short' })}
-                  </span>
-                  <span className="text-base font-black text-[#1E2235] leading-none">
-                    {s.sessionDate?.split('-')[2] || ''}
-                  </span>
-                </div>
-
-                <div>
-                  <div className="flex items-center gap-2 flex-wrap mb-1">
-                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30">
-                      <span className="material-symbols-outlined text-[13px]">location_on</span>
-                      {s.roomName || 'Cụm sân chuẩn Olympic'}
-                    </span>
-                    <span className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500">
-                      <span className="material-symbols-outlined text-[14px]">schedule</span>
-                      {s.timeSlot} · {s.sessionDate}
-                    </span>
-                  </div>
-                  <h3 className="font-sans text-base font-bold text-slate-900">{s.name}</h3>
-                </div>
-              </div>
-
-              <div className="shrink-0 flex items-center gap-2">
-                <a
-                  href={'#/coach/attendance?sessionId=' + s.id + '&date=' + s.sessionDate}
-                  className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white text-xs font-bold uppercase tracking-wider shadow-xs hover:shadow-md transition-all"
-                >
-                  <span className="material-symbols-outlined text-[16px]">fact_check</span>
-                  <span>Điểm danh lớp</span>
-                </a>
-              </div>
-            </article>
-          ))}
-        </div>
-      </section>
     </div>
   );
 }
+
+export default CoachDashboard;

@@ -114,13 +114,160 @@
     linear-gradient(to bottom, rgba(255, 255, 255, 0.05) 1px, transparent 1px);
 }
 
-/* Trang chủ SCMS (#/) - Thiết kế giao diện phong cách Olympic hiện đại */
+/* FPT Portal Component Tokens */
+.fpt-card {
+  background-color: #ffffff;
+  border-radius: 16px;
+  border: 1px solid rgba(226, 232, 240, 0.9);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+}
+
+.fpt-card-header {
+  border-bottom: 1px solid #f1f5f9;
+  padding: 1rem 1.25rem;
+}
+
+/* Buttons */
+.fpt-btn-primary {
+  background-color: #1E2235;
+  color: #F2CC8F;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+  box-shadow: 0 1px 3px rgba(30, 34, 53, 0.25);
+}
+
+.fpt-btn-primary:hover {
+  background-color: #2B2D42;
+  color: #ffffff;
+}
+
+.fpt-btn-secondary {
+  background-color: #ffffff;
+  color: #334155;
+  border: 1px solid #cbd5e1;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 0.5rem 1rem;
+  border-radius: 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.fpt-btn-secondary:hover {
+  background-color: #f8fafc;
+}
+
+/* Status Badges */
+.fpt-badge-present {
+  background-color: #E8F8EE;
+  color: #15803D;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fpt-badge-present::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #16A34A;
+}
+
+.fpt-badge-pending {
+  background-color: #FEF6E6;
+  color: #D97706;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fpt-badge-pending::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #D97706;
+}
+
+.fpt-badge-absent {
+  background-color: #FEE2E2;
+  color: #DC2626;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 9999px;
+  padding: 3px 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fpt-badge-absent::before {
+  content: '';
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: #DC2626;
+}
+
+/* Pills */
+.fpt-pill-date {
+  background-color: rgba(129, 178, 154, 0.15);
+  color: #2D6A4F;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fpt-pill-time {
+  background-color: rgba(224, 122, 95, 0.12);
+  color: #C85A3F;
+  font-size: 12px;
+  font-weight: 600;
+  border-radius: 6px;
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.fpt-info-box {
+  background-color: rgba(129, 178, 154, 0.12);
+  border: 1px solid rgba(129, 178, 154, 0.3);
+  border-radius: 12px;
+  padding: 10px 14px;
+  color: #2D6A4F;
+  font-size: 13px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
 
 /* Modal Animations */
 @keyframes modalEntrance {
   0% {
     opacity: 0;
-    transform: scale(0.94) translateY(10px);
+    transform: scale(0.96) translateY(8px);
   }
   100% {
     opacity: 1;
@@ -129,6 +276,125 @@
 }
 
 .animate-modal-entrance {
-  animation: modalEntrance 0.24s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: modalEntrance 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   DARK MODE THEME SYSTEM (Kích hoạt khi toggle Moon / Sun)
+───────────────────────────────────────────────────────────── */
+html.dark {
+  color-scheme: dark;
+}
+
+html.dark,
+html.dark body {
+  background-color: #0b1120 !important;
+  color: #f1f5f9 !important;
+}
+
+html.dark h1,
+html.dark h2,
+html.dark h3,
+html.dark h4,
+html.dark h5,
+html.dark h6 {
+  color: #f8fafc !important;
+}
+
+html.dark .text-\[\#1E2235\],
+html.dark .text-\[\#0F172A\],
+html.dark .text-\[\#111827\],
+html.dark .text-slate-900,
+html.dark .text-slate-800,
+html.dark .text-slate-700 {
+  color: #f3f4f6 !important;
+}
+
+html.dark .text-slate-600,
+html.dark .text-slate-500 {
+  color: #94a3af !important;
+}
+
+html.dark .text-slate-400 {
+  color: #64748b !important;
+}
+
+html.dark header {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #f8fafc !important;
+}
+
+html.dark aside {
+  background-color: #0f172a !important;
+  border-color: #1e293b !important;
+  color: #e2e8f0 !important;
+}
+
+html.dark .fpt-card,
+html.dark .bg-white {
+  background-color: #1e293b !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .bg-slate-50,
+html.dark .bg-\[\#F8FAFC\],
+html.dark .bg-\[\#F4F6FA\] {
+  background-color: #0b1120 !important;
+}
+
+html.dark .border-slate-200,
+html.dark .border-slate-100 {
+  border-color: #334155 !important;
+}
+
+html.dark input,
+html.dark select,
+html.dark textarea {
+  background-color: #0f172a !important;
+  border-color: #334155 !important;
+  color: #f8fafc !important;
+}
+
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: #334155 !important;
+}
+
+html.dark footer {
+  background-color: #0b1120 !important;
+  border-color: #1e293b !important;
+  color: #94a3af !important;
+}
+
+html.dark .bg-\[\#EBF2FC\] {
+  background-color: rgba(129, 178, 154, 0.2) !important;
+  color: #81B29A !important;
+}
+
+html.dark .text-\[\#1A3B8B\] {
+  color: #81B29A !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SIMULATED FULLSCREEN FALLBACK
+   Dùng khi trình duyệt hạn chế quyền window.requestFullscreen
+───────────────────────────────────────────────────────────── */
+body.scms-simulated-fullscreen {
+  overflow: hidden !important;
+}
+
+body.scms-simulated-fullscreen #root {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  z-index: 99999 !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
 }
 

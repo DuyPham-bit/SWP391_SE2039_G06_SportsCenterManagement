@@ -192,10 +192,14 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         if (year is < 2000 or > 2200 || month is < 1 or > 12) throw Invalid("Tháng KPI không hợp lệ.");
         var from = new DateOnly(year, month, 1);
         var to = from.AddMonths(1);
+        var localNow = TimeZoneInfo.ConvertTimeFromUtc(UtcNow, VietnamTimeZone);
+        var today = DateOnly.FromDateTime(localNow);
+        var currentTime = TimeOnly.FromDateTime(localNow);
         var classIds = AssignedClassIds(coach.Id);
         var completedClassSessions = await db.ClassSessions.CountAsync(x => classIds.Contains(x.ClassId) &&
             (x.CoachId == null || x.CoachId == coach.Id) && x.SessionDate >= from && x.SessionDate < to &&
-            x.SessionStatus != "Cancelled", ct);
+            x.SessionStatus != "Cancelled" && (x.SessionDate < today ||
+                (x.SessionDate == today && x.EndTime <= currentTime)), ct);
         var completedPt = await db.CoachWorkEvents.CountAsync(x => x.CoachId == coach.Id && x.EventType == "PersonalTraining" &&
             x.Status == "Completed" && x.StartAt >= ToUtc(from.ToDateTime(TimeOnly.MinValue)) &&
             x.StartAt < ToUtc(to.ToDateTime(TimeOnly.MinValue)), ct);
@@ -239,6 +243,8 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
 
     public async Task<long> CreateWorkEvent(long userId, SaveWorkEventRequest request, CancellationToken ct)
     {
+        // Keep conflict checks, event and notifications atomic across concurrent bookings.
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var coach = await Coach(userId, ct);
         var start = ToUtc(request.StartAt); var end = ToUtc(request.EndAt);
         if (start < UtcNow.AddMinutes(-5) || end <= start || end - start > TimeSpan.FromHours(12))
@@ -251,15 +257,20 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         if (request.MemberId.HasValue) await EnsureCoachMember(coach.Id, request.MemberId.Value, ct);
         if (request.RoomId.HasValue && !await db.Rooms.AnyAsync(x => x.Id == request.RoomId && x.CenterId == coach.CenterId && x.Status == "Active", ct))
             throw Invalid("Phòng tập không tồn tại hoặc không hoạt động.");
-        if (await db.CoachWorkEvents.AnyAsync(x => x.CoachId == coach.Id && x.Status != "Cancelled" && x.StartAt < end && x.EndAt > start, ct))
+        if (await db.CoachWorkEvents.AnyAsync(x => x.CoachId == coach.Id &&
+            (x.Status == "Confirmed" || x.Status == "PendingMemberConfirmation") && x.StartAt < end && x.EndAt > start, ct))
             throw BusinessException.Conflict("HLV đã có lịch khác trong khoảng thời gian này.", "COACH-SCHEDULE-CONFLICT");
         if (await db.CoachLeaves.AnyAsync(x => x.CoachId == coach.Id && x.Status == "Approved" && x.StartAt < end && x.EndAt > start, ct))
             throw BusinessException.Conflict("Khoảng thời gian nằm trong kỳ nghỉ đã được duyệt.", "COACH-LEAVE-CONFLICT");
         var localStart = TimeZoneInfo.ConvertTimeFromUtc(start, VietnamTimeZone);
         var localEnd = TimeZoneInfo.ConvertTimeFromUtc(end, VietnamTimeZone);
-        if (await db.ClassSessions.AnyAsync(x => AssignedClassIds(coach.Id).Contains(x.ClassId) && x.SessionStatus != "Cancelled" &&
-            x.SessionDate == DateOnly.FromDateTime(localStart) && x.StartTime < TimeOnly.FromDateTime(localEnd) &&
-            x.EndTime > TimeOnly.FromDateTime(localStart), ct))
+        var startDate = DateOnly.FromDateTime(localStart);
+        var endDate = DateOnly.FromDateTime(localEnd);
+        var sessions = await db.ClassSessions.Where(x => AssignedClassIds(coach.Id).Contains(x.ClassId)
+            && x.SessionStatus != "Cancelled" && x.SessionDate >= startDate && x.SessionDate <= endDate)
+            .Select(x => new { x.SessionDate, x.StartTime, x.EndTime }).ToListAsync(ct);
+        if (sessions.Any(x => x.SessionDate.ToDateTime(x.StartTime) < localEnd
+            && x.SessionDate.ToDateTime(x.EndTime) > localStart))
             throw BusinessException.Conflict("Lịch hẹn trùng với buổi dạy lớp hiện có.", "COACH-CLASS-CONFLICT");
         var row = new CoachWorkEvent { CenterId = coach.CenterId, CoachId = coach.Id, MemberId = request.MemberId,
             RoomId = request.RoomId, Title = request.Title.Trim(), EventType = type, StartAt = start, EndAt = end,
@@ -275,11 +286,13 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         }
         AddAudit(userId, coach.CenterId, "COACH_WORK_EVENT_CREATED", "CoachWorkEvent", row.Id);
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
         return row.Id;
     }
 
     public async Task ChangeWorkEvent(long userId, long id, ChangeWorkEventStatusRequest request, bool memberAction, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var row = await db.CoachWorkEvents.SingleOrDefaultAsync(x => x.Id == id, ct)
             ?? throw BusinessException.NotFound("Không tìm thấy lịch hẹn.", "WORK-EVENT-NOT-FOUND");
         if (memberAction)
@@ -289,12 +302,16 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             if (row.MemberId != member.Id || row.Status != "PendingMemberConfirmation")
                 throw BusinessException.Conflict("Lịch hẹn không còn chờ bạn xác nhận.", "WORK-EVENT-STATE");
             if (request.Status is not ("Confirmed" or "Declined")) throw Invalid("Hội viên chỉ có thể xác nhận hoặc từ chối.");
+            if (row.StartAt <= UtcNow) throw BusinessException.Conflict("Lịch hẹn đã bắt đầu, không còn nhận phản hồi.");
         }
         else
         {
             var coach = await Coach(userId, ct);
             if (row.CoachId != coach.Id) throw BusinessException.Forbidden("Bạn không sở hữu lịch hẹn này.");
             if (request.Status is not ("Cancelled" or "Completed")) throw Invalid("HLV chỉ có thể hủy hoặc hoàn thành lịch hẹn.");
+            if (row.Status is "Cancelled" or "Declined" or "Completed"
+                || (request.Status == "Completed" && row.Status != "Confirmed"))
+                throw BusinessException.Conflict("Trạng thái lịch hẹn đã thay đổi. Vui lòng tải lại lịch.");
             if (request.Status == "Completed" && row.EndAt > UtcNow) throw BusinessException.Conflict("Chỉ hoàn thành sau khi lịch hẹn kết thúc.");
         }
         row.Status = request.Status;
@@ -308,10 +325,12 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             await NotifyUsers(userId, [memberUserId], "Cập nhật lịch tập", $"Lịch {row.Title}: {request.Status}. {request.Reason}", "AppointmentChanged", ["InApp", "Email", "SMS", "Push"], ct);
         }
         await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task<long> RequestLeave(long userId, SaveLeaveRequest request, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var coach = await Coach(userId, ct);
         var start = ToUtc(request.StartAt); var end = ToUtc(request.EndAt);
         if (end <= start || end < UtcNow) throw Invalid("Khoảng nghỉ không hợp lệ.");
@@ -332,6 +351,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             join role in db.Roles on user.RoleId equals role.Id where staff.CenterId == coach.CenterId && staff.Status == "Active" &&
             (role.Name == "Manager" || role.Name == "Admin") select user.Id).ToArrayAsync(ct);
         await NotifyUsers(userId, managerUsers, "Đơn nghỉ mới từ HLV", $"{coach.FullName} gửi đơn {request.LeaveType}.", "CoachLeave", ["InApp"], ct);
+        await transaction.CommitAsync(ct);
         return row.Id;
     }
 
@@ -684,6 +704,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
 
     public async Task ReviewLeave(long userId, long leaveId, ReviewLeaveRequest request, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var manager = await Manager(userId, ct);
         if (request.Status is not ("Approved" or "Rejected")) throw Invalid("Trạng thái duyệt đơn không hợp lệ.");
         var row = await (from leave in db.CoachLeaves join coach in db.CoachProfiles on leave.CoachId equals coach.Id
@@ -695,6 +716,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         var coachUser = await db.CoachProfiles.Where(x => x.Id == row.CoachId).Select(x => x.UserId).SingleAsync(ct);
         await NotifyUsers(userId, [coachUser], "Kết quả đơn nghỉ", $"Đơn nghỉ của bạn: {request.Status}. {request.ManagerNote}", "CoachLeaveReviewed", ["InApp", "Email"], ct);
         AddAudit(userId, manager.CenterId, "COACH_LEAVE_REVIEWED", "CoachLeave", row.Id); await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task<long> SaveCompensation(long userId, SaveCompensationPolicyRequest request, CancellationToken ct)
@@ -719,9 +741,19 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             throw BusinessException.NotFound("HLV không thuộc trung tâm.");
         if (request.MemberId.HasValue && !await db.MemberProfiles.AnyAsync(x => x.Id == request.MemberId && x.CenterId == manager.CenterId, ct))
             throw Invalid("Hội viên không thuộc trung tâm.");
-        if (request.SubscriptionId.HasValue && !await db.MemberSubscriptions.AnyAsync(x => x.Id == request.SubscriptionId &&
-            (!request.MemberId.HasValue || x.MemberId == request.MemberId), ct)) throw Invalid("Gói hội viên không hợp lệ.");
-        var row = new CoachSalesCredit { CoachId = request.CoachId, MemberId = request.MemberId,
+        var memberId = request.MemberId;
+        if (request.SubscriptionId.HasValue)
+        {
+            var subscription = await (from sub in db.MemberSubscriptions
+                join member in db.MemberProfiles on sub.MemberId equals member.Id
+                join package in db.MembershipPackages on sub.PackageId equals package.Id
+                where sub.Id == request.SubscriptionId && member.CenterId == manager.CenterId
+                    && package.CenterId == manager.CenterId && (!memberId.HasValue || sub.MemberId == memberId)
+                select new { sub.MemberId }).SingleOrDefaultAsync(ct)
+                ?? throw Invalid("Gói hội viên không thuộc hội viên hoặc trung tâm đang quản lý.");
+            memberId = subscription.MemberId;
+        }
+        var row = new CoachSalesCredit { CoachId = request.CoachId, MemberId = memberId,
             SubscriptionId = request.SubscriptionId, Amount = request.Amount, CreditedAt = request.CreditedAt.HasValue ? ToUtc(request.CreditedAt.Value) : UtcNow,
             Note = request.Note?.Trim(), CreatedBy = userId };
         db.CoachSalesCredits.Add(row); await db.SaveChangesAsync(ct); return row.Id;

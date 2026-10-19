@@ -2,12 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { systemApi, staffApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
 import { useAuth } from '../../context/AuthContext.js';
-import {
-  SYSTEM_CAPABILITIES,
-  getUserCustomOverrides,
-  saveUserCustomOverrides,
-  getAllUserCustomOverrides
-} from '../../services/permissions.js';
+import { SYSTEM_CAPABILITIES } from '../../services/permissions.js';
 import { Badge } from '../../components/common/StatCard.js';
 
 // Predefined module categories for organization
@@ -25,12 +20,13 @@ export function RolesPermissions() {
   const { showError, showSuccess } = useToast();
 
   // Navigation tab
-  const [activeTab, setActiveTab] = useState('ROLES'); // 'ROLES' | 'USERS' | 'MATRIX'
+  const [activeTab, setActiveTab] = useState('ROLES'); // 'ROLES' | 'MATRIX'
 
   // Data states
   const [matrix, setMatrix] = useState([]);
   const [staffList, setStaffList] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState('');
   const [busy, setBusy] = useState(false);
 
   // Role tab state
@@ -40,23 +36,10 @@ export function RolesPermissions() {
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const [roleCategoryFilter, setRoleCategoryFilter] = useState('ALL');
 
-  // User/Staff tab state
-  const [selectedStaffId, setSelectedStaffId] = useState(null);
-  const [staffSearchQuery, setStaffSearchQuery] = useState('');
-  const [staffRoleFilter, setStaffRoleFilter] = useState('ALL');
-  const [staffOverridesMap, setStaffOverridesMap] = useState({});
-
-  // Individual staff editing state
-  const [userEffectiveCaps, setUserEffectiveCaps] = useState([]);
-  const [userRestrictedCaps, setUserRestrictedCaps] = useState([]);
-  const [userGrantedCaps, setUserGrantedCaps] = useState([]);
-  const [userNotes, setUserNotes] = useState('');
-  const [userSaveBusy, setUserSaveBusy] = useState(false);
-
   // Matrix tab state
   const [matrixSearchQuery, setMatrixSearchQuery] = useState('');
 
-  const centerId = currentUser?.centerId || 1;
+  const centerId = currentUser?.centerId;
   const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
 
   // Load initial permissions and staff directory
@@ -64,12 +47,10 @@ export function RolesPermissions() {
     let isMounted = true;
     async function loadData() {
       setLoading(true);
+      setLoadError('');
       try {
         const [matrixRows, staffData] = await Promise.all([
-          systemApi.getPermissions().catch(err => {
-            console.warn('Could not load permissions matrix:', err);
-            return [];
-          }),
+          systemApi.getPermissions(),
           staffApi.getAll().catch(err => {
             console.warn('Could not load staff list:', err);
             return [];
@@ -81,22 +62,14 @@ export function RolesPermissions() {
         setMatrix(matrixRows || []);
         setStaffList(staffData || []);
 
-        // Load all local staff overrides
-        const storedOverrides = getAllUserCustomOverrides(centerId);
-        setStaffOverridesMap(storedOverrides || {});
-
         // Default select first role (prefer Coach or first available)
         if (matrixRows && matrixRows.length > 0) {
           const coachRole = matrixRows.find(r => r.roleName?.toUpperCase() === 'COACH') || matrixRows[0];
           selectRole(coachRole);
         }
 
-        // Default select first staff
-        if (staffData && staffData.length > 0) {
-          selectStaffMember(staffData[0], matrixRows, storedOverrides);
-        }
       } catch (e) {
-        if (isMounted) showError(e.message || 'Lỗi khi tải dữ liệu phân quyền');
+        if (isMounted) setLoadError(e.message || 'Lỗi khi tải dữ liệu phân quyền');
       } finally {
         if (isMounted) setLoading(false);
       }
@@ -116,44 +89,6 @@ export function RolesPermissions() {
   const selectedRole = useMemo(() => {
     return matrix.find(r => String(r.roleId) === String(selectedRoleId)) || null;
   }, [matrix, selectedRoleId]);
-
-  // When an individual staff member is chosen in Tab 2
-  const selectStaffMember = (staff, currentMatrix = matrix, overridesMap = staffOverridesMap) => {
-    if (!staff) return;
-    setSelectedStaffId(staff.id);
-
-    // Find the base role capabilities for this staff
-    const staffRoleNormalized = String(staff.role || '').toUpperCase();
-    const roleRow = (currentMatrix || []).find(r => String(r.roleName || '').toUpperCase() === staffRoleNormalized);
-    const baseRoleCaps = roleRow ? (roleRow.capabilityIds || roleRow.availableCapabilities || []) : [];
-
-    // Check if this user has existing overrides
-    const override = overridesMap[staff.id] || getUserCustomOverrides(centerId, staff.id);
-    if (override) {
-      setUserRestrictedCaps(override.restrictedCapabilities || []);
-      setUserGrantedCaps(override.grantedCapabilities || []);
-      setUserEffectiveCaps(override.effectiveCapabilities || []);
-      setUserNotes(override.notes || '');
-    } else {
-      // Default to 100% role capabilities
-      setUserRestrictedCaps([]);
-      setUserGrantedCaps([]);
-      setUserEffectiveCaps([...baseRoleCaps]);
-      setUserNotes('');
-    }
-  };
-
-  const selectedStaff = useMemo(() => {
-    return staffList.find(s => s.id === selectedStaffId) || null;
-  }, [staffList, selectedStaffId]);
-
-  // Base capabilities for selected staff's role
-  const staffRoleBaselineCaps = useMemo(() => {
-    if (!selectedStaff) return [];
-    const staffRoleNormalized = String(selectedStaff.role || '').toUpperCase();
-    const roleRow = matrix.find(r => String(r.roleName || '').toUpperCase() === staffRoleNormalized);
-    return roleRow ? (roleRow.capabilityIds || roleRow.availableCapabilities || []) : [];
-  }, [selectedStaff, matrix]);
 
   // Toggle role capability (Tab 1)
   const toggleRoleCap = (capId) => {
@@ -180,7 +115,7 @@ export function RolesPermissions() {
     if (!selectedRole) return;
     setRoleCaps([...(selectedRole.availableCapabilities || [])]);
     setRoleCodes((selectedRole.availablePermissions || []).map(p => p.code));
-    showSuccess('Đã khôi phục cài đặt chuẩn mặc định của vai trò!');
+    showSuccess('Đã chọn quyền mặc định. Bấm Lưu cấu hình để áp dụng.');
   };
 
   // Save Role Permissions to Backend (Tab 1)
@@ -200,100 +135,6 @@ export function RolesPermissions() {
       setBusy(false);
     }
   };
-
-  // Toggle inherited capability restriction for individual staff (Tab 2)
-  const handleToggleStaffInheritedCap = (capId) => {
-    // If it's currently restricted (unchecked), enable it back
-    if (userRestrictedCaps.includes(capId)) {
-      const nextRestricted = userRestrictedCaps.filter(c => c !== capId);
-      setUserRestrictedCaps(nextRestricted);
-      setUserEffectiveCaps(prev => [...new Set([...prev, capId])]);
-    } else {
-      // It was enabled, so restrict it
-      const nextRestricted = [...userRestrictedCaps, capId];
-      setUserRestrictedCaps(nextRestricted);
-      setUserEffectiveCaps(prev => prev.filter(c => c !== capId));
-    }
-  };
-
-  // Toggle granted additional capability for individual staff (Tab 2)
-  const handleToggleStaffGrantedCap = (capId) => {
-    if (userGrantedCaps.includes(capId)) {
-      // Remove extra grant
-      const nextGranted = userGrantedCaps.filter(c => c !== capId);
-      setUserGrantedCaps(nextGranted);
-      setUserEffectiveCaps(prev => prev.filter(c => c !== capId));
-    } else {
-      // Add extra grant
-      const nextGranted = [...userGrantedCaps, capId];
-      setUserGrantedCaps(nextGranted);
-      setUserEffectiveCaps(prev => [...new Set([...prev, capId])]);
-    }
-  };
-
-  // Save individual staff permissions (Tab 2)
-  const handleSaveStaffPermissions = () => {
-    if (!selectedStaff) return;
-    setUserSaveBusy(true);
-    try {
-      const hasCustomOverrides = userRestrictedCaps.length > 0 || userGrantedCaps.length > 0 || userNotes.trim().length > 0;
-      if (!hasCustomOverrides) {
-        // Clear override if it matches role 100%
-        saveUserCustomOverrides(centerId, selectedStaff.id, null);
-        const nextMap = { ...staffOverridesMap };
-        delete nextMap[selectedStaff.id];
-        setStaffOverridesMap(nextMap);
-        showSuccess(`Nhân sự ${selectedStaff.fullName} đã đồng bộ 100% theo chuẩn vai trò ${selectedStaff.role}!`);
-      } else {
-        const payload = {
-          userId: selectedStaff.id,
-          centerId,
-          role: selectedStaff.role,
-          staffName: selectedStaff.fullName,
-          restrictedCapabilities: userRestrictedCaps,
-          grantedCapabilities: userGrantedCaps,
-          effectiveCapabilities: userEffectiveCaps,
-          notes: userNotes,
-          updatedAt: new Date().toISOString()
-        };
-        saveUserCustomOverrides(centerId, selectedStaff.id, payload);
-        setStaffOverridesMap(prev => ({ ...prev, [selectedStaff.id]: payload }));
-        showSuccess(`Đã lưu cấu hình quyền riêng biệt cho ${selectedStaff.fullName} thành công!`);
-      }
-    } catch (e) {
-      showError('Không thể lưu quyền riêng của nhân sự.');
-    } finally {
-      setUserSaveBusy(false);
-    }
-  };
-
-  // Reset individual staff to role default (Tab 2)
-  const handleResetStaffToRole = () => {
-    if (!selectedStaff) return;
-    saveUserCustomOverrides(centerId, selectedStaff.id, null);
-    const nextMap = { ...staffOverridesMap };
-    delete nextMap[selectedStaff.id];
-    setStaffOverridesMap(nextMap);
-    setUserRestrictedCaps([]);
-    setUserGrantedCaps([]);
-    setUserEffectiveCaps([...staffRoleBaselineCaps]);
-    setUserNotes('');
-    showSuccess(`Đã hủy bỏ toàn bộ quyền riêng và khôi phục chuẩn vai trò cho ${selectedStaff.fullName}!`);
-  };
-
-  // Filtered staff list for Tab 2
-  const filteredStaffList = useMemo(() => {
-    return staffList.filter(s => {
-      const matchesRole = staffRoleFilter === 'ALL' || String(s.role).toUpperCase() === staffRoleFilter;
-      const q = staffSearchQuery.trim().toLowerCase();
-      const matchesQuery = !q ||
-        (s.fullName || '').toLowerCase().includes(q) ||
-        (s.email || '').toLowerCase().includes(q) ||
-        (s.staffCode || s.coachCode || '').toLowerCase().includes(q) ||
-        (s.specialty || '').toLowerCase().includes(q);
-      return matchesRole && matchesQuery;
-    });
-  }, [staffList, staffRoleFilter, staffSearchQuery]);
 
   // Filtered capabilities for Tab 1
   const filteredRoleCaps = useMemo(() => {
@@ -345,6 +186,8 @@ export function RolesPermissions() {
     );
   }
 
+  if (loadError) return <div role="alert" className="p-4 text-red-700">{loadError}</div>;
+
   return (
     <div className="space-y-6 pb-16">
       {/* Top Banner / Header */}
@@ -356,19 +199,19 @@ export function RolesPermissions() {
                 {isManager ? 'Phân Quyền Trung Tâm' : 'Quản Trị Toàn Hệ Thống'}
               </span>
               <span className="px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
-                Cơ sở #{centerId}
+                {centerId ? `Cơ sở #${centerId}` : 'Toàn hệ thống'}
               </span>
             </div>
             <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
-              Phân Quyền Chi Tiết Theo Từng Vai Trò & Từng Người
+              Phân Quyền Theo Vai Trò
             </h1>
             <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
-              Thiết lập ma trận truy cập (RBAC) chuẩn hóa theo từng nhóm vai trò và tinh chỉnh quyền đặc cách cho từng nhân viên, huấn luyện viên tại trung tâm.
+              Thiết lập quyền truy cập theo vai trò và lưu cấu hình tại trung tâm.
             </p>
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-950/40 p-3 rounded-xl border border-slate-700/60 backdrop-blur-sm">
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-950/40 p-3 rounded-xl border border-slate-700/60 backdrop-blur-sm">
             <div className="text-center px-2">
               <div className="text-xl font-black text-red-400">{matrix.length}</div>
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Vai trò</div>
@@ -380,10 +223,6 @@ export function RolesPermissions() {
             <div className="text-center px-2 border-l border-slate-700/60">
               <div className="text-xl font-black text-emerald-400">{SYSTEM_CAPABILITIES.length}</div>
               <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Chức năng</div>
-            </div>
-            <div className="text-center px-2 border-l border-slate-700/60">
-              <div className="text-xl font-black text-cyan-400">{Object.keys(staffOverridesMap).length}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Đặc cách riêng</div>
             </div>
           </div>
         </div>
@@ -403,23 +242,6 @@ export function RolesPermissions() {
           </button>
 
           <button
-            onClick={() => setActiveTab('USERS')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
-              activeTab === 'USERS'
-                ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-                : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">person_check</span>
-            2. Phân Quyền Theo Từng Người ({staffList.length} nhân sự)
-            {Object.keys(staffOverridesMap).length > 0 && (
-              <span className="ml-1 px-1.5 py-0.2 rounded-full text-[10px] bg-amber-400 text-slate-950 font-black">
-                {Object.keys(staffOverridesMap).length}
-              </span>
-            )}
-          </button>
-
-          <button
             onClick={() => setActiveTab('MATRIX')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'MATRIX'
@@ -428,7 +250,7 @@ export function RolesPermissions() {
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">grid_view</span>
-            3. Ma Trận Toàn Cảnh (Full RBAC Grid)
+            2. Ma Trận Toàn Cảnh (Full RBAC Grid)
           </button>
         </div>
       </div>
@@ -780,364 +602,6 @@ export function RolesPermissions() {
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 2: PHÂN QUYỀN THEO TỪNG NGƯỜI (INDIVIDUAL PERSONNEL OVERRIDES)       */}
-      {/* ========================================================================= */}
-      {activeTab === 'USERS' && (
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Personnel Directory (4 cols) */}
-          <div className="lg:col-span-5 bg-white rounded-2xl border border-slate-200 shadow-sm p-4 space-y-4">
-            <div className="flex items-center justify-between pb-2 border-b border-slate-100">
-              <div>
-                <h3 className="font-bold text-slate-900 text-sm">Danh Sách Nhân Sự</h3>
-                <p className="text-[11px] text-slate-500">Chọn 1 người để cấu hình quyền riêng</p>
-              </div>
-              <Badge variant="primary" size="sm">{filteredStaffList.length} nhân sự</Badge>
-            </div>
-
-            {/* Staff Search */}
-            <div className="relative">
-              <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">
-                search
-              </span>
-              <input
-                type="text"
-                value={staffSearchQuery}
-                onChange={e => setStaffSearchQuery(e.target.value)}
-                placeholder="Tìm nhân sự theo tên, mã, email..."
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
-              />
-            </div>
-
-            {/* Role Filter Tabs for Staff */}
-            <div className="flex flex-wrap gap-1">
-              {[
-                { id: 'ALL', label: 'Tất cả' },
-                { id: 'COACH', label: 'HLV' },
-                { id: 'RECEPTIONIST', label: 'Lễ tân' },
-                { id: 'MANAGER', label: 'Quản lý' }
-              ].map(tab => (
-                <button
-                  key={tab.id}
-                  onClick={() => setStaffRoleFilter(tab.id)}
-                  className={`px-2.5 py-1 text-xs rounded-lg font-semibold transition-colors ${
-                    staffRoleFilter === tab.id
-                      ? 'bg-slate-900 text-white'
-                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                  }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </div>
-
-            {/* Staff List */}
-            <div className="space-y-2 max-h-[620px] overflow-y-auto pr-1">
-              {filteredStaffList.length === 0 ? (
-                <div className="p-8 text-center text-slate-400 text-xs">
-                  Không tìm thấy nhân sự phù hợp.
-                </div>
-              ) : (
-                filteredStaffList.map(staff => {
-                  const isSelected = staff.id === selectedStaffId;
-                  const hasOverride = Boolean(staffOverridesMap[staff.id]);
-                  const staffRoleUpper = String(staff.role || '').toUpperCase();
-
-                  return (
-                    <div
-                      key={staff.id}
-                      onClick={() => selectStaffMember(staff)}
-                      className={`cursor-pointer rounded-xl p-3 border transition-all flex items-center justify-between gap-3 ${
-                        isSelected
-                          ? 'bg-red-50/60 border-red-400 ring-2 ring-red-500/20 shadow-sm'
-                          : 'bg-white border-slate-200 hover:border-slate-300 hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center gap-3 min-w-0">
-                        {/* Avatar */}
-                        <div className={`w-9 h-9 rounded-xl flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 ${
-                          staffRoleUpper === 'COACH'
-                            ? 'bg-amber-100 text-amber-800'
-                            : staffRoleUpper === 'RECEPTIONIST'
-                              ? 'bg-purple-100 text-purple-800'
-                              : 'bg-blue-100 text-blue-800'
-                        }`}>
-                          {(staff.fullName || 'U').charAt(0)}
-                        </div>
-
-                        <div className="min-w-0">
-                          <div className="flex items-center gap-1.5">
-                            <h4 className="font-bold text-xs text-slate-900 truncate">
-                              {staff.fullName}
-                            </h4>
-                            {hasOverride && (
-                              <span title="Có quyền đặc cách riêng" className="inline-flex text-amber-500 text-[14px]">
-                                ⭐
-                              </span>
-                            )}
-                          </div>
-                          <p className="text-[11px] text-slate-500 truncate">
-                            {staff.staffCode || staff.coachCode || staff.email}
-                          </p>
-                          <div className="flex items-center gap-1.5 mt-0.5">
-                            <Badge variant={staffRoleUpper} size="sm">{staff.role}</Badge>
-                            {staff.specialty && (
-                              <span className="text-[10px] text-slate-500 truncate">
-                                • {staff.specialty}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-
-                      <div className="text-right flex-shrink-0">
-                        {hasOverride ? (
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                            Quyền riêng
-                          </span>
-                        ) : (
-                          <span className="text-[10px] text-slate-400">
-                            Chuẩn vai trò
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </div>
-
-          {/* Right Column: Individual Permission Inspector & Overrides (7 cols) */}
-          <div className="lg:col-span-7 space-y-6">
-            {selectedStaff ? (
-              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-                {/* Staff Header Profile */}
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-slate-900 to-red-600 text-white flex items-center justify-center font-black text-lg shadow-sm">
-                      {(selectedStaff.fullName || 'U').charAt(0)}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <h3 className="text-base font-extrabold text-slate-900">
-                          {selectedStaff.fullName}
-                        </h3>
-                        <Badge variant={String(selectedStaff.role).toUpperCase()} size="sm">
-                          {selectedStaff.role}
-                        </Badge>
-                        <Badge variant={selectedStaff.status === 'ACTIVE' ? 'ACTIVE' : 'INACTIVE'} size="sm">
-                          {selectedStaff.status === 'ACTIVE' ? 'Hoạt động' : 'Đã khóa'}
-                        </Badge>
-                      </div>
-                      <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500 mt-1">
-                        <span>Mã: <strong className="text-slate-700">{selectedStaff.staffCode || selectedStaff.coachCode || 'N/A'}</strong></span>
-                        <span>• Email: <strong className="text-slate-700">{selectedStaff.email}</strong></span>
-                        {selectedStaff.specialty && <span>• Chuyên môn: <strong className="text-slate-700">{selectedStaff.specialty}</strong></span>}
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={handleResetStaffToRole}
-                      title="Xóa quyền riêng, quay về 100% chuẩn vai trò"
-                      className="px-3 py-1.5 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors flex items-center gap-1"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-                      Đặt lại theo vai trò
-                    </button>
-                  </div>
-                </div>
-
-                {/* Status Summary Banner */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 bg-slate-50 p-3 rounded-xl border border-slate-200 text-center">
-                  <div>
-                    <div className="text-lg font-black text-slate-900">{userEffectiveCaps.length}</div>
-                    <div className="text-[10px] text-slate-500 uppercase font-semibold">Quyền thực nhận</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-black text-emerald-600">
-                      {staffRoleBaselineCaps.length - userRestrictedCaps.length}
-                    </div>
-                    <div className="text-[10px] text-slate-500 uppercase font-semibold">Kế thừa vai trò</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-black text-amber-600">{userGrantedCaps.length}</div>
-                    <div className="text-[10px] text-slate-500 uppercase font-semibold">Cấp đặc cách</div>
-                  </div>
-                  <div>
-                    <div className="text-lg font-black text-red-600">{userRestrictedCaps.length}</div>
-                    <div className="text-[10px] text-slate-500 uppercase font-semibold">Bị hạn chế</div>
-                  </div>
-                </div>
-
-                {/* SECTION 1: INHERITED CAPABILITIES FROM ROLE */}
-                <div className="space-y-3">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-emerald-600 text-[18px]">verified</span>
-                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                        1. Quyền kế thừa từ vai trò [{selectedStaff.role}]
-                      </h4>
-                    </div>
-                    <span className="text-[11px] text-slate-500">
-                      Gạt công tắc để TẠM KHÓA / HẠN CHẾ riêng cho nhân sự này
-                    </span>
-                  </div>
-
-                  {staffRoleBaselineCaps.length === 0 ? (
-                    <div className="p-4 bg-slate-50 rounded-xl text-xs text-slate-500 text-center">
-                      Vai trò này hiện chưa được mở quyền cơ sở nào.
-                    </div>
-                  ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                      {staffRoleBaselineCaps.map(capId => {
-                        const cap = SYSTEM_CAPABILITIES.find(c => c.id === capId) || { id: capId, label: capId, desc: 'Quyền cơ sở' };
-                        const isRestricted = userRestrictedCaps.includes(capId);
-                        const isEnabled = !isRestricted;
-
-                        return (
-                          <div
-                            key={capId}
-                            onClick={() => handleToggleStaffInheritedCap(capId)}
-                            className={`cursor-pointer rounded-xl p-3 border transition-all flex items-start gap-3 select-none ${
-                              isEnabled
-                                ? 'bg-emerald-50/40 border-emerald-200'
-                                : 'bg-red-50/30 border-red-200 opacity-70'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isEnabled}
-                              onChange={() => {}}
-                              className="mt-0.5 h-4 w-4 rounded text-emerald-600 focus:ring-emerald-500 border-slate-300 cursor-pointer"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-xs text-slate-900">{cap.label}</span>
-                                {isEnabled ? (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                                    Kế thừa
-                                  </span>
-                                ) : (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-red-100 text-red-800">
-                                    Đã khóa riêng
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{cap.desc}</p>
-                            </div>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-
-                {/* SECTION 2: GRANTED SPECIFIC CAPABILITIES BEYOND ROLE */}
-                <div className="space-y-3 pt-4 border-t border-slate-100">
-                  <div className="flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="material-symbols-outlined text-amber-500 text-[18px]">workspace_premium</span>
-                      <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900">
-                        2. Cấp quyền đặc cách riêng (Ngoài vai trò gốc)
-                      </h4>
-                    </div>
-                    <span className="text-[11px] text-slate-500">
-                      Bật để cấp thêm quyền quản trị / hỗ trợ cho nhân sự này
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-2.5">
-                    {SYSTEM_CAPABILITIES
-                      .filter(cap => !staffRoleBaselineCaps.includes(cap.id))
-                      .map(cap => {
-                        const isGranted = userGrantedCaps.includes(cap.id);
-
-                        return (
-                          <div
-                            key={cap.id}
-                            onClick={() => handleToggleStaffGrantedCap(cap.id)}
-                            className={`cursor-pointer rounded-xl p-3 border transition-all flex items-start gap-3 select-none ${
-                              isGranted
-                                ? 'bg-amber-50/70 border-amber-300 ring-1 ring-amber-500/20'
-                                : 'bg-white border-slate-200 hover:border-slate-300'
-                            }`}
-                          >
-                            <input
-                              type="checkbox"
-                              checked={isGranted}
-                              onChange={() => {}}
-                              className="mt-0.5 h-4 w-4 rounded text-amber-600 focus:ring-amber-500 border-slate-300 cursor-pointer"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <div className="flex items-center justify-between">
-                                <span className="font-bold text-xs text-slate-900">{cap.label}</span>
-                                {isGranted && (
-                                  <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800 flex items-center gap-0.5">
-                                    ⭐ Đặc cách
-                                  </span>
-                                )}
-                              </div>
-                              <p className="text-[11px] text-slate-500 mt-0.5 line-clamp-1">{cap.desc}</p>
-                              <span className="text-[9px] font-mono text-slate-400 mt-1 inline-block">({cap.category})</span>
-                            </div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-
-                {/* SECTION 3: NOTES & JUSTIFICATION */}
-                <div className="space-y-2 pt-4 border-t border-slate-100">
-                  <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                    Ghi chú ủy quyền / Lý do phân quyền riêng:
-                  </label>
-                  <textarea
-                    rows={2}
-                    value={userNotes}
-                    onChange={e => setUserNotes(e.target.value)}
-                    placeholder="VD: Trưởng bộ môn Cầu lông phụ trách xếp lịch dạy; hoặc Nhân viên thử việc tạm khóa quyền thu tiền..."
-                    className="w-full p-2.5 text-xs border border-slate-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 bg-slate-50/50"
-                  />
-                </div>
-
-                {/* Save Staff Permissions Bar */}
-                <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                  <span className="text-xs text-slate-500">
-                    Cấu hình quyền riêng này được lưu tức thời cho tài khoản <strong>{selectedStaff.fullName}</strong>.
-                  </span>
-
-                  <button
-                    disabled={userSaveBusy}
-                    onClick={handleSaveStaffPermissions}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md shadow-red-600/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50"
-                  >
-                    {userSaveBusy ? (
-                      <>
-                        <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                        <span>Đang lưu quyền nhân sự...</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="material-symbols-outlined text-[18px]">person_save</span>
-                        <span>Lưu Quyền Riêng Cho {selectedStaff.fullName}</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
-                <span className="material-symbols-outlined text-slate-400 text-[48px] mb-2">person_pin</span>
-                <p className="text-sm font-semibold text-slate-600">Vui lòng chọn một nhân sự ở danh sách bên trái.</p>
-              </div>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
       {/* TAB 3: MA TRẬN TOÀN CẢNH (FULL RBAC MATRIX GRID)                          */}
       {/* ========================================================================= */}
       {activeTab === 'MATRIX' && (
@@ -1209,15 +673,15 @@ export function RolesPermissions() {
 
                         // Check coach
                         const coachRole = matrix.find(r => r.roleName?.toUpperCase() === 'COACH');
-                        const coachHas = coachRole ? (coachRole.capabilityIds || []).includes(cap.id) : (cap.defaultRole === 'COACH');
+                        const coachHas = coachRole ? (coachRole.capabilityIds || []).includes(cap.id) : false;
 
                         // Check receptionist
                         const recepRole = matrix.find(r => r.roleName?.toUpperCase() === 'RECEPTIONIST');
-                        const recepHas = recepRole ? (recepRole.capabilityIds || []).includes(cap.id) : (cap.defaultRole === 'RECEPTIONIST');
+                        const recepHas = recepRole ? (recepRole.capabilityIds || []).includes(cap.id) : false;
 
                         // Check member
                         const memberRole = matrix.find(r => r.roleName?.toUpperCase() === 'MEMBER');
-                        const memberHas = memberRole ? (memberRole.capabilityIds || []).includes(cap.id) : (cap.defaultRole === 'MEMBER');
+                        const memberHas = memberRole ? (memberRole.capabilityIds || []).includes(cap.id) : false;
 
                         return (
                           <tr key={cap.id} className="hover:bg-slate-50/80 transition-colors">
@@ -1299,10 +763,6 @@ export function RolesPermissions() {
               <span className="inline-flex items-center gap-1.5 text-slate-700">
                 <span className="w-5 h-5 rounded bg-slate-100 text-slate-400 flex items-center justify-center text-[12px] font-bold">—</span>
                 Không có quyền
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-slate-700">
-                <span className="text-amber-500 font-bold">⭐</span>
-                Có thể cấp đặc cách riêng cho cá nhân
               </span>
             </div>
 

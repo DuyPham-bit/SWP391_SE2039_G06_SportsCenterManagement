@@ -9,6 +9,7 @@ const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, 'tmp/manager-merge');
 const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
 const errors = [], checks = [], requests = [];
+const resetRequests = [], resetConfirmations = [];
 const sports = [{ id: 1, name: 'Yoga', status: 'Active' }, { id: 2, name: 'Bơi lội', status: 'Active' }];
 const rooms = [{ id: 1, name: 'Phòng kiểm thử', capacity: 30, type: 'Studio', status: 'Active' }];
 const coaches = [{ id: 10, fullName: 'Coach Yoga', specialization: 'Yoga', sportIds: [1] }, { id: 11, fullName: 'Coach Bơi', specialization: 'Bơi lội', sportIds: [2] }];
@@ -18,6 +19,8 @@ const classes = [
 ];
 const member = { memberId: 1, userId: 3, memberCode: 'MEM-TEST', fullName: 'Hội viên kiểm thử', email: 'member@example.test', accountStatus: 'Active' };
 const staff = { userId: 10, fullName: 'Coach Yoga', email: 'coach@example.test', roleName: 'Coach', status: 'Active', specialization: 'Yoga', sportIds: [1] };
+const roleMatrix = [{ roleId: 2, roleName: 'Coach', permissions: [], availablePermissions: [],
+  capabilityIds: ['view_teaching_schedule'], availableCapabilities: ['view_teaching_schedule', 'take_attendance'] }];
 let subscriptionFailure = true, browser, socket, cdp, origin;
 
 function json(res, body, status = 200) {
@@ -32,11 +35,18 @@ const server = http.createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = raw ? JSON.parse(raw) : null;
     requests.push({ route, method: req.method, body, query: Object.fromEntries(url.searchParams) });
+    if (route === '/api/auth/request-password-reset') { resetRequests.push({ res, body }); return; }
+    if (route === '/api/auth/reset-password') { resetConfirmations.push({ res, body }); return; }
     if (route === '/api/auth/login') return json(res, { accessToken: 'manager-fixture-token' });
     if (req.headers.authorization !== 'Bearer manager-fixture-token') return json(res, { message: 'Unauthorized' }, 401);
     if (route === '/api/profile/me') return json(res, { userId: 99, role: 'Manager', status: 'Active', centerId: 1, fullName: 'Manager kiểm thử', email: 'manager@example.test' });
     if (route === '/api/access/me/capabilities') return json(res, ['manage_staff', 'manage_members', 'manage_classes', 'manage_packages', 'assign_coach', 'view_reports']);
     if (route === '/api/notifications/me') return json(res, []);
+    if (route === '/api/centers/1/roles') return json(res, roleMatrix);
+    if (route === '/api/centers/1/roles/2/permissions' && req.method === 'PUT') {
+      roleMatrix[0].capabilityIds = body.capabilityIds;
+      return json(res, roleMatrix[0]);
+    }
     if (route === '/api/centers/1/audit-logs') return json(res, { items: [], totalCount: 0, pageSize: 50 });
     if (route === '/api/centers/1/members') return json(res, { items: [member], totalCount: 1, pageSize: 20 });
     if (route === '/api/centers/1/members/1' && req.method === 'PATCH') { Object.assign(member, body); return json(res, member); }
@@ -141,6 +151,60 @@ async function closeDialog() {
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false }, session);
   await cdp.send('Page.navigate', { url: `${origin}/#/login` }, session);
   await until('login', () => evaluate(`Boolean(document.getElementById('login-email'))`));
+  await click('Quên mật khẩu?');
+  await setInput('[role=dialog] input[type=email]', 'first@example.test');
+  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit(); document.querySelector('[role=dialog] form').requestSubmit()`);
+  await until('reset request pending', () => resetRequests.length > 0);
+  await delay(150);
+  assert.equal(resetRequests.length, 1, 'Duplicate reset requests must be prevented');
+  assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').disabled`), true);
+  checks.push('Password reset locks the submitted account and prevents duplicate requests');
+  await closeDialog();
+  await click('Quên mật khẩu?');
+  assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').value`), '');
+  json(resetRequests[0].res, { message: 'Earlier request accepted', developmentOtp: null });
+  await delay(150);
+  assert.equal(await evaluate(`Boolean(document.querySelector('[role=dialog] input[type=email]'))`), true);
+  checks.push('Closing reset clears sensitive state and discards a delayed OTP response');
+  await setInput('[role=dialog] input[type=email]', 'second@example.test');
+  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+  await until('second reset request', () => resetRequests.length === 2);
+  json(resetRequests[1].res, { message: 'Current request accepted', developmentOtp: null });
+  await until('OTP form', () => evaluate(`Boolean(document.getElementById('reset-new-password'))`));
+  await setInput('[role=dialog] input[type=text]', '123456');
+  await setInput('#reset-new-password', 'Valid_Reset42!');
+  await setInput('#reset-confirm-password', 'Valid_Reset42!');
+  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit(); document.querySelector('[role=dialog] form').requestSubmit()`);
+  await until('confirmation pending', () => resetConfirmations.length > 0);
+  await delay(150);
+  assert.equal(resetConfirmations.length, 1, 'Duplicate confirmations must be prevented');
+  assert.equal(resetConfirmations[0].body.email, 'second@example.test');
+  assert.equal(await evaluate(`[...document.querySelectorAll('[role=dialog] button')].find(b=>b.textContent.includes('Quay lại')).disabled`), true);
+  await closeDialog();
+  await click('Quên mật khẩu?');
+  resetConfirmations[0].res.writeHead(204); resetConfirmations[0].res.end();
+  await delay(150);
+  assert.equal(await evaluate(`Boolean(document.querySelector('[role=dialog] input[type=email]'))`), true);
+  assert.equal(await evaluate(`document.getElementById('login-email').value`), '');
+  checks.push('Closing during confirmation discards late success and preserves the newly opened dialog');
+  await setInput('[role=dialog] input[type=email]', 'third@example.test');
+  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+  await until('third reset request', () => resetRequests.length === 3);
+  json(resetRequests[2].res, { message: 'Gateway unavailable', developmentOtp: null }, 503);
+  await until('reset retry enabled', () => evaluate(`!document.querySelector('[role=dialog] button[type=submit]').disabled`));
+  assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').value`), 'third@example.test');
+  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+  await until('retry reset request', () => resetRequests.length === 4);
+  json(resetRequests[3].res, { message: 'Request accepted', developmentOtp: null });
+  await until('retry OTP form', () => evaluate(`Boolean(document.getElementById('reset-new-password'))`));
+  await setInput('[role=dialog] input[type=text]', '654321');
+  await setInput('#reset-new-password', 'Valid_Reset42!');
+  await setInput('#reset-confirm-password', 'Valid_Reset42!');
+  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+  await until('current confirmation', () => resetConfirmations.length === 2);
+  resetConfirmations[1].res.writeHead(204); resetConfirmations[1].res.end();
+  await until('reset completed', () => evaluate(`!document.querySelector('[role=dialog]') && document.getElementById('login-email').value === 'third@example.test'`));
+  checks.push('Reset API errors keep the form retryable, and only the current completion updates login');
   await setInput('#login-email', 'manager@example.test'); await setInput('#login-password', 'TestPassword123!');
   await evaluate(`document.querySelector('button[type=submit]').click()`);
   await until('authenticated', () => evaluate(`location.hash === '#/manager/dashboard'`));
@@ -204,9 +268,18 @@ async function closeDialog() {
   await until('daily report', () => requests.some(r => r.route === '/api/reports/revenue' && r.query.from === today && r.query.to === today));
   checks.push('Report rankings show API sport revenue, and the daily filter sends the correct date range');
 
+  await route('#/manager/roles-permissions', 'Phân Quyền Theo Vai Trò');
+  assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Theo Từng Người')`), false);
+  await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
+  await click('Lưu Phân Quyền Vai Trò [Coach]', 'document.querySelector("main")');
+  await until('role API save', () => requests.some(r => r.route === '/api/centers/1/roles/2/permissions' && r.method === 'PUT'));
+  assert.deepEqual(requests.find(r => r.route === '/api/centers/1/roles/2/permissions').body.capabilityIds, []);
+  assert.equal(await evaluate(`Object.keys(localStorage).some(key => key.startsWith('scms_user_perm_override_'))`), false);
+  checks.push('Role permissions save to the backend API and no per-user local override UI remains');
+
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, session);
-  for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', classes[0].name], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói']]) await route(`#/manager/${hash}`, text);
-  checks.push('All six affected manager routes render at a mobile viewport');
+  for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', classes[0].name], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói'], ['roles-permissions', 'Phân Quyền Theo Vai Trò']]) await route(`#/manager/${hash}`, text);
+  checks.push('All seven affected manager routes render at a mobile viewport');
   assert.deepEqual(errors, []);
   checks.push('No uncaught JavaScript exceptions or unexpected API endpoints');
   fs.writeFileSync(path.join(artifacts, 'report.json'), JSON.stringify({ checks, errors, api: 'Local fixtures; no live backend used', viewport: [375, 812] }, null, 2));

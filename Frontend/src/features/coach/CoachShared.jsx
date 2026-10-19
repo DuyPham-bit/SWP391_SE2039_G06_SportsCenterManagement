@@ -2,10 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { classApi } from '../../services/api.js';
 import { coachDate } from './coachOverview.js';
 import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 
-export const coachInput = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-sm bg-white focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] outline-none';
+export const coachInput = 'w-full rounded-lg border border-slate-300 px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-[#81B29A]/20 focus:border-[#81B29A] outline-none transition-all';
 
 export function CoachError({ message, retry }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
   if (!message) return null;
   const isObj = message && typeof message === 'object';
   const text = isObj ? (message.message || String(message)) : String(message);
@@ -15,11 +19,11 @@ export function CoachError({ message, retry }) {
   return (
     <BusinessAlert
       type="error"
-      title="Thông báo lỗi thao tác"
+      title={isEn ? "Action Error Notice" : "Thông báo lỗi thao tác"}
       code={code}
       message={text}
       proposedHandling={proposedHandling}
-      actionText={retry ? "Thử lại" : undefined}
+      actionText={retry ? (isEn ? "Retry" : "Thử lại") : undefined}
       onAction={retry}
       className="my-3"
     />
@@ -52,12 +56,25 @@ export function useTeachingSessions(endOffset = 30, anchorDate = null) {
 }
 
 export function CoachPeriod({ schedule }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
   return (
     <form onSubmit={e => { e.preventDefault(); schedule.reload(); }} className="flex flex-wrap items-end gap-3 p-4 rounded-2xl border border-slate-200/90 bg-white shadow-xs">
-      <label className="text-xs font-bold text-slate-700">Từ ngày<input aria-label="Từ ngày" type="date" required className={coachInput} value={schedule.from} onChange={e => schedule.setFrom(e.target.value)} /></label>
-      <label className="text-xs font-bold text-slate-700">Đến ngày<input aria-label="Đến ngày" type="date" required className={coachInput} value={schedule.to} onChange={e => schedule.setTo(e.target.value)} /></label>
-      <button disabled={schedule.loading} className="px-5 py-2 rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] font-bold text-sm shadow-xs hover:shadow-md transition-all disabled:opacity-50 cursor-pointer">Xem lịch</button>
-      <span className="text-xs text-slate-500 pb-2">Tối đa 92 ngày mỗi lần xem.</span>
+      <label className="text-xs font-semibold text-slate-600">
+        {isEn ? "From Date" : "Từ ngày"}
+        <input aria-label={isEn ? "From Date" : "Từ ngày"} type="date" required className={coachInput} value={schedule.from} onChange={e => schedule.setFrom(e.target.value)} />
+      </label>
+      <label className="text-xs font-semibold text-slate-600">
+        {isEn ? "To Date" : "Đến ngày"}
+        <input aria-label={isEn ? "To Date" : "Đến ngày"} type="date" required className={coachInput} value={schedule.to} onChange={e => schedule.setTo(e.target.value)} />
+      </label>
+      <button disabled={schedule.loading} className="px-4 py-2 rounded-lg bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white font-semibold text-xs shadow-xs transition-all disabled:opacity-50 cursor-pointer">
+        {schedule.loading ? (isEn ? "Loading..." : "Đang tải...") : (isEn ? "View Schedule" : "Xem lịch")}
+      </button>
+      <span className="text-xs text-slate-400 pb-2">
+        {isEn ? "Maximum 92 days per query." : "Tối đa 92 ngày mỗi lần xem."}
+      </span>
     </form>
   );
 }

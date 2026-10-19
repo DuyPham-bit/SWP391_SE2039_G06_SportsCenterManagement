@@ -1,13 +1,14 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { coachApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
-import { useToast } from '../../context/ToastContext.js';
+import { useToast } from '../../context/ToastContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.jsx';
-import { CoachError } from './CoachShared.js';
+import { CoachError } from './CoachShared.jsx';
 import { formatMemberDateTime } from '../member/memberOverview.js';
 import { useNotifications } from '../../components/common/useNotifications.js';
 import { NotificationList } from '../../components/common/NotificationList.jsx';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 
 // Bảng mẫu thông báo & bài tập chuẩn bị sẵn (1-click template)
 const QUICK_TEMPLATES = [
@@ -50,52 +51,52 @@ const QUICK_TEMPLATES = [
 ];
 
 // Tự động phân loại thẻ dựa trên nội dung
-function detectType(title = '', content = '') {
+function detectType(title = '', content = '', isEn = false) {
   const text = (title + ' ' + content).toLowerCase();
-  if (text.includes('góp ý') || text.includes('khích lệ') || text.includes('khen ngợi') || text.includes('cá nhân') || text.includes('chỉnh sửa kỹ thuật')) {
+  if (text.includes('góp ý') || text.includes('khích lệ') || text.includes('khen ngợi') || text.includes('cá nhân') || text.includes('chỉnh sửa kỹ thuật') || text.includes('feedback') || text.includes('review') || text.includes('1-1')) {
     return {
       type: 'PERSONAL_FEEDBACK',
-      label: 'Góp ý 1-1 cá nhân',
+      label: isEn ? '1-on-1 Feedback' : 'Góp ý 1-1 cá nhân',
       icon: 'person_pin',
       badgeClass: 'bg-purple-50 text-purple-800 border-purple-200',
       iconBg: 'bg-purple-100 text-purple-700',
       stripe: 'border-l-purple-600'
     };
   }
-  if (text.includes('bài tập') || text.includes('rèn luyện') || text.includes('hiệp') || text.includes('reps') || text.includes('tập tại nhà') || text.includes('plank') || text.includes('squat')) {
+  if (text.includes('bài tập') || text.includes('rèn luyện') || text.includes('hiệp') || text.includes('reps') || text.includes('tập tại nhà') || text.includes('plank') || text.includes('squat') || text.includes('homework') || text.includes('workout')) {
     return {
       type: 'HOMEWORK',
-      label: 'Bài tập về nhà',
+      label: isEn ? 'Homework & Workout' : 'Bài tập về nhà',
       icon: 'fitness_center',
       badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
       iconBg: 'bg-amber-100 text-amber-700',
       stripe: 'border-l-amber-500'
     };
   }
-  if (text.includes('nhắc') || text.includes('lịch') || text.includes('chuẩn bị') || text.includes('đúng giờ') || text.includes('mang')) {
+  if (text.includes('nhắc') || text.includes('lịch') || text.includes('chuẩn bị') || text.includes('đúng giờ') || text.includes('mang') || text.includes('reminder')) {
     return {
       type: 'REMINDER',
-      label: 'Nhắc lịch học',
+      label: isEn ? 'Class Reminder' : 'Nhắc lịch học',
       icon: 'schedule',
       badgeClass: 'bg-sky-50 text-sky-800 border-sky-200',
       iconBg: 'bg-sky-100 text-sky-700',
       stripe: 'border-l-sky-500'
     };
   }
-  if (text.includes('nghỉ') || text.includes('thay đổi') || text.includes('hoãn') || text.includes('bù') || text.includes('hủy') || text.includes('dời')) {
+  if (text.includes('nghỉ') || text.includes('thay đổi') || text.includes('hoãn') || text.includes('bù') || text.includes('hủy') || text.includes('dời') || text.includes('reschedule') || text.includes('change')) {
     return {
       type: 'SCHEDULE_CHANGE',
-      label: 'Thay đổi ca dạy',
+      label: isEn ? 'Schedule Update' : 'Thay đổi ca dạy',
       icon: 'campaign',
       badgeClass: 'bg-rose-50 text-rose-800 border-rose-200',
       iconBg: 'bg-rose-100 text-rose-700',
       stripe: 'border-l-rose-500'
     };
   }
-  if (text.includes('dinh dưỡng') || text.includes('ăn') || text.includes('uống') || text.includes('protein') || text.includes('nước') || text.includes('phục hồi')) {
+  if (text.includes('dinh dưỡng') || text.includes('ăn') || text.includes('uống') || text.includes('protein') || text.includes('nước') || text.includes('phục hồi') || text.includes('nutrition')) {
     return {
       type: 'NUTRITION',
-      label: 'Dinh dưỡng & Phục hồi',
+      label: isEn ? 'Nutrition & Recovery' : 'Dinh dưỡng & Phục hồi',
       icon: 'restaurant',
       badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
       iconBg: 'bg-emerald-100 text-emerald-700',
@@ -104,7 +105,7 @@ function detectType(title = '', content = '') {
   }
   return {
     type: 'GENERAL',
-    label: 'Thông báo lớp học',
+    label: isEn ? 'Class Announcement' : 'Thông báo lớp học',
     icon: 'chat_bubble',
     badgeClass: 'bg-slate-100 text-slate-800 border-slate-200',
     iconBg: 'bg-slate-100 text-slate-700',
@@ -114,6 +115,8 @@ function detectType(title = '', content = '') {
 
 export function CoachNotifications() {
   const { currentUser } = useAuth();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const inbox = useNotifications();
   const { showSuccess, showError } = useToast();
 
@@ -421,14 +424,16 @@ export function CoachNotifications() {
         <div className="space-y-1 relative z-10">
           <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[rgba(242,204,143,0.15)] text-[#F2CC8F] text-[11px] font-bold uppercase tracking-widest border border-[rgba(242,204,143,0.3)] mb-2">
             <span className="w-2 h-2 rounded-full bg-[#F2CC8F] animate-pulse" />
-            Chuyên môn &amp; Kết nối học viên
+            {isEn ? 'Coaching & Student Engagement' : 'Chuyên môn & Kết nối học viên'}
           </div>
           <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
             <span className="material-symbols-outlined text-[28px] text-[#F2CC8F]">campaign</span>
-            Gửi Bài Tập &amp; Thông Báo Cho Học Viên
+            {isEn ? 'Send Workouts & Student Announcements' : 'Gửi Bài Tập & Thông Báo Cho Học Viên'}
           </h1>
           <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
-            Giao bài tập về nhà theo lớp hoặc gửi nhận xét &amp; góp ý kỹ thuật riêng 1-1 tới từng học viên.
+            {isEn
+              ? 'Assign class homework or send 1-on-1 technical feedback and reviews directly to individual students.'
+              : 'Giao bài tập về nhà theo lớp hoặc gửi nhận xét & góp ý kỹ thuật riêng 1-1 tới từng học viên.'}
           </p>
         </div>
 
@@ -444,7 +449,7 @@ export function CoachNotifications() {
             className="px-5 py-3 bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white border border-[#F2CC8F]/30 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-sm hover:shadow-md transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             <span className="material-symbols-outlined text-[20px] text-[#F2CC8F]">add_circle</span>
-            <span>Soạn Thông Báo Mới</span>
+            <span>{isEn ? 'Compose New Notice' : 'Soạn Thông Báo Mới'}</span>
           </button>
         </div>
       </div>
@@ -464,9 +469,11 @@ export function CoachNotifications() {
           }`}
         >
           <div>
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Đã gửi học viên</div>
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              {isEn ? 'Sent to Students' : 'Đã gửi học viên'}
+            </div>
             <div className="font-chivo text-xl font-black text-slate-900 mt-0.5">
-              {stats.totalSent} <span className="text-xs font-normal text-slate-400">bản tin</span>
+              {stats.totalSent} <span className="text-xs font-normal text-slate-400">{isEn ? 'notices' : 'bản tin'}</span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-slate-100 text-slate-700 flex items-center justify-center shrink-0">
@@ -477,9 +484,11 @@ export function CoachNotifications() {
         {/* Tile 2: Lượt học viên nhận */}
         <div className="p-3 rounded-xl border border-slate-200 bg-white shadow-2xs flex items-center justify-between">
           <div>
-            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">Lượt học viên nhận</div>
+            <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider">
+              {isEn ? 'Total Receivers' : 'Lượt học viên nhận'}
+            </div>
             <div className="font-chivo text-xl font-black text-slate-900 mt-0.5">
-              {stats.totalRecipients} <span className="text-xs font-normal text-slate-400">lượt tiếp cận</span>
+              {stats.totalRecipients} <span className="text-xs font-normal text-slate-400">{isEn ? 'reach' : 'lượt tiếp cận'}</span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-[#81B29A]/15 text-[#2D6A4F] flex items-center justify-center shrink-0">
@@ -501,11 +510,11 @@ export function CoachNotifications() {
         >
           <div>
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
-              <span>Gửi riêng 1-1</span>
+              <span>{isEn ? '1-on-1 Direct' : 'Gửi riêng 1-1'}</span>
               {selectedClassFilter === 'MEMBER' && <span className="w-1.5 h-1.5 rounded-full bg-purple-600" />}
             </div>
             <div className="font-chivo text-xl font-black text-slate-900 mt-0.5">
-              {stats.oneOnOneCount} <span className="text-xs font-normal text-slate-400">tin nhắn</span>
+              {stats.oneOnOneCount} <span className="text-xs font-normal text-slate-400">{isEn ? 'messages' : 'tin nhắn'}</span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-purple-50 text-purple-600 flex items-center justify-center shrink-0">
@@ -526,11 +535,11 @@ export function CoachNotifications() {
             <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1">
               <span className="flex items-center gap-1">
                 {stats.inboxUnread > 0 && <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-ping" />}
-                Hộp thư đến
+                {isEn ? 'Inbox' : 'Hộp thư đến'}
               </span>
             </div>
             <div className="font-chivo text-xl font-black text-slate-900 mt-0.5">
-              {stats.inboxUnread} <span className="text-xs font-normal text-slate-400">chưa đọc</span>
+              {stats.inboxUnread} <span className="text-xs font-normal text-slate-400">{isEn ? 'unread' : 'chưa đọc'}</span>
             </div>
           </div>
           <div className="w-8 h-8 rounded-lg bg-sky-50 text-sky-600 flex items-center justify-center shrink-0">
@@ -554,7 +563,7 @@ export function CoachNotifications() {
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">send</span>
-              <span>Đã gửi ({notifications.length})</span>
+              <span>{isEn ? `Sent (${notifications.length})` : `Đã gửi (${notifications.length})`}</span>
             </button>
 
             <button
@@ -565,7 +574,7 @@ export function CoachNotifications() {
               }`}
             >
               <span className="material-symbols-outlined text-[16px]">inbox</span>
-              <span>Hộp thư đến</span>
+              <span>{isEn ? 'Inbox' : 'Hộp thư đến'}</span>
               {stats.inboxUnread > 0 && (
                 <span className="px-1.5 py-0.2 rounded-full text-[10px] font-black bg-[#E07A5F] text-white">
                   {stats.inboxUnread}
@@ -583,10 +592,10 @@ export function CoachNotifications() {
                 className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'split' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Chế độ chia đôi màn hình: Danh sách bên trái, đọc nội dung bên phải (dễ quan sát nhất)"
+                title={isEn ? "Split screen view" : "Chế độ chia đôi màn hình: Danh sách bên trái, đọc nội dung bên phải (dễ quan sát nhất)"}
               >
                 <span className="material-symbols-outlined text-[16px]">vertical_split</span>
-                <span>Chia đôi (Dễ đọc)</span>
+                <span>{isEn ? 'Split (Easy Read)' : 'Chia đôi (Dễ đọc)'}</span>
               </button>
               <button
                 type="button"
@@ -594,10 +603,10 @@ export function CoachNotifications() {
                 className={`px-2.5 py-1 rounded-md text-xs font-bold transition-all flex items-center gap-1 cursor-pointer ${
                   viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
                 }`}
-                title="Chế độ lưới thẻ 2 cột"
+                title={isEn ? "Grid card view" : "Chế độ lưới thẻ 2 cột"}
               >
                 <span className="material-symbols-outlined text-[16px]">grid_view</span>
-                <span>Lưới thẻ</span>
+                <span>{isEn ? 'Grid Cards' : 'Lưới thẻ'}</span>
               </button>
             </div>
           )}
@@ -615,7 +624,7 @@ export function CoachNotifications() {
                 type="text"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                placeholder="Tìm tiêu đề, nội dung, học viên..."
+                placeholder={isEn ? "Search title, content, student..." : "Tìm tiêu đề, nội dung, học viên..."}
                 className="w-full pl-8 pr-7 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium placeholder-slate-400"
               />
               {searchQuery && (
@@ -636,12 +645,12 @@ export function CoachNotifications() {
                 onChange={e => setSelectedClassFilter(e.target.value)}
                 className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium cursor-pointer"
               >
-                <option value="ALL">🎯 Tất cả đối tượng gửi</option>
-                <option value="MEMBER">👤 Gửi riêng 1-1 (Từng học viên)</option>
-                <option value="ENTIRE">👥 Toàn bộ học viên của HLV</option>
+                <option value="ALL">{isEn ? '🎯 All Recipients' : '🎯 Tất cả đối tượng gửi'}</option>
+                <option value="MEMBER">{isEn ? '👤 1-on-1 Direct (Individual Student)' : '👤 Gửi riêng 1-1 (Từng học viên)'}</option>
+                <option value="ENTIRE">{isEn ? '👥 All Students of Coach' : '👥 Toàn bộ học viên của HLV'}</option>
                 {classes.map(c => (
                   <option key={c.id} value={c.id}>
-                    Lớp: {c.name} ({c.sportName})
+                    {isEn ? `Class: ${c.name} (${c.sportName})` : `Lớp: ${c.name} (${c.sportName})`}
                   </option>
                 ))}
               </select>
@@ -654,12 +663,12 @@ export function CoachNotifications() {
                 onChange={e => setSelectedTypeFilter(e.target.value)}
                 className="w-full px-2.5 py-1.5 text-xs rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 bg-white font-medium cursor-pointer"
               >
-                <option value="ALL">🏷️ Tất cả chủ đề</option>
-                <option value="PERSONAL_FEEDBACK">🎯 Góp ý 1-1 cá nhân</option>
-                <option value="HOMEWORK">🏋️ Bài tập về nhà</option>
-                <option value="REMINDER">⏰ Nhắc lịch học</option>
-                <option value="SCHEDULE_CHANGE">📢 Thay đổi ca dạy</option>
-                <option value="NUTRITION">🥗 Dinh dưỡng & Phục hồi</option>
+                <option value="ALL">{isEn ? '🏷️ All Topics' : '🏷️ Tất cả chủ đề'}</option>
+                <option value="PERSONAL_FEEDBACK">{isEn ? '🎯 1-on-1 Feedback' : '🎯 Góp ý 1-1 cá nhân'}</option>
+                <option value="HOMEWORK">{isEn ? '🏋️ Homework & Workout' : '🏋️ Bài tập về nhà'}</option>
+                <option value="REMINDER">{isEn ? '⏰ Schedule Reminder' : '⏰ Nhắc lịch học'}</option>
+                <option value="SCHEDULE_CHANGE">{isEn ? '📢 Schedule Update' : '📢 Thay đổi ca dạy'}</option>
+                <option value="NUTRITION">{isEn ? '🥗 Nutrition & Recovery' : '🥗 Dinh dưỡng & Phục hồi'}</option>
               </select>
             </div>
           </div>

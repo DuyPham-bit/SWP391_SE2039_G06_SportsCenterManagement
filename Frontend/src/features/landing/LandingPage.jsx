@@ -5,6 +5,7 @@ import { FacilitiesSection } from './FacilitiesSection.js';
 import { SCMS_FACILITIES } from '../../services/facilitiesCatalog.js';
 import { useLandingContent } from '../../hooks/useLandingContent.js';
 import { getExternalContactUrl, normalizeZaloPhone } from '../../services/landingContentService.js';
+import { Logo } from '../../components/common/Logo.jsx';
 
 // Danh mục trang chủ và cơ sở tập luyện tương ứng cho từng môn.
 export const LANDING_SPORTS = SUPPORTED_SPORTS.map(sport => ({
@@ -591,19 +592,8 @@ export function LandingPage() {
         className={`tiya-navbar ${isScrolled ? 'is-sticky scrolled' : ''}`}
       >
         <div className="tiya-navbar__container">
-          {/* Brand Logo - SCMS PRO */}
-          <a
-            href="#/"
-            onClick={(e) => handleNavClick(navItems[0], e)}
-            aria-label="SCMS Olympic Sports Arena - Về trang chủ"
-            className="tiya-brand"
-          >
-            <div className="tiya-brand-icon">S</div>
-            <div className="tiya-brand-text">
-              SCMS
-              <small>Olympic Sports Arena</small>
-            </div>
-          </a>
+          {/* Brand Logo - SCMS Olympic Sports Arena */}
+          <Logo variant="dark" size="md" onClick={(e) => handleNavClick(navItems[0], e)} />
 
           {/* Navigation Links */}
           <nav className="tiya-nav-menu">
@@ -1001,8 +991,9 @@ export function LandingPage() {
         <div className="section-bg-image-container">
           <div className="tiya-reveal--scale">
             <div className="section-bg-image-block">
-              <div style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'4px 12px',borderRadius:'100px',background:'rgba(129,178,154,0.18)',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
-                <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--primary-color)',animation:'tiyaPulse 2s infinite'}} />
+              {/* Status Badge */}
+              <div className="section-bg-badge">
+                <span className="section-bg-badge-dot" aria-hidden="true" />
                 Cụm Sân Quốc Tế • Mở Cửa 24/7
               </div>
 
@@ -1012,35 +1003,49 @@ export function LandingPage() {
                 Hệ thống {SCMS_FACILITIES.length} khu liên hợp thể thao tiêu chuẩn: Bể bơi 4 mùa, sân bóng đá cỏ nhân tạo, cụm sân cầu lông, bóng rổ, pickleball, võ thuật &amp; gym. Đặt chỗ trực tuyến nhanh trong 30 giây với đầy đủ tiện ích tủ đồ, phòng tắm nước nóng, trọng tài &amp; y tế.
               </p>
 
-              <div style={{display:'flex',flexWrap:'wrap',gap:'16px',marginBottom:'24px',fontSize:'13px',fontWeight:600,color:'var(--p-color)'}}>
-                <span style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                  <span className="material-symbols-outlined" style={{fontSize:'18px',color:'var(--custom-btn-bg-hover-color)'}}>bolt</span>Giữ Chỗ Tức Thì
+              {/* 3 Key Highlights with High-Contrast Chips */}
+              <div className="section-bg-features">
+                <span className="section-bg-feature-chip">
+                  <span className="material-symbols-outlined chip-icon chip-icon--amber" aria-hidden="true">bolt</span>
+                  <span>Giữ Chỗ Tức Thì</span>
                 </span>
-                <span style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                  <span className="material-symbols-outlined" style={{fontSize:'18px',color:'var(--primary-color)'}}>groups</span>Ưu Đãi Đội Nhóm 20%
+                <span className="section-bg-feature-chip">
+                  <span className="material-symbols-outlined chip-icon chip-icon--emerald" aria-hidden="true">groups</span>
+                  <span>Ưu Đãi Đội Nhóm 20%</span>
                 </span>
-                <span style={{display:'flex',alignItems:'center',gap:'6px'}}>
-                  <span className="material-symbols-outlined" style={{fontSize:'18px',color:'var(--custom-btn-bg-color)'}}>light_mode</span>Đèn LED Ban Đêm
+                <span className="section-bg-feature-chip">
+                  <span className="material-symbols-outlined chip-icon chip-icon--sky" aria-hidden="true">light_mode</span>
+                  <span>Đèn LED Ban Đêm</span>
                 </span>
               </div>
 
-              {/* Tiya Exact Input Group Form */}
-              <div className="input-group">
-                <span className="input-group-text material-symbols-outlined">stadium</span>
-                <input
-                  type="text"
-                  readOnly
-                  value={`Hệ thống ${SCMS_FACILITIES.length} cụm sân & phòng tập sẵn sàng phục vụ`}
-                  aria-label="Thông tin cụm sân"
-                />
+              {/* Signature Action Bar - 100% Visible Text, Zero Truncation */}
+              <div className="section-bg-cta-bar">
+                <div className="section-bg-cta-info">
+                  <div className="section-bg-cta-icon-wrap" aria-hidden="true">
+                    <span className="material-symbols-outlined">stadium</span>
+                  </div>
+                  <div className="section-bg-cta-text-group">
+                    <span className="section-bg-cta-title">
+                      Hệ thống {SCMS_FACILITIES.length} cụm sân &amp; phòng tập
+                    </span>
+                    <span className="section-bg-cta-sub">
+                      <span className="section-bg-cta-sub-dot" aria-hidden="true" />
+                      Sẵn sàng phục vụ 24/7
+                    </span>
+                  </div>
+                </div>
                 <button
                   type="button"
+                  className="section-bg-cta-btn"
                   onClick={() => {
                     const el = document.getElementById('co-so-vat-chat');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
+                  aria-label="Xem 9 khu vực cơ sở vật chất và đặt chỗ ngay"
                 >
-                  Xem 9 Khu Vực &amp; Đặt Chỗ Ngay
+                  <span>Xem 9 Khu Vực &amp; Đặt Chỗ Ngay</span>
+                  <span className="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
                 </button>
               </div>
             </div>
@@ -1250,16 +1255,9 @@ export function LandingPage() {
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))',gap:'40px',marginBottom:'40px'}}>
             {/* Col 1: Brand */}
             <div>
-              <a href="#/" onClick={e => handleNavClick(navItems[0], e)} aria-label="SCMS Olympic Sports Arena - Về trang chủ"
-                style={{display:'flex',alignItems:'center',gap:'12px',marginBottom:'16px',textDecoration:'none'}}>
-                <div style={{width:'44px',height:'44px',borderRadius:'12px',background:'linear-gradient(135deg,var(--scms-red),var(--custom-btn-bg-hover-color))',display:'flex',alignItems:'center',justifyContent:'center',color:'white',fontWeight:900,fontSize:'20px',flexShrink:0}}>
-                  S
-                </div>
-                <div>
-                  <div style={{fontFamily:'var(--body-font-family)',fontWeight:700,fontSize:'22px',color:'var(--white-color)',letterSpacing:'-0.5px'}}>SCMS</div>
-                  <div style={{fontSize:'10px',fontWeight:700,letterSpacing:'0.18em',textTransform:'uppercase',color:'rgba(255,255,255,0.6)'}}>Olympic Sports Arena</div>
-                </div>
-              </a>
+              <div className="mb-4">
+                <Logo variant="dark" size="md" onClick={e => handleNavClick(navItems[0], e)} />
+              </div>
               <p style={{fontSize:'14px',lineHeight:1.7,color:'rgba(255,255,255,0.65)'}}>
                 Không gian học tập và rèn luyện thể thao dành cho mọi lứa tuổi. Cùng SCMS chọn bộ môn yêu thích, nâng cao thể lực và kết nối cộng đồng.
               </p>

@@ -31,6 +31,7 @@ builder.Services.AddDbContext<SportsCenterDbContext>(options =>
 
 builder.Services.AddSingleton(jwtIssuer);
 builder.Services.AddScoped<JwtAccountValidator>();
+builder.Services.AddScoped<PasswordResetEmailSender>();
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(options =>
 {
     options.MapInboundClaims = false;
@@ -106,6 +107,7 @@ builder.Services.AddHttpClient<GeminiService>(client => client.Timeout = TimeSpa
 builder.Services.AddRateLimiter(options =>
 {
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
+    PasswordResetRateLimiting.Configure(options);
     options.AddPolicy("ai", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));

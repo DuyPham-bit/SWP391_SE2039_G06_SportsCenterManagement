@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Security.Cryptography;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Authentication;
 using SportsCenterManagement.API.DTOs.Auth;
@@ -21,7 +22,8 @@ public sealed class AuthController(
     SportsCenterDbContext dbContext,
     JwtTokenIssuer tokenIssuer,
     IHostEnvironment environment,
-    IAuthService authService) : ControllerBase
+    IAuthService authService,
+    PasswordResetEmailSender resetEmail) : ControllerBase
 {
     [HttpPost("register")]
     [AllowAnonymous]
@@ -82,17 +84,25 @@ public sealed class AuthController(
     }
 
     [HttpPost("request-password-reset")]
+    [EnableRateLimiting("password-reset")]
     [AllowAnonymous]
     [ProducesResponseType(typeof(PasswordResetRequestResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status503ServiceUnavailable)]
     public async Task<ActionResult<PasswordResetRequestResponse>> RequestPasswordReset(
         [FromBody] RequestPasswordResetRequest request,
         CancellationToken cancellationToken)
     {
+        if (!environment.IsDevelopment() && !resetEmail.IsConfigured)
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new
+            {
+                message = "Hiện chưa thể gửi mã đặt lại mật khẩu. Vui lòng liên hệ trung tâm để được hỗ trợ."
+            });
+
         await using var transaction = await dbContext.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.Serializable, cancellationToken);
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var user = await dbContext.Users
-            .SingleOrDefaultAsync(item => item.Email == normalizedEmail, cancellationToken);
+            .SingleOrDefaultAsync(item => item.Email == normalizedEmail && item.Status == "Active", cancellationToken);
         if (user is null)
         {
             await transaction.CommitAsync(cancellationToken);
@@ -110,15 +120,19 @@ public sealed class AuthController(
         }
 
         var otp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
-        await dbContext.PasswordResetTokens.AddAsync(new PasswordResetToken
+        var reset = new PasswordResetToken
         {
             UserId = user.Id,
             Token = BCrypt.Net.BCrypt.HashPassword(otp),
             ExpiresAt = DateTime.UtcNow.AddMinutes(10),
             CreatedAt = DateTime.UtcNow
-        }, cancellationToken);
+        };
+        await dbContext.PasswordResetTokens.AddAsync(reset, cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
+
+        if (resetEmail.IsConfigured && !await resetEmail.SendAsync(user, reset, otp, cancellationToken))
+            return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Chưa gửi được mã xác thực. Vui lòng thử lại sau." });
 
         return Ok(new PasswordResetRequestResponse(
             "Nếu email tồn tại, mã xác thực đã được gửi.",
@@ -126,6 +140,7 @@ public sealed class AuthController(
     }
 
     [HttpPost("reset-password")]
+    [EnableRateLimiting("password-reset")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -137,19 +152,27 @@ public sealed class AuthController(
             System.Data.IsolationLevel.Serializable, cancellationToken);
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var user = await dbContext.Users
-            .SingleOrDefaultAsync(item => item.Email == normalizedEmail, cancellationToken);
+            .SingleOrDefaultAsync(item => item.Email == normalizedEmail && item.Status == "Active", cancellationToken);
         if (user is null)
         {
             return BadRequest(new { message = "Mã xác thực không hợp lệ hoặc đã hết hạn." });
         }
 
-        var tokens = await dbContext.PasswordResetTokens
+        var token = await dbContext.PasswordResetTokens
             .Where(token => token.UserId == user.Id && token.UsedAt == null && token.ExpiresAt > DateTime.UtcNow)
             .OrderByDescending(token => token.CreatedAt)
-            .ToListAsync(cancellationToken);
-        var token = tokens.FirstOrDefault(item => BCrypt.Net.BCrypt.Verify(request.Otp, item.Token));
-        if (token is null)
+            .FirstOrDefaultAsync(cancellationToken);
+        if (token is null || token.FailedAttempts >= 5)
         {
+            return BadRequest(new { message = "Mã xác thực không hợp lệ hoặc đã hết hạn." });
+        }
+
+        if (!BCrypt.Net.BCrypt.Verify(request.Otp, token.Token))
+        {
+            token.FailedAttempts += 1;
+            if (token.FailedAttempts >= 5) token.UsedAt = DateTime.UtcNow;
+            await dbContext.SaveChangesAsync(cancellationToken);
+            await transaction.CommitAsync(cancellationToken);
             return BadRequest(new { message = "Mã xác thực không hợp lệ hoặc đã hết hạn." });
         }
 
@@ -159,11 +182,15 @@ public sealed class AuthController(
             return BadRequest(new { message = passwordError });
         }
 
-        user.PasswordHash = BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12);
+        user.PasswordHash = PasswordHashing.Hash(request.NewPassword);
+        user.AuthVersion += 1;
         user.FailedLoginAttempts = 0;
         user.LockedUntil = null;
         user.UpdatedAt = DateTime.UtcNow;
         token.UsedAt = DateTime.UtcNow;
+        await dbContext.PasswordResetTokens
+            .Where(item => item.UserId == user.Id && item.Id != token.Id && item.UsedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(item => item.UsedAt, token.UsedAt), cancellationToken);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
         return NoContent();
@@ -206,19 +233,27 @@ public sealed class AuthController(
             return BadRequest(new { message = passwordError });
         }
 
+        var newHash = PasswordHashing.Hash(request.NewPassword);
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable, cancellationToken);
         var now = DateTime.UtcNow;
         var updated = await dbContext.Users
             .Where(item => item.Id == user.Id && item.PasswordHash == user.PasswordHash && item.Status == "Active")
             .ExecuteUpdateAsync(setters => setters
-                .SetProperty(item => item.PasswordHash, BCrypt.Net.BCrypt.HashPassword(request.NewPassword, workFactor: 12))
+                .SetProperty(item => item.PasswordHash, newHash)
                 .SetProperty(item => item.FailedLoginAttempts, 0)
                 .SetProperty(item => item.LockedUntil, (DateTime?)null)
+                .SetProperty(item => item.AuthVersion, item => item.AuthVersion + 1)
                 .SetProperty(item => item.UpdatedAt, now), cancellationToken);
         if (updated == 0)
         {
             return Unauthorized(new { message = "Mật khẩu hiện tại không còn hợp lệ." });
         }
 
+        await dbContext.PasswordResetTokens.Where(item => item.UserId == user.Id && item.UsedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(item => item.UsedAt, now), cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        user.AuthVersion += 1;
         return Ok(await CreateAuthResponseAsync(user, cancellationToken));
     }
 
@@ -242,7 +277,7 @@ public sealed class AuthController(
             .SingleOrDefaultAsync(cancellationToken);
 
         return CreateAuthResponse(new SportsCenterManagement.BLL.DTOs.Auth.Responses.AuthenticatedUser(
-            user.Id, user.Username, role, centerId, user.Email));
+            user.Id, user.Username, role, centerId, user.Email, user.AuthVersion));
     }
 
     private AuthResponse CreateAuthResponse(
