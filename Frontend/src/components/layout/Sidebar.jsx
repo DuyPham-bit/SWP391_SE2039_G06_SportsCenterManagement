@@ -92,65 +92,75 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
     if (normalizedRole === 'COACH') {
       return [
         {
-          category: isEn ? 'TEACHING & SCHEDULE' : 'GIẢNG DẠY & HỌC VIÊN',
+          category: isEn ? 'SCHEDULE & ATTENDANCE' : 'LỊCH & ĐIỂM DANH',
           items: [
             {
               id: 'coach_dashboard',
-              label: isEn ? 'Coach Overview' : 'Tổng quan HLV',
+              label: isEn ? 'Coach Overview' : 'Tổng quan Dashboard',
               icon: 'dashboard',
               path: '#/coach/dashboard'
             },
             {
               id: 'coach_schedule_group',
-              label: isEn ? 'Schedule & Leave' : 'Lịch & Nghỉ phép',
+              label: isEn ? 'Schedule & Attendance' : 'Lịch & Điểm danh',
               icon: 'calendar_month',
               subItems: [
                 { label: isEn ? 'Teaching Schedule' : 'Lịch giảng dạy', path: '#/coach/schedule' },
-                { label: isEn ? 'Attendance Report' : 'Báo cáo điểm danh', path: '#/coach/attendance' },
+                { label: isEn ? 'Attendance Check-in' : 'Điểm danh học viên', path: '#/coach/attendance' },
                 { label: isEn ? 'Leave Requests' : 'Xin nghỉ phép', path: '#/coach/support' }
               ]
             },
             {
               id: 'coach_members',
-              label: isEn ? 'Students' : 'Học viên',
+              label: isEn ? 'Students & Goals' : 'Học viên & Mục tiêu',
               icon: 'group',
               path: '#/coach/members'
             }
           ]
         },
         {
-          category: isEn ? 'PROFESSIONAL' : 'CHUYÊN MÔN',
+          category: isEn ? 'TRAINING & PROGRESS' : 'GIÁO ÁN & TIẾN ĐỘ',
           items: [
             {
               id: 'coach_plans_group',
-              label: isEn ? 'Lesson Plans & Nutrition' : 'Giáo án & Dinh dưỡng',
+              label: isEn ? 'Workout Plans & Journal' : 'Giáo án & Tiến độ',
               icon: 'fitness_center',
               subItems: [
-                { label: isEn ? 'Create Workout Plans' : 'Tạo giáo án rèn luyện', path: '#/coach/training-plan' },
-                { label: isEn ? 'Track Progress' : 'Ghi nhận tiến độ', path: '#/coach/progress' },
-                { label: isEn ? 'AI Suggestions' : 'Gợi ý AI', path: '#/coach/ai-recommendation' }
+                { label: isEn ? 'Create Workout Plans' : 'Tạo kế hoạch tập luyện', path: '#/coach/training-plan' },
+                { label: isEn ? 'Session Journal & Progress' : 'Nhật ký & Đánh giá tiến độ', path: '#/coach/progress' }
               ]
             }
           ]
         },
         {
-          category: isEn ? 'OPERATIONS & FINANCE' : 'TƯƠNG TÁC & VẬN HÀNH',
+          category: isEn ? 'AI ASSISTANT' : 'TRỢ LÝ AI',
+          items: [
+            {
+              id: 'coach_ai_recommendation',
+              label: isEn ? 'AI Lesson Assistant' : 'Gợi ý giáo án AI',
+              icon: 'neurology',
+              path: '#/coach/ai-recommendation'
+            }
+          ]
+        },
+        {
+          category: isEn ? 'INTERACTION & OPS' : 'TƯƠNG TÁC & VẬN HÀNH',
           items: [
             {
               id: 'coach_notifications',
-              label: isEn ? 'Interaction & Chat' : 'Tương tác & Chat',
+              label: isEn ? 'Notices & Homework' : 'Tương tác & Bài tập về nhà',
               icon: 'forum',
               path: '#/coach/notifications'
             },
             {
-              id: 'coach_salary_kpi',
-              label: isEn ? 'KPI & Income' : 'KPI & Thu nhập',
+              id: 'coach_performance',
+              label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất',
               icon: 'monitoring',
-              path: '#/coach/salary-kpi'
+              path: '#/coach/performance'
             },
             {
               id: 'coach_resources',
-              label: isEn ? 'Resources & Equipment' : 'Tài nguyên & Thiết bị',
+              label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị',
               icon: 'inventory_2',
               path: '#/coach/resources'
             }

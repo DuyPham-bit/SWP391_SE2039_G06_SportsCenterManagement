@@ -39,7 +39,8 @@ const TrainingPlan = lazy(() => import('./features/coach/TrainingPlan.js').then(
 const WorkoutProgress = lazy(() => import('./features/coach/WorkoutProgress.js').then(m => ({ default: m.WorkoutProgress })));
 const CoachNotifications = lazy(() => import('./features/coach/CoachNotifications.js').then(m => ({ default: m.CoachNotifications })));
 const AIRecommendation = lazy(() => import('./features/coach/AIRecommendation.js').then(m => ({ default: m.AIRecommendation })));
-const CoachSalaryKPI = lazy(() => import('./features/coach/CoachSalaryKPI.jsx').then(m => ({ default: m.CoachSalaryKPI })));
+const PerformanceDashboard = lazy(() => import('./features/coach/PerformanceDashboard.jsx').then(m => ({ default: m.PerformanceDashboard })));
+const CoachSalaryKPI = PerformanceDashboard;
 const CoachResources = lazy(() => import('./features/coach/CoachResources.jsx').then(m => ({ default: m.CoachResources })));
 const CoachProfessionalHub = lazy(() => import('./features/coach/CoachProfessionalHub.jsx').then(m => ({ default: m.CoachProfessionalHub })));
 const ManagerCoachOperations = lazy(() => import('./features/manager/ManagerCoachOperations.jsx').then(m => ({ default: m.ManagerCoachOperations })));
@@ -234,9 +235,10 @@ function AppRouter() {
         return renderCoachRoute(CoachNotifications, 'view_teaching_schedule');
       case '#/coach/ai-recommendation':
         return renderCoachRoute(AIRecommendation, 'get_ai_recommendation');
+      case '#/coach/performance':
       case '#/coach/salary-kpi':
       case '#/coach/kpi':
-        return renderCoachRoute(CoachSalaryKPI, 'manage_coach_workspace');
+        return renderCoachRoute(PerformanceDashboard, 'manage_coach_workspace');
       case '#/coach/resources':
       case '#/coach/equipment':
         return renderCoachRoute(CoachResources, 'manage_coach_workspace');

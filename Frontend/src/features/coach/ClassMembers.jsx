@@ -151,6 +151,11 @@ export function ClassMembers() {
       return;
     }
 
+    if (!startDate || !startDate.trim()) {
+      showError(isEn ? 'Please choose an effective start date!' : 'Vui lòng chọn ngày bắt đầu áp dụng giáo án!');
+      return;
+    }
+
     if (!exercises.length || exercises.some(ex => !ex.name.trim()) || (endDate && endDate < startDate)) {
       showError(isEn ? 'Please add at least one valid exercise and a valid date range.' : 'Nhập ít nhất một bài tập có tên và khoảng ngày hợp lệ.');
       return;
@@ -206,16 +211,34 @@ export function ClassMembers() {
   };
 
   const columns = [
-    { header: isEn ? 'Goal' : 'Mục tiêu', accessor: 'fitnessGoal' },
-    { header: isEn ? 'Level' : 'Trình độ', accessor: 'fitnessLevel' },
+    {
+      header: isEn ? 'Goal' : 'Mục tiêu',
+      render: row => row.fitnessGoal?.trim() ? (
+        <span className="font-medium text-slate-800">{row.fitnessGoal}</span>
+      ) : (
+        <span className="text-slate-400 italic text-xs">{isEn ? 'Not updated' : 'Chưa cập nhật'}</span>
+      )
+    },
+    {
+      header: isEn ? 'Level' : 'Trình độ',
+      render: row => row.fitnessLevel?.trim() ? (
+        <span className="font-semibold text-blue-700 bg-blue-50 px-2 py-0.5 rounded-md text-xs">{row.fitnessLevel}</span>
+      ) : (
+        <span className="text-slate-400 italic text-xs">{isEn ? 'Not evaluated' : 'Chưa đánh giá'}</span>
+      )
+    },
     {
       header: isEn ? 'Student' : 'Học Viên',
       render: (row) => (
         <div className="flex items-center gap-3">
           <img
             src={row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
-            alt=""
-            className="w-9 h-9 rounded-full object-cover border border-slate-200"
+            onError={e => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
+            }}
+            alt={row.memberName || 'Student'}
+            className="w-9 h-9 rounded-full object-cover border border-slate-200 shrink-0"
           />
           <div>
             <div className="font-bold text-slate-900 flex items-center gap-1.5">
@@ -407,7 +430,7 @@ export function ClassMembers() {
             ].map(([label, value]) => (
               <div key={label}>
                 <dt className="text-slate-500 text-xs">{label}</dt>
-                <dd className="font-semibold whitespace-pre-wrap mt-1">{value ?? (isEn ? 'Not updated' : 'Chưa cập nhật')}</dd>
+                <dd className="font-semibold whitespace-pre-wrap mt-1">{(value && String(value).trim()) ? value : (isEn ? 'Not updated' : 'Chưa cập nhật')}</dd>
               </div>
             ))}
           </dl>
@@ -432,7 +455,11 @@ export function ClassMembers() {
               <div className="flex items-center gap-3">
                 <img
                   src={activeMember.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
-                  alt=""
+                  onError={e => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
+                  }}
+                  alt={activeMember.memberName || 'Student'}
                   className="w-11 h-11 rounded-full object-cover border-2 border-amber-400 shrink-0"
                 />
                 <div>

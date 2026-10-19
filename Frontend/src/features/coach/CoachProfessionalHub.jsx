@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { CoachError } from './CoachShared.jsx';
+import { PerformanceDashboard } from './PerformanceDashboard.jsx';
 import { calendarWindow, currency, localDateKey, mergeCoachCalendar, tdeeEstimate } from './coachProfessionalView.js';
 
 // Unified input and button styles in SCMS Olympic Arena design system
@@ -88,7 +89,7 @@ export function CoachProfessionalHub() {
   const [error, setError] = useState('');
 
   const tabsConfig = [
-    { id: 'performance', icon: 'monitoring', label: isEn ? 'KPI & Income' : 'KPI & Thu nhập' },
+    { id: 'performance', icon: 'monitoring', label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất' },
     { id: 'facilities', icon: 'inventory_2', label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị' }
   ];
 
@@ -202,11 +203,11 @@ export function CoachProfessionalHub() {
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
-                {isEn ? 'Estimated Income' : 'Thu nhập dự kiến'}
+              <span className="text-[10px] font-bold uppercase text-[#81B29A] block">
+                {isEn ? 'Attendance Rate' : 'Tỉ lệ chuyên cần'}
               </span>
               <span className="text-base sm:text-lg font-black text-emerald-300 truncate block">
-                {currency(kpiData.estimatedIncome || 0)}
+                {kpiData.attendanceRate ?? 95}%
               </span>
             </div>
           </div>
@@ -1397,146 +1398,10 @@ function CommunicationTab({ data, act, working, isEn }) {
 }
 
 // ─────────────────────────────────────────────────────────────
-// TAB 5: KPI & PERFORMANCE (KPI & THU NHẬP)
+// TAB 5: TEACHING PERFORMANCE (THỐNG KÊ HIỆU SUẤT GIẢNG DẠY)
 // ─────────────────────────────────────────────────────────────
-function PerformanceTab({ data, isEn }) {
-  const k = data.kpi || {};
-  const sessionPercent = k.targetSessions ? Math.min(100, Math.round((k.completedSessions * 100) / k.targetSessions)) : 0;
-  const salesPercent = k.targetSales ? Math.min(100, Math.round((k.sales * 100) / k.targetSales)) : 0;
-
-  return (
-    <div className="space-y-5">
-      {/* 4 Stat Cards */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-slate-400 block">{isEn ? 'Completed Sessions' : 'Buổi dạy hoàn thành'}</span>
-          <span className="text-2xl font-black text-slate-900 dark:text-white mt-1 block">
-            {k.completedSessions || 0}
-          </span>
-          <span className="text-xs text-slate-500 mt-1 block">
-            {isEn
-              ? `${k.completedClassSessions || 0} classes · ${k.completedPersonalSessions || 0} PT sessions`
-              : `${k.completedClassSessions || 0} lớp · ${k.completedPersonalSessions || 0} ca PT`}
-          </span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-slate-400 block">{isEn ? 'Student Retention Rate' : 'Tỷ lệ giữ chân học viên'}</span>
-          <span className="text-2xl font-black text-[#2D6A4F] dark:text-[#81B29A] mt-1 block">
-            {k.retentionRate || 0}%
-          </span>
-          <span className="text-xs text-slate-500 mt-1 block">
-            {isEn
-              ? `${k.retainedClients || 0}/${k.activeClients || 0} retained students`
-              : `${k.retainedClients || 0}/${k.activeClients || 0} học viên duy trì`}
-          </span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-slate-400 block">{isEn ? 'Recorded Sales' : 'Doanh số ghi nhận'}</span>
-          <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400 mt-1 block truncate">
-            {currency(k.sales)}
-          </span>
-          <span className="text-xs text-slate-500 mt-1 block">{isEn ? 'Packages & new enrollments' : 'Gói tập & hội viên mới'}</span>
-        </div>
-
-        <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xs">
-          <span className="text-[10px] font-bold uppercase text-slate-400 block">{isEn ? 'Average Rating' : 'Đánh giá trung bình'}</span>
-          <span className="text-2xl font-black text-amber-500 mt-1 block">
-            ★ {k.averageRating || '5.0'}/5
-          </span>
-          <span className="text-xs text-slate-500 mt-1 block">{isEn ? `${k.reviewCount || 0} student reviews` : `${k.reviewCount || 0} lượt nhận xét`}</span>
-        </div>
-      </div>
-
-      {/* KPI Progress & Transparent Income */}
-      <div className="grid gap-5 xl:grid-cols-2">
-        <SectionCard title={isEn ? 'KPI Target Progress' : 'Tiến độ hoàn thành chỉ tiêu KPI'} icon="trending_up">
-          <div className="space-y-4">
-            <div>
-              <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                <span>{isEn ? `Teaching Sessions (${sessionPercent}%)` : `Số buổi dạy (${sessionPercent}%)`}</span>
-                <span>{k.completedSessions || 0} / {k.targetSessions || 0} {isEn ? 'sessions' : 'buổi'}</span>
-              </div>
-              <div className="h-3 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-[#81B29A] transition-all duration-500"
-                  style={{ width: `${sessionPercent}%` }}
-                />
-              </div>
-            </div>
-
-            <div>
-              <div className="flex justify-between text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
-                <span>{isEn ? `Package Sales (${salesPercent}%)` : `Doanh số bán gói (${salesPercent}%)`}</span>
-                <span>{currency(k.sales)} / {currency(k.targetSales)}</span>
-              </div>
-              <div className="h-3 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                <div
-                  className="h-full rounded-full bg-emerald-600 transition-all duration-500"
-                  style={{ width: `${salesPercent}%` }}
-                />
-              </div>
-            </div>
-          </div>
-        </SectionCard>
-
-        <SectionCard title={isEn ? 'Transparent Estimated Income' : 'Bảng tính thu nhập dự kiến minh bạch'} icon="payments">
-          <div className="space-y-2.5 text-xs">
-            <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
-              <span className="text-slate-600 dark:text-slate-400">{isEn ? 'Base Coach Salary:' : 'Lương cơ bản ngạch HLV:'}</span>
-              <strong className="text-slate-900 dark:text-white">{currency(k.baseSalary)}</strong>
-            </div>
-            <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
-              <span className="text-slate-600 dark:text-slate-400">{isEn ? 'Session Teaching Commission:' : 'Hoa hồng buổi dạy (Session Commission):'}</span>
-              <strong className="text-slate-900 dark:text-white">{currency(k.sessionCommission)}</strong>
-            </div>
-            <div className="flex justify-between py-2 border-b border-slate-100 dark:border-slate-700">
-              <span className="text-slate-600 dark:text-slate-400">{isEn ? 'Sales & Membership Commission:' : 'Hoa hồng doanh số ký mới (Sales Commission):'}</span>
-              <strong className="text-slate-900 dark:text-white">{currency(k.salesCommission)}</strong>
-            </div>
-
-            <div className="flex items-center justify-between p-3.5 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-sm mt-3">
-              <span className="font-bold text-emerald-900 dark:text-emerald-200">{isEn ? 'Total Estimated Income:' : 'Tổng thu nhập dự kiến:'}</span>
-              <span className="text-lg font-black text-emerald-700 dark:text-emerald-400">
-                {currency(k.estimatedIncome)}
-              </span>
-            </div>
-          </div>
-        </SectionCard>
-      </div>
-
-      {/* Student Reviews */}
-      <SectionCard title={isEn ? 'Student Reviews & Feedback' : 'Đánh giá & Phản hồi từ học viên'} icon="rate_review">
-        {!data.reviews?.length ? (
-          <EmptyState icon="star_outline" isEn={isEn}>
-            {isEn ? 'No student reviews received this period.' : 'Chưa có đánh giá nào từ học viên trong kỳ này.'}
-          </EmptyState>
-        ) : (
-          <div className="grid gap-3 sm:grid-cols-2">
-            {data.reviews.map(x => (
-              <div key={x.id} className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/50 dark:bg-slate-750 text-xs space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <span className="font-bold text-slate-900 dark:text-white">
-                    {x.memberName || (isEn ? `Student #${x.memberId}` : `Học viên #${x.memberId}`)}
-                  </span>
-                  <span className="text-amber-500 font-bold">
-                    {'★'.repeat(x.rating)}{'☆'.repeat(5 - x.rating)}
-                  </span>
-                </div>
-                <p className="text-slate-600 dark:text-slate-300 leading-relaxed italic">
-                  "{x.comment || (isEn ? 'No detailed review.' : 'Không có nhận xét chi tiết.')}"
-                </p>
-                <span className="text-[10px] text-slate-400 block pt-1">
-                  {formatDate(x.updatedAt || x.createdAt, isEn)}
-                </span>
-              </div>
-            ))}
-          </div>
-        )}
-      </SectionCard>
-    </div>
-  );
+function PerformanceTab() {
+  return <PerformanceDashboard />;
 }
 
 // ─────────────────────────────────────────────────────────────

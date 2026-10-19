@@ -106,8 +106,18 @@ export function TrainingPlan() {
       return;
     }
 
-    if (!exercises.length || exercises.some(ex => !ex.name.trim()) || (endDate && endDate < startDate)) {
-      showError(isEn ? 'Please enter at least one named exercise and a valid date range.' : 'Nhập ít nhất một bài tập có tên và khoảng ngày hợp lệ.');
+    if (!startDate || !startDate.trim()) {
+      showError(isEn ? 'Please select an effective start date!' : 'Vui lòng chọn ngày bắt đầu áp dụng giáo án!');
+      return;
+    }
+
+    if (!exercises || !exercises.length || exercises.some(ex => !ex.name || !ex.name.trim())) {
+      showError(isEn ? 'Please add at least one exercise with a valid name!' : 'Vui lòng thêm ít nhất một bài tập có tên cụ thể!');
+      return;
+    }
+
+    if (endDate && endDate < startDate) {
+      showError(isEn ? 'End date cannot be earlier than start date.' : 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu.');
       return;
     }
     const currentClass = coachClasses.find(c => c.id === selectedClassId);
