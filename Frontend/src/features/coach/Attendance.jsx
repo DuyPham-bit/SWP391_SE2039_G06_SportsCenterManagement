@@ -1487,6 +1487,8 @@ export function Attendance() {
               >
                 {isEn ? 'Absent' : 'Vắng'} ({stats.absent})
               </button>
+              <button
+                type="button"
                 onClick={() => setFilterRosterStatus('EXCUSED')}
                 className={`px-3 py-1 rounded-lg transition-all ${
                   filterRosterStatus === 'EXCUSED'
@@ -1644,7 +1646,6 @@ export function Attendance() {
                           ))}
                         </div>
                       )}
-                    </div>
                     </div>
                   </div>
                 </article>
