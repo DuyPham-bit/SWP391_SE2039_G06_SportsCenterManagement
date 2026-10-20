@@ -790,266 +790,107 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   )}
                 </div>
               ) : (
-                /* PACKAGES & SCHEDULE TAB - FULLY VISUAL & INTUITIVE */
-                <div className="space-y-6">
-                  {/* 1. Facility Spotlight Card */}
-                  <div
-                    className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl border border-slate-200/90 shadow-sm"
-                    style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #fffbeb 50%, #ecfdf5 100%)' }}
-                  >
-                    {selectedFacility.image ? (
-                      <img
-                        src={selectedFacility.image}
-                        alt={selectedFacility.name}
-                        className="w-20 h-20 rounded-xl object-cover shrink-0 border border-slate-200 shadow-sm"
-                      />
-                    ) : (
-                      <div className="w-20 h-20 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                        <span className="material-symbols-outlined text-[32px]">
+                /* PACKAGES & SCHEDULE TAB - CONCISE & EASY TO CHOOSE */
+                <div className="space-y-4">
+                  {/* 1. Quick Facility Summary Banner */}
+                  <div className="p-3.5 sm:p-4 rounded-xl bg-slate-50 border border-slate-200/90 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-lg bg-emerald-100 text-emerald-800 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[22px]">
                           {getFacilityCategoryMeta(selectedFacility).icon || 'stadium'}
                         </span>
                       </div>
-                    )}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex flex-wrap items-center gap-2 mb-1">
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
-                          {isEn ? translateFacilityBadge(selectedFacility.badge, true) : (selectedFacility.badge || 'Sân bãi tiêu chuẩn')}
-                        </span>
-                        <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[14px] text-amber-600">location_on</span>
-                          {isEn ? translateLocation(selectedFacility.location, true) : selectedFacility.location}
-                        </span>
-                      </div>
-                      <h4 className="text-base sm:text-lg font-extrabold text-slate-900 truncate">
-                        {isEn ? translateFacilityName(selectedFacility.name, true) : selectedFacility.name}
-                      </h4>
-                      <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-600">
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[15px] text-blue-600">group</span>
-                          <strong>{selectedFacility.capacity || (isEn ? '30 slots' : '30 người')}</strong>
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1">
-                          <span className="material-symbols-outlined text-[15px] text-amber-600">schedule</span>
-                          <span>{selectedFacility.openHours || '06:00 - 22:00'}</span>
-                        </span>
-                        <span>•</span>
-                        <span className="flex items-center gap-1 text-emerald-700 font-semibold">
-                          <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
-                          <span>{isEn ? 'Open for Booking' : 'Mở nhận học viên'}</span>
-                        </span>
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* 2. Visual 3-Step Participation Process */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                        {isEn ? '3 Simple Steps to Join' : 'Quy trình 3 bước tham gia tập luyện'}
-                      </h5>
-                      <span className="text-[11px] text-slate-400 font-medium">
-                        {isEn ? 'Fast & Automated' : 'Nhanh chóng & Tiện lợi'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      {/* Step 1 */}
-                      <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-all">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
-                            1
-                          </div>
-                          <span className="material-symbols-outlined text-[20px] text-emerald-600">card_membership</span>
+                      <div>
+                        <div className="flex flex-wrap items-center gap-2 mb-0.5">
+                          <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
+                            {isEn ? translateFacilityBadge(selectedFacility.badge, true) : (selectedFacility.badge || 'Sân bãi tiêu chuẩn')}
+                          </span>
+                          <span className="text-xs font-semibold text-slate-500">
+                            ⏱ {selectedFacility.openHours || '06:00 - 22:00'} • 👥 {selectedFacility.capacity || (isEn ? '30 slots' : 'Sức chứa tiêu chuẩn')}
+                          </span>
                         </div>
-                        <h6 className="text-xs font-bold text-slate-900 mb-1">
-                          {isEn ? 'Choose Membership' : 'Chọn gói hội viên'}
-                        </h6>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">
-                          {isEn ? 'Select Basic, Pro or Elite pass matching your fitness routine.' : 'Đăng ký gói 1 tháng, 3 tháng hoặc 1 năm tùy mục tiêu tập.'}
-                        </p>
-                      </div>
-
-                      {/* Step 2 */}
-                      <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-300 transition-all">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
-                            2
-                          </div>
-                          <span className="material-symbols-outlined text-[20px] text-blue-600">calendar_month</span>
-                        </div>
-                        <h6 className="text-xs font-bold text-slate-900 mb-1">
-                          {isEn ? 'Pick Class / Court' : 'Chọn ca học tại sân'}
-                        </h6>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">
-                          {isEn ? 'Reserve your slot from real-time calendar schedule.' : 'Chọn ca tập hoặc lớp có HLV tại cụm sân này trên thời khóa biểu.'}
-                        </p>
-                      </div>
-
-                      {/* Step 3 */}
-                      <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group hover:border-amber-300 transition-all">
-                        <div className="flex items-center gap-3 mb-2">
-                          <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm shrink-0">
-                            3
-                          </div>
-                          <span className="material-symbols-outlined text-[20px] text-amber-600">sports</span>
-                        </div>
-                        <h6 className="text-xs font-bold text-slate-900 mb-1">
-                          {isEn ? 'Check-in & Train' : 'Check-in & Luyện tập'}
-                        </h6>
-                        <p className="text-[11px] text-slate-500 leading-relaxed">
-                          {isEn ? 'Arrive at court, use lockers, and train with standard equipment.' : 'Đến sân, sử dụng tủ đồ miễn phí và bắt đầu ca tập luyện.'}
+                        <p className="text-xs text-slate-700 font-medium leading-snug">
+                          {isEn
+                            ? `Join with a membership pass to train at ${selectedFacility.name} with free lockers & warm showers.`
+                            : `Đăng ký gói hội viên để tập luyện tự do tại ${selectedFacility.name}, miễn phí tủ đồ thông minh và phòng tắm.`}
                         </p>
                       </div>
                     </div>
                   </div>
 
-                  {/* 3. Classes and Timetables Available at this Court */}
-                  <div className="space-y-3">
+                  {/* 2. Three Core Package Cards for Quick Selection */}
+                  <div className="space-y-2">
                     <div className="flex items-center justify-between">
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[18px] text-blue-600">event_note</span>
-                        {isEn ? 'Classes & Timetables at this Court' : 'Lớp đào tạo & Khung ca hoạt động tại sân'}
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-800 flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-[17px] text-amber-600">loyalty</span>
+                        {isEn ? 'Choose a Membership Pass' : 'Chọn gói tập phù hợp'}
                       </h5>
-                      <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                        {isEn ? 'Daily Sessions' : 'Ca học mỗi ngày'}
+                      <span className="text-[11px] text-slate-500">
+                        {isEn ? 'Instant online activation' : 'Kích hoạt ngay sau thanh toán'}
                       </span>
                     </div>
 
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {facilityClasses.length > 0 ? (
-                        facilityClasses.map((cls, idx) => (
-                          <div key={cls.id || idx} className="p-3.5 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-300 transition-all shadow-sm">
-                            <div className="flex items-center justify-between gap-2 mb-1.5">
-                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-blue-100 text-blue-800">
-                                {cls.level || (isEn ? 'All Levels' : 'Mọi trình độ')}
-                              </span>
-                              <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
-                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                                {isEn ? 'Active' : 'Đang mở đăng ký'}
-                              </span>
-                            </div>
-                            <h6 className="text-xs font-bold text-slate-900 truncate mb-1">
-                              {cls.name}
-                            </h6>
-                            <div className="flex items-center gap-3 text-[11px] text-slate-500">
-                              <span className="flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[13px]">timer</span>
-                                60 {isEn ? 'mins' : 'phút / ca'}
-                              </span>
-                              <span>•</span>
-                              <span className="flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[13px]">groups</span>
-                                12-20 {isEn ? 'slots' : 'chỗ'}
-                              </span>
-                            </div>
-                          </div>
-                        ))
-                      ) : (
-                        <>
-                          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-sm space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-800">
-                                🌅 {isEn ? 'Morning Session' : 'Ca Sáng (06:00 - 11:30)'}
-                              </span>
-                              <span className="text-[10px] font-bold text-emerald-600">{isEn ? 'Available' : 'Mở đặt chỗ'}</span>
-                            </div>
-                            <h6 className="text-xs font-bold text-slate-800">
-                              {isEn ? 'Technical Training & Drills' : 'Tập luyện kỹ thuật & Thể lực nhóm'}
-                            </h6>
-                            <p className="text-[11px] text-slate-500">
-                              {isEn ? 'Ideal for morning individual drills or coached beginner classes.' : 'Thích hợp rèn luyện cá nhân hoặc lớp hướng dẫn căn bản buổi sáng.'}
-                            </p>
-                          </div>
-                          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-sm space-y-1">
-                            <div className="flex items-center justify-between">
-                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
-                                🌙 {isEn ? 'Evening Session' : 'Ca Tối (17:30 - 22:00)'}
-                              </span>
-                              <span className="text-[10px] font-bold text-emerald-600">{isEn ? 'Prime Time' : 'Khung giờ vàng'}</span>
-                            </div>
-                            <h6 className="text-xs font-bold text-slate-800">
-                              {isEn ? 'Club Matches & Advanced Training' : 'Giao lưu CLB & Lớp huấn luyện nâng cao'}
-                            </h6>
-                            <p className="text-[11px] text-slate-500">
-                              {isEn ? 'Team play, sparring, tournament prep and advanced techniques.' : 'Tập đối kháng, ghép đội thi đấu và lớp nâng cao cùng HLV.'}
-                            </p>
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-
-                  {/* 4. Visual Membership Packages Cards */}
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
-                        <span className="material-symbols-outlined text-[18px] text-amber-600">loyalty</span>
-                        {isEn ? 'Available Membership Packages' : 'Các gói tập áp dụng quyền lợi tại sân'}
-                      </h5>
-                      <span className="text-[11px] text-slate-400">
-                        {isEn ? 'Full Access Included' : 'Đã bao gồm sân bãi & tủ đồ'}
-                      </span>
-                    </div>
-
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                      {packages.slice(0, 4).map((pkg) => {
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                      {packages.slice(0, 3).map((pkg) => {
                         const priceVnd = Number(pkg.price || 0).toLocaleString('vi-VN');
                         const isPop = pkg.popular || pkg.id === 2 || (pkg.name || '').includes('Pro');
+                        const unit = pkg.durationDays >= 365 ? (isEn ? 'year' : 'năm') : pkg.durationDays >= 90 ? (isEn ? 'quarter' : 'quý') : (isEn ? 'month' : 'tháng');
+
                         return (
                           <div
                             key={pkg.id}
-                            className={`p-4 rounded-xl border transition-all shadow-sm flex flex-col justify-between ${
+                            className={`p-3.5 rounded-xl border transition-all flex flex-col justify-between ${
                               isPop
-                                ? 'bg-amber-50/40 border-amber-300 ring-1 ring-amber-300/40'
-                                : 'bg-white border-slate-200 hover:border-slate-300'
+                                ? 'bg-amber-50/50 border-amber-300 ring-1 ring-amber-300/50 shadow-sm'
+                                : 'bg-white border-slate-200 hover:border-slate-300 shadow-sm'
                             }`}
                           >
                             <div>
                               <div className="flex items-center justify-between gap-1 mb-1.5">
-                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                                <span className={`text-[9.5px] font-bold uppercase px-2 py-0.5 rounded ${
                                   isPop ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
                                 }`}>
-                                  {isPop ? (isEn ? 'Popular Choice' : 'Phổ biến nhất') : (pkg.badge || (isEn ? 'Standard' : 'Tiêu chuẩn'))}
+                                  {isPop ? (isEn ? 'Most Popular' : 'Phổ biến nhất') : (pkg.badge || (isEn ? 'Standard' : 'Tiêu chuẩn'))}
                                 </span>
                                 <span className="text-[11px] font-semibold text-slate-400">
                                   {pkg.durationDays} {isEn ? 'days' : 'ngày'}
                                 </span>
                               </div>
-                              <h6 className="text-xs sm:text-sm font-extrabold text-slate-900">
+
+                              <h6 className="text-xs sm:text-sm font-extrabold text-slate-900 leading-tight">
                                 {isEn && pkg.nameEn ? pkg.nameEn : pkg.name}
                               </h6>
-                              <div className="mt-2 mb-3">
-                                <span className="text-lg font-black text-[#2D6A4F] font-chivo">
+
+                              <div className="my-2">
+                                <span className="text-base sm:text-lg font-black text-[#2D6A4F] font-chivo">
                                   {priceVnd}đ
                                 </span>
                                 <span className="text-[11px] text-slate-500 ml-1">
-                                  / {pkg.durationDays >= 365 ? (isEn ? 'year' : 'năm') : pkg.durationDays >= 90 ? (isEn ? 'quarter' : 'quý') : (isEn ? 'month' : 'tháng')}
+                                  / {unit}
                                 </span>
                               </div>
 
-                              <ul className="space-y-1.5 text-[11px] text-slate-600 mb-3">
+                              <ul className="space-y-1 text-[11px] text-slate-600 mb-3">
                                 <li className="flex items-center gap-1.5">
-                                  <span className="material-symbols-outlined text-[14px] text-emerald-600 shrink-0">check_circle</span>
-                                  <span>{pkg.accessType || (isEn ? 'Selected sports' : 'Môn thể thao tự chọn')}</span>
+                                  <span className="material-symbols-outlined text-[13px] text-emerald-600 shrink-0">check</span>
+                                  <span>{pkg.accessType || (isEn ? 'Court training included' : 'Tập tự do tại sân bãi')}</span>
                                 </li>
                                 <li className="flex items-center gap-1.5">
-                                  <span className="material-symbols-outlined text-[14px] text-emerald-600 shrink-0">check_circle</span>
-                                  <span>{isEn ? 'Full court & basic amenities' : 'Tập luyện tại cụm sân này'}</span>
+                                  <span className="material-symbols-outlined text-[13px] text-emerald-600 shrink-0">check</span>
+                                  <span>{isEn ? 'Smart lockers & shower' : 'Tủ đồ thông minh miễn phí'}</span>
                                 </li>
                               </ul>
                             </div>
 
                             <a
                               href={membershipAction.href}
-                              className={`w-full py-2 px-3 rounded-lg text-xs font-bold text-center flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                              className={`w-full py-2 px-3 rounded-lg text-xs font-bold text-center flex items-center justify-center gap-1 transition active:scale-95 ${
                                 isPop
                                   ? 'bg-[#2D6A4F] hover:bg-[#1b4332] text-white shadow-sm'
-                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-800'
                               }`}
                             >
-                              <span>{isEn ? 'Choose This Pass' : 'Chọn gói này'}</span>
+                              <span>{isEn ? 'Select Pass' : 'Chọn gói này'}</span>
                               <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
                             </a>
                           </div>
@@ -1058,63 +899,34 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                     </div>
                   </div>
 
-                  {/* 5. Primary Action Buttons & Hotline Support */}
-                  <div className="pt-2 border-t border-slate-200 space-y-4">
-                    <div className="flex flex-col sm:flex-row gap-3">
+                  {/* 3. Action Toolbar & Hotline */}
+                  <div className="pt-2 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div className="flex flex-wrap items-center gap-2 w-full sm:w-auto">
                       <a
                         href={membershipAction.href}
-                        className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-[#2D6A4F] to-[#40916C] hover:from-[#1b4332] hover:to-[#2D6A4F] text-white text-xs sm:text-sm font-bold text-center flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition active:scale-98"
+                        className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-[#2D6A4F] hover:bg-[#1b4332] text-white text-xs font-bold text-center inline-flex items-center justify-center gap-1.5 shadow-sm transition"
                       >
-                        <span className="material-symbols-outlined text-[18px]">loyalty</span>
-                        <span>{isEn ? 'View All Membership Packages' : 'Xem chi tiết & Đăng ký gói tập'}</span>
-                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                        <span className="material-symbols-outlined text-[16px]">visibility</span>
+                        <span>{isEn ? 'View All Packages' : 'Xem tất cả gói tập'}</span>
                       </a>
                       <a
-                        href={isMember ? '#/member/schedule' : '#/login?next=schedule'}
-                        className="py-3 px-5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs sm:text-sm font-bold text-center flex items-center justify-center gap-2 shadow-sm transition active:scale-98"
+                        href={isMember ? '#/member/schedule' : '#khoa-hoc'}
+                        className="flex-1 sm:flex-none py-2 px-4 rounded-lg bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs font-bold text-center inline-flex items-center justify-center gap-1.5 transition"
                       >
-                        <span className="material-symbols-outlined text-[18px] text-blue-600">calendar_month</span>
-                        <span>{isEn ? 'Center-Wide Timetable' : 'Xem thời khóa biểu trung tâm'}</span>
+                        <span className="material-symbols-outlined text-[16px] text-blue-600">calendar_month</span>
+                        <span>{isEn ? 'Class Timetable' : 'Xem lịch mở ca'}</span>
                       </a>
                     </div>
 
-                    {/* Support Callout Box */}
-                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
-                      <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
-                          <span className="material-symbols-outlined text-[18px]">support_agent</span>
-                        </div>
-                        <div>
-                          <p className="font-bold text-slate-800">
-                            {isEn ? 'Need assistance booking or matching a team?' : 'Cần tư vấn chọn gói hoặc hỗ trợ ghép đội?'}
-                          </p>
-                          <p className="text-[11px] text-slate-500">
-                            {isEn ? 'Contact our receptionists directly for fast court reservation.' : 'Chuyên viên lễ tân luôn sẵn sàng hỗ trợ giữ ca và tư vấn 24/7.'}
-                          </p>
-                        </div>
+                    {contactPhone && (
+                      <div className="text-[11.5px] text-slate-500 flex items-center gap-1.5">
+                        <span>{isEn ? 'Need advice?' : 'Cần tư vấn?'}</span>
+                        <a href={`tel:${contactPhone}`} className="font-bold text-emerald-700 hover:underline inline-flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px]">call</span>
+                          <span>{contactPhone}</span>
+                        </a>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
-                        {contactPhone && (
-                          <a
-                            href={`tel:${contactPhone}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:text-emerald-700 hover:border-emerald-400 font-bold text-xs shadow-sm transition"
-                          >
-                            <span className="material-symbols-outlined text-[14px] text-emerald-600">call</span>
-                            <span>{contactPhone}</span>
-                          </a>
-                        )}
-                        {contactEmail && (
-                          <a
-                            href={`mailto:${contactEmail}`}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:text-blue-700 hover:border-blue-400 font-bold text-xs shadow-sm transition"
-                            title={contactEmail}
-                          >
-                            <span className="material-symbols-outlined text-[14px] text-blue-600">mail</span>
-                            <span>{isEn ? 'Email Support' : 'Gửi Email'}</span>
-                          </a>
-                        )}
-                      </div>
-                    </div>
+                    )}
                   </div>
                 </div>
               )}
