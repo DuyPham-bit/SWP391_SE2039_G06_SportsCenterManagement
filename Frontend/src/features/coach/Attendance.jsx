@@ -23,14 +23,6 @@ const getAttendanceStatuses = (isEn) => ({
     statClass: 'bg-rose-50 text-rose-800 border-rose-200',
     dotClass: 'bg-rose-500'
   },
-  LATE: {
-    label: isEn ? 'Late' : 'Đến muộn',
-    icon: 'schedule',
-    activeClass: 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-500/30 font-bold',
-    inactiveClass: 'bg-white hover:bg-amber-50 hover:text-amber-700 text-slate-700 border-slate-200',
-    statClass: 'bg-amber-50 text-amber-800 border-amber-200',
-    dotClass: 'bg-amber-500'
-  },
   EXCUSED: {
     label: isEn ? 'Excused' : 'Vắng có phép',
     icon: 'event_available',
@@ -319,14 +311,25 @@ export function Attendance() {
         setMembers(roster);
         setRecords(
           Object.fromEntries(
-            roster.map(m => [
-              m.memberId,
-              {
-                memberId: m.memberId,
-                status: m.attendanceStatus || '',
-                note: m.note || ''
+            roster.map(m => {
+              let status = m.attendanceStatus || '';
+              let note = m.note || '';
+              // Nếu dữ liệu cũ có status LATE, chuẩn hóa thành PRESENT và ghi nhận vào note
+              if (status === 'LATE') {
+                status = 'PRESENT';
+                if (!note) {
+                  note = 'Đến muộn';
+                }
               }
-            ])
+              return [
+                m.memberId,
+                {
+                  memberId: m.memberId,
+                  status,
+                  note
+                }
+              ];
+            })
           )
         );
       })
@@ -401,6 +404,30 @@ export function Attendance() {
         note
       }
     }));
+  };
+
+  // Ghi nhận Đến muộn vào phần ghi chú (Tự động chuyển trạng thái thành Có mặt)
+  const handleToggleLateNote = (memberId, minutes = 15) => {
+    if (!canAttendSession(activeSession)) return;
+    setRecords(prev => {
+      const cur = prev[memberId] || { memberId, status: '', note: '' };
+      const noteText = cur.note || '';
+      let newNote = '';
+      if (noteText.includes('Đến muộn')) {
+        newNote = noteText.replace(/Đến muộn(\s*\d+\s*(phút|p))?\.?,?\s*/gi, '').trim();
+      } else {
+        const lateSnippet = minutes ? `Đến muộn ${minutes} phút.` : 'Đến muộn.';
+        newNote = noteText ? `${lateSnippet} ${noteText}` : lateSnippet;
+      }
+      return {
+        ...prev,
+        [memberId]: {
+          ...cur,
+          status: cur.status || 'PRESENT',
+          note: newNote
+        }
+      };
+    });
   };
 
   // Quick batch actions
@@ -590,10 +617,9 @@ export function Attendance() {
     const values = Object.values(records);
     const present = values.filter(r => r.status === 'PRESENT').length;
     const absent = values.filter(r => r.status === 'ABSENT').length;
-    const late = values.filter(r => r.status === 'LATE').length;
     const excused = values.filter(r => r.status === 'EXCUSED').length;
-    const unmarked = members.length - (present + absent + late + excused);
-    return { present, absent, late, excused, unmarked: Math.max(0, unmarked), total: members.length };
+    const unmarked = members.length - (present + absent + excused);
+    return { present, absent, excused, unmarked: Math.max(0, unmarked), total: members.length };
   }, [records, members]);
 
   // Filtered members in attendance roster
@@ -1351,7 +1377,7 @@ export function Attendance() {
         {activeSession && !memberError && (
           <div className="space-y-4">
             {/* Stat Cards */}
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
                 <span className="text-[11px] font-bold text-slate-500 block">{isEn ? 'Total Students' : 'Tổng học viên'}</span>
                 <span className="font-chivo text-2xl font-black text-slate-900 mt-1 block">
@@ -1461,19 +1487,6 @@ export function Attendance() {
               >
                 {isEn ? 'Absent' : 'Vắng'} ({stats.absent})
               </button>
-              <button
-                type="button"
-                onClick={() => setFilterRosterStatus('LATE')}
-                className={`px-3 py-1 rounded-lg transition-all ${
-                  filterRosterStatus === 'LATE'
-                    ? 'bg-amber-500 text-white'
-                    : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
-                }`}
-              >
-                {isEn ? 'Late' : 'Muộn'} ({stats.late})
-              </button>
-              <button
-                type="button"
                 onClick={() => setFilterRosterStatus('EXCUSED')}
                 className={`px-3 py-1 rounded-lg transition-all ${
                   filterRosterStatus === 'EXCUSED'
@@ -1578,17 +1591,60 @@ export function Attendance() {
                       })}
                     </div>
 
-                    {/* Note Field */}
-                    <div className="lg:w-72">
-                      <input
-                        type="text"
-                        maxLength={500}
-                        placeholder={isEn ? "Notes (e.g. 15m late, good effort...)" : "Ghi chú (ví dụ: đến muộn 15p, tập tốt...)"}
-                        disabled={!canAttend || saving}
-                        value={currentRecord.note || ''}
-                        onChange={e => handleNoteChange(m.memberId, e.target.value)}
-                        className={`${coachInput} text-xs py-1.5`}
-                      />
+                    {/* Note Field & Quick Late Tag */}
+                    <div className="lg:w-80 space-y-1">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="text"
+                          maxLength={500}
+                          placeholder={isEn ? "Notes (e.g. 5m late, good effort...)" : "Ghi chú (VD: Đến muộn 5 phút, tập tốt...)"}
+                          disabled={!canAttend || saving}
+                          value={currentRecord.note || ''}
+                          onChange={e => handleNoteChange(m.memberId, e.target.value)}
+                          className={`${coachInput} text-xs py-1.5 flex-1`}
+                        />
+                        <button
+                          type="button"
+                          disabled={!canAttend || saving}
+                          onClick={() => handleToggleLateNote(m.memberId, 15)}
+                          className={`px-2 py-1.5 rounded-lg text-[11px] font-bold border transition-colors flex items-center gap-1 shrink-0 cursor-pointer ${
+                            currentRecord.note?.includes('Đến muộn')
+                              ? 'bg-amber-100 text-amber-800 border-amber-300 font-extrabold shadow-2xs'
+                              : 'bg-slate-50 hover:bg-amber-50 text-slate-600 hover:text-amber-800 border-slate-200'
+                          }`}
+                          title={isEn ? "Mark Present and add Late note" : "Đánh dấu Có mặt và ghi chú Đến muộn"}
+                        >
+                          <span className="material-symbols-outlined text-[13px]">schedule</span>
+                          <span>{isEn ? '+ Late' : '+ Muộn'}</span>
+                        </button>
+                      </div>
+
+                      {/* Quick late minute chips if note has Đến muộn */}
+                      {currentRecord.note?.includes('Đến muộn') && (
+                        <div className="flex items-center gap-1 text-[10px] pl-1 animate-fadeIn">
+                          <span className="text-slate-400 font-semibold">{isEn ? 'Time:' : 'Thời gian:'}</span>
+                          {[5, 10, 15, 30].map(mins => (
+                            <button
+                              key={mins}
+                              type="button"
+                              disabled={!canAttend || saving}
+                              onClick={() => {
+                                const cleaned = (currentRecord.note || '').replace(/Đến muộn(\s*\d+\s*(phút|p))?\.?,?\s*/gi, '').trim();
+                                const note = cleaned ? `Đến muộn ${mins} phút. ${cleaned}` : `Đến muộn ${mins} phút.`;
+                                handleNoteChange(m.memberId, note);
+                              }}
+                              className={`px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
+                                currentRecord.note?.includes(`${mins} phút`)
+                                  ? 'bg-amber-200 text-amber-900 border-amber-400 font-bold'
+                                  : 'bg-white hover:bg-slate-100 text-slate-600 border-slate-200'
+                              }`}
+                            >
+                              {mins}p
+                            </button>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                     </div>
                   </div>
                 </article>

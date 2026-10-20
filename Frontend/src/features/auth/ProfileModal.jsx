@@ -179,7 +179,7 @@ export function ProfileModal({ isOpen, onClose }) {
             />
           </div>
 
-          {currentUser?.packageName && (
+          {currentUser?.role === 'MEMBER' && currentUser?.packageName && (
             <div className="p-3 rounded-lg bg-[#81B29A]/10 border border-[#81B29A]/30 flex items-center justify-between text-xs">
               <div>
                 <span className="font-bold text-slate-800">

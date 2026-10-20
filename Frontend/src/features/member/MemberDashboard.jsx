@@ -524,6 +524,12 @@ export function MemberDashboard() {
             <a
               key={item.href}
               href={item.href}
+              onClick={(e) => {
+                if (item.isAiPopup) {
+                  e.preventDefault();
+                  window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
+                }
+              }}
               className="group relative p-3.5 bg-white dark:bg-slate-900 hover:bg-[#FAF8F5]/80 dark:hover:bg-slate-800/80 border border-slate-200/90 dark:border-slate-800 hover:border-[#81B29A]/50 dark:hover:border-[#81B29A]/40 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between active:scale-[0.98] hover-lift"
             >
               <div className="flex items-start justify-between">

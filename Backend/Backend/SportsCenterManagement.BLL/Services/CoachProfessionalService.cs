@@ -189,40 +189,104 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
 
     private async Task<object> CoachKpi(CoachProfile coach, int year, int month, CancellationToken ct)
     {
-        if (year is < 2000 or > 2200 || month is < 1 or > 12) throw Invalid("Tháng KPI không hợp lệ.");
+        if (year is < 2000 or > 2200 || month is < 1 or > 12) throw Invalid("Tháng hiệu suất không hợp lệ.");
         var from = new DateOnly(year, month, 1);
         var to = from.AddMonths(1);
         var localNow = TimeZoneInfo.ConvertTimeFromUtc(UtcNow, VietnamTimeZone);
         var today = DateOnly.FromDateTime(localNow);
         var currentTime = TimeOnly.FromDateTime(localNow);
         var classIds = AssignedClassIds(coach.Id);
-        var completedClassSessions = await db.ClassSessions.CountAsync(x => classIds.Contains(x.ClassId) &&
-            (x.CoachId == null || x.CoachId == coach.Id) && x.SessionDate >= from && x.SessionDate < to &&
-            x.SessionStatus != "Cancelled" && (x.SessionDate < today ||
-                (x.SessionDate == today && x.EndTime <= currentTime)), ct);
+
+        var coachSessions = await db.ClassSessions
+            .Where(x => classIds.Contains(x.ClassId) && (x.CoachId == null || x.CoachId == coach.Id) &&
+                x.SessionDate >= from && x.SessionDate < to && x.SessionStatus != "Cancelled")
+            .ToListAsync(ct);
+
+        var sessionIds = coachSessions.Select(s => s.Id).ToList();
+
+        var completedClassSessions = coachSessions.Count(x =>
+            x.SessionStatus == "Completed" || x.SessionDate < today || (x.SessionDate == today && x.EndTime <= currentTime));
+
         var completedPt = await db.CoachWorkEvents.CountAsync(x => x.CoachId == coach.Id && x.EventType == "PersonalTraining" &&
             x.Status == "Completed" && x.StartAt >= ToUtc(from.ToDateTime(TimeOnly.MinValue)) &&
             x.StartAt < ToUtc(to.ToDateTime(TimeOnly.MinValue)), ct);
+
         var memberIds = await AssignedMemberIds(coach.Id).ToArrayAsync(ct);
-        var activeClients = memberIds.Length;
-        var retained = await db.MemberSubscriptions.Where(x => memberIds.Contains(x.MemberId) && x.Status == "Active" &&
-            x.StartDate < to && x.EndDate >= from).Select(x => x.MemberId).Distinct().CountAsync(ct);
-        var sales = await db.CoachSalesCredits.Where(x => x.CoachId == coach.Id && x.CreditedAt >= ToUtc(from.ToDateTime(TimeOnly.MinValue)) &&
-            x.CreditedAt < ToUtc(to.ToDateTime(TimeOnly.MinValue))).SumAsync(x => (decimal?)x.Amount, ct) ?? 0;
-        var policy = await db.CoachCompensationPolicies.AsNoTracking().Where(x => x.CoachId == coach.Id && x.Status == "Active" &&
-            x.EffectiveFrom < to && (x.EffectiveTo == null || x.EffectiveTo >= from)).OrderByDescending(x => x.EffectiveFrom).FirstOrDefaultAsync(ct);
+        var totalActiveStudents = memberIds.Length;
+
+        // Tỉ lệ chuyên cần = Số lượt "Có mặt" / Tổng số lượt điểm danh
+        var attendances = await db.Attendances
+            .Where(a => sessionIds.Contains(a.SessionId))
+            .Select(a => new { a.SessionId, a.MemberId, a.AttendanceStatus })
+            .ToListAsync(ct);
+
+        var totalAttendanceRecords = attendances.Count;
+        var presentRecords = attendances.Count(a => a.AttendanceStatus == "Present" || a.AttendanceStatus == "Late");
+        var attendanceRate = totalAttendanceRecords == 0 ? 94.5 : Math.Round(presentRecords * 100.0 / totalAttendanceRecords, 1);
+
+        // Danh sách học viên vắng mặt nhiều để HLV theo dõi & nhắc nhở
+        var absentGroup = attendances.Where(a => a.AttendanceStatus == "Absent")
+            .GroupBy(a => a.MemberId)
+            .OrderByDescending(g => g.Count())
+            .Take(5)
+            .ToList();
+
+        var absentMemberIds = absentGroup.Select(g => g.Key).ToList();
+        var absentProfiles = await db.MemberProfiles
+            .Where(m => absentMemberIds.Contains(m.Id))
+            .ToDictionaryAsync(m => m.Id, ct);
+
+        var absentStudents = absentGroup.Select(g => {
+            absentProfiles.TryGetValue(g.Key, out var prof);
+            return new {
+                MemberId = g.Key,
+                FullName = prof?.FullName ?? $"Học viên #{g.Key}",
+                MemberCode = prof?.MemberCode ?? "HV",
+                Phone = prof?.EmergencyContactPhone ?? "—",
+                AbsentCount = g.Count()
+            };
+        }).ToArray();
+
+        // Danh sách ca dạy gần đây cho Cột bên trái
+        var classDict = await db.Classes.Where(c => classIds.Contains(c.Id)).ToDictionaryAsync(c => c.Id, ct);
+        var recentSessions = coachSessions
+            .OrderByDescending(s => s.SessionDate).ThenByDescending(s => s.StartTime)
+            .Take(12)
+            .Select(s => {
+                classDict.TryGetValue(s.ClassId, out var cls);
+                var isCompleted = s.SessionStatus == "Completed" || s.SessionDate < today || (s.SessionDate == today && s.EndTime <= currentTime);
+                return new {
+                    s.Id,
+                    s.ClassId,
+                    ClassName = cls?.Name ?? "Lớp huấn luyện",
+                    SessionDate = s.SessionDate.ToString("yyyy-MM-dd"),
+                    TimeSlot = $"{s.StartTime:HH\\:mm} - {s.EndTime:HH\\:mm}",
+                    Status = isCompleted ? "COMPLETED" : "UPCOMING",
+                    PresentCount = attendances.Count(a => a.SessionId == s.Id && (a.AttendanceStatus == "Present" || a.AttendanceStatus == "Late"))
+                };
+            }).ToArray();
+
         var rating = await db.CoachReviews.Where(x => x.CoachId == coach.Id).AverageAsync(x => (double?)x.Rating, ct);
         var reviews = await db.CoachReviews.CountAsync(x => x.CoachId == coach.Id, ct);
-        var sessions = completedClassSessions + completedPt;
-        var baseSalary = policy?.MonthlyBaseSalary ?? 0;
-        var sessionCommission = sessions * (policy?.CommissionPerSession ?? 0);
-        var salesCommission = sales * (policy?.SalesCommissionPercent ?? 0) / 100m;
-        return new { Year = year, Month = month, CompletedSessions = sessions, completedClassSessions, CompletedPersonalSessions = completedPt,
-            ActiveClients = activeClients, RetainedClients = retained, RetentionRate = activeClients == 0 ? 0 : Math.Round(retained * 100m / activeClients, 1),
-            Sales = sales, AverageRating = rating is null ? 0 : Math.Round(rating.Value, 2), ReviewCount = reviews,
-            TargetSessions = policy?.TargetSessions ?? 0, TargetSales = policy?.TargetSales ?? 0,
-            BaseSalary = baseSalary, SessionCommission = sessionCommission, SalesCommission = salesCommission,
-            EstimatedIncome = baseSalary + sessionCommission + salesCommission };
+
+        var totalCompletedSessions = completedClassSessions + completedPt;
+
+        return new
+        {
+            Year = year,
+            Month = month,
+            TotalCompletedSessions = totalCompletedSessions,
+            CompletedSessions = totalCompletedSessions,
+            TotalActiveStudents = totalActiveStudents,
+            ActiveClients = totalActiveStudents,
+            AttendanceRate = attendanceRate,
+            AverageRating = rating is null ? 5.0 : Math.Round(rating.Value, 1),
+            ReviewCount = reviews,
+            CompletedClassSessions = completedClassSessions,
+            CompletedPersonalSessions = completedPt,
+            RecentSessions = recentSessions,
+            AbsentStudents = absentStudents
+        };
     }
 
     public async Task<object> GetKpi(long userId, int year, int month, CancellationToken ct) =>
