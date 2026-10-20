@@ -200,7 +200,7 @@ export function MemberLookup() {
         <button
           type="submit"
           disabled={searching}
-          className="px-6 py-2.5 bg-[#1E2235] hover:bg-[#2B2D42] text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all hover-lift shrink-0 cursor-pointer disabled:opacity-50"
+          className="px-6 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all hover-lift shrink-0 cursor-pointer disabled:opacity-50"
         >
           {searching ? (isEn ? 'Searching...' : 'Đang tra cứu...') : (isEn ? 'Search' : 'Tra Cứu')}
         </button>
@@ -434,7 +434,7 @@ export function MemberLookup() {
 
                     <a
                       href={`#/receptionist/check-in?query=${encodeURIComponent(selectedMember.memberCode || selectedMember.phone || '')}`}
-                      className="px-5 py-2.5 bg-[#1E2235] hover:bg-[#2B2D42] text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-2 hover-lift"
+                      className="px-5 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-2 hover-lift"
                     >
                       <span className="material-symbols-outlined text-[18px]">how_to_reg</span>
                       <span>{isEn ? 'Check-in Now' : 'Check-in Ngay'}</span>

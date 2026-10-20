@@ -446,7 +446,7 @@ Gồm 4 màn hình phục vụ trực tiếp tại bàn lễ tân:
 - **Quy trình thanh toán 4 bước trực quan:**
   - **Bước 1 (Chọn hội viên):** Chọn từ danh sách hoặc tìm kiếm nhanh.
   - **Bước 2 (Chọn gói tập):** Hiển thị danh mục gói tập kèm giá tiền và thời hạn.
-  - **Bước 3 (Thanh toán):** Chọn *Tiền mặt* để thu tại quầy hoặc *VNPay Sandbox* để mở cửa sổ thanh toán trực tuyến và chờ backend xác minh callback.
+  - **Bước 3 (Thanh toán):** Chọn *Tiền mặt* để thu tại quầy hoặc *VNPay* để mở cửa sổ thanh toán trực tuyến và chờ backend xác minh callback.
   - **Bước 4 (Biên nhận & Kích hoạt):** Gọi `receptionApi.registerCounterPackage` -> Tự động sinh mã giao dịch `TXN-xxxxxx`, cập nhật thời hạn mới cho hội viên, in/hiển thị biên nhận thành công.
 
 ### 8.4 UC-22 Check-in Quét Thẻ Vào Sân (Member Check-In)

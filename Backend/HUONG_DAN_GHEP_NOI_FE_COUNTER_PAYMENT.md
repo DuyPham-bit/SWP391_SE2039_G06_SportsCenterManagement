@@ -1,6 +1,6 @@
 # Tích hợp thanh toán tại quầy
 
-Tài liệu này mô tả hợp đồng hiện tại của backend .NET 10. Thu trực tiếp qua `counter-checkout` vẫn hỗ trợ `CASH` và `POS`; màn hình đăng ký gói tại quầy dùng `CASH` hoặc endpoint VNPay Sandbox riêng.
+Tài liệu này mô tả hợp đồng hiện tại của backend .NET 10. Thu trực tiếp qua `counter-checkout` vẫn hỗ trợ `CASH` và `POS`; màn hình đăng ký gói tại quầy dùng `CASH` hoặc endpoint VNPay riêng.
 
 ## Endpoint
 
@@ -35,7 +35,7 @@ Content-Type: application/json
 }
 ```
 
-`paymentMethod` chỉ nhận `CASH` hoặc `POS`. `amountReceived` là số tiền khách đưa. CASH được thu một phần hoặc thừa tiền; backend chỉ ghi số tiền đến hạn, tính tiền thối và chỉ kích hoạt subscription khi hóa đơn đã được trả đủ. POS cần mã chuẩn chi và phải thu đúng toàn bộ giá gói. Giá và thời hạn luôn lấy từ database. Để mở VNPay Sandbox cho hội viên được chọn, gửi `memberId`, `packageId` và `cancelPendingIfAny` tới `POST /api/payments/counter-vnpay-url` cùng `Idempotency-Key`; backend chỉ cho phép hội viên/gói thuộc trung tâm của nhân viên.
+`paymentMethod` chỉ nhận `CASH` hoặc `POS`. `amountReceived` là số tiền khách đưa. CASH được thu một phần hoặc thừa tiền; backend chỉ ghi số tiền đến hạn, tính tiền thối và chỉ kích hoạt subscription khi hóa đơn đã được trả đủ. POS cần mã chuẩn chi và phải thu đúng toàn bộ giá gói. Giá và thời hạn luôn lấy từ database. Để mở VNPay cho hội viên được chọn, gửi `memberId`, `packageId` và `cancelPendingIfAny` tới `POST /api/payments/counter-vnpay-url` cùng `Idempotency-Key`; backend chỉ cho phép hội viên/gói thuộc trung tâm của nhân viên.
 
 Phản hồi thành công gồm `invoiceNumber`, `invoiceStatus`, `amount`, `amountReceived`, `amountPaid`, `outstandingBalance`, `changeDue`, thông tin hội viên và gói. Có thể dùng `invoiceNumber` để gọi GET hóa đơn và in/xuất lại biên nhận.
 

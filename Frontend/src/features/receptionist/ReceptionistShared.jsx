@@ -3,7 +3,7 @@ import { receptionApi } from '../../services/api.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 export const counterInput = 'w-full min-w-0 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-900 px-3.5 py-2.5 text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#81B29A]/30 focus:border-[#81B29A] transition-all shadow-xs';
-export const counterButton = 'inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] active:scale-[0.98] px-4 py-2.5 text-sm font-bold text-white transition-all shadow-sm hover-lift disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
+export const counterButton = 'inline-flex items-center justify-center gap-1.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] active:scale-[0.98] px-4 py-2.5 text-sm font-bold text-white transition-all shadow-sm hover-lift disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer';
 export const counterQuery = () => new URLSearchParams(window.location.hash.split('?')[1] || '').get('query') || '';
 
 export function CounterError({ message, retry }) {

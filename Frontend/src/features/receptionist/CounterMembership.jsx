@@ -192,8 +192,8 @@ export function CounterMembership() {
           </h1>
           <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
             {isEn
-              ? 'Select a member and package, then collect cash or open the VNPay Sandbox checkout.'
-              : 'Chọn thành viên và gói tập, sau đó thu tiền mặt hoặc mở cổng VNPay Sandbox.'}
+              ? 'Select a member and package, then collect cash or open the VNPay checkout.'
+              : 'Chọn thành viên và gói tập, sau đó thu tiền mặt hoặc mở cổng VNPay.'}
           </p>
         </div>
 
@@ -269,7 +269,7 @@ export function CounterMembership() {
             <button
               type="submit"
               disabled={memberSearchLoading}
-              className="rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] px-5 py-2.5 text-xs font-bold text-white uppercase font-chivo tracking-wider disabled:opacity-50 cursor-pointer hover-lift transition-all"
+              className="rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] px-5 py-2.5 text-xs font-bold text-white uppercase font-chivo tracking-wider disabled:opacity-50 cursor-pointer hover-lift transition-all"
             >
               {memberSearchLoading ? (isEn ? 'Searching...' : 'Đang tìm...') : (isEn ? 'Search' : 'Tìm hội viên')}
             </button>
@@ -398,7 +398,7 @@ export function CounterMembership() {
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 max-w-2xl mx-auto hover-lift transition-all">
           <h2 className="font-chivo text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-[#1E2235] text-white flex items-center justify-center text-xs font-black">3</span>
-            {isEn ? 'Counter Payment & VNPay Sandbox' : 'Xác Nhận & Thanh Toán Tại Quầy'}
+            {isEn ? 'Counter Payment & VNPay' : 'Xác Nhận & Thanh Toán Tại Quầy'}
           </h2>
 
           {/* Invoice Summary Box */}
@@ -443,7 +443,7 @@ export function CounterMembership() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { id: 'TIỀN MẶT', label: isEn ? 'CASH' : 'TIỀN MẶT', icon: 'payments' },
-                { id: 'VNPAY', label: 'VNPAY SANDBOX', icon: 'qr_code_2' }
+                { id: 'VNPAY', label: 'VNPAY', icon: 'qr_code_2' }
               ].map(m => (
                 <button
                   key={m.id}
@@ -487,8 +487,8 @@ export function CounterMembership() {
                 <span className="material-symbols-outlined text-[20px] text-blue-600 shrink-0">verified_user</span>
                 <p className="leading-relaxed">
                   {isEn
-                    ? 'VNPay Sandbox opens in a secure payment window. The package activates only after the backend verifies the gateway response.'
-                    : 'VNPay Sandbox sẽ mở trong cửa sổ thanh toán riêng. Gói tập chỉ được kích hoạt sau khi backend xác minh phản hồi từ cổng.'}
+                    ? 'Pay with VNPay in a separate window. Your membership package will activate once payment is successful.'
+                    : 'Thanh toán qua VNPay trong cửa sổ riêng. Gói tập sẽ được kích hoạt khi thanh toán thành công.'}
                 </p>
               </div>
             )}
@@ -557,7 +557,7 @@ export function CounterMembership() {
               </span>
               <span>{processing
                 ? (paymentMethod === 'VNPAY' ? (isEn ? 'Connecting VNPay...' : 'Đang kết nối VNPay...') : (isEn ? 'Processing...' : 'Đang ghi nhận...'))
-                : (paymentMethod === 'VNPAY' ? (isEn ? 'Open VNPay Sandbox' : 'Mở VNPay Sandbox') : (isEn ? 'Confirm Payment' : 'Xác nhận khoản thu'))}</span>
+                : (paymentMethod === 'VNPAY' ? (isEn ? 'Open VNPay' : 'Mở VNPay') : (isEn ? 'Confirm Payment' : 'Xác nhận khoản thu'))}</span>
             </button>
           </div>
         </div>
@@ -626,7 +626,7 @@ export function CounterMembership() {
           <div className="flex flex-wrap justify-center gap-3 pt-2">
             <a
               href={`#/receptionist/invoices?query=${encodeURIComponent(receiptData.invoiceNumber)}`}
-              className="rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] px-5 py-2.5 text-xs font-bold text-white uppercase font-chivo tracking-wider transition-all hover-lift shadow-sm"
+              className="rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] px-5 py-2.5 text-xs font-bold text-white uppercase font-chivo tracking-wider transition-all hover-lift shadow-sm"
             >
               {isEn ? 'View / Print Invoice' : 'Xem / In hóa đơn'}
             </a>

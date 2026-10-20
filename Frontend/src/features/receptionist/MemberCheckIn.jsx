@@ -258,7 +258,7 @@ export function MemberCheckIn() {
                 <button
                   type="button"
                   onClick={() => setOverrideModalOpen(true)}
-                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] text-white text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-sm hover-lift cursor-pointer"
+                  className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-sm hover-lift cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px] text-[#F2CC8F]">verified_user</span>
                   <span>{isEn ? 'Request Exception Review' : 'Gửi yêu cầu xử lý ngoại lệ'}</span>
@@ -321,7 +321,7 @@ export function MemberCheckIn() {
               <button
                 type="submit"
                 disabled={processing}
-                className="px-5 py-2 text-xs font-bold text-white bg-[#1E2235] hover:bg-[#2B2D42] rounded-lg shadow-sm hover-lift cursor-pointer disabled:opacity-50"
+                className="px-5 py-2 text-xs font-bold text-white bg-[#2D6A4F] hover:bg-[#1B4332] rounded-lg shadow-sm hover-lift cursor-pointer disabled:opacity-50"
               >
                 {processing ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'SUBMIT REQUEST' : 'LƯU YÊU CẦU')}
               </button>

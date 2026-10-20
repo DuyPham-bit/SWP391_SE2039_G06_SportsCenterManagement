@@ -79,7 +79,7 @@ test('ambiguous member and API failures cannot fabricate a successful local reco
   await assert.rejects(unavailable.receptionApi.requestCheckInReview('MB-1', 'Lý do', 'Quản lý'), /SQL unavailable/);
 });
 
-test('counter VNPay Sandbox checkout sends the selected member to the staff-scoped endpoint', async () => {
+test('counter VNPay checkout sends the selected member to the staff-scoped endpoint', async () => {
   const f = loadApi(() => ({ paymentUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html' }));
   const result = await f.receptionApi.createCounterVnPayUrl({
     memberId: 21,

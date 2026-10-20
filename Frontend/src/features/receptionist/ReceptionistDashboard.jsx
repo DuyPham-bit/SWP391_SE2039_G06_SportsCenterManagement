@@ -133,8 +133,8 @@ export function ReceptionistDashboard() {
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
                 {isEn
-                  ? 'Collect cash or open VNPay Sandbox checkout, then track the verified invoice status.'
-                  : 'Thu tiền mặt hoặc mở VNPay Sandbox, sau đó theo dõi trạng thái hóa đơn đã xác minh.'}
+                  ? 'Collect cash or open VNPay checkout, then track the verified invoice status.'
+                  : 'Thu tiền mặt hoặc mở VNPay, sau đó theo dõi trạng thái hóa đơn đã xác minh.'}
               </p>
             </div>
           </a>

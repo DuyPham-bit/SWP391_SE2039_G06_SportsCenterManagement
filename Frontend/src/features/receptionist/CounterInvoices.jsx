@@ -280,7 +280,7 @@ export function CounterInvoices() {
                         type="button"
                         aria-haspopup="dialog"
                         aria-label={isEn ? `View invoice ${row.invoiceNumber}` : `Xem hóa đơn ${row.invoiceNumber}`}
-                        className="px-4 py-2 bg-[#1E2235] hover:bg-[#2B2D42] text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer disabled:opacity-50"
+                        className="px-4 py-2 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer disabled:opacity-50"
                         disabled={busy || opening}
                         onClick={() => open(row.invoiceNumber)}
                       >
