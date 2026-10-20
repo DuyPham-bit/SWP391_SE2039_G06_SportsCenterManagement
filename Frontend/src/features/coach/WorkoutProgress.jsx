@@ -5,6 +5,7 @@ import { Modal } from '../../components/common/Modal.jsx';
 import { CoachError, CoachPeriod, coachInput, useTeachingSessions } from './CoachShared.jsx';
 import { canRecordSession, metricChanges } from './coachOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translateClassName, translateSportName } from '../../services/i18nHelper.js';
 
 export function WorkoutProgress() {
   const { language } = useLanguage();
@@ -133,7 +134,11 @@ export function WorkoutProgress() {
                 {!classes.length && (
                   <option value="">{isEn ? 'No assigned classes' : 'Chưa được phân công lớp'}</option>
                 )}
-                {classes.map(c => <option key={c.id} value={c.id}>[{c.sportName}] {c.name}</option>)}
+                {classes.map(c => (
+                  <option key={c.id} value={c.id}>
+                    [{translateSportName(c.sportName, isEn)}] {translateClassName(c.name, isEn)}
+                  </option>
+                ))}
               </select>
             </label>
 

@@ -6,6 +6,7 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { CoachError } from './CoachShared.jsx';
 import { calendarWindow, currency, localDateKey, mergeCoachCalendar, tdeeEstimate } from './coachProfessionalView.js';
+import { translateClassName, translateSportName, translateRoomName } from '../../services/i18nHelper.js';
 
 // Unified input and button styles in SCMS Olympic Arena design system
 const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#81B29A] dark:focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 dark:focus:ring-[#81B29A]/30 outline-none transition-all shadow-2xs';
@@ -198,7 +199,7 @@ export function CoachProfessionalHub() {
                 {isEn ? 'Average Rating' : 'Đánh giá TB'}
               </span>
               <span className="text-lg font-black text-amber-300 flex items-center gap-1">
-                ★ {kpiData.averageRating || '5.0'}
+                ★ {kpiData.reviewCount > 0 ? kpiData.averageRating : '—'}
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
@@ -1028,7 +1029,7 @@ function ProgramsTab({ data, act, working, isEn }) {
               <select value={planClass} onChange={e => setPlanClass(e.target.value)} required className={selectClass}>
                 <option value="">{isEn ? '-- Select Class --' : '-- Chọn lớp --'}</option>
                 {availableClasses.map(x => (
-                  <option key={x.id} value={x.id}>{x.name}</option>
+                  <option key={x.id} value={x.id}>{translateClassName(x.name, isEn)}</option>
                 ))}
               </select>
             </FormField>
@@ -1443,7 +1444,7 @@ function PerformanceTab({ data, isEn }) {
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xs">
           <span className="text-[10px] font-bold uppercase text-slate-400 block">{isEn ? 'Average Rating' : 'Đánh giá trung bình'}</span>
           <span className="text-2xl font-black text-amber-500 mt-1 block">
-            ★ {k.averageRating || '5.0'}/5
+            ★ {k.reviewCount > 0 ? k.averageRating : '—'}/5
           </span>
           <span className="text-xs text-slate-500 mt-1 block">{isEn ? `${k.reviewCount || 0} student reviews` : `${k.reviewCount || 0} lượt nhận xét`}</span>
         </div>

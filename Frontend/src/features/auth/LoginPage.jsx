@@ -1,17 +1,16 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
-import { SUPPORTED_SPORTS } from '../../services/sportsCatalog.js';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 import { loadGoogleIdentity, googleClientId } from '../../services/googleIdentity.js';
 import { AuthField } from './AuthField.js';
 import { ForgotPasswordModal } from './ForgotPasswordModal.js';
 import { GoogleLoginModal } from './GoogleLoginModal.js';
 import { Logo } from '../../components/common/Logo.jsx';
+import { getMembershipIntent, getPostLoginRoute } from '../../services/membershipEntry.js';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const FACILITY_COUNT = new Set(SUPPORTED_SPORTS.map(sport => sport.facilityId)).size;
 
 function readRememberedEmail() {
   try {
@@ -30,22 +29,13 @@ function saveRememberedEmail(email) {
   }
 }
 
-function redirectToRoleDashboard(role) {
-  const normalized = String(role || '').toUpperCase();
-  const routes = {
-    SYSTEMADMIN: '#/manager/dashboard',
-    ADMIN: '#/manager/dashboard',
-    MANAGER: '#/manager/dashboard',
-    RECEPTIONIST: '#/receptionist/dashboard',
-    COACH: '#/coach/dashboard',
-    MEMBER: '#/member/dashboard'
-  };
-  window.location.hash = routes[normalized] || '#/';
-}
-
 export function LoginPage() {
   const { login, register, logout, loginWithGoogle, isAuthenticated, role } = useAuth();
   const { showSuccess, showError } = useToast();
+  const membershipIntent = useRef(getMembershipIntent(window.location.hash));
+  const redirectToRoleDashboard = role => {
+    window.location.hash = getPostLoginRoute(role, membershipIntent.current);
+  };
   const [activeTab, setActiveTab] = useState(() => window.location.hash.split('?')[0] === '#/register' ? 'register' : 'login');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showGoogleModal, setShowGoogleModal] = useState(false);
@@ -147,7 +137,8 @@ export function LoginPage() {
     setRegConfirmPassword('');
     setRegAgree(false);
     setActiveTab(tab);
-    window.location.hash = tab === 'register' ? '#/register' : '#/login';
+    const authPath = tab === 'register' ? '#/register' : '#/login';
+    window.location.hash = authPath + (membershipIntent.current ? `?next=${membershipIntent.current}` : '');
   };
 
   const updateField = (id, value, setter) => {

@@ -2,27 +2,40 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { bookingApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { Badge } from '../../components/common/StatCard.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
 import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
 import {
   BOOKING_LABELS,
+  BOOKING_LABELS_EN,
+  getBookingStatusLabel,
   formatMemberDate,
   formatMemberDateTime,
   isUpcomingBooking,
   bookingStart,
   getSportTheme,
   DAY_LABELS,
+  DAY_LABELS_EN,
   parseIsoDate,
   formatIsoDate,
   getMonday,
   getWeekDays
 } from './memberOverview.js';
+import {
+  translateClassName,
+  translateSportName,
+  translateCoachName,
+  translateRoomName
+} from '../../services/i18nHelper.js';
 
 export function MyBookings() {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const DAY_LABELS_ACTIVE = isEn ? DAY_LABELS_EN : DAY_LABELS;
 
   const [bookings, setBookings] = useState([]);
   const [waitlist, setWaitlist] = useState([]);
@@ -64,7 +77,7 @@ export function MyBookings() {
       setBookings(data || []);
       setWaitlist(waiting || []);
     } catch (err) {
-      setError(err.message || 'Không thể tải danh sách đặt chỗ.');
+      setError(err.message || (isEn ? 'Unable to load bookings.' : 'Không thể tải danh sách đặt chỗ.'));
       showError(err);
     } finally {
       setLoading(false);
@@ -87,7 +100,7 @@ export function MyBookings() {
     setCancelError(null);
     try {
       const result = await bookingApi.cancelBooking(bookingToCancel.id, currentUser.id);
-      showSuccess(result.message || 'Đã hủy ca đặt chỗ thành công.');
+      showSuccess(result.message || (isEn ? 'Booking cancelled successfully.' : 'Đã hủy ca đặt chỗ thành công.'));
       setCancelModalOpen(false);
       await loadBookings();
     } catch (err) {
@@ -102,10 +115,10 @@ export function MyBookings() {
     setLeavingWaitlistId(waitlistId);
     try {
       await bookingApi.leaveWaitlist(waitlistId);
-      showSuccess(`Đã rời khỏi danh sách chờ của lớp "${className || ''}".`);
+      showSuccess(isEn ? `Left the waitlist for "${translateClassName(className, isEn)}".` : `Đã rời khỏi danh sách chờ của lớp "${className || ''}".`);
       await loadBookings();
     } catch (err) {
-      showError(err.message || 'Không thể rời danh sách chờ.');
+      showError(err.message || (isEn ? 'Unable to leave waitlist.' : 'Không thể rời danh sách chờ.'));
     } finally {
       setLeavingWaitlistId(null);
     }
@@ -132,11 +145,11 @@ export function MyBookings() {
   const availableSports = useMemo(() => {
     const set = new Set();
     bookings.forEach(b => {
-      const theme = getSportTheme(b.sportName, b.className);
+      const theme = getSportTheme(b.sportName, b.className, isEn);
       set.add(theme.tag);
     });
     return Array.from(set);
-  }, [bookings]);
+  }, [bookings, isEn]);
 
   // Lọc danh sách đặt chỗ
   const filteredBookings = useMemo(() => {
@@ -154,16 +167,16 @@ export function MyBookings() {
       // 2. Tìm kiếm từ khóa
       if (searchQuery.trim()) {
         const q = searchQuery.toLowerCase();
-        const matchName = b.className?.toLowerCase().includes(q);
-        const matchCoach = b.coachName?.toLowerCase().includes(q);
-        const matchRoom = b.roomName?.toLowerCase().includes(q);
+        const matchName = b.className?.toLowerCase().includes(q) || translateClassName(b.className, isEn).toLowerCase().includes(q);
+        const matchCoach = b.coachName?.toLowerCase().includes(q) || translateCoachName(b.coachName, isEn).toLowerCase().includes(q);
+        const matchRoom = b.roomName?.toLowerCase().includes(q) || translateRoomName(b.roomName, isEn).toLowerCase().includes(q);
         const matchId = String(b.id).includes(q);
         if (!matchName && !matchCoach && !matchRoom && !matchId) return false;
       }
 
       // 3. Lọc theo môn thể thao
       if (selectedSport !== 'ALL') {
-        const theme = getSportTheme(b.sportName, b.className);
+        const theme = getSportTheme(b.sportName, b.className, isEn);
         if (theme.tag !== selectedSport) return false;
       }
 
@@ -179,7 +192,7 @@ export function MyBookings() {
       const startB = bookingStart(b) || 0;
       return startB - startA;
     });
-  }, [bookings, activeTab, searchQuery, selectedSport, selectedDate]);
+  }, [bookings, activeTab, searchQuery, selectedSport, selectedDate, isEn]);
 
   // Tiện ích lịch tuần chuẩn Olympic
   const todayStr = useMemo(() => formatIsoDate(new Date()), []);
@@ -188,8 +201,10 @@ export function MyBookings() {
   const periodTitle = useMemo(() => {
     const start = weekDays[0];
     const end = weekDays[6];
-    return `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
-  }, [weekDays]);
+    return isEn
+      ? `Week: ${start.getDate()} M${start.getMonth() + 1} - ${end.getDate()} M${end.getMonth() + 1}, ${end.getFullYear()}`
+      : `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
+  }, [weekDays, isEn]);
 
   const handlePrevWeek = () => {
     const d = new Date(currentDate);
@@ -230,28 +245,30 @@ export function MyBookings() {
   }, [filteredBookings]);
 
   if (loading) {
-    return <LoadingSpinner text="Đang đồng bộ vé đặt & danh sách chờ Olympic..." />;
+    return <LoadingSpinner text={isEn ? "Syncing Olympic bookings & waitlist..." : "Đang đồng bộ vé đặt & danh sách chờ Olympic..."} />;
   }
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-6 animate-fade-slide-up">
       {/* 1. Header & Title (Đồng bộ chuẩn Olympic Schedule) */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-chivo text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+            <span className="font-chivo text-xs font-black uppercase tracking-widest text-[#2D6A4F] dark:text-[#81B29A] bg-[#81B29A]/15 px-2.5 py-0.5 rounded-md border border-[#81B29A]/30">
               OLYMPIC BOOKING MANAGEMENT
             </span>
             <span className="text-xs text-slate-400">·</span>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-              {stats.upcoming} ca sắp diễn ra
+              {stats.upcoming} {isEn ? 'upcoming sessions' : 'ca sắp diễn ra'}
             </span>
           </div>
-          <h1 className="font-chivo text-2xl lg:text-3xl font-black text-slate-900 tracking-tight mt-1">
-            Lớp Đã Đặt & Lịch Hủy Chỗ
+          <h1 className="font-chivo text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+            {isEn ? 'Booked Classes & Cancellation' : 'Lớp Đã Đặt & Lịch Hủy Chỗ'}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5 max-w-2xl">
-            Theo dõi tất cả ca rèn luyện đã đặt chỗ, danh sách chờ (Waitlist) và quản lý lịch học linh hoạt. Chủ động hủy chỗ trước 2 giờ để bảo lưu lượt tập và nhường chỗ cho hội viên khác.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-2xl">
+            {isEn
+              ? 'Track all booked workout sessions, waitlist status, and manage your training schedule flexibly. Proactively cancel spots at least 2 hours prior to retain your workout credits and open spots for others.'
+              : 'Theo dõi tất cả ca rèn luyện đã đặt chỗ, danh sách chờ (Waitlist) và quản lý lịch học linh hoạt. Chủ động hủy chỗ trước 2 giờ để bảo lưu lượt tập và nhường chỗ cho hội viên khác.'}
           </p>
         </div>
 
@@ -260,17 +277,17 @@ export function MyBookings() {
           <button
             type="button"
             onClick={loadBookings}
-            className="p-2.5 rounded-xl border border-slate-300 hover:bg-slate-100 text-slate-700 transition-colors flex items-center justify-center shrink-0 shadow-xs"
-            title="Tải lại dữ liệu vé"
+            className="p-2.5 rounded-xl border border-slate-300 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors flex items-center justify-center shrink-0 shadow-xs"
+            title={isEn ? "Reload ticket data" : "Tải lại dữ liệu vé"}
           >
             <span className="material-symbols-outlined text-[18px]">refresh</span>
           </button>
           <a
             href="#/member/schedule"
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm shrink-0"
+            className="px-4 py-2.5 bg-[#1E2235] hover:bg-[#2B2D42] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm hover-lift shrink-0"
           >
-            <span className="material-symbols-outlined text-[18px] text-red-400">calendar_month</span>
-            <span>Lịch Mở Lớp Rèn Luyện</span>
+            <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">calendar_month</span>
+            <span>{isEn ? 'Olympic Class Schedule' : 'Lịch Mở Lớp Rèn Luyện'}</span>
           </a>
         </div>
       </div>
@@ -280,18 +297,18 @@ export function MyBookings() {
         {/* Card 1: Tổng vé đã đặt */}
         <div
           onClick={() => setActiveTab('ALL')}
-          className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center gap-3 ${
+          className={`p-3.5 rounded-xl border cursor-pointer transition-all flex items-center gap-3 hover-lift ${
             activeTab === 'ALL'
-              ? 'bg-red-50 border-red-400 shadow-sm ring-2 ring-red-500/20'
-              : 'bg-white border-slate-200 hover:border-slate-300'
+              ? 'bg-[#1E2235]/5 dark:bg-[#1E2235]/40 border-[#1E2235] dark:border-[#81B29A] shadow-sm ring-2 ring-[#81B29A]/30'
+              : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-800 hover:border-slate-300'
           }`}
         >
-          <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+          <div className="w-10 h-10 rounded-lg bg-[#81B29A]/20 text-[#2D6A4F] dark:text-[#81B29A] flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-[22px]">confirmation_number</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Tổng vé đặt</span>
-            <span className="font-chivo text-lg font-black text-slate-900">{stats.total}</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">{isEn ? 'Total Bookings' : 'Tổng vé đặt'}</span>
+            <span className="font-chivo text-lg font-black text-slate-900 dark:text-white">{stats.total}</span>
           </div>
         </div>
 
@@ -308,7 +325,7 @@ export function MyBookings() {
             <span className="material-symbols-outlined text-[22px]">event_upcoming</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Sắp diễn ra</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">{isEn ? 'Upcoming' : 'Sắp diễn ra'}</span>
             <span className="font-chivo text-lg font-black text-emerald-800">{stats.upcoming}</span>
           </div>
         </div>
@@ -326,7 +343,7 @@ export function MyBookings() {
             <span className="material-symbols-outlined text-[22px]">hourglass_top</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Danh sách chờ</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">{isEn ? 'Waitlist' : 'Danh sách chờ'}</span>
             <span className="font-chivo text-lg font-black text-amber-800">{stats.inWaitlist}</span>
           </div>
         </div>
@@ -344,7 +361,7 @@ export function MyBookings() {
             <span className="material-symbols-outlined text-[22px]">history</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Đã hoàn thành</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">{isEn ? 'Completed' : 'Đã hoàn thành'}</span>
             <span className="font-chivo text-lg font-black text-blue-900">{stats.completed}</span>
           </div>
         </div>
@@ -357,11 +374,11 @@ export function MyBookings() {
           {/* Status Tabs */}
           <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0 overflow-x-auto">
             {[
-              { id: 'ALL', label: 'Tất Cả', icon: 'list', count: stats.total },
-              { id: 'UPCOMING', label: 'Sắp Tới', icon: 'event_available', count: stats.upcoming },
-              { id: 'WAITLIST', label: 'Hàng Chờ', icon: 'hourglass_top', count: stats.inWaitlist },
-              { id: 'COMPLETED', label: 'Đã Tập', icon: 'task_alt', count: stats.completed },
-              { id: 'CANCELLED', label: 'Đã Hủy', icon: 'cancel', count: stats.cancelled }
+              { id: 'ALL', label: isEn ? 'All' : 'Tất Cả', icon: 'list', count: stats.total },
+              { id: 'UPCOMING', label: isEn ? 'Upcoming' : 'Sắp Tới', icon: 'event_available', count: stats.upcoming },
+              { id: 'WAITLIST', label: isEn ? 'Waitlist' : 'Hàng Chờ', icon: 'hourglass_top', count: stats.inWaitlist },
+              { id: 'COMPLETED', label: isEn ? 'Completed' : 'Đã Tập', icon: 'task_alt', count: stats.completed },
+              { id: 'CANCELLED', label: isEn ? 'Cancelled' : 'Đã Hủy', icon: 'cancel', count: stats.cancelled }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -392,7 +409,7 @@ export function MyBookings() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px]">calendar_view_week</span>
-                <span>Lịch Tuần</span>
+                <span>{isEn ? 'Week Timetable' : 'Lịch Tuần'}</span>
               </button>
               <button
                 type="button"
@@ -402,7 +419,7 @@ export function MyBookings() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px]">grid_view</span>
-                <span>Dạng Thẻ</span>
+                <span>{isEn ? 'Cards' : 'Dạng Thẻ'}</span>
               </button>
               <button
                 type="button"
@@ -412,7 +429,7 @@ export function MyBookings() {
                 }`}
               >
                 <span className="material-symbols-outlined text-[16px]">table_rows</span>
-                <span>Dạng Bảng</span>
+                <span>{isEn ? 'Table' : 'Dạng Bảng'}</span>
               </button>
             </div>
           )}
@@ -427,13 +444,13 @@ export function MyBookings() {
                 onClick={handleToday}
                 className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs"
               >
-                Hôm Nay
+                {isEn ? 'Today' : 'Hôm Nay'}
               </button>
               <div className="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">
                 <button
                   type="button"
                   onClick={handlePrevWeek}
-                  title="Lùi tuần trước"
+                  title={isEn ? "Previous week" : "Lùi tuần trước"}
                   className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors border-r border-slate-200"
                 >
                   <span className="material-symbols-outlined text-[20px]">chevron_left</span>
@@ -441,7 +458,7 @@ export function MyBookings() {
                 <button
                   type="button"
                   onClick={handleNextWeek}
-                  title="Tiến tuần sau"
+                  title={isEn ? "Next week" : "Tiến tuần sau"}
                   className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors"
                 >
                   <span className="material-symbols-outlined text-[20px]">chevron_right</span>
@@ -453,7 +470,9 @@ export function MyBookings() {
             </div>
 
             <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">
-              Nhấp vào ca học bất kỳ trên lịch tuần để xem thông tin hoặc quản lý hủy vé
+              {isEn
+                ? 'Click any session on the timetable to view details or manage cancellation'
+                : 'Nhấp vào ca học bất kỳ trên lịch tuần để xem thông tin hoặc quản lý hủy vé'}
             </span>
           </div>
         )}
@@ -468,7 +487,7 @@ export function MyBookings() {
               </span>
               <input
                 type="text"
-                placeholder="Tìm tên lớp, HLV, phòng tập, mã vé..."
+                placeholder={isEn ? "Search class, coach, room, ticket ID..." : "Tìm tên lớp, HLV, phòng tập, mã vé..."}
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
                 className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
@@ -490,10 +509,10 @@ export function MyBookings() {
                 onChange={e => setSelectedSport(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 bg-white font-medium"
               >
-                <option value="ALL">🏅 Tất cả bộ môn thể thao</option>
+                <option value="ALL">{isEn ? '🏅 All Sports' : '🏅 Tất cả bộ môn thể thao'}</option>
                 {availableSports.map(sport => (
                   <option key={sport} value={sport}>
-                    {sport}
+                    {translateSportName(sport, isEn)}
                   </option>
                 ))}
               </select>
@@ -517,7 +536,7 @@ export function MyBookings() {
                 <button
                   type="button"
                   onClick={() => setSelectedDate('')}
-                  title="Xóa lọc ngày"
+                  title={isEn ? "Clear date filter" : "Xóa lọc ngày"}
                   className="px-2.5 py-2 rounded-lg border border-slate-300 hover:bg-slate-100 text-slate-600 font-bold"
                 >
                   ✕
@@ -536,7 +555,7 @@ export function MyBookings() {
             <span className="text-xs font-bold">{error}</span>
           </div>
           <button type="button" onClick={loadBookings} className="text-xs font-black underline uppercase">
-            Thử lại
+            {isEn ? 'Retry' : 'Thử lại'}
           </button>
         </div>
       )}
@@ -548,11 +567,13 @@ export function MyBookings() {
             <div className="flex items-center gap-2">
               <span className="w-2.5 h-2.5 rounded-full bg-amber-500 animate-pulse"></span>
               <h2 className="font-chivo text-base font-black text-slate-900 tracking-tight">
-                Danh Sách Chờ Đang Kích Hoạt ({waitlist.length})
+                {isEn ? 'Active Waitlist' : 'Danh Sách Chờ Đang Kích Hoạt'} ({waitlist.length})
               </h2>
             </div>
             <span className="text-[11px] text-slate-500 italic">
-              * Hệ thống tự động nâng lên thành vé chính thức khi có hội viên khác hủy chỗ trước giờ học.
+              {isEn
+                ? '* Automatically upgraded to official ticket when another member cancels before class.'
+                : '* Hệ thống tự động nâng lên thành vé chính thức khi có hội viên khác hủy chỗ trước giờ học.'}
             </span>
           </div>
 
@@ -560,16 +581,18 @@ export function MyBookings() {
             <div className="p-8 text-center bg-white rounded-2xl border border-slate-200">
               <span className="material-symbols-outlined text-4xl text-slate-300">hourglass_disabled</span>
               <h3 className="font-chivo text-sm font-bold text-slate-800 mt-2">
-                Bạn Hiện Không Có Ca Học Nào Trong Hàng Chờ
+                {isEn ? 'You Have No Classes in Waitlist' : 'Bạn Hiện Không Có Ca Học Nào Trong Hàng Chờ'}
               </h3>
               <p className="text-xs text-slate-500 mt-0.5">
-                Khi một ca học đã kín chỗ, bạn có thể ghi danh vào hàng chờ tại Lịch Lớp Thể Thao.
+                {isEn
+                  ? 'When a session is fully booked, you can join the waitlist on the Class Schedule page.'
+                  : 'Khi một ca học đã kín chỗ, bạn có thể ghi danh vào hàng chờ tại Lịch Lớp Thể Thao.'}
               </p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5">
               {waitlist.map(w => {
-                const sportTheme = getSportTheme('', w.className);
+                const sportTheme = getSportTheme('', w.className, isEn);
                 const isLeaving = leavingWaitlistId === w.id;
 
                 return (
@@ -587,11 +610,11 @@ export function MyBookings() {
                           </span>
                           <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-amber-100 text-amber-800 border border-amber-200 flex items-center gap-1">
                             <span className="material-symbols-outlined text-[13px]">hourglass_top</span>
-                            <span>ĐANG CHỜ DUYỆT</span>
+                            <span>{isEn ? 'PENDING' : 'ĐANG CHỜ DUYỆT'}</span>
                           </span>
                         </div>
                         <h3 className="font-chivo text-base font-black text-slate-900">
-                          {w.className}
+                          {translateClassName(w.className, isEn)}
                         </h3>
                       </div>
 
@@ -602,14 +625,14 @@ export function MyBookings() {
                         className="px-3 py-1.5 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold font-chivo uppercase tracking-wider transition-colors flex items-center gap-1 disabled:opacity-50 shrink-0"
                       >
                         <span className="material-symbols-outlined text-[16px]">close</span>
-                        <span>{isLeaving ? 'Đang rời...' : 'Rời Hàng Chờ'}</span>
+                        <span>{isLeaving ? (isEn ? 'Leaving...' : 'Đang rời...') : (isEn ? 'Leave Waitlist' : 'Rời Hàng Chờ')}</span>
                       </button>
                     </div>
 
                     <div className="mt-3 grid grid-cols-2 gap-2 text-xs text-slate-600 bg-amber-50/60 p-3 rounded-xl border border-amber-100">
                       <div className="flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-amber-600 text-[18px]">calendar_month</span>
-                        <span className="font-bold">{formatMemberDate(w.sessionDate)}</span>
+                        <span className="font-bold">{formatMemberDate(w.sessionDate, isEn)}</span>
                       </div>
                       <div className="flex items-center gap-1.5">
                         <span className="material-symbols-outlined text-amber-600 text-[18px]">schedule</span>
@@ -629,8 +652,8 @@ export function MyBookings() {
         <div className="space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="font-chivo text-base font-black text-slate-900 tracking-tight flex items-center gap-2">
-              <span>Danh Sách Lớp Đặt Chỗ</span>
-              <span className="text-xs font-bold text-slate-400">({filteredBookings.length} ca)</span>
+              <span>{isEn ? 'Booked Class List' : 'Danh Sách Lớp Đặt Chỗ'}</span>
+              <span className="text-xs font-bold text-slate-400">({filteredBookings.length} {isEn ? 'sessions' : 'ca'})</span>
             </h2>
           </div>
 
@@ -654,7 +677,7 @@ export function MyBookings() {
                       }`}
                     >
                       <span className="text-[11px] font-bold uppercase text-slate-500 block">
-                        {DAY_LABELS[day.getDay()]}
+                        {DAY_LABELS_ACTIVE[day.getDay()]}
                       </span>
                       <div className="mt-1 flex items-center justify-center gap-1">
                         <span
@@ -669,10 +692,10 @@ export function MyBookings() {
                       </div>
                       {dayBookings.length > 0 ? (
                         <span className="inline-block mt-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-200/80 text-slate-700">
-                          {dayBookings.length} ca
+                          {dayBookings.length} {isEn ? 'sess' : 'ca'}
                         </span>
                       ) : (
-                        <span className="text-[10px] text-slate-400 block mt-1">Trống</span>
+                        <span className="text-[10px] text-slate-400 block mt-1">{isEn ? 'Empty' : 'Trống'}</span>
                       )}
                     </div>
                   );
@@ -695,8 +718,8 @@ export function MyBookings() {
                     >
                       {/* Tiêu đề ngày trên màn hình mobile nhỏ */}
                       <div className="md:hidden pb-1 border-b border-slate-200 flex justify-between items-center text-xs font-bold">
-                        <span>{DAY_LABELS[day.getDay()]} ({dayStr})</span>
-                        <span className="text-slate-500">{dayBookings.length} ca</span>
+                        <span>{DAY_LABELS_ACTIVE[day.getDay()]} ({dayStr})</span>
+                        <span className="text-slate-500">{dayBookings.length} {isEn ? 'sess' : 'ca'}</span>
                       </div>
 
                       {dayBookings.length === 0 ? (
@@ -704,11 +727,11 @@ export function MyBookings() {
                           <span className="material-symbols-outlined text-2xl text-slate-300 block mb-1">
                             event_busy
                           </span>
-                          <span>Không có ca</span>
+                          <span>{isEn ? 'No sessions' : 'Không có ca'}</span>
                         </div>
                       ) : (
                         dayBookings.map(b => {
-                          const theme = getSportTheme(b.sportName, b.className);
+                          const theme = getSportTheme(b.sportName, b.className, isEn);
                           const isUpcoming = isUpcomingBooking(b);
                           const isCancelled = b.status === 'CANCELLED' || b.status === 'CANCELLEDLATE' || b.sessionStatus === 'CANCELLED';
                           const isCompleted = b.status === 'COMPLETED' || (!isUpcoming && !isCancelled);
@@ -730,19 +753,19 @@ export function MyBookings() {
                                   <span>{b.timeSlot}</span>
                                 </span>
                                 <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${theme.badge}`}>
-                                  {theme.tag || b.sportName}
+                                  {theme.tag || translateSportName(b.sportName, isEn)}
                                 </span>
                               </div>
 
                               {/* Class Name */}
                               <h4 className="font-chivo font-black text-slate-900 leading-snug line-clamp-2">
-                                {b.className}
+                                {translateClassName(b.className, isEn)}
                               </h4>
 
                               {/* Coach & Room Info */}
                               <div className="text-[11px] text-slate-600 space-y-0.5">
-                                <div className="truncate">HLV: <strong>{b.coachName}</strong></div>
-                                <div className="truncate text-slate-500">{b.roomName}</div>
+                                <div className="truncate">{isEn ? 'Coach' : 'HLV'}: <strong>{translateCoachName(b.coachName, isEn)}</strong></div>
+                                <div className="truncate text-slate-500">{translateRoomName(b.roomName, isEn)}</div>
                               </div>
 
                               {/* Capacity / Booking ID & Action Status Footer */}
@@ -754,17 +777,17 @@ export function MyBookings() {
                                 {isCancelled ? (
                                   <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-rose-800 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200">
                                     <span className="material-symbols-outlined text-[12px]">cancel</span>
-                                    <span>ĐÃ HỦY</span>
+                                    <span>{isEn ? 'CANCELLED' : 'ĐÃ HỦY'}</span>
                                   </span>
                                 ) : isCompleted ? (
                                   <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200">
                                     <span className="material-symbols-outlined text-[12px]">task_alt</span>
-                                    <span>ĐÃ TẬP</span>
+                                    <span>{isEn ? 'ATTENDED' : 'ĐÃ TẬP'}</span>
                                   </span>
                                 ) : (
                                   <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
                                     <span className="material-symbols-outlined text-[12px]">verified</span>
-                                    <span>ĐÃ ĐẶT</span>
+                                    <span>{isEn ? 'BOOKED' : 'ĐÃ ĐẶT'}</span>
                                   </span>
                                 )}
                               </div>
@@ -784,13 +807,13 @@ export function MyBookings() {
               </div>
               <h3 className="font-chivo text-base font-bold text-slate-900">
                 {searchQuery || selectedSport !== 'ALL' || selectedDate
-                  ? 'Không Tìm Thấy Ca Đặt Chỗ Phù Hợp Bộ Lọc'
-                  : 'Bạn Chưa Có Lịch Đặt Chỗ Nào'}
+                  ? (isEn ? 'No Bookings Match Your Filters' : 'Không Tìm Thấy Ca Đặt Chỗ Phù Hợp Bộ Lọc')
+                  : (isEn ? 'You Have No Bookings Yet' : 'Bạn Chưa Có Lịch Đặt Chỗ Nào')}
               </h3>
               <p className="text-xs text-slate-500 max-w-sm mx-auto">
                 {searchQuery || selectedSport !== 'ALL' || selectedDate
-                  ? 'Vui lòng thử điều chỉnh hoặc xóa các tiêu chí tìm kiếm để hiển thị toàn bộ vé tập.'
-                  : 'Khám phá ngay lịch mở lớp thể thao chuẩn Olympic và chọn ca tập yêu thích cùng HLV chuyên nghiệp.'}
+                  ? (isEn ? 'Please adjust or clear search criteria to display your bookings.' : 'Vui lòng thử điều chỉnh hoặc xóa các tiêu chí tìm kiếm để hiển thị toàn bộ vé tập.')
+                  : (isEn ? 'Explore the Olympic sports class schedule and book your favorite session with professional coaches.' : 'Khám phá ngay lịch mở lớp thể thao chuẩn Olympic và chọn ca tập yêu thích cùng HLV chuyên nghiệp.')}
               </p>
               <div>
                 {searchQuery || selectedSport !== 'ALL' || selectedDate ? (
@@ -803,14 +826,14 @@ export function MyBookings() {
                     }}
                     className="px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-wider hover:bg-slate-800 transition-colors"
                   >
-                    Xóa Tất Cả Bộ Lọc
+                    {isEn ? 'Clear All Filters' : 'Xóa Tất Cả Bộ Lọc'}
                   </button>
                 ) : (
                   <a
                     href="#/member/schedule"
                     className="px-5 py-2.5 bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-colors inline-block"
                   >
-                    Xem Lịch & Đặt Chỗ Ngay
+                    {isEn ? 'View Schedule & Book Now' : 'Xem Lịch & Đặt Chỗ Ngay'}
                   </a>
                 )}
               </div>
@@ -819,7 +842,7 @@ export function MyBookings() {
             /* DẠNG THẺ (GRID VIEW) - Chuẩn màu sắc nhận diện Olympic & getSportTheme */
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {filteredBookings.map(b => {
-                const sportTheme = getSportTheme(b.sportName, b.className);
+                const sportTheme = getSportTheme(b.sportName, b.className, isEn);
                 const isUpcoming = isUpcomingBooking(b);
                 const startMs = bookingStart(b);
                 const hoursUntil = startMs ? (startMs - Date.now()) / (1000 * 60 * 60) : null;
@@ -848,14 +871,14 @@ export function MyBookings() {
                         </div>
                         <Badge variant={b.status}>
                           {b.sessionStatus === 'CANCELLED'
-                            ? 'Buổi học bị hủy'
-                            : BOOKING_LABELS[b.status] || b.status}
+                            ? (isEn ? 'Cancelled' : 'Buổi học bị hủy')
+                            : getBookingStatusLabel(b.status, isEn)}
                         </Badge>
                       </div>
 
                       {/* Class Name */}
                       <h3 className="font-chivo text-lg font-black text-slate-900 leading-snug">
-                        {b.className}
+                        {translateClassName(b.className, isEn)}
                       </h3>
 
                       {/* Info Details Box */}
@@ -867,7 +890,7 @@ export function MyBookings() {
                               calendar_month
                             </span>
                             <span className="font-bold text-slate-900">
-                              {formatMemberDate(b.bookingDate)}
+                              {formatMemberDate(b.bookingDate, isEn)}
                             </span>
                             <span className="text-slate-600 font-semibold">({b.timeSlot})</span>
                           </div>
@@ -875,8 +898,8 @@ export function MyBookings() {
                           {isUpcoming && hoursUntil !== null && hoursUntil >= 0 && (
                             <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
                               {hoursUntil < 24
-                                ? `Còn ${Math.ceil(hoursUntil)}h nữa`
-                                : `Còn ${Math.ceil(hoursUntil / 24)} ngày`}
+                                ? (isEn ? `${Math.ceil(hoursUntil)}h left` : `Còn ${Math.ceil(hoursUntil)}h nữa`)
+                                : (isEn ? `${Math.ceil(hoursUntil / 24)} days left` : `Còn ${Math.ceil(hoursUntil / 24)} ngày`)}
                             </span>
                           )}
                         </div>
@@ -886,7 +909,7 @@ export function MyBookings() {
                           <span className="material-symbols-outlined text-slate-400 text-[18px]">
                             stadium
                           </span>
-                          <span className="font-medium text-slate-700">{b.roomName}</span>
+                          <span className="font-medium text-slate-700">{translateRoomName(b.roomName, isEn)}</span>
                         </div>
 
                         {/* Huấn luyện viên */}
@@ -895,11 +918,11 @@ export function MyBookings() {
                             sports
                           </span>
                           <div>
-                            <span className="font-medium">HLV: </span>
-                            <strong className="text-slate-900">{b.coachName}</strong>
+                            <span className="font-medium">{isEn ? 'Coach: ' : 'HLV: '}</span>
+                            <strong className="text-slate-900">{translateCoachName(b.coachName, isEn)}</strong>
                             {b.coachSpecialization && (
                               <span className="block text-[11px] text-slate-500">
-                                Chuyên môn: {b.coachSpecialization}
+                                {isEn ? 'Specialization' : 'Chuyên môn'}: {b.coachSpecialization}
                               </span>
                             )}
                           </div>
@@ -908,12 +931,12 @@ export function MyBookings() {
                         {/* Điểm danh nếu đã có */}
                         {b.attendanceStatus && (
                           <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                            <span className="text-slate-500">Điểm danh:</span>
+                            <span className="text-slate-500">{isEn ? 'Attendance:' : 'Điểm danh:'}</span>
                             <span className="font-bold text-slate-800">
-                              {b.attendanceStatus === 'PRESENT' && '✅ Có mặt'}
-                              {b.attendanceStatus === 'LATE' && '⏰ Đi muộn'}
-                              {b.attendanceStatus === 'ABSENT' && '❌ Vắng mặt'}
-                              {b.attendanceStatus === 'EXCUSED' && '📝 Vắng có phép'}
+                              {b.attendanceStatus === 'PRESENT' && (isEn ? '✅ Present' : '✅ Có mặt')}
+                              {b.attendanceStatus === 'LATE' && (isEn ? '⏰ Late' : '⏰ Đi muộn')}
+                              {b.attendanceStatus === 'ABSENT' && (isEn ? '❌ Absent' : '❌ Vắng mặt')}
+                              {b.attendanceStatus === 'EXCUSED' && (isEn ? '📝 Excused' : '📝 Vắng có phép')}
                             </span>
                           </div>
                         )}
@@ -925,8 +948,8 @@ export function MyBookings() {
                           <span className="material-symbols-outlined text-[15px] text-slate-400">info</span>
                           <span>
                             {isTooLateToCancel
-                              ? 'Ca học dưới 2 tiếng: Cần liên hệ trực tiếp lễ tân để xử lý hủy khẩn cấp.'
-                              : 'Chính sách hủy: Hủy trước 2 tiếng để hoàn lại lượt và mở chỗ cho hội viên khác.'}
+                              ? (isEn ? 'Under 2 hours to start: Please contact reception directly for urgent handling.' : 'Ca học dưới 2 tiếng: Cần liên hệ trực tiếp lễ tân để xử lý hủy khẩn cấp.')
+                              : (isEn ? 'Cancellation policy: Cancel 2 hours before start to retain session credit and release spot.' : 'Chính sách hủy: Hủy trước 2 tiếng để hoàn lại lượt và mở chỗ cho hội viên khác.')}
                           </span>
                         </div>
                       )}
@@ -935,7 +958,7 @@ export function MyBookings() {
                     {/* Card Footer */}
                     <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
                       <span className="text-slate-400 text-[11px]">
-                        Đăng ký: {formatMemberDateTime(b.createdAt)}
+                        {isEn ? 'Booked on: ' : 'Đăng ký: '}{formatMemberDateTime(b.createdAt, isEn)}
                       </span>
 
                       {/* Action Hủy Chỗ */}
@@ -946,7 +969,7 @@ export function MyBookings() {
                           className="px-3.5 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold font-chivo uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-2xs"
                         >
                           <span className="material-symbols-outlined text-[16px]">cancel</span>
-                          <span>Hủy Chỗ</span>
+                          <span>{isEn ? 'Cancel Booking' : 'Hủy Chỗ'}</span>
                         </button>
                       )}
                     </div>
@@ -961,19 +984,19 @@ export function MyBookings() {
                 <table className="w-full text-left border-collapse text-xs">
                   <thead>
                     <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-chivo font-black uppercase tracking-wider text-[11px]">
-                      <th className="py-3.5 px-4">Mã Vé</th>
-                      <th className="py-3.5 px-4">Lớp Học & Môn</th>
-                      <th className="py-3.5 px-4">Ngày Tập</th>
-                      <th className="py-3.5 px-4">Khung Giờ</th>
-                      <th className="py-3.5 px-4">Phòng Tập</th>
-                      <th className="py-3.5 px-4">Huấn Luyện Viên</th>
-                      <th className="py-3.5 px-4">Trạng Thái</th>
-                      <th className="py-3.5 px-4 text-right">Thao Tác</th>
+                      <th className="py-3.5 px-4">{isEn ? 'Ticket ID' : 'Mã Vé'}</th>
+                      <th className="py-3.5 px-4">{isEn ? 'Class & Sport' : 'Lớp Học & Môn'}</th>
+                      <th className="py-3.5 px-4">{isEn ? 'Session Date' : 'Ngày Tập'}</th>
+                      <th className="py-3.5 px-4">{isEn ? 'Time Slot' : 'Khung Giờ'}</th>
+                      <th className="py-3.5 px-4">{isEn ? 'Room / Court' : 'Phòng Tập'}</th>
+                      <th className="py-3.5 px-4">{isEn ? 'Coach' : 'Huấn Luyện Viên'}</th>
+                      <th className="py-3.5 px-4">{isEn ? 'Status' : 'Trạng Thái'}</th>
+                      <th className="py-3.5 px-4 text-right">{isEn ? 'Action' : 'Thao Tác'}</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
                     {filteredBookings.map(b => {
-                      const sportTheme = getSportTheme(b.sportName, b.className);
+                      const sportTheme = getSportTheme(b.sportName, b.className, isEn);
                       const isUpcoming = isUpcomingBooking(b);
 
                       return (
@@ -982,28 +1005,28 @@ export function MyBookings() {
                             #{b.id}
                           </td>
                           <td className="py-3.5 px-4">
-                            <div className="font-bold text-slate-900 font-chivo">{b.className}</div>
+                            <div className="font-bold text-slate-900 font-chivo">{translateClassName(b.className, isEn)}</div>
                             <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wide border mt-0.5 ${sportTheme.badge}`}>
                               {sportTheme.tag}
                             </span>
                           </td>
                           <td className="py-3.5 px-4 font-semibold text-slate-900">
-                            {formatMemberDate(b.bookingDate)}
+                            {formatMemberDate(b.bookingDate, isEn)}
                           </td>
                           <td className="py-3.5 px-4 font-mono font-medium text-slate-600">
                             {b.timeSlot}
                           </td>
                           <td className="py-3.5 px-4 text-slate-600">
-                            {b.roomName}
+                            {translateRoomName(b.roomName, isEn)}
                           </td>
                           <td className="py-3.5 px-4 text-slate-800 font-medium">
-                            {b.coachName}
+                            {translateCoachName(b.coachName, isEn)}
                           </td>
                           <td className="py-3.5 px-4">
                             <Badge variant={b.status}>
                               {b.sessionStatus === 'CANCELLED'
-                                ? 'Buổi học bị hủy'
-                                : BOOKING_LABELS[b.status] || b.status}
+                                ? (isEn ? 'Cancelled' : 'Buổi học bị hủy')
+                                : getBookingStatusLabel(b.status, isEn)}
                             </Badge>
                           </td>
                           <td className="py-3.5 px-4 text-right">
@@ -1014,7 +1037,7 @@ export function MyBookings() {
                                 className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-bold uppercase transition-colors inline-flex items-center gap-1"
                               >
                                 <span className="material-symbols-outlined text-[14px]">cancel</span>
-                                <span>Hủy</span>
+                                <span>{isEn ? 'Cancel' : 'Hủy'}</span>
                               </button>
                             )}
                           </td>
@@ -1033,24 +1056,28 @@ export function MyBookings() {
       <Modal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
-        title="Xác Nhận Hủy Đặt Chỗ Rèn Luyện"
+        title={isEn ? "Confirm Booking Cancellation" : "Xác Nhận Hủy Đặt Chỗ Rèn Luyện"}
       >
         {bookingToCancel && (
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-red-50 border border-red-200 text-xs text-red-950 space-y-2">
               <span className="font-bold text-sm block text-red-900">
-                Bạn có chắc chắn muốn hủy ca học này?
+                {isEn ? 'Are you sure you want to cancel this training session?' : 'Bạn có chắc chắn muốn hủy ca học này?'}
               </span>
               <div className="bg-white/80 p-2.5 rounded-lg border border-red-100 space-y-1">
-                <div>Lớp: <strong className="text-slate-900">{bookingToCancel.className}</strong></div>
-                <div>Thời gian: <strong className="text-slate-900">{formatMemberDate(bookingToCancel.bookingDate)} ({bookingToCancel.timeSlot})</strong></div>
-                <div>Phòng tập: <strong className="text-slate-900">{bookingToCancel.roomName}</strong></div>
+                <div>{isEn ? 'Class: ' : 'Lớp: '}<strong className="text-slate-900">{translateClassName(bookingToCancel.className, isEn)}</strong></div>
+                <div>{isEn ? 'Time: ' : 'Thời gian: '}<strong className="text-slate-900">{formatMemberDate(bookingToCancel.bookingDate, isEn)} ({bookingToCancel.timeSlot})</strong></div>
+                <div>{isEn ? 'Room: ' : 'Phòng tập: '}<strong className="text-slate-900">{translateRoomName(bookingToCancel.roomName, isEn)}</strong></div>
               </div>
               <p className="pt-1 text-red-800 leading-relaxed">
-                [ME-06] Áp dụng chính sách hủy của Trung tâm: Hủy trước thời hạn quy định (ít nhất 2 giờ trước khi buổi học bắt đầu) sẽ giải phóng chỗ và hoàn lại lượt rèn luyện. Hủy muộn hoặc sau giờ bắt đầu sẽ tính là đã tham gia.
+                {isEn
+                  ? '[ME-06] Center Policy: Cancelling at least 2 hours prior to session start will release the spot and refund your session credit. Late cancellations or cancellations after start time will count as attended.'
+                  : '[ME-06] Áp dụng chính sách hủy của Trung tâm: Hủy trước thời hạn quy định (ít nhất 2 giờ trước khi buổi học bắt đầu) sẽ giải phóng chỗ và hoàn lại lượt rèn luyện. Hủy muộn hoặc sau giờ bắt đầu sẽ tính là đã tham gia.'}
               </p>
               <p className="text-[11px] text-amber-800 italic pt-1 border-t border-red-200/60">
-                * Nếu cần hỗ trợ ngoại lệ khẩn cấp do sức khỏe hoặc chấn thương, vui lòng liên hệ trực tiếp quầy lễ tân.
+                {isEn
+                  ? '* For emergency exceptions due to health or injury, please contact the front desk directly.'
+                  : '* Nếu cần hỗ trợ ngoại lệ khẩn cấp do sức khỏe hoặc chấn thương, vui lòng liên hệ trực tiếp quầy lễ tân.'}
               </p>
             </div>
 
@@ -1058,12 +1085,14 @@ export function MyBookings() {
             {cancelError && (
               <BusinessAlert
                 type="error"
-                title="Không thể hoàn tất hủy đặt chỗ"
+                title={isEn ? "Cannot complete cancellation" : "Không thể hoàn tất hủy đặt chỗ"}
                 code={cancelError.code || 'ME-06'}
                 message={cancelError.message || String(cancelError)}
                 proposedHandling={
                   cancelError.proposedHandling ||
-                  'Ca học đã sát giờ bắt đầu (dưới 2 tiếng). Vui lòng liên hệ trực tiếp quầy lễ tân để được kiểm tra và hỗ trợ giải quyết ngoại lệ.'
+                  (isEn
+                    ? "Session starts in less than 2 hours. Please contact reception directly for assistance and exceptions."
+                    : "Ca học đã sát giờ bắt đầu (dưới 2 tiếng). Vui lòng liên hệ trực tiếp quầy lễ tân để được kiểm tra và hỗ trợ giải quyết ngoại lệ.")
                 }
               />
             )}
@@ -1074,7 +1103,7 @@ export function MyBookings() {
                 onClick={() => setCancelModalOpen(false)}
                 className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 transition-colors"
               >
-                Giữ Lại Ca Học
+                {isEn ? 'Keep Session' : 'Giữ Lại Ca Học'}
               </button>
               <button
                 type="button"
@@ -1085,12 +1114,12 @@ export function MyBookings() {
                 {cancelling ? (
                   <>
                     <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
-                    <span>Đang Hủy...</span>
+                    <span>{isEn ? 'Cancelling...' : 'Đang Hủy...'}</span>
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[16px]">cancel</span>
-                    <span>Đồng Ý Hủy Chỗ</span>
+                    <span>{isEn ? 'Confirm Cancel' : 'Đồng Ý Hủy Chỗ'}</span>
                   </>
                 )}
               </button>
@@ -1103,53 +1132,53 @@ export function MyBookings() {
       <Modal
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
-        title="Chi Tiết Đặt Chỗ Rèn Luyện"
+        title={isEn ? "Booking Session Details" : "Chi Tiết Đặt Chỗ Rèn Luyện"}
       >
         {selectedBookingDetail && (
           <div className="space-y-4">
             <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
               <div className="flex items-center justify-between">
                 <span className="font-mono text-xs text-slate-400 font-bold">
-                  Mã vé: #{selectedBookingDetail.id}
+                  {isEn ? 'Ticket ID: ' : 'Mã vé: '}#{selectedBookingDetail.id}
                 </span>
                 <Badge variant={selectedBookingDetail.status}>
                   {selectedBookingDetail.sessionStatus === 'CANCELLED'
-                    ? 'Buổi học bị hủy'
-                    : BOOKING_LABELS[selectedBookingDetail.status] || selectedBookingDetail.status}
+                    ? (isEn ? 'Cancelled' : 'Buổi học bị hủy')
+                    : getBookingStatusLabel(selectedBookingDetail.status, isEn)}
                 </Badge>
               </div>
               <h3 className="font-chivo text-lg font-black text-slate-900">
-                {selectedBookingDetail.className}
+                {translateClassName(selectedBookingDetail.className, isEn)}
               </h3>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs bg-white p-3.5 rounded-xl border border-slate-200">
               <div>
-                <span className="text-slate-400 block font-medium">Bộ môn</span>
+                <span className="text-slate-400 block font-medium">{isEn ? 'Sport' : 'Bộ môn'}</span>
                 <span className="font-bold text-slate-900">
-                  {selectedBookingDetail.sportName}
+                  {translateSportName(selectedBookingDetail.sportName, isEn)}
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 block font-medium">Ngày rèn luyện</span>
+                <span className="text-slate-400 block font-medium">{isEn ? 'Session Date' : 'Ngày rèn luyện'}</span>
                 <span className="font-bold text-slate-900">
-                  {formatMemberDate(selectedBookingDetail.bookingDate)}
+                  {formatMemberDate(selectedBookingDetail.bookingDate, isEn)}
                 </span>
               </div>
               <div>
-                <span className="text-slate-400 block font-medium">Khung giờ</span>
+                <span className="text-slate-400 block font-medium">{isEn ? 'Time Slot' : 'Khung giờ'}</span>
                 <span className="font-bold text-slate-900">{selectedBookingDetail.timeSlot}</span>
               </div>
               <div>
-                <span className="text-slate-400 block font-medium">Phòng / Sân tập</span>
-                <span className="font-bold text-slate-900">{selectedBookingDetail.roomName}</span>
+                <span className="text-slate-400 block font-medium">{isEn ? 'Room / Court' : 'Phòng / Sân tập'}</span>
+                <span className="font-bold text-slate-900">{translateRoomName(selectedBookingDetail.roomName, isEn)}</span>
               </div>
               <div className="col-span-2 pt-2 border-t border-slate-100">
-                <span className="text-slate-400 block font-medium">Huấn luyện viên phụ trách</span>
-                <span className="font-bold text-slate-900">{selectedBookingDetail.coachName}</span>
+                <span className="text-slate-400 block font-medium">{isEn ? 'Assigned Coach' : 'Huấn luyện viên phụ trách'}</span>
+                <span className="font-bold text-slate-900">{translateCoachName(selectedBookingDetail.coachName, isEn)}</span>
                 {selectedBookingDetail.coachSpecialization && (
                   <span className="block text-[11px] text-slate-500">
-                    Chuyên môn: {selectedBookingDetail.coachSpecialization}
+                    {isEn ? 'Specialization' : 'Chuyên môn'}: {selectedBookingDetail.coachSpecialization}
                   </span>
                 )}
               </div>
@@ -1157,13 +1186,13 @@ export function MyBookings() {
 
             {selectedBookingDetail.attendanceStatus && (
               <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 text-xs flex items-center justify-between">
-                <span className="text-slate-600 font-medium">Điểm danh:</span>
+                <span className="text-slate-600 font-medium">{isEn ? 'Attendance:' : 'Điểm danh:'}</span>
                 <span className="font-bold text-slate-900">
-                  {selectedBookingDetail.attendanceStatus === 'PRESENT' ? 'Đã có mặt' :
-                   selectedBookingDetail.attendanceStatus === 'LATE' ? 'Đi muộn' :
-                   selectedBookingDetail.attendanceStatus === 'ABSENT' ? 'Vắng mặt' :
-                   selectedBookingDetail.attendanceStatus === 'EXCUSED' ? 'Vắng có phép' :
-                   'Chưa ghi nhận'}
+                  {selectedBookingDetail.attendanceStatus === 'PRESENT' ? (isEn ? 'Present' : 'Đã có mặt') :
+                   selectedBookingDetail.attendanceStatus === 'LATE' ? (isEn ? 'Late' : 'Đi muộn') :
+                   selectedBookingDetail.attendanceStatus === 'ABSENT' ? (isEn ? 'Absent' : 'Vắng mặt') :
+                   selectedBookingDetail.attendanceStatus === 'EXCUSED' ? (isEn ? 'Excused' : 'Vắng có phép') :
+                   (isEn ? 'Not recorded' : 'Chưa ghi nhận')}
                 </span>
               </div>
             )}
@@ -1181,7 +1210,7 @@ export function MyBookings() {
                     className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-xl bg-red-600 hover:bg-red-700 text-white shadow-xs transition-colors flex items-center gap-1.5"
                   >
                     <span className="material-symbols-outlined text-[16px]">cancel</span>
-                    <span>Hủy Đặt Chỗ Này</span>
+                    <span>{isEn ? 'Cancel This Booking' : 'Hủy Đặt Chỗ Này'}</span>
                   </button>
               )}
               <div className="ml-auto">
@@ -1190,7 +1219,7 @@ export function MyBookings() {
                   onClick={() => setDetailModalOpen(false)}
                   className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-xl bg-slate-900 hover:bg-slate-800 text-white shadow-xs transition-colors"
                 >
-                  Đóng
+                  {isEn ? 'Close' : 'Đóng'}
                 </button>
               </div>
             </div>

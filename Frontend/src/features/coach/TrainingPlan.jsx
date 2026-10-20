@@ -7,6 +7,16 @@ import { Modal } from '../../components/common/Modal.jsx';
 import { CoachError } from './CoachShared.jsx';
 import { coachDate } from './coachOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import {
+  translateClassName,
+  translateSportName,
+  translateCoachName,
+  translatePlanTitle,
+  translatePlanGoal,
+  translateExerciseName,
+  translateExerciseNote,
+  translateReps
+} from '../../services/i18nHelper.js';
 
 export function TrainingPlan() {
   const { currentUser } = useAuth();
@@ -223,7 +233,7 @@ export function TrainingPlan() {
                     : 'bg-white text-slate-600 border border-slate-200 hover:bg-slate-50'
                 }`}
               >
-                {c.name} ({count})
+                {translateClassName(c.name, isEn)} ({count})
               </button>
             );
           })}
@@ -263,23 +273,23 @@ export function TrainingPlan() {
                     )}
                     {plan.className && (
                       <span className="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-                        {isEn ? `Class: ${plan.className}` : `Lớp: ${plan.className}`}
+                        {isEn ? `Class: ${translateClassName(plan.className, isEn)}` : `Lớp: ${plan.className}`}
                       </span>
                     )}
                     <span className="text-[10px] font-bold text-[#2D6A4F] bg-[#81B29A]/15 px-2 py-0.5 rounded border border-[#81B29A]/30">
-                      {plan.sportName || (isEn ? 'Sports' : 'Thể thao')}
+                      {translateSportName(plan.sportName, isEn) || (isEn ? 'Sports' : 'Thể thao')}
                     </span>
                   </div>
                   <h3 className="font-chivo text-lg font-black text-slate-900 leading-tight">
-                    {plan.title}
+                    {translatePlanTitle(plan.title, isEn)}
                   </h3>
                   <div className="text-xs text-slate-500 mt-1">
                     {isEn ? 'Audience: ' : 'Đối tượng: '}
                     <strong className="text-slate-900">
                       {plan.isCustom
                         ? (isEn ? `${plan.memberName} (Personal custom)` : `${plan.memberName} (Học viên riêng)`)
-                        : (isEn ? `All enrolled students in ${plan.className || ''}` : `Toàn bộ học viên lớp ${plan.className || ''}`)}
-                    </strong> • {isEn ? 'Coach: ' : 'HLV: '}<strong>{plan.coachName}</strong>
+                        : (isEn ? `All enrolled students in ${translateClassName(plan.className, isEn)}` : `Toàn bộ học viên lớp ${plan.className || ''}`)}
+                    </strong> • {isEn ? 'Coach: ' : 'HLV: '}<strong>{translateCoachName(plan.coachName, isEn)}</strong>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
@@ -300,7 +310,7 @@ export function TrainingPlan() {
                 <span className="font-bold text-slate-700 block mb-0.5">
                   {isEn ? 'Coaching Goal:' : 'Mục tiêu huấn luyện:'}
                 </span>
-                <p className="text-slate-600 italic">"{plan.goal}"</p>
+                <p className="text-slate-600 italic">"{translatePlanGoal(plan.goal, isEn)}"</p>
               </div>
 
               <div>
@@ -311,11 +321,11 @@ export function TrainingPlan() {
                   {plan.exercises?.map((ex, idx) => (
                     <div key={idx} className="p-2.5 rounded-lg border border-slate-100 text-xs flex items-center justify-between">
                       <div>
-                        <div className="font-bold text-slate-900">{idx + 1}. {ex.name}</div>
-                        <div className="text-[11px] text-slate-500">{ex.note}</div>
+                        <div className="font-bold text-slate-900">{idx + 1}. {translateExerciseName(ex.name, isEn)}</div>
+                        <div className="text-[11px] text-slate-500">{translateExerciseNote(ex.note, isEn)}</div>
                       </div>
                       <div className="text-right font-chivo font-bold text-slate-800 text-[11px] shrink-0">
-                        {ex.sets} {isEn ? 'sets x' : 'hiệp x'} {ex.reps}
+                        {ex.sets} {isEn ? 'sets x' : 'hiệp x'} {translateReps(ex.reps, isEn)}
                       </div>
                     </div>
                   ))}
@@ -363,7 +373,7 @@ export function TrainingPlan() {
               >
                 {coachClasses.map(c => (
                   <option key={c.id} value={c.id}>
-                    {c.name} ({c.sportName} • {isEn ? 'Enrolled:' : 'Sĩ số:'} {c.members?.length || 0} {isEn ? 'students' : 'học viên'})
+                    {translateClassName(c.name, isEn)} ({translateSportName(c.sportName, isEn)} • {isEn ? 'Enrolled:' : 'Sĩ số:'} {c.members?.length || 0} {isEn ? 'students' : 'học viên'})
                   </option>
                 ))}
               </select>

@@ -26,6 +26,7 @@ const server = http.createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = raw ? JSON.parse(raw) : null;
     if (route === '/api/landing-content' && req.method === 'GET') return json(res, { content: published });
+    if (/^\/api\/public\/centers\/\d+\/catalog$/.test(route)) return json(res, { center: { id: 15, name: 'Test center' }, sports: [], rooms: [], classes: [] });
     if (route === '/api/auth/login') return json(res, { accessToken: 'manager-test-token' });
     if (req.headers.authorization !== 'Bearer manager-test-token') return json(res, { message: 'Unauthorized' }, 401);
     if (route === '/api/profile/me') return json(res, { userId: 99, role: 'Manager', status: 'Active', centerId: 1, fullName: 'Manager test', email: 'manager@example.test' });
@@ -134,7 +135,7 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   await evaluate(manager, `document.querySelector('button[type=submit]').click()`);
   await until('authenticated', () => evaluate(manager, `location.hash === '#/manager/dashboard'`));
   await evaluate(manager, `location.hash = '#/manager/home-content'`);
-  const originalTitle = 'SHAPING RESILIENCE THROUGH SPORTS';
+  const originalTitle = '';
   await until('editor loaded', () => evaluate(manager, `Boolean(${titleInput(originalTitle)})`));
   console.log('Manager editor loaded; checking preview and publishing.');
   await setInput(manager, titleInput(originalTitle), 'Isolated preview draft');
@@ -153,7 +154,7 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   const { targetId: visitorId } = await cdp.send('Target.createTarget', { url: 'about:blank', browserContextId });
   const visitor = await attach(visitorId);
   await cdp.send('Page.navigate', { url: `${origin}/#/` }, visitor);
-  await until('visitor sees defaults', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes(${JSON.stringify(originalTitle)})`));
+  await until('visitor sees database center name', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes('Test center')`));
   await cdp.send('Page.bringToFront', {}, manager);
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
   await until('save completed', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && !document.querySelector('main')?.textContent.includes('Có thay đổi chưa lưu')`));
@@ -180,13 +181,14 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   failSave = false;
   await click(manager, 'Đồng Ý Khôi Phục');
   await until('reset completed', () => evaluate(manager, `Boolean(${titleInput(originalTitle)})`));
-  const metric = published.heroBanner.metrics[0].value;
-  await setInput(manager, titleInput(metric), 'Modified metric');
+  assert.deepEqual(published.heroBanner.metrics, []);
   await click(manager, 'Khôi Phục Gốc');
   await click(manager, 'Đồng Ý Khôi Phục');
-  await until('nested defaults restored', () => evaluate(manager, `!document.querySelector('main fieldset').disabled && Boolean(${titleInput(metric)})`));
-  assert.equal(published.heroBanner.metrics[0].value, metric);
-  checks.push('Repeated reset restores nested metrics to the original defaults.');
+  await until('empty defaults restored', () => evaluate(manager, `!document.querySelector('main fieldset').disabled`));
+  assert.deepEqual(published.heroBanner.metrics, []);
+  assert.deepEqual(published.coursesSection.sportsList, []);
+  assert.deepEqual(published.facilitiesSection.facilitiesList, []);
+  checks.push('Repeated reset keeps business lists and metrics empty instead of restoring demo records.');
 
   for (const label of ['2. Tại Sao Chọn SCMS', '3. Thẻ Môn Thể Thao', '4. Thẻ Cụm Sân', '5. Sơ Đồ Phân Khu', '6. Banner Kêu Gọi & Footer']) {
     await click(manager, label); await delay(100);
@@ -206,7 +208,7 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
     return Boolean(contactPreviewId);
   });
   const contactPreview = await attach(contactPreviewId);
-  const footerLink = label => `[...document.querySelectorAll('footer a')].find(link => link.textContent.trim() === ${JSON.stringify(label)})`;
+  const footerLink = label => `[...document.querySelectorAll('footer a')].find(link => link.title === ${JSON.stringify(label)} || link.textContent.trim() === ${JSON.stringify(label)})`;
   await until('contact preview rendered', () => evaluate(contactPreview, `Boolean(${footerLink(zaloLabel)}) && Boolean(${footerLink('Facebook')})`));
   assert.equal(published.ctaAndFooter.contactZaloPhone, '');
   checks.push('Contact links appear in the draft preview without publishing.');

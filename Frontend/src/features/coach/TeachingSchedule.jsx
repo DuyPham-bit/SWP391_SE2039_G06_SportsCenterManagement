@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { CoachError, useTeachingSessions, coachInput } from './CoachShared.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translateClassName, translateRoomName, translateSportName } from '../../services/i18nHelper.js';
 
 // --- TIỆN ÍCH NGÀY THÁNG VÀ LỊCH CHUẨN OLYMPIC ---
 
@@ -629,7 +630,7 @@ export function TeachingSchedule() {
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-[#F2CC8F]' : theme.dot}`} />
-                <span>{s.name}</span>
+                <span>{translateSportName(s.name, isEn)}</span>
                 <span className={`text-[10px] px-1 rounded ${isSelected ? 'bg-[#F2CC8F] text-[#1E2235]' : 'bg-slate-100 text-slate-600'}`}>
                   {s.count}
                 </span>
@@ -753,14 +754,14 @@ export function TeachingSchedule() {
 
                               {/* Class Name */}
                               <h4 className="font-chivo font-black text-slate-900 leading-snug line-clamp-2">
-                                {s.name}
+                                {translateClassName(s.name, isEn)}
                               </h4>
 
                               {/* Room & Status */}
                               <div className="text-[11px] text-slate-600 space-y-1">
                                 <div className="truncate flex items-center gap-1 text-slate-600">
                                   <span className="material-symbols-outlined text-[13px] text-slate-400">meeting_room</span>
-                                  <span>{s.roomName}</span>
+                                  <span>{translateRoomName(s.roomName, isEn)}</span>
                                 </div>
 
                                 <div className="flex items-center justify-between gap-1 pt-1 border-t border-black/5">
@@ -879,7 +880,7 @@ export function TeachingSchedule() {
                                 className={`px-1.5 py-0.5 rounded text-[10px] font-bold truncate flex items-center gap-1 border ${theme.bg} ${theme.text} ${theme.border}`}
                               >
                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${theme.dot}`} />
-                                <span className="truncate">{s.timeSlot.slice(0, 5)} {s.name}</span>
+                                <span className="truncate">{s.timeSlot.slice(0, 5)} {translateClassName(s.name, isEn)}</span>
                               </div>
                             );
                           })}
@@ -939,10 +940,10 @@ export function TeachingSchedule() {
                               <span className="font-bold text-slate-700">{s.timeSlot}</span>
                             </div>
                             <h4 className="font-chivo font-black text-sm text-slate-900 leading-snug">
-                              {s.name}
+                              {translateClassName(s.name, isEn)}
                             </h4>
                             <p className="text-[11px] text-slate-600 mt-1">
-                              {isEn ? 'Court / Room:' : 'Địa điểm:'} <strong>{s.roomName}</strong> · {isEn ? 'Enrolled:' : 'Sĩ số:'} <strong>{s.enrolledCount}/{s.capacity}</strong>
+                              {isEn ? 'Court / Room:' : 'Địa điểm:'} <strong>{translateRoomName(s.roomName, isEn)}</strong> · {isEn ? 'Enrolled:' : 'Sĩ số:'} <strong>{s.enrolledCount}/{s.capacity}</strong>
                             </p>
                           </div>
 
@@ -1023,11 +1024,11 @@ export function TeachingSchedule() {
                                       {theme.tag}
                                     </span>
                                     <h4 className="font-chivo font-black text-slate-900 text-sm truncate">
-                                      {s.name}
+                                      {translateClassName(s.name, isEn)}
                                     </h4>
                                   </div>
                                   <p className="text-slate-500 text-[11px]">
-                                    {isEn ? 'Room:' : 'Phòng:'} <strong className="text-slate-800">{s.roomName}</strong> · {isEn ? 'Status:' : 'Trạng thái:'} <strong className="text-slate-800">{statusInfo.label}</strong>
+                                    {isEn ? 'Room:' : 'Phòng:'} <strong className="text-slate-800">{translateRoomName(s.roomName, isEn)}</strong> · {isEn ? 'Status:' : 'Trạng thái:'} <strong className="text-slate-800">{statusInfo.label}</strong>
                                   </p>
                                 </div>
                               </div>
@@ -1102,7 +1103,7 @@ export function TeachingSchedule() {
                           </div>
 
                           <h2 className="font-chivo font-black text-slate-900 text-base leading-snug">
-                            {s.name}
+                            {translateClassName(s.name, isEn)}
                           </h2>
 
                           <div className="space-y-1.5 text-xs text-slate-600">
@@ -1116,7 +1117,7 @@ export function TeachingSchedule() {
                             </p>
                             <p className="flex items-center gap-1.5">
                               <span className="material-symbols-outlined text-[16px] text-slate-400">meeting_room</span>
-                              <span>{s.roomName}</span>
+                              <span>{translateRoomName(s.roomName, isEn)}</span>
                             </p>
                           </div>
 
@@ -1188,7 +1189,7 @@ export function TeachingSchedule() {
                 </span>
               </div>
               <h3 className="font-chivo font-black text-lg text-slate-900">
-                {activeSession.name}
+                {translateClassName(activeSession.name, isEn)}
               </h3>
             </div>
 
@@ -1216,7 +1217,7 @@ export function TeachingSchedule() {
                 <span className="text-slate-400 uppercase font-bold text-[10px] block">
                   {isEn ? 'Court / Room' : 'Phòng / Sân bãi'}
                 </span>
-                <strong className="text-slate-900 text-sm">{activeSession.roomName}</strong>
+                <strong className="text-slate-900 text-sm">{translateRoomName(activeSession.roomName, isEn)}</strong>
                 <p className="text-slate-600">{isEn ? 'Confirmed Schedule' : 'Đã chốt lịch'}</p>
               </div>
 

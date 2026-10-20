@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { systemApi, staffApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
 import { useAuth } from '../../context/AuthContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { SYSTEM_CAPABILITIES } from '../../services/permissions.js';
 import { Badge } from '../../components/common/StatCard.js';
 
@@ -15,7 +16,21 @@ const CAPABILITY_CATEGORIES = [
   'BÁO CÁO & BẢO MẬT'
 ];
 
+const getCategoryLabel = (category, isEn) => {
+  const map = {
+    'VẬN HÀNH & NHÂN SỰ': isEn ? 'OPERATIONS & STAFF' : 'VẬN HÀNH & NHÂN SỰ',
+    'NGHIỆP VỤ LỄ TÂN': isEn ? 'RECEPTION & FRONT DESK' : 'NGHIỆP VỤ LỄ TÂN',
+    'HUẤN LUYỆN VIÊN': isEn ? 'COACH OPERATIONS' : 'HUẤN LUYỆN VIÊN',
+    'GIÁO ÁN & CHUYÊN MÔN': isEn ? 'TRAINING PLANS & EXPERTISE' : 'GIÁO ÁN & CHUYÊN MÔN',
+    'HỘI VIÊN & ĐẶT CHỖ': isEn ? 'MEMBERS & BOOKINGS' : 'HỘI VIÊN & ĐẶT CHỖ',
+    'BÁO CÁO & BẢO MẬT': isEn ? 'REPORTS & SECURITY' : 'BÁO CÁO & BẢO MẬT'
+  };
+  return map[category] || category;
+};
+
 export function RolesPermissions() {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const { currentUser } = useAuth();
   const { showError, showSuccess } = useToast();
 
@@ -69,14 +84,14 @@ export function RolesPermissions() {
         }
 
       } catch (e) {
-        if (isMounted) setLoadError(e.message || 'Lỗi khi tải dữ liệu phân quyền');
+        if (isMounted) setLoadError(e.message || (isEn ? 'Failed to load permissions matrix' : 'Lỗi khi tải dữ liệu phân quyền'));
       } finally {
         if (isMounted) setLoading(false);
       }
     }
     loadData();
     return () => { isMounted = false; };
-  }, []);
+  }, [isEn]);
 
   // When a role is chosen in Tab 1
   const selectRole = (row) => {
@@ -115,7 +130,7 @@ export function RolesPermissions() {
     if (!selectedRole) return;
     setRoleCaps([...(selectedRole.availableCapabilities || [])]);
     setRoleCodes((selectedRole.availablePermissions || []).map(p => p.code));
-    showSuccess('Đã chọn quyền mặc định. Bấm Lưu cấu hình để áp dụng.');
+    showSuccess(isEn ? 'Restored default permissions. Click Save to apply.' : 'Đã chọn quyền mặc định. Bấm Lưu cấu hình để áp dụng.');
   };
 
   // Save Role Permissions to Backend (Tab 1)
@@ -128,9 +143,11 @@ export function RolesPermissions() {
       setMatrix(rows);
       const updated = rows.find(r => String(r.roleId) === String(selectedRoleId));
       if (updated) selectRole(updated);
-      showSuccess(`Đã lưu cấu hình phân quyền cho vai trò ${selectedRole?.roleName || ''} thành công!`);
+      showSuccess(isEn
+        ? `Successfully saved role permissions for ${selectedRole?.roleName || ''}!`
+        : `Đã lưu cấu hình phân quyền cho vai trò ${selectedRole?.roleName || ''} thành công!`);
     } catch (e) {
-      showError(e.message || 'Không thể lưu phân quyền vai trò.');
+      showError(e.message || (isEn ? 'Could not save role permissions.' : 'Không thể lưu phân quyền vai trò.'));
     } finally {
       setBusy(false);
     }
@@ -141,7 +158,7 @@ export function RolesPermissions() {
     if (!selectedRole) return [];
     const available = selectedRole.availableCapabilities || [];
     return available
-      .map(id => SYSTEM_CAPABILITIES.find(c => c.id === id) || { id, label: id, desc: 'Chức năng hệ thống', category: 'KHÁC', icon: 'settings' })
+      .map(id => SYSTEM_CAPABILITIES.find(c => c.id === id) || { id, label: id, desc: isEn ? 'System feature' : 'Chức năng hệ thống', category: 'KHÁC', icon: 'settings' })
       .filter(cap => {
         const matchesCategory = roleCategoryFilter === 'ALL' || cap.category === roleCategoryFilter;
         const q = roleSearchQuery.trim().toLowerCase();
@@ -151,7 +168,7 @@ export function RolesPermissions() {
           (cap.desc || '').toLowerCase().includes(q);
         return matchesCategory && matchesQuery;
       });
-  }, [selectedRole, roleCategoryFilter, roleSearchQuery]);
+  }, [selectedRole, roleCategoryFilter, roleSearchQuery, isEn]);
 
   // Filtered data permissions for Tab 1
   const filteredRoleCodes = useMemo(() => {
@@ -180,77 +197,89 @@ export function RolesPermissions() {
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
-        <div className="w-10 h-10 border-4 border-red-200 border-t-red-600 rounded-full animate-spin"></div>
-        <p className="text-sm font-semibold text-slate-600">Đang tải ma trận phân quyền hệ thống SCMS...</p>
+        <div className="w-10 h-10 border-4 border-[#81B29A]/30 border-t-[#2D6A4F] rounded-full animate-spin"></div>
+        <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
+          {isEn ? 'Loading SCMS permission matrix...' : 'Đang tải ma trận phân quyền hệ thống SCMS...'}
+        </p>
       </div>
     );
   }
 
-  if (loadError) return <div role="alert" className="p-4 text-red-700">{loadError}</div>;
+  if (loadError) return <div role="alert" className="p-4 rounded-2xl bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400 border border-rose-200 dark:border-rose-800">{loadError}</div>;
 
   return (
-    <div className="space-y-6 pb-16">
-      {/* Top Banner / Header */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-red-950 text-white p-6 rounded-2xl shadow-sm border border-slate-700/50">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+    <div className="space-y-6 pb-16 animate-fade-slide-up">
+      {/* Top Banner / Header - Olympic Midnight Navy */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] p-6 lg:p-8 text-white shadow-xl">
+        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#81B29A]/10 blur-3xl pointer-events-none" />
+        <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-[#F2CC8F]/10 blur-2xl pointer-events-none" />
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="px-2.5 py-0.5 rounded text-[11px] font-bold tracking-wider bg-red-600/90 text-white uppercase">
-                {isManager ? 'Phân Quyền Trung Tâm' : 'Quản Trị Toàn Hệ Thống'}
+            <div className="flex items-center gap-2 mb-3">
+              <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-[#2D6A4F] text-white uppercase shadow-sm">
+                {isManager ? (isEn ? 'Center Access Control' : 'Phân Quyền Trung Tâm') : (isEn ? 'System Admin' : 'Quản Trị Toàn Hệ Thống')}
               </span>
-              <span className="px-2.5 py-0.5 rounded text-[11px] font-medium bg-slate-800 text-slate-300 border border-slate-700">
-                {centerId ? `Cơ sở #${centerId}` : 'Toàn hệ thống'}
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md text-[#F2CC8F] border border-white/10">
+                {centerId ? `${isEn ? 'Facility' : 'Cơ sở'} #${centerId}` : (isEn ? 'Enterprise-wide' : 'Toàn hệ thống')}
               </span>
             </div>
-            <h1 className="text-2xl lg:text-3xl font-extrabold tracking-tight text-white">
-              Phân Quyền Theo Vai Trò
+            <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white">
+              {isEn ? 'Role-Based Access Control (RBAC)' : 'Phân Quyền Theo Vai Trò'}
             </h1>
             <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
-              Thiết lập quyền truy cập theo vai trò và lưu cấu hình tại trung tâm.
+              {isEn
+                ? 'Configure role capabilities, manage data permissions, and govern delegation across center staff.'
+                : 'Thiết lập quyền truy cập theo vai trò và lưu cấu hình tại trung tâm an toàn theo chính sách Safe Delegation.'}
             </p>
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 bg-slate-950/40 p-3 rounded-xl border border-slate-700/60 backdrop-blur-sm">
-            <div className="text-center px-2">
-              <div className="text-xl font-black text-red-400">{matrix.length}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Vai trò</div>
+          <div className="grid grid-cols-3 gap-3 bg-white/5 p-3 rounded-2xl border border-white/10 backdrop-blur-md">
+            <div className="text-center px-3">
+              <div className="text-xl font-black text-[#81B29A]">{matrix.length}</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                {isEn ? 'Roles' : 'Vai trò'}
+              </div>
             </div>
-            <div className="text-center px-2 border-l border-slate-700/60">
-              <div className="text-xl font-black text-amber-400">{staffList.length}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Nhân sự</div>
+            <div className="text-center px-3 border-l border-white/10">
+              <div className="text-xl font-black text-[#F2CC8F]">{staffList.length}</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                {isEn ? 'Staff' : 'Nhân sự'}
+              </div>
             </div>
-            <div className="text-center px-2 border-l border-slate-700/60">
-              <div className="text-xl font-black text-emerald-400">{SYSTEM_CAPABILITIES.length}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">Chức năng</div>
+            <div className="text-center px-3 border-l border-white/10">
+              <div className="text-xl font-black text-white">{SYSTEM_CAPABILITIES.length}</div>
+              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+                {isEn ? 'Features' : 'Chức năng'}
+              </div>
             </div>
           </div>
         </div>
 
         {/* Master Navigation Tabs */}
-        <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-slate-700/60">
+        <div className="relative z-10 flex flex-wrap gap-2 mt-6 pt-4 border-t border-white/10">
           <button
             onClick={() => setActiveTab('ROLES')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'ROLES'
-                ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-                : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white'
+                ? 'bg-[#2D6A4F] text-white shadow-lg shadow-[#2D6A4F]/30'
+                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            1. Phân Quyền Theo Vai Trò ({matrix.length})
+            {isEn ? `1. Role Access Permissions (${matrix.length})` : `1. Phân Quyền Theo Vai Trò (${matrix.length})`}
           </button>
 
           <button
             onClick={() => setActiveTab('MATRIX')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'MATRIX'
-                ? 'bg-red-600 text-white shadow-lg shadow-red-600/30'
-                : 'bg-slate-800/80 text-slate-300 hover:bg-slate-800 hover:text-white'
+                ? 'bg-[#2D6A4F] text-white shadow-lg shadow-[#2D6A4F]/30'
+                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">grid_view</span>
-            2. Ma Trận Toàn Cảnh (Full RBAC Grid)
+            {isEn ? '2. Full RBAC Matrix Grid' : '2. Ma Trận Toàn Cảnh (Full RBAC Grid)'}
           </button>
         </div>
       </div>
@@ -263,11 +292,12 @@ export function RolesPermissions() {
           {/* Role Selection Cards */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <h2 className="text-sm font-bold uppercase tracking-wider text-slate-500">
-                Bước 1: Chọn vai trò muốn cấu hình phân quyền
+              <h2 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                {isEn ? 'Step 1: Select role to configure permissions' : 'Bước 1: Chọn vai trò muốn cấu hình phân quyền'}
               </h2>
-              <span className="text-xs text-slate-500">
-                Đang cấu hình: <strong className="text-slate-800">{selectedRole?.roleName}</strong>
+              <span className="text-xs text-slate-500 dark:text-slate-400">
+                {isEn ? 'Currently configuring:' : 'Đang cấu hình:'}{' '}
+                <strong className="text-slate-800 dark:text-white font-bold">{selectedRole?.roleName}</strong>
               </span>
             </div>
 
@@ -277,31 +307,39 @@ export function RolesPermissions() {
                 const roleUpper = String(role.roleName).toUpperCase();
 
                 // Assign theme details based on role
-                let roleColor = 'border-slate-200 hover:border-slate-300';
+                let roleColor = 'border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 bg-white dark:bg-slate-900';
                 let icon = 'badge';
-                let roleDesc = 'Quyền hạn cơ sở';
+                let roleDesc = isEn ? 'Base system permissions' : 'Quyền hạn cơ sở';
                 let badgeVariant = 'info';
 
                 if (roleUpper === 'COACH') {
                   icon = 'sports';
-                  roleDesc = 'Huấn luyện viên phụ trách ca dạy, điểm danh & soạn giáo án thể thao.';
+                  roleDesc = isEn
+                    ? 'Coach in charge of training sessions, attendance & sport syllabus.'
+                    : 'Huấn luyện viên phụ trách ca dạy, điểm danh & soạn giáo án thể thao.';
                   badgeVariant = 'COACH';
-                  if (isSelected) roleColor = 'border-amber-500 ring-2 ring-amber-500/20 bg-amber-50/40';
+                  if (isSelected) roleColor = 'border-[#F2CC8F] ring-2 ring-[#F2CC8F]/30 bg-[#F2CC8F]/10 dark:bg-[#F2CC8F]/5';
                 } else if (roleUpper === 'RECEPTIONIST') {
                   icon = 'countertops';
-                  roleDesc = 'Nhân viên lễ tân đón tiếp, tra cứu hội viên, thu ngân & quét thẻ check-in.';
+                  roleDesc = isEn
+                    ? 'Receptionist welcoming guests, looking up members, cashiering & check-in.'
+                    : 'Nhân viên lễ tân đón tiếp, tra cứu hội viên, thu ngân & quét thẻ check-in.';
                   badgeVariant = 'RECEPTIONIST';
-                  if (isSelected) roleColor = 'border-purple-500 ring-2 ring-purple-500/20 bg-purple-50/40';
+                  if (isSelected) roleColor = 'border-purple-500 ring-2 ring-purple-500/20 bg-purple-50/60 dark:bg-purple-950/20';
                 } else if (roleUpper === 'MEMBER') {
                   icon = 'card_membership';
-                  roleDesc = 'Hội viên trung tâm: tự đặt chỗ lớp học, theo dõi tiến độ tập luyện.';
+                  roleDesc = isEn
+                    ? 'Center member: booking classes, tracking workout progress.'
+                    : 'Hội viên trung tâm: tự đặt chỗ lớp học, theo dõi tiến độ tập luyện.';
                   badgeVariant = 'MEMBER';
-                  if (isSelected) roleColor = 'border-emerald-500 ring-2 ring-emerald-500/20 bg-emerald-50/40';
+                  if (isSelected) roleColor = 'border-[#2D6A4F] ring-2 ring-[#2D6A4F]/30 bg-[#2D6A4F]/10 dark:bg-[#2D6A4F]/5';
                 } else {
                   icon = 'admin_panel_settings';
-                  roleDesc = 'Quản trị viên & ban quản lý trung tâm điều hành mọi hoạt động.';
+                  roleDesc = isEn
+                    ? 'Administrator & management overseeing all sports center operations.'
+                    : 'Quản trị viên & ban quản lý trung tâm điều hành mọi hoạt động.';
                   badgeVariant = 'MANAGER';
-                  if (isSelected) roleColor = 'border-blue-500 ring-2 ring-blue-500/20 bg-blue-50/40';
+                  if (isSelected) roleColor = 'border-[#1E2235] dark:border-[#81B29A] ring-2 ring-[#1E2235]/30 dark:ring-[#81B29A]/30 bg-slate-50 dark:bg-slate-800/50';
                 }
 
                 // Count staff assigned to this role
@@ -311,37 +349,37 @@ export function RolesPermissions() {
                   <div
                     key={role.roleId}
                     onClick={() => selectRole(role)}
-                    className={`cursor-pointer rounded-2xl border p-4 bg-white transition-all shadow-sm relative ${roleColor}`}
+                    className={`cursor-pointer rounded-2xl border p-4 transition-all shadow-sm relative hover-lift ${roleColor}`}
                   >
                     {isSelected && (
                       <span className="absolute top-3 right-3 flex h-3 w-3">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-red-600"></span>
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-[#2D6A4F] opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-[#2D6A4F]"></span>
                       </span>
                     )}
 
                     <div className="flex items-center gap-3 mb-2">
-                      <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800">
+                      <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
                         <span className="material-symbols-outlined text-[24px]">{icon}</span>
                       </div>
                       <div>
-                        <h3 className="font-bold text-slate-900 text-base">{role.roleName}</h3>
+                        <h3 className="font-bold text-slate-900 dark:text-white text-base">{role.roleName}</h3>
                         <Badge variant={badgeVariant} size="sm">{role.roleName}</Badge>
                       </div>
                     </div>
 
-                    <p className="text-xs text-slate-500 leading-snug line-clamp-2 my-2">
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-snug line-clamp-2 my-2 min-h-[32px]">
                       {roleDesc}
                     </p>
 
-                    <div className="mt-3 pt-3 border-t border-slate-100 flex items-center justify-between text-[11px] text-slate-600">
-                      <span>Nhân sự áp dụng:</span>
-                      <span className="font-bold text-slate-800">{staffCount} người</span>
+                    <div className="mt-3 pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
+                      <span>{isEn ? 'Assigned Staff:' : 'Nhân sự áp dụng:'}</span>
+                      <span className="font-bold text-slate-800 dark:text-white">{staffCount} {isEn ? 'staff' : 'người'}</span>
                     </div>
 
-                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-600">
-                      <span>Chức năng mở:</span>
-                      <span className="font-bold text-emerald-600">
+                    <div className="mt-1 flex items-center justify-between text-[11px] text-slate-600 dark:text-slate-400">
+                      <span>{isEn ? 'Enabled Features:' : 'Chức năng mở:'}</span>
+                      <span className="font-bold text-[#2D6A4F] dark:text-[#81B29A]">
                         {(role.capabilityIds || []).length} / {(role.availableCapabilities || []).length}
                       </span>
                     </div>
@@ -353,18 +391,21 @@ export function RolesPermissions() {
 
           {/* Detailed Inspector & Permissions Toggle Area */}
           {selectedRole ? (
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
+            <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 space-y-6">
               {/* Header of Inspector */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
                 <div>
                   <div className="flex items-center gap-2">
-                    <h3 className="text-lg font-bold text-slate-900">
-                      Cấu hình quyền cho vai trò: <span className="text-red-600">{selectedRole.roleName}</span>
+                    <h3 className="text-lg font-bold text-slate-900 dark:text-white">
+                      {isEn ? 'Configure Permissions for Role:' : 'Cấu hình quyền cho vai trò:'}{' '}
+                      <span className="text-[#2D6A4F] dark:text-[#81B29A]">{selectedRole.roleName}</span>
                     </h3>
                     <Badge variant={selectedRole.roleName.toUpperCase()} size="sm">{selectedRole.roleName}</Badge>
                   </div>
-                  <p className="text-xs text-slate-500 mt-1">
-                    Bật/tắt các quyền chức năng và quyền dữ liệu mà mọi người mang vai trò này sẽ được cấp mặc định.
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                    {isEn
+                      ? 'Enable/disable business features and data operations granted by default to all users with this role.'
+                      : 'Bật/tắt các quyền chức năng và quyền dữ liệu mà mọi người mang vai trò này sẽ được cấp mặc định.'}
                   </p>
                 </div>
 
@@ -372,24 +413,24 @@ export function RolesPermissions() {
                 <div className="flex flex-wrap items-center gap-2">
                   <button
                     onClick={handleSelectAllRoleCaps}
-                    className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-colors flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-lg transition-colors flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[16px]">select_all</span>
-                    Chọn tất cả
+                    {isEn ? 'Select All' : 'Chọn tất cả'}
                   </button>
                   <button
                     onClick={handleDeselectAllRoleCaps}
-                    className="px-3 py-1.5 text-xs font-semibold bg-slate-100 text-slate-700 hover:bg-slate-200 border border-slate-200 rounded-lg transition-colors flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[16px]">deselect</span>
-                    Bỏ chọn tất cả
+                    {isEn ? 'Deselect All' : 'Bỏ chọn tất cả'}
                   </button>
                   <button
                     onClick={handleResetRoleDefaults}
-                    className="px-3 py-1.5 text-xs font-semibold bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200 rounded-lg transition-colors flex items-center gap-1"
+                    className="px-3 py-1.5 text-xs font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-lg transition-colors flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[16px]">restore</span>
-                    Chuẩn mặc định
+                    {isEn ? 'Reset Default' : 'Chuẩn mặc định'}
                   </button>
                 </div>
               </div>
@@ -404,13 +445,13 @@ export function RolesPermissions() {
                     type="text"
                     value={roleSearchQuery}
                     onChange={e => setRoleSearchQuery(e.target.value)}
-                    placeholder="Tìm kiếm quyền theo tên, mã code hoặc mô tả..."
-                    className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                    placeholder={isEn ? 'Search permissions by name, code or description...' : 'Tìm kiếm quyền theo tên, mã code hoặc mô tả...'}
+                    className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]"
                   />
                   {roleSearchQuery && (
                     <button
                       onClick={() => setRoleSearchQuery('')}
-                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 text-xs"
+                      className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
                     >
                       ✕
                     </button>
@@ -421,9 +462,11 @@ export function RolesPermissions() {
                   <select
                     value={roleCategoryFilter}
                     onChange={e => setRoleCategoryFilter(e.target.value)}
-                    className="border border-slate-200 rounded-xl px-3 py-2 text-xs bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-500 font-medium"
+                    className="border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-200 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F] font-medium"
                   >
-                    <option value="ALL">Tất cả danh mục ({filteredRoleCaps.length})</option>
+                    <option value="ALL">
+                      {isEn ? `All Categories (${filteredRoleCaps.length})` : `Tất cả danh mục (${filteredRoleCaps.length})`}
+                    </option>
                     {CAPABILITY_CATEGORIES.map(cat => (
                       <option key={cat} value={cat}>{cat}</option>
                     ))}
@@ -435,19 +478,25 @@ export function RolesPermissions() {
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-red-600 text-[20px]">layers</span>
-                    <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider">
-                      1. Chức năng nghiệp vụ & Màn hình truy cập ({roleCaps.length}/{(selectedRole.availableCapabilities || []).length})
+                    <span className="material-symbols-outlined text-[#2D6A4F] dark:text-[#81B29A] text-[20px]">layers</span>
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
+                      {isEn
+                        ? `1. Business Features & Screens (${roleCaps.length}/${(selectedRole.availableCapabilities || []).length})`
+                        : `1. Chức năng nghiệp vụ & Màn hình truy cập (${roleCaps.length}/${(selectedRole.availableCapabilities || []).length})`}
                     </h4>
                   </div>
-                  <span className="text-xs text-slate-500">
-                    Chỉ cấp trong phạm vi an toàn của vai trò {selectedRole.roleName}
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {isEn
+                      ? `Within safe scope of role ${selectedRole.roleName}`
+                      : `Chỉ cấp trong phạm vi an toàn của vai trò ${selectedRole.roleName}`}
                   </span>
                 </div>
 
                 {filteredRoleCaps.length === 0 ? (
-                  <div className="p-8 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs">
-                    Không tìm thấy chức năng phù hợp với từ khóa "{roleSearchQuery}".
+                  <div className="p-8 text-center bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs">
+                    {isEn
+                      ? `No features matched "${roleSearchQuery}".`
+                      : `Không tìm thấy chức năng phù hợp với từ khóa "${roleSearchQuery}".`}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
@@ -457,48 +506,48 @@ export function RolesPermissions() {
                         <div
                           key={cap.id}
                           onClick={() => toggleRoleCap(cap.id)}
-                          className={`cursor-pointer rounded-xl border p-3.5 transition-all flex items-start gap-3 select-none ${
+                          className={`cursor-pointer rounded-xl border p-3.5 transition-all flex items-start gap-3 select-none hover-lift ${
                             isChecked
-                              ? 'bg-red-50/40 border-red-300 ring-1 ring-red-500/20'
-                              : 'bg-white border-slate-200 hover:border-slate-300'
+                              ? 'bg-[#2D6A4F]/10 dark:bg-[#2D6A4F]/20 border-[#2D6A4F]/40 dark:border-[#2D6A4F]/50 ring-1 ring-[#2D6A4F]/30'
+                              : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => {}} // handled by parent onClick
-                            className="mt-1 h-4 w-4 rounded text-red-600 focus:ring-red-500 border-slate-300 cursor-pointer"
+                            className="mt-1 h-4 w-4 rounded text-[#2D6A4F] focus:ring-[#2D6A4F] border-slate-300 dark:border-slate-700 cursor-pointer accent-[#2D6A4F]"
                           />
 
-                          <div className="w-8 h-8 rounded-lg bg-slate-100 flex items-center justify-center text-slate-700 flex-shrink-0 mt-0.5">
+                          <div className="w-8 h-8 rounded-lg bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-700 dark:text-slate-300 flex-shrink-0 mt-0.5">
                             <span className="material-symbols-outlined text-[18px]">{cap.icon || 'star'}</span>
                           </div>
 
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1">
-                              <h5 className="font-bold text-xs text-slate-900 leading-tight">
+                              <h5 className="font-bold text-xs text-slate-900 dark:text-white leading-tight">
                                 {cap.label}
                               </h5>
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 text-slate-600 font-semibold">
+                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
                                 {cap.id}
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-500 mt-1 leading-snug">
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
                               {cap.desc}
                             </p>
                             <div className="mt-2 flex items-center gap-2">
-                              <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400">
+                              <span className="text-[10px] uppercase tracking-wider font-bold text-slate-400 dark:text-slate-500">
                                 {cap.category}
                               </span>
                               {isChecked ? (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-600">
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-bold text-[#2D6A4F] dark:text-[#81B29A]">
                                   <span className="material-symbols-outlined text-[12px]">check_circle</span>
-                                  Đang bật
+                                  {isEn ? 'Enabled' : 'Đang bật'}
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-400">
+                                <span className="inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-400 dark:text-slate-500">
                                   <span className="material-symbols-outlined text-[12px]">block</span>
-                                  Đang khóa
+                                  {isEn ? 'Disabled' : 'Đang khóa'}
                                 </span>
                               )}
                             </div>
@@ -511,22 +560,24 @@ export function RolesPermissions() {
               </div>
 
               {/* Section 2: Data Permissions (Quyền dữ liệu backend) */}
-              <div className="space-y-4 pt-4 border-t border-slate-100">
+              <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-blue-600 text-[20px]">database</span>
-                    <h4 className="font-bold text-slate-900 text-sm uppercase tracking-wider">
-                      2. Quyền Dữ Liệu & Thao Tác API ({roleCodes.length}/{(selectedRole.availablePermissions || []).length})
+                    <span className="material-symbols-outlined text-[#1E2235] dark:text-[#81B29A] text-[20px]">database</span>
+                    <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
+                      {isEn
+                        ? `2. Data Permissions & API Operations (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`
+                        : `2. Quyền Dữ Liệu & Thao Tác API (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`}
                     </h4>
                   </div>
-                  <span className="text-xs text-slate-500">
-                    Phạm vi truy xuất dữ liệu database của vai trò
+                  <span className="text-xs text-slate-500 dark:text-slate-400">
+                    {isEn ? 'Database query & operation scope for role' : 'Phạm vi truy xuất dữ liệu database của vai trò'}
                   </span>
                 </div>
 
                 {filteredRoleCodes.length === 0 ? (
-                  <div className="p-6 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 text-slate-500 text-xs">
-                    Không có quyền dữ liệu đặc thù hoặc chưa tìm thấy kết quả.
+                  <div className="p-6 text-center bg-slate-50 dark:bg-slate-800/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800 text-slate-500 dark:text-slate-400 text-xs">
+                    {isEn ? 'No specific data permissions found.' : 'Không có quyền dữ liệu đặc thù hoặc chưa tìm thấy kết quả.'}
                   </div>
                 ) : (
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
@@ -536,27 +587,27 @@ export function RolesPermissions() {
                         <div
                           key={p.code}
                           onClick={() => toggleRoleCode(p.code)}
-                          className={`cursor-pointer rounded-xl border p-3 transition-all flex items-start gap-3 select-none ${
+                          className={`cursor-pointer rounded-xl border p-3 transition-all flex items-start gap-3 select-none hover-lift ${
                             isChecked
-                              ? 'bg-blue-50/40 border-blue-300 ring-1 ring-blue-500/20'
-                              : 'bg-white border-slate-200 hover:border-slate-300'
+                              ? 'bg-slate-100 dark:bg-slate-800 border-slate-400 dark:border-slate-600 ring-1 ring-slate-400/20'
+                              : 'bg-white dark:bg-slate-800/50 border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
                           }`}
                         >
                           <input
                             type="checkbox"
                             checked={isChecked}
                             onChange={() => {}}
-                            className="mt-0.5 h-4 w-4 rounded text-blue-600 focus:ring-blue-500 border-slate-300 cursor-pointer"
+                            className="mt-0.5 h-4 w-4 rounded text-[#1E2235] dark:text-[#81B29A] focus:ring-[#1E2235] border-slate-300 dark:border-slate-700 cursor-pointer accent-[#1E2235]"
                           />
                           <div className="flex-1 min-w-0">
                             <div className="flex items-center justify-between gap-1">
-                              <span className="font-bold text-xs text-slate-900">{p.name}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-blue-100 text-blue-800">
+                              <span className="font-bold text-xs text-slate-900 dark:text-white">{p.name}</span>
+                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
                                 {p.code}
                               </span>
                             </div>
-                            <p className="text-[11px] text-slate-500 mt-1 line-clamp-2">
-                              {p.description || 'Quyền thao tác dữ liệu hệ thống'}
+                            <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
+                              {p.description || (isEn ? 'System data operation capability' : 'Quyền thao tác dữ liệu hệ thống')}
                             </p>
                           </div>
                         </div>
@@ -567,52 +618,66 @@ export function RolesPermissions() {
               </div>
 
               {/* Save Bar */}
-              <div className="pt-4 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
-                <div className="text-xs text-slate-500 flex items-center gap-1.5">
+              <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+                <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
                   <span className="material-symbols-outlined text-amber-500 text-[18px]">info</span>
-                  <span>Quyền áp dụng từ request tiếp theo; giao diện người dùng cập nhật khi đăng nhập lại hoặc reload.</span>
+                  <span>
+                    {isEn
+                      ? 'Permissions apply immediately from the next request; UI refreshes on next reload.'
+                      : 'Quyền áp dụng từ request tiếp theo; giao diện người dùng cập nhật khi đăng nhập lại hoặc reload.'}
+                  </span>
                 </div>
 
                 <button
                   disabled={busy}
                   onClick={handleSaveRole}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md shadow-red-600/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50"
+                  className="w-full sm:w-auto px-6 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold rounded-xl shadow-md shadow-[#2D6A4F]/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 hover-lift"
                 >
                   {busy ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>Đang lưu ma trận vai trò...</span>
+                      <span>{isEn ? 'Saving role matrix...' : 'Đang lưu ma trận vai trò...'}</span>
                     </>
                   ) : (
                     <>
                       <span className="material-symbols-outlined text-[18px]">save</span>
-                      <span>Lưu Phân Quyền Vai Trò [{selectedRole.roleName}]</span>
+                      <span>
+                        {isEn
+                          ? `Save Role Permissions [${selectedRole.roleName}]`
+                          : `Lưu Phân Quyền Vai Trò [${selectedRole.roleName}]`}
+                      </span>
                     </>
                   )}
                 </button>
               </div>
             </div>
           ) : (
-            <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
+            <div className="p-12 text-center bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800">
               <span className="material-symbols-outlined text-slate-400 text-[48px] mb-2">lock_open</span>
-              <p className="text-sm font-semibold text-slate-600">Vui lòng chọn một vai trò ở trên để bắt đầu cấu hình.</p>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">
+                {isEn ? 'Please select a role above to begin configuration.' : 'Vui lòng chọn một vai trò ở trên để bắt đầu cấu hình.'}
+              </p>
             </div>
           )}
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* TAB 3: MA TRẬN TOÀN CẢNH (FULL RBAC MATRIX GRID)                          */}
+      {/* TAB 2: MA TRẬN TOÀN CẢNH (FULL RBAC MATRIX GRID)                          */}
       {/* ========================================================================= */}
       {activeTab === 'MATRIX' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
-              <h3 className="font-bold text-slate-900 text-base">
-                Bảng Ma Trận Phân Quyền Toàn Cảnh (Enterprise RBAC Matrix)
+              <h3 className="font-bold text-slate-900 dark:text-white text-base">
+                {isEn
+                  ? 'Enterprise RBAC Matrix Overview'
+                  : 'Bảng Ma Trận Phân Quyền Toàn Cảnh (Enterprise RBAC Matrix)'}
               </h3>
-              <p className="text-xs text-slate-500 mt-1">
-                Bảng đối chiếu tổng thể quyền truy cập giữa các vai trò trong hệ thống SCMS.
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                {isEn
+                  ? 'Cross-role matrix comparing system capabilities and permissions in SCMS.'
+                  : 'Bảng đối chiếu tổng thể quyền truy cập giữa các vai trò trong hệ thống SCMS.'}
               </p>
             </div>
 
@@ -624,35 +689,35 @@ export function RolesPermissions() {
                 type="text"
                 value={matrixSearchQuery}
                 onChange={e => setMatrixSearchQuery(e.target.value)}
-                placeholder="Tìm tính năng trong ma trận..."
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-red-500"
+                placeholder={isEn ? 'Search features in matrix...' : 'Tìm tính năng trong ma trận...'}
+                className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]"
               />
             </div>
           </div>
 
           {/* Matrix Grid Table */}
-          <div className="overflow-x-auto border border-slate-200 rounded-xl">
+          <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
-                <tr className="bg-slate-900 text-white font-chivo">
+                <tr className="bg-[#1E2235] text-white">
                   <th className="py-3 px-4 uppercase tracking-wider text-[11px] font-bold min-w-[260px]">
-                    Chức Năng & Quyền Hệ Thống
+                    {isEn ? 'Feature & System Capability' : 'Chức Năng & Quyền Hệ Thống'}
                   </th>
                   <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36">
-                    Quản Lý (Manager)
+                    {isEn ? 'Manager' : 'Quản Lý (Manager)'}
                   </th>
                   <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36 bg-amber-950/60 text-amber-300">
-                    Huấn Luyện Viên
+                    {isEn ? 'Coach' : 'Huấn Luyện Viên'}
                   </th>
                   <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36 bg-purple-950/60 text-purple-300">
-                    Lễ Tân
+                    {isEn ? 'Receptionist' : 'Lễ Tân'}
                   </th>
                   <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36 bg-emerald-950/60 text-emerald-300">
-                    Hội Viên
+                    {isEn ? 'Member' : 'Hội Viên'}
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
                 {CAPABILITY_CATEGORIES.map(category => {
                   const capsInCategory = filteredMatrixCaps.filter(c => c.category === category);
                   if (capsInCategory.length === 0) return null;
@@ -660,9 +725,9 @@ export function RolesPermissions() {
                   return (
                     <React.Fragment key={category}>
                       {/* Category Header Row */}
-                      <tr className="bg-slate-100/80 font-bold text-slate-800">
-                        <td colSpan={5} className="py-2.5 px-4 text-[11px] uppercase tracking-wider text-slate-700 bg-slate-100">
-                          {category} ({capsInCategory.length} chức năng)
+                      <tr className="bg-slate-100/80 dark:bg-slate-800/80 font-bold text-slate-800 dark:text-slate-200">
+                        <td colSpan={5} className="py-2.5 px-4 text-[11px] uppercase tracking-wider text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800">
+                          {category} ({capsInCategory.length} {isEn ? 'features' : 'chức năng'})
                         </td>
                       </tr>
 
@@ -684,60 +749,60 @@ export function RolesPermissions() {
                         const memberHas = memberRole ? (memberRole.capabilityIds || []).includes(cap.id) : false;
 
                         return (
-                          <tr key={cap.id} className="hover:bg-slate-50/80 transition-colors">
+                          <tr key={cap.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
                             <td className="py-2.5 px-4">
                               <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[18px] text-slate-500">
+                                <span className="material-symbols-outlined text-[18px] text-slate-500 dark:text-slate-400">
                                   {cap.icon || 'circle'}
                                 </span>
                                 <div>
-                                  <div className="font-bold text-slate-900">{cap.label}</div>
-                                  <div className="text-[10px] text-slate-500 font-mono">ID: {cap.id}</div>
+                                  <div className="font-bold text-slate-900 dark:text-white">{cap.label}</div>
+                                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">ID: {cap.id}</div>
                                 </div>
                               </div>
                             </td>
 
                             {/* Manager cell */}
                             <td className="py-2.5 px-3 text-center">
-                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                                 <span className="material-symbols-outlined text-[16px]">check</span>
                               </span>
                             </td>
 
                             {/* Coach cell */}
-                            <td className="py-2.5 px-3 text-center bg-amber-50/30">
+                            <td className="py-2.5 px-3 text-center bg-amber-50/20 dark:bg-amber-950/10">
                               {coachHas ? (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                                   <span className="material-symbols-outlined text-[16px]">check</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-400">
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600">
                                   <span className="material-symbols-outlined text-[16px]">remove</span>
                                 </span>
                               )}
                             </td>
 
                             {/* Receptionist cell */}
-                            <td className="py-2.5 px-3 text-center bg-purple-50/30">
+                            <td className="py-2.5 px-3 text-center bg-purple-50/20 dark:bg-purple-950/10">
                               {recepHas ? (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                                   <span className="material-symbols-outlined text-[16px]">check</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-400">
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600">
                                   <span className="material-symbols-outlined text-[16px]">remove</span>
                                 </span>
                               )}
                             </td>
 
                             {/* Member cell */}
-                            <td className="py-2.5 px-3 text-center bg-emerald-50/30">
+                            <td className="py-2.5 px-3 text-center bg-emerald-50/20 dark:bg-emerald-950/10">
                               {memberHas ? (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
                                   <span className="material-symbols-outlined text-[16px]">check</span>
                                 </span>
                               ) : (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 text-slate-400">
+                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600">
                                   <span className="material-symbols-outlined text-[16px]">remove</span>
                                 </span>
                               )}
@@ -753,21 +818,23 @@ export function RolesPermissions() {
           </div>
 
           {/* Legend / Footer Notes */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs">
+          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-xs">
             <div className="flex items-center gap-4">
-              <span className="font-bold text-slate-700">Chú giải ký hiệu:</span>
-              <span className="inline-flex items-center gap-1.5 text-slate-700">
-                <span className="w-5 h-5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 flex items-center justify-center text-[12px] font-bold">✓</span>
-                Có quyền truy cập
+              <span className="font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Legend:' : 'Chú giải ký hiệu:'}</span>
+              <span className="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                <span className="w-5 h-5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-[12px] font-bold">✓</span>
+                {isEn ? 'Granted Access' : 'Có quyền truy cập'}
               </span>
-              <span className="inline-flex items-center gap-1.5 text-slate-700">
-                <span className="w-5 h-5 rounded bg-slate-100 text-slate-400 flex items-center justify-center text-[12px] font-bold">—</span>
-                Không có quyền
+              <span className="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                <span className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 flex items-center justify-center text-[12px] font-bold">—</span>
+                {isEn ? 'No Access' : 'Không có quyền'}
               </span>
             </div>
 
-            <div className="text-slate-500">
-              * Quản lý trung tâm có toàn quyền giám sát và phân quyền an toàn theo chính sách Safe Delegation.
+            <div className="text-slate-500 dark:text-slate-400">
+              {isEn
+                ? '* System managers hold complete operational oversight and safe delegation authority under SCMS security policies.'
+                : '* Quản lý trung tâm có toàn quyền giám sát và phân quyền an toàn theo chính sách Safe Delegation.'}
             </div>
           </div>
         </div>

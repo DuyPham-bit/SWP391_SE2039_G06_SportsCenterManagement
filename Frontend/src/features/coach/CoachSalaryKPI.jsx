@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { CoachError } from './CoachShared.jsx';
 import { currency } from './coachProfessionalView.js';
+import { translateCoachName } from '../../services/i18nHelper.js';
 
 function SectionCard({ title, icon, action, children, className = '' }) {
   return (
@@ -106,7 +107,7 @@ export function CoachSalaryKPI() {
           </div>
 
           <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
-            {isEn ? `Performance & Salary · Coach ${coachName}` : `KPI & Bảng kê thu nhập · HLV ${coachName}`}
+            {isEn ? `Performance & Salary · Coach ${translateCoachName(coachName, isEn)}` : `KPI & Bảng kê thu nhập · HLV ${coachName}`}
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
             {isEn
@@ -137,7 +138,7 @@ export function CoachSalaryKPI() {
                 {isEn ? 'Average Rating' : 'Đánh giá trung bình'}
               </span>
               <span className="text-lg font-black text-amber-300 flex items-center gap-1">
-                ★ {k.averageRating || '5.0'}
+                ★ {k.reviewCount > 0 ? k.averageRating : '—'}
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
@@ -191,7 +192,7 @@ export function CoachSalaryKPI() {
         <div className="rounded-2xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 p-4 shadow-2xs">
           <span className="text-[10px] font-bold uppercase text-slate-400 block">{isEn ? 'Average Rating' : 'Đánh giá trung bình'}</span>
           <span className="text-2xl font-black text-amber-500 mt-1 block">
-            ★ {k.averageRating || '5.0'}/5
+            ★ {k.reviewCount > 0 ? k.averageRating : '—'}/5
           </span>
           <span className="text-xs text-slate-500 mt-1 block">{isEn ? `${k.reviewCount || 0} student reviews` : `${k.reviewCount || 0} lượt nhận xét`}</span>
         </div>

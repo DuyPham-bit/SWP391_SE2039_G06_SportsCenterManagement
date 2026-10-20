@@ -3,11 +3,15 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
+const { transformSync } = require('esbuild');
 
-const source = fs.readFileSync(path.join(__dirname, '../src/features/member/memberOverview.js'), 'utf8')
-  .replaceAll('export function ', 'function ').replaceAll('export const ', 'const ');
-const context = vm.createContext({ Date });
-vm.runInContext(`${source}\nglobalThis.getReminders = getMemberReminders;`, context);
+function loadModule(file) {
+  const module = { exports: {} };
+  const context = vm.createContext({ Date, module, require: id => loadModule(path.resolve(path.dirname(file), id)) });
+  vm.runInContext(transformSync(fs.readFileSync(file, 'utf8'), { format: 'cjs' }).code, context);
+  return module.exports;
+}
+const context = { getReminders: loadModule(path.join(__dirname, '../src/features/member/memberOverview.js')).getMemberReminders };
 const user = { packageStatus: 'ACTIVE', packageExpiry: '2027-01-07' };
 const booking = { id: 1, status: 'CONFIRMED', sessionStatus: 'SCHEDULED', bookingDate: '2026-10-15',
   startTime: '08:30:00', timeSlot: '08:30 - 09:30', className: 'Yoga Phục hồi', roomName: 'Phòng Yoga' };

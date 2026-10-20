@@ -175,6 +175,7 @@ function AppRouter() {
         return <PaymentResult />;
 
       // MANAGER ROUTES (8 chức năng)
+      case '#/manager':
       case '#/manager/dashboard':
         return renderManagerRoute(ManagerDashboard);
       case '#/manager/members':
@@ -199,6 +200,7 @@ function AppRouter() {
         return renderManagerRoute(ManagerCoachOperations, 'manage_coach_operations');
 
       // RECEPTIONIST ROUTES (4 chức năng)
+      case '#/receptionist':
       case '#/receptionist/dashboard':
         return renderReceptionistRoute(ReceptionistDashboard);
       case '#/receptionist/lookup':
@@ -244,6 +246,7 @@ function AppRouter() {
         return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');
 
       // MEMBER ROUTES
+      case '#/member':
       case '#/member/dashboard':
         return renderMemberRoute(MemberDashboard);
       case '#/member/packages':

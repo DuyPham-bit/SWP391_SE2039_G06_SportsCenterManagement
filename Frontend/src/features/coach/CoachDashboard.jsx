@@ -1,145 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { coachApi } from '../../services/api.js';
+import { coachProfessionalApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
-import { CoachError, useTeachingSessions } from './CoachShared.jsx';
-import { sessionTime } from './coachOverview.js';
+import { CoachError } from './CoachShared.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translateClassName, translateRoomName, translateStatus } from '../../services/i18nHelper.js';
+import { getDashboardSessions, appointmentRequest } from './coachDashboardData.js';
 
 export function CoachDashboard() {
   const { currentUser } = useAuth();
   const { language } = useLanguage();
   const isEn = language === 'en';
-
-  const [classes, setClasses] = useState([]);
+  const [workspace, setWorkspace] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const schedule = useTeachingSessions();
-
-  // Bộ lọc Ngày/Tuần/Tháng liền kề
-  const [filterPeriod, setFilterPeriod] = useState('day'); // 'day' | 'week' | 'month'
-
-  // Danh sách các ca hẹn PT tự tạo thêm trực tiếp trên Dashboard
-  const [customSessions, setCustomSessions] = useState([]);
+  const [filterPeriod, setFilterPeriod] = useState('day');
+  const [saving, setSaving] = useState(false);
   const [formSuccess, setFormSuccess] = useState(false);
-
-  // State Form "Chủ động lên lịch PT"
-  const [formData, setFormData] = useState({
-    appointmentType: '1to1',
-    title: '',
-    studentName: '',
-    sessionDate: new Date().toISOString().split('T')[0],
-    startTime: '14:00',
-  });
-
+  const [formData, setFormData] = useState({ appointmentType: '1to1', title: '', memberId: '', sessionDate: new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Ho_Chi_Minh' }), startTime: '14:00' });
   const load = async () => {
-    setLoading(true);
-    setError('');
-    try {
-      setClasses(await coachApi.getCoachClassesAndMembers());
-    } catch (e) {
-      setError(e.message);
-    } finally {
-      setLoading(false);
-    }
+    setLoading(true); setError('');
+    try { setWorkspace(await coachProfessionalApi.getWorkspace()); }
+    catch (error) { setWorkspace(null); setError(error.message); }
+    finally { setLoading(false); }
   };
-
-  useEffect(() => {
-    load();
-  }, []);
-
-  const studentCount = new Set(classes.flatMap(c => (c.members || []).map(m => m.id))).size;
-  const upcoming = schedule.sessions.filter(s => s.status === 'SCHEDULED' && sessionTime(s) > Date.now());
-
-  // Lấy danh sách học viên từ các lớp đang phụ trách
-  const memberList = Array.from(
-    new Map(
-      classes
-        .flatMap(c => c.members || [])
-        .filter(Boolean)
-        .map(m => [m.id, m])
-    ).values()
-  );
-
-  // Mẫu ca tập mặc định chuẩn hiển thị
-  const defaultSessions = [
-    {
-      id: 'demo-1',
-      timeSlot: '07:30 - 08:30',
-      room: isEn ? 'Weight Room #1' : 'Phòng Tạ #1',
-      studentName: 'Nguyễn Văn An',
-      packageInfo: isEn ? 'PT 1:1 • Session 12/24' : 'PT 1:1 • Buổi 12/24',
-      exerciseTitle: 'Chest & Triceps Hypertrophy',
-      exerciseDetails: 'Bench Press, Dumbbell Flyes, Cable Pushdown',
-      status: 'COMPLETED',
-    },
-    {
-      id: 'demo-2',
-      timeSlot: '09:30 - 10:30',
-      room: isEn ? 'Cardio Studio' : 'Khu Cardio',
-      studentName: 'Trần Thị Bích',
-      packageInfo: isEn ? 'PT 1:1 • Session 8/16' : 'PT 1:1 • Buổi 8/16',
-      exerciseTitle: 'Cardio HIIT & Core Fat Burn',
-      exerciseDetails: 'Chạy biến tốc, Battle Rope, Plank kháng lực',
-      status: 'UPCOMING',
-    },
-    {
-      id: 'demo-3',
-      timeSlot: '15:30 - 16:30',
-      room: isEn ? 'Stretching Studio' : 'Phòng Kéo giãn',
-      studentName: 'Lê Hoàng Nam',
-      packageInfo: isEn ? 'PT 1:1 • Session 3/10' : 'PT 1:1 • Buổi 3/10',
-      exerciseTitle: 'Mobility & Lower Back Rehab',
-      exerciseDetails: 'Giãn cơ sâu chuyên sâu, Deadlift kỹ thuật nhẹ',
-      status: 'PENDING',
-    },
-  ];
-
-  // Kết hợp ca dạy thực tế từ schedule backend
-  const backendSessionsFormatted = schedule.sessions.slice(0, 4).map((s, idx) => ({
-    id: s.id,
-    timeSlot: s.timeSlot || '08:00 - 09:30',
-    room: s.roomName || (isEn ? 'Olympic Standard Hall' : 'Cụm sân Olympic'),
-    studentName: s.name || `Lớp học phần #${idx + 1}`,
-    packageInfo: `${s.sessionDate} • Ca thực tế`,
-    exerciseTitle: isEn ? 'Standard Olympic Training Drill' : 'Giáo án huấn luyện thể thao',
-    exerciseDetails: isEn ? 'Stamina & Technique evaluation' : 'Đánh giá kỹ thuật, rèn luyện thể lực',
-    status: s.status === 'COMPLETED' ? 'COMPLETED' : 'UPCOMING',
-    isBackend: true,
-    sessionDate: s.sessionDate,
-  }));
-
-  const allSessions = [
-    ...customSessions,
-    ...(backendSessionsFormatted.length > 0 ? backendSessionsFormatted : defaultSessions),
-  ];
-
-  // Xử lý tạo lịch hẹn PT
-  const handleCreateAppointment = (e) => {
-    e.preventDefault();
-    if (!formData.title || !formData.studentName) return;
-
-    const newSession = {
-      id: 'custom-' + Date.now(),
-      timeSlot: `${formData.startTime} - ${parseInt(formData.startTime.split(':')[0]) + 1}:00`,
-      room: isEn ? 'PT Zone #2' : 'Khu vực PT #2',
-      studentName: formData.studentName,
-      packageInfo: `${formData.sessionDate} • PT 1:1`,
-      exerciseTitle: formData.title,
-      exerciseDetails: isEn ? 'Personal coaching session' : 'Buổi tập kèm riêng theo giáo án cá nhân',
-      status: 'UPCOMING',
-    };
-
-    setCustomSessions([newSession, ...customSessions]);
-    setFormSuccess(true);
-    setFormData({
-      appointmentType: '1to1',
-      title: '',
-      studentName: '',
-      sessionDate: new Date().toISOString().split('T')[0],
-      startTime: '14:00',
-    });
-
-    setTimeout(() => setFormSuccess(false), 4000);
+  useEffect(() => { load(); }, []);
+  const memberList = workspace?.clients || [];
+  const studentCount = memberList.length;
+  const allSessions = getDashboardSessions(workspace, filterPeriod);
+  const handleCreateAppointment = async event => {
+    event.preventDefault();
+    if (saving) return;
+    setSaving(true); setFormSuccess(false); setError('');
+    try {
+      await coachProfessionalApi.createEvent(appointmentRequest(formData));
+      setFormSuccess(true);
+      setFormData(previous => ({ ...previous, title: '', memberId: '' }));
+      await load();
+    } catch (error) { setError(error.message); }
+    finally { setSaving(false); }
   };
 
   return (
@@ -173,7 +71,7 @@ export function CoachDashboard() {
             </h1>
             <p className="text-slate-300 text-xs sm:text-sm font-normal leading-relaxed opacity-95">
               {isEn
-                ? `Wishing you an energetic day. You have ${allSessions.length} sessions scheduled today.`
+                ? `You have ${allSessions.length} sessions in the selected period.`
                 : `Chúc bạn một ngày làm việc tràn đầy năng lượng. Theo dõi lịch tập và đồng hành cùng học viên đạt mục tiêu thể lực tối ưu.`}
             </p>
           </div>
@@ -200,7 +98,7 @@ export function CoachDashboard() {
                     {isEn ? 'Students' : 'Học viên'}
                   </div>
                   <div className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5 leading-none truncate">
-                    {loading ? '...' : (studentCount > 0 ? studentCount : 2)}
+                    {loading ? '...' : workspace ? studentCount : '—'}
                   </div>
                 </div>
               </div>
@@ -225,7 +123,7 @@ export function CoachDashboard() {
                     {isEn ? 'Sessions' : 'Buổi dạy'}
                   </div>
                   <div className="text-xl sm:text-2xl font-black text-white tracking-tight mt-0.5 leading-none truncate">
-                    {schedule.loading ? '...' : (schedule.sessions.length > 0 ? schedule.sessions.length : 45)}
+                    {loading ? '...' : workspace ? allSessions.length : '—'}
                   </div>
                 </div>
               </div>
@@ -250,7 +148,7 @@ export function CoachDashboard() {
                     {isEn ? 'Rating' : 'Đánh giá'}
                   </div>
                   <div className="text-xl sm:text-2xl font-black text-[#F2CC8F] tracking-tight mt-0.5 leading-none truncate">
-                    5.0 ★
+                    {loading ? '...' : !workspace ? '—' : workspace.kpi?.reviewCount ? `${workspace.kpi.averageRating} ★` : (isEn ? 'No reviews' : 'Chưa có đánh giá')}
                   </div>
                 </div>
               </div>
@@ -277,7 +175,7 @@ export function CoachDashboard() {
                   <div
                     className="text-lg sm:text-xl lg:text-2xl font-black text-[#F2CC8F] tracking-tight mt-0.5 leading-none truncate"
                   >
-                    8.262.500 ₫
+                    {loading ? '...' : workspace?.kpi ? new Intl.NumberFormat(isEn ? 'en-US' : 'vi-VN', { style: 'currency', currency: 'VND' }).format(workspace.kpi.estimatedIncome) : '—'}
                   </div>
                 </div>
               </div>
@@ -335,6 +233,7 @@ export function CoachDashboard() {
 
           {/* List các ca dạy */}
           <div className="space-y-3">
+            {!loading && !error && allSessions.length === 0 && <p role="status" className="text-sm text-slate-500">{isEn ? 'No sessions in this period.' : 'Chưa có lịch trong khoảng thời gian này.'}</p>}
             {allSessions.map((item) => (
               <div
                 key={item.id}
@@ -367,26 +266,26 @@ export function CoachDashboard() {
 
                 {/* Trạng thái ca học & nút Điểm danh */}
                 <div className="shrink-0 flex items-center gap-2 self-end sm:self-center">
-                  {item.status === 'COMPLETED' ? (
+                  {String(item.status).toUpperCase() === 'COMPLETED' ? (
                     <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#ecfdf5] text-[#059669] border border-[#a7f3d0]">
-                      {isEn ? 'Completed' : 'Đã xong'}
+                      {translateStatus(item.status, isEn)}
                     </span>
-                  ) : item.status === 'UPCOMING' ? (
+                  ) : ['SCHEDULED', 'CONFIRMED'].includes(String(item.status).toUpperCase()) ? (
                     <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/30">
-                      {isEn ? 'Upcoming' : 'Sắp diễn ra'}
+                      {translateStatus(item.status, isEn)}
                     </span>
                   ) : (
                     <span className="px-3 py-1 rounded-full text-[11px] font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                      {isEn ? 'Pending' : 'Chờ điểm danh'}
+                      {translateStatus(item.status, isEn)}
                     </span>
                   )}
 
                   <a
-                    href={item.isBackend ? `#/coach/attendance?sessionId=${item.id}&date=${item.sessionDate}` : '#/coach/attendance'}
+                    href={item.isBackend ? `#/coach/attendance?sessionId=${item.sessionId}&date=${item.sessionDate}` : '#/coach/professional'}
                     className="px-3 py-1.5 rounded-[8px] bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white text-xs font-bold transition-all shadow-2xs cursor-pointer inline-flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[14px]">how_to_reg</span>
-                    <span>{isEn ? 'Check' : 'Điểm danh'}</span>
+                    <span>{isEn ? 'Take Attendance' : 'Điểm danh'}</span>
                   </a>
                 </div>
               </div>
@@ -443,7 +342,7 @@ export function CoachDashboard() {
               </label>
               <input
                 type="text"
-                placeholder={isEn ? 'e.g. Chest & Triceps Hypertrophy' : 'Ví dụ: Rèn luyện Squat & Thân dưới'}
+                placeholder={isEn ? 'e.g. Squat & Lower Body Power' : 'Ví dụ: Rèn luyện Squat & Thân dưới'}
                 value={formData.title}
                 onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                 className="w-full h-11 px-3.5 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 transition-all"
@@ -457,26 +356,13 @@ export function CoachDashboard() {
                 {isEn ? 'Student' : 'Học viên'}
               </label>
               <select
-                value={formData.studentName}
-                onChange={(e) => setFormData({ ...formData, studentName: e.target.value })}
+                value={formData.memberId}
+                onChange={(e) => setFormData({ ...formData, memberId: e.target.value })}
                 className="w-full h-11 px-3.5 rounded-[8px] border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 text-xs font-medium text-slate-800 dark:text-slate-100 focus:outline-none focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 transition-all cursor-pointer"
                 required
               >
                 <option value="">{isEn ? '-- Select Student --' : '-- Chọn học viên --'}</option>
-                {memberList.length > 0 ? (
-                  memberList.map((m) => (
-                    <option key={m.id} value={m.fullName || m.name}>
-                      {m.fullName || m.name} (Mã: {m.code || m.id})
-                    </option>
-                  ))
-                ) : (
-                  <>
-                    <option value="Nguyễn Văn An">Nguyễn Văn An (Còn 12 buổi)</option>
-                    <option value="Trần Thị Bích">Trần Thị Bích (Còn 8 buổi)</option>
-                    <option value="Lê Hoàng Nam">Lê Hoàng Nam (Còn 7 buổi)</option>
-                    <option value="Phạm Minh Trang">Phạm Minh Trang (Còn 4 buổi)</option>
-                  </>
-                )}
+                {memberList.map(m => <option key={m.id} value={m.id}>{m.fullName} ({m.memberCode || m.id})</option>)}
               </select>
             </div>
 
@@ -508,7 +394,7 @@ export function CoachDashboard() {
 
             {/* Nút Submit Rộng 100% trong Tiya Dark Slate Navy + Gold */}
             <button
-              type="submit"
+              type="submit" disabled={saving || loading || memberList.length === 0}
               className="w-full h-11 rounded-[8px] bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors duration-200 shadow-md flex items-center justify-center gap-2 cursor-pointer mt-2"
             >
               <span className="material-symbols-outlined text-[18px]">add_circle</span>
@@ -518,7 +404,7 @@ export function CoachDashboard() {
             {formSuccess && (
               <div className="p-3 rounded-[8px] bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 text-emerald-800 dark:text-emerald-300 text-xs font-bold flex items-center gap-2 animate-fade-in">
                 <span className="material-symbols-outlined text-[18px] text-emerald-600">check_circle</span>
-                <span>{isEn ? 'PT Appointment created successfully!' : 'Đã tạo ca hẹn PT thành công!'}</span>
+                <span>{isEn ? 'Appointment saved. Awaiting member confirmation.' : 'Đã lưu lịch hẹn, đang chờ học viên xác nhận.'}</span>
               </div>
             )}
 

@@ -38,3 +38,8 @@ test('AVIF upload reaches the API while SVG and fake AVIF extensions remain reje
   await assert.rejects(api.uploadMediaFileToCloud(new File(['html'], 'payload.html', { type: 'image/avif' })));
   assert.equal(requests, 1);
 });
+
+test('failed upload cannot become a successful browser-only image record', async () => {
+  const api = loadService(async () => [], async () => { throw new Error('API offline'); });
+  await assert.rejects(api.uploadMediaFileToCloud(new File(['image'], 'photo.webp', { type: 'image/webp' }), true), /API offline/);
+});

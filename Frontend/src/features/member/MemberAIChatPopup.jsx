@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { aiApi } from '../../services/api.js';
 
 // Global helper to trigger opening the AI chat popup from anywhere in the app
@@ -145,7 +146,7 @@ function parseFormattedMarkdown(content = '') {
   return elements;
 }
 
-const QUICK_SUGGESTIONS = [
+const QUICK_SUGGESTIONS_VI = [
   { label: '🏊‍♂️ Lịch bơi & ca hôm nay', query: 'Hôm nay có các lớp học hay ca bơi nào đang mở?' },
   { label: '💳 Giá các gói tập', query: 'Trung tâm hiện có những gói tập nào và biểu phí ra sao?' },
   { label: '🏋️‍♂️ Gợi ý lịch tập tăng cơ', query: 'Gợi ý cho tôi kế hoạch tập thể thao 3 buổi/tuần chuẩn nâng cao sức khỏe' },
@@ -154,24 +155,43 @@ const QUICK_SUGGESTIONS = [
   { label: '🥗 Dinh dưỡng sau giờ tập', query: 'Nên ăn uống bổ sung gì sau buổi tập thể thao để phục hồi tốt nhất?' }
 ];
 
+const QUICK_SUGGESTIONS_EN = [
+  { label: "🏊‍♂️ Today's Classes & Pool", query: 'What classes or swimming sessions are available today?' },
+  { label: '💳 Membership Pricing', query: 'What membership packages are currently available and what are the fees?' },
+  { label: '🏋️‍♂️ Muscle Building Plan', query: 'Recommend a 3 sessions/week training plan for strength and wellness' },
+  { label: '⏱️ Opening Hours', query: 'What are the operating hours of SCMS Sports Center?' },
+  { label: '🔄 Reschedule Policy', query: 'How far in advance can I cancel or reschedule a session?' },
+  { label: '🥗 Post-workout Nutrition', query: 'What should I eat after a workout for optimal recovery?' }
+];
+
 const STORAGE_KEY_MSGS = 'SCMS_MEMBER_AI_CHAT_MSGS_V5';
 const STORAGE_KEY_CONV = 'SCMS_MEMBER_AI_CONV_ID_V5';
 
 export function MemberAIChatPopup() {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
 
-  const getInitialMessage = () => ({
+  const getInitialMessage = (en = isEn) => ({
     id: 'welcome',
     sender: 'ai',
-    text: `Xin chào **${currentUser?.fullName || 'bạn'}**! 👋 Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi luôn sẵn sàng hỗ trợ bạn ngay trong popup này:
+    text: en
+      ? `Hello **${currentUser?.fullName || 'there'}**! 👋 I am your Olympic-standard **SCMS AI Sports Assistant**. I am always ready to help you:
+* **Look up class & swimming schedules** today and throughout the week.
+* **Consult membership packages** & member privileges.
+* **Suggest workout & nutrition plans** tailored to your fitness goals.
+* **Guide QR card check-in, scheduling & support**.
+
+What would you like to explore today?`
+      : `Xin chào **${currentUser?.fullName || 'bạn'}**! 👋 Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi luôn sẵn sàng hỗ trợ bạn ngay trong popup này:
 * **Tra cứu lịch lớp & ca bơi** hôm nay hoặc trong tuần.
 * **Tư vấn giá gói tập** & quyền lợi hội viên.
 * **Gợi ý bài tập & chế độ dinh dưỡng** theo thể trạng.
 * **Hướng dẫn check-in mã thẻ, đổi lịch & hỗ trợ**.
 
 Bạn muốn tìm hiểu thông tin nào hôm nay?`,
-    time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    time: new Date().toLocaleTimeString(en ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
   });
 
   const [isOpen, setIsOpen] = useState(false);
@@ -228,6 +248,16 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       // ignore
     }
   }, []);
+
+  // Update welcome message if user toggles language before starting conversation
+  useEffect(() => {
+    setMessages((prev) => {
+      if (prev.length === 1 && prev[0].id === 'welcome') {
+        return [getInitialMessage(isEn)];
+      }
+      return prev;
+    });
+  }, [isEn]);
 
   // Sync to session storage
   useEffect(() => {
@@ -312,7 +342,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           id: `ai-${Date.now()}`,
           sender: 'ai',
           text: reply,
-          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
         }
       ]);
 
@@ -321,8 +351,8 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       }
     } catch (err) {
       const errorText = err.proposedHandling
-        ? `${err.message || 'Lỗi kết nối Trợ lý AI'}\n\n💡 Hướng dẫn xử lý: ${err.proposedHandling}`
-        : `${err.message || 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.'}`;
+        ? `${err.message || (isEn ? 'AI Assistant connection error' : 'Lỗi kết nối Trợ lý AI')}\n\n💡 ${isEn ? 'Suggested solution' : 'Hướng dẫn xử lý'}: ${err.proposedHandling}`
+        : `${err.message || (isEn ? 'Cannot connect to center AI service. Please try again later.' : 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.')}`;
 
       setMessages((prev) => [
         ...prev,
@@ -333,10 +363,10 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           code: err.code || (err.status === 429 ? 'AI-RATE-LIMIT' : 'AI-ERROR'),
           text: errorText,
           failedQuestion: text,
-          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
         }
       ]);
-      showError(err.message || 'Không thể nhận phản hồi từ AI');
+      showError(err.message || (isEn ? 'Unable to receive AI response' : 'Không thể nhận phản hồi từ AI'));
     } finally {
       setIsAsking(false);
     }
@@ -360,20 +390,20 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     } catch (e) {
       // ignore
     }
-    showSuccess('Đã làm mới cuộc trò chuyện!');
+    showSuccess(isEn ? 'Chat conversation reset!' : 'Đã làm mới cuộc trò chuyện!');
   };
 
   const copyMessage = (msg) => {
     if (!msg?.text) return;
     navigator.clipboard?.writeText(msg.text);
     setCopiedId(msg.id);
-    showSuccess('Đã sao chép nội dung!');
+    showSuccess(isEn ? 'Content copied to clipboard!' : 'Đã sao chép nội dung!');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const toggleSpeak = (msg) => {
     if (!('speechSynthesis' in window)) {
-      showError('Trình duyệt chưa hỗ trợ tính năng phát âm.');
+      showError(isEn ? 'Your browser does not support speech synthesis.' : 'Trình duyệt chưa hỗ trợ tính năng phát âm.');
       return;
     }
 
@@ -386,7 +416,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     window.speechSynthesis.cancel();
     const cleanText = msg.text.replace(/[\*`#]/g, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'vi-VN';
+    utterance.lang = isEn ? 'en-US' : 'vi-VN';
     utterance.rate = 1.0;
     utterance.onend = () => setSpeakingId(null);
     utterance.onerror = () => setSpeakingId(null);
@@ -400,7 +430,11 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       ...prev,
       [msgId]: prev[msgId] === type ? null : type
     }));
-    showSuccess(type === 'like' ? 'Cảm ơn bạn đã thích phản hồi này!' : 'Cảm ơn góp ý! SCMS sẽ cải thiện tốt hơn.');
+    showSuccess(
+      type === 'like'
+        ? (isEn ? 'Thank you for liking this response!' : 'Cảm ơn bạn đã thích phản hồi này!')
+        : (isEn ? 'Thank you for your feedback! SCMS will improve.' : 'Cảm ơn góp ý! SCMS sẽ cải thiện tốt hơn.')
+    );
   };
 
   return (
@@ -415,7 +449,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               setIsMinimized(false);
               setUnreadCount(0);
             }}
-            aria-label="Mở Trợ lý Thể thao AI SCMS"
+            aria-label={isEn ? "Open SCMS AI Sports Assistant" : "Mở Trợ lý Thể thao AI SCMS"}
             className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#1E2235] text-white border border-[#81B29A]/60 shadow-xl hover:shadow-2xl hover:border-[#81B29A] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer font-sans"
           >
             {/* Outer pulsating glow ring */}
@@ -442,7 +476,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
             {/* Sleek Tooltip on hover (appears to the left) */}
             <div className="hidden sm:flex absolute right-full mr-3 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E2235]/95 backdrop-blur-md border border-[#81B29A]/40 text-white text-xs font-semibold whitespace-nowrap shadow-xl opacity-0 translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
-              <span>Trợ Lý AI SCMS</span>
+              <span>{isEn ? "SCMS AI Assistant" : "Trợ Lý AI SCMS"}</span>
               <span className="px-1.5 py-0.5 rounded bg-[#F2CC8F] text-[#1E2235] text-[9px] font-black uppercase tracking-wider">
                 PRO
               </span>
@@ -459,7 +493,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               type="button"
               onClick={() => setIsMinimized(false)}
               className="flex items-center gap-2 text-left cursor-pointer hover:opacity-90 transition"
-              title="Nhấn để mở lại Trợ lý AI"
+              title={isEn ? "Click to open AI Assistant" : "Nhấn để mở lại Trợ lý AI"}
             >
               <div className="w-7 h-7 rounded-full bg-[#3D405B] flex items-center justify-center text-[#81B29A] shrink-0 border border-[#81B29A]/40">
                 <span className="material-symbols-outlined text-[16px]">smart_toy</span>
@@ -474,7 +508,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               <button
                 type="button"
                 onClick={() => setIsMinimized(false)}
-                title="Mở rộng"
+                title={isEn ? "Expand" : "Mở rộng"}
                 className="w-7 h-7 rounded-full flex items-center justify-center text-slate-300 hover:text-[#F2CC8F] hover:bg-white/10 transition cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">open_in_full</span>
@@ -485,7 +519,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                   setIsMinimized(false);
                   setIsOpen(false);
                 }}
-                title="Đóng"
+                title={isEn ? "Close" : "Đóng"}
                 className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-[#E07A5F] hover:bg-white/10 transition cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
@@ -516,14 +550,14 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               <div>
                 <div className="flex items-center gap-1.5">
                   <h3 className="text-xs sm:text-sm font-bold tracking-tight text-white font-sans">
-                    Trợ Lý Thể Thao SCMS AI
+                    {isEn ? 'SCMS AI Sports Assistant' : 'Trợ Lý Thể Thao SCMS AI'}
                   </h3>
                   <span className="px-1.5 py-0.5 rounded-full bg-[#F2CC8F] text-[#1E2235] text-[9px] font-black uppercase tracking-wider">
                     PRO
                   </span>
                 </div>
                 <p className="text-[10px] text-[#A8DADC] font-medium">
-                  Chuẩn Olympic · Trực tuyến 24/7
+                  {isEn ? 'Olympic Standard · 24/7 Online' : 'Chuẩn Olympic · Trực tuyến 24/7'}
                 </p>
               </div>
             </div>
@@ -533,7 +567,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               <button
                 type="button"
                 onClick={handleResetChat}
-                title="Làm mới cuộc trò chuyện"
+                title={isEn ? "Reset conversation" : "Làm mới cuộc trò chuyện"}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-[#F2CC8F] hover:bg-white/10 transition cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[17px]">restart_alt</span>
@@ -542,7 +576,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               <button
                 type="button"
                 onClick={() => setIsMinimized(true)}
-                title="Thu nhỏ xuống góc màn hình"
+                title={isEn ? "Minimize" : "Thu nhỏ xuống góc màn hình"}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-white/10 transition cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">keyboard_arrow_down</span>
@@ -551,7 +585,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                title="Đóng cửa sổ"
+                title={isEn ? "Close window" : "Đóng cửa sổ"}
                 className="p-1.5 rounded-lg text-slate-400 hover:text-[#E07A5F] hover:bg-white/10 transition cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">close</span>
@@ -562,9 +596,9 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           {/* Quick Prompts Strip */}
           <div className="px-3 py-2 bg-[#FAF8F5] border-b border-slate-200/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 pl-1 font-sans">
-              Gợi ý:
+              {isEn ? 'Suggestions:' : 'Gợi ý:'}
             </span>
-            {QUICK_SUGGESTIONS.map((item, idx) => (
+            {(isEn ? QUICK_SUGGESTIONS_EN : QUICK_SUGGESTIONS_VI).map((item, idx) => (
               <button
                 key={idx}
                 type="button"
@@ -612,7 +646,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                   {/* Error Tag */}
                   {msg.isError && msg.code && (
                     <span className="inline-block px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-rose-200 text-rose-900 mb-1.5 border border-rose-300">
-                      MÃ: {msg.code}
+                      {isEn ? 'CODE' : 'MÃ'}: {msg.code}
                     </span>
                   )}
 
@@ -634,7 +668,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                         className="px-2.5 py-1 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-[11px] font-bold transition inline-flex items-center gap-1 shadow-xs cursor-pointer"
                       >
                         <span className="material-symbols-outlined text-[14px]">refresh</span>
-                        <span>Thử lại câu hỏi này</span>
+                        <span>{isEn ? 'Retry this question' : 'Thử lại câu hỏi này'}</span>
                       </button>
                     </div>
                   )}
@@ -654,7 +688,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                         <button
                           type="button"
                           onClick={() => copyMessage(msg)}
-                          title="Sao chép nội dung"
+                          title={isEn ? "Copy content" : "Sao chép nội dung"}
                           className="p-1 hover:text-[#2D6A4F] rounded hover:bg-slate-100 transition cursor-pointer"
                         >
                           <span className="material-symbols-outlined text-[14px]">
@@ -665,7 +699,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                         <button
                           type="button"
                           onClick={() => toggleSpeak(msg)}
-                          title={speakingId === msg.id ? 'Dừng đọc' : 'Đọc câu trả lời'}
+                          title={speakingId === msg.id ? (isEn ? 'Stop reading' : 'Dừng đọc') : (isEn ? 'Read response' : 'Đọc câu trả lời')}
                           className={`p-1 rounded transition cursor-pointer ${
                             speakingId === msg.id
                               ? 'text-[#81B29A] bg-[#81B29A]/15'
@@ -680,7 +714,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                         <button
                           type="button"
                           onClick={() => handleReaction(msg.id, 'like')}
-                          title="Hữu ích"
+                          title={isEn ? "Helpful" : "Hữu ích"}
                           className={`p-1 rounded transition cursor-pointer ${
                             reactions[msg.id] === 'like'
                               ? 'text-emerald-600 bg-emerald-50'
@@ -693,7 +727,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                         <button
                           type="button"
                           onClick={() => handleReaction(msg.id, 'dislike')}
-                          title="Chưa hài lòng"
+                          title={isEn ? "Not satisfied" : "Chưa hài lòng"}
                           className={`p-1 rounded transition cursor-pointer ${
                             reactions[msg.id] === 'dislike'
                               ? 'text-rose-600 bg-rose-50'
@@ -721,7 +755,9 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                     <div className="w-1.5 h-1.5 rounded-full bg-[#81B29A] animate-bounce" style={{ animationDelay: '150ms' }} />
                     <div className="w-1.5 h-1.5 rounded-full bg-[#81B29A] animate-bounce" style={{ animationDelay: '300ms' }} />
                   </div>
-                  <span className="text-[11px] font-medium text-slate-500">Trợ lý AI đang soạn câu trả lời...</span>
+                  <span className="text-[11px] font-medium text-slate-500">
+                    {isEn ? 'AI Assistant is thinking...' : 'Trợ lý AI đang soạn câu trả lời...'}
+                  </span>
                 </div>
               </div>
             )}
@@ -742,7 +778,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Nhập câu hỏi... (VD: Hôm nay có lớp gì?)"
+                  placeholder={isEn ? 'Ask a question... (e.g. What classes are open today?)' : 'Nhập câu hỏi... (VD: Hôm nay có lớp gì?)'}
                   value={inputQuestion}
                   onChange={(e) => setInputQuestion(e.target.value)}
                   disabled={isAsking}
@@ -764,14 +800,18 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                 disabled={isAsking || !inputQuestion.trim()}
                 className="px-5 py-2.5 bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white disabled:opacity-40 rounded-xl font-bold text-xs uppercase tracking-wider transition shadow-sm flex items-center gap-1.5 shrink-0 active:scale-95 cursor-pointer font-sans"
               >
-                <span>Gửi</span>
+                <span>{isEn ? 'Send' : 'Gửi'}</span>
                 <span className="material-symbols-outlined text-[15px]">send</span>
               </button>
             </form>
 
             <p className="text-[10px] text-slate-400 text-center flex items-center justify-center gap-1 font-sans">
               <span className="material-symbols-outlined text-[12px] text-[#F2CC8F]">info</span>
-              <span>Gợi ý bài tập & dinh dưỡng cần HLV thẩm định trước khi tập.</span>
+              <span>
+                {isEn
+                  ? 'Workout & nutrition tips should be verified by a coach before training.'
+                  : 'Gợi ý bài tập & dinh dưỡng cần HLV thẩm định trước khi tập.'}
+              </span>
             </p>
           </div>
         </div>

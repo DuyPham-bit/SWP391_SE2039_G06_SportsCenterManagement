@@ -5,6 +5,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { CoachError } from './CoachShared.jsx';
+import { translateRoomName } from '../../services/i18nHelper.js';
 
 const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#81B29A] dark:focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 dark:focus:ring-[#81B29A]/30 outline-none transition-all shadow-2xs';
 const selectClass = `${inputClass} cursor-pointer`;
@@ -238,7 +239,7 @@ export function CoachResources() {
               <select name="resourceId" required className={selectClass}>
                 <option value="">{isEn ? '-- Select Court or Facility Equipment --' : '-- Chọn sân hoặc trang thiết bị --'}</option>
                 {resources.map(x => (
-                  <option key={x.id} value={x.id}>{x.name} · ({x.resourceType})</option>
+                  <option key={x.id} value={x.id}>{translateRoomName(x.name, isEn)} · ({x.resourceType})</option>
                 ))}
               </select>
             </FormField>
@@ -266,7 +267,7 @@ export function CoachResources() {
               <select name="resourceId" className={selectClass}>
                 <option value="">{isEn ? '-- General Facility / Other --' : '-- Thiết bị chung / Khác --'}</option>
                 {resources.map(x => (
-                  <option key={x.id} value={x.id}>{x.name}</option>
+                  <option key={x.id} value={x.id}>{translateRoomName(x.name, isEn)}</option>
                 ))}
               </select>
             </FormField>

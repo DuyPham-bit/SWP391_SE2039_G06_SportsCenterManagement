@@ -7,6 +7,7 @@ import { PasswordInput } from './PasswordInput.js';
 import { GoogleLoginModal } from './GoogleLoginModal.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translatePackageName } from '../../services/i18nHelper.js';
 
 export function ProfileModal({ isOpen, onClose }) {
   const { currentUser, updateProfile, changePassword } = useAuth();
@@ -184,7 +185,7 @@ export function ProfileModal({ isOpen, onClose }) {
                 <span className="font-bold text-slate-800">
                   {isEn ? 'Current Package: ' : 'Gói tập hiện tại: '}
                 </span>
-                <span className="text-[#2D6A4F] font-semibold">{currentUser.packageName}</span>
+                <span className="text-[#2D6A4F] font-semibold">{translatePackageName(currentUser.packageName, isEn)}</span>
               </div>
               <Badge variant={currentUser.packageStatus}>{currentUser.packageStatus}</Badge>
             </div>

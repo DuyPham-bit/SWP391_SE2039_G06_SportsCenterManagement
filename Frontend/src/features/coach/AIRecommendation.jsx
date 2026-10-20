@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { CoachError, coachInput } from './CoachShared.jsx';
 import { coachDate } from './coachOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translateClassName, translateSportName } from '../../services/i18nHelper.js';
 
 export function AIRecommendation() {
   const { language } = useLanguage();
@@ -123,7 +124,9 @@ export function AIRecommendation() {
                     <option value="">{isEn ? 'No assigned classes' : 'Chưa có lớp được phân công'}</option>
                   )}
                   {classes.map(c => (
-                    <option key={c.id} value={c.id}>[{c.sportName}] {c.name}</option>
+                    <option key={c.id} value={c.id}>
+                      [{translateSportName(c.sportName, isEn)}] {translateClassName(c.name, isEn)}
+                    </option>
                   ))}
                 </select>
               </label>

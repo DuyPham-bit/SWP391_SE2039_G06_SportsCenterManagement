@@ -20,6 +20,12 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
           category: isEn ? 'TRAINING & SCHEDULE' : 'HỌC TẬP',
           items: [
             {
+              id: 'member_dashboard',
+              label: isEn ? 'Member Dashboard' : 'Trang cá nhân',
+              icon: 'dashboard',
+              path: '#/member'
+            },
+            {
               id: 'member_schedule_group',
               label: isEn ? 'Class Schedule' : 'Lịch học',
               icon: 'calendar_month',
@@ -397,7 +403,10 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
                 // Trường hợp 2: Link Trực Tiếp Đơn Lẻ
                 const isActive =
                   currentPath === item.path ||
-                  (currentPath?.startsWith(item.path) && item.path !== '#/manager/dashboard');
+                  (item.path === '#/member' && currentPath === '#/member/dashboard') ||
+                  (item.path === '#/coach/dashboard' && currentPath === '#/coach') ||
+                  (item.path === '#/manager/dashboard' && currentPath === '#/manager') ||
+                  (currentPath?.startsWith(item.path) && item.path !== '#/manager/dashboard' && item.path !== '#/member');
 
                 return (
                   <a

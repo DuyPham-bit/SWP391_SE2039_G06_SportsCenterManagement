@@ -11,7 +11,7 @@ function resolveJsToJsx() {
       if (importer && source.startsWith('.') && source.endsWith('.js')) {
         const dir = path.dirname(importer);
         const resolvedPath = path.resolve(dir, source);
-        // Nếu file .js thực tế đã tồn tại (ví dụ api.js, dbStorage.js), giữ nguyên
+        // Nếu file .js thực tế đã tồn tại (ví dụ api.js), giữ nguyên
         if (fs.existsSync(resolvedPath)) {
           return null;
         }

@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
-  CLOUD_SPORT_ASSETS,
   uploadMediaFileToCloud,
   fetchDriveFiles,
   fetchGoogleDriveStatus
@@ -19,8 +18,7 @@ export function CloudMediaPickerModal({
   currentImage = '',
   title = 'Chọn / Tải Lên Hình Ảnh Đám Mây'
 }) {
-  const [activeTab, setActiveTab] = useState('drive-gallery'); // 'drive-gallery' | 'upload' | 'cloud-gallery' | 'url'
-  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [activeTab, setActiveTab] = useState('drive-gallery'); // 'drive-gallery' | 'upload' | 'url'
   const [previewUrl, setPreviewUrl] = useState(currentImage || '');
   const [customUrl, setCustomUrl] = useState(currentImage || '');
   const [uploadLoading, setUploadLoading] = useState(false);
@@ -66,18 +64,6 @@ export function CloudMediaPickerModal({
   }, [isOpen, currentImage, loadDriveData]);
 
   if (!isOpen) return null;
-
-  const categories = [
-    { id: 'all', label: 'Tất cả môn' },
-    { id: 'aquatics', label: 'Bơi lội' },
-    { id: 'fitness-wellness', label: 'Gym & Yoga' },
-    { id: 'team-sports', label: 'Bóng & Vợt' },
-    { id: 'combat', label: 'Võ thuật & Boxing' }
-  ];
-
-  const filteredCuratedAssets = selectedCategory === 'all'
-    ? CLOUD_SPORT_ASSETS
-    : CLOUD_SPORT_ASSETS.filter(a => a.category === selectedCategory);
 
   const handleCopyEmail = (email) => {
     if (!email) return;
@@ -227,18 +213,7 @@ export function CloudMediaPickerModal({
             <span className="material-symbols-outlined text-[17px]">upload_file</span>
             <span>Tải Lên Từ Máy Tính</span>
           </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab('cloud-gallery')}
-            className={`py-3 px-4 font-chivo text-xs font-bold uppercase border-b-2 flex items-center gap-1.5 transition-colors cursor-pointer shrink-0 ${
-              activeTab === 'cloud-gallery'
-                ? 'border-red-600 text-red-600 bg-white'
-                : 'border-transparent text-slate-600 hover:text-slate-900'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[17px]">photo_library</span>
-            <span>Kho Mẫu Tuyển Chọn (Olympic CDN)</span>
-          </button>
+
           <button
             type="button"
             onClick={() => setActiveTab('url')}
@@ -326,13 +301,7 @@ export function CloudMediaPickerModal({
                       <span className="material-symbols-outlined text-[16px]">upload</span>
                       <span>Tải ảnh lên ngay</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => setActiveTab('cloud-gallery')}
-                      className="px-4 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 rounded-xl text-xs font-bold uppercase transition-colors cursor-pointer"
-                    >
-                      Chọn từ Kho Mẫu
-                    </button>
+
                   </div>
                 </div>
               )}
@@ -452,64 +421,7 @@ export function CloudMediaPickerModal({
           )}
 
           {/* TAB 3: KHO ẢNH MẪU TUYỂN CHỌN */}
-          {activeTab === 'cloud-gallery' && (
-            <div>
-              <div className="flex flex-wrap gap-2 mb-4">
-                {categories.map(cat => (
-                  <button
-                    key={cat.id}
-                    type="button"
-                    onClick={() => setSelectedCategory(cat.id)}
-                    className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all cursor-pointer ${
-                      selectedCategory === cat.id
-                        ? 'bg-red-600 text-white shadow-sm'
-                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    {cat.label}
-                  </button>
-                ))}
-              </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3 max-h-[340px] overflow-y-auto p-1">
-                {filteredCuratedAssets.map(asset => {
-                  const isSelected = previewUrl === asset.url;
-                  return (
-                    <div
-                      key={asset.id}
-                      onClick={() => {
-                        setPreviewUrl(asset.url);
-                        setFileMeta({ name: asset.title, dimensions: 'Curated High-Res CDN' });
-                      }}
-                      className={`group relative rounded-xl overflow-hidden border-2 cursor-pointer transition-all ${
-                        isSelected
-                          ? 'border-red-600 ring-2 ring-red-600/40 shadow-lg scale-95'
-                          : 'border-slate-200 hover:border-slate-400'
-                      }`}
-                    >
-                      <div className="aspect-video bg-slate-100 overflow-hidden">
-                        <img
-                          src={asset.thumb}
-                          alt={asset.title}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                          loading="lazy"
-                        />
-                      </div>
-                      <div className="p-2 bg-white">
-                        <span className="text-[10px] font-bold text-red-600 block uppercase">{asset.categoryName}</span>
-                        <p className="text-[11px] font-medium text-slate-700 truncate">{asset.title}</p>
-                      </div>
-                      {isSelected && (
-                        <div className="absolute top-2 right-2 w-6 h-6 rounded-full bg-red-600 text-white flex items-center justify-center shadow-md">
-                          <span className="material-symbols-outlined text-[16px]">check</span>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
 
           {/* TAB 4: NHẬP URL ĐÁM MÂY */}
           {activeTab === 'url' && (

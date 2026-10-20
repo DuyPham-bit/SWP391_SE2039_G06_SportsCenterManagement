@@ -7,14 +7,14 @@ Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai 
 
 ## Chạy local
 
-1. Cấu hình SQL Server LocalDB và các khóa ứng dụng theo hướng dẫn trong [Backend/Backend/README.md](./Backend/Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte.
+1. Cấu hình kết nối tới SQL Server đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/Backend/README.md](./Backend/Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mã seed dữ liệu nghiệp vụ đã được gỡ; ứng dụng chỉ đồng bộ schema/quyền, không tự tạo dữ liệu demo. Xem [kết nối DB thật](./Frontend/docs/real-database.md).
 2. Chạy API từ thư mục workspace:
 
    ```powershell
    dotnet run --project .\Backend\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
    ```
 
-   API dùng `http://localhost:54162` trong cấu hình launch profile.
+   API dùng `http://localhost:3003` trong cấu hình launch profile; Vite proxy `/api` đến địa chỉ này.
 3. Sao chép `Frontend/.env.example` thành `Frontend/.env.local` và đặt `VITE_SPORTS_CENTER_ID` thành ID trung tâm thực tế trong database; biến này bắt buộc khi đăng ký hội viên mới.
 4. Cài và chạy giao diện:
 

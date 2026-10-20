@@ -2,7 +2,7 @@
 ## Frontend Flow & Architecture Document – React + JavaScript (Vite)
 
 > **Tài liệu đặc tả luồng giao diện Frontend SCMS**  
-> **Cập nhật:** Đồng bộ hóa chính xác 100% với kiến trúc mã nguồn thực tế tại thư mục `src/`.  
+> **Tài liệu lưu trữ của bản mô phỏng cũ:** Các mô tả client database/mock bên dưới không còn áp dụng. Kiến trúc hiện tại dùng ASP.NET Core API và SQL Server; xem [README hiện hành](README.md) và [Kết nối DB thật](docs/real-database.md).
 > **Nền tảng công nghệ:** React 18, JavaScript (ES6+), Vite, Tailwind CSS (Chivo & Inter typography, Dark Olympic theme, Material Symbols Outlined).  
 > **Nguồn gốc Use Case:** Đối chiếu với tài liệu nghiệp vụ *Use Cases - Copy(2).docx*.
 

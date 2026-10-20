@@ -207,6 +207,60 @@
   justify-content: space-between;
 }
 
+/* Minimalist Refined Language Toggle for Landing Navbar */
+.tiya-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 2px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.tiya-lang-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.tiya-lang-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1;
+}
+
+.tiya-lang-toggle__btn:hover {
+  color: #ffffff;
+}
+
+.tiya-lang-toggle__btn.active {
+  background: #2D6A4F;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.45);
+}
+
+.tiya-lang-toggle__btn .lang-code {
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .tiya-brand {
   display: flex;
   align-items: center;

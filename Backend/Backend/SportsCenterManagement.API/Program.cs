@@ -128,13 +128,12 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Khởi tạo Database và nạp dữ liệu mẫu nếu chưa có
+// Đồng bộ schema/quyền; chỉ tạo dữ liệu demo khi cấu hình yêu cầu rõ ràng.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<SportsCenterDbContext>();
     var baselineLegacySchema = app.Configuration.GetValue<bool>("Database:BaselineLegacySchema");
-    var seedDemoData = app.Configuration.GetValue<bool?>("Database:SeedDemoData") ?? app.Environment.IsDevelopment();
-    await DbInitializer.SeedAsync(dbContext, baselineLegacySchema, seedDemoData);
+    await DbInitializer.SeedAsync(dbContext, baselineLegacySchema);
     await SystemAdminBootstrapper.SeedAsync(dbContext, app.Configuration);
 }
 

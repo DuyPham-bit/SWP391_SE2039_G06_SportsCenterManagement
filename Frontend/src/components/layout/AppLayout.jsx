@@ -23,6 +23,7 @@ export function AppLayout({ children, currentPath }) {
       '#/login': 'nav.login',
       '#/payment-result': 'nav.payment_result',
       // Member
+      '#/member': 'nav.member_dashboard',
       '#/member/dashboard': 'nav.member_dashboard',
       '#/member/schedule': 'nav.member_schedule',
       '#/member/bookings': 'nav.member_bookings',
@@ -34,6 +35,7 @@ export function AppLayout({ children, currentPath }) {
       '#/member/coach-portal': 'nav.member_coach_portal',
       '#/member/ai-assistant': 'nav.member_ai_assistant',
       // Coach
+      '#/coach': 'nav.coach_dashboard',
       '#/coach/dashboard': 'nav.coach_dashboard',
       '#/coach/schedule': 'nav.coach_schedule',
       '#/coach/members': 'nav.coach_members',
@@ -49,6 +51,7 @@ export function AppLayout({ children, currentPath }) {
       '#/coach/professional': 'nav.coach_professional',
       '#/coach/support': 'nav.coach_support',
       // Manager
+      '#/manager': 'nav.manager_dashboard',
       '#/manager/dashboard': 'nav.manager_dashboard',
       '#/manager/members': 'nav.manager_members',
       '#/manager/staff': 'nav.manager_staff',
@@ -61,6 +64,7 @@ export function AppLayout({ children, currentPath }) {
       '#/manager/audit-logs': 'nav.manager_audit_logs',
       '#/manager/home-content': 'nav.manager_home_content',
       // Receptionist
+      '#/receptionist': 'nav.receptionist_dashboard',
       '#/receptionist/dashboard': 'nav.receptionist_dashboard',
       '#/receptionist/lookup': 'nav.receptionist_lookup',
       '#/receptionist/check-in': 'nav.receptionist_check_in',

@@ -2,10 +2,12 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { classApi, bookingApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { Modal } from '../../components/common/Modal.js';
 import { Badge } from '../../components/common/StatCard.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
+import { translateClassName, translateSportName, translateCoachName, translateRoomName, translateDayOfWeek } from '../../services/i18nHelper.js';
 
 // --- HÀM TIỆN ÍCH NGÀY THÁNG VÀ LỊCH TRÌNH CHUẨN OLYMPIC ---
 
@@ -53,16 +55,16 @@ function getMonthCalendarGrid(year, month) {
 }
 
 // Bảng màu nhận diện chuyên nghiệp theo 15 bộ môn thể thao
-function getSportTheme(sportName = '') {
+function getSportTheme(sportName = '', isEn = false) {
   const s = String(sportName).toLowerCase();
-  if (s.includes('bơi')) {
+  if (s.includes('bơi') || s.includes('swim')) {
     return {
       bg: 'bg-cyan-50/90 hover:bg-cyan-100/90',
       border: 'border-cyan-300',
       text: 'text-cyan-900',
       badge: 'bg-cyan-100 text-cyan-800 border-cyan-200',
       dot: 'bg-cyan-500',
-      tag: 'BƠI LỘI'
+      tag: isEn ? 'SWIMMING' : 'BƠI LỘI'
     };
   }
   if (s.includes('yoga') || s.includes('pilates')) {
@@ -72,17 +74,17 @@ function getSportTheme(sportName = '') {
       text: 'text-purple-900',
       badge: 'bg-purple-100 text-purple-800 border-purple-200',
       dot: 'bg-purple-500',
-      tag: 'YOGA & PILATES'
+      tag: isEn ? 'YOGA & PILATES' : 'YOGA & PILATES'
     };
   }
-  if (s.includes('cầu lông')) {
+  if (s.includes('cầu lông') || s.includes('badminton')) {
     return {
       bg: 'bg-emerald-50/90 hover:bg-emerald-100/90',
       border: 'border-emerald-300',
       text: 'text-emerald-900',
       badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
       dot: 'bg-emerald-500',
-      tag: 'CẦU LÔNG'
+      tag: isEn ? 'BADMINTON' : 'CẦU LÔNG'
     };
   }
   if (s.includes('gym') || s.includes('fitness')) {
@@ -92,7 +94,7 @@ function getSportTheme(sportName = '') {
       text: 'text-amber-900',
       badge: 'bg-amber-100 text-amber-800 border-amber-200',
       dot: 'bg-amber-500',
-      tag: 'GYM & FITNESS'
+      tag: isEn ? 'GYM & FITNESS' : 'GYM & FITNESS'
     };
   }
   if (s.includes('boxing') || s.includes('võ') || s.includes('kickfit')) {
@@ -102,7 +104,7 @@ function getSportTheme(sportName = '') {
       text: 'text-rose-900',
       badge: 'bg-rose-100 text-rose-800 border-rose-200',
       dot: 'bg-rose-500',
-      tag: 'BOXING & VÕ THUẬT'
+      tag: isEn ? 'BOXING & MARTIAL ARTS' : 'BOXING & VÕ THUẬT'
     };
   }
   if (s.includes('bóng rổ') || s.includes('bóng đá') || s.includes('bóng chuyền')) {
@@ -112,17 +114,17 @@ function getSportTheme(sportName = '') {
       text: 'text-blue-900',
       badge: 'bg-blue-100 text-blue-800 border-blue-200',
       dot: 'bg-blue-500',
-      tag: 'BÓNG & ĐỒNG ĐỘI'
+      tag: isEn ? 'TEAM SPORTS' : 'BÓNG & ĐỒNG ĐỘI'
     };
   }
-  if (s.includes('tennis') || s.includes('bóng bàn')) {
+  if (s.includes('tennis') || s.includes('bóng bàn') || s.includes('pickleball')) {
     return {
       bg: 'bg-lime-50/90 hover:bg-lime-100/90',
       border: 'border-lime-300',
       text: 'text-lime-900',
       badge: 'bg-lime-100 text-lime-800 border-lime-200',
       dot: 'bg-lime-500',
-      tag: 'VỢT & BÓNG NHỎ'
+      tag: isEn ? 'RACKET SPORTS' : 'VỢT & BÓNG NHỎ'
     };
   }
   return {
@@ -131,16 +133,23 @@ function getSportTheme(sportName = '') {
     text: 'text-indigo-900',
     badge: 'bg-indigo-100 text-indigo-800 border-indigo-200',
     dot: 'bg-indigo-500',
-    tag: 'THỂ THAO OLYMPIC'
+    tag: isEn ? 'OLYMPIC SPORTS' : 'THỂ THAO OLYMPIC'
   };
 }
 
-const DAY_LABELS = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-const SHORT_DAY_LABELS = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const DAY_LABELS_VI = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
+const DAY_LABELS_EN = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+const SHORT_DAY_LABELS_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+const SHORT_DAY_LABELS_EN = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
 export function ClassScheduleView() {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
+  const DAY_LABELS = isEn ? DAY_LABELS_EN : DAY_LABELS_VI;
+  const SHORT_DAY_LABELS = isEn ? SHORT_DAY_LABELS_EN : SHORT_DAY_LABELS_VI;
 
   const [classes, setClasses] = useState([]);
   const [myBookings, setMyBookings] = useState([]);
@@ -191,7 +200,7 @@ export function ClassScheduleView() {
         }
       }
     } catch (error) {
-      showError(error.message || 'Không thể tải lịch lớp từ backend.');
+      showError(error.message || (isEn ? 'Unable to load class schedule from backend.' : 'Không thể tải lịch lớp từ backend.'));
     } finally {
       setLoading(false);
     }
@@ -242,9 +251,9 @@ export function ClassScheduleView() {
 
     if (target.enrolledCount >= target.capacity) {
       setBookingError({
-        message: 'Lớp học đã đủ sĩ số tối đa (hết chỗ trống).',
+        message: isEn ? 'This class has reached maximum capacity (no spots left).' : 'Lớp học đã đủ sĩ số tối đa (hết chỗ trống).',
         code: 'BOOK-SLOT-FULL',
-        proposedHandling: 'Vui lòng chọn ca tập khác hoặc liên hệ nhân viên lễ tân quầy để vào danh sách chờ.'
+        proposedHandling: isEn ? 'Please choose another session or contact the front desk to join the waitlist.' : 'Vui lòng chọn ca tập khác hoặc liên hệ nhân viên lễ tân quầy để vào danh sách chờ.'
       });
       return;
     }
@@ -253,7 +262,7 @@ export function ClassScheduleView() {
     setBookingError(null);
     try {
       const result = await bookingApi.bookClass(currentUser.id, target.sessionId || target.id);
-      showSuccess(result.message || `Đã giữ chỗ thành công ca tập "${target.name}"!`);
+      showSuccess(result.message || (isEn ? `Successfully booked session "${translateClassName(target.name, isEn)}"!` : `Đã giữ chỗ thành công ca tập "${target.name}"!`));
       setDetailModalOpen(false);
       await loadClasses();
     } catch (err) {
@@ -332,12 +341,16 @@ export function ClassScheduleView() {
   // Tiêu đề khoảng thời gian hiển thị
   const periodTitle = useMemo(() => {
     if (viewMode === 'month') {
-      return `Tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
+      return isEn
+        ? `Month ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`
+        : `Tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
     }
     const start = weekDays[0];
     const end = weekDays[6];
-    return `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
-  }, [viewMode, currentDate, weekDays]);
+    return isEn
+      ? `Week: ${start.getDate()} M${start.getMonth() + 1} - ${end.getDate()} M${end.getMonth() + 1}, ${end.getFullYear()}`
+      : `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
+  }, [viewMode, currentDate, weekDays, isEn]);
 
   // Thống kê nhanh KPI
   const stats = useMemo(() => {
@@ -357,29 +370,31 @@ export function ClassScheduleView() {
     return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
   }, [classes]);
 
-  if (loading) return <LoadingSpinner text="Đang đồng bộ lịch mở lớp & trạng thái vé tập..." />;
+  if (loading) return <LoadingSpinner text={isEn ? 'Syncing class schedule & spot availability...' : 'Đang đồng bộ lịch mở lớp & trạng thái vé tập...'} />;
 
   const todayStr = formatIsoDate(new Date());
 
   return (
-    <div className="space-y-6 animate-in fade-in duration-200">
+    <div className="space-y-6 animate-fade-slide-up">
       {/* 1. Header & Title */}
       <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
         <div>
           <div className="flex items-center gap-2">
-            <span className="font-chivo text-xs font-black uppercase tracking-widest text-red-600 bg-red-50 px-2 py-0.5 rounded border border-red-200">
+            <span className="font-chivo text-xs font-black uppercase tracking-widest text-[#2D6A4F] dark:text-[#81B29A] bg-[#81B29A]/15 px-2.5 py-0.5 rounded-md border border-[#81B29A]/30">
               OLYMPIC SCHEDULE CALENDAR
             </span>
             <span className="text-xs text-slate-400">·</span>
             <span className="text-xs font-bold text-slate-500 uppercase tracking-wide">
-              {stats.total} ca học mở
+              {stats.total} {isEn ? 'open sessions' : 'ca học mở'}
             </span>
           </div>
-          <h1 className="font-chivo text-2xl lg:text-3xl font-black text-slate-900 tracking-tight mt-1">
-            Lịch Mở Lớp & Đặt Chỗ Rèn Luyện
+          <h1 className="font-chivo text-2xl lg:text-3xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+            {isEn ? 'Class Schedule & Training Bookings' : 'Lịch Mở Lớp & Đặt Chỗ Rèn Luyện'}
           </h1>
-          <p className="text-xs text-slate-500 mt-0.5 max-w-2xl">
-            Lịch tương tác đa chế độ theo chuẩn Olympic: Theo dõi lịch tuần, tổng quan tháng, chọn ca tập và bảo đảm suất rèn luyện cùng HLV chuyên môn.
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 max-w-2xl">
+            {isEn
+              ? 'Olympic-standard multi-mode interactive schedule: Track weekly timetable, monthly overview, select sessions and secure your spot with expert coaches.'
+              : 'Lịch tương tác đa chế độ theo chuẩn Olympic: Theo dõi lịch tuần, tổng quan tháng, chọn ca tập và bảo đảm suất rèn luyện cùng HLV chuyên môn.'}
           </p>
         </div>
 
@@ -387,23 +402,23 @@ export function ClassScheduleView() {
         <div className="flex items-center gap-2.5">
           <a
             href="#/member/bookings"
-            className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm shrink-0"
+            className="px-4 py-2.5 bg-[#1E2235] hover:bg-[#2B2D42] text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-sm hover-lift shrink-0"
           >
-            <span className="material-symbols-outlined text-[18px] text-emerald-400">confirmation_number</span>
-            <span>Vé Đã Đặt ({bookedSessionIds.size})</span>
+            <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">confirmation_number</span>
+            <span>{isEn ? 'My Bookings' : 'Vé Đã Đặt'} ({bookedSessionIds.size})</span>
           </a>
         </div>
       </div>
 
       {/* 2. KPI Summary Strip (Gọn gàng & Đậm chất Olympic) */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        <div className="bg-white p-3.5 rounded-xl border border-slate-200 shadow-xs flex items-center gap-3">
-          <div className="w-10 h-10 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+        <div className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs hover-lift flex items-center gap-3">
+          <div className="w-10 h-10 rounded-lg bg-[#81B29A]/20 text-[#2D6A4F] dark:text-[#81B29A] flex items-center justify-center shrink-0">
             <span className="material-symbols-outlined text-[22px]">calendar_month</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Tổng ca tập</span>
-            <span className="font-chivo text-lg font-black text-slate-900">{stats.total}</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">{isEn ? 'Total Sessions' : 'Tổng ca tập'}</span>
+            <span className="font-chivo text-lg font-black text-slate-900 dark:text-white">{stats.total}</span>
           </div>
         </div>
 
@@ -419,7 +434,7 @@ export function ClassScheduleView() {
             <span className="material-symbols-outlined text-[22px]">check_circle</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Ca tôi đã đặt</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">{isEn ? 'My Booked' : 'Ca tôi đã đặt'}</span>
             <span className="font-chivo text-lg font-black text-emerald-800">{stats.booked}</span>
           </div>
         </div>
@@ -436,7 +451,7 @@ export function ClassScheduleView() {
             <span className="material-symbols-outlined text-[22px]">event_available</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Ca còn chỗ</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">{isEn ? 'Available Spots' : 'Ca còn chỗ'}</span>
             <span className="font-chivo text-lg font-black text-cyan-800">{stats.available}</span>
           </div>
         </div>
@@ -446,7 +461,7 @@ export function ClassScheduleView() {
             <span className="material-symbols-outlined text-[22px]">sports</span>
           </div>
           <div>
-            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">Bộ môn mở</span>
+            <span className="text-[10px] font-bold uppercase text-slate-400 block tracking-wider">{isEn ? 'Open Sports' : 'Bộ môn mở'}</span>
             <span className="font-chivo text-lg font-black text-slate-900">{stats.sportsCount} / 15</span>
           </div>
         </div>
@@ -462,19 +477,19 @@ export function ClassScheduleView() {
               onClick={handleToday}
               className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors"
             >
-              Hôm Nay
+              {isEn ? 'Today' : 'Hôm Nay'}
             </button>
             <div className="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white">
               <button
                 onClick={handlePrev}
-                title="Lùi kỳ trước"
+                title={isEn ? 'Previous Period' : 'Lùi kỳ trước'}
                 className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors border-r border-slate-200"
               >
                 <span className="material-symbols-outlined text-[20px]">chevron_left</span>
               </button>
               <button
                 onClick={handleNext}
-                title="Tiến kỳ sau"
+                title={isEn ? 'Next Period' : 'Tiến kỳ sau'}
                 className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors"
               >
                 <span className="material-symbols-outlined text-[20px]">chevron_right</span>
@@ -488,10 +503,10 @@ export function ClassScheduleView() {
           {/* Segmented Control Chế độ xem: Tuần | Tháng | Lịch biểu | Lưới thẻ */}
           <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0">
             {[
-              { id: 'week', label: 'Tuần (Timetable)', icon: 'view_week' },
-              { id: 'month', label: 'Tháng', icon: 'calendar_view_month' },
-              { id: 'agenda', label: 'Lịch Biểu', icon: 'view_agenda' },
-              { id: 'grid', label: 'Dạng Thẻ', icon: 'grid_view' }
+              { id: 'week', label: isEn ? 'Week (Timetable)' : 'Tuần (Timetable)', icon: 'view_week' },
+              { id: 'month', label: isEn ? 'Month' : 'Tháng', icon: 'calendar_view_month' },
+              { id: 'agenda', label: isEn ? 'Agenda' : 'Lịch Biểu', icon: 'view_agenda' },
+              { id: 'grid', label: isEn ? 'Cards' : 'Dạng Thẻ', icon: 'grid_view' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -518,7 +533,7 @@ export function ClassScheduleView() {
             </span>
             <input
               type="text"
-              placeholder="Tìm lớp, HLV, sân tập..."
+              placeholder={isEn ? 'Search class, coach, venue...' : 'Tìm lớp, HLV, sân tập...'}
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
               className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-white"
@@ -540,10 +555,10 @@ export function ClassScheduleView() {
               onChange={e => setSelectedTimeSlot(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 bg-white font-medium"
             >
-              <option value="ALL">🕒 Tất cả khung giờ</option>
-              <option value="MORNING">🌅 Ca Sáng (Trước 12:00)</option>
-              <option value="AFTERNOON">☀️ Ca Chiều (12:00 - 17:00)</option>
-              <option value="EVENING">🌙 Ca Tối (Sau 17:00)</option>
+              <option value="ALL">{isEn ? '🕒 All Time Slots' : '🕒 Tất cả khung giờ'}</option>
+              <option value="MORNING">{isEn ? '🌅 Morning (Before 12:00)' : '🌅 Ca Sáng (Trước 12:00)'}</option>
+              <option value="AFTERNOON">{isEn ? '☀️ Afternoon (12:00 - 17:00)' : '☀️ Ca Chiều (12:00 - 17:00)'}</option>
+              <option value="EVENING">{isEn ? '🌙 Evening (After 17:00)' : '🌙 Ca Tối (Sau 17:00)'}</option>
             </select>
           </div>
 
@@ -554,9 +569,9 @@ export function ClassScheduleView() {
               onChange={e => setSelectedStatusFilter(e.target.value)}
               className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 bg-white font-medium"
             >
-              <option value="ALL">🎯 Tất cả trạng thái lớp</option>
-              <option value="AVAILABLE_ONLY">🟢 Chỉ lớp còn chỗ trống</option>
-              <option value="BOOKED_ONLY">✅ Chỉ lớp tôi đã đặt chỗ</option>
+              <option value="ALL">{isEn ? '🎯 All Class Statuses' : '🎯 Tất cả trạng thái lớp'}</option>
+              <option value="AVAILABLE_ONLY">{isEn ? '🟢 Available Spots Only' : '🟢 Chỉ lớp còn chỗ trống'}</option>
+              <option value="BOOKED_ONLY">{isEn ? '✅ My Booked Classes Only' : '✅ Chỉ lớp tôi đã đặt chỗ'}</option>
             </select>
           </div>
 
@@ -579,7 +594,7 @@ export function ClassScheduleView() {
 
         {/* Row 3: Sport Filter Chips (Kèm số lượng lớp mở) */}
         <div className="flex flex-wrap items-center gap-1.5 pt-1">
-          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">Bộ môn:</span>
+          <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1">{isEn ? 'Sports:' : 'Bộ môn:'}</span>
           <button
             onClick={() => setSelectedSport('ALL')}
             className={`px-2.5 py-1 rounded-lg text-xs font-bold font-chivo transition-all ${
@@ -588,11 +603,12 @@ export function ClassScheduleView() {
                 : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
             }`}
           >
-            Tất cả ({classes.length})
+            {isEn ? 'All' : 'Tất cả'} ({classes.length})
           </button>
           {availableSports.map(s => {
-            const theme = getSportTheme(s.name);
+            const theme = getSportTheme(s.name, isEn);
             const isSelected = selectedSport === s.name;
+            const displayName = translateSportName(s.name, isEn);
             return (
               <button
                 key={s.name}
@@ -604,7 +620,7 @@ export function ClassScheduleView() {
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-white' : theme.dot}`} />
-                <span>{s.name}</span>
+                <span>{displayName}</span>
                 <span className={`text-[10px] px-1 rounded ${isSelected ? 'bg-red-700 text-white' : 'bg-slate-100 text-slate-600'}`}>
                   {s.count}
                 </span>
@@ -651,10 +667,10 @@ export function ClassScheduleView() {
                   </div>
                   {dayClassesCount > 0 ? (
                     <span className="inline-block mt-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-200/80 text-slate-700">
-                      {dayClassesCount} ca
+                      {dayClassesCount} {isEn ? 'sess' : 'ca'}
                     </span>
                   ) : (
-                    <span className="text-[10px] text-slate-400 block mt-1">Trống</span>
+                    <span className="text-[10px] text-slate-400 block mt-1">{isEn ? 'Empty' : 'Trống'}</span>
                   )}
                 </div>
               );
@@ -678,7 +694,7 @@ export function ClassScheduleView() {
                   {/* Tiêu đề ngày trên màn hình mobile nhỏ */}
                   <div className="md:hidden pb-1 border-b border-slate-200 flex justify-between items-center text-xs font-bold">
                     <span>{DAY_LABELS[day.getDay()]} ({dayStr})</span>
-                    <span className="text-slate-500">{dayClasses.length} ca học</span>
+                    <span className="text-slate-500">{dayClasses.length} {isEn ? 'sessions' : 'ca học'}</span>
                   </div>
 
                   {dayClasses.length === 0 ? (
@@ -686,11 +702,11 @@ export function ClassScheduleView() {
                       <span className="material-symbols-outlined text-2xl text-slate-300 block mb-1">
                         event_busy
                       </span>
-                      <span>Không có ca</span>
+                      <span>{isEn ? 'No sessions' : 'Không có ca'}</span>
                     </div>
                   ) : (
                     dayClasses.map(cls => {
-                      const theme = getSportTheme(cls.sportName);
+                      const theme = getSportTheme(cls.sportName, isEn);
                       const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
                       const isFull = cls.enrolledCount >= cls.capacity;
 
@@ -711,35 +727,35 @@ export function ClassScheduleView() {
                               <span>{cls.timeSlot}</span>
                             </span>
                             <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${theme.badge}`}>
-                              {cls.sportName}
+                              {translateSportName(cls.sportName, isEn)}
                             </span>
                           </div>
 
                           {/* Class Name */}
                           <h4 className="font-chivo font-black text-slate-900 leading-snug line-clamp-2">
-                            {cls.name}
+                            {translateClassName(cls.name, isEn)}
                           </h4>
 
                           {/* Coach & Room Info */}
                           <div className="text-[11px] text-slate-600 space-y-0.5">
-                            <div className="truncate">HLV: <strong>{cls.coachName}</strong></div>
-                            <div className="truncate text-slate-500">{cls.roomName}</div>
+                            <div className="truncate">{isEn ? 'Coach' : 'HLV'}: <strong>{translateCoachName(cls.coachName, isEn)}</strong></div>
+                            <div className="truncate text-slate-500">{translateRoomName(cls.roomName, isEn)}</div>
                           </div>
 
                           {/* Capacity & Action Status Footer */}
                           <div className="pt-1.5 border-t border-black/5 flex items-center justify-between">
                             <div className="text-[10px] font-bold">
-                              <span className="text-slate-600">{cls.enrolledCount}/{cls.capacity} chỗ</span>
+                              <span className="text-slate-600">{cls.enrolledCount}/{cls.capacity} {isEn ? 'spots' : 'chỗ'}</span>
                             </div>
 
                             {isBooked ? (
                               <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
                                 <span className="material-symbols-outlined text-[12px]">verified</span>
-                                <span>ĐÃ ĐẶT</span>
+                                <span>{isEn ? 'BOOKED' : 'ĐÃ ĐẶT'}</span>
                               </span>
                             ) : isFull ? (
                               <span className="text-[10px] font-bold text-slate-500 bg-slate-200 px-1.5 py-0.5 rounded">
-                                HẾT CHỖ
+                                {isEn ? 'FULL' : 'HẾT CHỖ'}
                               </span>
                             ) : (
                               <button
@@ -750,7 +766,7 @@ export function ClassScheduleView() {
                                 }}
                                 className="px-2 py-0.5 rounded bg-red-600 hover:bg-red-700 text-white font-bold text-[10px] uppercase tracking-wide transition-colors"
                               >
-                                ĐẶT CHỖ
+                                {isEn ? 'BOOK NOW' : 'ĐẶT CHỖ'}
                               </button>
                             )}
                           </div>
@@ -809,11 +825,11 @@ export function ClassScheduleView() {
                       </span>
                       <div className="flex items-center gap-1">
                         {hasBooked && (
-                          <span className="w-2 h-2 rounded-full bg-emerald-500" title="Có lớp đã đặt vé" />
+                          <span className="w-2 h-2 rounded-full bg-emerald-500" title={isEn ? 'Has booked session' : 'Có lớp đã đặt vé'} />
                         )}
                         {dayClasses.length > 0 && (
                           <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-1 rounded">
-                            {dayClasses.length} ca
+                            {dayClasses.length} {isEn ? 'sess' : 'ca'}
                           </span>
                         )}
                       </div>
@@ -822,7 +838,7 @@ export function ClassScheduleView() {
                     {/* Danh sách các pill lớp thu nhỏ */}
                     <div className="space-y-1 my-1">
                       {dayClasses.slice(0, 2).map(c => {
-                        const theme = getSportTheme(c.sportName);
+                        const theme = getSportTheme(c.sportName, isEn);
                         const isBooked = bookedSessionIds.has(c.sessionId) || bookedSessionIds.has(c.id);
                         return (
                           <div
@@ -838,13 +854,13 @@ export function ClassScheduleView() {
                             }`}
                           >
                             <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${isBooked ? 'bg-emerald-600' : theme.dot}`} />
-                            <span className="truncate">{c.timeSlot.slice(0, 5)} {c.name}</span>
+                            <span className="truncate">{c.timeSlot.slice(0, 5)} {translateClassName(c.name, isEn)}</span>
                           </div>
                         );
                       })}
                       {dayClasses.length > 2 && (
                         <span className="text-[9px] font-bold text-slate-500 block text-right">
-                          +{dayClasses.length - 2} ca nữa
+                          +{dayClasses.length - 2} {isEn ? 'more' : 'ca nữa'}
                         </span>
                       )}
                     </div>
@@ -861,19 +877,19 @@ export function ClassScheduleView() {
             <div className="flex items-center justify-between pb-2 border-b border-slate-100">
               <h3 className="font-chivo font-black text-sm text-slate-900 uppercase tracking-wide flex items-center gap-2">
                 <span className="material-symbols-outlined text-red-600 text-[18px]">event</span>
-                <span>Ca học ngày: {selectedCalendarDate} ({(classesByDate.get(selectedCalendarDate) || []).length} ca)</span>
+                <span>{isEn ? 'Sessions on' : 'Ca học ngày'}: {selectedCalendarDate} ({(classesByDate.get(selectedCalendarDate) || []).length} {isEn ? 'sessions' : 'ca'})</span>
               </h3>
-              <span className="text-xs text-slate-400">Nhấn vào ca tập để xem chi tiết hoặc đặt chỗ</span>
+              <span className="text-xs text-slate-400">{isEn ? 'Click on a session to view details or book' : 'Nhấn vào ca tập để xem chi tiết hoặc đặt chỗ'}</span>
             </div>
 
             {(classesByDate.get(selectedCalendarDate) || []).length === 0 ? (
               <p className="text-xs text-slate-500 italic py-2">
-                Không có ca tập nào mở trong ngày này. Vui lòng chọn ngày khác trên lưới lịch.
+                {isEn ? 'No workout sessions scheduled on this day. Please select another date from the calendar.' : 'Không có ca tập nào mở trong ngày này. Vui lòng chọn ngày khác trên lưới lịch.'}
               </p>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
                 {(classesByDate.get(selectedCalendarDate) || []).map(cls => {
-                  const theme = getSportTheme(cls.sportName);
+                  const theme = getSportTheme(cls.sportName, isEn);
                   const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
                   const isFull = cls.enrolledCount >= cls.capacity;
 
@@ -890,28 +906,28 @@ export function ClassScheduleView() {
                       <div>
                         <div className="flex justify-between items-center mb-1.5">
                           <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                            {cls.sportName}
+                            {translateSportName(cls.sportName, isEn)}
                           </span>
                           <span className="font-bold text-slate-700">{cls.timeSlot}</span>
                         </div>
                         <h4 className="font-chivo font-black text-sm text-slate-900 leading-snug">
-                          {cls.name}
+                          {translateClassName(cls.name, isEn)}
                         </h4>
                         <p className="text-[11px] text-slate-600 mt-1">
-                          HLV: <strong>{cls.coachName}</strong> · {cls.roomName}
+                          {isEn ? 'Coach' : 'HLV'}: <strong>{translateCoachName(cls.coachName, isEn)}</strong> · {translateRoomName(cls.roomName, isEn)}
                         </p>
                       </div>
 
                       <div className="mt-3 pt-2 border-t border-black/5 flex justify-between items-center">
                         <span className="font-bold text-[11px] text-slate-700">
-                          {cls.enrolledCount}/{cls.capacity} chỗ ({cls.capacity - cls.enrolledCount} trống)
+                          {cls.enrolledCount}/{cls.capacity} {isEn ? 'spots' : 'chỗ'} ({cls.capacity - cls.enrolledCount} {isEn ? 'left' : 'trống'})
                         </span>
                         {isBooked ? (
-                          <span className="text-[10px] font-black text-emerald-800 uppercase">✓ ĐÃ ĐẶT CHỖ</span>
+                          <span className="text-[10px] font-black text-emerald-800 uppercase">{isEn ? '✓ BOOKED' : '✓ ĐÃ ĐẶT CHỖ'}</span>
                         ) : isFull ? (
-                          <span className="text-[10px] font-bold text-slate-400 uppercase">HẾT CHỖ</span>
+                          <span className="text-[10px] font-bold text-slate-400 uppercase">{isEn ? 'FULL' : 'HẾT CHỖ'}</span>
                         ) : (
-                          <span className="text-[10px] font-black text-red-600 uppercase hover:underline">ĐẶT CHỖ →</span>
+                          <span className="text-[10px] font-black text-red-600 uppercase hover:underline">{isEn ? 'BOOK NOW →' : 'ĐẶT CHỖ →'}</span>
                         )}
                       </div>
                     </div>
@@ -929,7 +945,7 @@ export function ClassScheduleView() {
           {Array.from(classesByDate.entries()).length === 0 ? (
             <div className="p-12 text-center text-slate-400 text-xs">
               <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">event_busy</span>
-              <p>Không có ca học nào phù hợp với bộ lọc hiện tại.</p>
+              <p>{isEn ? 'No classes match the current filter.' : 'Không có ca học nào phù hợp với bộ lọc hiện tại.'}</p>
             </div>
           ) : (
             Array.from(classesByDate.entries()).map(([dateStr, dayClasses]) => {
@@ -950,14 +966,14 @@ export function ClassScheduleView() {
                       {DAY_LABELS[d.getDay()]} · {dateStr}
                     </span>
                     <span className="text-xs text-slate-500 font-bold">
-                      {dayClasses.length} ca tập rèn luyện
+                      {dayClasses.length} {isEn ? 'training sessions' : 'ca tập rèn luyện'}
                     </span>
                   </div>
 
                   {/* Table Rows of Sessions */}
                   <div className="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-hidden bg-slate-50/20">
                     {dayClasses.map(cls => {
-                      const theme = getSportTheme(cls.sportName);
+                      const theme = getSportTheme(cls.sportName, isEn);
                       const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
                       const isFull = cls.enrolledCount >= cls.capacity;
 
@@ -981,14 +997,14 @@ export function ClassScheduleView() {
                             <div className="space-y-1 min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                                  {cls.sportName}
+                                  {translateSportName(cls.sportName, isEn)}
                                 </span>
                                 <h4 className="font-chivo font-black text-slate-900 text-sm truncate">
-                                  {cls.name}
+                                  {translateClassName(cls.name, isEn)}
                                 </h4>
                               </div>
                               <p className="text-slate-500 text-[11px]">
-                                HLV: <strong className="text-slate-800">{cls.coachName}</strong> · Địa điểm: <strong className="text-slate-800">{cls.roomName}</strong>
+                                {isEn ? 'Coach' : 'HLV'}: <strong className="text-slate-800">{translateCoachName(cls.coachName, isEn)}</strong> · {isEn ? 'Venue' : 'Địa điểm'}: <strong className="text-slate-800">{translateRoomName(cls.roomName, isEn)}</strong>
                               </p>
                             </div>
                           </div>
@@ -996,9 +1012,9 @@ export function ClassScheduleView() {
                           {/* Capacity & Action Buttons */}
                           <div className="flex items-center justify-between sm:justify-end gap-4 shrink-0 border-t sm:border-t-0 pt-2 sm:pt-0">
                             <div className="text-right">
-                              <span className="text-[10px] text-slate-400 uppercase font-bold block">Sức chứa</span>
+                              <span className="text-[10px] text-slate-400 uppercase font-bold block">{isEn ? 'Capacity' : 'Sức chứa'}</span>
                               <span className="font-chivo font-bold text-slate-900">
-                                {cls.enrolledCount}/{cls.capacity} ({cls.capacity - cls.enrolledCount} trống)
+                                {cls.enrolledCount}/{cls.capacity} ({cls.capacity - cls.enrolledCount} {isEn ? 'left' : 'trống'})
                               </span>
                             </div>
 
@@ -1009,7 +1025,7 @@ export function ClassScheduleView() {
                                 className="px-3.5 py-1.5 rounded-lg font-chivo text-xs font-black uppercase bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 cursor-default"
                               >
                                 <span className="material-symbols-outlined text-[14px]">verified</span>
-                                <span>ĐÃ ĐẶT CHỖ</span>
+                                <span>{isEn ? 'BOOKED' : 'ĐÃ ĐẶT CHỖ'}</span>
                               </button>
                             ) : (
                               <button
@@ -1025,7 +1041,7 @@ export function ClassScheduleView() {
                                     : 'bg-red-600 hover:bg-red-700 text-white'
                                 }`}
                               >
-                                {isFull ? 'Hết chỗ' : 'Đặt Chỗ'}
+                                {isFull ? (isEn ? 'Full' : 'Hết chỗ') : (isEn ? 'Book Now' : 'Đặt Chỗ')}
                               </button>
                             )}
                           </div>
@@ -1046,11 +1062,11 @@ export function ClassScheduleView() {
           {filteredClasses.length === 0 ? (
             <div className="col-span-3 p-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200 text-xs">
               <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">event_busy</span>
-              <p>Không có ca học nào phù hợp với bộ lọc hiện tại.</p>
+              <p>{isEn ? 'No classes match the current filter.' : 'Không có ca học nào phù hợp với bộ lọc hiện tại.'}</p>
             </div>
           ) : (
             filteredClasses.map(cls => {
-              const theme = getSportTheme(cls.sportName);
+              const theme = getSportTheme(cls.sportName, isEn);
               const isFull = cls.enrolledCount >= cls.capacity;
               const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
 
@@ -1067,20 +1083,20 @@ export function ClassScheduleView() {
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center gap-1.5">
                         <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                          {cls.sportName}
+                          {translateSportName(cls.sportName, isEn)}
                         </span>
                         {isBooked && (
                           <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
                             <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                            ĐÃ THAM GIA
+                            {isEn ? 'ATTENDED' : 'ĐÃ THAM GIA'}
                           </span>
                         )}
                       </div>
-                      <span className="text-xs text-slate-500 font-bold">{cls.dayOfWeek}</span>
+                      <span className="text-xs text-slate-500 font-bold">{translateDayOfWeek(cls.dayOfWeek, isEn)}</span>
                     </div>
 
                     <h3 className="font-chivo text-base font-black text-slate-900 leading-tight">
-                      {cls.name}
+                      {translateClassName(cls.name, isEn)}
                     </h3>
 
                     <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
@@ -1090,24 +1106,24 @@ export function ClassScheduleView() {
                       </div>
                       <div className="flex items-center gap-2 text-slate-700">
                         <span className="material-symbols-outlined text-[18px] text-slate-400">person</span>
-                        <span>HLV: <strong className="text-slate-900">{cls.coachName}</strong></span>
+                        <span>{isEn ? 'Coach' : 'HLV'}: <strong className="text-slate-900">{translateCoachName(cls.coachName, isEn)}</strong></span>
                       </div>
                       <div className="flex items-center gap-2 text-slate-700">
                         <span className="material-symbols-outlined text-[18px] text-slate-400">stadium</span>
-                        <span>{cls.roomName}</span>
+                        <span>{translateRoomName(cls.roomName, isEn)}</span>
                       </div>
                     </div>
                   </div>
 
                   <div className="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Số chỗ còn lại</span>
+                      <span className="text-[10px] uppercase font-bold text-slate-400 block">{isEn ? 'Remaining Spots' : 'Số chỗ còn lại'}</span>
                       <div className="flex items-center gap-1.5">
                         <span className="font-chivo text-sm font-bold text-slate-900">
                           {cls.enrolledCount}/{cls.capacity}
                         </span>
                         <Badge variant={isFull ? 'FULL' : 'OPEN'} size="sm">
-                          {isFull ? 'HẾT CHỖ' : 'CÒN CHỖ'}
+                          {isFull ? (isEn ? 'FULL' : 'HẾT CHỖ') : (isEn ? 'AVAILABLE' : 'CÒN CHỖ')}
                         </Badge>
                       </div>
                     </div>
@@ -1120,13 +1136,13 @@ export function ClassScheduleView() {
                           className="px-3.5 py-1.5 rounded-lg font-chivo text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs flex items-center gap-1.5 cursor-default"
                         >
                           <span className="material-symbols-outlined text-[16px] text-emerald-600">verified</span>
-                          <span>ĐÃ ĐẶT CHỖ</span>
+                          <span>{isEn ? 'BOOKED' : 'ĐÃ ĐẶT CHỖ'}</span>
                         </button>
                         <a
                           href="#/member/bookings"
                           className="text-[10px] text-emerald-700 hover:text-emerald-900 hover:underline font-bold mt-1 flex items-center gap-0.5"
                         >
-                          <span>Xem chi tiết vé tập</span>
+                          <span>{isEn ? 'View booking details' : 'Xem chi tiết vé tập'}</span>
                           <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
                         </a>
                       </div>
@@ -1140,7 +1156,7 @@ export function ClassScheduleView() {
                             : 'bg-red-600 hover:bg-red-700 text-white'
                         }`}
                       >
-                        {!cls.isBookable ? 'Đã đóng' : isFull ? 'Vào danh sách chờ' : 'Đặt Chỗ'}
+                        {!cls.isBookable ? (isEn ? 'Closed' : 'Đã đóng') : isFull ? (isEn ? 'Waitlist' : 'Vào danh sách chờ') : (isEn ? 'Book Now' : 'Đặt Chỗ')}
                       </button>
                     )}
                   </div>
@@ -1155,14 +1171,14 @@ export function ClassScheduleView() {
       <Modal
         isOpen={detailModalOpen}
         onClose={() => setDetailModalOpen(false)}
-        title="Chi Tiết Ca Tập & Xác Nhận Giữ Chỗ"
+        title={isEn ? 'Session Details & Booking Confirmation' : 'Chi Tiết Ca Tập & Xác Nhận Giữ Chỗ'}
         size="md"
       >
         {activeSession && (() => {
           const isBooked = bookedSessionIds.has(activeSession.sessionId) || bookedSessionIds.has(activeSession.id);
           const isFull = activeSession.enrolledCount >= activeSession.capacity;
           const remainingSlots = Math.max(0, activeSession.capacity - activeSession.enrolledCount);
-          const theme = getSportTheme(activeSession.sportName);
+          const theme = getSportTheme(activeSession.sportName, isEn);
 
           return (
             <div className="space-y-4">
@@ -1170,32 +1186,32 @@ export function ClassScheduleView() {
               <div className={`p-4 rounded-xl border text-xs space-y-2.5 ${theme.bg} ${theme.border}`}>
                 <div className="flex items-center justify-between">
                   <span className={`px-2.5 py-0.5 rounded text-[10px] font-black uppercase border ${theme.badge}`}>
-                    {activeSession.sportName}
+                    {translateSportName(activeSession.sportName, isEn)}
                   </span>
-                  <span className="font-bold text-slate-600">{activeSession.dayOfWeek} · {activeSession.sessionDate}</span>
+                  <span className="font-bold text-slate-600">{translateDayOfWeek(activeSession.dayOfWeek, isEn)} · {activeSession.sessionDate}</span>
                 </div>
 
                 <h3 className="font-chivo font-black text-slate-900 text-base leading-tight">
-                  {activeSession.name}
+                  {translateClassName(activeSession.name, isEn)}
                 </h3>
 
                 <div className="grid grid-cols-2 gap-2 pt-1 border-t border-black/5 text-slate-700">
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Thời gian</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{isEn ? 'Time' : 'Thời gian'}</span>
                     <strong className="text-red-600">{activeSession.timeSlot}</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Sân tập / Phòng</span>
-                    <strong>{activeSession.roomName}</strong>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{isEn ? 'Venue / Room' : 'Sân tập / Phòng'}</span>
+                    <strong>{translateRoomName(activeSession.roomName, isEn)}</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Huấn luyện viên</span>
-                    <strong>{activeSession.coachName}</strong>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{isEn ? 'Coach' : 'Huấn luyện viên'}</span>
+                    <strong>{translateCoachName(activeSession.coachName, isEn)}</strong>
                   </div>
                   <div>
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block">Số chỗ còn trống</span>
+                    <span className="text-[10px] uppercase font-bold text-slate-400 block">{isEn ? 'Available Spots' : 'Số chỗ còn trống'}</span>
                     <strong className={remainingSlots <= 3 ? 'text-red-600' : 'text-slate-900'}>
-                      {remainingSlots}/{activeSession.capacity} suất
+                      {remainingSlots}/{activeSession.capacity} {isEn ? 'spots' : 'suất'}
                     </strong>
                   </div>
                 </div>
@@ -1205,10 +1221,14 @@ export function ClassScheduleView() {
               {conflictingBooking && (
                 <BusinessAlert
                   type="warning"
-                  title="Cảnh báo trùng khung giờ tập luyện"
+                  title={isEn ? 'Schedule Conflict Warning' : 'Cảnh báo trùng khung giờ tập luyện'}
                   code="BOOK-CONFLICT"
-                  message={`Bạn đã có lịch tập lớp "${conflictingBooking.className}" vào cùng khung giờ ${conflictingBooking.timeSlot} ngày ${conflictingBooking.bookingDate}.`}
-                  proposedHandling="Một hội viên không nên đăng ký hai buổi học trùng giờ nhau. Vui lòng cân nhắc hủy lớp cũ trước khi đặt lớp mới."
+                  message={isEn
+                    ? `You already have a class scheduled for "${translateClassName(conflictingBooking.className, isEn)}" at ${conflictingBooking.timeSlot} on ${conflictingBooking.bookingDate}.`
+                    : `Bạn đã có lịch tập lớp "${conflictingBooking.className}" vào cùng khung giờ ${conflictingBooking.timeSlot} ngày ${conflictingBooking.bookingDate}.`}
+                  proposedHandling={isEn
+                    ? 'A member should not register for two overlapping classes. Please consider cancelling your earlier booking before booking this session.'
+                    : 'Một hội viên không nên đăng ký hai buổi học trùng giờ nhau. Vui lòng cân nhắc hủy lớp cũ trước khi đặt lớp mới.'}
                 />
               )}
 
@@ -1216,9 +1236,11 @@ export function ClassScheduleView() {
               {isBooked ? (
                 <BusinessAlert
                   type="success"
-                  title="Bạn đã đặt chỗ ca học này!"
-                  message="Vé tập của bạn đã được xác nhận. Vui lòng có mặt trước giờ học 10 phút để điểm danh tại phòng tập."
-                  actionText="Xem danh sách vé tập"
+                  title={isEn ? 'You have booked this session!' : 'Bạn đã đặt chỗ ca học này!'}
+                  message={isEn
+                    ? 'Your ticket is confirmed. Please arrive 10 minutes prior to class start for check-in at the facility.'
+                    : 'Vé tập của bạn đã được xác nhận. Vui lòng có mặt trước giờ học 10 phút để điểm danh tại phòng tập.'}
+                  actionText={isEn ? 'View My Bookings' : 'Xem danh sách vé tập'}
                   onAction={() => {
                     setDetailModalOpen(false);
                     window.location.hash = '#/member/bookings';
@@ -1227,16 +1249,22 @@ export function ClassScheduleView() {
               ) : isFull ? (
                 <BusinessAlert
                   type="warning"
-                  title="Lớp học đã đủ sĩ số tối đa"
+                  title={isEn ? 'Class has reached maximum capacity' : 'Lớp học đã đủ sĩ số tối đa'}
                   code="SLOT-FULL"
-                  message="Tất cả các vị trí tập luyện trong ca học này đã có hội viên đăng ký giữ chỗ."
-                  proposedHandling="Vui lòng chọn ca tập khác hoặc liên hệ quầy lễ tân để ghi danh vào danh sách chờ."
+                  message={isEn
+                    ? 'All workout spots in this session have been reserved by members.'
+                    : 'Tất cả các vị trí tập luyện trong ca học này đã có hội viên đăng ký giữ chỗ.'}
+                  proposedHandling={isEn
+                    ? 'Please choose another session or contact the front desk to join the waitlist.'
+                    : 'Vui lòng chọn ca tập khác hoặc liên hệ quầy lễ tân để ghi danh vào danh sách chờ.'}
                 />
               ) : remainingSlots <= 3 ? (
                 <BusinessAlert
                   type="info"
-                  title="Chỗ trống sắp hết!"
-                  message={`Chỉ còn ${remainingSlots} suất cuối cùng cho buổi học này. Hãy xác nhận sớm để bảo đảm chỗ rèn luyện.`}
+                  title={isEn ? 'Spots running out!' : 'Chỗ trống sắp hết!'}
+                  message={isEn
+                    ? `Only ${remainingSlots} spots left for this session. Confirm soon to secure your spot.`
+                    : `Chỉ còn ${remainingSlots} suất cuối cùng cho buổi học này. Hãy xác nhận sớm để bảo đảm chỗ rèn luyện.`}
                 />
               ) : null}
 
@@ -1244,10 +1272,10 @@ export function ClassScheduleView() {
               {bookingError && (
                 <BusinessAlert
                   type="error"
-                  title="Không thể hoàn tất giữ chỗ"
+                  title={isEn ? 'Unable to complete booking' : 'Không thể hoàn tất giữ chỗ'}
                   code={bookingError.code || 'BOOKING-ERROR'}
                   message={bookingError.message || String(bookingError)}
-                  proposedHandling={bookingError.proposedHandling || 'Kiểm tra lại thời hạn gói tập, bộ môn được cấp phép, hoặc kiểm tra kết nối mạng.'}
+                  proposedHandling={bookingError.proposedHandling || (isEn ? 'Check your package validity, allowed sports, or network connection.' : 'Kiểm tra lại thời hạn gói tập, bộ môn được cấp phép, hoặc kiểm tra kết nối mạng.')}
                 />
               )}
 
@@ -1255,13 +1283,17 @@ export function ClassScheduleView() {
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 leading-relaxed space-y-1">
                 <div className="font-bold text-slate-800 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[15px] text-red-600">verified_user</span>
-                  <span>Chính sách đặt & hủy chỗ [ME-06]:</span>
+                  <span>{isEn ? 'Booking & Cancellation Policy [ME-06]:' : 'Chính sách đặt & hủy chỗ [ME-06]:'}</span>
                 </div>
                 <p>
-                  • Hủy ca học trước tối thiểu 2 giờ sẽ được hoàn lại lượt tập vào gói hội viên.
+                  {isEn
+                    ? '• Cancel at least 2 hours prior to class start to have your session credit refunded.'
+                    : '• Hủy ca học trước tối thiểu 2 giờ sẽ được hoàn lại lượt tập vào gói hội viên.'}
                 </p>
                 <p>
-                  • Hủy muộn hoặc vắng mặt không phép sẽ tính là đã tham gia buổi học theo quy định trung tâm.
+                  {isEn
+                    ? '• Late cancellation or unauthorized absence will be counted as attended under center regulations.'
+                    : '• Hủy muộn hoặc vắng mặt không phép sẽ tính là đã tham gia buổi học theo quy định trung tâm.'}
                 </p>
               </div>
 
@@ -1272,7 +1304,7 @@ export function ClassScheduleView() {
                   onClick={() => setDetailModalOpen(false)}
                   className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-300 hover:bg-slate-50 text-slate-700"
                 >
-                  Đóng
+                  {isEn ? 'Close' : 'Đóng'}
                 </button>
 
                 {!isBooked && (
@@ -1285,10 +1317,10 @@ export function ClassScheduleView() {
                     {bookingLoading ? (
                       <>
                         <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Đang giữ chỗ...</span>
+                        <span>{isEn ? 'Booking...' : 'Đang giữ chỗ...'}</span>
                       </>
                     ) : (
-                      <span>Xác Nhận Giữ Chỗ</span>
+                      <span>{isEn ? 'Confirm Booking' : 'Xác Nhận Giữ Chỗ'}</span>
                     )}
                   </button>
                 )}

@@ -1,12 +1,14 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { coachApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { CoachError, CoachPeriod, coachInput, useTeachingSessions } from './CoachShared.js';
 import { attendanceRestriction, canAttendSession, coachDate, sessionTime } from './coachOverview.js';
+import { translateClassName, translateRoomName, translateSportName } from '../../services/i18nHelper.js';
 
-const ATTENDANCE_STATUSES = {
+const getAttendanceStatuses = (isEn) => ({
   PRESENT: {
-    label: 'Có mặt',
+    label: isEn ? 'Present' : 'Có mặt',
     icon: 'check_circle',
     activeClass: 'bg-emerald-600 text-white shadow-sm ring-2 ring-emerald-500/30 font-bold',
     inactiveClass: 'bg-white hover:bg-emerald-50 hover:text-emerald-700 text-slate-700 border-slate-200',
@@ -14,7 +16,7 @@ const ATTENDANCE_STATUSES = {
     dotClass: 'bg-emerald-500'
   },
   ABSENT: {
-    label: 'Vắng mặt',
+    label: isEn ? 'Absent' : 'Vắng mặt',
     icon: 'cancel',
     activeClass: 'bg-rose-600 text-white shadow-sm ring-2 ring-rose-500/30 font-bold',
     inactiveClass: 'bg-white hover:bg-rose-50 hover:text-rose-700 text-slate-700 border-slate-200',
@@ -22,7 +24,7 @@ const ATTENDANCE_STATUSES = {
     dotClass: 'bg-rose-500'
   },
   LATE: {
-    label: 'Đến muộn',
+    label: isEn ? 'Late' : 'Đến muộn',
     icon: 'schedule',
     activeClass: 'bg-amber-500 text-white shadow-sm ring-2 ring-amber-500/30 font-bold',
     inactiveClass: 'bg-white hover:bg-amber-50 hover:text-amber-700 text-slate-700 border-slate-200',
@@ -30,17 +32,19 @@ const ATTENDANCE_STATUSES = {
     dotClass: 'bg-amber-500'
   },
   EXCUSED: {
-    label: 'Vắng có phép',
+    label: isEn ? 'Excused' : 'Vắng có phép',
     icon: 'event_available',
     activeClass: 'bg-sky-600 text-white shadow-sm ring-2 ring-sky-500/30 font-bold',
     inactiveClass: 'bg-white hover:bg-sky-50 hover:text-sky-700 text-slate-700 border-slate-200',
     statClass: 'bg-sky-50 text-sky-800 border-sky-200',
     dotClass: 'bg-sky-500'
   }
-};
+});
 
-const DAY_NAMES = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
-const DAY_FULL_LABELS = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+const DAY_NAMES_VI = ['Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7', 'Chủ Nhật'];
+const DAY_NAMES_EN = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const DAY_FULL_LABELS_VI = ['Thứ Hai', 'Thứ Ba', 'Thứ Tư', 'Thứ Năm', 'Thứ Sáu', 'Thứ Bảy', 'Chủ Nhật'];
+const DAY_FULL_LABELS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
 
 function getMondayOfDate(d) {
   const date = new Date(d);
@@ -74,47 +78,55 @@ function formatFullDate(d) {
   return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 }
 
-function getSessionStatusInfo(session) {
-  if (!session) return { label: 'Không xác định', color: 'slate' };
+function getSessionStatusInfo(session, isEn = false) {
+  if (!session) return { label: isEn ? 'Unknown' : 'Không xác định', color: 'slate' };
   if (session.status === 'CANCELLED') {
-    return { label: 'Đã hủy', badge: 'bg-rose-100 text-rose-800 border-rose-300', dot: 'bg-rose-500', isCancelled: true };
+    return { label: isEn ? 'Cancelled' : 'Đã hủy', badge: 'bg-rose-100 text-rose-800 border-rose-300', dot: 'bg-rose-500', isCancelled: true };
   }
   const now = Date.now();
   const start = sessionTime(session, false);
   const end = sessionTime(session, true);
 
   if (now < start) {
-    return { label: 'Chưa tới giờ', badge: 'bg-amber-100 text-amber-800 border-amber-300', dot: 'bg-amber-500', isUpcoming: true };
+    return { label: isEn ? 'Upcoming' : 'Chưa tới giờ', badge: 'bg-amber-100 text-amber-800 border-amber-300', dot: 'bg-amber-500', isUpcoming: true };
   }
   if (now >= start && now <= end) {
-    return { label: 'Đang diễn ra', badge: 'bg-emerald-100 text-emerald-800 border-emerald-300', dot: 'bg-emerald-500 animate-pulse', isHappening: true };
+    return { label: isEn ? 'Happening' : 'Đang diễn ra', badge: 'bg-emerald-100 text-emerald-800 border-emerald-300', dot: 'bg-emerald-500 animate-pulse', isHappening: true };
   }
-  return { label: 'Đã kết thúc', badge: 'bg-slate-100 text-slate-800 border-slate-300', dot: 'bg-slate-400', isEnded: true };
+  return { label: isEn ? 'Ended' : 'Đã kết thúc', badge: 'bg-slate-100 text-slate-800 border-slate-300', dot: 'bg-slate-400', isEnded: true };
 }
 
-function getAttendanceRestrictionInfo(session) {
+function getAttendanceRestrictionInfo(session, isEn = false) {
   const restriction = attendanceRestriction(session);
   if (restriction === 'PAST_DATE') {
     return {
-      title: 'Buổi học đã qua ngày nên không thể sửa điểm danh.',
-      description: 'Kết quả điểm danh chỉ được cập nhật trong đúng ngày diễn ra buổi học.'
+      title: isEn ? 'This session has already passed and attendance cannot be edited.' : 'Buổi học đã qua ngày nên không thể sửa điểm danh.',
+      description: isEn ? 'Attendance results can only be recorded on the day of the session.' : 'Kết quả điểm danh chỉ được cập nhật trong đúng ngày diễn ra buổi học.'
     };
   }
   if (restriction === 'CANCELLED') {
     return {
-      title: 'Buổi học này đã bị hủy. Hệ thống không cho phép thực hiện điểm danh.',
-      description: 'Vui lòng liên hệ bộ phận quản lý nếu cần khôi phục buổi học.'
+      title: isEn ? 'This session has been cancelled. Attendance cannot be taken.' : 'Buổi học này đã bị hủy. Hệ thống không cho phép thực hiện điểm danh.',
+      description: isEn ? 'Please contact management if you need to restore this session.' : 'Vui lòng liên hệ bộ phận quản lý nếu cần khôi phục buổi học.'
     };
   }
   return {
-    title: 'Buổi học chưa đến giờ bắt đầu.',
-    description: `Buổi học diễn ra lúc ${session?.timeSlot || ''} ngày ${session?.sessionDate || ''}. Huấn luyện viên có thể xem trước danh sách học viên; chức năng lưu điểm danh sẽ mở khi ca học bắt đầu.`
+    title: isEn ? 'Session has not started yet.' : 'Buổi học chưa đến giờ bắt đầu.',
+    description: isEn
+      ? `Session scheduled at ${session?.timeSlot || ''} on ${session?.sessionDate || ''}. Coaches can preview the student roster; attendance saving will unlock when the session starts.`
+      : `Buổi học diễn ra lúc ${session?.timeSlot || ''} ngày ${session?.sessionDate || ''}. Huấn luyện viên có thể xem trước danh sách học viên; chức năng lưu điểm danh sẽ mở khi ca học bắt đầu.`
   };
 }
 
 export function Attendance() {
   const { showSuccess, showError } = useToast();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const workbenchRef = useRef(null);
+
+  const ATTENDANCE_STATUSES = useMemo(() => getAttendanceStatuses(isEn), [isEn]);
+  const DAY_NAMES = isEn ? DAY_NAMES_EN : DAY_NAMES_VI;
+  const DAY_FULL_LABELS = isEn ? DAY_FULL_LABELS_EN : DAY_FULL_LABELS_VI;
 
   // Read URL query params on mount
   const getUrlParams = () => {
@@ -292,7 +304,11 @@ export function Attendance() {
       });
       return updated;
     });
-    showSuccess(`Đã đánh dấu tất cả ${members.length} học viên Có mặt. Vui lòng kiểm tra lại trước khi lưu.`);
+    showSuccess(
+      isEn
+        ? `Marked all ${members.length} students as Present. Please review before saving.`
+        : `Đã đánh dấu tất cả ${members.length} học viên Có mặt. Vui lòng kiểm tra lại trước khi lưu.`
+    );
   };
 
   const handleResetRecords = () => {
@@ -314,30 +330,38 @@ export function Attendance() {
   const handleSaveAttendance = async () => {
     if (!activeSession) return;
     if (!canAttendSession(activeSession)) {
-      showError(getAttendanceRestrictionInfo(activeSession).title);
+      showError(getAttendanceRestrictionInfo(activeSession, isEn).title);
       return;
     }
     if (saving) return;
 
     const payload = Object.values(records);
     if (!payload.length) {
-      showError('Buổi học chưa có học viên đăng ký.');
+      showError(isEn ? 'This session has no enrolled students.' : 'Buổi học chưa có học viên đăng ký.');
       return;
     }
 
     const unmarked = payload.filter(r => !r.status);
     if (unmarked.length > 0) {
-      showError(`Còn ${unmarked.length} học viên chưa được chọn trạng thái. Vui lòng chọn trạng thái cho tất cả học viên trước khi lưu.`);
+      showError(
+        isEn
+          ? `${unmarked.length} students still unmarked. Please select a status for all students before saving.`
+          : `Còn ${unmarked.length} học viên chưa được chọn trạng thái. Vui lòng chọn trạng thái cho tất cả học viên trước khi lưu.`
+      );
       return;
     }
 
     setSaving(true);
     try {
       await coachApi.takeAttendance(activeSession.id, null, null, null, payload);
-      showSuccess(`Đã lưu kết quả điểm danh cho lớp ${activeSession.name} (${activeSession.timeSlot})!`);
+      showSuccess(
+        isEn
+          ? `Attendance saved for class ${activeSession.name} (${activeSession.timeSlot})!`
+          : `Đã lưu kết quả điểm danh cho lớp ${activeSession.name} (${activeSession.timeSlot})!`
+      );
       setVersion(v => v + 1);
     } catch (e) {
-      showError(e.message || 'Lỗi khi lưu điểm danh.');
+      showError(e.message || (isEn ? 'Error saving attendance records.' : 'Lỗi khi lưu điểm danh.'));
     } finally {
       setSaving(false);
     }
@@ -419,9 +443,9 @@ export function Attendance() {
   }, [members, searchMember, records, filterRosterStatus]);
 
   const canAttend = activeSession && canAttendSession(activeSession);
-  const activeSessionStatusInfo = activeSession ? getSessionStatusInfo(activeSession) : null;
+  const activeSessionStatusInfo = activeSession ? getSessionStatusInfo(activeSession, isEn) : null;
   const activeAttendanceRestriction = activeSession && !canAttend
-    ? getAttendanceRestrictionInfo(activeSession)
+    ? getAttendanceRestrictionInfo(activeSession, isEn)
     : null;
 
   return (
@@ -432,14 +456,16 @@ export function Attendance() {
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-red-600 text-2xl">event_available</span>
             <span className="text-xs font-bold uppercase tracking-wider text-red-600">
-              COACH TEACHING SCHEDULE & ATTENDANCE
+              {isEn ? 'COACH TEACHING SCHEDULE & ATTENDANCE' : 'LỊCH GIẢNG DẠY & ĐIỂM DANH LỚP HỌC'}
             </span>
           </div>
           <h1 className="font-chivo text-2xl md:text-3xl font-black text-slate-900 tracking-tight mt-0.5">
-            Lịch Dạy & Điểm Danh Lớp Học
+            {isEn ? 'Teaching Schedule & Class Attendance' : 'Lịch Dạy & Điểm Danh Lớp Học'}
           </h1>
           <p className="text-xs md:text-sm text-slate-500 mt-1">
-            Theo dõi thời khóa biểu ca dạy theo tuần, chọn buổi học để kiểm diện học viên và lưu kết quả chuyên cần.
+            {isEn
+              ? 'Track weekly coaching timetable, choose a session to take student roll-call and record attendance.'
+              : 'Theo dõi thời khóa biểu ca dạy theo tuần, chọn buổi học để kiểm diện học viên và lưu kết quả chuyên cần.'}
           </p>
         </div>
 
@@ -451,7 +477,7 @@ export function Attendance() {
             className="flex items-center gap-1.5 px-3 py-2 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-sm"
           >
             <span className="material-symbols-outlined text-base">date_range</span>
-            <span>{showCustomPeriod ? 'Ẩn bộ lọc ngày' : 'Tùy chỉnh khoảng ngày'}</span>
+            <span>{showCustomPeriod ? (isEn ? 'Hide date filter' : 'Ẩn bộ lọc ngày') : (isEn ? 'Custom date range' : 'Tùy chỉnh khoảng ngày')}</span>
           </button>
           <button
             type="button"
@@ -462,7 +488,7 @@ export function Attendance() {
             <span className={`material-symbols-outlined text-base ${schedule.loading ? 'animate-spin' : ''}`}>
               refresh
             </span>
-            <span>Làm mới lịch</span>
+            <span>{isEn ? 'Refresh schedule' : 'Làm mới lịch'}</span>
           </button>
         </div>
       </div>
@@ -470,7 +496,9 @@ export function Attendance() {
       {/* Optional custom period form */}
       {showCustomPeriod && (
         <div className="bg-slate-50 p-4 rounded-2xl border border-slate-200">
-          <p className="text-xs font-bold text-slate-700 mb-2">Chọn khoảng thời gian tải dữ liệu lịch giảng dạy:</p>
+          <p className="text-xs font-bold text-slate-700 mb-2">
+            {isEn ? 'Select date range to load schedule data:' : 'Chọn khoảng thời gian tải dữ liệu lịch giảng dạy:'}
+          </p>
           <CoachPeriod schedule={schedule} />
         </div>
       )}
@@ -487,7 +515,7 @@ export function Attendance() {
               <button
                 type="button"
                 onClick={handlePrevWeek}
-                title="Tuần trước"
+                title={isEn ? "Previous week" : "Tuần trước"}
                 className="p-1.5 rounded-lg hover:bg-white text-slate-700 transition-all flex items-center"
               >
                 <span className="material-symbols-outlined text-lg">chevron_left</span>
@@ -498,12 +526,12 @@ export function Attendance() {
                 className="px-3 py-1 rounded-lg text-xs font-bold text-slate-700 hover:bg-white transition-all flex items-center gap-1"
               >
                 <span className="material-symbols-outlined text-sm text-red-600">today</span>
-                <span>Tuần này</span>
+                <span>{isEn ? 'This week' : 'Tuần này'}</span>
               </button>
               <button
                 type="button"
                 onClick={handleNextWeek}
-                title="Tuần sau"
+                title={isEn ? "Next week" : "Tuần sau"}
                 className="p-1.5 rounded-lg hover:bg-white text-slate-700 transition-all flex items-center"
               >
                 <span className="material-symbols-outlined text-lg">chevron_right</span>
@@ -532,7 +560,7 @@ export function Attendance() {
                 }`}
               >
                 <span className="material-symbols-outlined text-sm">calendar_view_week</span>
-                <span>Lịch tuần</span>
+                <span>{isEn ? 'Weekly' : 'Lịch tuần'}</span>
               </button>
               <button
                 type="button"
@@ -544,7 +572,7 @@ export function Attendance() {
                 }`}
               >
                 <span className="material-symbols-outlined text-sm">view_day</span>
-                <span>Theo ngày</span>
+                <span>{isEn ? 'Daily' : 'Theo ngày'}</span>
               </button>
               <button
                 type="button"
@@ -556,36 +584,36 @@ export function Attendance() {
                 }`}
               >
                 <span className="material-symbols-outlined text-sm">format_list_bulleted</span>
-                <span>Danh sách ca</span>
+                <span>{isEn ? 'List' : 'Danh sách ca'}</span>
               </button>
             </div>
 
             {/* Sport Filter */}
             {availableSports.length > 2 && (
               <select
-                aria-label="Lọc theo môn"
+                aria-label={isEn ? "Filter by sport" : "Lọc theo môn"}
                 value={selectedSport}
                 onChange={e => setSelectedSport(e.target.value)}
                 className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-600 focus:outline-none"
               >
-                <option value="ALL">Tất cả môn</option>
+                <option value="ALL">{isEn ? 'All Sports' : 'Tất cả môn'}</option>
                 {availableSports.filter(s => s !== 'ALL').map(sport => (
-                  <option key={sport} value={sport}>{sport}</option>
+                  <option key={sport} value={sport}>{translateSportName(sport, isEn)}</option>
                 ))}
               </select>
             )}
 
             {/* Readiness Filter */}
             <select
-              aria-label="Lọc theo trạng thái điểm danh"
+              aria-label={isEn ? "Filter by readiness" : "Lọc theo trạng thái điểm danh"}
               value={readinessFilter}
               onChange={e => setReadinessFilter(e.target.value)}
               className="px-3 py-1.5 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-700 focus:ring-2 focus:ring-red-600 focus:outline-none"
             >
-              <option value="ALL">Tất cả ca</option>
-              <option value="READY">⚡ Sẵn sàng điểm danh</option>
-              <option value="UPCOMING">⏳ Sắp diễn ra</option>
-              <option value="CANCELLED">✕ Đã hủy</option>
+              <option value="ALL">{isEn ? 'All Sessions' : 'Tất cả ca'}</option>
+              <option value="READY">{isEn ? '⚡ Ready for Attendance' : '⚡ Sẵn sàng điểm danh'}</option>
+              <option value="UPCOMING">{isEn ? '⏳ Upcoming' : '⏳ Sắp diễn ra'}</option>
+              <option value="CANCELLED">{isEn ? '✕ Cancelled' : '✕ Đã hủy'}</option>
             </select>
           </div>
         </div>
@@ -602,7 +630,7 @@ export function Attendance() {
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              Tất cả các ngày
+              {isEn ? 'All Days' : 'Tất cả các ngày'}
             </button>
             {weekDays.map((d, index) => {
               const dayName = DAY_NAMES[index];
@@ -646,8 +674,8 @@ export function Attendance() {
             <div className="inline-block animate-spin text-red-600 mb-2">
               <span className="material-symbols-outlined text-3xl">progress_activity</span>
             </div>
-            <p className="text-sm font-bold text-slate-700">Đang tải thời khóa biểu ca dạy...</p>
-            <p className="text-xs text-slate-400 mt-1">Vui lòng chờ trong giây lát</p>
+            <p className="text-sm font-bold text-slate-700">{isEn ? 'Loading teaching timetable...' : 'Đang tải thời khóa biểu ca dạy...'}</p>
+            <p className="text-xs text-slate-400 mt-1">{isEn ? 'Please wait a moment' : 'Vui lòng chờ trong giây lát'}</p>
           </div>
         )}
 
@@ -684,11 +712,11 @@ export function Attendance() {
                       <div className="flex items-center justify-center gap-1 mt-1 text-[10px]">
                         {isToday && (
                           <span className="px-1.5 py-0.5 rounded-full bg-white/20 text-white font-bold">
-                            Hôm nay
+                            {isEn ? 'Today' : 'Hôm nay'}
                           </span>
                         )}
                         <span className={isToday ? 'text-white/80' : 'text-slate-500 font-semibold'}>
-                          {daySessions.length} ca dạy
+                          {isEn ? `${daySessions.length} sessions` : `${daySessions.length} ca dạy`}
                         </span>
                       </div>
                     </div>
@@ -698,12 +726,12 @@ export function Attendance() {
                       {daySessions.length === 0 ? (
                         <div className="h-full flex flex-col items-center justify-center text-slate-400 py-6 text-center">
                           <span className="material-symbols-outlined text-2xl text-slate-300">event_busy</span>
-                          <span className="text-[11px] mt-1">Không có ca</span>
+                          <span className="text-[11px] mt-1">{isEn ? 'No sessions' : 'Không có ca'}</span>
                         </div>
                       ) : (
                         daySessions.map(s => {
                           const isSelected = activeSession?.id === s.id;
-                          const statusInfo = getSessionStatusInfo(s);
+                          const statusInfo = getSessionStatusInfo(s, isEn);
                           const attendable = canAttendSession(s);
 
                           return (
@@ -737,29 +765,29 @@ export function Attendance() {
 
                               <div className="flex items-center gap-1 mb-1.5 flex-wrap">
                                 <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
-                                  {s.sportName}
+                                  {translateSportName(s.sportName, isEn)}
                                 </span>
                                 {attendable && (
                                   <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-0.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    Điểm danh
+                                    {isEn ? 'Attendance' : 'Điểm danh'}
                                   </span>
                                 )}
                               </div>
 
                               {/* Class Name */}
                               <h2 className="text-xs font-black text-slate-900 leading-snug line-clamp-2">
-                                {s.name}
+                                {translateClassName(s.name, isEn)}
                               </h2>
 
                               {/* Room & Capacity */}
                               <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 space-y-0.5">
                                 <div className="flex items-center gap-1 truncate">
                                   <span className="material-symbols-outlined text-[13px] text-slate-400">stadium</span>
-                                  <span className="truncate">{s.roomName}</span>
+                                  <span className="truncate">{translateRoomName(s.roomName, isEn)}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-slate-600 font-semibold">
-                                  <span>Đã đặt:</span>
+                                  <span>{isEn ? 'Enrolled:' : 'Đã đặt:'}</span>
                                   <span className="text-slate-900 font-bold">{s.enrolledCount}/{s.capacity}</span>
                                 </div>
                               </div>
@@ -770,7 +798,7 @@ export function Attendance() {
                                   ? 'bg-red-600 text-white'
                                   : 'bg-slate-50 text-slate-600 group-hover:bg-red-50 group-hover:text-red-700'
                               }`}>
-                                {isSelected ? 'Đang chọn điểm danh' : 'Chọn ca này'}
+                                {isSelected ? (isEn ? 'Selected for Attendance' : 'Đang chọn điểm danh') : (isEn ? 'Select this session' : 'Chọn ca này')}
                               </div>
                             </div>
                           );
@@ -790,14 +818,14 @@ export function Attendance() {
             {filteredSessions.length === 0 ? (
               <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200">
                 <span className="material-symbols-outlined text-4xl text-slate-300">event_busy</span>
-                <p className="text-sm font-bold text-slate-700 mt-2">Không tìm thấy ca dạy phù hợp bộ lọc.</p>
-                <p className="text-xs text-slate-500 mt-1">Thử thay đổi bộ môn hoặc chọn tuần khác.</p>
+                <p className="text-sm font-bold text-slate-700 mt-2">{isEn ? 'No teaching sessions match the filter.' : 'Không tìm thấy ca dạy phù hợp bộ lọc.'}</p>
+                <p className="text-xs text-slate-500 mt-1">{isEn ? 'Try changing sports or selecting another week.' : 'Thử thay đổi bộ môn hoặc chọn tuần khác.'}</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {filteredSessions.map(s => {
                   const isSelected = activeSession?.id === s.id;
-                  const statusInfo = getSessionStatusInfo(s);
+                  const statusInfo = getSessionStatusInfo(s, isEn);
                   const attendable = canAttendSession(s);
 
                   return (
@@ -814,7 +842,7 @@ export function Attendance() {
                         {/* Header Badges */}
                         <div className="flex items-center justify-between gap-2 mb-2">
                           <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700">
-                            {s.sportName}
+                            {translateSportName(s.sportName, isEn)}
                           </span>
                           <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1 ${statusInfo.badge}`}>
                             <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`}></span>
@@ -824,7 +852,7 @@ export function Attendance() {
 
                         {/* Class Name */}
                         <h2 className="font-chivo text-base font-black text-slate-900 leading-tight">
-                          {s.name}
+                          {translateClassName(s.name, isEn)}
                         </h2>
 
                         {/* Session Date & Time */}
@@ -839,7 +867,7 @@ export function Attendance() {
                           </div>
                           <div className="flex items-center gap-2">
                             <span className="material-symbols-outlined text-base text-slate-400">stadium</span>
-                            <span>{s.roomName}</span>
+                            <span>{translateRoomName(s.roomName, isEn)}</span>
                           </div>
                         </div>
                       </div>
@@ -847,9 +875,9 @@ export function Attendance() {
                       {/* Footer Actions */}
                       <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
                         <div>
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">Sĩ số ca</span>
+                          <span className="text-[10px] uppercase font-bold text-slate-400 block">{isEn ? 'Enrolled capacity' : 'Sĩ số ca'}</span>
                           <span className="font-chivo text-sm font-extrabold text-slate-900">
-                            {s.enrolledCount}/{s.capacity} học viên
+                            {s.enrolledCount}/{s.capacity} {isEn ? 'students' : 'học viên'}
                           </span>
                         </div>
 
@@ -862,7 +890,7 @@ export function Attendance() {
                           }`}
                         >
                           <span className="material-symbols-outlined text-base">fact_check</span>
-                          <span>{isSelected ? 'Đang điểm danh' : 'Điểm danh ca này'}</span>
+                          <span>{isSelected ? (isEn ? 'Taking attendance' : 'Đang điểm danh') : (isEn ? 'Take attendance' : 'Điểm danh ca này')}</span>
                         </button>
                       </div>
                     </article>
@@ -887,10 +915,10 @@ export function Attendance() {
               <div>
                 <div className="flex items-center flex-wrap gap-2 mb-2">
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-600 text-white">
-                    {activeSession.sportName}
+                    {translateSportName(activeSession.sportName, isEn)}
                   </span>
                   <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/10 text-white border border-white/20">
-                    Phòng: {activeSession.roomName}
+                    {isEn ? `Room: ${translateRoomName(activeSession.roomName, isEn)}` : `Phòng: ${activeSession.roomName}`}
                   </span>
                   {activeSessionStatusInfo && (
                     <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-white/20 text-white flex items-center gap-1.5">
@@ -901,7 +929,7 @@ export function Attendance() {
                 </div>
 
                 <h2 className="font-chivo text-xl md:text-2xl font-black tracking-tight text-white">
-                  {activeSession.name}
+                  {translateClassName(activeSession.name, isEn)}
                 </h2>
 
                 <p className="text-slate-300 text-xs md:text-sm mt-1 flex items-center flex-wrap gap-x-3 gap-y-1">
@@ -915,16 +943,18 @@ export function Attendance() {
                     <strong>{activeSession.timeSlot}</strong>
                   </span>
                   <span>·</span>
-                  <span>Sĩ số đăng ký: <strong>{activeSession.enrolledCount}/{activeSession.capacity} học viên</strong></span>
+                  <span>{isEn ? 'Enrolled students: ' : 'Sĩ số đăng ký: '}<strong>{activeSession.enrolledCount}/{activeSession.capacity} {isEn ? 'students' : 'học viên'}</strong></span>
                 </p>
               </div>
 
               {/* Quick Session Switcher Dropdown */}
               <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 min-w-[260px]">
                 <div className="bg-white/10 p-2.5 rounded-xl border border-white/15 text-xs text-slate-200">
-                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">Đổi ca dạy khác:</span>
+                  <span className="text-[10px] text-slate-400 uppercase font-bold block mb-1">
+                    {isEn ? 'Switch session:' : 'Đổi ca dạy khác:'}
+                  </span>
                   <select
-                    aria-label="Đổi ca dạy nhanh"
+                    aria-label={isEn ? "Switch session" : "Đổi ca dạy nhanh"}
                     value={activeSession.id}
                     onChange={e => {
                       const found = schedule.sessions.find(s => s.id === Number(e.target.value));
@@ -934,7 +964,7 @@ export function Attendance() {
                   >
                     {schedule.sessions.map(s => (
                       <option key={s.id} value={s.id}>
-                        {s.name} · {s.sessionDate} · {s.timeSlot}
+                        {translateClassName(s.name, isEn)} · {s.sessionDate} · {s.timeSlot}
                       </option>
                     ))}
                   </select>
@@ -944,7 +974,7 @@ export function Attendance() {
           </div>
         ) : (
           <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200 text-slate-500">
-            Chưa có ca dạy nào được chọn. Vui lòng chọn một ca từ lịch thời khóa biểu ở trên.
+            {isEn ? 'No teaching session selected. Please pick a session from the timetable above.' : 'Chưa có ca dạy nào được chọn. Vui lòng chọn một ca từ lịch thời khóa biểu ở trên.'}
           </div>
         )}
 
@@ -967,7 +997,7 @@ export function Attendance() {
             {/* Stat Cards */}
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
               <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200">
-                <span className="text-[11px] font-bold text-slate-500 block">Tổng học viên</span>
+                <span className="text-[11px] font-bold text-slate-500 block">{isEn ? 'Total Students' : 'Tổng học viên'}</span>
                 <span className="font-chivo text-2xl font-black text-slate-900 mt-1 block">
                   {stats.total}
                 </span>
@@ -991,7 +1021,7 @@ export function Attendance() {
               <div className={`p-3.5 rounded-xl border ${
                 stats.unmarked > 0 ? 'bg-orange-50 border-orange-200 text-orange-900' : 'bg-slate-50 border-slate-200 text-slate-600'
               }`}>
-                <span className="text-[11px] font-bold block">Chưa đánh dấu</span>
+                <span className="text-[11px] font-bold block">{isEn ? 'Unmarked' : 'Chưa đánh dấu'}</span>
                 <span className="font-chivo text-2xl font-black mt-1 block">
                   {stats.unmarked}
                 </span>
@@ -1007,7 +1037,7 @@ export function Attendance() {
                 </span>
                 <input
                   type="text"
-                  placeholder="Tìm học viên theo tên, mã HV, SĐT..."
+                  placeholder={isEn ? "Search students by name, code, phone..." : "Tìm học viên theo tên, mã HV, SĐT..."}
                   value={searchMember}
                   onChange={e => setSearchMember(e.target.value)}
                   className="w-full pl-9 pr-3 py-2 rounded-lg border border-slate-200 bg-white text-xs font-semibold text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-red-600"
@@ -1021,10 +1051,10 @@ export function Attendance() {
                   disabled={!canAttend || saving || members.length === 0}
                   onClick={handleMarkAllPresent}
                   className="px-3 py-2 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-bold transition-all shadow-sm flex items-center gap-1.5 disabled:opacity-50"
-                  title="Đánh dấu tất cả học viên thành Có mặt"
+                  title={isEn ? "Mark all students as Present" : "Đánh dấu tất cả học viên thành Có mặt"}
                 >
                   <span className="material-symbols-outlined text-base">done_all</span>
-                  <span>Tất cả Có mặt</span>
+                  <span>{isEn ? 'All Present' : 'Tất cả Có mặt'}</span>
                 </button>
 
                 <button
@@ -1034,14 +1064,14 @@ export function Attendance() {
                   className="px-3 py-2 rounded-lg border border-slate-300 bg-white hover:bg-slate-100 text-slate-700 text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-base">restart_alt</span>
-                  <span>Đặt lại</span>
+                  <span>{isEn ? 'Reset' : 'Đặt lại'}</span>
                 </button>
               </div>
             </div>
 
             {/* Status Filter Tabs for Roster */}
             <div className="flex items-center gap-1.5 overflow-x-auto pb-1 text-xs font-bold">
-              <span className="text-slate-400 text-[11px] uppercase tracking-wider mr-1">Lọc:</span>
+              <span className="text-slate-400 text-[11px] uppercase tracking-wider mr-1">{isEn ? 'Filter:' : 'Lọc:'}</span>
               <button
                 type="button"
                 onClick={() => setFilterRosterStatus('ALL')}
@@ -1051,7 +1081,7 @@ export function Attendance() {
                     : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
                 }`}
               >
-                Tất cả ({members.length})
+                {isEn ? 'All' : 'Tất cả'} ({members.length})
               </button>
               <button
                 type="button"
@@ -1062,7 +1092,7 @@ export function Attendance() {
                     : 'bg-emerald-50 text-emerald-800 hover:bg-emerald-100'
                 }`}
               >
-                Có mặt ({stats.present})
+                {isEn ? 'Present' : 'Có mặt'} ({stats.present})
               </button>
               <button
                 type="button"
@@ -1073,7 +1103,7 @@ export function Attendance() {
                     : 'bg-rose-50 text-rose-800 hover:bg-rose-100'
                 }`}
               >
-                Vắng ({stats.absent})
+                {isEn ? 'Absent' : 'Vắng'} ({stats.absent})
               </button>
               <button
                 type="button"
@@ -1084,7 +1114,7 @@ export function Attendance() {
                     : 'bg-amber-50 text-amber-800 hover:bg-amber-100'
                 }`}
               >
-                Muộn ({stats.late})
+                {isEn ? 'Late' : 'Muộn'} ({stats.late})
               </button>
               <button
                 type="button"
@@ -1095,7 +1125,7 @@ export function Attendance() {
                     : 'bg-sky-50 text-sky-800 hover:bg-sky-100'
                 }`}
               >
-                Có phép ({stats.excused})
+                {isEn ? 'Excused' : 'Có phép'} ({stats.excused})
               </button>
               <button
                 type="button"
@@ -1106,7 +1136,7 @@ export function Attendance() {
                     : 'bg-orange-50 text-orange-800 hover:bg-orange-100'
                 }`}
               >
-                Chưa đánh dấu ({stats.unmarked})
+                {isEn ? 'Unmarked' : 'Chưa đánh dấu'} ({stats.unmarked})
               </button>
             </div>
           </div>
@@ -1118,7 +1148,7 @@ export function Attendance() {
             <div className="inline-block animate-spin text-red-600 mb-2">
               <span className="material-symbols-outlined text-3xl">progress_activity</span>
             </div>
-            <p className="text-sm font-bold text-slate-700">Đang tải danh sách học viên điểm danh...</p>
+            <p className="text-sm font-bold text-slate-700">{isEn ? 'Loading student roster...' : 'Đang tải danh sách học viên điểm danh...'}</p>
           </div>
         )}
 
@@ -1126,8 +1156,8 @@ export function Attendance() {
         {!loadingMembers && !memberError && activeSession && members.length === 0 && (
           <div className="p-8 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
             <span className="material-symbols-outlined text-4xl text-slate-300">group_off</span>
-            <p className="text-sm font-bold text-slate-700 mt-2">Chưa có học viên đặt chỗ cho buổi học này.</p>
-            <p className="text-xs text-slate-500 mt-1">Khi học viên đặt chỗ tham gia lớp, danh sách sẽ hiển thị tại đây.</p>
+            <p className="text-sm font-bold text-slate-700 mt-2">{isEn ? 'No students enrolled for this session yet.' : 'Chưa có học viên đặt chỗ cho buổi học này.'}</p>
+            <p className="text-xs text-slate-500 mt-1">{isEn ? 'When students book a spot, the roster will show up here.' : 'Khi học viên đặt chỗ tham gia lớp, danh sách sẽ hiển thị tại đây.'}</p>
           </div>
         )}
 
@@ -1161,11 +1191,11 @@ export function Attendance() {
                           </span>
                         </div>
                         <p className="text-xs text-slate-500 mt-0.5">
-                          {m.phone || 'Chưa có SĐT'} {m.email ? `· ${m.email}` : ''}
+                          {m.phone || (isEn ? 'No phone' : 'Chưa có SĐT')} {m.email ? `· ${m.email}` : ''}
                         </p>
                         {(m.fitnessGoal || m.fitnessLevel) && (
                           <p className="text-[11px] text-red-600 font-semibold mt-0.5">
-                            Mục tiêu: {m.fitnessGoal || m.fitnessLevel}
+                            {isEn ? 'Goal: ' : 'Mục tiêu: '}{m.fitnessGoal || m.fitnessLevel}
                           </p>
                         )}
                       </div>
@@ -1197,7 +1227,7 @@ export function Attendance() {
                       <input
                         type="text"
                         maxLength={500}
-                        placeholder="Ghi chú (ví dụ: đến muộn 15p, tập tốt...)"
+                        placeholder={isEn ? "Notes (e.g. 15m late, good effort...)" : "Ghi chú (ví dụ: đến muộn 15p, tập tốt...)"}
                         disabled={!canAttend || saving}
                         value={currentRecord.note || ''}
                         onChange={e => handleNoteChange(m.memberId, e.target.value)}
@@ -1216,18 +1246,18 @@ export function Attendance() {
           <div className="pt-4 border-t border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div className="text-xs text-slate-600 space-y-1">
               <div className="flex items-center gap-2">
-                <span className="font-bold">Tiến độ điểm danh:</span>
+                <span className="font-bold">{isEn ? 'Attendance progress:' : 'Tiến độ điểm danh:'}</span>
                 <span className="font-extrabold text-slate-900">
-                  {stats.total - stats.unmarked}/{stats.total} học viên
+                  {stats.total - stats.unmarked}/{stats.total} {isEn ? 'students' : 'học viên'}
                 </span>
                 {stats.unmarked === 0 ? (
                   <span className="text-emerald-600 font-bold flex items-center gap-0.5">
                     <span className="material-symbols-outlined text-sm">check_circle</span>
-                    Hoàn tất
+                    {isEn ? 'Complete' : 'Hoàn tất'}
                   </span>
                 ) : (
                   <span className="text-amber-600 font-bold">
-                    (Còn {stats.unmarked} chưa chọn)
+                    {isEn ? `(${stats.unmarked} unmarked)` : `(Còn ${stats.unmarked} chưa chọn)`}
                   </span>
                 )}
               </div>
@@ -1249,12 +1279,12 @@ export function Attendance() {
                 {saving ? (
                   <>
                     <span className="material-symbols-outlined text-lg animate-spin">progress_activity</span>
-                    <span>Đang lưu...</span>
+                    <span>{isEn ? 'Saving...' : 'Đang lưu...'}</span>
                   </>
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-lg">save</span>
-                    <span>Lưu Kết Quả Điểm Danh</span>
+                    <span>{isEn ? 'Save Attendance Records' : 'Lưu Kết Quả Điểm Danh'}</span>
                   </>
                 )}
               </button>

@@ -95,7 +95,7 @@ export function Logo({
       <a
         href={href}
         onClick={onClick}
-        aria-label="SCMS Olympic Sports Arena - Trang chủ"
+        aria-label="SCMS Olympic Sports Arena"
         className={containerClasses}
       >
         {content}

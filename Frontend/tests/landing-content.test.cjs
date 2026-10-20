@@ -81,12 +81,14 @@ test('reset uses independent defaults even after editing nested metrics and zone
   const fixture = loadService(async (_route, options = {}) => ({ content: options.body?.content ?? null }));
   const initial = fixture.api.getDefaultLandingContent();
   const edited = await fixture.api.resetLandingContentToDefault();
-  edited.heroBanner.metrics[0].value = 'Modified metric';
-  edited.zonesLayout.zones[0].items[0] = 'Modified zone';
+  edited.heroBanner.metrics.push({ id: 'test-metric', value: 'Modified metric', label: 'Test' });
+  edited.zonesLayout.zones.push({ id: 'test-zone', name: 'Test zone', items: ['Modified zone'] });
   await fixture.api.saveLandingContent(edited);
   const restored = await fixture.api.resetLandingContentToDefault();
-  assert.equal(restored.heroBanner.metrics[0].value, initial.heroBanner.metrics[0].value);
-  assert.equal(restored.zonesLayout.zones[0].items[0], initial.zonesLayout.zones[0].items[0]);
+  assert.deepEqual(restored.heroBanner.metrics, initial.heroBanner.metrics);
+  assert.deepEqual(restored.zonesLayout.zones, initial.zonesLayout.zones);
+  assert.equal(restored.coursesSection.sportsList.length, 0);
+  assert.equal(restored.facilitiesSection.facilitiesList.length, 0);
 });
 
 test('preview isolates a draft in the new tab without publishing or changing browser storage', () => {

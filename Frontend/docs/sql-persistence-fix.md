@@ -10,13 +10,13 @@ Người dùng yêu cầu tài khoản mới và dữ liệu nghiệp vụ đã 
 
 - `DbInitializer.SeedAsync` trước đây chạy đồng bộ dữ liệu mẫu mỗi lần Development khởi động: ghi lại giá/thời hạn/mô tả/trạng thái gói, email/điện thoại/trạng thái/lockout/hồ sơ demo; một số đoạn còn đặt lại mật khẩu mẫu. Đổi tên đối tượng có thể làm mẫu cũ được tạo lại, hủy subscription có thể được bổ sung subscription Active mới. Dữ liệu từng ghi SQL sau đó bị seed thay đổi, gây cảm giác không lưu.
 - “Duyệt ngoại lệ check-in” ở frontend tự tạo đối tượng bằng `Date.now()` và thêm vào React state, không gọi API; lời thông báo mở cửa/audit thành công không có bằng chứng SQL.
-- Đăng ký, hồ sơ và CRUD hiện có đã đi qua API; tài khoản nằm ở `users` và `member_profiles`, không phải localStorage. `dbStorage.js`/`mockData.js` là mã cũ không được import vào ứng dụng hiện tại. localStorage hoạt động hiện tại chỉ ghi nhớ email đăng nhập tùy chọn.
+- Đăng ký, hồ sơ và CRUD hiện có đã đi qua API; tài khoản nằm ở `users` và `member_profiles`, không phải localStorage. `dbStorage.js`/`mockData.js` đã được gỡ. localStorage chỉ dùng cho tùy chọn trình duyệt và nhập nội dung trang chủ cũ, không làm database nghiệp vụ.
 
 ## Bản sửa
 
-- Backend chỉ tạo demo cho database Development mới, có marker `seed.demo-data.v1` trong `system_settings`. Database đã có tài khoản/trung tâm không bị bổ sung/ghi đè demo; marker cũng ngăn tái tạo dữ liệu sau khi đổi tên/xóa mẫu. Bỏ các đoạn đặt lại dữ liệu và mật khẩu đã có.
+- Cập nhật 19/10/2026: đã xóa mã seed nghiệp vụ khỏi initializer; chỉ giữ đồng bộ schema và quyền. Xem [kết nối DB hiện hành](real-database.md).
 - Khởi tạo catalog vai trò/quyền tách khỏi seed nghiệp vụ, giữ các quyền và kiểm soát truy cập cần thiết. Không thay schema, migration hoặc connection string.
-- Có cấu hình `Database:SeedDemoData` để tắt demo khi chạy dùng chung; mặc định vẫn theo environment.
+- Không còn flag tạo dữ liệu demo; các bản ghi đã có trong SQL Server được giữ nguyên.
 - Ngoại lệ check-in tạo yêu cầu hỗ trợ thật qua API, lưu lý do/người được đề nghị xử lý vào `support_requests`, có audit và thông báo theo service hiện có. Không tạo check-in giả, không coi tên approver nhập tay là phê duyệt và không bỏ qua kiểm tra gói/tài khoản/lượt vào. Lỗi tải nhật ký được hiển thị thay vì âm thầm coi như danh sách trống.
 - `start-shared.ps1` build giao diện nhúng dùng `/api`, giữ SQL/JWT hiện có, tắt demo và chạy backend cho LAN. Không tự mở firewall, triển khai Internet, reset SQL, commit hoặc push.
 

@@ -1,24 +1,27 @@
+import { translateClassName, translateRoomName } from '../../services/i18nHelper.js';
+
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 export function vietnamDate(now = new Date()) {
   return new Date(now.getTime() + 7 * 60 * 60 * 1000).toISOString().slice(0, 10);
 }
 
-export function formatMemberDate(value) {
-  if (!value) return 'Chưa có thông tin';
+export function formatMemberDate(value, isEn = false) {
+  if (!value) return isEn ? 'N/A' : 'Chưa có thông tin';
   const date = new Date(`${String(value).slice(0, 10)}T12:00:00+07:00`);
-  return Number.isNaN(date.getTime()) ? 'Chưa có thông tin' : date.toLocaleDateString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  return Number.isNaN(date.getTime()) ? (isEn ? 'N/A' : 'Chưa có thông tin') : date.toLocaleDateString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
-export function formatMemberDateTime(value) {
-  if (!value) return 'Chưa có thông tin';
+export function formatMemberDateTime(value, isEn = false) {
+  if (!value) return isEn ? 'N/A' : 'Chưa có thông tin';
   // SQL Server DateTime values serialized without an offset are stored as UTC.
   const timestamp = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
   const date = new Date(timestamp);
-  return Number.isNaN(date.getTime()) ? 'Chưa có thông tin' : date.toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
+  return Number.isNaN(date.getTime()) ? (isEn ? 'N/A' : 'Chưa có thông tin') : date.toLocaleString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
 }
 
 export const DAY_LABELS = ['CHỦ NHẬT', 'THỨ 2', 'THỨ 3', 'THỨ 4', 'THỨ 5', 'THỨ 6', 'THỨ 7'];
+export const DAY_LABELS_EN = ['SUNDAY', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 export function parseIsoDate(dateStr) {
   if (!dateStr) return new Date();
@@ -72,32 +75,60 @@ export function getUpcomingBookings(bookings, now = new Date()) {
     .sort((a, b) => bookingStart(a) - bookingStart(b));
 }
 
-export function getMembershipSummary(user, now = new Date()) {
+export function getMembershipSummary(user, now = new Date(), isEn = false) {
   const expiry = String(user?.packageExpiry || '').slice(0, 10);
   const expiryTime = /^\d{4}-\d{2}-\d{2}$/.test(expiry) ? Date.parse(`${expiry}T00:00:00Z`) : NaN;
   const daysLeft = Number.isNaN(expiryTime) ? null : Math.round((expiryTime - Date.parse(`${vietnamDate(now)}T00:00:00Z`)) / DAY_MS);
   const active = user?.packageStatus === 'ACTIVE' && daysLeft !== null && daysLeft >= 0;
-  return { active, daysLeft, label: active ? 'CÒN HẠN' : 'CẦN GIA HẠN' };
+  return {
+    active,
+    daysLeft,
+    label: active
+      ? (isEn ? 'ACTIVE' : 'CÒN HẠN')
+      : (isEn ? 'NEEDS RENEWAL' : 'CẦN GIA HẠN')
+  };
 }
 
-export function getMemberReminders(user, bookings, now = new Date()) {
+export function getMemberReminders(user, bookings, now = new Date(), isEn = false) {
   const reminders = [];
-  const membership = getMembershipSummary(user, now);
+  const membership = getMembershipSummary(user, now, isEn);
   if (!membership.active || membership.daysLeft <= 7) {
-    reminders.push({ id: 'membership', title: membership.active ? 'Gói tập sắp hết hạn' : 'Đăng ký hoặc gia hạn gói tập',
-      content: membership.active ? `Gói tập hết hạn ngày ${formatMemberDate(user.packageExpiry)} (${membership.daysLeft === 0 ? 'hôm nay' : `còn ${membership.daysLeft} ngày`}).`
-        : 'Bạn chưa có gói tập còn hiệu lực. Hãy chọn gói phù hợp để đăng ký lớp.',
-      href: '#/member/packages', action: 'Xem gói tập', icon: 'card_membership' });
+    reminders.push({
+      id: 'membership',
+      title: membership.active
+        ? (isEn ? 'Package Expiring Soon' : 'Gói tập sắp hết hạn')
+        : (isEn ? 'Sign up or Renew Package' : 'Đăng ký hoặc gia hạn gói tập'),
+      content: membership.active
+        ? (isEn
+            ? `Membership expires on ${formatMemberDate(user.packageExpiry, isEn)} (${membership.daysLeft === 0 ? 'today' : `${membership.daysLeft} days left`}).`
+            : `Gói tập hết hạn ngày ${formatMemberDate(user.packageExpiry)} (${membership.daysLeft === 0 ? 'hôm nay' : `còn ${membership.daysLeft} ngày`}).`)
+        : (isEn
+            ? 'You do not have an active package. Choose a suitable package to book classes.'
+            : 'Bạn chưa có gói tập còn hiệu lực. Hãy chọn gói phù hợp để đăng ký lớp.'),
+      href: '#/member/packages',
+      action: isEn ? 'View Packages' : 'Xem gói tập',
+      icon: 'card_membership'
+    });
   }
   for (const booking of getUpcomingBookings(bookings, now).filter(b => bookingStart(b) - now.getTime() <= 60 * 60 * 1000)) {
-    reminders.push({ id: `session-${booking.id}`, title: `Sắp đến giờ: ${booking.className}`,
-      content: `${formatMemberDate(booking.bookingDate)} · ${booking.timeSlot} · ${booking.roomName}`,
-      href: '#/member/bookings', action: 'Xem lịch cá nhân', icon: 'event' });
+    reminders.push({
+      id: `session-${booking.id}`,
+      title: isEn ? `Upcoming Class: ${translateClassName(booking.className, isEn)}` : `Sắp đến giờ: ${booking.className}`,
+      content: `${formatMemberDate(booking.bookingDate, isEn)} · ${booking.timeSlot} · ${translateRoomName(booking.roomName, isEn)}`,
+      href: '#/member/bookings',
+      action: isEn ? 'My Bookings' : 'Xem lịch cá nhân',
+      icon: 'event'
+    });
   }
   for (const booking of bookings.filter(b => b.sessionStatus === 'CANCELLED' && b.bookingDate >= vietnamDate(now))) {
-    reminders.push({ id: `cancelled-${booking.id}`, title: `Buổi học đã bị hủy: ${booking.className}`,
-      content: `${formatMemberDate(booking.bookingDate)} · ${booking.timeSlot}. Vui lòng chọn buổi học khác.`,
-      href: '#/member/schedule', action: 'Xem lịch lớp', icon: 'event_busy' });
+    reminders.push({
+      id: `cancelled-${booking.id}`,
+      title: isEn ? `Class Cancelled: ${translateClassName(booking.className, isEn)}` : `Buổi học đã bị hủy: ${booking.className}`,
+      content: `${formatMemberDate(booking.bookingDate, isEn)} · ${booking.timeSlot}. ${isEn ? 'Please choose another class session.' : 'Vui lòng chọn buổi học khác.'}`,
+      href: '#/member/schedule',
+      action: isEn ? 'Class Timetable' : 'Xem lịch lớp',
+      icon: 'event_busy'
+    });
   }
   return reminders;
 }
@@ -106,14 +137,38 @@ export function getLatestProgress(records) {
   return [...records].sort((a, b) => String(b.date).localeCompare(String(a.date)) || Number(b.id) - Number(a.id))[0] || null;
 }
 
-export function formatMeasurement(value, unit) {
-  return value === null || value === undefined || value === '' ? 'Chưa đo' : `${value} ${unit}`;
+export function formatMeasurement(value, unit, isEn = false) {
+  return value === null || value === undefined || value === '' ? (isEn ? 'Not measured' : 'Chưa đo') : `${value} ${unit}`;
 }
 
 export const ATTENDANCE_LABELS = { PRESENT: 'Có mặt', LATE: 'Đi muộn', ABSENT: 'Vắng mặt', EXCUSED: 'Vắng có phép', PENDING: 'Chưa điểm danh' };
-export const BOOKING_LABELS = { CONFIRMED: 'Đã xác nhận', CANCELLED: 'Đã hủy', CANCELLEDLATE: 'Hủy muộn', COMPLETED: 'Đã hoàn thành', NOSHOW: 'Vắng mặt' };
+export const ATTENDANCE_LABELS_EN = { PRESENT: 'Present', LATE: 'Late', ABSENT: 'Absent', EXCUSED: 'Excused', PENDING: 'Pending' };
 
-export function getSportTheme(sportName = '', className = '') {
+export const BOOKING_LABELS = {
+  CONFIRMED: 'Đã xác nhận',
+  CANCELLED: 'Đã hủy',
+  CANCELLEDLATE: 'Hủy muộn',
+  COMPLETED: 'Đã hoàn thành',
+  NOSHOW: 'Vắng mặt',
+  PENDING: 'Chờ duyệt',
+  BOOKED: 'Đã đặt chỗ'
+};
+export const BOOKING_LABELS_EN = {
+  CONFIRMED: 'Confirmed',
+  CANCELLED: 'Cancelled',
+  CANCELLEDLATE: 'Late Cancel',
+  COMPLETED: 'Completed',
+  NOSHOW: 'No Show',
+  PENDING: 'Pending',
+  BOOKED: 'Booked'
+};
+
+export function getBookingStatusLabel(status, isEn = false) {
+  const norm = String(status || '').toUpperCase();
+  return (isEn ? BOOKING_LABELS_EN[norm] : BOOKING_LABELS[norm]) || status;
+}
+
+export function getSportTheme(sportName = '', className = '', isEn = false) {
   const s = `${String(sportName || '')} ${String(className || '')}`.toLowerCase();
   if (s.includes('bơi') || s.includes('swim') || s.includes('aqua')) {
     return {
@@ -122,7 +177,7 @@ export function getSportTheme(sportName = '', className = '') {
       text: 'text-cyan-900',
       badge: 'bg-cyan-100 text-cyan-800 border-cyan-200',
       dot: 'bg-cyan-500',
-      tag: 'BƠI LỘI',
+      tag: isEn ? 'SWIMMING' : 'BƠI LỘI',
       icon: 'pool'
     };
   }
@@ -133,7 +188,7 @@ export function getSportTheme(sportName = '', className = '') {
       text: 'text-purple-900',
       badge: 'bg-purple-100 text-purple-800 border-purple-200',
       dot: 'bg-purple-500',
-      tag: 'YOGA & PILATES',
+      tag: isEn ? 'YOGA & PILATES' : 'YOGA & PILATES',
       icon: 'self_improvement'
     };
   }
@@ -144,7 +199,7 @@ export function getSportTheme(sportName = '', className = '') {
       text: 'text-emerald-900',
       badge: 'bg-emerald-100 text-emerald-800 border-emerald-200',
       dot: 'bg-emerald-500',
-      tag: 'CẦU LÔNG',
+      tag: isEn ? 'BADMINTON' : 'CẦU LÔNG',
       icon: 'sports_tennis'
     };
   }
@@ -155,7 +210,7 @@ export function getSportTheme(sportName = '', className = '') {
       text: 'text-amber-900',
       badge: 'bg-amber-100 text-amber-800 border-amber-200',
       dot: 'bg-amber-500',
-      tag: 'GYM & FITNESS',
+      tag: isEn ? 'GYM & FITNESS' : 'GYM & FITNESS',
       icon: 'fitness_center'
     };
   }
@@ -166,7 +221,7 @@ export function getSportTheme(sportName = '', className = '') {
       text: 'text-rose-900',
       badge: 'bg-rose-100 text-rose-800 border-rose-200',
       dot: 'bg-rose-500',
-      tag: 'BOXING & VÕ THUẬT',
+      tag: isEn ? 'BOXING & MARTIAL ARTS' : 'BOXING & VÕ THUẬT',
       icon: 'sports_mma'
     };
   }
@@ -177,7 +232,7 @@ export function getSportTheme(sportName = '', className = '') {
       text: 'text-blue-900',
       badge: 'bg-blue-100 text-blue-800 border-blue-200',
       dot: 'bg-blue-500',
-      tag: 'BÓNG & ĐỒNG ĐỘI',
+      tag: isEn ? 'TEAM SPORTS & BALL' : 'BÓNG & ĐỒNG ĐỘI',
       icon: 'sports_basketball'
     };
   }
@@ -188,7 +243,7 @@ export function getSportTheme(sportName = '', className = '') {
       text: 'text-lime-900',
       badge: 'bg-lime-100 text-lime-800 border-lime-200',
       dot: 'bg-lime-500',
-      tag: 'VỢT & BÓNG NHỎ',
+      tag: isEn ? 'RACKET SPORTS' : 'VỢT & BÓNG NHỎ',
       icon: 'sports_baseball'
     };
   }
@@ -198,7 +253,7 @@ export function getSportTheme(sportName = '', className = '') {
     text: 'text-indigo-900',
     badge: 'bg-indigo-100 text-indigo-800 border-indigo-200',
     dot: 'bg-indigo-500',
-    tag: 'THỂ THAO OLYMPIC',
+    tag: isEn ? 'OLYMPIC SPORTS' : 'THỂ THAO OLYMPIC',
     icon: 'military_tech'
   };
 }

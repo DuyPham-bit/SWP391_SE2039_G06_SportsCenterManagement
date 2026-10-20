@@ -7,6 +7,7 @@ import { Modal } from '../../components/common/Modal.jsx';
 import { CoachError, coachInput } from './CoachShared.jsx';
 import { coachDate } from './coachOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translateClassName, translateSportName } from '../../services/i18nHelper.js';
 
 export function ClassMembers() {
   const { currentUser } = useAuth();
@@ -343,7 +344,7 @@ export function ClassMembers() {
             >
               {classes.map(cls => (
                 <option key={cls.id} value={cls.id}>
-                  {cls.name} ({cls.sportName})
+                  {translateClassName(cls.name, isEn)} ({translateSportName(cls.sportName, isEn)})
                 </option>
               ))}
             </select>

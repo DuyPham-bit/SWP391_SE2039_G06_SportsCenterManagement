@@ -162,9 +162,9 @@ src/
 │
 └── services/
     ├── api.js                          # Tầng Service API hợp nhất toàn bộ 24+ Use Case
-    ├── dbStorage.js                    # Cơ sở dữ liệu IndexedDB / LocalStorage Client-side
-    ├── permissions.js                  # Định nghĩa SYSTEM_CAPABILITIES, hasCapability, dynamic navigation
-    └── mockData.js                     # Bộ dữ liệu mẫu chuẩn Olympic (Users, Packages, Classes, Rooms...)
+    ├── backendApi.js                   # API nghiệp vụ theo trung tâm và ánh xạ DTO
+    ├── http.js                         # HTTP, Bearer JWT và lỗi từ backend
+    └── permissions.js                  # Định nghĩa SYSTEM_CAPABILITIES, hasCapability, dynamic navigation
 ```
 
 ---
@@ -627,7 +627,7 @@ Toàn bộ ứng dụng sử dụng cơ chế Hash Routing mượt mà, không y
 
 Backend ASP.NET Core/EF Core lưu nghiệp vụ trong SQL Server. Frontend gửi JWT HS256 tới API; server kiểm tra chữ ký, issuer, audience, thời hạn, trạng thái tài khoản và quyền theo trung tâm. Sau khi tải lại trang, AuthContext xác minh phiên với server trước khi mở màn hình nghiệp vụ.
 
-`dbStorage.js` và `mockData.js` còn trong cây mã nguồn từ bản mô phỏng cũ. Các service nghiệp vụ hiện tại không dùng chúng làm database hoặc trả thành công giả khi API lỗi.
+`dbStorage.js` và `mockData.js` đã được gỡ. Dữ liệu nghiệp vụ đi theo luồng `api.js`/`backendApi.js` → `http.js` → ASP.NET Core API → EF Core → SQL Server. API lỗi được báo về giao diện; không thay bằng dữ liệu mẫu. Backend đã gỡ mã seed dữ liệu nghiệp vụ, chỉ đồng bộ schema/quyền và giữ các bản ghi đã có trong database. Danh mục trang chủ đọc từ public catalog API; CMS chỉ gắn ảnh và ẩn/hiện cho ID thật. Hướng dẫn cấu hình và kiểm chứng: [Kết nối DB thật](docs/real-database.md).
 
 ### 12.2 Service API
 
