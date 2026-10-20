@@ -21,11 +21,11 @@ namespace SportsCenterManagement.API.Controllers;
 public sealed class AuthController(
     SportsCenterDbContext dbContext,
     JwtTokenIssuer tokenIssuer,
-    IHostEnvironment environment,
     IAuthService authService,
     PasswordResetEmailSender resetEmail) : ControllerBase
 {
     [HttpPost("register")]
+    [EnableRateLimiting("password-reset")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -51,6 +51,46 @@ public sealed class AuthController(
         {
             return Conflict(new { message = "Username, email, or phone number is already in use." });
         }
+    }
+
+    [HttpPost("request-email-verification")]
+    [EnableRateLimiting("password-reset")]
+    [AllowAnonymous]
+    public async Task<IActionResult> RequestEmailVerification(
+        [FromBody] RequestPasswordResetRequest request, CancellationToken cancellationToken)
+    {
+        if (!resetEmail.IsConfigured)
+            return StatusCode(503, new { message = "Hiện chưa thể gửi email xác thực. Vui lòng thử lại sau hoặc liên hệ trung tâm." });
+
+        var email = request.Email.Trim().ToLowerInvariant();
+        var now = DateTime.UtcNow;
+        await using var transaction = await dbContext.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable, cancellationToken);
+        const string sentMessage = "Nếu email có thể đăng ký, mã xác thực đã được gửi. Vui lòng kiểm tra hộp thư và thư rác. Mã có hạn 10 phút.";
+        if (await dbContext.Users.AnyAsync(user => user.Email == email, cancellationToken))
+            return Ok(new { message = sentMessage });
+
+        var latest = await dbContext.EmailVerificationTokens.Where(token => token.Email == email)
+            .OrderByDescending(token => token.Id).FirstOrDefaultAsync(cancellationToken);
+        if (latest is not null && latest.CreatedAt > now.AddMinutes(-1))
+        {
+            Response.Headers.RetryAfter = "60";
+            return StatusCode(429, new { message = "Vui lòng chờ 60 giây trước khi yêu cầu mã mới." });
+        }
+        await dbContext.EmailVerificationTokens.Where(token => token.Email == email && token.UsedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(token => token.UsedAt, now), cancellationToken);
+        var otp = RandomNumberGenerator.GetInt32(100000, 1000000).ToString();
+        var verification = new EmailVerificationToken
+        {
+            Email = email, Token = BCrypt.Net.BCrypt.HashPassword(otp),
+            CreatedAt = now, ExpiresAt = now.AddMinutes(10)
+        };
+        dbContext.EmailVerificationTokens.Add(verification);
+        await dbContext.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        if (!await resetEmail.SendVerificationAsync(verification, otp, cancellationToken))
+            return StatusCode(503, new { message = "Chưa gửi được email xác thực. Vui lòng thử lại sau." });
+        return Ok(new { message = sentMessage });
     }
 
     [HttpPost("login")]
@@ -92,7 +132,7 @@ public sealed class AuthController(
         [FromBody] RequestPasswordResetRequest request,
         CancellationToken cancellationToken)
     {
-        if (!environment.IsDevelopment() && !resetEmail.IsConfigured)
+        if (!resetEmail.IsConfigured)
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new
             {
                 message = "Hiện chưa thể gửi mã đặt lại mật khẩu. Vui lòng liên hệ trung tâm để được hỗ trợ."
@@ -136,7 +176,7 @@ public sealed class AuthController(
 
         return Ok(new PasswordResetRequestResponse(
             "Nếu email tồn tại, mã xác thực đã được gửi.",
-            environment.IsDevelopment() ? otp : null));
+            null));
     }
 
     [HttpPost("reset-password")]

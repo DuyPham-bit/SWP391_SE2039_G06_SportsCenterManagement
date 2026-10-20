@@ -45,7 +45,7 @@ int count = 0;
 try {
     await using (var db = new SportsCenterDbContext(options)) {
         var migrations = db.Database.GetMigrations().ToArray();
-        await db.GetService<IMigrator>().MigrateAsync(migrations[^2]);
+        await db.GetService<IMigrator>().MigrateAsync("20261016175228_AddCoachProfessionalWorkspace");
         await db.Database.ExecuteSqlRawAsync("""
             INSERT INTO dbo.roles (name, created_at) VALUES ('UpgradeFixture', SYSUTCDATETIME());
             INSERT INTO dbo.users (username, email, password_hash, role_id, status, failed_login_attempts, created_at)
@@ -335,6 +335,7 @@ try {
         await Check("HTTP staff cannot pick arbitrary pending member by package", async () => (await http.DeleteAsync($"api/payments/pending-package/{package.Id}")).StatusCode == HttpStatusCode.BadRequest);
         builder.Configuration["ExternalCommunications:Email:WebhookUrl"] = web.Urls.Single() + "/audit-email";
         builder.Configuration["ExternalCommunications:Email:BearerToken"] = "audit-only-token";
+        await RegistrationChecks.Run(db, http, mail, builder.Configuration, center.Id, Check);
         await AuthChecks.Run(db, http, issuer, owner, mail, Check);
         await web.StopAsync();
     }

@@ -40,10 +40,11 @@ Các ảnh đại diện cho 9 bộ môn trong danh mục đào tạo của SCMS
 | 7 | **Bóng Rổ** | Trụ rổ kính cường lực sàn acrylic | `https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop` |
 | 8 | **Bóng Bàn** | Bàn bóng bàn thi đấu tiêu chuẩn | `https://images.unsplash.com/photo-1708268411988-d30e0e1eef0c?q=80&w=1200&auto=format&fit=crop` |
 | 9 | **Pickleball** | Cụm sân Pickleball ngoài trời | `https://images.unsplash.com/photo-1693142517898-2f986215e412?q=80&w=1200&auto=format&fit=crop` |
+| 10 | **Golf** | Học viện Golf Driving Range & Studio 3D | `https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=1200&auto=format&fit=crop` |
 
 ---
 
-## 3. 9 Cụm Sân & Phòng Tập (Facilities Catalog)
+## 3. 10 Cụm Sân & Phòng Tập (Facilities Catalog)
 
 Mỗi cụm sân gồm 1 **ảnh chính (1200px)** và 1 **ảnh phụ chi tiết (800px)**:
 
@@ -82,6 +83,10 @@ Mỗi cụm sân gồm 1 **ảnh chính (1200px)** và 1 **ảnh phụ chi tiế
 ### 9. Phòng Tập Yoga & Pilates (`room-09`)
 - **Ảnh chính (Sàn Yoga thiền định):** `https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=1200&auto=format&fit=crop`
 - **Ảnh phụ (Thảm tập thư giãn):** `https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800&auto=format&fit=crop`
+
+### 10. Tổ Hợp Sân Tập Golf & 3D Simulator (`room-10`)
+- **Ảnh chính (Học viện Golf Driving Range):** `https://images.unsplash.com/photo-1535131749006-b7f58c99034b?q=80&w=1200&auto=format&fit=crop`
+- **Ảnh phụ (Studio Golf 3D & Putting Green):** `https://images.unsplash.com/photo-1592919505780-303950717480?q=80&w=800&auto=format&fit=crop`
 
 ---
 

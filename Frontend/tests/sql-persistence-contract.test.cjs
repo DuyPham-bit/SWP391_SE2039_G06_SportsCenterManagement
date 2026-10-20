@@ -36,6 +36,24 @@ test('registration is sent to SQL-backed API and is not reported successful when
   assert.equal(f.calls[0].options.body.centerId, 15);
 });
 
+test('email verification normalizes the address and preserves request cancellation', async () => {
+  const f = loadApi(() => ({ message: 'Sent' }));
+  const controller = new AbortController();
+  await f.authApi.requestEmailVerification(' MEMBER@Example.Test ', { signal: controller.signal });
+  assert.equal(f.calls[0].route, 'auth/request-email-verification');
+  assert.equal(f.calls[0].options.body.email, 'member@example.test');
+  assert.equal(f.calls[0].options.token, null);
+  assert.equal(f.calls[0].options.signal, controller.signal);
+});
+
+test('registration includes the emailed OTP and a rejected challenge cannot trigger login', async () => {
+  const f = loadApi(() => { throw new Error('OTP expired'); });
+  await assert.rejects(f.authApi.register({ fullName: 'Hội viên', email: 'MEMBER@example.test', password: 'Valid_Password42!', emailOtp: '123456' }), /OTP expired/);
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].options.body.emailOtp, '123456');
+  assert.equal(f.calls[0].options.body.email, 'member@example.test');
+});
+
 test('check-in review saves a real support request with a resolved member and no claimed approval', async () => {
   const f = loadApi(route => route.includes('/members?')
     ? { items: [{ memberId: 21, memberCode: 'MB-21', fullName: 'Hội viên', email: 'member@example.test', accountStatus: 'Active' }] }

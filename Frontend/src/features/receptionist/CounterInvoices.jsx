@@ -1,4 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
+import { Modal } from '../../components/common/Modal.jsx';
 import { receptionApi } from '../../services/api.js';
 import { createIdempotencyKey } from '../../services/http.js';
 import { downloadInvoice, invoiceStatus, printInvoice } from '../../services/invoiceExport.js';
@@ -18,6 +20,7 @@ export function CounterInvoices() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [detail, setDetail] = useState(null);
+  const [selectedInvoice, setSelectedInvoice] = useState(null);
   const [detailError, setDetailError] = useState('');
   const [opening, setOpening] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -87,6 +90,7 @@ export function CounterInvoices() {
 
   const open = async number => {
     const id = ++sequence.current;
+    setSelectedInvoice(number);
     setOpening(true);
     setDetail(null);
     setDetailError('');
@@ -105,6 +109,17 @@ export function CounterInvoices() {
     } finally {
       if (id === sequence.current) setOpening(false);
     }
+  };
+
+  const closeDetail = () => {
+    if (busy) return;
+    // Closing also invalidates a pending response before another invoice opens.
+    sequence.current += 1;
+    setSelectedInvoice(null);
+    setDetail(null);
+    setOpening(false);
+    setDetailError('');
+    setSuccess('');
   };
 
   const record = async event => {
@@ -262,6 +277,9 @@ export function CounterInvoices() {
                     </td>
                     <td className="p-3.5 text-right">
                       <button
+                        type="button"
+                        aria-haspopup="dialog"
+                        aria-label={isEn ? `View invoice ${row.invoiceNumber}` : `Xem hóa đơn ${row.invoiceNumber}`}
                         className="px-4 py-2 bg-[#1E2235] hover:bg-[#2B2D42] text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer disabled:opacity-50"
                         disabled={busy || opening}
                         onClick={() => open(row.invoiceNumber)}
@@ -304,8 +322,16 @@ export function CounterInvoices() {
         </div>
       )}
 
+      {selectedInvoice && createPortal(
+        <Modal
+          isOpen={true}
+          onClose={closeDetail}
+          title={isEn ? 'Invoice Details' : 'Chi tiết hóa đơn'}
+          maxWidth="max-w-5xl"
+        >
+      {!detail && <p className="font-mono text-xs break-all mb-3">{selectedInvoice}</p>}
       {opening && <p role="status" className="text-xs text-slate-500">{isEn ? 'Loading invoice details...' : 'Đang tải chi tiết hóa đơn...'}</p>}
-      <CounterError message={detailError} />
+      <CounterError message={detailError} retry={!busy && !opening ? () => open(selectedInvoice) : undefined} />
       {success && <p role="status" className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{success}</p>}
 
       {/* Invoice Detail Section */}
@@ -502,6 +528,9 @@ export function CounterInvoices() {
             </form>
           )}
         </section>
+      )}
+        </Modal>,
+        document.body
       )}
     </div>
   );

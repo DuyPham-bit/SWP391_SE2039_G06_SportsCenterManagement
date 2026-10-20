@@ -7,10 +7,37 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { MemberAIChatPopup, openMemberAIChat } from '../../features/member/MemberAIChatPopup.jsx';
 
 export function AppLayout({ children, currentPath }) {
-  const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [desktopCollapsed, setDesktopCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('scms_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [mobileOpen, setMobileOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const { role } = useAuth();
   const { language, t } = useLanguage();
+
+  const handleToggleSidebar = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      setDesktopCollapsed(prev => {
+        const next = !prev;
+        try {
+          localStorage.setItem('scms_sidebar_collapsed', String(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    } else {
+      setMobileOpen(prev => !prev);
+    }
+  };
+
+  const handleCloseMobile = () => {
+    setMobileOpen(false);
+  };
 
   const isMemberArea = role === 'MEMBER' || (currentPath && currentPath.startsWith('#/member'));
 
@@ -86,22 +113,28 @@ export function AppLayout({ children, currentPath }) {
       {/* Top Header */}
       <Header
         onOpenProfile={() => setProfileModalOpen(true)}
-        onToggleSidebar={() => setSidebarOpen(prev => !prev)}
+        onToggleSidebar={handleToggleSidebar}
+        isSidebarCollapsed={desktopCollapsed}
       />
 
       <div className="flex-1 flex">
         {/* Left Sidebar */}
         <Sidebar
-          isOpen={sidebarOpen}
-          onClose={() => setSidebarOpen(false)}
+          isOpen={mobileOpen}
+          isDesktopCollapsed={desktopCollapsed}
+          onClose={handleCloseMobile}
           currentPath={currentPath}
         />
 
         {/* Main Content Viewport */}
-        <main className="flex-1 lg:pl-64 flex flex-col min-w-0 transition-all duration-300">
+        <main
+          className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
+            desktopCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+          }`}
+        >
           <div className="flex-1 p-3.5 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto">
             {/* FPT Portal Breadcrumb Bar */}
-            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4">
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 no-print">
               <span className="material-symbols-outlined text-[17px] text-[#81B29A]">home</span>
               <a href="#/" className="hover:text-[#E07A5F] dark:hover:text-[#F2CC8F] transition-colors">
                 {t('nav.home', 'Trang chủ')}

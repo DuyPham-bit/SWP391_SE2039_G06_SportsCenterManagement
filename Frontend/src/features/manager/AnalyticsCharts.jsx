@@ -83,7 +83,7 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
 
       {/* SVG Interactive Chart */}
       <div className="relative overflow-x-auto">
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
+        <svg data-chart-id="chart-revenue" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
           <defs>
             <linearGradient id="revenueBarGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#2D6A4F" />
@@ -300,7 +300,7 @@ export function NewMembersAreaChart({ data = [] }) {
 
       {/* SVG Chart */}
       <div className="relative overflow-x-auto">
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
+        <svg data-chart-id="chart-members" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
           <defs>
             <linearGradient id="memberAreaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.45" />
@@ -457,87 +457,70 @@ export function SportsDonutChart({ sports = [] }) {
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-2">
-      {/* SVG Donut */}
-      <div className="relative w-48 h-48 flex-shrink-0">
-        <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
-          {/* Base empty ring */}
-          <circle
-            cx="100"
-            cy="100"
-            r={radius}
-            fill="transparent"
-            stroke="#f1f5f9"
-            strokeWidth="24"
-          />
-
-          {/* Slices */}
-          {slices.map((slice) => {
-            const isHovered = activeIdx === slice.idx;
-            return (
-              <circle
-                key={slice.name}
-                cx="100"
-                cy="100"
-                r={radius}
-                fill="transparent"
-                stroke={slice.color.stroke}
-                strokeWidth={isHovered ? 28 : 22}
-                strokeDasharray={`${slice.strokeDash} ${circumference - slice.strokeDash}`}
-                strokeDashoffset={-slice.offset}
-                strokeLinecap="round"
-                className="cursor-pointer transition-all duration-300 hover:opacity-90"
-                onMouseEnter={() => setActiveIdx(slice.idx)}
-                onMouseLeave={() => setActiveIdx(null)}
-              />
-            );
-          })}
-        </svg>
-
-        {/* Center label */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
-          <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider line-clamp-1">
-            {currentHovered?.name || (isEn ? 'Total Bookings' : 'Tổng Đặt Chỗ')}
-          </span>
-          <span className="text-xl font-black text-slate-900 dark:text-white font-chivo leading-tight">
-            {currentHovered?.booked || totalBooked}
-            <span className="text-xs font-normal text-slate-500 dark:text-slate-400 ml-0.5">{isEn ? 'bookings' : 'lượt'}</span>
-          </span>
-          <span className="text-[11px] font-bold text-[#2D6A4F] dark:text-[#81B29A] bg-[#81B29A]/20 dark:bg-[#81B29A]/10 px-2 py-0.5 rounded-full border border-[#81B29A]/40 mt-0.5">
-            {currentHovered?.share || Math.round(((currentHovered?.booked || 0) / totalBooked) * 100)}% {isEn ? 'share' : 'thị phần'}
-          </span>
-        </div>
-      </div>
-
-      {/* Interactive Legend List */}
-      <div className="w-full space-y-2">
-        {slices.map((slice) => {
-          const isHovered = activeIdx === slice.idx;
-          return (
-            <div
+      {/* Unified SVG: ring + center label + legend — all capturable for PDF */}
+      <svg
+        data-chart-id="chart-donut"
+        viewBox="0 0 460 210"
+        className="w-full h-auto"
+        style={{ fontFamily: 'Arial, sans-serif' }}
+      >
+        {/* ── Donut ring (left, centred at 105,105) ── */}
+        <g transform="rotate(-90,105,105)">
+          <circle cx="105" cy="105" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="24" />
+          {slices.map((slice) => (
+            <circle
               key={slice.name}
+              cx="105" cy="105" r={radius}
+              fill="none"
+              stroke={slice.color.stroke}
+              strokeWidth="22"
+              strokeDasharray={`${slice.strokeDash} ${circumference - slice.strokeDash}`}
+              strokeDashoffset={-slice.offset}
+              strokeLinecap="round"
+              className="cursor-pointer transition-all duration-300 hover:opacity-90"
               onMouseEnter={() => setActiveIdx(slice.idx)}
               onMouseLeave={() => setActiveIdx(null)}
-              className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
-                isHovered
-                  ? 'bg-slate-50 dark:bg-slate-800/80 border-[#81B29A] shadow-sm'
-                  : 'bg-white dark:bg-slate-900 border-slate-100 dark:border-slate-800 hover:border-slate-200 dark:hover:border-slate-700'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: slice.color.stroke }} />
-                <span className="font-bold text-slate-900 dark:text-white">{slice.name}</span>
-                <span className="text-slate-400 dark:text-slate-500 text-[11px]">({slice.sessionsCount || 0} {isEn ? 'sessions' : 'ca'})</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-extrabold text-slate-800 dark:text-slate-200">{slice.booked} {isEn ? 'bookings' : 'lượt'}</span>
-                <span className="w-12 text-right font-black text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded text-[11px]">
-                  {slice.share}%
-                </span>
-              </div>
-            </div>
+            />
+          ))}
+        </g>
+
+        {/* ── Center label ── */}
+        <text x="105" y="97" textAnchor="middle" fontSize="9" fontWeight="700" fill="#64748b"
+          style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {isEn ? 'Total Bookings' : 'Tổng Đặt Chỗ'}
+        </text>
+        <text x="105" y="117" textAnchor="middle" fontSize="22" fontWeight="900" fill="#1e293b">
+          {String(currentHovered?.booked ?? totalBooked)}
+        </text>
+        <text x="105" y="133" textAnchor="middle" fontSize="9" fill="#64748b">
+          {currentHovered?.share ?? Math.round(((currentHovered?.booked ?? 0) / totalBooked) * 100)}% {isEn ? 'share' : 'thị phần'}
+        </text>
+
+        {/* ── Legend rows (right side, starting x=220) ── */}
+        {slices.map((slice, i) => {
+          const ly = 28 + i * 38;
+          const pct = slice.share ?? Math.round((slice.booked / totalBooked) * 100);
+          return (
+            <g key={slice.name}
+              onMouseEnter={() => setActiveIdx(slice.idx)}
+              onMouseLeave={() => setActiveIdx(null)}
+              style={{ cursor: 'pointer' }}>
+              {/* Color dot */}
+              <circle cx="224" cy={ly + 8} r="6" fill={slice.color.stroke} />
+              {/* Sport name */}
+              <text x="236" y={ly + 13} fontSize="10" fontWeight="700" fill="#0f172a">{slice.name}</text>
+              {/* Sessions */}
+              <text x="236" y={ly + 26} fontSize="8.5" fill="#94a3b8">
+                {slice.booked} {isEn ? 'bookings' : 'lượt'} · {slice.sessionsCount || 0} {isEn ? 'sessions' : 'ca'}
+              </text>
+              {/* % badge background */}
+              <rect x="406" y={ly} width="44" height="20" rx="5" fill="#f1f5f9" />
+              {/* % text */}
+              <text x="428" y={ly + 14} textAnchor="middle" fontSize="10" fontWeight="900" fill="#0f172a">{pct}%</text>
+            </g>
           );
         })}
-      </div>
+      </svg>
     </div>
   );
 }

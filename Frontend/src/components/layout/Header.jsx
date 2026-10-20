@@ -68,7 +68,7 @@ function UKFlagIcon({ className = "w-4 h-3" }) {
   );
 }
 
-export function Header({ onOpenProfile, onToggleSidebar }) {
+export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = false }) {
   const { currentUser, role, logout } = useAuth();
   const { showSuccess, showInfo, showWarning } = useToast();
   const { language, setLanguage, t } = useLanguage();
@@ -258,21 +258,32 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
   const currentLangObj = LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 px-3 sm:px-6 flex items-center justify-between shadow-xs transition-colors">
-      {/* Left: Brand Logo SCMS & Hamburger Toggle */}
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* SCMS Brand Logo */}
-        <Logo variant="auto" size="md" />
-
-        {/* Sidebar Toggle Button */}
-        <button
-          onClick={onToggleSidebar}
-          type="button"
-          className="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer shadow-2xs"
-          title={t('header.menu_toggle', 'Ẩn / Hiện Menu')}
+    <header className="h-16 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 pr-3 sm:pr-6 flex items-center justify-between shadow-xs transition-colors">
+      {/* Left: Brand Logo SCMS & Hamburger Toggle matching FPT Portal */}
+      <div className="flex items-center h-full">
+        {/* Brand Logo Column: switches width between w-20 and w-64 */}
+        <div
+          className={`h-full flex items-center border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out ${
+            isSidebarCollapsed
+              ? 'w-16 lg:w-20 justify-center px-1'
+              : 'w-56 lg:w-64 justify-start px-3 sm:px-4'
+          }`}
         >
-          <span className="material-symbols-outlined text-[20px]">menu</span>
-        </button>
+          <Logo variant="auto" size="md" compact={isSidebarCollapsed} />
+        </div>
+
+        {/* Sidebar Toggle Button (Hamburger) placed right next to the border */}
+        <div className="px-2.5 sm:px-3.5">
+          <button
+            onClick={onToggleSidebar}
+            type="button"
+            className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer shadow-2xs"
+            title={isSidebarCollapsed ? (language === 'vi' ? 'Mở thanh menu dọc' : 'Show vertical sidebar') : (language === 'vi' ? 'Thu gọn thanh menu dọc' : 'Collapse vertical sidebar')}
+            aria-label={isSidebarCollapsed ? 'Show sidebar' : 'Collapse sidebar'}
+          >
+            <span className="material-symbols-outlined text-[22px]">menu</span>
+          </button>
+        </div>
       </div>
 
       {/* Right Controls: Language, Notification, DarkMode, Fullscreen, User Profile */}

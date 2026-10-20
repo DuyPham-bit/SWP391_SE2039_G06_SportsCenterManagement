@@ -30,7 +30,7 @@ Muốn mọi máy nhìn thấy cùng tài khoản và dữ liệu, hãy triển 
 
 ## Các luồng đã nối API
 
-- Đăng nhập, đăng ký hội viên, hồ sơ, đổi mật khẩu và yêu cầu/đặt lại mật khẩu.
+- Đăng nhập, đăng ký hội viên có OTP xác thực email, hồ sơ, đổi mật khẩu và yêu cầu/đặt lại mật khẩu qua email. [Cấu hình SMTP/webhook và kiểm chứng](./docs/EMAIL_VERIFICATION.md).
 - Danh mục và quản lý gói tập; lịch ca tập và đặt/hủy chỗ.
 - Flow 2: quản lý lớp/phòng, tạo lịch, công bố/hủy lớp, phân công HLV, danh sách chờ, lễ tân đặt/hủy hộ và HLV xem học viên/điểm danh qua API.
 - Manager cấu hình quyền Member/Coach/Receptionist trong trung tâm; System Admin giữ ma trận quyền toàn hệ thống.

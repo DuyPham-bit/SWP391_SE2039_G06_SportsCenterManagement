@@ -14,6 +14,7 @@ public static class DbInitializer
         else await context.Database.EnsureCreatedAsync();
         await EnsureRolesAndPermissionsAsync(context);
         await EnsureAuthAndReceptionPermissionsAsync(context);
+        await EnsureGolfCatalogAsync(context);
     }
 
     private static async Task EnsureRolesAndPermissionsAsync(SportsCenterDbContext context)
@@ -325,5 +326,41 @@ public static class DbInitializer
             END
             """);
     }
+    private static async Task EnsureGolfCatalogAsync(SportsCenterDbContext context)
+    {
+        var center = await context.Centers.FirstOrDefaultAsync(c => c.Id == 15)
+                     ?? await context.Centers.FirstOrDefaultAsync();
+        if (center == null) return;
 
+        var golfSport = await context.Sports.FirstOrDefaultAsync(s => s.Name == "Golf");
+        if (golfSport == null)
+        {
+            golfSport = new Sport
+            {
+                CenterId = center.Id,
+                Name = "Golf",
+                Description = "Học viện đào tạo Golf chuẩn quốc tế, driving range 18 làn và phòng mô phỏng 3D TrackMan 4K",
+                Status = "Active"
+            };
+            await context.Sports.AddAsync(golfSport);
+            await context.SaveChangesAsync();
+        }
+
+        var golfRoom = await context.Rooms.FirstOrDefaultAsync(r => r.Name.Contains("Golf"));
+        if (golfRoom == null)
+        {
+            golfRoom = new Room
+            {
+                CenterId = center.Id,
+                Name = "Tổ Hợp Sân Tập Golf & 3D Simulator",
+                RoomType = "Golf Complex",
+                Capacity = 30,
+                LocationDescription = "Khu Ngoài Trời & Khu C • Tầng 2",
+                Status = "Active",
+                CreatedAt = DateTime.UtcNow
+            };
+            await context.Rooms.AddAsync(golfRoom);
+            await context.SaveChangesAsync();
+        }
+    }
 }

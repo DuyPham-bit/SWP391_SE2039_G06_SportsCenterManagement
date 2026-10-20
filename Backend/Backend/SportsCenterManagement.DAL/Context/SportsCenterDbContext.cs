@@ -28,6 +28,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
+    public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
     public DbSet<MemberSubscription> MemberSubscriptions => Set<MemberSubscription>();
     public DbSet<ClassCoach> ClassCoaches => Set<ClassCoach>();
     public DbSet<ClassSchedule> ClassSchedules => Set<ClassSchedule>();
@@ -133,6 +134,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
         modelBuilder.Entity<StaffProfile>().HasIndex(entity => entity.UserId).IsUnique();
         modelBuilder.Entity<StaffProfile>().HasIndex(entity => entity.StaffCode).IsUnique();
         modelBuilder.Entity<PasswordResetToken>().HasIndex(entity => entity.Token).IsUnique();
+        modelBuilder.Entity<EmailVerificationToken>().HasIndex(entity => new { entity.Email, entity.CreatedAt });
         modelBuilder.Entity<Invoice>().HasIndex(entity => entity.InvoiceNumber).IsUnique();
         modelBuilder.Entity<AuditLog>().HasIndex(entity => new { entity.CenterId, entity.CreatedAt });
         modelBuilder.Entity<Notification>().HasIndex(entity => entity.ReminderKey).IsUnique()

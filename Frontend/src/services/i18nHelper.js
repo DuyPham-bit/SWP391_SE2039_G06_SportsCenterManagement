@@ -28,7 +28,8 @@ export const SPORT_NAME_MAP = {
   'Bóng bàn': 'Table Tennis',
   'Bóng đá': 'Football / Soccer',
   'Bóng chuyền': 'Volleyball',
-  'Điền kinh': 'Athletics & Running'
+  'Điền kinh': 'Athletics & Running',
+  'Golf': 'Golf'
 };
 
 export const COACH_NAME_MAP = {
@@ -61,7 +62,8 @@ export const ROOM_NAME_MAP = {
   'Sân Cầu lông Tiêu chuẩn #1': 'Standard Badminton Court #1',
   'Sân Cầu lông Tiêu chuẩn #2': 'Standard Badminton Court #2',
   'Võ đài Boxing & Kickfit': 'Boxing & Kickfit Ring',
-  'Sân Tennis Mặt sân Cứng': 'Hard Court Tennis Arena'
+  'Sân Tennis Mặt sân Cứng': 'Hard Court Tennis Arena',
+  'Tổ Hợp Sân Tập Golf & 3D Simulator': 'Golf Driving Range & 3D Simulator Complex'
 };
 
 export const EXERCISE_NAME_MAP = {
@@ -152,6 +154,8 @@ export function translateSportName(name, isEn) {
   if (lower.includes('bóng rổ') || lower.includes('basket')) return 'Basketball';
   if (lower.includes('tennis')) return 'Tennis';
   if (lower.includes('bóng bàn')) return 'Table Tennis';
+  if (lower.includes('golf')) return 'Golf';
+  if (lower.includes('pickleball')) return 'Pickleball';
   return name;
 }
 
@@ -479,7 +483,11 @@ export const FACILITY_NAME_MAP = {
   'Phòng Tập Gym & Fitness': 'Gym & Fitness Studio',
   'Phòng tập Gym & Fitness': 'Gym & Fitness Studio',
   'Phòng Tập Yoga & Pilates': 'Yoga & Pilates Studio',
-  'Phòng tập Yoga & Pilates, khu thảm và máy Reformer': 'Yoga & Pilates Studio (Mats & Reformers)'
+  'Phòng tập Yoga & Pilates, khu thảm và máy Reformer': 'Yoga & Pilates Studio (Mats & Reformers)',
+  'Tổ Hợp Sân Tập Golf & 3D Simulator': 'Golf Driving Range & 3D Simulator Complex',
+  'Tổ hợp sân tập golf & 3D simulator': 'Golf Driving Range & 3D Simulator Complex',
+  'Sân tập Golf Driving Range 18 làn đánh & Putting green': 'Golf Driving Range (18 bays) & Putting Green',
+  'Studio Golf 3D Simulator cảm biến TrackMan 4K': 'TrackMan 4K 3D Golf Simulator Studio'
 };
 
 export const FACILITY_CATEGORY_MAP = {
@@ -505,7 +513,13 @@ export const FACILITY_CATEGORY_MAP = {
   'Thể thao đối kháng': 'Combat & Martial Arts',
   'Bóng & Vợt': 'Ball & Racket',
   'Thể hình & Vóc dáng': 'Fitness & Body Sculpting',
-  'Phòng / sân': 'Court / Studio'
+  'Phòng / sân': 'Court / Studio',
+  'Golf & Thể thao cao cấp': 'Golf & Premium Sports',
+  'GOLF & THỂ THAO CAO CẤP': 'GOLF & PREMIUM SPORTS',
+  'Golf & Cao Cấp': 'Golf & Precision',
+  'golf': 'Golf & Premium Sports',
+  'GOLF': 'GOLF',
+  'Golf': 'Golf'
 };
 
 export const FACILITY_BADGE_MAP = {
@@ -543,7 +557,15 @@ export const FACILITY_BADGE_MAP = {
   'VỀ TRUNG TÂM': 'ABOUT US',
   'PHÒNG VÀ SÂN TẬP': 'FACILITIES & COURTS',
   'KHÔNG GIAN TẬP LUYỆN': 'TRAINING CAMPUS',
-  'Phòng / sân': 'Court / Studio'
+  'Phòng / sân': 'Court / Studio',
+  'Công Nghệ TrackMan 4K': 'TrackMan 4K Technology',
+  'CÔNG NGHỆ TRACKMAN 4K': 'TRACKMAN 4K TECHNOLOGY',
+  'Chuẩn PGA': 'PGA Standard',
+  'CHUẨN PGA': 'PGA STANDARD',
+  '18 Làn Đánh': '18 Driving Bays',
+  '18 LÀN ĐÁNH': '18 DRIVING BAYS',
+  'TrackMan 4K': 'TrackMan 4K',
+  'TRACKMAN 4K': 'TRACKMAN 4K'
 };
 
 export const LOCATION_MAP = {
@@ -556,6 +578,8 @@ export const LOCATION_MAP = {
   'Khu C • Tầng 1': 'Zone C • 1st Floor',
   'Khu A • Tầng 2': 'Zone A • 2nd Floor',
   'Khu C • Tầng 3': 'Zone C • 3rd Floor',
+  'Khu C • Tầng 2': 'Zone C • 2nd Floor',
+  'Khu Ngoài Trời & Khu C • Tầng 2': 'Outdoor Zone & Zone C • 2nd Floor',
   'Khu A': 'Zone A',
   'Khu B': 'Zone B',
   'Khu C': 'Zone C',
@@ -602,7 +626,9 @@ export const FACILITY_DESCRIPTION_MAP = {
   'Phòng tập thể hình trang bị đầy đủ máy chạy bộ, xe đạp tập, máy ép ngực, kéo xô và các dàn tạ tay từ nhẹ đến nặng. Không gian tập luyện hòa đồng, thân thiện, có nhân viên túc trực hỗ trợ hướng dẫn cơ bản cho người mới bắt đầu.':
     'Fully equipped fitness studio featuring treadmills, stationary bikes, selectorized resistance machines, and free weights. Friendly staff on hand to guide members of all experience levels.',
   'Phòng tập Yoga & Pilates có khu thảm cho các bài tập thở, kéo giãn, thăng bằng và Pilates Mat, cùng khu máy Reformer dành cho nhóm nhỏ theo lịch hướng dẫn. Trang bị thảm tập, gạch Yoga, dây đai, vòng Pilates và bóng tập hỗ trợ học viên rèn luyện sự dẻo dai, sức mạnh cơ trung tâm và kiểm soát tư thế.':
-    'Peaceful studio offering mat areas for breathwork, flexibility, and Pilates Mat, alongside a dedicated Reformer zone for small group sessions with full props and accessories.'
+    'Peaceful studio offering mat areas for breathwork, flexibility, and Pilates Mat, alongside a dedicated Reformer zone for small group sessions with full props and accessories.',
+  'Tổ hợp luyện tập Golf đẳng cấp quy mô hơn 6.500m² tích hợp sân tập Driving Range ngoài trời 18 làn đánh phát bóng xa và khu studio Golf 3D màn hình cong cảm biến TrackMan 4K đo đạc chính xác góc swing, độ xoáy và khoảng cách bóng. Phục vụ học viên từ nhập môn làm quen đến golfer chuyên nghiệp luyện thi đấu.':
+    'A world-class golf training facility spanning over 6,500m², integrating an outdoor 18-bay driving range with a curved-screen TrackMan 4K 3D simulator studio precisely tracking swing angle, spin rate, and carry distance. Catering to beginners through tournament-ready golfers.'
 };
 
 export const SPEC_LABEL_MAP = {
@@ -638,7 +664,9 @@ export const SPEC_LABEL_MAP = {
   'Khu Pilates Reformer': 'Pilates Reformer Zone',
   'Dụng cụ hỗ trợ': 'Props & Accessories',
   'Sức chứa': 'Capacity',
-  'Vị trí': 'Location'
+  'Vị trí': 'Location',
+  'Công nghệ 3D': '3D Simulation Tech',
+  'Khu Putting Green': 'Putting Green Area'
 };
 
 export const SPEC_VALUE_MAP = {
@@ -678,7 +706,11 @@ export const SPEC_VALUE_MAP = {
   'Thảm Yoga TPE và thảm Pilates Mat bám sàn tốt': 'High-grip TPE Yoga & Pilates floor mats',
   '4 máy Reformer cho lớp nhóm nhỏ theo lịch': '4 Reformer machines for scheduled small group classes',
   'Gạch Yoga, dây đai, vòng Pilates và bóng tập': 'Yoga blocks, straps, Pilates rings & swiss balls',
-  'Chưa cập nhật': 'Not updated'
+  'Chưa cập nhật': 'Not updated',
+  '18 làn phát bóng ngoài trời + 4 phòng Golf 3D': '18 outdoor bays + 4 3D golf simulator rooms',
+  '6.000m² sân Driving Range & 500m² studio trong nhà': '6,000m² driving range & 500m² indoor studio',
+  'Cảm biến TrackMan 4K giả lập 200+ sân golf thế giới': 'TrackMan 4K sensors simulating 200+ world courses',
+  'Khu gạt bóng cỏ nhân tạo 300m² đạt chuẩn quốc tế': '300m² synthetic putting green meeting championship standards'
 };
 
 export const AMENITY_MAP = {
@@ -716,7 +748,17 @@ export const AMENITY_MAP = {
   'Tủ thuốc y tế và băng gạc sơ cứu cơ bản': 'First-aid kit & emergency medical supplies',
   'Cân sức khỏe và thước đo chiều cao': 'Body scale & height measurement station',
   'Phòng thay đồ lịch sự': 'Private, discreet changing facilities',
-  'Có mở các lớp cơ bản cho người mới': 'Beginner-friendly classes available'
+  'Có mở các lớp cơ bản cho người mới': 'Beginner-friendly classes available',
+  'Dịch vụ cho thuê gậy golf cao cấp Titleist, TaylorMade': 'Premium Titleist & TaylorMade golf club rentals',
+  'HLV đạt chứng chỉ PGA hướng dẫn trực tiếp': 'PGA-certified master coaches for 1-on-1 instruction',
+  'Quầy Pro Shop phụ kiện và đồ tập golf chính hãng': 'Pro Shop offering authentic golf gear and accessories',
+  'Lounge cà phê thư giãn ngắm sân tập thoáng mát': 'Relaxing outdoor cafe lounge overlooking the driving range',
+  'Golf nhập môn': 'Beginner Golf',
+  'Chỉnh Swing TrackMan 4K': 'TrackMan 4K Swing Analysis',
+  'Khóa học Golf chuẩn PGA': 'PGA Standard Golf Courses',
+  'Chuẩn PGA': 'PGA Standard',
+  'TrackMan 4K': 'TrackMan 4K',
+  '18 Làn Đánh': '18 Driving Bays'
 };
 
 export const METRIC_LABEL_MAP = {
@@ -733,6 +775,11 @@ export const METRIC_LABEL_MAP = {
 export const METRIC_VALUE_MAP = {
   '9 Khu Vực': '9 Zones',
   '3.500m²': '3,500m²',
+  '4.000m²': '4,000m²',
+  '10 Khu Vực': '10 Zones',
+  '10 Bộ Môn': '10 Disciplines',
+  '13.000m²': '13,000m²',
+  '13.000 m²': '13,000 m²',
   '600+': '600+',
   '100%': '100%'
 };
@@ -741,6 +788,8 @@ export const ZONE_NAME_MAP = {
   'Khu A: Bơi Lội, Gym & Fitness': 'Zone A: Swimming, Gym & Fitness',
   'Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn': 'Zone B: Basketball, Badminton & Table Tennis',
   'Khu C: Võ Thuật, Boxing, Yoga & Pilates': 'Zone C: Martial Arts, Boxing, Yoga & Pilates',
+  'Khu C: Võ Thuật, Boxing, Yoga, Pilates & Golf 3D': 'Zone C: Martial Arts, Boxing, Yoga, Pilates & Golf 3D',
+  'Khu Ngoài Trời: Bóng Đá, Pickleball & Sân Tập Golf': 'Outdoor Zone: Football, Pickleball & Golf Driving Range',
   'Khu Ngoài Trời: Bóng Đá & Pickleball': 'Outdoor Zone: Football & Pickleball'
 };
 
@@ -756,7 +805,9 @@ export const ZONE_ITEM_MAP = {
   'Tủ đồ cá nhân và khu thay đồ phục vụ học viên': 'Personal lockers and student changing facilities',
   'Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)': 'Artificial turf football pitch complex (5- & 7-a-side)',
   'Cụm 4 sân Pickleball, có lưới riêng và vạch khu vực bếp': 'Cluster of 4 Pickleball courts with regulation nets & kitchen zones',
-  'Dàn đèn pha LED chiếu sáng ban đêm rõ nét': 'High-powered LED floodlights for crisp night play'
+  'Dàn đèn pha LED chiếu sáng ban đêm rõ nét': 'High-powered LED floodlights for crisp night play',
+  'Tầng 2: Studio Golf 3D Simulator cảm biến TrackMan 4K': '2nd Floor: TrackMan 4K sensor 3D Golf Simulator Studio',
+  'Sân tập Golf Driving Range 18 làn đánh & Putting green': 'Golf Driving Range (18 bays) & artificial turf putting green'
 };
 
 export const SERVICE_AMENITY_MAP = {
@@ -792,7 +843,9 @@ export const COURSE_HIGHLIGHT_MAP = {
   'Không gian 250m² trang bị giàn máy kháng lực Matrix, dàn tạ tự do đa dạng và máy đo InBody 770.':
     '250m² fitness floor featuring Matrix selectorized equipment, versatile free weights, and InBody 770 scanner.',
   'Không gian yên tĩnh sàn gỗ tự nhiên, trang bị máy Pilates Reformer và thảm tập cao cấp lớp nhóm nhỏ.':
-    'Peaceful natural wood studio equipped with Pilates Reformers and premium mats for small-group sessions.'
+    'Peaceful natural wood studio equipped with Pilates Reformers and premium mats for small-group sessions.',
+  'Học viện đào tạo Golf chuẩn quốc tế, driving range 18 làn phát bóng và studio 3D TrackMan 4K mô phỏng 200+ sân golf thế giới.':
+    'International standard Golf academy featuring an 18-bay driving range and TrackMan 4K 3D simulator studio with 200+ global courses.'
 };
 
 export function translateFacilityName(name, isEn) {
@@ -1015,7 +1068,7 @@ export function translateLandingContent(content, isEn) {
       badge: isEn ? 'SCMS WORLD-CLASS OLYMPIC SPORTS ARENA' : (content.heroBanner?.badge || 'TRUNG TÂM THỂ THAO'),
       title: isEn ? 'SHAPING RESILIENCE THROUGH SPORTS' : (content.heroBanner?.title || 'TÔI LUYỆN BẢN LĨNH TỪ THỂ THAO'),
       description: isEn
-        ? 'Develop fitness, forge resilience, and push boundaries across 9 athletic facilities and 9 sports disciplines.'
+        ? 'Develop fitness, forge resilience, and push boundaries across 10 athletic facilities and 10 sports disciplines.'
         : content.heroBanner?.description,
       primaryCtaText: isEn ? 'REGISTER NEW MEMBER' : (content.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI'),
       secondaryCtaText: isEn ? 'EXPLORE DISCIPLINES' : (content.heroBanner?.secondaryCtaText || 'KHÁM PHÁ MÔN HỌC'),
@@ -1105,7 +1158,7 @@ export function translateLandingContent(content, isEn) {
       badge: isEn ? 'STANDARD ATHLETIC INFRASTRUCTURE' : (content.facilitiesSection?.badge || 'HẠ TẦNG THỂ THAO TIÊU CHUẨN'),
       title: isEn ? 'MODERN & QUALITY OLYMPIC FACILITY COMPLEX' : (content.facilitiesSection?.title || 'HỆ THỐNG CƠ SỞ VẬT CHẤT TIỆN NGHI & CHẤT LƯỢNG'),
       description: isEn
-        ? 'Spacious, modern athletic complex featuring 9 state-of-the-art courts, studios and pools for swimming, gym & fitness, yoga & pilates, martial arts & boxing, football, badminton, basketball, table tennis and pickleball. Ideal for fitness training, club activities and tournament competitions.'
+        ? 'Spacious, modern athletic complex featuring 10 state-of-the-art courts, studios and pools for swimming, gym & fitness, yoga & pilates, martial arts & boxing, football, badminton, basketball, table tennis, pickleball and golf. Ideal for fitness training, club activities and tournament competitions.'
         : content.facilitiesSection?.description,
       metrics: (content.facilitiesSection?.metrics || []).map(m => ({
         ...m,
@@ -1151,7 +1204,7 @@ export function translateLandingContent(content, isEn) {
       badge: isEn ? 'CONVENIENT SPATIAL LAYOUT' : (content.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN'),
       title: isEn ? 'TRAINING & MATCH ZONE MAP' : (content.zonesLayout?.title || 'SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN'),
       description: isEn
-        ? '9 neatly planned courts and training studios with open corridors, clear navigation signs, and dedicated front desks for seamless booking in person or online.'
+        ? '10 neatly planned courts and training studios with open corridors, clear navigation signs, and dedicated front desks for seamless booking in person or online.'
         : content.zonesLayout?.description,
       serviceAmenities: (content.zonesLayout?.serviceAmenities || []).map(sa => ({
         ...sa,

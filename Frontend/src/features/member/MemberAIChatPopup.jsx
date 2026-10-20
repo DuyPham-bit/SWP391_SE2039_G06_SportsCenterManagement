@@ -230,8 +230,219 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   const [reactions, setReactions] = useState({});
   const [unreadCount, setUnreadCount] = useState(0);
 
+  // Draggable positions
+  const [bubblePos, setBubblePos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('scms_chat_bubble_pos');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  const [windowPos, setWindowPos] = useState(() => {
+    try {
+      const saved = localStorage.getItem('scms_chat_window_pos');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return null;
+  });
+
+  const [isBubbleMoving, setIsBubbleMoving] = useState(false);
+  const [isWindowMoving, setIsWindowMoving] = useState(false);
+  const isDraggingBubbleRef = useRef(false);
+  const dragStartBubbleRef = useRef({ mouseX: 0, mouseY: 0, startX: 0, startY: 0, hasMoved: false });
+  const isDraggingWindowRef = useRef(false);
+  const dragStartWindowRef = useRef({ mouseX: 0, mouseY: 0, startX: 0, startY: 0, hasMoved: false });
+
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // Initialize bubble position if null
+  useEffect(() => {
+    if (!bubblePos && typeof window !== 'undefined') {
+      const defaultX = Math.max(16, window.innerWidth - 76);
+      const defaultY = Math.max(16, window.innerHeight - 86);
+      setBubblePos({ x: defaultX, y: defaultY });
+    }
+  }, []);
+
+  // Clamping positions on window resize
+  useEffect(() => {
+    const handleResize = () => {
+      setBubblePos(prev => {
+        if (!prev) return prev;
+        const x = Math.min(Math.max(12, prev.x), window.innerWidth - 68);
+        const y = Math.min(Math.max(12, prev.y), window.innerHeight - 68);
+        return { x, y };
+      });
+      setWindowPos(prev => {
+        if (!prev) return prev;
+        const width = Math.min(420, window.innerWidth - 32);
+        const height = Math.min(600, window.innerHeight - 80);
+        const x = Math.min(Math.max(8, prev.x), window.innerWidth - width - 8);
+        const y = Math.min(Math.max(8, prev.y), window.innerHeight - height - 8);
+        return { x, y };
+      });
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Drag handler for floating bubble / minimized bar
+  const handleBubblePointerDown = (e) => {
+    if (e.target.closest('.no-bubble-drag')) return;
+    if (e.button !== undefined && e.button !== 0) return;
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX;
+    const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+    if (clientX === undefined || clientY === undefined) return;
+
+    const currentX = bubblePos?.x ?? (window.innerWidth - 76);
+    const currentY = bubblePos?.y ?? (window.innerHeight - 86);
+
+    dragStartBubbleRef.current = {
+      mouseX: clientX,
+      mouseY: clientY,
+      startX: currentX,
+      startY: currentY,
+      hasMoved: false
+    };
+    isDraggingBubbleRef.current = false;
+
+    const onPointerMove = (moveEvent) => {
+      const curX = moveEvent.clientX ?? moveEvent.touches?.[0]?.clientX;
+      const curY = moveEvent.clientY ?? moveEvent.touches?.[0]?.clientY;
+      if (curX === undefined || curY === undefined) return;
+
+      const dx = curX - dragStartBubbleRef.current.mouseX;
+      const dy = curY - dragStartBubbleRef.current.mouseY;
+
+      if (!dragStartBubbleRef.current.hasMoved && Math.hypot(dx, dy) > 4) {
+        dragStartBubbleRef.current.hasMoved = true;
+        isDraggingBubbleRef.current = true;
+        setIsBubbleMoving(true);
+      }
+
+      if (dragStartBubbleRef.current.hasMoved) {
+        if (moveEvent.cancelable) moveEvent.preventDefault();
+        const nextX = Math.min(Math.max(12, dragStartBubbleRef.current.startX + dx), window.innerWidth - 68);
+        const nextY = Math.min(Math.max(12, dragStartBubbleRef.current.startY + dy), window.innerHeight - 68);
+        setBubblePos({ x: nextX, y: nextY });
+      }
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('touchend', onPointerUp);
+      setIsBubbleMoving(false);
+
+      if (dragStartBubbleRef.current.hasMoved) {
+        setBubblePos(latest => {
+          if (latest) {
+            try {
+              localStorage.setItem('scms_chat_bubble_pos', JSON.stringify(latest));
+            } catch {}
+          }
+          return latest;
+        });
+        setTimeout(() => {
+          isDraggingBubbleRef.current = false;
+        }, 120);
+      } else {
+        isDraggingBubbleRef.current = false;
+      }
+    };
+
+    window.addEventListener('mousemove', onPointerMove, { passive: false });
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchmove', onPointerMove, { passive: false });
+    window.addEventListener('touchend', onPointerUp);
+  };
+
+  // Drag handler for full popup window header
+  const handleWindowHeaderPointerDown = (e) => {
+    if (e.target.closest('button') || e.target.closest('input')) return;
+    if (e.button !== undefined && e.button !== 0) return;
+
+    const clientX = e.clientX ?? e.touches?.[0]?.clientX;
+    const clientY = e.clientY ?? e.touches?.[0]?.clientY;
+    if (clientX === undefined || clientY === undefined) return;
+
+    const winWidth = Math.min(420, window.innerWidth - 32);
+    const winHeight = Math.min(600, window.innerHeight - 80);
+    const currentX = windowPos?.x ?? Math.max(12, window.innerWidth - winWidth - 24);
+    const currentY = windowPos?.y ?? Math.max(12, window.innerHeight - winHeight - 24);
+
+    dragStartWindowRef.current = {
+      mouseX: clientX,
+      mouseY: clientY,
+      startX: currentX,
+      startY: currentY,
+      hasMoved: false
+    };
+
+    const onPointerMove = (moveEvent) => {
+      const curX = moveEvent.clientX ?? moveEvent.touches?.[0]?.clientX;
+      const curY = moveEvent.clientY ?? moveEvent.touches?.[0]?.clientY;
+      if (curX === undefined || curY === undefined) return;
+
+      const dx = curX - dragStartWindowRef.current.mouseX;
+      const dy = curY - dragStartWindowRef.current.mouseY;
+
+      if (!dragStartWindowRef.current.hasMoved && Math.hypot(dx, dy) > 4) {
+        dragStartWindowRef.current.hasMoved = true;
+        isDraggingWindowRef.current = true;
+        setIsWindowMoving(true);
+      }
+
+      if (dragStartWindowRef.current.hasMoved) {
+        if (moveEvent.cancelable) moveEvent.preventDefault();
+        const nextX = Math.min(Math.max(8, dragStartWindowRef.current.startX + dx), window.innerWidth - winWidth - 8);
+        const nextY = Math.min(Math.max(8, dragStartWindowRef.current.startY + dy), window.innerHeight - winHeight - 8);
+        setWindowPos({ x: nextX, y: nextY });
+      }
+    };
+
+    const onPointerUp = () => {
+      window.removeEventListener('mousemove', onPointerMove);
+      window.removeEventListener('mouseup', onPointerUp);
+      window.removeEventListener('touchmove', onPointerMove);
+      window.removeEventListener('touchend', onPointerUp);
+      setIsWindowMoving(false);
+
+      if (dragStartWindowRef.current.hasMoved) {
+        setWindowPos(latest => {
+          if (latest) {
+            try {
+              localStorage.setItem('scms_chat_window_pos', JSON.stringify(latest));
+            } catch {}
+          }
+          return latest;
+        });
+        setTimeout(() => {
+          isDraggingWindowRef.current = false;
+        }, 120);
+      } else {
+        isDraggingWindowRef.current = false;
+      }
+    };
+
+    window.addEventListener('mousemove', onPointerMove, { passive: false });
+    window.addEventListener('mouseup', onPointerUp);
+    window.addEventListener('touchmove', onPointerMove, { passive: false });
+    window.addEventListener('touchend', onPointerUp);
+  };
+
+  const handleResetPosition = (e) => {
+    e.stopPropagation();
+    try {
+      localStorage.removeItem('scms_chat_bubble_pos');
+      localStorage.removeItem('scms_chat_window_pos');
+    } catch {}
+    setBubblePos({ x: Math.max(16, window.innerWidth - 76), y: Math.max(16, window.innerHeight - 86) });
+    setWindowPos(null);
+  };
 
   // Proactive cleanup of legacy corrupted storage
   useEffect(() => {
@@ -439,44 +650,65 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
   return (
     <>
-      {/* 1. Floating Launch Bubble (When Closed) - Ultra-compact Circular FAB */}
+      {/* 1. Floating Launch Bubble (When Closed) - Draggable FAB */}
       {!isOpen && (
-        <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-40 animate-in fade-in zoom-in-95 duration-300">
+        <div
+          style={
+            bubblePos
+              ? { left: `${bubblePos.x}px`, top: `${bubblePos.y}px` }
+              : { bottom: '24px', right: '24px' }
+          }
+          onPointerDown={handleBubblePointerDown}
+          className={`fixed z-40 touch-none select-none ${
+            isBubbleMoving ? 'cursor-grabbing scale-105 transition-none' : 'cursor-grab animate-in fade-in zoom-in-95 duration-200'
+          }`}
+        >
           <button
             type="button"
             onClick={() => {
+              if (isDraggingBubbleRef.current) return;
               setIsOpen(true);
               setIsMinimized(false);
               setUnreadCount(0);
             }}
-            aria-label={isEn ? "Open SCMS AI Sports Assistant" : "Mở Trợ lý Thể thao AI SCMS"}
-            className="group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#1E2235] text-white border border-[#81B29A]/60 shadow-xl hover:shadow-2xl hover:border-[#81B29A] hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer font-sans"
+            aria-label={isEn ? "Open SCMS AI Sports Assistant (Drag to reposition)" : "Mở Trợ lý Thể thao AI SCMS (Kéo để di chuyển)"}
+            className={`group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-[#1E2235] text-white border border-[#81B29A]/60 shadow-xl hover:shadow-2xl hover:border-[#81B29A] hover:scale-105 active:scale-95 transition-all duration-200 font-sans ${
+              isBubbleMoving ? 'ring-4 ring-[#81B29A]/50 shadow-2xl' : ''
+            }`}
           >
             {/* Outer pulsating glow ring */}
             <span className="absolute -inset-0.5 rounded-full bg-gradient-to-tr from-[#81B29A] via-[#F2CC8F] to-[#81B29A] opacity-30 blur-sm group-hover:opacity-75 transition duration-300 animate-pulse pointer-events-none" />
 
             {/* Inner Icon */}
-            <div className="relative z-10 w-full h-full rounded-full flex items-center justify-center text-[#81B29A] group-hover:text-[#F2CC8F] transition-colors">
+            <div className="relative z-10 w-full h-full rounded-full flex items-center justify-center text-[#81B29A] group-hover:text-[#F2CC8F] transition-colors pointer-events-none">
               <span className="material-symbols-outlined text-[24px] sm:text-[26px] group-hover:rotate-12 transition-transform duration-300">
                 smart_toy
               </span>
             </div>
 
+            {/* Drag Grip Indicator Dots on Hover */}
+            <div className="absolute -top-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-[#1E2235] px-1.5 py-0.2 rounded-full border border-[#81B29A]/40 text-[9px] text-[#F2CC8F] pointer-events-none z-30">
+              <span className="material-symbols-outlined text-[11px]">drag_indicator</span>
+            </div>
+
             {/* Online Green Pulse Indicator */}
-            <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-[#81B29A] border-2 border-[#1E2235] shadow-sm flex items-center justify-center z-20">
+            <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-[#81B29A] border-2 border-[#1E2235] shadow-sm flex items-center justify-center z-20 pointer-events-none">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
             </span>
 
             {/* Unread Message Pill Badge */}
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 px-1.5 min-w-[20px] h-5 rounded-full bg-[#E07A5F] text-white text-[10px] font-bold shadow-md flex items-center justify-center animate-bounce z-20">
+              <span className="absolute -top-1 -right-1 px-1.5 min-w-[20px] h-5 rounded-full bg-[#E07A5F] text-white text-[10px] font-bold shadow-md flex items-center justify-center animate-bounce z-20 pointer-events-none">
                 {unreadCount}
               </span>
             )}
 
             {/* Sleek Tooltip on hover (appears to the left) */}
-            <div className="hidden sm:flex absolute right-full mr-3 items-center gap-1.5 px-3 py-1.5 rounded-xl bg-[#1E2235]/95 backdrop-blur-md border border-[#81B29A]/40 text-white text-xs font-semibold whitespace-nowrap shadow-xl opacity-0 translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
-              <span>{isEn ? "SCMS AI Assistant" : "Trợ Lý AI SCMS"}</span>
+            <div className="hidden sm:flex absolute right-full mr-3 items-center gap-2 px-3 py-1.5 rounded-xl bg-[#1E2235]/95 backdrop-blur-md border border-[#81B29A]/40 text-white text-xs font-semibold whitespace-nowrap shadow-xl opacity-0 translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
+              <span className="flex items-center gap-1">
+                <span className="material-symbols-outlined text-[14px] text-[#81B29A]">drag_pan</span>
+                <span>{isEn ? "SCMS AI Assistant (Drag anywhere)" : "Trợ Lý AI SCMS (Kéo để di chuyển)"}</span>
+              </span>
               <span className="px-1.5 py-0.5 rounded bg-[#F2CC8F] text-[#1E2235] text-[9px] font-black uppercase tracking-wider">
                 PRO
               </span>
@@ -487,12 +719,26 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
       {/* 2. Minimized Bar State */}
       {isOpen && isMinimized && (
-        <div className="fixed bottom-5 right-5 sm:bottom-6 sm:right-6 z-50 animate-in fade-in zoom-in-95 duration-200">
+        <div
+          style={
+            bubblePos
+              ? { left: `${bubblePos.x}px`, top: `${bubblePos.y}px` }
+              : { bottom: '24px', right: '24px' }
+          }
+          onPointerDown={handleBubblePointerDown}
+          className={`fixed z-50 touch-none select-none ${
+            isBubbleMoving ? 'cursor-grabbing scale-105 transition-none' : 'cursor-grab animate-in fade-in zoom-in-95 duration-200'
+          }`}
+        >
           <div className="flex items-center gap-2 pl-3 pr-2 py-1.5 rounded-full bg-[#1E2235] text-white border border-[#81B29A]/50 shadow-2xl font-sans">
+            <span className="material-symbols-outlined text-[13px] text-slate-400">drag_indicator</span>
             <button
               type="button"
-              onClick={() => setIsMinimized(false)}
-              className="flex items-center gap-2 text-left cursor-pointer hover:opacity-90 transition"
+              onClick={() => {
+                if (isDraggingBubbleRef.current) return;
+                setIsMinimized(false);
+              }}
+              className="no-bubble-drag flex items-center gap-2 text-left cursor-pointer hover:opacity-90 transition"
               title={isEn ? "Click to open AI Assistant" : "Nhấn để mở lại Trợ lý AI"}
             >
               <div className="w-7 h-7 rounded-full bg-[#3D405B] flex items-center justify-center text-[#81B29A] shrink-0 border border-[#81B29A]/40">
@@ -509,7 +755,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                 type="button"
                 onClick={() => setIsMinimized(false)}
                 title={isEn ? "Expand" : "Mở rộng"}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-300 hover:text-[#F2CC8F] hover:bg-white/10 transition cursor-pointer"
+                className="no-bubble-drag w-7 h-7 rounded-full flex items-center justify-center text-slate-300 hover:text-[#F2CC8F] hover:bg-white/10 transition cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">open_in_full</span>
               </button>
@@ -520,7 +766,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                   setIsOpen(false);
                 }}
                 title={isEn ? "Close" : "Đóng"}
-                className="w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-[#E07A5F] hover:bg-white/10 transition cursor-pointer"
+                className="no-bubble-drag w-7 h-7 rounded-full flex items-center justify-center text-slate-400 hover:text-[#E07A5F] hover:bg-white/10 transition cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
@@ -531,13 +777,32 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
       {/* 3. Full Popup Window */}
       {isOpen && !isMinimized && (
-        <div className="fixed bottom-4 right-4 sm:bottom-6 sm:right-6 z-50 w-[420px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100dvh-5.5rem)] bg-white rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-5 duration-300 font-sans">
-          {/* Header Bar */}
-          <div className="relative px-4 py-3.5 bg-[#1E2235] text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+        <div
+          style={
+            windowPos
+              ? { left: `${windowPos.x}px`, top: `${windowPos.y}px` }
+              : { bottom: '24px', right: '24px' }
+          }
+          className={`fixed z-50 w-[420px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100dvh-5.5rem)] bg-white rounded-3xl shadow-2xl border border-slate-200/90 flex flex-col overflow-hidden font-sans ${
+            isWindowMoving ? 'shadow-3xl ring-2 ring-[#81B29A]/50 transition-none' : 'animate-in fade-in slide-in-from-bottom-5 duration-300'
+          }`}
+        >
+          {/* Header Bar - Draggable */}
+          <div
+            onPointerDown={handleWindowHeaderPointerDown}
+            className={`relative px-4 py-3.5 bg-[#1E2235] text-white flex items-center justify-between border-b border-slate-800 shrink-0 select-none ${
+              isWindowMoving ? 'cursor-grabbing' : 'cursor-grab'
+            }`}
+            title={isEn ? "Drag header to move chat window" : "Kéo thanh tiêu đề để di chuyển cửa sổ chat"}
+          >
             {/* Ambient Glow */}
             <div className="absolute top-0 right-1/4 w-32 h-16 bg-[#81B29A]/15 blur-2xl pointer-events-none" />
 
-            <div className="relative z-10 flex items-center gap-3">
+            <div className="relative z-10 flex items-center gap-2.5 pointer-events-none">
+              <span className="material-symbols-outlined text-[16px] text-slate-400 hover:text-white transition" title={isEn ? "Drag handle" : "Tay cầm kéo thả"}>
+                drag_indicator
+              </span>
+
               <div className="relative">
                 <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-[#81B29A] to-[#F2CC8F] p-0.5 shadow-md flex items-center justify-center">
                   <div className="w-full h-full rounded-[14px] bg-[#1E2235] flex items-center justify-center text-white">
@@ -556,14 +821,28 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                     PRO
                   </span>
                 </div>
-                <p className="text-[10px] text-[#A8DADC] font-medium">
-                  {isEn ? 'Olympic Standard · 24/7 Online' : 'Chuẩn Olympic · Trực tuyến 24/7'}
+                <p className="text-[10px] text-[#A8DADC] font-medium flex items-center gap-1">
+                  <span>{isEn ? 'Olympic Standard · 24/7' : 'Chuẩn Olympic · 24/7'}</span>
+                  <span>•</span>
+                  <span className="text-[#F2CC8F]/80">{isEn ? 'Drag to move' : 'Kéo để di chuyển'}</span>
                 </p>
               </div>
             </div>
 
             {/* Header Action Buttons */}
             <div className="relative z-10 flex items-center gap-1">
+              {/* Reset Position Button */}
+              {(windowPos || bubblePos) && (
+                <button
+                  type="button"
+                  onClick={handleResetPosition}
+                  title={isEn ? "Snap back to corner position" : "Đưa về góc dưới phải mặc định"}
+                  className="p-1.5 rounded-lg text-slate-400 hover:text-[#81B29A] hover:bg-white/10 transition cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[16px]">pin_drop</span>
+                </button>
+              )}
+
               <button
                 type="button"
                 onClick={handleResetChat}

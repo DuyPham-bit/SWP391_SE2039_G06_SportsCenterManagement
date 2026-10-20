@@ -59,11 +59,17 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     ...[...new Set(visibleFacilities.map(f => f.category).filter(Boolean))].map(category => {
       const sample = visibleFacilities.find(f => f.category === category);
       const rawLabel = sample?.categoryName || category;
+      const icon = category === 'golf' ? 'golf_course'
+        : category === 'aquatics' || category === 'pool' ? 'pool'
+        : category === 'fitness' ? 'fitness_center'
+        : category === 'combat-studio' || category === 'martial-arts' ? 'sports_kabaddi'
+        : category === 'team-sports' ? 'sports_soccer'
+        : 'stadium';
       return {
         id: category,
         label: (isEn ? translateFacilityCategory(rawLabel, true) : rawLabel).toUpperCase(),
         count: visibleFacilities.filter(f => f.category === category).length,
-        icon: 'stadium'
+        icon
       };
     })
   ], [visibleFacilities, isEn]);

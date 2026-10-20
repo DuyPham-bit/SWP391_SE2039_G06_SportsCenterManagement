@@ -8,6 +8,7 @@ import { ForgotPasswordModal } from './ForgotPasswordModal.js';
 import { GoogleLoginModal } from './GoogleLoginModal.js';
 import { Logo } from '../../components/common/Logo.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../services/membershipEntry.js';
+import { authApi } from '../../services/api.js';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -49,9 +50,23 @@ export function LoginPage() {
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regAgree, setRegAgree] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [regOtp, setRegOtp] = useState('');
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const needsEmailCode = verificationEmail !== '' && verificationEmail === regEmail.trim().toLowerCase();
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const isRegister = activeTab === 'register';
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const timer = setTimeout(() => setResendSeconds(seconds => Math.max(0, seconds - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [resendSeconds]);
+
+  useEffect(() => {
+    if (needsEmailCode) document.getElementById('register-otp')?.focus();
+  }, [needsEmailCode]);
 
   // Tích hợp Google Identity trực tiếp trên trang
   const googleButtonRef = useRef(null);
@@ -136,6 +151,8 @@ export function LoginPage() {
     setRegPassword('');
     setRegConfirmPassword('');
     setRegAgree(false);
+    setVerificationEmail('');
+    setRegOtp('');
     setActiveTab(tab);
     const authPath = tab === 'register' ? '#/register' : '#/login';
     window.location.hash = authPath + (membershipIntent.current ? `?next=${membershipIntent.current}` : '');
@@ -143,6 +160,10 @@ export function LoginPage() {
 
   const updateField = (id, value, setter) => {
     setter(value);
+    if (id === 'register-email') {
+      setVerificationEmail('');
+      setRegOtp('');
+    }
     setFieldErrors(previous => ({ ...previous, [id]: undefined }));
     setFormError('');
   };
@@ -198,19 +219,44 @@ export function LoginPage() {
     }
     if (!isAsciiPassword(regPassword)) errors['register-password'] = PASSWORD_CHARACTER_ERROR;
     else if (regPassword.length < 6) errors['register-password'] = 'Mật khẩu cần ít nhất 6 ký tự.';
+    else if (!/[A-Z]/.test(regPassword) || !/[a-z]/.test(regPassword) || !/[0-9]/.test(regPassword) || !/[^a-zA-Z0-9]/.test(regPassword)) errors['register-password'] = 'Mật khẩu cần có chữ hoa, chữ thường, số và ký tự đặc biệt.';
     if (!regConfirmPassword) errors['register-confirm'] = 'Vui lòng nhập lại mật khẩu.';
     else if (!isAsciiPassword(regConfirmPassword)) errors['register-confirm'] = PASSWORD_CHARACTER_ERROR;
     else if (regPassword !== regConfirmPassword) errors['register-confirm'] = 'Mật khẩu xác nhận chưa khớp.';
     if (!regAgree) errors['register-agree'] = 'Vui lòng xác nhận thông tin trước khi đăng ký.';
+    if (needsEmailCode && !/^[0-9]{6}$/.test(regOtp)) errors['register-otp'] = 'Vui lòng nhập mã gồm 6 chữ số trong email.';
     if (hasValidationErrors(errors)) return;
 
     setIsSubmitting(true);
     try {
-      const user = await register({ fullName: regFullName.trim(), email, phone, password: regPassword });
+      if (!needsEmailCode) {
+        await authApi.requestEmailVerification(email);
+        setVerificationEmail(email.toLowerCase());
+        setRegOtp('');
+        setResendSeconds(60);
+        return;
+      }
+      const user = await register({ fullName: regFullName.trim(), email, phone, password: regPassword, emailOtp: regOtp });
       showSuccess('Đăng ký thành công! Mã hội viên của bạn: ' + user.memberCode);
       redirectToRoleDashboard(user.role || 'MEMBER');
     } catch (error) {
       setFormError(error.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (isSubmitting || resendSeconds > 0) return;
+    setIsSubmitting(true);
+    setFormError('');
+    try {
+      await authApi.requestEmailVerification(verificationEmail);
+      setRegOtp('');
+      setResendSeconds(60);
+      showSuccess('Đã yêu cầu gửi lại mã xác thực. Vui lòng kiểm tra email và thư rác.');
+    } catch (error) {
+      setFormError(error.message || 'Không thể gửi lại mã. Vui lòng thử lại sau.');
     } finally {
       setIsSubmitting(false);
     }
@@ -223,7 +269,7 @@ export function LoginPage() {
       className="w-full min-h-11 sm:min-h-12 py-3 px-6 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--custom-btn-bg-color)] hover:bg-[var(--custom-btn-bg-hover-color)] text-[var(--secondary-color)] hover:text-white font-dm-sans text-sm font-bold shadow-md shadow-[#F2CC8F]/25 hover:shadow-lg hover:shadow-[#E07A5F]/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-wait transition-all duration-200 group"
     >
       {isSubmitting && <span className="w-4 h-4 border-2 border-[var(--secondary-color)]/40 border-t-[var(--secondary-color)] rounded-full animate-spin" aria-hidden="true" />}
-      <span>{isSubmitting ? (isRegister ? 'Đang kích hoạt tài khoản...' : 'Đang đăng nhập...') : (isRegister ? 'Tạo tài khoản hội viên' : 'Đăng nhập vào SCMS')}</span>
+      <span>{isSubmitting ? (isRegister ? 'Đang xử lý...' : 'Đang đăng nhập...') : (isRegister ? (needsEmailCode ? 'Xác thực và tạo tài khoản' : 'Tiếp tục xác thực email') : 'Đăng nhập vào SCMS')}</span>
       {!isSubmitting && (
         <span className="material-symbols-outlined text-[19px] group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">
           arrow_forward
@@ -487,7 +533,7 @@ export function LoginPage() {
                   </div>
                   <AuthField key="register-email" id="register-email" label="Địa chỉ Email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={150} placeholder="ban@example.com" required value={regEmail} error={fieldErrors['register-email']} onChange={event => updateField('register-email', event.target.value, setRegEmail)} />
                   <div className="grid sm:grid-cols-2 gap-2.5">
-                    <AuthField key="register-password" id="register-password" label="Mật khẩu" type="password" autoComplete="new-password" minLength={6} maxLength={128} placeholder="Tạo mật khẩu" hint="Tối thiểu 6 ký tự." required value={regPassword} error={fieldErrors['register-password']} onChange={event => updateField('register-password', event.target.value, setRegPassword)} />
+                    <AuthField key="register-password" id="register-password" label="Mật khẩu" type="password" autoComplete="new-password" minLength={6} maxLength={128} placeholder="Tạo mật khẩu" hint="Từ 6 ký tự, có chữ hoa, thường, số và ký tự đặc biệt." required value={regPassword} error={fieldErrors['register-password']} onChange={event => updateField('register-password', event.target.value, setRegPassword)} />
                     <AuthField key="register-confirm" id="register-confirm" label="Nhập lại mật khẩu" type="password" autoComplete="new-password" maxLength={128} placeholder="Xác nhận mật khẩu" required value={regConfirmPassword} error={fieldErrors['register-confirm']} onChange={event => updateField('register-confirm', event.target.value, setRegConfirmPassword)} />
                   </div>
                   <div>
@@ -497,6 +543,13 @@ export function LoginPage() {
                     </label>
                     {fieldErrors['register-agree'] && <p id="register-agree-error" className="text-[11px] text-red-600 leading-4 mt-0.5">{fieldErrors['register-agree']}</p>}
                   </div>
+                  {needsEmailCode && (
+                    <div className="space-y-2 border-t border-slate-200 pt-3">
+                      <p role="status" className="text-xs text-slate-600 break-words">Kiểm tra mã gửi đến <strong>{verificationEmail}</strong>, kể cả thư rác. Mã có hạn 10 phút. Tài khoản sẽ được tạo sau khi xác thực thành công.</p>
+                      <AuthField id="register-otp" label="Mã xác thực email" inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" placeholder="Nhập 6 chữ số" required value={regOtp} error={fieldErrors['register-otp']} onChange={event => updateField('register-otp', event.target.value.replace(/[^0-9]/g, ''), setRegOtp)} />
+                      <button type="button" disabled={isSubmitting || resendSeconds > 0} onClick={handleResendVerification} className="min-h-11 text-xs font-semibold text-slate-700 underline disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]">{resendSeconds > 0 ? `Gửi lại mã sau ${resendSeconds}s` : 'Gửi lại mã xác thực'}</button>
+                    </div>
+                  )}
                   <div className="pt-1">
                     {submitButton}
                   </div>

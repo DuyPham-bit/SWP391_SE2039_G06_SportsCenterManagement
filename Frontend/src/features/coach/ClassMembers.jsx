@@ -234,29 +234,37 @@ export function ClassMembers() {
     },
     {
       header: isEn ? 'Card / Code' : 'Mã Thẻ',
-      render: (row) => <span className="font-bold text-[#1E2235] bg-[#81B29A]/15 px-2 py-0.5 rounded-md border border-[#81B29A]/30 text-xs">{row.memberCode}</span>
+      className: 'whitespace-nowrap min-w-[130px]',
+      render: (row) => (
+        <span className="font-bold font-mono text-[#1E2235] bg-[#81B29A]/15 px-2.5 py-1 rounded-md border border-[#81B29A]/30 text-xs whitespace-nowrap inline-block">
+          {row.memberCode}
+        </span>
+      )
     },
     {
       header: isEn ? 'Phone Number' : 'Số Điện Thoại',
-      accessor: 'phone'
+      accessor: 'phone',
+      className: 'whitespace-nowrap min-w-[130px]'
     },
     {
       header: isEn ? 'Profile' : 'Hồ sơ',
+      className: 'whitespace-nowrap min-w-[90px]',
       render: row => (
-        <button onClick={() => setProfile(row)} className="text-[#3D405B] hover:text-[#E07A5F] font-semibold text-xs underline transition-colors cursor-pointer">
+        <button onClick={() => setProfile(row)} className="text-[#3D405B] hover:text-[#E07A5F] font-semibold text-xs underline transition-colors cursor-pointer whitespace-nowrap">
           {isEn ? 'View Profile' : 'Xem hồ sơ'}
         </button>
       )
     },
     {
       header: isEn ? 'Personal Plan (⭐)' : 'Giáo Án Riêng (⭐)',
+      className: 'whitespace-nowrap min-w-[180px]',
       render: (row) => {
         const hasCustomPlan = !!getPersonalPlanForMember(row.memberId);
         return (
           <button
             type="button"
             onClick={() => handleOpenPersonalPlanModal(row)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold whitespace-nowrap ${
               hasCustomPlan
                 ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-xs hover:bg-amber-100 ring-2 ring-amber-400/30'
                 : 'bg-white border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50/50'
@@ -290,8 +298,9 @@ export function ClassMembers() {
     },
     {
       header: isEn ? 'Actions' : 'Thao Tác Chuyên Môn',
+      className: 'whitespace-nowrap min-w-[140px]',
       render: () => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 whitespace-nowrap">
           <a
             href="#/coach/progress"
             className="px-3 py-1.5 rounded-lg bg-[#81B29A]/15 hover:bg-[#81B29A]/25 text-[#2D6A4F] text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1"

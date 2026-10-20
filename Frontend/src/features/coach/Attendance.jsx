@@ -118,6 +118,112 @@ function getAttendanceRestrictionInfo(session, isEn = false) {
   };
 }
 
+function getSportBadgeTheme(sportName = '', isEn = false) {
+  const s = String(sportName).toLowerCase();
+  if (s.includes('bơi') || s.includes('swim')) {
+    return {
+      bg: 'bg-cyan-50 text-cyan-800 border-cyan-200',
+      tagBg: 'bg-cyan-100 text-cyan-800 border-cyan-200',
+      dot: 'bg-cyan-500',
+      icon: 'pool',
+      accent: 'border-l-cyan-500',
+      label: isEn ? 'Swimming' : 'Bơi lội'
+    };
+  }
+  if (s.includes('yoga') || s.includes('pilates')) {
+    return {
+      bg: 'bg-purple-50 text-purple-800 border-purple-200',
+      tagBg: 'bg-purple-100 text-purple-800 border-purple-200',
+      dot: 'bg-purple-500',
+      icon: 'self_improvement',
+      accent: 'border-l-purple-500',
+      label: 'Yoga & Pilates'
+    };
+  }
+  if (s.includes('cầu lông') || s.includes('badminton')) {
+    return {
+      bg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      tagBg: 'bg-emerald-100 text-emerald-800 border-emerald-200',
+      dot: 'bg-emerald-500',
+      icon: 'sports_tennis',
+      accent: 'border-l-emerald-500',
+      label: isEn ? 'Badminton' : 'Cầu lông'
+    };
+  }
+  if (s.includes('gym') || s.includes('fitness')) {
+    return {
+      bg: 'bg-amber-50 text-amber-800 border-amber-200',
+      tagBg: 'bg-amber-100 text-amber-800 border-amber-200',
+      dot: 'bg-amber-500',
+      icon: 'fitness_center',
+      accent: 'border-l-amber-500',
+      label: 'Gym & Fitness'
+    };
+  }
+  if (s.includes('boxing') || s.includes('võ') || s.includes('kickfit') || s.includes('martial')) {
+    return {
+      bg: 'bg-rose-50 text-rose-800 border-rose-200',
+      tagBg: 'bg-rose-100 text-rose-800 border-rose-200',
+      dot: 'bg-rose-500',
+      icon: 'sports_mma',
+      accent: 'border-l-rose-500',
+      label: isEn ? 'Boxing & Martial Arts' : 'Boxing & Võ thuật'
+    };
+  }
+  if (s.includes('bóng rổ') || s.includes('bóng đá') || s.includes('basketball') || s.includes('football')) {
+    return {
+      bg: 'bg-blue-50 text-blue-800 border-blue-200',
+      tagBg: 'bg-blue-100 text-blue-800 border-blue-200',
+      dot: 'bg-blue-500',
+      icon: 'sports_basketball',
+      accent: 'border-l-blue-500',
+      label: isEn ? 'Team Sports' : 'Thể thao đồng đội'
+    };
+  }
+  if (s.includes('tennis') || s.includes('bóng bàn') || s.includes('table tennis') || s.includes('pickleball')) {
+    return {
+      bg: 'bg-lime-50 text-lime-800 border-lime-200',
+      tagBg: 'bg-lime-100 text-lime-800 border-lime-200',
+      dot: 'bg-lime-500',
+      icon: 'sports_tennis',
+      accent: 'border-l-lime-500',
+      label: isEn ? 'Racket Sports' : 'Vợt & Bóng nhỏ'
+    };
+  }
+  return {
+    bg: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+    tagBg: 'bg-indigo-100 text-indigo-800 border-indigo-200',
+    dot: 'bg-indigo-500',
+    icon: 'sports',
+    accent: 'border-l-indigo-500',
+    label: translateSportName(sportName, isEn)
+  };
+}
+
+function getTimeOfDayBadge(timeSlot = '', isEn = false) {
+  const match = timeSlot.match(/(\d{1,2}):/);
+  const hour = match ? parseInt(match[1], 10) : 12;
+  if (hour < 12) {
+    return {
+      label: isEn ? 'Morning' : 'Ca Sáng',
+      badge: 'bg-amber-50 text-amber-800 border-amber-200',
+      icon: 'wb_twilight'
+    };
+  }
+  if (hour < 17) {
+    return {
+      label: isEn ? 'Afternoon' : 'Ca Chiều',
+      badge: 'bg-orange-50 text-orange-800 border-orange-200',
+      icon: 'light_mode'
+    };
+  }
+  return {
+    label: isEn ? 'Evening' : 'Ca Tối',
+    badge: 'bg-indigo-50 text-indigo-800 border-indigo-200',
+    icon: 'dark_mode'
+  };
+}
+
 export function Attendance() {
   const { showSuccess, showError } = useToast();
   const { language } = useLanguage();
@@ -148,7 +254,7 @@ export function Attendance() {
   // Navigation states
   const [currentMonday, setCurrentMonday] = useState(() => getMondayOfDate(initialDate));
   const [viewMode, setViewMode] = useState('weekly'); // 'weekly' | 'daily' | 'list'
-  const [selectedDayTab, setSelectedDayTab] = useState('ALL'); // 'ALL' or 'Thứ 2', etc.
+  const [selectedDateIso, setSelectedDateIso] = useState('ALL'); // 'ALL' or specific ISO date '2026-10-21'
   const [selectedSport, setSelectedSport] = useState('ALL');
   const [readinessFilter, setReadinessFilter] = useState('ALL'); // 'ALL', 'READY', 'UPCOMING', 'CANCELLED'
   const [showCustomPeriod, setShowCustomPeriod] = useState(false);
@@ -171,6 +277,9 @@ export function Attendance() {
   const weekDays = useMemo(() => getWeekDays(currentMonday), [currentMonday]);
   const todayIso = toIsoDate(new Date());
 
+  const weekStartIso = useMemo(() => toIsoDate(weekDays[0]), [weekDays]);
+  const weekEndIso = useMemo(() => toIsoDate(weekDays[6]), [weekDays]);
+
   // Determine the active session
   const activeSession = useMemo(() => {
     if (!schedule.sessions.length) return null;
@@ -178,10 +287,11 @@ export function Attendance() {
       const found = schedule.sessions.find(s => s.id === Number(selectedId));
       if (found) return found;
     }
-    // Default to the first session happening today or the first upcoming session
-    const todaySession = schedule.sessions.find(s => s.sessionDate === todayIso);
-    return todaySession || schedule.sessions[0];
-  }, [schedule.sessions, selectedId, todayIso]);
+    // Default to the first session happening today or the first upcoming session in selected week
+    const inWeek = schedule.sessions.filter(s => s.sessionDate >= weekStartIso && s.sessionDate <= weekEndIso);
+    const todaySession = inWeek.find(s => s.sessionDate === todayIso);
+    return todaySession || inWeek[0] || schedule.sessions[0];
+  }, [schedule.sessions, selectedId, todayIso, weekStartIso, weekEndIso]);
 
   // Sync selectedId with activeSession once loaded
   useEffect(() => {
@@ -237,6 +347,7 @@ export function Attendance() {
       next.setDate(next.getDate() - 7);
       return next;
     });
+    setSelectedDateIso('ALL');
   };
 
   const handleNextWeek = () => {
@@ -245,11 +356,13 @@ export function Attendance() {
       next.setDate(next.getDate() + 7);
       return next;
     });
+    setSelectedDateIso('ALL');
   };
 
   const handleThisWeek = () => {
     const monday = getMondayOfDate(new Date());
     setCurrentMonday(monday);
+    setSelectedDateIso('ALL');
   };
 
   const handleSelectSession = (s, scrollToWorkbench = true) => {
@@ -373,10 +486,56 @@ export function Attendance() {
     return ['ALL', ...Array.from(set)];
   }, [schedule.sessions]);
 
+  // Overall metrics for the currently selected week
+  const weekStats = useMemo(() => {
+    const inWeek = schedule.sessions.filter(s => s.sessionDate >= weekStartIso && s.sessionDate <= weekEndIso);
+    const todaySessions = inWeek.filter(s => s.sessionDate === todayIso);
+    const readySessions = inWeek.filter(s => canAttendSession(s));
+    const endedSessions = inWeek.filter(s => {
+      const end = sessionTime(s, true);
+      return s.status !== 'CANCELLED' && Date.now() > end;
+    });
+    return {
+      total: inWeek.length,
+      today: todaySessions.length,
+      ready: readySessions.length,
+      ended: endedSessions.length
+    };
+  }, [schedule.sessions, weekStartIso, weekEndIso, todayIso]);
+
+  const selectedDayInfo = useMemo(() => {
+    if (selectedDateIso === 'ALL') return null;
+    const idx = weekDays.findIndex(d => toIsoDate(d) === selectedDateIso);
+    if (idx !== -1) {
+      return {
+        date: weekDays[idx],
+        iso: selectedDateIso,
+        dayName: DAY_NAMES[idx],
+        dayFullLabel: DAY_FULL_LABELS[idx]
+      };
+    }
+    const d = new Date(selectedDateIso + 'T12:00:00');
+    return {
+      date: d,
+      iso: selectedDateIso,
+      dayName: '',
+      dayFullLabel: formatFullDate(d)
+    };
+  }, [selectedDateIso, weekDays, DAY_NAMES, DAY_FULL_LABELS]);
+
   const filteredSessions = useMemo(() => {
-    return schedule.sessions.filter(s => {
+    const list = schedule.sessions.filter(s => {
+      // If a specific day is selected, filter strictly by that day's ISO date
+      if (selectedDateIso !== 'ALL') {
+        if (s.sessionDate !== selectedDateIso) return false;
+      } else {
+        // Otherwise strictly bound by current week (unless custom period is enabled)
+        if (!showCustomPeriod) {
+          if (s.sessionDate < weekStartIso || s.sessionDate > weekEndIso) return false;
+        }
+      }
+
       if (selectedSport !== 'ALL' && s.sportName !== selectedSport) return false;
-      if (selectedDayTab !== 'ALL' && s.dayOfWeek !== selectedDayTab) return false;
 
       if (readinessFilter === 'READY') {
         return canAttendSession(s);
@@ -388,15 +547,33 @@ export function Attendance() {
       }
       return true;
     });
-  }, [schedule.sessions, selectedSport, selectedDayTab, readinessFilter]);
 
-  // Group sessions by ISO date string for quick weekly calendar lookup
+    return list.sort((a, b) => {
+      if (a.sessionDate !== b.sessionDate) {
+        return a.sessionDate.localeCompare(b.sessionDate);
+      }
+      return String(a.startTime).localeCompare(String(b.startTime));
+    });
+  }, [schedule.sessions, selectedDateIso, showCustomPeriod, weekStartIso, weekEndIso, selectedSport, readinessFilter]);
+
+
+  // Group sessions by ISO date string for quick weekly calendar lookup and day tab counts
   const sessionsByDate = useMemo(() => {
     const map = {};
     weekDays.forEach(d => {
       map[toIsoDate(d)] = [];
     });
-    filteredSessions.forEach(s => {
+    schedule.sessions.forEach(s => {
+      if (s.sessionDate < weekStartIso || s.sessionDate > weekEndIso) return;
+      if (selectedSport !== 'ALL' && s.sportName !== selectedSport) return;
+      if (readinessFilter === 'READY') {
+        if (!canAttendSession(s)) return;
+      } else if (readinessFilter === 'UPCOMING') {
+        const start = sessionTime(s, false);
+        if (s.status === 'CANCELLED' || Date.now() >= start) return;
+      } else if (readinessFilter === 'CANCELLED') {
+        if (s.status !== 'CANCELLED') return;
+      }
       if (map[s.sessionDate]) {
         map[s.sessionDate].push(s);
       }
@@ -406,7 +583,7 @@ export function Attendance() {
       map[key].sort((a, b) => String(a.startTime).localeCompare(String(b.startTime)));
     });
     return map;
-  }, [filteredSessions, weekDays]);
+  }, [schedule.sessions, weekDays, weekStartIso, weekEndIso, selectedSport, readinessFilter]);
 
   // Attendance metrics calculation
   const stats = useMemo(() => {
@@ -447,6 +624,7 @@ export function Attendance() {
   const activeAttendanceRestriction = activeSession && !canAttend
     ? getAttendanceRestrictionInfo(activeSession, isEn)
     : null;
+
 
   return (
     <div className="space-y-6">
@@ -553,7 +731,7 @@ export function Attendance() {
               <button
                 type="button"
                 onClick={() => setViewMode('weekly')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
                   viewMode === 'weekly'
                     ? 'bg-white text-red-600 shadow-sm font-extrabold'
                     : 'text-slate-600 hover:text-slate-900'
@@ -564,20 +742,8 @@ export function Attendance() {
               </button>
               <button
                 type="button"
-                onClick={() => setViewMode('daily')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${
-                  viewMode === 'daily'
-                    ? 'bg-white text-red-600 shadow-sm font-extrabold'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                <span className="material-symbols-outlined text-sm">view_day</span>
-                <span>{isEn ? 'Daily' : 'Theo ngày'}</span>
-              </button>
-              <button
-                type="button"
                 onClick={() => setViewMode('list')}
-                className={`flex items-center gap-1 px-3 py-1.5 rounded-lg transition-all ${
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg transition-all ${
                   viewMode === 'list'
                     ? 'bg-white text-red-600 shadow-sm font-extrabold'
                     : 'text-slate-600 hover:text-slate-900'
@@ -618,49 +784,135 @@ export function Attendance() {
           </div>
         </div>
 
-        {/* Day Tabs (For Daily view or quick day filter) */}
-        {viewMode === 'daily' && (
+        {/* KPI Quick Overview Strip */}
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-900 text-white flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-xl">calendar_today</span>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                {isEn ? 'This Week' : 'Tổng ca tuần này'}
+              </div>
+              <div className="font-chivo font-black text-lg text-slate-900 leading-tight">
+                {weekStats.total} {isEn ? 'sessions' : 'ca'}
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={() => {
+              setViewMode('list');
+              setSelectedDateIso(todayIso);
+            }}
+            className="p-3.5 rounded-xl bg-red-50/60 hover:bg-red-50 border border-red-200 text-left transition-all flex items-center gap-3 group"
+          >
+            <div className="w-10 h-10 rounded-xl bg-red-600 text-white flex items-center justify-center shrink-0 shadow-sm group-hover:scale-105 transition-transform">
+              <span className="material-symbols-outlined text-xl">today</span>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold text-red-700 uppercase tracking-wider flex items-center gap-1">
+                <span className="truncate">{isEn ? 'Today' : 'Ca hôm nay'}</span>
+                <span className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse shrink-0"></span>
+              </div>
+              <div className="font-chivo font-black text-lg text-red-950 leading-tight">
+                {weekStats.today} {isEn ? 'sessions' : 'ca'}
+              </div>
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setReadinessFilter(readinessFilter === 'READY' ? 'ALL' : 'READY');
+            }}
+            className={`p-3.5 rounded-xl border text-left transition-all flex items-center gap-3 ${
+              readinessFilter === 'READY'
+                ? 'bg-emerald-100 border-emerald-400 ring-2 ring-emerald-500/30'
+                : 'bg-emerald-50/60 hover:bg-emerald-50 border-emerald-200'
+            }`}
+          >
+            <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-sm">
+              <span className="material-symbols-outlined text-xl">fact_check</span>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold text-emerald-800 uppercase tracking-wider flex items-center gap-1">
+                <span className="truncate">{isEn ? 'Roll-call Ready' : 'Sẵn sàng điểm danh'}</span>
+              </div>
+              <div className="font-chivo font-black text-lg text-emerald-950 leading-tight">
+                {weekStats.ready} {isEn ? 'sessions' : 'ca'}
+              </div>
+            </div>
+          </button>
+
+          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl bg-slate-200 text-slate-700 flex items-center justify-center shrink-0">
+              <span className="material-symbols-outlined text-xl">task_alt</span>
+            </div>
+            <div className="min-w-0">
+              <div className="text-[11px] font-bold text-slate-500 uppercase tracking-wider truncate">
+                {isEn ? 'Completed' : 'Đã kết thúc'}
+              </div>
+              <div className="font-chivo font-black text-lg text-slate-900 leading-tight">
+                {weekStats.ended} {isEn ? 'sessions' : 'ca'}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Day Tabs (For quick day filter in list view) */}
+        {viewMode === 'list' && (
           <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-thin">
             <button
               type="button"
-              onClick={() => setSelectedDayTab('ALL')}
-              className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border ${
-                selectedDayTab === 'ALL'
+              onClick={() => setSelectedDateIso('ALL')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 ${
+                selectedDateIso === 'ALL'
                   ? 'bg-slate-900 text-white border-slate-900 shadow-sm'
                   : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
               }`}
             >
-              {isEn ? 'All Days' : 'Tất cả các ngày'}
+              <span>{isEn ? 'All Days' : 'Tất cả các ngày'}</span>
+              <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                selectedDateIso === 'ALL' ? 'bg-white/20 text-white' : 'bg-slate-200 text-slate-700'
+              }`}>
+                {weekStats.total}
+              </span>
             </button>
             {weekDays.map((d, index) => {
-              const dayName = DAY_NAMES[index];
               const iso = toIsoDate(d);
+              const isSelected = selectedDateIso === iso;
               const isToday = iso === todayIso;
               const count = (sessionsByDate[iso] || []).length;
               return (
                 <button
                   key={iso}
                   type="button"
-                  onClick={() => setSelectedDayTab(dayName)}
-                  className={`px-3 py-1.5 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 ${
-                    selectedDayTab === dayName
+                  onClick={() => setSelectedDateIso(iso)}
+                  className={`px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all border flex items-center gap-1.5 ${
+                    isSelected
                       ? 'bg-red-600 text-white border-red-600 shadow-sm'
                       : isToday
-                        ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100'
+                        ? 'bg-red-50 text-red-700 border-red-200 hover:bg-red-100 font-extrabold'
                         : 'bg-white text-slate-700 border-slate-200 hover:bg-slate-50'
                   }`}
                 >
                   <span>{DAY_FULL_LABELS[index]}</span>
                   <span className="opacity-75 font-normal">({formatDayMonth(d)})</span>
                   {count > 0 && (
-                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                      selectedDayTab === dayName ? 'bg-white text-red-600' : 'bg-slate-200 text-slate-700'
+                    <span className={`px-1.5 py-0.2 rounded-full text-[10px] font-bold ${
+                      isSelected ? 'bg-white text-red-600' : 'bg-slate-100 text-slate-700'
                     }`}>
                       {count}
                     </span>
                   )}
                   {isToday && (
-                    <span className="w-1.5 h-1.5 rounded-full bg-red-400"></span>
+                    <span className={`px-1.5 py-0.2 rounded-full text-[9px] uppercase font-black tracking-wider ${
+                      isSelected ? 'bg-white/25 text-white' : 'bg-red-600 text-white'
+                    }`}>
+                      {isEn ? 'Today' : 'Hôm nay'}
+                    </span>
                   )}
                 </button>
               );
@@ -733,6 +985,8 @@ export function Attendance() {
                           const isSelected = activeSession?.id === s.id;
                           const statusInfo = getSessionStatusInfo(s, isEn);
                           const attendable = canAttendSession(s);
+                          const sportTheme = getSportBadgeTheme(s.sportName, isEn);
+                          const fillPercent = s.capacity > 0 ? Math.round((s.enrolledCount / s.capacity) * 100) : 0;
 
                           return (
                             <div
@@ -744,8 +998,10 @@ export function Attendance() {
                               className={`p-3 rounded-xl border text-left transition-all cursor-pointer relative group ${
                                 isSelected
                                   ? 'bg-white border-red-600 ring-2 ring-red-600/30 shadow-md scale-[1.02]'
-                                  : 'bg-white border-slate-200 hover:border-red-300 hover:shadow-sm'
-                              }`}
+                                  : attendable
+                                    ? 'bg-white border-emerald-300 hover:border-emerald-500 hover:shadow-sm'
+                                    : 'bg-white border-slate-200 hover:border-red-300 hover:shadow-sm'
+                              } border-l-4 ${sportTheme.accent}`}
                             >
                               {/* Selected Marker */}
                               {isSelected && (
@@ -764,13 +1020,14 @@ export function Attendance() {
                               </div>
 
                               <div className="flex items-center gap-1 mb-1.5 flex-wrap">
-                                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-slate-100 text-slate-700">
-                                  {translateSportName(s.sportName, isEn)}
+                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold border flex items-center gap-1 ${sportTheme.tagBg}`}>
+                                  <span className="material-symbols-outlined text-[11px]">{sportTheme.icon}</span>
+                                  <span className="truncate max-w-[85px]">{translateSportName(s.sportName, isEn)}</span>
                                 </span>
                                 {attendable && (
-                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 flex items-center gap-0.5">
+                                  <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-0.5">
                                     <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
-                                    {isEn ? 'Attendance' : 'Điểm danh'}
+                                    {isEn ? 'Roll-call' : 'Điểm danh'}
                                   </span>
                                 )}
                               </div>
@@ -781,14 +1038,20 @@ export function Attendance() {
                               </h2>
 
                               {/* Room & Capacity */}
-                              <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 space-y-0.5">
+                              <div className="mt-2 pt-2 border-t border-slate-100 text-[10px] text-slate-500 space-y-1">
                                 <div className="flex items-center gap-1 truncate">
                                   <span className="material-symbols-outlined text-[13px] text-slate-400">stadium</span>
                                   <span className="truncate">{translateRoomName(s.roomName, isEn)}</span>
                                 </div>
                                 <div className="flex items-center justify-between text-slate-600 font-semibold">
                                   <span>{isEn ? 'Enrolled:' : 'Đã đặt:'}</span>
-                                  <span className="text-slate-900 font-bold">{s.enrolledCount}/{s.capacity}</span>
+                                  <span className={`font-bold ${fillPercent >= 100 ? 'text-rose-600' : 'text-slate-900'}`}>{s.enrolledCount}/{s.capacity}</span>
+                                </div>
+                                <div className="w-full bg-slate-100 rounded-full h-1 overflow-hidden">
+                                  <div
+                                    className={`h-full rounded-full ${fillPercent >= 100 ? 'bg-rose-500' : fillPercent >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                    style={{ width: `${Math.min(100, fillPercent)}%` }}
+                                  />
                                 </div>
                               </div>
 
@@ -796,9 +1059,15 @@ export function Attendance() {
                               <div className={`mt-2 text-center py-1 rounded text-[10px] font-bold transition-colors ${
                                 isSelected
                                   ? 'bg-red-600 text-white'
-                                  : 'bg-slate-50 text-slate-600 group-hover:bg-red-50 group-hover:text-red-700'
+                                  : attendable
+                                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200 group-hover:bg-emerald-600 group-hover:text-white'
+                                    : 'bg-slate-50 text-slate-600 group-hover:bg-red-50 group-hover:text-red-700'
                               }`}>
-                                {isSelected ? (isEn ? 'Selected for Attendance' : 'Đang chọn điểm danh') : (isEn ? 'Select this session' : 'Chọn ca này')}
+                                {isSelected
+                                  ? (isEn ? 'Selected for Attendance' : 'Đang chọn điểm danh')
+                                  : attendable
+                                    ? (isEn ? '⚡ Take attendance' : '⚡ Điểm danh ca này')
+                                    : (isEn ? 'Select this session' : 'Chọn ca này')}
                               </div>
                             </div>
                           );
@@ -812,90 +1081,177 @@ export function Attendance() {
           </div>
         )}
 
-        {/* VIEW 2: DAILY / CARDS VIEW */}
-        {!schedule.loading && (viewMode === 'daily' || viewMode === 'list') && (
-          <div>
+        {/* VIEW 2: LIST VIEW (DANH SÁCH CA BẢNG BIỂU CHUYÊN NGHIỆP) */}
+        {!schedule.loading && viewMode === 'list' && (
+          <div className="space-y-4">
+            {/* Optional Selected Day Focus Banner */}
+            {selectedDateIso !== 'ALL' && selectedDayInfo && (
+              <div className="flex items-center justify-between p-3.5 rounded-2xl bg-gradient-to-r from-red-500/10 via-amber-500/5 to-slate-50 border border-red-200 flex-wrap gap-2">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-9 h-9 rounded-xl bg-red-600 text-white flex items-center justify-center font-black shadow-xs">
+                    <span className="material-symbols-outlined text-lg">event</span>
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="font-chivo font-black text-sm md:text-base text-slate-900">
+                        {selectedDayInfo.dayFullLabel}, {formatFullDate(selectedDayInfo.date)}
+                      </span>
+                      {selectedDateIso === todayIso && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-red-600 text-white">
+                          {isEn ? 'Today' : 'Hôm nay'}
+                        </span>
+                      )}
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 border border-red-200">
+                        {filteredSessions.length} {isEn ? 'sessions' : 'ca dạy'}
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setSelectedDateIso('ALL')}
+                  className="text-xs font-bold text-slate-700 hover:text-red-600 flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-300 bg-white hover:bg-slate-50 transition-all shadow-xs"
+                >
+                  <span className="material-symbols-outlined text-sm">view_agenda</span>
+                  <span>{isEn ? 'View all days this week' : 'Xem tất cả các ngày trong tuần'}</span>
+                </button>
+              </div>
+            )}
+
             {filteredSessions.length === 0 ? (
-              <div className="p-8 text-center bg-slate-50 rounded-2xl border border-slate-200">
+              <div className="p-10 text-center bg-slate-50 rounded-2xl border border-dashed border-slate-200">
                 <span className="material-symbols-outlined text-4xl text-slate-300">event_busy</span>
-                <p className="text-sm font-bold text-slate-700 mt-2">{isEn ? 'No teaching sessions match the filter.' : 'Không tìm thấy ca dạy phù hợp bộ lọc.'}</p>
-                <p className="text-xs text-slate-500 mt-1">{isEn ? 'Try changing sports or selecting another week.' : 'Thử thay đổi bộ môn hoặc chọn tuần khác.'}</p>
+                <p className="text-sm font-bold text-slate-700 mt-2">
+                  {isEn ? 'No teaching sessions match your current filter.' : 'Không tìm thấy ca dạy nào phù hợp với bộ lọc.'}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {isEn ? 'Try selecting another day, sport, or clearing readiness filters.' : 'Thử chọn ngày khác, môn học khác hoặc xóa bộ lọc trạng thái.'}
+                </p>
+                {(selectedDateIso !== 'ALL' || selectedSport !== 'ALL' || readinessFilter !== 'ALL') && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedDateIso('ALL');
+                      setSelectedSport('ALL');
+                      setReadinessFilter('ALL');
+                    }}
+                    className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+                  >
+                    <span className="material-symbols-outlined text-sm">refresh</span>
+                    <span>{isEn ? 'Reset all filters' : 'Xóa tất cả bộ lọc'}</span>
+                  </button>
+                )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                {filteredSessions.map(s => {
-                  const isSelected = activeSession?.id === s.id;
-                  const statusInfo = getSessionStatusInfo(s, isEn);
-                  const attendable = canAttendSession(s);
-
-                  return (
-                    <article
-                      key={s.id}
-                      onClick={() => handleSelectSession(s)}
-                      className={`p-5 rounded-2xl border transition-all cursor-pointer flex flex-col justify-between ${
-                        isSelected
-                          ? 'bg-white border-red-600 ring-2 ring-red-600/30 shadow-md'
-                          : 'bg-white border-slate-200 hover:border-red-300 hover:shadow-sm'
-                      }`}
-                    >
-                      <div>
-                        {/* Header Badges */}
-                        <div className="flex items-center justify-between gap-2 mb-2">
-                          <span className="px-2 py-0.5 rounded-md text-[11px] font-bold bg-slate-100 text-slate-700">
-                            {translateSportName(s.sportName, isEn)}
-                          </span>
-                          <span className={`px-2 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1 ${statusInfo.badge}`}>
-                            <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`}></span>
-                            {statusInfo.label}
-                          </span>
-                        </div>
-
-                        {/* Class Name */}
-                        <h2 className="font-chivo text-base font-black text-slate-900 leading-tight">
-                          {translateClassName(s.name, isEn)}
-                        </h2>
-
-                        {/* Session Date & Time */}
-                        <div className="mt-3 p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs text-slate-700">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-base text-red-600">calendar_month</span>
-                            <span className="font-bold">{s.dayOfWeek}, {formatFullDate(new Date(s.sessionDate + 'T12:00:00'))}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-base text-slate-400">schedule</span>
-                            <span className="font-bold">{s.timeSlot}</span>
-                          </div>
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-base text-slate-400">stadium</span>
-                            <span>{translateRoomName(s.roomName, isEn)}</span>
-                          </div>
-                        </div>
-                      </div>
-
-                      {/* Footer Actions */}
-                      <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between">
-                        <div>
-                          <span className="text-[10px] uppercase font-bold text-slate-400 block">{isEn ? 'Enrolled capacity' : 'Sĩ số ca'}</span>
-                          <span className="font-chivo text-sm font-extrabold text-slate-900">
-                            {s.enrolledCount}/{s.capacity} {isEn ? 'students' : 'học viên'}
-                          </span>
-                        </div>
-
-                        <button
-                          type="button"
-                          className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 ${
-                            isSelected
-                              ? 'bg-red-600 text-white shadow-sm'
-                              : 'bg-slate-900 hover:bg-red-600 text-white'
+              /* REAL HIGH-DENSITY LIST TABLE VIEW */
+              <div className="overflow-x-auto rounded-2xl border border-slate-200 bg-white shadow-xs">
+                <table className="w-full text-left border-collapse text-xs">
+                  <thead>
+                    <tr className="bg-slate-50 border-b border-slate-200 text-slate-500 font-bold uppercase tracking-wider text-[11px]">
+                      <th className="py-3 px-4">{isEn ? 'Time Slot' : 'Thời gian'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Sport & Class' : 'Môn học & Lớp'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Room / Venue' : 'Phòng học'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Enrolled' : 'Sĩ số'}</th>
+                      <th className="py-3 px-4">{isEn ? 'Status' : 'Trạng thái'}</th>
+                      <th className="py-3 px-4 text-right">{isEn ? 'Action' : 'Thao tác'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100">
+                    {filteredSessions.map(s => {
+                      const isSelected = activeSession?.id === s.id;
+                      const statusInfo = getSessionStatusInfo(s, isEn);
+                      const attendable = canAttendSession(s);
+                      const sportTheme = getSportBadgeTheme(s.sportName, isEn);
+                      const timeOfDay = getTimeOfDayBadge(s.timeSlot, isEn);
+                      const fillPercent = s.capacity > 0 ? Math.round((s.enrolledCount / s.capacity) * 100) : 0;
+                      return (
+                        <tr
+                          key={s.id}
+                          onClick={() => handleSelectSession(s)}
+                          className={`cursor-pointer transition-colors ${
+                            isSelected ? 'bg-red-50/50 font-medium' : 'hover:bg-slate-50'
                           }`}
                         >
-                          <span className="material-symbols-outlined text-base">fact_check</span>
-                          <span>{isSelected ? (isEn ? 'Taking attendance' : 'Đang điểm danh') : (isEn ? 'Take attendance' : 'Điểm danh ca này')}</span>
-                        </button>
-                      </div>
-                    </article>
-                  );
-                })}
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="flex items-center gap-2">
+                              <span className="font-chivo font-black text-slate-900">{s.timeSlot}</span>
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border ${timeOfDay.badge}`}>
+                                {timeOfDay.label}
+                              </span>
+                            </div>
+                            <div className="text-[11px] text-slate-500 font-semibold mt-0.5">
+                              {s.dayOfWeek}, {formatDayMonth(new Date(s.sessionDate + 'T12:00:00'))}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-1.5 mb-1">
+                              <span className={`px-2 py-0.5 rounded text-[10px] font-bold border flex items-center gap-1 ${sportTheme.tagBg}`}>
+                                <span className="material-symbols-outlined text-xs">{sportTheme.icon}</span>
+                                <span>{translateSportName(s.sportName, isEn)}</span>
+                              </span>
+                            </div>
+                            <div className="font-chivo font-bold text-slate-900 line-clamp-1">
+                              {translateClassName(s.name, isEn)}
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 text-slate-600 whitespace-nowrap">
+                            <div className="flex items-center gap-1.5">
+                              <span className="material-symbols-outlined text-sm text-slate-400">stadium</span>
+                              <span>{translateRoomName(s.roomName, isEn)}</span>
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            <div className="font-bold text-slate-800">
+                              {s.enrolledCount}/{s.capacity} <span className="text-[10px] font-normal text-slate-500">({fillPercent}%)</span>
+                            </div>
+                            <div className="w-24 bg-slate-100 rounded-full h-1 mt-1 overflow-hidden">
+                              <div
+                                className={`h-full rounded-full ${fillPercent >= 100 ? 'bg-rose-500' : fillPercent >= 80 ? 'bg-amber-500' : 'bg-emerald-500'}`}
+                                style={{ width: `${Math.min(100, fillPercent)}%` }}
+                              />
+                            </div>
+                          </td>
+                          <td className="py-3 px-4 whitespace-nowrap">
+                            {attendable ? (
+                              <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1 w-fit shadow-xs">
+                                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                                <span>{isEn ? '⚡ Ready' : '⚡ Sẵn sàng'}</span>
+                              </span>
+                            ) : (
+                              <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold border flex items-center gap-1 w-fit ${statusInfo.badge}`}>
+                                <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dot}`}></span>
+                                <span>{statusInfo.label}</span>
+                              </span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right whitespace-nowrap">
+                            <button
+                              type="button"
+                              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all inline-flex items-center gap-1.5 shadow-xs ${
+                                isSelected
+                                  ? 'bg-red-600 text-white shadow-red-500/20'
+                                  : attendable
+                                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-emerald-600/20'
+                                    : 'bg-slate-900 hover:bg-red-600 text-white'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-sm">
+                                {isSelected ? 'check' : attendable ? 'fact_check' : 'visibility'}
+                              </span>
+                              <span>
+                                {isSelected
+                                  ? (isEn ? 'Taking attendance' : 'Đang điểm danh')
+                                  : attendable
+                                    ? (isEn ? 'Roll-call' : 'Điểm danh ngay')
+                                    : (isEn ? 'Select' : 'Chọn ca')}
+                              </span>
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
               </div>
             )}
           </div>

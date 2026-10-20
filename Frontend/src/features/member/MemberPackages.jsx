@@ -9,6 +9,95 @@ import { openPaymentCheckout } from '../../services/paymentCheckout.js';
 import { formatMemberDate } from './memberOverview.js';
 import { translatePackageName } from '../../services/i18nHelper.js';
 
+const PACKAGE_PERKS = {
+  basic: {
+    vi: [
+      'Tập luyện 1 bộ môn tự chọn (Gym / Bơi lội / Cầu lông / Yoga)',
+      'Tủ đồ locker cá nhân & phòng tắm nóng lạnh tiêu chuẩn',
+      'Đặt lịch học & điểm danh QR qua ứng dụng di động',
+      'Thời hạn rèn luyện tiêu chuẩn 30 ngày'
+    ],
+    en: [
+      'Access to 1 elective sport (Gym / Swimming / Badminton / Yoga)',
+      'Personal locker & standard hot-water shower facilities',
+      'Class scheduling & QR code check-in via mobile app',
+      'Standard 30-day training duration'
+    ]
+  },
+  pro: {
+    vi: [
+      'Lựa chọn 3 bộ môn kết hợp (Gym + Bơi lội + Cầu lông/Yoga)',
+      'Tặng 1 buổi đo và phân tích thể trạng InBody 770 chuyên sâu',
+      'Tham gia lớp rèn luyện thể lực nhóm chuyên biệt',
+      'Quyền đổi và bảo lưu lịch tập linh hoạt trước 24 giờ'
+    ],
+    en: [
+      'Multi-sport combination of 3 sports (Gym + Swim + Badminton/Yoga)',
+      'Complimentary InBody 770 comprehensive body composition test',
+      'Access to dedicated group functional fitness classes',
+      'Flexible reschedule & freeze rights 24h in advance'
+    ]
+  },
+  elite: {
+    vi: [
+      'Toàn quyền tập luyện 6 bộ môn thể thao cao cấp đa năng',
+      'Sử dụng không giới hạn phòng xông hơi Sauna & Bể sục Jacuzzi',
+      'Ưu tiên đặt sân thi đấu và làn bơi riêng vào khung giờ cao điểm',
+      '2 buổi tư vấn dinh dưỡng & phác đồ thể lực cùng HLV Pro'
+    ],
+    en: [
+      'All-inclusive training across 6 premium athletic sports',
+      'Unlimited access to Himalayan Sauna & Hydrotherapy Jacuzzi',
+      'Priority court & private lane booking during peak hours',
+      '2 private consultations for nutrition & workout plan with Pro Coach'
+    ]
+  },
+  olympic: {
+    vi: [
+      'Toàn quyền sử dụng 15 bộ môn và 8 sàn thi đấu Olympic quốc tế',
+      'Không giới hạn số buổi tập và thời gian trong suốt 365 ngày',
+      'Đặc quyền phòng VIP Lounge, khăn tập cao cấp & đồ uống thể thao',
+      'Ưu tiên đặt lịch số 1, quyền bảo lưu gói tập lên đến 60 ngày'
+    ],
+    en: [
+      'Unlimited all-access to 15 Olympic sports & 8 international courts',
+      'Unlimited sessions and hours throughout 365 days',
+      'VIP Lounge access, complimentary premium towels & sports drinks',
+      'Tier-1 booking priority and up to 60 days membership freeze'
+    ]
+  }
+};
+
+function getPackagePerks(pkg, isEn = false) {
+  if (Array.isArray(pkg?.features) && pkg.features.length > 0) {
+    return pkg.features;
+  }
+  const name = (pkg?.name || '').toLowerCase();
+  const lang = isEn ? 'en' : 'vi';
+
+  if (name.includes('olympic') || name.includes('all-access') || pkg?.durationDays >= 365) {
+    return PACKAGE_PERKS.olympic[lang];
+  }
+  if (name.includes('elite') || pkg?.durationDays >= 180) {
+    return PACKAGE_PERKS.elite[lang];
+  }
+  if (name.includes('pro') || pkg?.durationDays >= 90) {
+    return PACKAGE_PERKS.pro[lang];
+  }
+  return PACKAGE_PERKS.basic[lang];
+}
+
+function getMonthlyEquivalent(price, durationDays, isEn = false) {
+  if (!price || !durationDays) return null;
+  if (durationDays === 30) {
+    const perDay = Math.round(price / 30);
+    return isEn ? `~${perDay.toLocaleString()}đ / day` : `~${perDay.toLocaleString()}đ / ngày`;
+  }
+  const months = Math.round(durationDays / 30);
+  const perMonth = Math.round(price / months);
+  return isEn ? `~${perMonth.toLocaleString()}đ / month` : `~${perMonth.toLocaleString()}đ / tháng`;
+}
+
 export function MemberPackages() {
   const { currentUser, refreshUser } = useAuth();
   const { language } = useLanguage();
@@ -104,7 +193,6 @@ export function MemberPackages() {
       if (!res.paymentUrl) throw new Error(isEn ? 'Backend did not return payment URL.' : 'Backend không trả về địa chỉ thanh toán.');
       if (checkout.navigate(res.paymentUrl)) setModalOpen(false);
     } catch (err) {
-      // An earlier API response must not close a checkout opened after it.
       if (checkout && checkoutRef.current !== checkout) return;
       checkoutRef.current?.dispose();
       checkoutRef.current = null;
@@ -130,58 +218,83 @@ export function MemberPackages() {
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
-      {/* Header */}
-      <div>
-        <span className="font-chivo text-xs font-bold uppercase tracking-wider text-[#2D6A4F] dark:text-[#81B29A]">
-          SUBSCRIBE / RENEW PACKAGE
-        </span>
-        <h1 className="font-chivo text-2xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
-          {isEn ? 'Subscribe & Renew Membership Online' : 'Đăng Ký & Gia Hạn Gói Tập Trực Tuyến'}
-        </h1>
-        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-          {isEn ? 'Choose the training package that fits your fitness goals. Instant online activation.' : 'Lựa chọn gói rèn luyện phù hợp với mục tiêu thể lực của bạn. Kích hoạt trực tuyến tức thì.'}
-        </p>
+      {/* Page Header */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-slate-800">
+        <div className="space-y-1">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] text-[11px] font-bold uppercase tracking-widest border border-[#81B29A]/30">
+            <span className="w-2 h-2 rounded-full bg-[#2D6A4F] dark:bg-[#81B29A] animate-pulse" />
+            {isEn ? 'Olympic Membership & Plans' : 'Gói Tập & Thẻ Hội Viên Olympic'}
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-chivo">
+            {isEn ? 'Subscribe & Renew Membership Online' : 'Đăng Ký & Gia Hạn Gói Tập Trực Tuyến'}
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
+            {isEn
+              ? 'Select the optimal training curriculum for your personal fitness goals. Instant automated online activation.'
+              : 'Lựa chọn gói rèn luyện phù hợp với mục tiêu thể lực của bạn. Thanh toán bảo mật và kích hoạt trực tuyến tức thì.'}
+          </p>
+        </div>
+
+        {/* Trust Badges */}
+        <div className="hidden lg:flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 shrink-0">
+          <span className="flex items-center gap-1 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
+            <span>{isEn ? 'VNPay / MoMo Secure' : 'Cổng bảo mật VNPay / MoMo'}</span>
+          </span>
+          <span className="flex items-center gap-1 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
+            <span className="material-symbols-outlined text-[16px] text-amber-500">bolt</span>
+            <span>{isEn ? 'Instant Activation' : 'Kích hoạt ngay'}</span>
+          </span>
+        </div>
       </div>
 
       {/* Pending Invoices Warning Banner */}
       {pendingInvoices.length > 0 && (
-        <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/50 text-amber-900 dark:text-amber-200 space-y-3 shadow-sm">
+        <div className="p-4 sm:p-5 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-300 dark:border-amber-800/60 text-amber-900 dark:text-amber-200 space-y-3 shadow-sm">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[22px]">pending_actions</span>
+            <span className="material-symbols-outlined text-amber-600 dark:text-amber-400 text-[24px]">pending_actions</span>
             <span className="font-chivo font-black text-sm uppercase tracking-wide">
-              {isEn ? 'You have pending invoices' : 'Bạn có hóa đơn chờ thanh toán'}
+              {isEn ? 'You Have Pending Invoices Awaiting Payment' : 'Bạn Có Hóa Đơn Đang Chờ Thanh Toán'}
             </span>
           </div>
-          <p className="text-xs text-amber-800 dark:text-amber-300">
-            {isEn ? 'If you initiated registration without completing payment, you can continue payment or cancel the invoice to choose another package.' : 'Nếu bạn đã lỡ bấm đăng ký mà chưa thanh toán, bạn có thể tiếp tục thanh toán hoặc hủy hóa đơn để chọn gói tập khác.'}
+          <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
+            {isEn
+              ? 'If you initiated a subscription without completing payment, you can resume payment immediately or cancel the pending invoice to pick a new tier.'
+              : 'Nếu bạn đã tạo yêu cầu đăng ký trước đó nhưng chưa hoàn tất giao dịch, bạn có thể tiếp tục thanh toán hoặc hủy hóa đơn để chọn gói tập khác.'}
           </p>
-          <div className="space-y-2">
+          <div className="space-y-2 pt-1">
             {pendingInvoices.map(inv => {
               const matchedPkg = packages.find(p => p.id === inv.packageId);
               return (
-                <div key={inv.invoiceNumber} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 rounded-lg border border-amber-200 dark:border-amber-800/40">
-                  <div className="text-xs">
-                    <span className="font-bold text-slate-800 dark:text-white">{isEn ? 'Package:' : 'Gói:'} {translatePackageName(inv.packageName, isEn)}</span>
-                    <span className="text-slate-400 mx-1.5">•</span>
-                    <span className="font-black text-[#E07A5F] font-chivo">{inv.amount?.toLocaleString()} VNĐ</span>
-                    <span className="text-slate-400 mx-1.5">•</span>
-                    <span className="text-slate-500 dark:text-slate-400 font-mono">{isEn ? 'Code:' : 'Mã:'} {inv.invoiceNumber}</span>
+                <div key={inv.invoiceNumber} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-amber-200 dark:border-amber-800/40 shadow-2xs">
+                  <div className="text-xs space-y-0.5">
+                    <div className="font-black text-slate-900 dark:text-white text-sm">
+                      {isEn ? 'Package: ' : 'Gói: '}{translatePackageName(inv.packageName, isEn)}
+                    </div>
+                    <div className="text-slate-500 dark:text-slate-400 flex items-center gap-2">
+                      <span className="font-bold text-[#E07A5F] font-chivo text-xs">{inv.amount?.toLocaleString()} VNĐ</span>
+                      <span>•</span>
+                      <span className="font-mono bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded text-[11px] text-slate-700 dark:text-slate-300">
+                        {inv.invoiceNumber}
+                      </span>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 shrink-0">
                     <button
                       type="button"
                       onClick={() => handleCancelPending(inv.invoiceNumber)}
                       disabled={cancelling}
-                      className="px-3 py-1.5 text-xs font-bold font-chivo uppercase rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                      className="px-3 py-2 text-xs font-bold font-chivo uppercase rounded-xl border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
                     >
-                      {cancelling ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel This Invoice' : 'Hủy Hóa Đơn Này')}
+                      {cancelling ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel Invoice' : 'Hủy Hóa Đơn')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleOpenCheckout(matchedPkg || { id: inv.packageId, name: inv.packageName, price: inv.amount, durationDays: inv.durationDays }, inv.invoiceNumber)}
-                      className="px-3.5 py-1.5 text-xs font-bold font-chivo uppercase rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow transition"
+                      className="px-4 py-2 text-xs font-bold font-chivo uppercase rounded-xl bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition cursor-pointer flex items-center gap-1.5"
                     >
-                      {isEn ? 'Continue Payment' : 'Tiếp Tục Thanh Toán'}
+                      <span>{isEn ? 'Continue Payment' : 'Tiếp Tục Thanh Toán'}</span>
+                      <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
                     </button>
                   </div>
                 </div>
@@ -191,125 +304,259 @@ export function MemberPackages() {
         </div>
       )}
 
-      {/* Current Package Reminder */}
-      <div className="p-5 rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] text-white border border-white/10 shadow-lg hover-lift flex flex-col sm:flex-row sm:items-center justify-between gap-4 relative overflow-hidden transition-all">
-        <div>
-          <span className="text-[10px] uppercase font-bold text-[#F2CC8F] tracking-widest flex items-center gap-1.5">
-            <span className="w-1.5 h-1.5 rounded-full bg-[#81B29A] animate-pulse"></span>
-            {isEn ? 'Your current active package:' : 'Gói tập hiện tại của bạn:'}
-          </span>
-          <div className="font-chivo text-xl font-black mt-0.5">{translatePackageName(currentUser?.packageName, isEn)}</div>
+      {/* Current Active Package Card (Olympic Pass Membership Visual) */}
+      <div className="p-6 rounded-3xl bg-gradient-to-br from-[#1E2235] via-[#2B2D42] to-[#151724] text-white border border-white/10 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
+        {/* Ambient Glows */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
+        <div className="pointer-events-none absolute left-1/3 -bottom-16 w-48 h-48 rounded-full bg-[#81B29A]/15 blur-3xl" />
+
+        <div className="relative z-10 flex items-start gap-4">
+          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#81B29A] to-[#F2CC8F] p-0.5 shadow-md shrink-0 flex items-center justify-center">
+            <div className="w-full h-full rounded-[14px] bg-[#1E2235] flex items-center justify-center">
+              <span className="material-symbols-outlined text-[24px] text-[#F2CC8F]">workspace_premium</span>
+            </div>
+          </div>
+
+          <div className="space-y-1">
+            <div className="flex items-center gap-2">
+              <span className="text-[11px] uppercase font-bold text-[#F2CC8F] tracking-widest flex items-center gap-1.5">
+                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                {isEn ? 'Active Membership Tier' : 'Gói Tập Hiện Tại Đang Sử Dụng'}
+              </span>
+              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+                ACTIVE
+              </span>
+            </div>
+            <h2 className="text-xl sm:text-2xl font-black font-chivo text-white">
+              {translatePackageName(currentUser?.packageName, isEn) || (isEn ? 'No active package' : 'Chưa có gói tập')}
+            </h2>
+            <p className="text-xs text-slate-300">
+              {isEn ? 'Full privilege rights apply to all enrolled class schedules & center facilities.' : 'Đặc quyền hội viên áp dụng cho toàn bộ lịch học và dịch vụ thể thao của trung tâm.'}
+            </p>
+          </div>
         </div>
-        <div className="text-xs text-slate-300 bg-white/10 px-3.5 py-1.5 rounded-xl border border-white/10 backdrop-blur-sm">
-          {isEn ? 'Expiry date:' : 'Hạn sử dụng:'} <strong className="text-white ml-1">{formatMemberDate(currentUser?.packageExpiry, isEn)}</strong>
+
+        <div className="relative z-10 flex items-center gap-3 self-start md:self-center shrink-0">
+          <div className="text-xs text-slate-300 bg-white/10 px-4 py-2.5 rounded-2xl border border-white/10 backdrop-blur-md flex items-center gap-2.5">
+            <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">event_available</span>
+            <div>
+              <span className="text-[10px] text-slate-400 uppercase tracking-wider block">{isEn ? 'Valid Until' : 'Thời hạn sử dụng'}</span>
+              <strong className="text-white text-sm font-chivo font-black">{formatMemberDate(currentUser?.packageExpiry, isEn) || (isEn ? 'N/A' : 'Chưa kích hoạt')}</strong>
+            </div>
+          </div>
         </div>
       </div>
 
-      {currentUser?.scheduledSubscriptions?.length > 0 && <section aria-label={isEn ? "Paid packages awaiting activation" : "Gói đã thanh toán chờ hiệu lực"} className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50 dark:bg-emerald-950/20 p-4 space-y-2">
-        <h2 className="font-bold text-sm text-emerald-900 dark:text-emerald-200">{isEn ? 'Paid packages, awaiting start date' : 'Gói đã thanh toán, chờ ngày bắt đầu'}</h2>
-        <p className="text-sm text-emerald-800 dark:text-emerald-300">{isEn ? 'New package queued sequentially after your current package. No extra payment required.' : 'Gói mới được xếp nối tiếp sau gói hiện tại. Bạn chưa cần thanh toán lại.'}</p>
-        {currentUser.scheduledSubscriptions.map(subscription => <p key={subscription.subscriptionId} className="text-sm text-emerald-900 dark:text-emerald-200">
-          <strong>{translatePackageName(subscription.packageName, isEn)}</strong> · {formatMemberDate(subscription.startDate, isEn)} – {formatMemberDate(subscription.endDate, isEn)}
-        </p>)}
-      </section>}
+      {/* Queued / Scheduled Package Banner */}
+      {currentUser?.scheduledSubscriptions?.length > 0 && (
+        <div className="rounded-2xl border border-emerald-200 dark:border-emerald-800/60 bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/20 dark:via-teal-950/20 dark:to-emerald-950/20 p-5 shadow-xs space-y-3">
+          <div className="flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-xl bg-emerald-600 text-white flex items-center justify-center shrink-0 shadow-xs">
+              <span className="material-symbols-outlined text-[18px]">update</span>
+            </div>
+            <div>
+              <h2 className="font-bold text-sm text-emerald-950 dark:text-emerald-200 font-chivo">
+                {isEn ? 'Paid Package Queued For Seamless Continuation' : 'Gói Đã Thanh Toán • Chờ Ngày Kích Hoạt Nối Tiếp'}
+              </h2>
+              <p className="text-xs text-emerald-800 dark:text-emerald-300">
+                {isEn
+                  ? 'Your upcoming cycle is paid and will activate automatically the moment your current tier expires.'
+                  : 'Gói tập mới sẽ tự động kích hoạt liền mạch ngay sau khi gói hiện tại kết thúc mà không bị gián đoạn.'}
+              </p>
+            </div>
+          </div>
 
-      {/* Package Tier Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {packages.map(pkg => {
-          const isCurrent = currentUser?.packageId === pkg.id && currentUser?.packageStatus === 'ACTIVE';
-          const pendingInv = pendingInvoices.find(p => p.packageId === pkg.id);
-          const isVip = pkg.badge === 'VIP OLYMPIC' || (pkg.name && pkg.name.toLowerCase().includes('vip'));
-          return (
-            <div
-              key={pkg.id}
-              className={`bg-white dark:bg-slate-900 rounded-2xl border p-6 flex flex-col justify-between shadow-sm hover:shadow-xl hover-lift transition-all relative ${
-                pendingInv
-                  ? 'border-amber-400 ring-2 ring-amber-400/20'
-                  : isVip
-                  ? 'border-[#F2CC8F] ring-2 ring-[#F2CC8F]/25 dark:border-[#F2CC8F]/40'
-                  : 'border-slate-200 dark:border-slate-800'
-              }`}
-            >
-              {pendingInv ? (
-                <span className="absolute top-4 right-4 px-2 py-0.5 rounded bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 font-chivo text-[10px] font-black uppercase tracking-wider border border-amber-300 dark:border-amber-800">
-                  {isEn ? 'Pending Payment' : 'Chờ Thanh Toán'}
-                </span>
-              ) : pkg.badge ? (
-                <span className={`absolute top-4 right-4 px-2.5 py-0.5 rounded font-chivo text-[10px] font-black uppercase tracking-wider ${
-                  isVip ? 'athletic-tag-gold' : 'athletic-tag-sage'
-                }`}>
-                  {pkg.badge}
-                </span>
-              ) : null}
-
-              <div>
-                <div className="text-[10px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500">
-                  {pkg.durationDays} {isEn ? 'Days of Training' : 'Ngày rèn luyện'}
-                </div>
-                <h3 className="font-chivo text-lg font-black text-slate-900 dark:text-white leading-tight mt-1">
-                  {translatePackageName(pkg.name, isEn)}
-                </h3>
-
-                <div className="mt-4 mb-4">
-                  <span className="font-chivo text-3xl font-black text-slate-900 dark:text-white">
-                    {pkg.price.toLocaleString()}đ
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-1">
+            {currentUser.scheduledSubscriptions.map(subscription => (
+              <div
+                key={subscription.subscriptionId}
+                className="bg-white dark:bg-slate-900 p-3.5 rounded-xl border border-emerald-200 dark:border-emerald-800/40 flex items-center justify-between text-xs shadow-2xs"
+              >
+                <div className="space-y-0.5">
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 block">
+                    {isEn ? 'Upcoming Cycle' : 'Chu kỳ kế tiếp'}
                   </span>
-                  <span className="text-xs text-slate-500 dark:text-slate-400 font-medium ml-1">{isEn ? '/ package' : '/ gói'}</span>
+                  <strong className="text-slate-900 dark:text-white font-black text-sm">
+                    {translatePackageName(subscription.packageName, isEn)}
+                  </strong>
+                </div>
+                <div className="text-right text-[11px] font-mono text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-200 dark:border-slate-700">
+                  {formatMemberDate(subscription.startDate, isEn)} ➜ {formatMemberDate(subscription.endDate, isEn)}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Package Tier Cards Grid */}
+      <div className="space-y-3">
+        <div className="flex items-center justify-between">
+          <h2 className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 font-chivo flex items-center gap-2">
+            <span className="material-symbols-outlined text-[18px] text-[#2D6A4F] dark:text-[#81B29A]">fitness_center</span>
+            <span>{isEn ? 'Available Membership Tiers' : 'Bảng Giá Các Gói Rèn Luyện & Đào Tạo'}</span>
+          </h2>
+          <span className="text-xs text-slate-500 dark:text-slate-400">
+            {packages.length} {isEn ? 'tiers available' : 'gói tập tiêu chuẩn'}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 items-stretch">
+          {packages.map(pkg => {
+            const isCurrent = currentUser?.packageId === pkg.id && currentUser?.packageStatus === 'ACTIVE';
+            const isQueued = currentUser?.scheduledSubscriptions?.some(
+              s => s.packageId === pkg.id || (s.packageName && s.packageName === pkg.name)
+            );
+            const pendingInv = pendingInvoices.find(p => p.packageId === pkg.id);
+            const isVip = pkg.badge === 'VIP OLYMPIC' || (pkg.name && (pkg.name.toLowerCase().includes('olympic') || pkg.name.toLowerCase().includes('vip')));
+            const isPro = pkg.name && pkg.name.toLowerCase().includes('pro');
+            const perks = getPackagePerks(pkg, isEn);
+            const monthlyEquiv = getMonthlyEquivalent(pkg.price, pkg.durationDays, isEn);
+
+            return (
+              <div
+                key={pkg.id}
+                className={`bg-white dark:bg-slate-900 rounded-3xl p-6 flex flex-col justify-between shadow-xs hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative border ${
+                  isQueued
+                    ? 'border-emerald-400 ring-2 ring-emerald-400/25 dark:border-emerald-500'
+                    : isCurrent
+                    ? 'border-[#2D6A4F] ring-2 ring-[#2D6A4F]/20 dark:border-[#81B29A]'
+                    : isVip
+                    ? 'border-[#F2CC8F] ring-2 ring-[#F2CC8F]/30 dark:border-[#F2CC8F]/50 bg-gradient-to-b from-[#FFFDF9] to-white dark:from-slate-900 dark:to-slate-900'
+                    : 'border-slate-200 dark:border-slate-800'
+                }`}
+              >
+                {/* Top Badge Indicators */}
+                <div className="absolute -top-3 left-6 right-6 flex items-center justify-between pointer-events-none">
+                  {isQueued ? (
+                    <span className="px-3 py-1 rounded-full bg-emerald-600 text-white font-chivo text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">check_circle</span>
+                      <span>{isEn ? 'QUEUED' : 'ĐÃ ĐẶT NỐI TIẾP'}</span>
+                    </span>
+                  ) : isCurrent ? (
+                    <span className="px-3 py-1 rounded-full bg-[#2D6A4F] text-white font-chivo text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      <span>{isEn ? 'CURRENT ACTIVE' : 'GÓI ĐANG DÙNG'}</span>
+                    </span>
+                  ) : isVip ? (
+                    <span className="px-3 py-1 rounded-full bg-gradient-to-r from-[#D4A373] via-[#F2CC8F] to-[#E07A5F] text-[#1E2235] font-chivo text-[10px] font-black uppercase tracking-wider shadow-sm flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px]">hotel_class</span>
+                      <span>{isEn ? 'BEST VALUE • OLYMPIC' : '★ TOÀN NĂNG OLYMPIC'}</span>
+                    </span>
+                  ) : isPro ? (
+                    <span className="px-3 py-1 rounded-full bg-[#81B29A] text-white font-chivo text-[10px] font-black uppercase tracking-wider shadow-sm">
+                      {isEn ? 'MOST POPULAR' : 'PHỔ BIẾN NHẤT'}
+                    </span>
+                  ) : null}
+
+                  {pendingInv && (
+                    <span className="ml-auto px-2 py-0.5 rounded bg-amber-500 text-white font-chivo text-[10px] font-black uppercase tracking-wider shadow-xs">
+                      {isEn ? 'PENDING' : 'CHỜ TT'}
+                    </span>
+                  )}
                 </div>
 
-                <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 text-xs text-slate-700 dark:text-slate-300 font-semibold mb-3 border border-slate-100 dark:border-slate-700">
-                  {isEn ? 'Applicable sports: ' : 'Môn áp dụng: '}{pkg.allowedSports === 15 ? (isEn ? 'Full access to 15 sports' : 'Toàn quyền 15 môn') : (isEn ? `${pkg.allowedSports} elective sports` : `${pkg.allowedSports} môn tự chọn`)}
-                </div>
+                {/* Card Content Top */}
+                <div className="pt-2">
+                  <div className="flex items-center justify-between text-[11px] font-bold uppercase tracking-widest text-slate-400 dark:text-slate-500 mb-1">
+                    <span>{pkg.durationDays} {isEn ? 'Days' : 'Ngày rèn luyện'}</span>
+                    {monthlyEquiv && (
+                      <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 normal-case font-chivo">
+                        {monthlyEquiv}
+                      </span>
+                    )}
+                  </div>
 
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4">
-                  {pkg.description}
-                </p>
+                  <h3 className="font-chivo text-xl font-black text-slate-900 dark:text-white leading-tight">
+                    {translatePackageName(pkg.name, isEn)}
+                  </h3>
 
-                {pkg.features && (
-                  <ul className="space-y-1.5 text-xs text-slate-500 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800 mb-6">
-                    {pkg.features.map((feat, idx) => (
-                      <li key={idx} className="flex items-start gap-1.5">
+                  {/* Price Block */}
+                  <div className="mt-3 mb-4 flex items-baseline gap-1">
+                    <span className="font-chivo text-3xl font-black text-slate-900 dark:text-white tracking-tight">
+                      {pkg.price.toLocaleString()}đ
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+                      {isEn ? '/ package' : '/ gói'}
+                    </span>
+                  </div>
+
+                  {/* Sport Allowance Pill */}
+                  <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/70 text-xs text-slate-700 dark:text-slate-300 font-bold mb-3.5 border border-slate-100 dark:border-slate-700 flex items-center gap-2">
+                    <span className="material-symbols-outlined text-[16px] text-blue-600 dark:text-blue-400">sports</span>
+                    <span>
+                      {isEn ? 'Applicable sports: ' : 'Môn áp dụng: '}
+                      <strong className="text-slate-900 dark:text-white">
+                        {pkg.allowedSports === 15 ? (isEn ? 'Full 15 Olympic Sports' : 'Toàn quyền 15 môn Olympic') : (isEn ? `${pkg.allowedSports} elective sports` : `${pkg.allowedSports} môn tự chọn`)}
+                      </strong>
+                    </span>
+                  </div>
+
+                  {/* Description */}
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed mb-4 min-h-[36px]">
+                    {pkg.description}
+                  </p>
+
+                  {/* Feature Checkmarks List */}
+                  <div className="pt-3 border-t border-slate-100 dark:border-slate-800 mb-6 space-y-2">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                      {isEn ? 'Included privileges:' : 'Đặc quyền bao gồm:'}
+                    </span>
+                    {perks.map((feat, idx) => (
+                      <div key={idx} className="flex items-start gap-2 text-xs text-slate-700 dark:text-slate-300 leading-snug">
                         <span className="material-symbols-outlined text-[#81B29A] text-[16px] shrink-0 mt-0.5">check_circle</span>
                         <span>{feat}</span>
-                      </li>
+                      </div>
                     ))}
-                  </ul>
-                )}
-              </div>
-
-              {pendingInv ? (
-                <div className="space-y-2">
-                  <button
-                    onClick={() => handleOpenCheckout(pkg, pendingInv.invoiceNumber)}
-                    className="w-full py-2.5 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition-all"
-                  >
-                    {isEn ? 'Continue Payment' : 'Tiếp Tục Thanh Toán'}
-                  </button>
-                  <button
-                    onClick={() => handleCancelPending(pendingInv.invoiceNumber)}
-                    disabled={cancelling}
-                    className="w-full py-1.5 rounded-xl font-chivo text-[11px] font-bold uppercase tracking-wider border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all"
-                  >
-                    {cancelling ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel This Invoice' : 'Hủy Hóa Đơn Này')}
-                  </button>
+                  </div>
                 </div>
-              ) : (
-                <button
-                  onClick={() => handleOpenCheckout(pkg)}
-                  className={`w-full py-2.5 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider transition-all shadow-sm ${
-                    isCurrent
-                      ? 'bg-[#2D6A4F] text-white hover:bg-[#1B4332]'
-                      : isVip
-                      ? 'bg-gradient-to-r from-[#1E2235] to-[#2B2D42] text-[#F2CC8F] border border-[#F2CC8F]/40 hover:brightness-110'
-                      : 'bg-[#1E2235] hover:bg-[#2B2D42] text-white dark:bg-[#81B29A] dark:text-slate-950 dark:hover:bg-[#6FA088]'
-                  }`}
-                >
-                  {isCurrent ? (isEn ? 'Renew Another Cycle' : 'Gia Hạn Thêm Chu Kỳ') : (isEn ? 'Subscribe Now' : 'Đăng Ký Gói Này')}
-                </button>
-              )}
-            </div>
-          );
-        })}
+
+                {/* Card Button Bottom */}
+                <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                  {pendingInv ? (
+                    <div className="space-y-2">
+                      <button
+                        onClick={() => handleOpenCheckout(pkg, pendingInv.invoiceNumber)}
+                        className="w-full py-3 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider bg-amber-600 hover:bg-amber-700 text-white shadow-sm transition-all cursor-pointer"
+                      >
+                        {isEn ? 'Continue Payment' : 'Tiếp Tục Thanh Toán'}
+                      </button>
+                      <button
+                        onClick={() => handleCancelPending(pendingInv.invoiceNumber)}
+                        disabled={cancelling}
+                        className="w-full py-2 rounded-xl font-chivo text-[11px] font-bold uppercase tracking-wider border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition-all cursor-pointer"
+                      >
+                        {cancelling ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel Invoice' : 'Hủy Hóa Đơn Này')}
+                      </button>
+                    </div>
+                  ) : isQueued ? (
+                    <button
+                      disabled
+                      className="w-full py-3 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider bg-emerald-100 dark:bg-emerald-950/50 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 cursor-default flex items-center justify-center gap-1.5"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">check</span>
+                      <span>{isEn ? 'Queued Sequentially' : 'Đã Đặt Nối Tiếp'}</span>
+                    </button>
+                  ) : (
+                    <button
+                      onClick={() => handleOpenCheckout(pkg)}
+                      className={`w-full py-3 rounded-xl font-chivo text-xs font-bold uppercase tracking-wider transition-all duration-200 shadow-sm cursor-pointer flex items-center justify-center gap-1.5 ${
+                        isCurrent
+                          ? 'bg-[#2D6A4F] text-white hover:bg-[#1B4332] hover:shadow-md'
+                          : isVip
+                          ? 'bg-gradient-to-r from-[#1E2235] via-[#2B2D42] to-[#1E2235] text-[#F2CC8F] hover:text-white border border-[#F2CC8F]/50 hover:border-[#F2CC8F] hover:shadow-lg'
+                          : 'bg-[#1E2235] hover:bg-[#2B2D42] text-white hover:shadow-md dark:bg-[#81B29A] dark:text-slate-950 dark:hover:bg-[#6FA088]'
+                      }`}
+                    >
+                      <span>{isCurrent ? (isEn ? 'Renew Another Cycle' : 'Gia Hạn Thêm Chu Kỳ') : (isEn ? 'Subscribe Now' : 'Đăng Ký Gói Này')}</span>
+                      <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                    </button>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
       </div>
 
       {/* Checkout Modal */}
@@ -317,6 +564,7 @@ export function MemberPackages() {
         isOpen={modalOpen}
         onClose={() => setModalOpen(false)}
         title={activeInvoiceNumber ? (isEn ? "Continue Paying Pending Invoice" : "Tiếp Tục Thanh Toán Hóa Đơn Chờ") : (isEn ? "Online Membership Subscription" : "Thanh Toán Trực Tuyến Gói Tập")}
+        maxWidth="max-w-lg"
       >
         {selectedPkg && (
           <div className="space-y-4">
@@ -327,63 +575,71 @@ export function MemberPackages() {
                   type="button"
                   onClick={() => handleCancelPending(activeInvoiceNumber)}
                   disabled={cancelling}
-                  className="text-red-600 font-bold hover:underline"
+                  className="text-red-600 font-bold hover:underline cursor-pointer"
                 >
                   {cancelling ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel this invoice' : 'Hủy hóa đơn này')}
                 </button>
               </div>
             )}
 
-            <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 text-xs space-y-2">
-              <div className="flex justify-between">
+            {/* Selected Package Details Box */}
+            <div className="p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs space-y-2.5">
+              <div className="flex justify-between items-center">
                 <span className="text-slate-500">{isEn ? 'Selected package:' : 'Gói đăng ký:'}</span>
-                <span className="font-bold text-slate-900">{translatePackageName(selectedPkg.name, isEn)}</span>
+                <span className="font-bold text-slate-900 text-sm">{translatePackageName(selectedPkg.name, isEn)}</span>
               </div>
-              <div className="flex justify-between">
+              <div className="flex justify-between items-center">
                 <span className="text-slate-500">{isEn ? 'Duration:' : 'Thời hạn sử dụng:'}</span>
-                <span className="font-bold text-slate-900">{selectedPkg.durationDays} {isEn ? 'days' : 'ngày'}</span>
+                <span className="font-bold text-slate-900">{selectedPkg.durationDays} {isEn ? 'days' : 'ngày rèn luyện'}</span>
               </div>
-              <div className="flex justify-between pt-2 border-t border-slate-200 dark:border-slate-700 text-sm font-black">
-                <span>{isEn ? 'Total payment:' : 'Số tiền thanh toán:'}</span>
-                <span className="text-[#E07A5F] font-chivo">{selectedPkg.price?.toLocaleString()} VNĐ</span>
+              <div className="flex justify-between items-center pt-2.5 border-t border-slate-200 dark:border-slate-700">
+                <span className="text-slate-700 font-bold">{isEn ? 'Total payment amount:' : 'Tổng số tiền thanh toán:'}</span>
+                <span className="text-xl font-black text-[#E07A5F] font-chivo">{selectedPkg.price?.toLocaleString()} VNĐ</span>
               </div>
             </div>
 
+            {/* Payment Method Selector */}
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
-                {isEn ? 'Select payment gateway *' : 'Chọn cổng thanh toán *'}
+                {isEn ? 'Select payment gateway *' : 'Chọn cổng thanh toán trực tuyến *'}
               </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-2 gap-3">
                 {['VNPAY', 'MOMO'].map(m => (
                   <button
                     key={m}
                     type="button"
                     onClick={() => setPaymentMethod(m)}
-                    className={`p-3 rounded-xl border text-xs font-chivo font-bold uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1 ${
+                    className={`p-3.5 rounded-2xl border text-xs font-chivo font-bold uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer ${
                       paymentMethod === m
                         ? 'bg-[#1E2235] text-white border-[#1E2235] shadow-md ring-2 ring-[#81B29A]/60'
                         : 'border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[20px]">
+                    <span className="material-symbols-outlined text-[24px]">
                       {m === 'MOMO' ? 'account_balance_wallet' : 'credit_card'}
                     </span>
-                    <span>{m}</span>
+                    <span>{m === 'VNPAY' ? 'Cổng VNPAY (ATM/QR)' : 'Ví Điện Tử MoMo'}</span>
                   </button>
                 ))}
               </div>
             </div>
 
-            <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2 border border-blue-100 dark:border-blue-900/50">
-              <span className="material-symbols-outlined text-[18px] shrink-0 mt-0.5">verified</span>
-              <span>{isEn ? 'Payment opens in a separate window. When cancelled or completed, you return to your active packages page. Membership is activated once payment confirmation is received.' : 'Thanh toán mở trong cửa sổ riêng. Khi hủy hoặc hoàn tất, bạn quay lại trang gói tập đang đăng nhập. Thẻ tập được kích hoạt sau khi hệ thống xác nhận giao dịch.'}</span>
+            {/* Safe Payment Notice */}
+            <div className="p-3.5 rounded-2xl bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2.5 border border-blue-100 dark:border-blue-900/50">
+              <span className="material-symbols-outlined text-[20px] text-blue-600 shrink-0 mt-0.5">verified_user</span>
+              <p className="leading-relaxed">
+                {isEn
+                  ? 'Payment window will open in a secure tab. You will be redirected back upon completion, and your membership will activate immediately.'
+                  : 'Cửa sổ thanh toán sẽ mở trong tab an toàn. Hệ thống tự động ghi nhận và kích hoạt thời hạn thẻ tập ngay sau khi nhận phản hồi từ cổng thanh toán.'}
+              </p>
             </div>
 
+            {/* Actions */}
             <div className="flex justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 onClick={() => setModalOpen(false)}
-                className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+                className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer"
               >
                 {isEn ? 'Close' : 'Đóng'}
               </button>
@@ -391,9 +647,19 @@ export function MemberPackages() {
                 type="button"
                 onClick={handleConfirmSubscribe}
                 disabled={processing}
-                className="px-6 py-2.5 text-xs font-bold font-chivo uppercase tracking-wider rounded-lg bg-[#2D6A4F] hover:bg-[#1B4332] text-white shadow-md transition-colors"
+                className="px-6 py-2.5 text-xs font-bold font-chivo uppercase tracking-wider rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white shadow-md transition-all cursor-pointer flex items-center gap-1.5"
               >
-                {processing ? (isEn ? 'Connecting gateway...' : 'Đang kết nối cổng...') : (isEn ? 'Confirm Payment' : 'Xác Nhận Thanh Toán')}
+                {processing ? (
+                  <>
+                    <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
+                    <span>{isEn ? 'Connecting Gateway...' : 'Đang Kết Nối Cổng...'}</span>
+                  </>
+                ) : (
+                  <>
+                    <span className="material-symbols-outlined text-[16px]">lock</span>
+                    <span>{isEn ? 'Confirm & Pay' : 'Xác Nhận & Thanh Toán'}</span>
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -405,11 +671,13 @@ export function MemberPackages() {
         isOpen={conflictModalOpen}
         onClose={() => setConflictModalOpen(false)}
         title={isEn ? "Pending Invoice Exists For This Package" : "Đã Có Hóa Đơn Chờ Cho Gói Này"}
+        maxWidth="max-w-lg"
       >
         <div className="space-y-4">
-          <div className="p-4 rounded-xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-2">
+          <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-2">
             <p className="font-semibold text-slate-800 dark:text-white">
-              {isEn ? 'You have a pending invoice for package' : 'Bạn đang có một hóa đơn chờ thanh toán cho gói'} <strong>{translatePackageName(conflictData?.package?.name, isEn)}</strong>.
+              {isEn ? 'You have a pending invoice for package' : 'Bạn đang có một hóa đơn chờ thanh toán cho gói'}{' '}
+              <strong>{translatePackageName(conflictData?.package?.name, isEn)}</strong>.
             </p>
             {conflictData?.invoiceNumber && (
               <p className="text-slate-600 dark:text-slate-400">
@@ -425,7 +693,7 @@ export function MemberPackages() {
             <button
               type="button"
               onClick={() => setConflictModalOpen(false)}
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wider rounded-lg border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300"
+              className="px-4 py-2.5 text-xs font-bold uppercase tracking-wider rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 cursor-pointer"
             >
               {isEn ? 'Later' : 'Để Sau'}
             </button>
@@ -434,9 +702,9 @@ export function MemberPackages() {
                 type="button"
                 onClick={() => handleCancelPending(conflictData.invoiceNumber)}
                 disabled={cancelling}
-                className="px-4 py-2 text-xs font-bold font-chivo uppercase tracking-wider rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                className="px-4 py-2.5 text-xs font-bold font-chivo uppercase tracking-wider rounded-xl border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
               >
-                {cancelling ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel This Pending Invoice' : 'Hủy Hóa Đơn Chờ Này')}
+                {cancelling ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel This Invoice' : 'Hủy Hóa Đơn Chờ Này')}
               </button>
             )}
             <button
@@ -445,7 +713,7 @@ export function MemberPackages() {
                 setConflictModalOpen(false);
                 handleOpenCheckout(conflictData?.package, conflictData?.invoiceNumber);
               }}
-              className="px-5 py-2.5 text-xs font-bold font-chivo uppercase tracking-wider rounded-lg bg-[#2D6A4F] hover:bg-[#1B4332] text-white shadow transition"
+              className="px-5 py-2.5 text-xs font-bold font-chivo uppercase tracking-wider rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white shadow-sm transition cursor-pointer"
             >
               {isEn ? 'Continue Payment' : 'Tiếp Tục Thanh Toán'}
             </button>

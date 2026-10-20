@@ -168,7 +168,7 @@ export function TeachingSchedule() {
 
   const schedule = useTeachingSessions(60);
 
-  // Chế độ xem: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu) | 'grid' (Lưới thẻ)
+  // Chế độ xem: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu)
   const [viewMode, setViewMode] = useState('week');
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
@@ -524,16 +524,6 @@ export function TeachingSchedule() {
             >
               <span className="material-symbols-outlined text-[16px]">view_agenda</span>
               <span>{isEn ? 'Agenda' : 'Lịch Biểu'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">grid_view</span>
-              <span>{isEn ? 'Grid View' : 'Lưới Thẻ'}</span>
             </button>
           </div>
         </div>
@@ -1065,104 +1055,6 @@ export function TeachingSchedule() {
                     </div>
                   );
                 })
-              )}
-            </div>
-          )}
-
-          {/* --- D. CHẾ ĐỘ LƯỚI THẺ (RESPONSIVE CARDS GRID) --- */}
-          {viewMode === 'grid' && (
-            <div className="space-y-4">
-              {filteredSessions.length === 0 ? (
-                <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">
-                  <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">event_busy</span>
-                  <p>{isEn ? 'No teaching sessions found matching the current filters.' : 'Không có ca dạy nào phù hợp với bộ lọc hiện tại.'}</p>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredSessions.map(s => {
-                    const theme = getSportTheme(s.sportName, isEn);
-                    const statusInfo = STATUS_CONFIG[s.status] || STATUS_CONFIG.SCHEDULED;
-                    const percent = s.capacity > 0 ? Math.min(100, Math.round((s.enrolledCount / s.capacity) * 100)) : 0;
-                    const dayLabel = formatDayOfWeek(s.sessionDate, s.dayOfWeek);
-
-                    return (
-                      <article
-                        key={s.id}
-                        onClick={() => handleOpenDetail(s)}
-                        className="bg-white p-5 border border-slate-200 rounded-2xl space-y-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer relative flex flex-col justify-between"
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between gap-2 text-xs">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                              {theme.tag}
-                            </span>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusInfo.badgeClass}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
-                              {statusInfo.label}
-                            </span>
-                          </div>
-
-                          <h2 className="font-chivo font-black text-slate-900 text-base leading-snug">
-                            {translateClassName(s.name, isEn)}
-                          </h2>
-
-                          <div className="space-y-1.5 text-xs text-slate-600">
-                            <p className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[16px] text-[#81B29A]">calendar_today</span>
-                              <strong>{dayLabel} · {s.sessionDate}</strong>
-                            </p>
-                            <p className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[16px] text-slate-400">schedule</span>
-                              <span>{s.timeSlot}</span>
-                            </p>
-                            <p className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[16px] text-slate-400">meeting_room</span>
-                              <span>{translateRoomName(s.roomName, isEn)}</span>
-                            </p>
-                          </div>
-
-                          {/* Enrollment bar */}
-                          <div className="space-y-1 pt-1 border-t border-slate-100">
-                            <div className="flex justify-between text-xs font-bold text-slate-700">
-                              <span>
-                                {isEn
-                                  ? `Bookings: ${s.enrolledCount}/${s.capacity} students`
-                                  : `Đặt chỗ: ${s.enrolledCount}/${s.capacity} học viên`}
-                              </span>
-                              <span className="text-slate-500">{percent}%</span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${percent >= 100 ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Card actions */}
-                        <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 text-xs font-bold">
-                          <a
-                            href={`#/coach/members?classId=${s.classId}`}
-                            onClick={e => e.stopPropagation()}
-                            className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">group</span>
-                            <span>{isEn ? 'Students' : 'Học viên'}</span>
-                          </a>
-                          <a
-                            href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
-                            onClick={e => e.stopPropagation()}
-                            className="px-3.5 py-1.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white transition-colors flex items-center gap-1 shadow-xs font-bold"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">how_to_reg</span>
-                            <span>{isEn ? 'Attendance' : 'Điểm danh'}</span>
-                          </a>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
               )}
             </div>
           )}

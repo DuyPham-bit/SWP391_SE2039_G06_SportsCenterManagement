@@ -519,3 +519,79 @@ body.scms-simulated-fullscreen #root {
   overflow-x: hidden !important;
 }
 
+/* ─────────────────────────────────────────────────────────────
+   PRINT MEDIA STYLES (IN BÁO CÁO TRỰC TIẾP CHUẨN A4)
+───────────────────────────────────────────────────────────── */
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
+
+  /* Force exact background colors, gradients, and borders */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
+
+  /* Hide app navigation chrome, header, sidebar, footer, buttons, floating popups */
+  header,
+  aside,
+  footer,
+  nav,
+  .no-print,
+  #member-ai-chat-popup,
+  .member-ai-chat-popup,
+  [data-no-print="true"] {
+    display: none !important;
+  }
+
+  /* Reset body and layout to full paper width */
+  html, body {
+    background-color: #FAF8F5 !important;
+    color: #1E2235 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
+
+  #root, .min-h-screen {
+    background: transparent !important;
+    min-height: auto !important;
+  }
+
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
+
+  main > div {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* Avoid awkward page breaks across cards, charts, and table rows */
+  section,
+  .stat-card,
+  table,
+  tr,
+  svg,
+  .rounded-3xl,
+  .rounded-2xl {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
+
+  /* Prevent SVG or table horizontal overflow cutting off */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
+
+  /* Remove drop shadows for clean, crisp printing */
+  .shadow-xl, .shadow-lg, .shadow-md, .shadow-sm, .shadow-xs {
+    box-shadow: none !important;
+  }
+}

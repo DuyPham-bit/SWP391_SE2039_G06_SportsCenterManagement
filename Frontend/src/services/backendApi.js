@@ -190,7 +190,13 @@ export const authApi = {
     return loginAndLoad('auth/login', { email: email.trim(), password });
   },
 
-  async register({ fullName, email, phone, password }) {
+  async requestEmailVerification(email, { signal } = {}) {
+    return apiRequest('auth/request-email-verification', {
+      method: 'POST', token: null, signal, body: { email: email.trim().toLowerCase() }
+    });
+  },
+
+  async register({ fullName, email, phone, password, emailOtp }) {
     const cleanEmail = email.trim().toLowerCase();
     const registeredCenterId = Number(import.meta.env.VITE_SPORTS_CENTER_ID);
     if (!Number.isSafeInteger(registeredCenterId) || registeredCenterId <= 0) {
@@ -205,6 +211,7 @@ export const authApi = {
         username,
         email: cleanEmail,
         password,
+        emailOtp,
         fullName: fullName.trim(),
         phone: phone?.trim() || null,
         centerId: registeredCenterId

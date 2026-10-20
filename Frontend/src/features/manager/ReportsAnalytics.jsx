@@ -1,6 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { reportApi } from '../../services/api.js';
 import { createReportCsv } from '../../services/reportExport.js';
+import { downloadReportFile } from '../../services/reportFiles.js';
 import { StatCard } from '../../components/common/StatCard.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -58,6 +59,9 @@ export function ReportsAnalytics() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [revision, setRevision] = useState(0);
+  const [exportingPdf, setExportingPdf] = useState(false);
+  const [exportingXlsx, setExportingXlsx] = useState(false);
+  const [exportingCsv, setExportingCsv] = useState(false);
 
   // Table filters
   const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | sports | rooms | logs
@@ -65,6 +69,12 @@ export function ReportsAnalytics() {
   const [classSportFilter, setClassSportFilter] = useState('ALL');
   const [classSortBy, setClassSortBy] = useState('booked'); // booked | occupancy | sessions
   const [roomSortBy, setRoomSortBy] = useState('booked'); // booked | sessions | occupancy
+
+  const periodLabel = useMemo(() => {
+    const mapEn = { DAY: 'Today', WEEK: 'This Week', MONTH: 'This Month', QUARTER: 'This Quarter', YEAR: 'This Year', CUSTOM: 'Custom Range' };
+    const mapVi = { DAY: 'Hôm nay', WEEK: 'Tuần này', MONTH: 'Tháng này', QUARTER: 'Quý này', YEAR: 'Năm nay', CUSTOM: 'Khoảng tùy chọn' };
+    return (isEn ? mapEn[period] : mapVi[period]) || period;
+  }, [period, isEn]);
 
   useEffect(() => {
     let active = true;
@@ -80,7 +90,31 @@ export function ReportsAnalytics() {
     return () => { active = false; };
   }, [selection, revision]);
 
+  const exportOptions = () => ({
+    language,
+    centerLabel: 'SCMS Olympic Sports Arena',
+    generatedAt: new Date()
+  });
+
+  const exportPdf = async () => {
+    if (exportingPdf || !metrics) return;
+    setExportingPdf(true);
+    try { await downloadReportFile(metrics, exportOptions(), 'pdf'); }
+    catch (e) { showError(e); }
+    finally { setExportingPdf(false); }
+  };
+
+  const exportExcel = async () => {
+    if (exportingXlsx || !metrics) return;
+    setExportingXlsx(true);
+    try { await downloadReportFile(metrics, exportOptions(), 'xlsx'); }
+    catch (e) { showError(e); }
+    finally { setExportingXlsx(false); }
+  };
+
   const exportReport = () => {
+    if (exportingCsv || !metrics) return;
+    setExportingCsv(true);
     try {
       const url = URL.createObjectURL(new Blob([createReportCsv(metrics, period)], { type: 'text/csv;charset=utf-8' }));
       const link = document.createElement('a');
@@ -92,6 +126,8 @@ export function ReportsAnalytics() {
       setTimeout(() => URL.revokeObjectURL(url), 1000);
     } catch (e) {
       showError(e);
+    } finally {
+      setExportingCsv(false);
     }
   };
 
@@ -132,9 +168,28 @@ export function ReportsAnalytics() {
   const topRoom = highlights.mostBookedRoom;
 
   return (
-    <div className="space-y-6 pb-12 animate-fade-slide-up">
+    <div className="space-y-6 pb-12 animate-fade-slide-up print:space-y-4 print:pb-0">
+      {/* 0. PRINT-ONLY OFFICIAL REPORT HEADER */}
+      <div className="hidden print:block mb-4 border-b-2 border-[#1E2235] pb-3">
+        <div className="flex justify-between items-start">
+          <div>
+            <div className="text-xs font-black uppercase tracking-wider text-[#2D6A4F]">SCMS · Olympic Sports Arena</div>
+            <h1 className="text-xl font-black text-[#1E2235] font-chivo">
+              {isEn ? 'REVENUE & OPERATIONAL ANALYTICS REPORT' : 'BÁO CÁO DOANH THU & THỐNG KÊ HOẠT ĐỘNG'}
+            </h1>
+            <p className="text-xs text-slate-600 mt-1">
+              {isEn ? 'Period:' : 'Kỳ báo cáo:'} <strong>{range.from}</strong> → <strong>{range.to}</strong> ({periodLabel})
+            </p>
+          </div>
+          <div className="text-right text-xs text-slate-600">
+            <p><strong>{isEn ? 'Printed at:' : 'Thời điểm in:'}</strong> {new Date().toLocaleString('vi-VN')}</p>
+            <p className="text-[11px] text-slate-500">{isEn ? 'Issued by Management' : 'Đơn vị phát hành: Ban Quản Lý'}</p>
+          </div>
+        </div>
+      </div>
+
       {/* 1. PAGE HEADER - OLYMPIC MIDNIGHT NAVY HERO */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] p-6 lg:p-8 text-white shadow-xl">
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] p-6 lg:p-8 text-white shadow-xl print:p-5 print:rounded-2xl">
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#81B29A]/10 blur-3xl pointer-events-none" />
         <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-[#F2CC8F]/10 blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
@@ -152,21 +207,66 @@ export function ReportsAnalytics() {
                 : 'Tổng hợp biểu đồ thống kê trực quan, thị phần bộ môn và hiệu suất vận hành toàn trung tâm.'}
             </p>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2 flex-wrap no-print">
+            {/* In trực tiếp / Print */}
             <button
-              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-sm font-semibold transition-all shadow-md shadow-[#2D6A4F]/20 disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
+              id="btn-print-report"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1E4D38] text-white text-sm font-semibold transition-all shadow-md shadow-[#2D6A4F]/20 disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
               disabled={loading || !metrics}
-              onClick={exportReport}
+              onClick={() => window.print()}
+              title={isEn ? 'Print report directly or save as PDF' : 'In báo cáo trực tiếp hoặc lưu PDF từ trình duyệt'}
             >
-              <span className="material-symbols-outlined text-[18px]">download</span>
-              {isEn ? 'Export CSV Report' : 'Xuất Báo Cáo Chi Tiết (.CSV)'}
+              <span className="material-symbols-outlined text-[18px]">print</span>
+              {isEn ? 'Print' : 'In Báo Cáo'}
+            </button>
+
+            {/* PDF */}
+            <button
+              id="btn-export-pdf"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#C0392B] hover:bg-[#922B21] text-white text-sm font-semibold transition-all shadow-md shadow-[#C0392B]/20 disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
+              disabled={loading || !metrics || exportingPdf || exportingXlsx || exportingCsv}
+              onClick={exportPdf}
+              title={isEn ? 'Download formatted A4 PDF report for printing' : 'Tải PDF khổ A4 để in báo cáo'}
+            >
+              {exportingPdf
+                ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                : <span className="material-symbols-outlined text-[18px]">picture_as_pdf</span>}
+              {exportingPdf ? (isEn ? 'Generating…' : 'Đang tạo…') : 'PDF'}
+            </button>
+
+            {/* Excel */}
+            <button
+              id="btn-export-excel"
+              className="flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#1A6B3C] hover:bg-[#145A30] text-white text-sm font-semibold transition-all shadow-md shadow-[#1A6B3C]/20 disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
+              disabled={loading || !metrics || exportingPdf || exportingXlsx || exportingCsv}
+              onClick={exportExcel}
+              title={isEn ? 'Download .xlsx spreadsheet for data analysis' : 'Tải file .xlsx để phân tích số liệu'}
+            >
+              {exportingXlsx
+                ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                : <span className="material-symbols-outlined text-[18px]">table_chart</span>}
+              {exportingXlsx ? (isEn ? 'Generating…' : 'Đang tạo…') : 'Excel'}
+            </button>
+
+            {/* CSV (legacy) */}
+            <button
+              id="btn-export-csv"
+              className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-white text-sm font-semibold transition-all disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
+              disabled={loading || !metrics || exportingPdf || exportingXlsx || exportingCsv}
+              onClick={exportReport}
+              title={isEn ? 'Raw CSV export for custom processing' : 'Xuất CSV thô cho xử lý tuỳ chỉnh'}
+            >
+              {exportingCsv
+                ? <span className="material-symbols-outlined text-[18px] animate-spin">progress_activity</span>
+                : <span className="material-symbols-outlined text-[18px]">download</span>}
+              CSV
             </button>
           </div>
         </div>
       </div>
 
       {/* 2. DATE RANGE & PERIOD SELECTOR */}
-      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm">
+      <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm no-print">
         <div className="flex flex-wrap items-center gap-2">
           <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 mr-1">
             {isEn ? 'Quick Period:' : 'Kỳ nhanh:'}
@@ -654,7 +754,7 @@ export function ReportsAnalytics() {
               </div>
 
               {/* Table Tab Switcher */}
-              <div className="flex flex-wrap gap-2">
+              <div className="flex flex-wrap gap-2 no-print">
                 {[
                   ['classes', isEn ? '🏅 Classes Table' : '🏅 Bảng Lớp học'],
                   ['sports', isEn ? '🥋 Sports Directory' : '🥋 Danh sách Bộ môn'],
@@ -686,7 +786,7 @@ export function ReportsAnalytics() {
                     </h3>
                   </div>
 
-                  <div className="flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2 no-print">
                     {/* Search box */}
                     <div className="relative">
                       <span className="material-symbols-outlined absolute left-2.5 top-2 text-slate-400 text-[18px]">
@@ -731,14 +831,14 @@ export function ReportsAnalytics() {
                   <table className="w-full text-left border-collapse text-sm">
                     <thead>
                       <tr className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-chivo text-xs uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
-                        <th className="py-3 px-3 w-14 text-center">{isEn ? 'Rank' : 'Hạng'}</th>
-                        <th className="py-3 px-4">{isEn ? 'Class Name' : 'Lớp học'}</th>
-                        <th className="py-3 px-4">{isEn ? 'Discipline & Coach' : 'Bộ môn & HLV'}</th>
-                        <th className="py-3 px-4">{isEn ? 'Court / Studio' : 'Sân / Phòng diễn ra'}</th>
-                        <th className="py-3 px-3 text-center">{isEn ? 'Sessions' : 'Số buổi'}</th>
-                        <th className="py-3 px-4 text-center">{isEn ? 'Booked / Cap' : 'Lượt đặt / Sức chứa'}</th>
-                        <th className="py-3 px-4 w-44">{isEn ? 'Occupancy Rate' : 'Tỷ lệ lấp đầy'}</th>
-                        <th className="py-3 px-3 text-center">{isEn ? 'Load Status' : 'Đánh giá tải'}</th>
+                        <th className="py-3 px-3 w-14 text-center whitespace-nowrap">{isEn ? 'Rank' : 'Hạng'}</th>
+                        <th className="py-3 px-4 min-w-[180px]">{isEn ? 'Class Name' : 'Lớp học'}</th>
+                        <th className="py-3 px-4 min-w-[160px] whitespace-nowrap">{isEn ? 'Discipline & Coach' : 'Bộ môn & HLV'}</th>
+                        <th className="py-3 px-4 min-w-[160px] whitespace-nowrap">{isEn ? 'Court / Studio' : 'Sân / Phòng diễn ra'}</th>
+                        <th className="py-3 px-3 text-center whitespace-nowrap min-w-[80px]">{isEn ? 'Sessions' : 'Số buổi'}</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[120px]">{isEn ? 'Booked / Cap' : 'Lượt đặt / Sức chứa'}</th>
+                        <th className="py-3 px-4 w-44 min-w-[140px] whitespace-nowrap">{isEn ? 'Occupancy Rate' : 'Tỷ lệ lấp đầy'}</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[120px]">{isEn ? 'Load Status' : 'Đánh giá tải'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -810,18 +910,21 @@ export function ReportsAnalytics() {
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3 px-3 text-center">
+                            <td className="py-3 px-4 text-center whitespace-nowrap">
                               {cls.booked >= 15 ? (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
-                                  🔥 {isEn ? 'Very Hot' : 'Rất Hot'}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                                  <span>🔥</span>
+                                  <span>{isEn ? 'Very Hot' : 'Rất Hot'}</span>
                                 </span>
                               ) : cls.booked >= 5 ? (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                  ✅ {isEn ? 'Optimal' : 'Ổn định'}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                  <span>✅</span>
+                                  <span>{isEn ? 'Optimal' : 'Ổn định'}</span>
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
-                                  ⚠️ {isEn ? 'Off-peak' : 'Thấp điểm'}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700">
+                                  <span>⚠️</span>
+                                  <span>{isEn ? 'Off-peak' : 'Thấp điểm'}</span>
                                 </span>
                               )}
                             </td>
@@ -918,7 +1021,7 @@ export function ReportsAnalytics() {
                     </h3>
                   </div>
 
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 no-print">
                     <select
                       className="text-xs font-medium border border-slate-200 dark:border-slate-700 rounded-xl px-2.5 py-1.5 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:outline-none"
                       value={roomSortBy}
@@ -936,14 +1039,14 @@ export function ReportsAnalytics() {
                   <table className="w-full text-left border-collapse text-sm">
                     <thead>
                       <tr className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-chivo text-xs uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
-                        <th className="py-3 px-3 w-14 text-center">{isEn ? 'Rank' : 'Hạng'}</th>
-                        <th className="py-3 px-4">{isEn ? 'Court / Studio Name' : 'Tên Sân / Phòng'}</th>
-                        <th className="py-3 px-4">{isEn ? 'Type & Location' : 'Loại hình & Vị trí'}</th>
-                        <th className="py-3 px-3 text-center">{isEn ? 'Cap / Session' : 'Sức chứa / ca'}</th>
-                        <th className="py-3 px-3 text-center">{isEn ? 'Sessions Hosted' : 'Số ca đã tổ chức'}</th>
-                        <th className="py-3 px-4 text-center">{isEn ? 'Guests Received' : 'Lượt khách tiếp nhận'}</th>
-                        <th className="py-3 px-4 w-44">{isEn ? 'Utilization Rate' : 'Tỷ lệ khai thác'}</th>
-                        <th className="py-3 px-3 text-center">{isEn ? 'Load Status' : 'Tình trạng tải'}</th>
+                        <th className="py-3 px-3 w-14 text-center whitespace-nowrap">{isEn ? 'Rank' : 'Hạng'}</th>
+                        <th className="py-3 px-4 min-w-[180px]">{isEn ? 'Court / Studio Name' : 'Tên Sân / Phòng'}</th>
+                        <th className="py-3 px-4 min-w-[160px] whitespace-nowrap">{isEn ? 'Type & Location' : 'Loại hình & Vị trí'}</th>
+                        <th className="py-3 px-3 text-center whitespace-nowrap min-w-[90px]">{isEn ? 'Cap / Session' : 'Sức chứa / ca'}</th>
+                        <th className="py-3 px-3 text-center whitespace-nowrap min-w-[90px]">{isEn ? 'Sessions Hosted' : 'Số ca đã tổ chức'}</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[120px]">{isEn ? 'Guests Received' : 'Lượt khách tiếp nhận'}</th>
+                        <th className="py-3 px-4 w-44 min-w-[140px] whitespace-nowrap">{isEn ? 'Utilization Rate' : 'Tỷ lệ khai thác'}</th>
+                        <th className="py-3 px-4 text-center whitespace-nowrap min-w-[120px]">{isEn ? 'Load Status' : 'Tình trạng tải'}</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
@@ -1020,18 +1123,21 @@ export function ReportsAnalytics() {
                                 </div>
                               </div>
                             </td>
-                            <td className="py-3 px-3 text-center">
+                            <td className="py-3 px-4 text-center whitespace-nowrap">
                               {room.booked >= 15 ? (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-                                  🔥 {isEn ? 'High Load' : 'Tải cao'}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold whitespace-nowrap bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                                  <span>🔥</span>
+                                  <span>{isEn ? 'High Load' : 'Tải cao'}</span>
                                 </span>
                               ) : room.booked >= 5 ? (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
-                                  ✅ {isEn ? 'Balanced' : 'Đang tối ưu'}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                                  <span>✅</span>
+                                  <span>{isEn ? 'Balanced' : 'Đang tối ưu'}</span>
                                 </span>
                               ) : (
-                                <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
-                                  ⚠️ {isEn ? 'Slots Available' : 'Còn nhiều ca trống'}
+                                <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold whitespace-nowrap bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                                  <span>⚠️</span>
+                                  <span>{isEn ? 'Slots Available' : 'Còn nhiều ca trống'}</span>
                                 </span>
                               )}
                             </td>
