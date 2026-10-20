@@ -34,9 +34,6 @@ export function RolesPermissions() {
   const { currentUser } = useAuth();
   const { showError, showSuccess } = useToast();
 
-  // Navigation tab
-  const [activeTab, setActiveTab] = useState('ROLES'); // 'ROLES' | 'MATRIX'
-
   // Data states
   const [matrix, setMatrix] = useState([]);
   const [staffList, setStaffList] = useState([]);
@@ -50,9 +47,6 @@ export function RolesPermissions() {
   const [roleCaps, setRoleCaps] = useState([]);
   const [roleSearchQuery, setRoleSearchQuery] = useState('');
   const [roleCategoryFilter, setRoleCategoryFilter] = useState('ALL');
-
-  // Matrix tab state
-  const [matrixSearchQuery, setMatrixSearchQuery] = useState('');
 
   const centerId = currentUser?.centerId;
   const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
@@ -183,23 +177,12 @@ export function RolesPermissions() {
     );
   }, [selectedRole, roleSearchQuery]);
 
-  // Matrix Filtered Capabilities
-  const filteredMatrixCaps = useMemo(() => {
-    const q = matrixSearchQuery.trim().toLowerCase();
-    if (!q) return SYSTEM_CAPABILITIES;
-    return SYSTEM_CAPABILITIES.filter(c =>
-      c.label.toLowerCase().includes(q) ||
-      c.id.toLowerCase().includes(q) ||
-      c.category.toLowerCase().includes(q)
-    );
-  }, [matrixSearchQuery]);
-
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
         <div className="w-10 h-10 border-4 border-[#81B29A]/30 border-t-[#2D6A4F] rounded-full animate-spin"></div>
         <p className="text-sm font-semibold text-slate-600 dark:text-slate-400">
-          {isEn ? 'Loading SCMS permission matrix...' : 'Đang tải ma trận phân quyền hệ thống SCMS...'}
+          {isEn ? 'Loading SCMS permissions...' : 'Đang tải cấu hình phân quyền hệ thống SCMS...'}
         </p>
       </div>
     );
@@ -256,39 +239,12 @@ export function RolesPermissions() {
           </div>
         </div>
 
-        {/* Master Navigation Tabs */}
-        <div className="relative z-10 flex flex-wrap gap-2 mt-6 pt-4 border-t border-white/10">
-          <button
-            onClick={() => setActiveTab('ROLES')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
-              activeTab === 'ROLES'
-                ? 'bg-[#2D6A4F] text-white shadow-lg shadow-[#2D6A4F]/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            {isEn ? `1. Role Access Permissions (${matrix.length})` : `1. Phân Quyền Theo Vai Trò (${matrix.length})`}
-          </button>
-
-          <button
-            onClick={() => setActiveTab('MATRIX')}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
-              activeTab === 'MATRIX'
-                ? 'bg-[#2D6A4F] text-white shadow-lg shadow-[#2D6A4F]/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
-            }`}
-          >
-            <span className="material-symbols-outlined text-[18px]">grid_view</span>
-            {isEn ? '2. Full RBAC Matrix Grid' : '2. Ma Trận Toàn Cảnh (Full RBAC Grid)'}
-          </button>
-        </div>
       </div>
 
       {/* ========================================================================= */}
-      {/* TAB 1: PHÂN QUYỀN THEO TỪNG VAI TRÒ (ROLE-BASED PERMISSIONS)              */}
+      {/* PHÂN QUYỀN THEO TỪNG VAI TRÒ (ROLE-BASED PERMISSIONS)                      */}
       {/* ========================================================================= */}
-      {activeTab === 'ROLES' && (
-        <div className="space-y-6">
+      <div className="space-y-6">
           {/* Role Selection Cards */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -636,7 +592,7 @@ export function RolesPermissions() {
                   {busy ? (
                     <>
                       <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
-                      <span>{isEn ? 'Saving role matrix...' : 'Đang lưu ma trận vai trò...'}</span>
+                      <span>{isEn ? 'Saving role permissions...' : 'Đang lưu phân quyền vai trò...'}</span>
                     </>
                   ) : (
                     <>
@@ -659,186 +615,7 @@ export function RolesPermissions() {
               </p>
             </div>
           )}
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 2: MA TRẬN TOÀN CẢNH (FULL RBAC MATRIX GRID)                          */}
-      {/* ========================================================================= */}
-      {activeTab === 'MATRIX' && (
-        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
-            <div>
-              <h3 className="font-bold text-slate-900 dark:text-white text-base">
-                {isEn
-                  ? 'Enterprise RBAC Matrix Overview'
-                  : 'Bảng Ma Trận Phân Quyền Toàn Cảnh (Enterprise RBAC Matrix)'}
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                {isEn
-                  ? 'Cross-role matrix comparing system capabilities and permissions in SCMS.'
-                  : 'Bảng đối chiếu tổng thể quyền truy cập giữa các vai trò trong hệ thống SCMS.'}
-              </p>
-            </div>
-
-            <div className="relative w-full sm:w-72">
-              <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">
-                search
-              </span>
-              <input
-                type="text"
-                value={matrixSearchQuery}
-                onChange={e => setMatrixSearchQuery(e.target.value)}
-                placeholder={isEn ? 'Search features in matrix...' : 'Tìm tính năng trong ma trận...'}
-                className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]"
-              />
-            </div>
-          </div>
-
-          {/* Matrix Grid Table */}
-          <div className="overflow-x-auto border border-slate-200 dark:border-slate-800 rounded-xl">
-            <table className="w-full text-left text-xs border-collapse">
-              <thead>
-                <tr className="bg-[#1E2235] text-white">
-                  <th className="py-3 px-4 uppercase tracking-wider text-[11px] font-bold min-w-[260px]">
-                    {isEn ? 'Feature & System Capability' : 'Chức Năng & Quyền Hệ Thống'}
-                  </th>
-                  <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36">
-                    {isEn ? 'Manager' : 'Quản Lý (Manager)'}
-                  </th>
-                  <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36 bg-amber-950/60 text-amber-300">
-                    {isEn ? 'Coach' : 'Huấn Luyện Viên'}
-                  </th>
-                  <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36 bg-purple-950/60 text-purple-300">
-                    {isEn ? 'Receptionist' : 'Lễ Tân'}
-                  </th>
-                  <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36 bg-emerald-950/60 text-emerald-300">
-                    {isEn ? 'Member' : 'Hội Viên'}
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
-                {CAPABILITY_CATEGORIES.map(category => {
-                  const capsInCategory = filteredMatrixCaps.filter(c => c.category === category);
-                  if (capsInCategory.length === 0) return null;
-
-                  return (
-                    <React.Fragment key={category}>
-                      {/* Category Header Row */}
-                      <tr className="bg-slate-100/80 dark:bg-slate-800/80 font-bold text-slate-800 dark:text-slate-200">
-                        <td colSpan={5} className="py-2.5 px-4 text-[11px] uppercase tracking-wider text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800">
-                          {category} ({capsInCategory.length} {isEn ? 'features' : 'chức năng'})
-                        </td>
-                      </tr>
-
-                      {/* Capabilities in this category */}
-                      {capsInCategory.map(cap => {
-                        // Manager has all caps
-                        const managerHas = true;
-
-                        // Check coach
-                        const coachRole = matrix.find(r => r.roleName?.toUpperCase() === 'COACH');
-                        const coachHas = coachRole ? (coachRole.capabilityIds || []).includes(cap.id) : false;
-
-                        // Check receptionist
-                        const recepRole = matrix.find(r => r.roleName?.toUpperCase() === 'RECEPTIONIST');
-                        const recepHas = recepRole ? (recepRole.capabilityIds || []).includes(cap.id) : false;
-
-                        // Check member
-                        const memberRole = matrix.find(r => r.roleName?.toUpperCase() === 'MEMBER');
-                        const memberHas = memberRole ? (memberRole.capabilityIds || []).includes(cap.id) : false;
-
-                        return (
-                          <tr key={cap.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
-                            <td className="py-2.5 px-4">
-                              <div className="flex items-center gap-2">
-                                <span className="material-symbols-outlined text-[18px] text-slate-500 dark:text-slate-400">
-                                  {cap.icon || 'circle'}
-                                </span>
-                                <div>
-                                  <div className="font-bold text-slate-900 dark:text-white">{cap.label}</div>
-                                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">ID: {cap.id}</div>
-                                </div>
-                              </div>
-                            </td>
-
-                            {/* Manager cell */}
-                            <td className="py-2.5 px-3 text-center">
-                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                                <span className="material-symbols-outlined text-[16px]">check</span>
-                              </span>
-                            </td>
-
-                            {/* Coach cell */}
-                            <td className="py-2.5 px-3 text-center bg-amber-50/20 dark:bg-amber-950/10">
-                              {coachHas ? (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                                  <span className="material-symbols-outlined text-[16px]">check</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600">
-                                  <span className="material-symbols-outlined text-[16px]">remove</span>
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Receptionist cell */}
-                            <td className="py-2.5 px-3 text-center bg-purple-50/20 dark:bg-purple-950/10">
-                              {recepHas ? (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                                  <span className="material-symbols-outlined text-[16px]">check</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600">
-                                  <span className="material-symbols-outlined text-[16px]">remove</span>
-                                </span>
-                              )}
-                            </td>
-
-                            {/* Member cell */}
-                            <td className="py-2.5 px-3 text-center bg-emerald-50/20 dark:bg-emerald-950/10">
-                              {memberHas ? (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                                  <span className="material-symbols-outlined text-[16px]">check</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600">
-                                  <span className="material-symbols-outlined text-[16px]">remove</span>
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </React.Fragment>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* Legend / Footer Notes */}
-          <div className="flex flex-wrap items-center justify-between gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 text-xs">
-            <div className="flex items-center gap-4">
-              <span className="font-bold text-slate-700 dark:text-slate-300">{isEn ? 'Legend:' : 'Chú giải ký hiệu:'}</span>
-              <span className="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-                <span className="w-5 h-5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 flex items-center justify-center text-[12px] font-bold">✓</span>
-                {isEn ? 'Granted Access' : 'Có quyền truy cập'}
-              </span>
-              <span className="inline-flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
-                <span className="w-5 h-5 rounded bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-600 flex items-center justify-center text-[12px] font-bold">—</span>
-                {isEn ? 'No Access' : 'Không có quyền'}
-              </span>
-            </div>
-
-            <div className="text-slate-500 dark:text-slate-400">
-              {isEn
-                ? '* System managers hold complete operational oversight and safe delegation authority under SCMS security policies.'
-                : '* Quản lý trung tâm có toàn quyền giám sát và phân quyền an toàn theo chính sách Safe Delegation.'}
-            </div>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

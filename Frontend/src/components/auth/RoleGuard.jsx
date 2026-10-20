@@ -42,7 +42,7 @@ export function RoleGuard({ allowedRoles = [], requiredCapability, children }) {
 
         {capInfo && (
           <div className="mt-4 p-3.5 bg-red-50 border border-red-200 rounded-xl text-left w-full text-xs">
-            <span className="font-bold text-red-800 block mb-1">Yêu cầu quyền hạn trong Ma trận phân quyền:</span>
+            <span className="font-bold text-red-800 block mb-1">Yêu cầu quyền hạn trong Cấu hình phân quyền:</span>
             <div className="flex items-center gap-2 text-slate-800 mt-1">
               <span className="material-symbols-outlined text-[18px] text-red-600">{capInfo.icon}</span>
               <strong className="font-bold">{capInfo.label}</strong>

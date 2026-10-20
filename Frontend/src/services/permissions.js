@@ -76,7 +76,7 @@ export const SYSTEM_CAPABILITIES = [
   {
     id: 'manage_roles',
     label: 'Cấu hình Phân quyền',
-    desc: 'Thiết lập ma trận quyền hạn cho các nhóm người dùng',
+    desc: 'Thiết lập quyền hạn cho các nhóm người dùng',
     path: '#/manager/roles-permissions',
     icon: 'admin_panel_settings',
     category: 'BÁO CÁO & BẢO MẬT',
