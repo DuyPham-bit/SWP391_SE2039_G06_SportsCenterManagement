@@ -1,18 +1,64 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
-import { getDynamicNavItems } from '../../services/permissions.js';
+import { translateCoachName } from '../../services/i18nHelper.js';
 
 export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPath }) {
-  const { role, logout } = useAuth();
+  const { currentUser, role, logout } = useAuth();
   const { language } = useLanguage();
   const [expandedGroups, setExpandedGroups] = useState({});
 
   const isEn = language === 'en';
 
+  const effectiveRole = String(
+    role || (
+      currentPath?.startsWith('#/member') ? 'MEMBER' :
+      currentPath?.startsWith('#/coach') ? 'COACH' :
+      currentPath?.startsWith('#/manager') ? 'MANAGER' :
+      currentPath?.startsWith('#/receptionist') ? 'RECEPTIONIST' :
+      'MEMBER'
+    )
+  ).toUpperCase();
+
+  const getRoleLabel = (r) => {
+    switch (String(r || '').toUpperCase()) {
+      case 'ADMIN':
+      case 'SYSTEMADMIN':
+        return isEn ? 'System Admin' : 'Quản trị hệ thống';
+      case 'MANAGER':
+        return isEn ? 'Manager' : 'Quản lý (Manager)';
+      case 'STAFF':
+      case 'RECEPTIONIST':
+        return isEn ? 'Receptionist' : 'Lễ tân (Receptionist)';
+      case 'COACH':
+        return isEn ? 'Coach' : 'Huấn luyện viên (Coach)';
+      case 'MEMBER':
+        return isEn ? 'Member' : 'Hội viên (Member)';
+      default:
+        return r || (isEn ? 'Member' : 'Hội viên');
+    }
+  };
+
+  const getUserInitials = (name) => {
+    if (!name) return 'H';
+    const parts = name.trim().split(/\s+/).filter(w => !/^\d+$/.test(w));
+    if (parts.length === 0) return 'SC';
+    if (parts.length === 1) return parts[0].substring(0, 2).toUpperCase();
+    return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
+  };
+
+  const rawDisplayName = currentUser?.fullName || currentUser?.name || currentUser?.username || (
+    effectiveRole === 'COACH' ? (isEn ? 'Coach 01' : 'Huấn luyện viên 01') :
+    'Huỳnh Nhật Huy'
+  );
+
+  const displayName = effectiveRole === 'COACH' ? translateCoachName(rawDisplayName, isEn) : rawDisplayName;
+  const roleLabel = getRoleLabel(effectiveRole);
+  const userInitials = getUserInitials(displayName);
+
   // Cấu hình các nhóm danh mục đồng bộ đa ngôn ngữ (Tiếng Việt & English)
   const getFptMenuSections = () => {
-    const normalizedRole = String(role || '').toUpperCase();
+    const normalizedRole = effectiveRole;
 
     if (normalizedRole === 'MEMBER') {
       return [
@@ -644,26 +690,46 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
                 type="button"
                 onClick={() => { logout(); window.location.hash = '#/login'; }}
                 className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer shadow-2xs"
-                title={isEn ? 'Sign Out' : 'Đăng xuất'}
+                title={`${displayName} (${roleLabel}) - ${isEn ? 'Sign Out' : 'Đăng xuất'}`}
               >
-                <span className="material-symbols-outlined text-[19px]">logout</span>
+                {currentUser?.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={displayName}
+                    className="w-7 h-7 rounded-lg object-cover"
+                  />
+                ) : (
+                  <span className="text-xs font-black text-[#2D6A4F] dark:text-[#81B29A]">{userInitials}</span>
+                )}
               </button>
             </div>
           ) : (
-            <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-2xs">
-              <div className="flex items-center gap-2">
-                <span className="material-symbols-outlined text-[#81B29A] dark:text-emerald-400 text-[18px]">verified</span>
-                <div className="flex flex-col">
-                  <span className="text-[11px] font-bold text-slate-800 dark:text-slate-200 leading-tight">Olympic Arena</span>
-                  <span className="text-[9px] text-slate-400 dark:text-slate-500">
-                    {isEn ? 'SCMS Standard' : 'Tiêu chuẩn SCMS'}
+            <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-2xs gap-2 min-w-0">
+              <div className="flex items-center gap-2.5 min-w-0">
+                {currentUser?.avatar ? (
+                  <img
+                    src={currentUser.avatar}
+                    alt={displayName}
+                    className="w-8 h-8 rounded-[10px] object-cover border border-[#81B29A]/40 shrink-0"
+                  />
+                ) : (
+                  <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#81B29A] via-[#A8DADC] to-[#F2CC8F] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs ring-1 ring-white/60 dark:ring-slate-700">
+                    <span>{userInitials}</span>
+                  </div>
+                )}
+                <div className="flex flex-col min-w-0">
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight truncate max-w-[130px]" title={displayName}>
+                    {displayName}
+                  </span>
+                  <span className="text-[10px] text-[#2D6A4F] dark:text-[#81B29A] font-semibold truncate leading-tight">
+                    {roleLabel}
                   </span>
                 </div>
               </div>
               <button
                 type="button"
                 onClick={() => { logout(); window.location.hash = '#/login'; }}
-                className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1 transition-colors cursor-pointer"
+                className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shrink-0"
                 title={isEn ? 'Sign Out' : 'Đăng xuất'}
               >
                 <span className="material-symbols-outlined text-[18px]">logout</span>
