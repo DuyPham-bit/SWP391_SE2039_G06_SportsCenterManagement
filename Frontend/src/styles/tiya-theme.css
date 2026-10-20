@@ -2403,13 +2403,34 @@
 .tiya-page [class*="bg-[#3D405B]"] p,
 .tiya-page [class*="bg-[#3D405B]"] span,
 .tiya-page [class*="bg-[#3D405B]"] li,
-.tiya-page [class*="bg-gradient-to"] h1,
-.tiya-page [class*="bg-gradient-to"] h2,
-.tiya-page [class*="bg-gradient-to"] h3,
-.tiya-page [class*="bg-gradient-to"] h4,
-.tiya-page [class*="bg-gradient-to"] p,
-.tiya-page [class*="bg-gradient-to"] span,
-.tiya-page [class*="bg-gradient-to"] li {
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) h1,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) h2,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) h3,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) h4,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) p,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) span,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) li {
   color: #ffffff;
 }
+
+.tiya-modal-container [class*="text-slate-900"] {
+  color: #0f172a !important;
+}
+
+.tiya-modal-container [class*="text-slate-800"] {
+  color: #1e293b !important;
+}
+
+.tiya-modal-container [class*="text-slate-700"] {
+  color: #334155 !important;
+}
+
+.tiya-modal-container [class*="text-slate-600"] {
+  color: #475569 !important;
+}
+
+.tiya-modal-container [class*="text-slate-500"] {
+  color: #64748b !important;
+}
+
 

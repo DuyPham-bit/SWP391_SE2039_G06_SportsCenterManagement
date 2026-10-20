@@ -793,7 +793,10 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 /* PACKAGES & SCHEDULE TAB - FULLY VISUAL & INTUITIVE */
                 <div className="space-y-6">
                   {/* 1. Facility Spotlight Card */}
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-slate-50 via-amber-50/20 to-emerald-50/20 border border-slate-200/80 shadow-sm">
+                  <div
+                    className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl border border-slate-200/90 shadow-sm"
+                    style={{ background: 'linear-gradient(135deg, #f8fafc 0%, #fffbeb 50%, #ecfdf5 100%)' }}
+                  >
                     {selectedFacility.image ? (
                       <img
                         src={selectedFacility.image}
@@ -999,7 +1002,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                             key={pkg.id}
                             className={`p-4 rounded-xl border transition-all shadow-sm flex flex-col justify-between ${
                               isPop
-                                ? 'bg-gradient-to-br from-white to-amber-50/40 border-amber-300 ring-1 ring-amber-300/40'
+                                ? 'bg-amber-50/40 border-amber-300 ring-1 ring-amber-300/40'
                                 : 'bg-white border-slate-200 hover:border-slate-300'
                             }`}
                           >
