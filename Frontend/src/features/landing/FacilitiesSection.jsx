@@ -5,6 +5,7 @@ import { getLandingPresentation } from '../../services/landingPresentation.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useAuth } from '../../context/AuthContext.js';
 import { getMembershipAction, getMembershipBanner } from '../../services/membershipEntry.js';
+import { packageApi } from '../../services/api.js';
 import {
   translateLandingContent,
   translateFacilityName,
@@ -24,6 +25,58 @@ import {
   translateOpenHours
 } from '../../services/i18nHelper.js';
 
+const DEFAULT_PACKAGES = [
+  {
+    id: 1,
+    name: 'Gói Basic Thể Thao',
+    nameEn: 'Basic Sport Pass',
+    price: 650000,
+    durationDays: 30,
+    badge: 'Khởi đầu',
+    badgeEn: 'Starter',
+    accessType: '1 môn tự chọn',
+    accessTypeEn: '1 Selected Sport',
+    features: ['1 bộ môn tự chọn', 'Sân bãi tiêu chuẩn Olympic', 'Tủ đồ & tiện ích cơ bản']
+  },
+  {
+    id: 2,
+    name: 'Gói Pro Bứt Phá',
+    nameEn: 'Pro Dynamic Pass',
+    price: 1800000,
+    durationDays: 90,
+    badge: 'Phổ biến nhất',
+    badgeEn: 'Most Popular',
+    popular: true,
+    accessType: '3 môn tự chọn',
+    accessTypeEn: '3 Selected Sports',
+    features: ['3 bộ môn kết hợp', 'Ưu tiên giữ ca học tại sân', 'Kèm 1 buổi phân tích InBody']
+  },
+  {
+    id: 3,
+    name: 'Gói Elite Chuyên Nghiệp',
+    nameEn: 'Elite Performance Pass',
+    price: 3200000,
+    durationDays: 180,
+    badge: 'Chuyên sâu',
+    badgeEn: 'Intensive',
+    accessType: '6 môn tự chọn',
+    accessTypeEn: '6 Selected Sports',
+    features: ['6 bộ môn thể thao', 'Quyền dùng phòng Sauna & Phục hồi', 'Hỗ trợ giáo trình HLV riêng']
+  },
+  {
+    id: 4,
+    name: 'Gói All-Access Olympic Pass',
+    nameEn: 'Olympic VIP All-Access',
+    price: 5800000,
+    durationDays: 365,
+    badge: 'VIP Toàn Năng',
+    badgeEn: 'VIP All-Access',
+    accessType: 'Toàn quyền 10+ môn',
+    accessTypeEn: 'All Disciplines & Courts',
+    features: ['Toàn quyền 10+ môn & cụm sân', 'Huấn luyện viên đồng hành', 'Full quyền lợi VIP không giới hạn']
+  }
+];
+
 export function FacilitiesSection({ externalFacility = null, onModalClose = null } = {}) {
   const { isAuthenticated, role } = useAuth();
   const { language } = useLanguage();
@@ -41,6 +94,59 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [activeModalTab, setActiveModalTab] = useState('packages');
+  const [packages, setPackages] = useState(DEFAULT_PACKAGES);
+
+  useEffect(() => {
+    let active = true;
+    packageApi.getAll()
+      .then((res) => {
+        if (active && Array.isArray(res) && res.length > 0) {
+          setPackages(res);
+        }
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const facilityClasses = useMemo(() => {
+    if (!catalog?.classes || !selectedFacility) return [];
+    const byRoom = catalog.classes.filter((c) => String(c.roomId) === String(selectedFacility.id));
+    if (byRoom.length > 0) return byRoom;
+
+    const facName = (selectedFacility.name || '').toLowerCase();
+    const facCat = (selectedFacility.category || '').toLowerCase();
+
+    return catalog.classes.filter((cls) => {
+      const sport = (catalog.sports || []).find((s) => s.id === cls.sportId);
+      const sName = (sport?.name || '').toLowerCase();
+      const cName = (cls.name || '').toLowerCase();
+
+      if (facCat.includes('aquatic') || facCat.includes('pool') || facName.includes('bơi')) {
+        return sName.includes('bơi') || cName.includes('bơi');
+      }
+      if (facCat.includes('combat') || facName.includes('võ') || facName.includes('boxing')) {
+        return sName.includes('boxing') || sName.includes('võ') || cName.includes('boxing');
+      }
+      if (facCat.includes('fitness') || facCat.includes('gym') || facName.includes('gym') || facName.includes('tạ')) {
+        return sName.includes('gym') || sName.includes('fitness') || cName.includes('gym');
+      }
+      if (facCat.includes('yoga') || facName.includes('yoga') || facName.includes('pilates')) {
+        return sName.includes('yoga') || sName.includes('pilates') || cName.includes('yoga');
+      }
+      if (facCat.includes('golf') || facName.includes('golf')) {
+        return sName.includes('golf') || cName.includes('golf');
+      }
+      if (facName.includes('cầu lông') || facName.includes('badminton')) {
+        return sName.includes('cầu lông') || cName.includes('cầu lông');
+      }
+      if (facName.includes('bóng đá') || facCat.includes('soccer') || facCat.includes('football')) {
+        return cName.includes('bóng đá') || sName.includes('bóng đá');
+      }
+      return false;
+    });
+  }, [catalog, selectedFacility]);
 
   // Carousel State
   const [facilityCarouselIndex, setFacilityCarouselIndex] = useState(0);
@@ -180,10 +286,21 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     return () => window.removeEventListener('SCMS_OPEN_FACILITY', handleCustomOpen);
   }, [catalog, editorialContent]);
 
-  const getFacilityCategoryMeta = fac => ({
-    label: (isEn ? translateFacilityCategory(fac.categoryName || fac.category || 'Phòng / sân', true) : (fac.categoryName || 'Phòng / sân')).toUpperCase(),
-    icon: 'stadium'
-  });
+  const getFacilityCategoryMeta = fac => {
+    const cat = (fac.category || '').toLowerCase();
+    const name = (fac.name || '').toLowerCase();
+    const icon = cat === 'golf' || name.includes('golf') ? 'golf_course'
+      : cat === 'aquatics' || cat === 'pool' || name.includes('bơi') ? 'pool'
+      : cat === 'fitness' || name.includes('gym') ? 'fitness_center'
+      : cat === 'combat-studio' || cat === 'martial-arts' || name.includes('võ') || name.includes('boxing') ? 'sports_kabaddi'
+      : cat === 'team-sports' || name.includes('bóng đá') || name.includes('bóng rổ') ? 'sports_soccer'
+      : name.includes('cầu lông') ? 'sports_tennis'
+      : 'stadium';
+    return {
+      label: (isEn ? translateFacilityCategory(fac.categoryName || fac.category || 'Phòng / sân', true) : (fac.categoryName || 'Phòng / sân')).toUpperCase(),
+      icon
+    };
+  };
 
   const renderFacilityCard = (fac, isCarousel = false) => {
     const catMeta = getFacilityCategoryMeta(fac);
@@ -673,20 +790,328 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   )}
                 </div>
               ) : (
-                /* Membership entry uses the existing package and class schedule flows. */
-                <div className="space-y-4 p-6">
-                  <h4>{isEn ? 'Choose a package, then book a class' : 'Đăng ký gói tập, sau đó đặt ca học'}</h4>
-                  <p>{isEn ? translateFacilityName(selectedFacility.name, true) : selectedFacility.name}</p>
-                  <p>{isEn ? 'Choose a suitable package and complete payment. Once your membership is active, select an available class covered by your package.' : 'Chọn gói phù hợp và hoàn tất thanh toán. Khi gói có hiệu lực, chọn ca học còn chỗ thuộc quyền lợi gói của bạn.'}</p>
-                  <p>{isEn ? 'Explore the training facilities here, then reserve a place through the class schedule for your membership.' : 'Khám phá cơ sở tập luyện tại đây, sau đó đặt chỗ theo lịch lớp của gói tập đã đăng ký.'}</p>
-                  <div className="flex flex-wrap gap-3">
-                    <a className="custom-border-btn" href={membershipAction.href}>{membershipAction.label}</a>
-                    {isMember && <a className="custom-border-btn" href="#/member/schedule">{isEn ? 'View Class Schedule' : 'Xem lịch lớp'}</a>}
+                /* PACKAGES & SCHEDULE TAB - FULLY VISUAL & INTUITIVE */
+                <div className="space-y-6">
+                  {/* 1. Facility Spotlight Card */}
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 p-4 rounded-2xl bg-gradient-to-r from-slate-50 via-amber-50/20 to-emerald-50/20 border border-slate-200/80 shadow-sm">
+                    {selectedFacility.image ? (
+                      <img
+                        src={selectedFacility.image}
+                        alt={selectedFacility.name}
+                        className="w-20 h-20 rounded-xl object-cover shrink-0 border border-slate-200 shadow-sm"
+                      />
+                    ) : (
+                      <div className="w-20 h-20 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <span className="material-symbols-outlined text-[32px]">
+                          {getFacilityCategoryMeta(selectedFacility).icon || 'stadium'}
+                        </span>
+                      </div>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-2 mb-1">
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-200">
+                          {isEn ? translateFacilityBadge(selectedFacility.badge, true) : (selectedFacility.badge || 'Sân bãi tiêu chuẩn')}
+                        </span>
+                        <span className="text-[11px] font-semibold text-slate-500 flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[14px] text-amber-600">location_on</span>
+                          {isEn ? translateLocation(selectedFacility.location, true) : selectedFacility.location}
+                        </span>
+                      </div>
+                      <h4 className="text-base sm:text-lg font-extrabold text-slate-900 truncate">
+                        {isEn ? translateFacilityName(selectedFacility.name, true) : selectedFacility.name}
+                      </h4>
+                      <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-600">
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[15px] text-blue-600">group</span>
+                          <strong>{selectedFacility.capacity || (isEn ? '30 slots' : '30 người')}</strong>
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1">
+                          <span className="material-symbols-outlined text-[15px] text-amber-600">schedule</span>
+                          <span>{selectedFacility.openHours || '06:00 - 22:00'}</span>
+                        </span>
+                        <span>•</span>
+                        <span className="flex items-center gap-1 text-emerald-700 font-semibold">
+                          <span className="material-symbols-outlined text-[15px] text-emerald-600">check_circle</span>
+                          <span>{isEn ? 'Open for Booking' : 'Mở nhận học viên'}</span>
+                        </span>
+                      </div>
+                    </div>
                   </div>
-                  <p>{isEn ? 'Need help choosing a package? Contact the center.' : 'Cần tư vấn chọn gói? Liên hệ trung tâm.'}</p>
-                  <div className="flex flex-wrap gap-3">
-                    {contactPhone && <a href={'tel:' + contactPhone}>{contactPhone}</a>}
-                    {contactEmail && <a href={'mailto:' + contactEmail}>{contactEmail}</a>}
+
+                  {/* 2. Visual 3-Step Participation Process */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                        <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                        {isEn ? '3 Simple Steps to Join' : 'Quy trình 3 bước tham gia tập luyện'}
+                      </h5>
+                      <span className="text-[11px] text-slate-400 font-medium">
+                        {isEn ? 'Fast & Automated' : 'Nhanh chóng & Tiện lợi'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      {/* Step 1 */}
+                      <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group hover:border-emerald-300 transition-all">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold text-sm shrink-0">
+                            1
+                          </div>
+                          <span className="material-symbols-outlined text-[20px] text-emerald-600">card_membership</span>
+                        </div>
+                        <h6 className="text-xs font-bold text-slate-900 mb-1">
+                          {isEn ? 'Choose Membership' : 'Chọn gói hội viên'}
+                        </h6>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          {isEn ? 'Select Basic, Pro or Elite pass matching your fitness routine.' : 'Đăng ký gói 1 tháng, 3 tháng hoặc 1 năm tùy mục tiêu tập.'}
+                        </p>
+                      </div>
+
+                      {/* Step 2 */}
+                      <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group hover:border-blue-300 transition-all">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-sm shrink-0">
+                            2
+                          </div>
+                          <span className="material-symbols-outlined text-[20px] text-blue-600">calendar_month</span>
+                        </div>
+                        <h6 className="text-xs font-bold text-slate-900 mb-1">
+                          {isEn ? 'Pick Class / Court' : 'Chọn ca học tại sân'}
+                        </h6>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          {isEn ? 'Reserve your slot from real-time calendar schedule.' : 'Chọn ca tập hoặc lớp có HLV tại cụm sân này trên thời khóa biểu.'}
+                        </p>
+                      </div>
+
+                      {/* Step 3 */}
+                      <div className="p-3.5 rounded-xl bg-white border border-slate-200 shadow-sm relative overflow-hidden group hover:border-amber-300 transition-all">
+                        <div className="flex items-center gap-3 mb-2">
+                          <div className="w-8 h-8 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center font-bold text-sm shrink-0">
+                            3
+                          </div>
+                          <span className="material-symbols-outlined text-[20px] text-amber-600">sports</span>
+                        </div>
+                        <h6 className="text-xs font-bold text-slate-900 mb-1">
+                          {isEn ? 'Check-in & Train' : 'Check-in & Luyện tập'}
+                        </h6>
+                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                          {isEn ? 'Arrive at court, use lockers, and train with standard equipment.' : 'Đến sân, sử dụng tủ đồ miễn phí và bắt đầu ca tập luyện.'}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 3. Classes and Timetables Available at this Court */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[18px] text-blue-600">event_note</span>
+                        {isEn ? 'Classes & Timetables at this Court' : 'Lớp đào tạo & Khung ca hoạt động tại sân'}
+                      </h5>
+                      <span className="text-[11px] text-emerald-700 font-bold bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
+                        {isEn ? 'Daily Sessions' : 'Ca học mỗi ngày'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {facilityClasses.length > 0 ? (
+                        facilityClasses.map((cls, idx) => (
+                          <div key={cls.id || idx} className="p-3.5 rounded-xl bg-slate-50 hover:bg-white border border-slate-200 hover:border-emerald-300 transition-all shadow-sm">
+                            <div className="flex items-center justify-between gap-2 mb-1.5">
+                              <span className="px-2 py-0.5 rounded-md text-[10px] font-bold uppercase bg-blue-100 text-blue-800">
+                                {cls.level || (isEn ? 'All Levels' : 'Mọi trình độ')}
+                              </span>
+                              <span className="text-[11px] font-semibold text-emerald-700 flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                                {isEn ? 'Active' : 'Đang mở đăng ký'}
+                              </span>
+                            </div>
+                            <h6 className="text-xs font-bold text-slate-900 truncate mb-1">
+                              {cls.name}
+                            </h6>
+                            <div className="flex items-center gap-3 text-[11px] text-slate-500">
+                              <span className="flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px]">timer</span>
+                                60 {isEn ? 'mins' : 'phút / ca'}
+                              </span>
+                              <span>•</span>
+                              <span className="flex items-center gap-1">
+                                <span className="material-symbols-outlined text-[13px]">groups</span>
+                                12-20 {isEn ? 'slots' : 'chỗ'}
+                              </span>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <>
+                          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-sm space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-amber-100 text-amber-800">
+                                🌅 {isEn ? 'Morning Session' : 'Ca Sáng (06:00 - 11:30)'}
+                              </span>
+                              <span className="text-[10px] font-bold text-emerald-600">{isEn ? 'Available' : 'Mở đặt chỗ'}</span>
+                            </div>
+                            <h6 className="text-xs font-bold text-slate-800">
+                              {isEn ? 'Technical Training & Drills' : 'Tập luyện kỹ thuật & Thể lực nhóm'}
+                            </h6>
+                            <p className="text-[11px] text-slate-500">
+                              {isEn ? 'Ideal for morning individual drills or coached beginner classes.' : 'Thích hợp rèn luyện cá nhân hoặc lớp hướng dẫn căn bản buổi sáng.'}
+                            </p>
+                          </div>
+                          <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 shadow-sm space-y-1">
+                            <div className="flex items-center justify-between">
+                              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-indigo-100 text-indigo-800">
+                                🌙 {isEn ? 'Evening Session' : 'Ca Tối (17:30 - 22:00)'}
+                              </span>
+                              <span className="text-[10px] font-bold text-emerald-600">{isEn ? 'Prime Time' : 'Khung giờ vàng'}</span>
+                            </div>
+                            <h6 className="text-xs font-bold text-slate-800">
+                              {isEn ? 'Club Matches & Advanced Training' : 'Giao lưu CLB & Lớp huấn luyện nâng cao'}
+                            </h6>
+                            <p className="text-[11px] text-slate-500">
+                              {isEn ? 'Team play, sparring, tournament prep and advanced techniques.' : 'Tập đối kháng, ghép đội thi đấu và lớp nâng cao cùng HLV.'}
+                            </p>
+                          </div>
+                        </>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* 4. Visual Membership Packages Cards */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <h5 className="text-xs font-bold uppercase tracking-wider text-slate-700 flex items-center gap-2">
+                        <span className="material-symbols-outlined text-[18px] text-amber-600">loyalty</span>
+                        {isEn ? 'Available Membership Packages' : 'Các gói tập áp dụng quyền lợi tại sân'}
+                      </h5>
+                      <span className="text-[11px] text-slate-400">
+                        {isEn ? 'Full Access Included' : 'Đã bao gồm sân bãi & tủ đồ'}
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      {packages.slice(0, 4).map((pkg) => {
+                        const priceVnd = Number(pkg.price || 0).toLocaleString('vi-VN');
+                        const isPop = pkg.popular || pkg.id === 2 || (pkg.name || '').includes('Pro');
+                        return (
+                          <div
+                            key={pkg.id}
+                            className={`p-4 rounded-xl border transition-all shadow-sm flex flex-col justify-between ${
+                              isPop
+                                ? 'bg-gradient-to-br from-white to-amber-50/40 border-amber-300 ring-1 ring-amber-300/40'
+                                : 'bg-white border-slate-200 hover:border-slate-300'
+                            }`}
+                          >
+                            <div>
+                              <div className="flex items-center justify-between gap-1 mb-1.5">
+                                <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-md ${
+                                  isPop ? 'bg-amber-500 text-white' : 'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {isPop ? (isEn ? 'Popular Choice' : 'Phổ biến nhất') : (pkg.badge || (isEn ? 'Standard' : 'Tiêu chuẩn'))}
+                                </span>
+                                <span className="text-[11px] font-semibold text-slate-400">
+                                  {pkg.durationDays} {isEn ? 'days' : 'ngày'}
+                                </span>
+                              </div>
+                              <h6 className="text-xs sm:text-sm font-extrabold text-slate-900">
+                                {isEn && pkg.nameEn ? pkg.nameEn : pkg.name}
+                              </h6>
+                              <div className="mt-2 mb-3">
+                                <span className="text-lg font-black text-[#2D6A4F] font-chivo">
+                                  {priceVnd}đ
+                                </span>
+                                <span className="text-[11px] text-slate-500 ml-1">
+                                  / {pkg.durationDays >= 365 ? (isEn ? 'year' : 'năm') : pkg.durationDays >= 90 ? (isEn ? 'quarter' : 'quý') : (isEn ? 'month' : 'tháng')}
+                                </span>
+                              </div>
+
+                              <ul className="space-y-1.5 text-[11px] text-slate-600 mb-3">
+                                <li className="flex items-center gap-1.5">
+                                  <span className="material-symbols-outlined text-[14px] text-emerald-600 shrink-0">check_circle</span>
+                                  <span>{pkg.accessType || (isEn ? 'Selected sports' : 'Môn thể thao tự chọn')}</span>
+                                </li>
+                                <li className="flex items-center gap-1.5">
+                                  <span className="material-symbols-outlined text-[14px] text-emerald-600 shrink-0">check_circle</span>
+                                  <span>{isEn ? 'Full court & basic amenities' : 'Tập luyện tại cụm sân này'}</span>
+                                </li>
+                              </ul>
+                            </div>
+
+                            <a
+                              href={membershipAction.href}
+                              className={`w-full py-2 px-3 rounded-lg text-xs font-bold text-center flex items-center justify-center gap-1.5 transition active:scale-95 ${
+                                isPop
+                                  ? 'bg-[#2D6A4F] hover:bg-[#1b4332] text-white shadow-sm'
+                                  : 'bg-slate-100 hover:bg-slate-200 text-slate-700'
+                              }`}
+                            >
+                              <span>{isEn ? 'Choose This Pass' : 'Chọn gói này'}</span>
+                              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                            </a>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* 5. Primary Action Buttons & Hotline Support */}
+                  <div className="pt-2 border-t border-slate-200 space-y-4">
+                    <div className="flex flex-col sm:flex-row gap-3">
+                      <a
+                        href={membershipAction.href}
+                        className="flex-1 py-3 px-5 rounded-xl bg-gradient-to-r from-[#2D6A4F] to-[#40916C] hover:from-[#1b4332] hover:to-[#2D6A4F] text-white text-xs sm:text-sm font-bold text-center flex items-center justify-center gap-2 shadow-md hover:shadow-lg transition active:scale-98"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">loyalty</span>
+                        <span>{isEn ? 'View All Membership Packages' : 'Xem chi tiết & Đăng ký gói tập'}</span>
+                        <span className="material-symbols-outlined text-[16px]">arrow_forward</span>
+                      </a>
+                      <a
+                        href={isMember ? '#/member/schedule' : '#/login?next=schedule'}
+                        className="py-3 px-5 rounded-xl bg-white hover:bg-slate-50 border border-slate-300 text-slate-700 text-xs sm:text-sm font-bold text-center flex items-center justify-center gap-2 shadow-sm transition active:scale-98"
+                      >
+                        <span className="material-symbols-outlined text-[18px] text-blue-600">calendar_month</span>
+                        <span>{isEn ? 'Center-Wide Timetable' : 'Xem thời khóa biểu trung tâm'}</span>
+                      </a>
+                    </div>
+
+                    {/* Support Callout Box */}
+                    <div className="p-3.5 rounded-xl bg-slate-50 border border-slate-200 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-2.5">
+                        <div className="w-8 h-8 rounded-full bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                          <span className="material-symbols-outlined text-[18px]">support_agent</span>
+                        </div>
+                        <div>
+                          <p className="font-bold text-slate-800">
+                            {isEn ? 'Need assistance booking or matching a team?' : 'Cần tư vấn chọn gói hoặc hỗ trợ ghép đội?'}
+                          </p>
+                          <p className="text-[11px] text-slate-500">
+                            {isEn ? 'Contact our receptionists directly for fast court reservation.' : 'Chuyên viên lễ tân luôn sẵn sàng hỗ trợ giữ ca và tư vấn 24/7.'}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 shrink-0">
+                        {contactPhone && (
+                          <a
+                            href={`tel:${contactPhone}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:text-emerald-700 hover:border-emerald-400 font-bold text-xs shadow-sm transition"
+                          >
+                            <span className="material-symbols-outlined text-[14px] text-emerald-600">call</span>
+                            <span>{contactPhone}</span>
+                          </a>
+                        )}
+                        {contactEmail && (
+                          <a
+                            href={`mailto:${contactEmail}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 hover:text-blue-700 hover:border-blue-400 font-bold text-xs shadow-sm transition"
+                            title={contactEmail}
+                          >
+                            <span className="material-symbols-outlined text-[14px] text-blue-600">mail</span>
+                            <span>{isEn ? 'Email Support' : 'Gửi Email'}</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}

@@ -1624,7 +1624,7 @@
 
 .tiya-modal-container {
   width: 100%;
-  max-width: 680px;
+  max-width: 780px;
   max-height: 90vh;
   overflow: hidden;
   border-radius: var(--border-radius-medium);
