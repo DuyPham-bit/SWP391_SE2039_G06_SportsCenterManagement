@@ -88,7 +88,7 @@ export function CloudMediaPickerModal({
       // Làm mới lại danh sách để ảnh mới xuất hiện ngay lập tức
       loadDriveData();
     } catch (err) {
-      setUploadError(err.message || 'Lỗi khi tải ảnh lên máy chủ');
+      setUploadError(err.message || 'Không thể tải ảnh lên thư viện. Vui lòng thử lại sau.');
     } finally {
       setUploadLoading(false);
       if (inputEl) {
@@ -350,7 +350,7 @@ export function CloudMediaPickerModal({
                         <div className="p-2 bg-white">
                           <span className="text-[10px] font-bold text-blue-600 block uppercase truncate flex items-center gap-1">
                             <span className="material-symbols-outlined text-[12px]">cloud_done</span>
-                            {isLocal ? 'Máy chủ Cục bộ' : 'Google Drive'}
+                            {isLocal ? 'Thư viện hệ thống' : 'Google Drive'}
                           </span>
                           <p className="text-[11px] font-medium text-slate-700 truncate mt-0.5" title={item.fileName}>
                             {item.fileName}
@@ -414,7 +414,7 @@ export function CloudMediaPickerModal({
                   <span>Lưu trữ hình ảnh:</span>
                 </div>
                 <p className="text-[11px] text-slate-500 leading-relaxed">
-                  Ảnh được lưu vào thư viện dùng chung. Khi Google Drive tạm thời không khả dụng, hệ thống lưu ảnh trên máy chủ để bạn có thể tiếp tục sử dụng.
+                  Ảnh được lưu vào thư viện dùng chung của trung tâm để bạn và nhân viên có thể sử dụng bất cứ lúc nào.
                 </p>
               </div>
             </div>
