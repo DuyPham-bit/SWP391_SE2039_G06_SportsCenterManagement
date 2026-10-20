@@ -1,16 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { receptionApi, packageApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Badge } from '../../components/common/StatCard.js';
 import { createIdempotencyKey } from '../../services/http.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { openPaymentCheckout } from '../../services/paymentCheckout.js';
 
 export function CounterMembership() {
   const { language } = useLanguage();
   const isEn = language === 'en';
 
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, showInfo, showWarning } = useToast();
+  const checkoutRef = useRef(null);
 
   const [step, setStep] = useState(1); // 1: Member, 2: Package, 3: Payment, 4: Receipt
   const [members, setMembers] = useState([]);
@@ -23,7 +25,6 @@ export function CounterMembership() {
   const [selectedMember, setSelectedMember] = useState(null);
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('TIỀN MẶT');
-  const [posApprovalCode, setPosApprovalCode] = useState('');
   const [amountReceived, setAmountReceived] = useState('');
   const [loadError, setLoadError] = useState('');
   const [processing, setProcessing] = useState(false);
@@ -60,6 +61,11 @@ export function CounterMembership() {
     loadInitial();
   }, []);
 
+  useEffect(() => () => {
+    checkoutRef.current?.dispose();
+    checkoutRef.current = null;
+  }, []);
+
   useEffect(() => {
     setAmountReceived(String(selectedPackage?.price || ''));
   }, [selectedPackage?.id]);
@@ -86,25 +92,49 @@ export function CounterMembership() {
   };
 
   const handleProcessPayment = async (overrideCancelPending = false) => {
-    if (!selectedMember || !selectedPackage) return;
-    const received = paymentMethod === 'THẺ POS' ? selectedPackage.price : Number(amountReceived);
+    if (!selectedMember || !selectedPackage || processing || checkoutRef.current) return;
+    const isVnPay = paymentMethod === 'VNPAY';
+    const received = isVnPay ? selectedPackage.price : Number(amountReceived);
     if (!Number.isFinite(received) || received <= 0) {
       showError(isEn ? 'Please enter a valid received amount greater than 0.' : 'Nhập số tiền thực nhận lớn hơn 0.');
       return;
     }
-    const fingerprint = [selectedMember.id, selectedPackage.id, paymentMethod, received, posApprovalCode.trim(), overrideCancelPending === true].join(':');
+    const fingerprint = [selectedMember.id, selectedPackage.id, paymentMethod, received, overrideCancelPending === true].join(':');
     const idempotencyKey = checkoutAttempt.fingerprint === fingerprint && checkoutAttempt.key
       ? checkoutAttempt.key
       : createIdempotencyKey();
     setCheckoutAttempt({ fingerprint, key: idempotencyKey });
     setProcessing(true);
+    let checkout = null;
     try {
+      if (isVnPay) {
+        checkout = openPaymentCheckout(({ cancelled, failed, closed }) => {
+          checkoutRef.current = null;
+          setProcessing(false);
+          setCheckoutAttempt({ fingerprint: '', key: '' });
+          if (cancelled) showWarning(isEn ? 'VNPay payment was cancelled.' : 'Đã hủy thanh toán VNPay.');
+          else if (failed) showWarning(isEn ? 'VNPay has not confirmed this payment. Check the invoice before retrying.' : 'VNPay chưa xác nhận khoản thanh toán. Hãy kiểm tra hóa đơn trước khi thử lại.');
+          else if (closed) showInfo(isEn ? 'Payment window closed. Check the invoice for the latest status.' : 'Đã đóng cửa sổ thanh toán. Hãy kiểm tra hóa đơn để xem trạng thái mới nhất.');
+          else showSuccess(isEn ? 'VNPay returned the payment result. The invoice status has been updated.' : 'VNPay đã trả kết quả. Trạng thái hóa đơn đã được cập nhật.');
+        });
+        checkoutRef.current = checkout;
+        const result = await receptionApi.createCounterVnPayUrl({
+          memberId: selectedMember.id,
+          packageId: selectedPackage.id,
+          idempotencyKey,
+          cancelPendingIfAny: overrideCancelPending === true
+        });
+        if (checkoutRef.current !== checkout) return;
+        if (!result.paymentUrl) throw new Error(isEn ? 'Backend did not return a VNPay URL.' : 'Backend không trả về địa chỉ VNPay.');
+        checkout.navigate(result.paymentUrl);
+        return;
+      }
+
       const result = await receptionApi.registerCounterPackage({
         memberId: selectedMember.id,
         packageId: selectedPackage.id,
         paymentMethod,
         amountReceived: received,
-        posApprovalCode,
         idempotencyKey,
         cancelPendingIfAny: overrideCancelPending === true
       });
@@ -114,13 +144,16 @@ export function CounterMembership() {
       showSuccess(result.message || (isEn ? 'Payment recorded successfully at counter.' : 'Đã ghi nhận thanh toán tại quầy.'));
       setStep(4);
     } catch (err) {
+      if (checkout && checkoutRef.current !== checkout) return;
+      checkoutRef.current?.dispose();
+      checkoutRef.current = null;
       const match = err.message && err.message.match(/SC-[A-Za-z0-9-]+/);
       if (match) {
         setPendingInvoice(match[0]);
       }
       showError(err.message || (isEn ? 'Counter payment failed!' : 'Lỗi thanh toán tại quầy!'));
     } finally {
-      setProcessing(false);
+      if (!checkoutRef.current) setProcessing(false);
     }
   };
 
@@ -159,8 +192,8 @@ export function CounterMembership() {
           </h1>
           <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
             {isEn
-              ? 'Select member and package, record cash or POS card payments, and instantly issue receipts & activate gate access.'
-              : 'Chọn thành viên và gói tập, ghi nhận tiền mặt hoặc mã chuẩn chi POS, rồi xem biên lai.'}
+              ? 'Select a member and package, then collect cash or open the VNPay Sandbox checkout.'
+              : 'Chọn thành viên và gói tập, sau đó thu tiền mặt hoặc mở cổng VNPay Sandbox.'}
           </p>
         </div>
 
@@ -200,7 +233,7 @@ export function CounterMembership() {
         {[
           { num: 1, label: isEn ? '1. Select Member' : '1. Chọn Hội Viên' },
           { num: 2, label: isEn ? '2. Choose Package' : '2. Chọn Gói Tập' },
-          { num: 3, label: isEn ? '3. Payment & POS' : '3. Thanh Toán' },
+          { num: 3, label: isEn ? '3. Payment' : '3. Thanh Toán' },
           { num: 4, label: isEn ? '4. Invoice & Pass' : '4. Hóa Đơn & Kích Hoạt' }
         ].map(s => (
           <div
@@ -365,7 +398,7 @@ export function CounterMembership() {
         <div className="bg-white dark:bg-slate-900 p-6 sm:p-8 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm space-y-6 max-w-2xl mx-auto hover-lift transition-all">
           <h2 className="font-chivo text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
             <span className="w-6 h-6 rounded-full bg-[#1E2235] text-white flex items-center justify-center text-xs font-black">3</span>
-            {isEn ? 'Counter Payment & POS Checkout' : 'Xác Nhận & Thu Ngân Tại Bàn'}
+            {isEn ? 'Counter Payment & VNPay Sandbox' : 'Xác Nhận & Thanh Toán Tại Quầy'}
           </h2>
 
           {/* Invoice Summary Box */}
@@ -410,12 +443,13 @@ export function CounterMembership() {
             <div className="grid grid-cols-2 gap-3">
               {[
                 { id: 'TIỀN MẶT', label: isEn ? 'CASH' : 'TIỀN MẶT', icon: 'payments' },
-                { id: 'THẺ POS', label: isEn ? 'POS CARD' : 'THẺ POS', icon: 'credit_card' }
+                { id: 'VNPAY', label: 'VNPAY SANDBOX', icon: 'qr_code_2' }
               ].map(m => (
                 <button
                   key={m.id}
                   type="button"
                   onClick={() => setPaymentMethod(m.id)}
+                  aria-pressed={paymentMethod === m.id}
                   className={`p-3.5 rounded-xl border text-xs font-chivo font-bold uppercase tracking-wider transition-all flex flex-col items-center justify-center gap-1.5 cursor-pointer hover-lift ${
                     paymentMethod === m.id
                       ? 'bg-[#1E2235] text-white border-[#1E2235] shadow-md ring-2 ring-[#81B29A]/30'
@@ -448,18 +482,15 @@ export function CounterMembership() {
               </label>
             )}
 
-            {paymentMethod === 'THẺ POS' && (
-              <label className="block mt-3 text-xs font-bold text-slate-700 dark:text-slate-300">
-                {isEn ? 'POS Approval Code *' : 'Mã chuẩn chi POS *'}
-                <input
-                  required
-                  value={posApprovalCode}
-                  onChange={event => setPosApprovalCode(event.target.value)}
-                  maxLength={100}
-                  className="mt-1 w-full px-3 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
-                  placeholder={isEn ? 'Enter approval code from POS terminal' : 'Nhập mã chuẩn chi từ máy POS'}
-                />
-              </label>
+            {paymentMethod === 'VNPAY' && (
+              <div className="mt-3 p-3.5 rounded-xl bg-blue-50 dark:bg-blue-950/30 text-blue-900 dark:text-blue-200 text-xs flex items-start gap-2.5 border border-blue-100 dark:border-blue-900/50">
+                <span className="material-symbols-outlined text-[20px] text-blue-600 shrink-0">verified_user</span>
+                <p className="leading-relaxed">
+                  {isEn
+                    ? 'VNPay Sandbox opens in a secure payment window. The package activates only after the backend verifies the gateway response.'
+                    : 'VNPay Sandbox sẽ mở trong cửa sổ thanh toán riêng. Gói tập chỉ được kích hoạt sau khi backend xác minh phản hồi từ cổng.'}
+                </p>
+              </div>
             )}
           </div>
 
@@ -521,8 +552,12 @@ export function CounterMembership() {
               disabled={processing}
               className="px-6 py-3 bg-[#2D6A4F] hover:bg-[#1B4332] disabled:opacity-50 text-white font-chivo text-xs font-black uppercase tracking-wider rounded-xl shadow-lg transition-all hover-lift flex items-center gap-2 cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[20px]">check_circle</span>
-              <span>{processing ? (isEn ? 'Processing...' : 'Đang ghi nhận...') : (isEn ? 'Confirm Payment' : 'Xác nhận khoản thu')}</span>
+              <span className={`material-symbols-outlined text-[20px] ${processing ? 'animate-spin' : ''}`} aria-hidden="true">
+                {processing ? 'progress_activity' : paymentMethod === 'VNPAY' ? 'open_in_new' : 'check_circle'}
+              </span>
+              <span>{processing
+                ? (paymentMethod === 'VNPAY' ? (isEn ? 'Connecting VNPay...' : 'Đang kết nối VNPay...') : (isEn ? 'Processing...' : 'Đang ghi nhận...'))
+                : (paymentMethod === 'VNPAY' ? (isEn ? 'Open VNPay Sandbox' : 'Mở VNPay Sandbox') : (isEn ? 'Confirm Payment' : 'Xác nhận khoản thu'))}</span>
             </button>
           </div>
         </div>

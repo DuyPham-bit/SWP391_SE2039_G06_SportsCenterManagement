@@ -43,6 +43,12 @@ namespace SportsCenterManagement.BLL.DTOs.Payments
         public bool CancelPendingIfAny { get; set; }
     }
 
+    public sealed class CounterOnlinePaymentRequest : CreatePaymentRequest
+    {
+        [Range(1, long.MaxValue, ErrorMessage = "Hội viên không hợp lệ.")]
+        public long MemberId { get; set; }
+    }
+
     public class CancelPendingRequest
     {
         [MaxLength(50)]

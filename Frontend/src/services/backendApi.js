@@ -601,6 +601,18 @@ export const receptionApi = {
     };
   },
 
+  async createCounterVnPayUrl({ memberId, packageId, idempotencyKey, cancelPendingIfAny = false }) {
+    return apiRequest('payments/counter-vnpay-url', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey || createIdempotencyKey() },
+      body: {
+        memberId: Number(memberId),
+        packageId: Number(packageId),
+        cancelPendingIfAny: cancelPendingIfAny === true
+      }
+    });
+  },
+
   async cancelPendingInvoice({ invoiceNumber, packageId, memberId }) {
     return apiRequest('payments/cancel-pending', {
       method: 'POST',

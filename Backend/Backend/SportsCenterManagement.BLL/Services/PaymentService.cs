@@ -36,9 +36,34 @@ public sealed class PaymentService(
         string idempotencyKey,
         CancellationToken cancellationToken = default)
     {
+        return await CreateVnPayPaymentUrlCoreAsync(
+            memberId, memberId, null, request, ipAddress, idempotencyKey, cancellationToken);
+    }
+
+    public async Task<string> CreateCounterVnPayPaymentUrlAsync(
+        long staffUserId,
+        long? staffCenterId,
+        CounterOnlinePaymentRequest request,
+        string ipAddress,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        return await CreateVnPayPaymentUrlCoreAsync(
+            request.MemberId, staffUserId, staffCenterId, request, ipAddress, idempotencyKey, cancellationToken);
+    }
+
+    private async Task<string> CreateVnPayPaymentUrlCoreAsync(
+        long memberId,
+        long actorUserId,
+        long? allowedCenterId,
+        CreatePaymentRequest request,
+        string ipAddress,
+        string idempotencyKey,
+        CancellationToken cancellationToken)
+    {
         EnsureGatewayConfiguration("VNPay", "VnPay:TmnCode", "VnPay:HashSecret", "VnPay:BaseUrl", "VnPay:ReturnUrl");
         var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, request, "VNPAY", idempotencyKey, cancellationToken);
+            memberId, actorUserId, allowedCenterId, request, "VNPAY", idempotencyKey, cancellationToken);
         if (!string.IsNullOrWhiteSpace(existingLink))
         {
             return existingLink;
@@ -75,7 +100,7 @@ public sealed class PaymentService(
     {
         EnsureGatewayConfiguration("MoMo", "Momo:PartnerCode", "Momo:AccessKey", "Momo:SecretKey", "Momo:PaymentUrl", "Momo:ReturnUrl", "Momo:NotifyUrl");
         var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, request, "MOMO", idempotencyKey, cancellationToken);
+            memberId, memberId, null, request, "MOMO", idempotencyKey, cancellationToken);
         if (!string.IsNullOrWhiteSpace(existingLink))
         {
             return existingLink;
@@ -130,7 +155,7 @@ public sealed class PaymentService(
         EnsureGatewayConfiguration("PayOS", "PayOS:ClientId", "PayOS:ApiKey", "PayOS:ChecksumKey", "PayOS:BaseUrl", "PayOS:ReturnUrl", "PayOS:CancelUrl");
         EnsurePayOsUrlConfiguration();
         var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, request, "PAYOS", idempotencyKey, cancellationToken);
+            memberId, memberId, null, request, "PAYOS", idempotencyKey, cancellationToken);
         if (!string.IsNullOrWhiteSpace(existingLink))
         {
             return existingLink;
@@ -1185,6 +1210,8 @@ public sealed class PaymentService(
 
     private async Task<(Invoice Invoice, Payment Payment, string? ExistingLink)> PrepareOnlinePaymentAsync(
         long memberId,
+        long actorUserId,
+        long? allowedCenterId,
         CreatePaymentRequest request,
         string provider,
         string idempotencyKey,
@@ -1195,7 +1222,7 @@ public sealed class PaymentService(
             throw BusinessException.BadRequest("Cần PackageId để tạo hóa đơn mới.");
         }
 
-        var scopedKey = ScopeIdempotencyKey(memberId, idempotencyKey);
+        var scopedKey = ScopeIdempotencyKey(actorUserId, idempotencyKey);
         await using var transaction = await _unitOfWork.Context.Database
             .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -1259,6 +1286,7 @@ public sealed class PaymentService(
             package = await _unitOfWork.Context.MembershipPackages
                 .SingleOrDefaultAsync(candidate => candidate.Id == request.PackageId && candidate.Status == "Active", cancellationToken)
                 ?? throw BusinessException.NotFound("Gói tập không tồn tại hoặc đã ngừng hoạt động.");
+            EnsureCenterScope(allowedCenterId, package.CenterId);
             if (package.Price <= 0 || package.DurationDays <= 0)
             {
                 throw BusinessException.Conflict("Gói tập phải có giá và thời hạn lớn hơn 0.");
@@ -1283,7 +1311,7 @@ public sealed class PaymentService(
                         .SingleOrDefaultAsync(i => i.InvoiceNumber == pendingInvoiceNumber, cancellationToken);
                     if (existingPendingInv is not null)
                     {
-                        await CancelPendingInvoiceCoreAsync(member.UserId, existingPendingInv, now, cancellationToken);
+                        await CancelPendingInvoiceCoreAsync(actorUserId, existingPendingInv, now, cancellationToken);
                         await _unitOfWork.SaveChangesAsync(cancellationToken);
                     }
                 }
@@ -1318,7 +1346,7 @@ public sealed class PaymentService(
                 IdempotencyKey = scopedKey,
                 MemberId = memberId,
                 CenterId = package.CenterId,
-                CreatedBy = member.UserId,
+                CreatedBy = actorUserId,
                 Subtotal = package.Price,
                 Discount = 0,
                 Tax = 0,
@@ -1356,6 +1384,8 @@ public sealed class PaymentService(
             package = await _unitOfWork.Context.MembershipPackages
                 .SingleAsync(candidate => candidate.Id == item.PackageId, cancellationToken);
         }
+
+        EnsureCenterScope(allowedCenterId, invoice.CenterId);
 
         var memberProfile = await _unitOfWork.Context.MemberProfiles
             .SingleAsync(candidate => candidate.Id == memberId, cancellationToken);

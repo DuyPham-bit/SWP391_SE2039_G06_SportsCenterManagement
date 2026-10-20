@@ -358,7 +358,7 @@ export function CounterInvoices() {
 
             <div className="flex flex-wrap gap-2 items-start">
               <button
-                className="px-4 py-2 bg-[#1E2235] hover:bg-[#2B2D42] text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer flex items-center gap-1.5"
+                className="px-4 py-2 bg-[#1B4332] hover:bg-[#2D6A4F] text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer flex items-center gap-1.5 shadow-sm"
                 disabled={busy}
                 onClick={() => printInvoice(detail)}
               >
@@ -430,35 +430,71 @@ export function CounterInvoices() {
             ))}
           </div>
 
-          {/* Payment History */}
+          {/* Payment History - Structured Table matching official SCMS receipt standard */}
           <div className="space-y-3">
-            <h3 className="font-chivo text-xs font-black uppercase tracking-wider text-slate-800 dark:text-slate-200">
-              {isEn ? 'Payment Transactions History' : 'Lịch Sử Thanh Toán'}
+            <h3 className="font-chivo text-sm font-black text-slate-900 dark:text-white">
+              {isEn ? 'Payment Transactions History' : 'Lịch sử thanh toán'}
             </h3>
             {!detail.payments.length ? (
-              <p className="text-xs text-slate-400 dark:text-slate-500">{isEn ? 'No payment transactions recorded yet.' : 'Chưa ghi nhận thanh toán.'}</p>
+              <p className="text-xs text-slate-400 dark:text-slate-500">
+                {isEn ? 'No payment transactions recorded yet.' : 'Chưa ghi nhận thanh toán.'}
+              </p>
             ) : (
-              detail.payments.map(p => (
-                <div key={p.id} className="text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3.5 space-y-1">
-                  <div className="flex justify-between items-center">
-                    <span className="font-bold text-slate-900 dark:text-white">
-                      {p.paymentMethod} · <span className="font-mono">{money(p.amount)}</span>
-                    </span>
-                    <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-100 dark:bg-emerald-950/40 text-emerald-800 dark:text-emerald-300">
-                      {p.status}
-                    </span>
-                  </div>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 font-mono">
-                    {p.transactionCode} · {formatMemberDateTime(p.paidAtUtc || p.createdAtUtc)}
-                  </p>
-                  {(p.refunds || []).map(r => (
-                    <p key={r.id} className="mt-1 text-[#E07A5F] text-[11px]">
-                      {isEn ? 'Refund' : 'Hoàn tiền'}: {money(r.amount)} · {r.status} · {r.reason}
-                    </p>
-                  ))}
-                </div>
-              ))
+              <div className="border border-slate-200 dark:border-slate-800 rounded-xl overflow-x-auto shadow-2xs bg-white dark:bg-slate-900">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold">
+                    <tr className="border-b border-slate-200 dark:border-slate-700">
+                      <th className="p-3">{isEn ? 'Transaction' : 'Giao dịch'}</th>
+                      <th className="p-3">{isEn ? 'Method' : 'Phương thức'}</th>
+                      <th className="p-3">{isEn ? 'Status' : 'Trạng thái'}</th>
+                      <th className="p-3">{isEn ? 'Amount' : 'Số tiền'}</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                    {detail.payments.map((p, pIdx) => (
+                      <tr key={p.id || pIdx} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/40">
+                        <td className="p-3 font-mono">
+                          {p.transactionCode && <span className="block font-bold text-slate-800 dark:text-slate-200">{p.transactionCode}</span>}
+                          <span className="text-slate-500 dark:text-slate-400 text-[11px] block">
+                            {formatMemberDateTime(p.paidAtUtc || p.createdAtUtc)}
+                          </span>
+                        </td>
+                        <td className="p-3 font-semibold text-slate-800 dark:text-slate-200">{p.paymentMethod}</td>
+                        <td className="p-3">
+                          <span className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${
+                            String(p.status).toLowerCase().includes('success') || String(p.status).toLowerCase().includes('paid')
+                              ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800'
+                              : String(p.status).toLowerCase().includes('void') || String(p.status).toLowerCase().includes('fail') || String(p.status).toLowerCase().includes('cancel')
+                              ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border border-rose-200 dark:border-rose-800'
+                              : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800'
+                          }`}>
+                            {p.status}
+                          </span>
+                        </td>
+                        <td className="p-3 whitespace-nowrap font-mono font-bold text-slate-900 dark:text-white">
+                          {money(p.amount)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
             )}
+
+            {(detail.payments.flatMap(p => p.refunds || [])).length > 0 && (
+              <div className="space-y-1.5 pt-1">
+                {detail.payments.flatMap(p => (p.refunds || []).map(r => (
+                  <p key={r.id} className="text-xs text-[#E07A5F] dark:text-[#F2CC8F] font-medium flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px]">currency_exchange</span>
+                    <span>{isEn ? 'Refund' : 'Hoàn tiền'} {r.id}: <strong>{money(r.amount)}</strong> · {r.status} · {r.reason}</span>
+                  </p>
+                )))}
+              </div>
+            )}
+
+            <p className="text-[11px] text-slate-500 dark:text-slate-400 pt-1">
+              {isEn ? 'SCMS cash receipt & collection documentation.' : 'Chứng từ thu tiền từ hệ thống SCMS.'}
+            </p>
           </div>
 
           {/* Collect Subsequent Payment Form */}

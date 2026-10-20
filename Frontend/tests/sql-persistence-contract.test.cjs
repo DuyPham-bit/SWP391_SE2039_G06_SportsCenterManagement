@@ -78,3 +78,24 @@ test('ambiguous member and API failures cannot fabricate a successful local reco
   });
   await assert.rejects(unavailable.receptionApi.requestCheckInReview('MB-1', 'Lý do', 'Quản lý'), /SQL unavailable/);
 });
+
+test('counter VNPay Sandbox checkout sends the selected member to the staff-scoped endpoint', async () => {
+  const f = loadApi(() => ({ paymentUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html' }));
+  const result = await f.receptionApi.createCounterVnPayUrl({
+    memberId: 21,
+    packageId: 7,
+    idempotencyKey: 'counter-vnpay-test-key',
+    cancelPendingIfAny: true
+  });
+
+  assert.match(result.paymentUrl, /^https:\/\/sandbox\.vnpayment\.vn\//);
+  assert.equal(f.calls.length, 1);
+  assert.equal(f.calls[0].route, 'payments/counter-vnpay-url');
+  assert.equal(f.calls[0].options.method, 'POST');
+  assert.equal(f.calls[0].options.headers['Idempotency-Key'], 'counter-vnpay-test-key');
+  assert.deepEqual({ ...f.calls[0].options.body }, {
+    memberId: 21,
+    packageId: 7,
+    cancelPendingIfAny: true
+  });
+});
