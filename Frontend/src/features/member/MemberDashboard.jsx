@@ -374,22 +374,22 @@ export function MemberDashboard() {
   return (
     <div className="space-y-6 pb-12 font-lexend">
       {/* 1. Olympic Hero Masterpiece Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-[#121624] via-[#181D2F] to-[#1E2235] text-white p-6 sm:p-8 border border-slate-700/60 shadow-xl overflow-hidden animate-fade-slide-up">
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#344E41] text-white p-6 sm:p-8 border border-emerald-700/40 shadow-xl overflow-hidden animate-fade-slide-up">
         {/* Glow accents */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#81B29A]/15 rounded-full blur-3xl pointer-events-none animate-float" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-[#F2CC8F]/10 rounded-full blur-3xl pointer-events-none animate-float" />
+        <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-300/15 rounded-full blur-3xl pointer-events-none animate-float" />
+        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-[#F2CC8F]/15 rounded-full blur-3xl pointer-events-none animate-float" />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
             {/* Avatar block with initial & verified dot */}
             <div className="relative shrink-0">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#F2CC8F] via-[#81B29A] to-[#E07A5F] p-0.5 shadow-lg shadow-black/40">
-                <div className="w-full h-full rounded-[14px] bg-[#1E2235] flex items-center justify-center text-[#F2CC8F] font-black text-2xl sm:text-3xl uppercase tracking-wider">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#F2CC8F] via-[#81B29A] to-[#E07A5F] p-0.5 shadow-lg shadow-black/20">
+                <div className="w-full h-full rounded-[14px] bg-[#1B4332] flex items-center justify-center text-[#F2CC8F] font-black text-2xl sm:text-3xl uppercase tracking-wider">
                   {currentUser?.fullName?.charAt(0) || 'M'}
                 </div>
               </div>
               <span
-                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#1E2235] flex items-center justify-center shadow animate-pulse-ring"
+                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#1B4332] flex items-center justify-center shadow animate-pulse-ring"
                 title={isEn ? 'Account Online' : 'Tài khoản đang trực tuyến'}
               >
                 <span className="material-symbols-outlined text-[12px] text-white font-bold">check</span>

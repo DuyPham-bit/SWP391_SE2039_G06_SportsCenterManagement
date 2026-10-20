@@ -142,8 +142,8 @@ export function PerformanceDashboard() {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* 1. Top Header Banner */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#2B2D42] to-[#3D405B] text-white p-5 sm:p-7 shadow-md border border-white/10">
-        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
+      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white p-5 sm:p-7 shadow-xl border border-emerald-700/30">
+        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-emerald-300/15 blur-3xl" />
         <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">

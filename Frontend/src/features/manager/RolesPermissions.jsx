@@ -209,8 +209,8 @@ export function RolesPermissions() {
 
   return (
     <div className="space-y-6 pb-16 animate-fade-slide-up">
-      {/* Top Banner / Header - Olympic Midnight Navy */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] p-6 lg:p-8 text-white shadow-xl">
+      {/* Top Banner / Header - Olympic Emerald */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] p-6 lg:p-8 text-white shadow-xl">
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#81B29A]/10 blur-3xl pointer-events-none" />
         <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-[#F2CC8F]/10 blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">

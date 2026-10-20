@@ -160,8 +160,8 @@ export function HomeContentManagement() {
 
   return (
     <fieldset disabled={isSaving} aria-busy={isSaving} className="space-y-6 pb-20 font-inter min-w-0 animate-fade-slide-up">
-      {/* 1. TOP HEADER BANNER (Midnight Navy gradient with Olympic Accents) */}
-      <div className="bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] text-white rounded-2xl p-6 sm:p-8 border border-white/10 shadow-xl relative overflow-hidden">
+      {/* 1. TOP HEADER BANNER (Olympic Emerald gradient with Gold Accents) */}
+      <div className="bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white rounded-2xl p-6 sm:p-8 border border-emerald-700/30 shadow-xl relative overflow-hidden">
         <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-[#2D6A4F]/20 to-transparent pointer-events-none" />
         <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-[#F2CC8F]/5 rounded-full blur-2xl pointer-events-none" />
 

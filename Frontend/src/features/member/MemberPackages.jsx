@@ -305,14 +305,14 @@ export function MemberPackages() {
       )}
 
       {/* Current Active Package Card (Olympic Pass Membership Visual) */}
-      <div className="p-6 rounded-3xl bg-gradient-to-br from-[#1E2235] via-[#2B2D42] to-[#151724] text-white border border-white/10 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white border border-emerald-700/30 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
         {/* Ambient Glows */}
         <div className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
-        <div className="pointer-events-none absolute left-1/3 -bottom-16 w-48 h-48 rounded-full bg-[#81B29A]/15 blur-3xl" />
+        <div className="pointer-events-none absolute left-1/3 -bottom-16 w-48 h-48 rounded-full bg-emerald-300/15 blur-3xl" />
 
         <div className="relative z-10 flex items-start gap-4">
           <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#81B29A] to-[#F2CC8F] p-0.5 shadow-md shrink-0 flex items-center justify-center">
-            <div className="w-full h-full rounded-[14px] bg-[#1E2235] flex items-center justify-center">
+            <div className="w-full h-full rounded-[14px] bg-[#1B4332] flex items-center justify-center">
               <span className="material-symbols-outlined text-[24px] text-[#F2CC8F]">workspace_premium</span>
             </div>
           </div>

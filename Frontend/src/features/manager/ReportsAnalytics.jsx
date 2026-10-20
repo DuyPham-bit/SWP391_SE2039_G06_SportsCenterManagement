@@ -188,8 +188,8 @@ export function ReportsAnalytics() {
         </div>
       </div>
 
-      {/* 1. PAGE HEADER - OLYMPIC MIDNIGHT NAVY HERO */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] p-6 lg:p-8 text-white shadow-xl print:p-5 print:rounded-2xl">
+      {/* 1. PAGE HEADER - OLYMPIC EMERALD HERO */}
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] p-6 lg:p-8 text-white shadow-xl print:p-5 print:rounded-2xl">
         <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#81B29A]/10 blur-3xl pointer-events-none" />
         <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-[#F2CC8F]/10 blur-2xl pointer-events-none" />
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">

@@ -121,13 +121,13 @@ export function CloudMediaPickerModal({
       <div className="relative w-full max-w-4xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col font-inter">
         
         {/* Header */}
-        <div className="p-5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
+        <div className="p-5 bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white flex items-center justify-between border-b border-emerald-700/30 shrink-0">
           <div className="flex items-center gap-3">
-            <span className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shrink-0 shadow-md shadow-red-600/30">
+            <span className="w-10 h-10 rounded-xl bg-white/15 backdrop-blur-md flex items-center justify-center text-[#F2CC8F] shrink-0 shadow-md">
               <span className="material-symbols-outlined text-[22px]">cloud_sync</span>
             </span>
             <div>
-              <span className="font-chivo text-[10px] font-black uppercase tracking-widest text-red-400 block">
+              <span className="font-chivo text-[10px] font-black uppercase tracking-widest text-[#F2CC8F] block">
                 GOOGLE DRIVE CLOUD OBJECT STORAGE &amp; CMS
               </span>
               <h3 className="font-chivo text-lg font-black uppercase text-white leading-tight mt-0.5">

@@ -199,12 +199,12 @@ export function CoachDashboard() {
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] space-y-6 animate-fadeIn pb-10">
       
       {/* ─────────────────────────────────────────────────────────────
-          1. TOP BANNER GRADIENT (Xanh Navy Slate & 3 Chỉ số Trọng tâm)
+          1. TOP BANNER GRADIENT (Olympic Emerald & 3 Chỉ số Trọng tâm)
       ───────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 sm:p-8 shadow-sm border border-slate-800/80">
+      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white p-6 sm:p-8 shadow-xl border border-emerald-700/30">
         {/* Glow ambient background trang trí */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-72 h-72 rounded-full bg-blue-500/15 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-60 h-60 rounded-full bg-indigo-500/15 blur-3xl" />
+        <div className="pointer-events-none absolute -right-16 -top-16 w-72 h-72 rounded-full bg-emerald-300/15 blur-3xl" />
+        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-60 h-60 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
 
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
@@ -319,7 +319,7 @@ export function CoachDashboard() {
                   onClick={() => setFilterPeriod(period.id)}
                   className={`px-3 py-1 text-xs font-bold rounded-lg transition-all duration-150 cursor-pointer ${
                     filterPeriod === period.id
-                      ? 'bg-slate-900 text-white shadow-2xs'
+                      ? 'bg-[#2D6A4F] text-white shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >
