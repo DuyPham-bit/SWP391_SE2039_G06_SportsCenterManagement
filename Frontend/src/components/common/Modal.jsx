@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 
 const FOCUSABLE_SELECTOR = [
   'button:not([disabled])',
@@ -78,8 +79,8 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-50 overflow-y-auto p-4 sm:p-6 flex items-center justify-center min-h-screen">
+  const modalNode = (
+    <div className="fixed inset-0 z-[100] overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
       {/* Backdrop */}
       <div
         className="fixed inset-0 bg-slate-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity"
@@ -94,7 +95,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`relative bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full ${maxWidth} max-h-[min(90vh,820px)] flex flex-col overflow-hidden transform transition-all z-10 my-auto animate-scaleUp`}
+        className={`relative bg-white dark:bg-slate-900 rounded-2xl sm:rounded-3xl shadow-2xl border border-slate-200/90 dark:border-slate-800 w-full ${maxWidth} max-h-[min(90vh,820px)] flex flex-col overflow-hidden transform transition-all z-10 animate-scaleUp`}
       >
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-6 py-4.5 border-b border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-800/40">
@@ -112,10 +113,16 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
         </div>
 
         {/* Content */}
-        <div className="flex-1 overflow-y-auto p-5 sm:p-6 overscroll-contain text-slate-800 dark:text-slate-200">
+        <div className="flex-1 min-h-0 overflow-y-auto p-5 sm:p-6 overscroll-contain text-slate-800 dark:text-slate-200">
           {children}
         </div>
       </div>
     </div>
   );
+
+  if (typeof document !== 'undefined') {
+    return createPortal(modalNode, document.body);
+  }
+
+  return modalNode;
 }
