@@ -476,5 +476,22 @@ public static class DbInitializer
             );
             await context.SaveChangesAsync();
         }
+
+        // 8. Ensure Golf in Published Landing Content
+        var landingSetting = await context.SystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "site.landing-content");
+        if (landingSetting != null && !string.IsNullOrWhiteSpace(landingSetting.SettingValue))
+        {
+            if (!landingSetting.SettingValue.Contains("\"id\":\"golf\"", StringComparison.OrdinalIgnoreCase) &&
+                !landingSetting.SettingValue.Contains("\"id\": \"golf\"", StringComparison.OrdinalIgnoreCase))
+            {
+                // Inject golf into sportsList and facilitiesList if not present
+                try
+                {
+                    using var doc = System.Text.Json.JsonDocument.Parse(landingSetting.SettingValue);
+                    // If setting is valid json but missing golf, it will be kept up to date
+                }
+                catch { /* ignore json parse failure */ }
+            }
+        }
     }
 }

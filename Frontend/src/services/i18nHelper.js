@@ -12,7 +12,8 @@ export const CLASS_NAME_MAP = {
   'Bơi sải Kỹ thuật Olympic': 'Olympic Freestyle Swimming',
   'Tennis Cơ bản & Giao bóng Chuẩn': 'Basic Tennis & Standard Serve',
   'Bóng rổ Thi đấu Đồng đội': 'Team Competition Basketball',
-  'Pilates Giảm mỡ Cốt lõi Core': 'Core Fat Loss Pilates'
+  'Pilates Giảm mỡ Cốt lõi Core': 'Core Fat Loss Pilates',
+  'Golf Nhập Môn & Kỹ Thuật Swing TrackMan': 'Introductory Golf & TrackMan Swing Technique'
 };
 
 export const SPORT_NAME_MAP = {
