@@ -345,6 +345,11 @@ public static class DbInitializer
             await context.Sports.AddAsync(golfSport);
             await context.SaveChangesAsync();
         }
+        else if (golfSport.Status != "Active")
+        {
+            golfSport.Status = "Active";
+            await context.SaveChangesAsync();
+        }
 
         var golfRoom = await context.Rooms.FirstOrDefaultAsync(r => r.Name.Contains("Golf"));
         if (golfRoom == null)
@@ -360,6 +365,115 @@ public static class DbInitializer
                 CreatedAt = DateTime.UtcNow
             };
             await context.Rooms.AddAsync(golfRoom);
+            await context.SaveChangesAsync();
+        }
+
+        // 3. Ensure Coach Specialization
+        var coach = await context.CoachProfiles.FirstOrDefaultAsync(c => c.Id == 13)
+                    ?? await context.CoachProfiles.FirstOrDefaultAsync();
+        if (coach != null)
+        {
+            if (!await context.CoachSports.AnyAsync(cs => cs.CoachId == coach.Id && cs.SportId == golfSport.Id))
+            {
+                context.CoachSports.Add(new CoachSport { CoachId = coach.Id, SportId = golfSport.Id });
+                if (string.IsNullOrWhiteSpace(coach.Specialization) || coach.Specialization.Contains("Thể lực"))
+                {
+                    coach.Specialization = "Golf Chuẩn PGA, Phân Tích Swing TrackMan 4K";
+                }
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 4. Ensure Golf Class
+        var golfClass = await context.Classes.FirstOrDefaultAsync(c => c.SportId == golfSport.Id);
+        if (golfClass == null)
+        {
+            golfClass = new ClassEntity
+            {
+                CenterId = center.Id,
+                SportId = golfSport.Id,
+                RoomId = golfRoom.Id,
+                Name = "Golf Nhập Môn & Kỹ Thuật Swing TrackMan",
+                Description = "Khóa đào tạo Golf chuẩn quốc tế từ tư thế cầm gậy (grip), nhịp swing đến phân tích thông số đường bóng trên máy TrackMan 4K.",
+                Level = "All Levels",
+                Capacity = 12,
+                DurationMinutes = 60,
+                Status = "Published",
+                AllowWaitlist = true,
+                CreatedAt = DateTime.UtcNow
+            };
+            await context.Classes.AddAsync(golfClass);
+            await context.SaveChangesAsync();
+        }
+
+        // 5. Ensure Class Coach Assignment
+        if (coach != null && !await context.ClassCoaches.AnyAsync(cc => cc.ClassId == golfClass.Id && cc.CoachId == coach.Id))
+        {
+            context.ClassCoaches.Add(new ClassCoach
+            {
+                ClassId = golfClass.Id,
+                CoachId = coach.Id,
+                AssignedDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                IsPrimary = true
+            });
+            await context.SaveChangesAsync();
+        }
+
+        // 6. Ensure Class Schedule
+        if (!await context.ClassSchedules.AnyAsync(cs => cs.ClassId == golfClass.Id))
+        {
+            context.ClassSchedules.Add(new ClassSchedule
+            {
+                ClassId = golfClass.Id,
+                RoomId = golfRoom.Id,
+                DayOfWeek = 6, // Saturday
+                StartTime = new TimeOnly(8, 0),
+                EndTime = new TimeOnly(9, 0),
+                StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
+                EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(3)),
+                Status = "Active"
+            });
+            await context.SaveChangesAsync();
+        }
+
+        // 7. Ensure Golf Exercises
+        if (!await context.Exercises.AnyAsync(e => e.SportId == golfSport.Id))
+        {
+            context.Exercises.AddRange(
+                new Exercise
+                {
+                    SportId = golfSport.Id,
+                    CenterId = center.Id,
+                    Name = "Golf Grip & Stance Chuẩn Quốc Tế",
+                    Description = "Kỹ thuật cầm gậy Overlapping/Interlocking và thế đứng căn chỉnh trọng tâm.",
+                    MuscleGroup = "Core & Full Body",
+                    DifficultyLevel = "Beginner",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow
+                },
+                new Exercise
+                {
+                    SportId = golfSport.Id,
+                    CenterId = center.Id,
+                    Name = "Kỹ Thuật Full Swing Gậy Sắt 7 (Iron 7)",
+                    Description = "Chuyển giao lực hông, giữ góc xoay vai và điểm tiếp xúc bóng lý tưởng.",
+                    MuscleGroup = "Vai, Lưng, Hông",
+                    DifficultyLevel = "Intermediate",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow
+                },
+                new Exercise
+                {
+                    SportId = golfSport.Id,
+                    CenterId = center.Id,
+                    Name = "Putting & Chipping Cảm Biến 3D TrackMan",
+                    Description = "Luyện cảm giác gạt bóng trên green và cú chip tầm ngắn tiếp cận cờ hiệu quả.",
+                    MuscleGroup = "Cổ tay & Thăng bằng",
+                    DifficultyLevel = "All Levels",
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow
+                }
+            );
             await context.SaveChangesAsync();
         }
     }

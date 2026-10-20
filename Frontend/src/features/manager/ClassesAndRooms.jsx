@@ -17,6 +17,13 @@ import {
 
 // Visual Sport Theme Mapping
 const SPORT_THEMES = {
+  GOLF: {
+    match: ['golf', 'driving range', 'putting', 'simulator', 'trackman'],
+    icon: 'sports_golf',
+    badgeClass: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800',
+    barGrad: 'from-emerald-500 to-green-600',
+    accentColor: '#10b981'
+  },
   SWIMMING: {
     match: ['bơi', 'swim', 'hồ bơi', 'bể bơi'],
     icon: 'pool',
