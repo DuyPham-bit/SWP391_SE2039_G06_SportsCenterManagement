@@ -5,7 +5,6 @@ import {
   getLegacyLandingContent,
   loadLandingContent,
   saveLandingContent,
-  resetLandingContentToDefault,
   openLandingPreview
 } from '../../services/landingContentService.js';
 import { CloudMediaPickerModal } from '../../components/common/CloudMediaPickerModal.jsx';
@@ -19,7 +18,6 @@ export function HomeContentManagement() {
   const [content, setContent] = useState(() => getLandingContent());
   const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'whyUs' | 'sports' | 'facilities' | 'zones' | 'footer'
   const [isDirty, setIsDirty] = useState(false);
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
@@ -87,26 +85,6 @@ export function HomeContentManagement() {
       );
     } catch (error) {
       addToast(error.message || (isEn ? 'Error saving content. Please try again.' : 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.'), 'error');
-    } finally { setIsSaving(false); }
-  };
-
-  // Khôi phục mặc định
-  const handleResetDefault = async () => {
-    if (isSaving) return;
-    setIsSaving(true);
-    try {
-      const defaultData = await resetLandingContentToDefault();
-      setContent(defaultData);
-      setIsDirty(false);
-      setIsResetConfirmOpen(false);
-      addToast(
-        isEn
-          ? 'Editorial content reset. Operational records remain synced with database.'
-          : 'Đã đặt lại nội dung biên tập. Dữ liệu nghiệp vụ vẫn được tải từ database.',
-        'info'
-      );
-    } catch (error) {
-      addToast(error.message || (isEn ? 'Unable to reset content. Please try again.' : 'Không thể khôi phục nội dung. Vui lòng thử lại.'), 'error');
     } finally { setIsSaving(false); }
   };
 
@@ -213,16 +191,6 @@ export function HomeContentManagement() {
             >
               <span className="material-symbols-outlined text-[17px]">visibility</span>
               <span>{isEn ? 'Preview Homepage' : 'Xem Trước Trang Chủ'}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setIsResetConfirmOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-rose-950/40 border border-white/10 hover:border-rose-500/40 text-slate-300 hover:text-rose-300 text-xs font-bold uppercase transition-all flex items-center gap-1.5 hover-lift"
-              title={isEn ? 'Reset to default initial content' : 'Khôi phục lại nội dung chuẩn ban đầu'}
-            >
-              <span className="material-symbols-outlined text-[17px]">restart_alt</span>
-              <span>{isEn ? 'Reset to Default' : 'Khôi Phục Gốc'}</span>
             </button>
 
             <button
@@ -937,41 +905,6 @@ export function HomeContentManagement() {
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 4. MODAL XÁC NHẬN KHÔI PHỤC MẶC ĐỊNH */}
-      {isResetConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl border border-slate-200 dark:border-slate-800 p-6 text-center font-inter">
-            <div className="w-14 h-14 rounded-full bg-amber-100 dark:bg-amber-950/40 text-amber-600 dark:text-amber-400 flex items-center justify-center mx-auto mb-4">
-              <span className="material-symbols-outlined text-[32px]">warning</span>
-            </div>
-            <h3 className="text-lg font-black uppercase text-slate-900 dark:text-white">
-              {isEn ? 'Confirm Reset to Default?' : 'Xác Nhận Khôi Phục Mặc Định?'}
-            </h3>
-            <p className="text-xs text-slate-600 dark:text-slate-300 mt-2 leading-relaxed">
-              {isEn
-                ? 'All custom text, images, and card visibility toggles will be reset to default system values. Operational database records remain untouched.'
-                : 'Toàn bộ các tùy biến về chữ, hình ảnh, trạng thái ẩn/hiện môn học và sân bãi sẽ được đặt lại theo đúng thiết kế ban đầu. Dữ liệu nghiệp vụ trong database không bị ảnh hưởng.'}
-            </p>
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsResetConfirmOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold uppercase hover:bg-slate-50 dark:hover:bg-slate-800 transition-all cursor-pointer"
-              >
-                {isEn ? 'Cancel' : 'Hủy Bỏ'}
-              </button>
-              <button
-                type="button"
-                onClick={handleResetDefault}
-                className="px-5 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase shadow-lg shadow-[#2D6A4F]/30 cursor-pointer transition-all hover-lift"
-              >
-                {isEn ? 'Confirm Reset' : 'Đồng Ý Khôi Phục'}
-              </button>
             </div>
           </div>
         </div>
