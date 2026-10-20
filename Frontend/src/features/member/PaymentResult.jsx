@@ -51,7 +51,7 @@ export function PaymentResult() {
     <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
       <section className="w-full max-w-xl rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
         <h1 className="font-chivo text-2xl font-black text-slate-900">{isEn ? 'Payment Result' : 'Kết quả thanh toán'}</h1>
-        {state.loading && <p className="mt-3 text-sm text-slate-600">{isEn ? 'Confirming transaction with backend...' : 'Đang xác nhận giao dịch với backend...'}</p>}
+        {state.loading && <p className="mt-3 text-sm text-slate-600">{isEn ? 'Confirming transaction...' : 'Đang kiểm tra và xác nhận giao dịch...'}</p>}
         {!state.loading && state.error && <p role="alert" className="mt-3 text-sm text-red-700">{state.error}</p>}
         {!state.loading && state.result && (
           <div className={`mt-4 rounded-xl p-4 text-sm ${state.result.success ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-900'}`}>
@@ -65,7 +65,7 @@ export function PaymentResult() {
             {cancelled
               ? (isEn ? 'Transaction was cancelled.' : 'Giao dịch đã bị hủy.')
               : isPayOsReturn
-                ? (isEn ? 'Waiting for backend confirmation via webhook. Please check back in a few moments.' : 'Đang chờ backend xác nhận giao dịch qua webhook PayOS. Kiểm tra lại hóa đơn sau ít phút.')
+                ? (isEn ? 'Waiting for payment confirmation. Please check back in a few moments.' : 'Đang chờ cổng thanh toán xác nhận giao dịch. Vui lòng kiểm tra lại hóa đơn sau ít phút.')
                 : (isEn ? 'No payment response data to verify.' : 'Không có dữ liệu phản hồi thanh toán để xác nhận.')}
           </p>
         )}

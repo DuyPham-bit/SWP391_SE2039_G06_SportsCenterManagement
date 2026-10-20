@@ -190,7 +190,7 @@ export function MemberPackages() {
         invoiceNumber: activeInvoiceNumber || undefined
       });
       if (checkoutRef.current !== checkout) return;
-      if (!res.paymentUrl) throw new Error(isEn ? 'Backend did not return payment URL.' : 'Backend không trả về địa chỉ thanh toán.');
+      if (!res.paymentUrl) throw new Error(isEn ? 'Could not generate payment link.' : 'Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.');
       if (checkout.navigate(res.paymentUrl)) setModalOpen(false);
     } catch (err) {
       if (checkout && checkoutRef.current !== checkout) return;

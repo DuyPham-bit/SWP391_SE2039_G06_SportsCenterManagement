@@ -44,8 +44,8 @@ const getRoleConfig = (isEn) => ({
     badgeClass: 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border-rose-200 dark:border-rose-800',
     avatarGrad: 'from-[#1E2235] to-[#2B2D42]',
     desc: isEn
-      ? 'Highest security administrator for system audit logs, user permissions, and cloud servers.'
-      : 'Quản trị tối cao toàn bộ cụm trung tâm và cấu hình máy chủ SCMS.'
+      ? 'Highest security administrator for system audit logs, user permissions, and center operations.'
+      : 'Quản trị viên điều hành toàn bộ cụm trung tâm và quản lý quyền hệ thống SCMS.'
   }
 });
 

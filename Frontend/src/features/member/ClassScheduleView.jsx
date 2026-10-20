@@ -200,7 +200,7 @@ export function ClassScheduleView() {
         }
       }
     } catch (error) {
-      showError(error.message || (isEn ? 'Unable to load class schedule from backend.' : 'Không thể tải lịch lớp từ backend.'));
+      showError(error.message || (isEn ? 'Unable to load class schedule.' : 'Không thể tải lịch lớp học. Vui lòng thử lại sau.'));
     } finally {
       setLoading(false);
     }

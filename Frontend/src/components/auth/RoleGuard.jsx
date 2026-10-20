@@ -1,4 +1,4 @@
-import { useAuth } from '../../context/AuthContext.js';
+                    import { useAuth } from '../../context/AuthContext.js';
 import { hasCapability, getCapabilityById } from '../../services/permissions.js';
 
 export function ProtectedRoute({ children }) {

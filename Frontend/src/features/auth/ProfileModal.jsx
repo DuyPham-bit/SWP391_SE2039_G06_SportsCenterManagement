@@ -214,8 +214,8 @@ export function ProfileModal({ isOpen, onClose }) {
             <span className="material-symbols-outlined text-[18px] shrink-0 mt-0.5">shield</span>
             <span>
               {isEn
-                ? 'Password must be at least 6 characters (including letters, numbers, and special characters) to comply with backend security policy.'
-                : 'Mật khẩu phải dài tối thiểu 6 ký tự (gồm chữ hoa, thường, số và ký tự đặc biệt) để tương thích với chính sách bảo mật của backend.'}
+                ? 'Password must be at least 6 characters (including letters, numbers, and special characters) to comply with system security policy.'
+                : 'Mật khẩu phải dài tối thiểu 6 ký tự (gồm chữ hoa, thường, số và ký tự đặc biệt) theo đúng chính sách bảo mật của hệ thống.'}
             </span>
           </div>
 

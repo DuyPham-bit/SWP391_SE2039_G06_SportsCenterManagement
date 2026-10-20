@@ -52,7 +52,7 @@ export function CounterMembership() {
         }
       } catch (e) {
         console.error(e);
-        showError(e.message || (isEn ? 'Failed to load packages or members.' : 'Không thể tải hội viên hoặc gói tập từ backend.'));
+        showError(e.message || (isEn ? 'Failed to load packages or members.' : 'Không thể tải danh sách hội viên hoặc gói tập. Vui lòng thử lại sau.'));
         setLoadError(e.message || (isEn ? 'Failed to load counter cashier data.' : 'Không thể tải dữ liệu thu ngân.'));
       } finally {
         setLoading(false);
@@ -125,7 +125,7 @@ export function CounterMembership() {
           cancelPendingIfAny: overrideCancelPending === true
         });
         if (checkoutRef.current !== checkout) return;
-        if (!result.paymentUrl) throw new Error(isEn ? 'Backend did not return a VNPay URL.' : 'Backend không trả về địa chỉ VNPay.');
+        if (!result.paymentUrl) throw new Error(isEn ? 'Could not generate VNPay payment link.' : 'Không thể tạo liên kết thanh toán VNPay. Vui lòng thử lại sau.');
         checkout.navigate(result.paymentUrl);
         return;
       }
@@ -309,7 +309,7 @@ export function CounterMembership() {
           </div>
           {members.length === 0 && (
             <p className="text-xs text-slate-500 dark:text-slate-400">
-              {isEn ? 'Enter keywords above to find members in the system.' : 'Nhập từ khóa để tìm hội viên từ backend.'}
+              {isEn ? 'Enter keywords above to find members in the system.' : 'Nhập từ khóa phía trên để tìm kiếm hội viên trong hệ thống.'}
             </p>
           )}
 

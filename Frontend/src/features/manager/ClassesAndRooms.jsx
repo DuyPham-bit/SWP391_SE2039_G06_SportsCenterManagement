@@ -120,7 +120,7 @@ export function ClassesAndRooms() {
         coaches: coaches || []
       });
       if (isManualRefresh) {
-        showSuccess(isEn ? 'Data refreshed from server!' : 'Dữ liệu đã được làm mới từ máy chủ!');
+        showSuccess(isEn ? 'Data refreshed successfully!' : 'Đã cập nhật dữ liệu mới nhất!');
       }
     } catch (err) {
       setError(err.message || (isEn ? 'Cannot load classes and facilities data.' : 'Không thể tải dữ liệu lớp và cơ sở vật chất.'));

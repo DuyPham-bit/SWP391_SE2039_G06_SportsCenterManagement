@@ -841,8 +841,8 @@ export function MemberManagement() {
             <span>
               {modal?.row
                 ? isEn
-                  ? 'Updated information will be saved directly to the database and synchronized with the user account.'
-                  : 'Thông tin cập nhật sẽ được lưu trực tiếp vào cơ sở dữ liệu của trung tâm và đồng bộ đến tài khoản người dùng.'
+                  ? 'Updated information will be saved directly to the center system and synchronized with the user account.'
+                  : 'Thông tin cập nhật sẽ được lưu trực tiếp vào hệ thống trung tâm và đồng bộ đến tài khoản người dùng.'
                 : isEn
                 ? 'New members will receive an automatic member code (MEM-...) and can log in immediately after creation.'
                 : 'Thành viên mới sẽ được cấp mã hội viên tự động (MEM-...) và có thể đăng nhập ngay sau khi tạo.'}

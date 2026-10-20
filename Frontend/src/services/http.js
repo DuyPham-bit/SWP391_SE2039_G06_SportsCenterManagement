@@ -61,7 +61,7 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
     });
   } catch (cause) {
     if (cause?.name === 'AbortError') throw cause;
-    const error = new Error(`Chưa xác định kết quả: Mất kết nối mạng hoặc hết thời gian chờ tới backend (${API_BASE_URL}). Vui lòng kiểm tra trạng thái giao dịch trước khi thử lại.`);
+    const error = new Error('Chưa xác định kết quả: Mất kết nối mạng hoặc quá thời gian chờ phản hồi từ hệ thống. Vui lòng kiểm tra lại trước khi thử lại.');
     error.cause = cause;
     error.code = 'COMMON-01';
     error.proposedHandling = 'Thông báo “Chưa xác định kết quả”; kiểm tra trạng thái trước khi thử lại. Tránh tạo hai đăng ký hoặc hai khoản thu.';
@@ -99,7 +99,7 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
     const message = expiredToken
       ? 'Phiên đăng nhập đã hết hạn hoặc quyền đã bị thu hồi. Vui lòng đăng nhập lại.'
       : payload?.detail || payload?.message || validationErrors || payload?.title ||
-        (typeof payload === 'string' && payload) || `Yêu cầu API thất bại (${response.status}).`;
+        (typeof payload === 'string' && payload) || `Yêu cầu không thể hoàn tất (Mã: ${response.status}). Vui lòng thử lại sau.`;
     const traceSuffix = payload?.traceId ? `, traceId ${payload.traceId}` : '';
     const error = new Error(message);
     error.code = payload?.code || (expiredToken ? 'COMMON-04' : (response.status === 409 ? 'COMMON-03' : null));

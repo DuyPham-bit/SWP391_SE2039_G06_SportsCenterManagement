@@ -152,10 +152,10 @@ export function CloudMediaPickerModal({
               <span className="material-symbols-outlined text-amber-600 text-[20px] shrink-0 mt-0.5">warning</span>
               <div>
                 <p className="font-bold text-amber-950">
-                  Google Drive API chưa được kích hoạt hoặc chưa phân quyền thư mục
+                  Chưa kết nối kho ảnh trực tuyến hoặc chưa phân quyền thư mục
                 </p>
                 <p className="text-[11px] text-amber-800 mt-0.5 leading-relaxed">
-                  Vui lòng bấm <b>Bật Google Drive API</b> trên Google Cloud Console và chia sẻ thư mục Drive cho email Service Account.
+                  Vui lòng kết nối Google Drive và chia sẻ thư mục ảnh cho tài khoản hệ thống.
                 </p>
               </div>
             </div>
@@ -166,7 +166,7 @@ export function CloudMediaPickerModal({
                 rel="noreferrer"
                 className="px-3 py-1.5 rounded-lg bg-red-600 hover:bg-red-700 text-white font-bold text-[11px] uppercase tracking-wider flex items-center gap-1 shadow-sm transition-colors"
               >
-                <span>Bật Google Drive API</span>
+                <span>Kết nối Google Drive</span>
                 <span className="material-symbols-outlined text-[14px]">open_in_new</span>
               </a>
               <button
@@ -254,10 +254,10 @@ export function CloudMediaPickerModal({
                 <div className="flex items-center gap-2">
                   <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
                   <span className="text-xs font-bold text-slate-700 uppercase">
-                    {driveStatus?.folderId?.includes('uploads') ? 'Ảnh Lưu Trữ Máy Chủ Cục Bộ' : 'Kho Ảnh Hệ Thống'}
+                    {driveStatus?.folderId?.includes('uploads') ? 'Kho Ảnh Nội Bộ' : 'Kho Ảnh Hệ Thống'}
                   </span>
                   <span className="text-[11px] px-2 py-0.5 rounded bg-slate-100 text-slate-600 font-mono">
-                    {driveStatus?.folderId ? 'Ảnh dùng chung từ Google Drive' : 'Thư viện ảnh đã lưu trên máy chủ'}
+                    {driveStatus?.folderId ? 'Ảnh dùng chung từ Google Drive' : 'Thư viện ảnh đã lưu trữ'}
                   </span>
                 </div>
                 <button
@@ -277,7 +277,7 @@ export function CloudMediaPickerModal({
               {driveLoading && (
                 <div className="py-12 flex flex-col items-center justify-center text-center">
                   <span className="w-8 h-8 border-3 border-red-600 border-t-transparent rounded-full animate-spin mb-3" />
-                  <p className="text-xs font-semibold text-slate-600">Đang tải danh sách ảnh từ máy chủ...</p>
+                  <p className="text-xs font-semibold text-slate-600">Đang tải danh sách hình ảnh...</p>
                 </div>
               )}
 
@@ -290,7 +290,7 @@ export function CloudMediaPickerModal({
                     Chưa có ảnh nào trong kho lưu trữ
                   </h4>
                   <p className="text-xs text-slate-500 max-w-md mt-1 leading-relaxed">
-                    Bạn có thể chọn tab <b>"TẢI LÊN TỪ MÁY TÍNH"</b> để tải ảnh lên máy chủ ngay lập tức, hoặc chọn nhanh từ Kho Mẫu Tuyển Chọn.
+                    Bạn có thể chọn tab <b>"TẢI LÊN TỪ MÁY TÍNH"</b> để tải ảnh lên hệ thống ngay lập tức, hoặc chọn nhanh từ Kho Mẫu Tuyển Chọn.
                   </p>
                   <div className="mt-4 flex gap-2">
                     <button
@@ -435,7 +435,7 @@ export function CloudMediaPickerModal({
                     type="url"
                     value={customUrl}
                     onChange={(e) => setCustomUrl(e.target.value)}
-                    placeholder="https://lh3.googleusercontent.com/d/... hoặc S3 / Cloudinary"
+                    placeholder="https://example.com/hinh-anh.jpg hoặc đường dẫn ảnh trực tuyến"
                     className="flex-1 px-4 py-2.5 rounded-xl border border-slate-300 text-xs text-slate-800 focus:outline-none focus:ring-2 focus:ring-red-500"
                   />
                   <button

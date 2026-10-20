@@ -515,19 +515,19 @@ export function RolesPermissions() {
                 )}
               </div>
 
-              {/* Section 2: Data Permissions (Quyền dữ liệu backend) */}
+              {/* Section 2: Data Permissions (Quyền dữ liệu nghiệp vụ) */}
               <div className="space-y-4 pt-4 border-t border-slate-100 dark:border-slate-800">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[#1E2235] dark:text-[#81B29A] text-[20px]">database</span>
+                    <span className="material-symbols-outlined text-[#1E2235] dark:text-[#81B29A] text-[20px]">dataset</span>
                     <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       {isEn
-                        ? `2. Data Permissions & API Operations (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`
-                        : `2. Quyền Dữ Liệu & Thao Tác API (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`}
+                        ? `2. Data & Operation Scope (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`
+                        : `2. Quyền Dữ Liệu & Thao Tác Nghiệp Vụ (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`}
                     </h4>
                   </div>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {isEn ? 'Database query & operation scope for role' : 'Phạm vi truy xuất dữ liệu database của vai trò'}
+                    {isEn ? 'Data and operational scope for role' : 'Phạm vi truy cập dữ liệu và thao tác của vai trò'}
                   </span>
                 </div>
 

