@@ -22,8 +22,8 @@ services:
 
   backend:
     build:
-      context: ../Backend/Backend
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/backend/Dockerfile
     container_name: scms-backend
     restart: unless-stopped
     depends_on:
@@ -52,8 +52,8 @@ services:
 
   frontend:
     build:
-      context: ../Frontend
-      dockerfile: Dockerfile
+      context: ..
+      dockerfile: docker/frontend/Dockerfile
     container_name: scms-frontend
     restart: unless-stopped
     depends_on:
