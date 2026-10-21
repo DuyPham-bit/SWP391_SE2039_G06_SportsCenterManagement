@@ -99,13 +99,24 @@ test('an unconfigured homepage uses only the actual SQL catalog and never invent
   assert.equal(result.facilitiesSection.facilitiesList[0].capacity, '11 người');
 });
 
-test('editing a published homepage image preserves all entries, their order and their saved details', () => {
+function loadCatalogEditor(catalog) {
   const React = require('react');
   const module = { exports: {} };
-  const catalog = { sports: [{ id: 99, name: 'Different operational sport' }], rooms: [] };
-  const context = vm.createContext({ module, Number, String,
+  const hookValues = [];
+  let hookIndex = 0;
+  const context = vm.createContext({ module, Number, String, document: { body: {} },
     require: id => {
-      if (id === 'react') return React;
+      if (id === 'react') return {
+        ...React,
+        useEffect() {},
+        useState(initial) {
+          const index = hookIndex++;
+          if (!(index in hookValues)) hookValues[index] = initial;
+          return [hookValues[index], value => { hookValues[index] = typeof value === 'function' ? value(hookValues[index]) : value; }];
+        }
+      };
+      if (id === 'react-dom') return { createPortal: children => children };
+      if (id.includes('Modal.jsx')) return { Modal: () => null };
       if (id.includes('usePublicCatalog')) return { usePublicCatalog: () => ({ catalog, loading: false, error: '' }) };
       if (id.includes('publicCatalog.js')) return load('services/publicCatalog.js');
       if (id.includes('LanguageContext')) return { useLanguage: () => ({ language: 'vi' }) };
@@ -114,24 +125,119 @@ test('editing a published homepage image preserves all entries, their order and 
   });
   const source = fs.readFileSync(path.join(__dirname, '../src/features/manager/LandingCatalogEditor.jsx'), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs', loader: 'jsx' }).code, context);
+  return props => {
+    hookIndex = 0;
+    return module.exports.LandingCatalogEditor(props);
+  };
+}
+
+function findAll(node, type) {
+  if (!node || typeof node !== 'object') return [];
+  if (Array.isArray(node)) return node.flatMap(child => findAll(child, type));
+  return [...(node.type === type ? [node] : []), ...findAll(node.props?.children, type)];
+}
+
+test('editing a published homepage image preserves all entries, their order and their saved details', () => {
+  const renderEditor = loadCatalogEditor({ center: {}, sports: [{ id: 99, name: 'Different operational sport' }], rooms: [] });
   const metadata = [
     { id: 'saved-first', name: 'First', image: '/first.webp', facilityId: 'room-01', category: 'Published category', isVisible: false },
     { id: 'saved-second', name: 'Second', image: '/second.webp', highlight: 'Keep description' }
   ];
   let updated;
-  const element = module.exports.LandingCatalogEditor({ type: 'sports', metadata, onChange: value => { updated = value; },
-    openMediaPicker: (_title, _url, change) => change('/updated.webp') });
-  function findAll(node, type) {
-    if (!node || typeof node !== 'object') return [];
-    if (Array.isArray(node)) return node.flatMap(child => findAll(child, type));
-    return [...(node.type === type ? [node] : []), ...findAll(node.props?.children, type)];
-  }
+  const props = { type: 'sports', metadata, onChange: value => { updated = value; },
+    openMediaPicker: (_title, _url, change, onClose) => { change('/updated.webp'); onClose?.(); } };
+  let element = renderEditor(props);
   assert.equal(findAll(element, 'article').length, 2);
-  findAll(element, 'button')[0].props.onClick();
+  findAll(element, 'button').find(button => button.props['aria-haspopup'] === 'dialog').props.onClick();
+  element = renderEditor(props);
+  findAll(element, 'button').find(button => findAll(button, 'span').some(span => span.props.children === 'Tải/Đổi Ảnh')).props.onClick();
   assert.deepEqual(JSON.parse(JSON.stringify(updated)), [{ ...metadata[0], image: '/updated.webp' }, metadata[1]]);
   assert.equal(metadata[0].image, '/first.webp');
-  findAll(element, 'input')[0].props.onChange({ target: { checked: true } });
+  findAll(element, 'input').find(input => input.props.type === 'checkbox').props.onChange({ target: { checked: true } });
   assert.deepEqual(JSON.parse(JSON.stringify(updated)), [{ ...metadata[0], isVisible: true }, metadata[1]]);
+});
+
+test('both homepage card editors can add and edit cards without changing existing IDs, details or order', () => {
+  const renderEditor = loadCatalogEditor(null);
+  for (const type of ['sports', 'facilities']) {
+    const original = [
+      { id: 'saved-first', name: 'First', image: '/first.webp', facilityId: 'saved-room', customDetail: 'Keep me', isVisible: false },
+      { id: 'saved-second', name: 'Second', image: '/second.webp' }
+    ];
+    let cards = original;
+    const view = () => renderEditor({ type, metadata: cards, facilities: [{ id: 'saved-room', name: 'Saved room' }], onChange: value => { cards = value; } });
+    findAll(view(), 'button')[0].props.onClick();
+    assert.deepEqual(JSON.parse(JSON.stringify(cards.slice(0, 2))), original);
+    assert.equal(cards.length, 3);
+    assert.equal(typeof cards[2].id, 'string');
+    assert.equal(new Set(cards.map(card => card.id)).size, 3);
+    assert.equal(cards[2].isVisible, true);
+    assert.ok(cards[2].name);
+    if (type === 'facilities') {
+      assert.deepEqual(JSON.parse(JSON.stringify(cards[2].specs)), []);
+      assert.deepEqual(JSON.parse(JSON.stringify(cards[2].amenities)), []);
+    } else {
+      assert.equal(cards[2].facilityId, '');
+    }
+    findAll(view(), 'button').find(button => button.props['aria-haspopup'] === 'dialog').props.onClick();
+    findAll(view(), 'input').find(input => input.props.name === 'name').props.onChange({ target: { value: 'Edited first' } });
+    assert.deepEqual(JSON.parse(JSON.stringify(cards[0])), { ...original[0], name: 'Edited first' });
+    assert.equal(cards[1], original[1]);
+    assert.equal(original[0].name, 'First');
+    const key = type === 'sports' ? 'highlight' : 'description';
+    findAll(view(), 'textarea').find(input => input.props.name === key).props.onChange({ target: { value: 'Edited description' } });
+    assert.equal(cards[0][key], 'Edited description');
+    assert.equal(cards[0].id, original[0].id);
+    assert.equal(cards[0].facilityId, original[0].facilityId);
+  }
+});
+
+test('adding a homepage sport retains catalog fallback cards and uses a saveable empty facility reference', () => {
+  const renderEditor = loadCatalogEditor({ center: {}, sports: [{ id: 81, name: 'Actual sport' }], rooms: [], classes: [] });
+  let cards;
+  const element = renderEditor({ type: 'sports', metadata: [], onChange: value => { cards = value; } });
+  findAll(element, 'button')[0].props.onClick();
+  assert.equal(cards.length, 2);
+  assert.equal(cards[0].id, '81');
+  assert.equal(cards[0].name, 'Actual sport');
+  assert.equal(cards[0].facilityId, '');
+  assert.equal(cards[1].facilityId, '');
+});
+
+test('explicitly emptied homepage card sections stay empty even when the operational catalog has records', () => {
+  const { getLandingPresentation } = load('services/landingPresentation.js');
+  const content = {
+    coursesSection: { sportsList: [], catalogSource: 'custom' },
+    facilitiesSection: { facilitiesList: [], catalogSource: 'custom' }
+  };
+  const catalog = { center: {}, sports: [{ id: 81, name: 'Operational sport' }], rooms: [{ id: 77, name: 'Operational room', capacity: 10 }], classes: [] };
+  const result = getLandingPresentation(content, catalog);
+  assert.equal(result.coursesSection.sportsList.length, 0);
+  assert.equal(result.facilitiesSection.facilitiesList.length, 0);
+});
+
+test('deleting either type of homepage card requires confirmation and preserves the other cards', () => {
+  for (const type of ['sports', 'facilities']) {
+    const renderEditor = loadCatalogEditor({ center: {}, sports: [{ id: 81, name: 'Operational sport' }], rooms: [{ id: 77, name: 'Operational room', capacity: 10 }], classes: [] });
+    const original = [{ id: 'first', name: 'First', image: '/first.webp' }, { id: 'second', name: 'Second', customDetail: 'Keep' }];
+    let cards = original;
+    const view = () => renderEditor({ type, metadata: cards, fallbackToCatalog: false, onChange: value => { cards = value; } });
+    const deleteButton = () => findAll(view(), 'button').find(button => button.props['aria-label'] === 'Xóa thẻ: First');
+    assert.ok(deleteButton(), 'Each card should have a delete action');
+    deleteButton().props.onClick();
+    assert.equal(cards, original);
+    findAll(view(), 'button').find(button => button.props.children === 'Hủy bỏ').props.onClick();
+    assert.equal(cards, original);
+    deleteButton().props.onClick();
+    findAll(view(), 'button').find(button => button.props.children === 'Xác nhận xóa').props.onClick();
+    assert.equal(cards.length, 1);
+    assert.equal(cards[0], original[1]);
+    assert.equal(original.length, 2);
+    findAll(view(), 'button').find(button => button.props['aria-label'] === 'Xóa thẻ: Second').props.onClick();
+    findAll(view(), 'button').find(button => button.props.children === 'Xác nhận xóa').props.onClick();
+    assert.equal(cards.length, 0);
+    assert.equal(findAll(view(), 'article').length, 0);
+  }
 });
 
 test('coach dashboard respects Vietnam day/week/month boundaries and keeps persisted session IDs', () => {

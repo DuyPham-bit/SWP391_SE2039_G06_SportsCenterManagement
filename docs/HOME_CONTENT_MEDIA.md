@@ -10,7 +10,6 @@ Trang quản lý: `#/manager/home-content`. Manager, Admin và SystemAdmin có t
 - Trang chủ đọc dữ liệu từ API, tự làm mới mỗi 15 giây khi đang hiển thị, khi lấy lại focus và khi tab khác báo có thay đổi.
 - Bản nháp trong trang quản lý không bị thay thế bởi cập nhật nền. Chỉ sau khi API xác nhận lưu thành công, giao diện mới bỏ trạng thái chưa lưu.
 - Xem trước mở tab riêng bằng SessionStorage của tab đó; không ghi nội dung vào API hoặc LocalStorage công khai. Tab xem trước không đồng bộ nội dung đã công bố đè lên bản nháp.
-- Khôi phục mặc định lưu một bản sao độc lập của mẫu qua API. Nếu lưu lỗi, giữ nguyên bản nháp và báo lỗi.
 - Khi database chưa có nội dung nhưng trình duyệt còn dữ liệu cũ trong `SCMS_DYNAMIC_LANDING_CONTENT_V1`, trang quản lý tải dữ liệu cũ thành bản nháp. Bấm **Lưu Toàn Bộ Thay Đổi** để công bố. Trang chủ công khai không dùng dữ liệu cũ này.
 - Tại mục **6. Banner Kêu Gọi & Footer**, nhập **Số điện thoại Zalo** và **Liên kết Facebook** rồi bấm **Lưu Toàn Bộ Thay Đổi**. Hai trường `ctaAndFooter.contactZaloPhone` và `ctaAndFooter.contactFacebookUrl` được lưu cùng nội dung trang chủ. Zalo nhận số điện thoại 10 chữ số hoặc đầu số `+84`, bỏ dấu cách và chuẩn hóa về đầu số `0`; trang chủ hiển thị **Zalo: số điện thoại** và tự tạo liên kết `https://zalo.me/{số điện thoại}`. Facebook nhận đường dẫn HTTP/HTTPS. Cả hai mở trong tab mới tại **Thông Tin Liên Hệ**. Mặc định để trống; xóa giá trị để ẩn liên hệ tương ứng. Nội dung đã lưu trước khi có các trường này vẫn tải bình thường.
 

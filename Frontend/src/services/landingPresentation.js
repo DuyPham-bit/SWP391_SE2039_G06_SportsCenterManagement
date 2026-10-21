@@ -14,11 +14,11 @@ export function getLandingPresentation(content, catalog) {
     },
     coursesSection: {
       ...content.coursesSection,
-      sportsList: sports.length ? sports : catalogSports(catalog)
+      sportsList: sports.length || content.coursesSection?.catalogSource === 'custom' ? sports : catalogSports(catalog)
     },
     facilitiesSection: {
       ...content.facilitiesSection,
-      facilitiesList: facilities.length ? facilities : catalogFacilities(catalog)
+      facilitiesList: facilities.length || content.facilitiesSection?.catalogSource === 'custom' ? facilities : catalogFacilities(catalog)
     }
   };
 }
