@@ -154,7 +154,7 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   const { targetId: visitorId } = await cdp.send('Target.createTarget', { url: 'about:blank', browserContextId });
   const visitor = await attach(visitorId);
   await cdp.send('Page.navigate', { url: `${origin}/#/` }, visitor);
-  await until('visitor sees database center name', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes('Test center')`));
+  await until('visitor sees the homepage without the draft', () => evaluate(visitor, `Boolean(document.querySelector('h1')) && !document.querySelector('h1').textContent.includes('Isolated preview draft')`));
   await cdp.send('Page.bringToFront', {}, manager);
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
   await until('save completed', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && !document.querySelector('main')?.textContent.includes('Có thay đổi chưa lưu')`));
@@ -172,23 +172,17 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   assert.equal(published.heroBanner.title, 'Isolated preview draft');
   assert.equal(await evaluate(manager, `document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`), true);
   checks.push('Save failure keeps the draft dirty and leaves published content unchanged.');
-  await click(manager, 'Khôi Phục Gốc');
-  await click(manager, 'Đồng Ý Khôi Phục');
-  await until('reset failure completed', () => evaluate(manager, `!document.querySelector('main fieldset').disabled`));
+  assert.equal(await evaluate(manager, `[...document.querySelectorAll('main button')].some(button => /Khôi Phục Gốc|Reset to Default/.test(button.textContent))`), false);
   assert.equal(await evaluate(manager, `Boolean(${titleInput('Unsaved failure draft')})`), true);
-  assert.equal(published.heroBanner.title, 'Isolated preview draft');
-  checks.push('Failed reset preserves the unsaved draft.');
+  checks.push('The editor has no reset action and preserves the unsaved draft after a save failure.');
   failSave = false;
-  await click(manager, 'Đồng Ý Khôi Phục');
-  await until('reset completed', () => evaluate(manager, `Boolean(${titleInput(originalTitle)})`));
-  assert.deepEqual(published.heroBanner.metrics, []);
-  await click(manager, 'Khôi Phục Gốc');
-  await click(manager, 'Đồng Ý Khôi Phục');
-  await until('empty defaults restored', () => evaluate(manager, `!document.querySelector('main fieldset').disabled`));
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('retry save completed', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && !document.querySelector('main')?.textContent.includes('Có thay đổi chưa lưu')`));
+  assert.equal(published.heroBanner.title, 'Unsaved failure draft');
   assert.deepEqual(published.heroBanner.metrics, []);
   assert.deepEqual(published.coursesSection.sportsList, []);
   assert.deepEqual(published.facilitiesSection.facilitiesList, []);
-  checks.push('Repeated reset keeps business lists and metrics empty instead of restoring demo records.');
+  checks.push('Retrying a failed save publishes the draft and preserves empty business lists and metrics.');
 
   for (const label of ['2. Tại Sao Chọn SCMS', '3. Thẻ Môn Thể Thao', '4. Thẻ Cụm Sân', '5. Sơ Đồ Phân Khu', '6. Banner Kêu Gọi & Footer']) {
     await click(manager, label); await delay(100);
@@ -223,7 +217,7 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   await evaluate(manager, `location.hash = '#/manager/dashboard'`);
   await until('manager leaves editor', () => evaluate(manager, `!document.querySelector('main fieldset')`));
   await evaluate(manager, `location.hash = '#/manager/home-content'`);
-  await until('editor reloads', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && Boolean(${titleInput(originalTitle)})`));
+  await until('editor reloads', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && Boolean(${titleInput('Unsaved failure draft')})`));
   await click(manager, '6. Banner Kêu Gọi & Footer');
   assert.equal(await evaluate(manager, `document.querySelector('#footer-zalo-phone').value`), zaloPhone);
   assert.equal(await evaluate(manager, `document.querySelector('#footer-facebook-url').value`), facebookUrl);

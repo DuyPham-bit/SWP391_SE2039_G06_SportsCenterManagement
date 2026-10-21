@@ -172,10 +172,6 @@ export async function saveLandingContent(content) {
   return getLandingContent();
 }
 
-export async function resetLandingContentToDefault() {
-  return saveLandingContent(getDefaultLandingContent());
-}
-
 export function getLandingPreviewContent() {
   const query = (window.location.hash || '').split('?')[1] || '';
   if (new URLSearchParams(query).get('preview') !== '1') return null;
