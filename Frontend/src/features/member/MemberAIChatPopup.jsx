@@ -177,14 +177,14 @@ export function MemberAIChatPopup() {
     id: 'welcome',
     sender: 'ai',
     text: en
-      ? `Hello **${currentUser?.fullName || 'there'}**! 👋 I am your Olympic-standard **SCMS AI Sports Assistant**. I am always ready to help you:
+      ? `Hello **${currentUser?.fullName || 'there'}**! I am your Olympic-standard **SCMS AI Sports Assistant**. I am always ready to help you:
 * **Look up class & swimming schedules** today and throughout the week.
 * **Consult membership packages** & member privileges.
 * **Suggest workout & nutrition plans** tailored to your fitness goals.
 * **Guide QR card check-in, scheduling & support**.
 
 What would you like to explore today?`
-      : `Xin chào **${currentUser?.fullName || 'bạn'}**! 👋 Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi luôn sẵn sàng hỗ trợ bạn ngay trong popup này:
+      : `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi luôn sẵn sàng hỗ trợ bạn ngay trong popup này:
 * **Tra cứu lịch lớp & ca bơi** hôm nay hoặc trong tuần.
 * **Tư vấn giá gói tập** & quyền lợi hội viên.
 * **Gợi ý bài tập & chế độ dinh dưỡng** theo thể trạng.

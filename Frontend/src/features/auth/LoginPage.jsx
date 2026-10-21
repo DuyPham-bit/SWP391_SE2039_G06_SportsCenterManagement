@@ -473,9 +473,8 @@ export function LoginPage() {
 
             {/* Tiêu đề & Lời chào thân thiện */}
             <div className="mb-3.5 sm:mb-4">
-              <h1 id="auth-heading" className="font-dm-sans text-xl sm:text-2xl font-bold text-[var(--secondary-color)] tracking-tight leading-tight flex items-center gap-1.5">
+              <h1 id="auth-heading" className="font-dm-sans text-xl sm:text-2xl font-bold text-[var(--secondary-color)] tracking-tight leading-tight">
                 <span>{isRegister ? 'Gia nhập SCMS' : 'Chào mừng trở lại!'}</span>
-                <span className="text-lg sm:text-xl">{isRegister ? '⚡' : '👋'}</span>
               </h1>
               <p className="text-xs text-slate-500 mt-1 leading-snug line-clamp-2">
                 {isRegister

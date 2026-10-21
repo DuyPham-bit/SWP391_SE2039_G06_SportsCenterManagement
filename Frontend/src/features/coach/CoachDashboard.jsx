@@ -230,7 +230,7 @@ export function CoachDashboard() {
             <h1 className="text-2xl sm:text-3xl font-chivo font-black tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
               {isEn
                 ? `Welcome back, Coach ${currentUser?.fullName || 'Trainer'}!`
-                : `Chào ngày mới, HLV ${currentUser?.fullName || 'Huấn Luyện Viên'}! 👋`}
+                : `Chào ngày mới, HLV ${currentUser?.fullName || 'Huấn Luyện Viên'}!`}
             </h1>
 
             <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-medium drop-shadow-xs">
