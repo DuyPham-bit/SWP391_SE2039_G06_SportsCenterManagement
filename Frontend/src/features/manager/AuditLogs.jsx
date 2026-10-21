@@ -41,6 +41,10 @@ const getActionMetaMap = isEn => ({
   'JOIN_SESSION_WAITLIST': { label: isEn ? 'Join Waitlist' : 'Vào Hàng Chờ Lớp', color: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800', icon: 'hourglass_empty' },
   'PAYMENT.CASH.RECORDED': { label: isEn ? 'Counter Cash Payment' : 'Thu Tiền Mặt Tại Quầy', color: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800', icon: 'payments' },
   'ROLE.PERMISSIONS.REPLACED': { label: isEn ? 'Role Permissions Updated' : 'Phân Quyền Vai Trò', color: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800', icon: 'security' },
+  'SUPPORT.SUBMITTED': { label: isEn ? 'Support Request Submitted' : 'Gửi Yêu Cầu Hỗ Trợ', color: 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800', icon: 'support_agent' },
+  'SUPPORT.UPDATED': { label: isEn ? 'Support Request Updated' : 'Cập Nhật Yêu Cầu Hỗ Trợ', color: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800', icon: 'published_with_changes' },
+  'SUPPORT.REPLIED': { label: isEn ? 'Support Reply Added' : 'Phản Hồi Yêu Cầu Hỗ Trợ', color: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800', icon: 'forum' },
+  'CENTER_NOTIFICATION_SENT': { label: isEn ? 'Center Notification Sent' : 'Gửi Thông Báo Trung Tâm', color: 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800', icon: 'campaign' },
 });
 
 function getActionMeta(actionCode = '', isEn = false) {
@@ -56,476 +60,6 @@ function getActionMeta(actionCode = '', isEn = false) {
     icon: 'history'
   };
 }
-
-const FIELD_DICT = {
-  // Account & Profile
-  UserId: { vi: 'Mã người dùng', en: 'User ID' },
-  MemberCode: { vi: 'Mã thẻ hội viên', en: 'Member Card Code' },
-  RegistrationSource: { vi: 'Kênh đăng ký', en: 'Registration Channel' },
-  FullName: { vi: 'Họ và tên', en: 'Full Name' },
-  Name: { vi: 'Tên đối tượng', en: 'Name' },
-  Email: { vi: 'Email', en: 'Email' },
-  Phone: { vi: 'Số điện thoại', en: 'Phone Number' },
-  PhoneNumber: { vi: 'Số điện thoại', en: 'Phone Number' },
-  Role: { vi: 'Vai trò / Chức vụ', en: 'Role' },
-  RoleName: { vi: 'Vai trò / Chức vụ', en: 'Role' },
-  AccountStatus: { vi: 'Trạng thái tài khoản', en: 'Account Status' },
-
-  // Packages
-  PackageId: { vi: 'Mã gói tập', en: 'Package ID' },
-  PackageName: { vi: 'Tên gói tập', en: 'Package Name' },
-  Price: { vi: 'Giá gói tập', en: 'Package Price' },
-  DurationDays: { vi: 'Thời hạn (ngày)', en: 'Duration (Days)' },
-  DurationMonths: { vi: 'Thời hạn (tháng)', en: 'Duration (Months)' },
-  MaxBookingPerDay: { vi: 'Lượt đặt tối đa/ngày', en: 'Max Bookings/Day' },
-  Description: { vi: 'Mô tả', en: 'Description' },
-
-  // Classes & Schedules
-  ClassId: { vi: 'Mã lớp học', en: 'Class ID' },
-  ClassName: { vi: 'Tên lớp học', en: 'Class Name' },
-  Capacity: { vi: 'Sức chứa tối đa', en: 'Max Capacity' },
-  MaxCapacity: { vi: 'Sức chứa tối đa', en: 'Max Capacity' },
-  UnitCapacity: { vi: 'Sức chứa / ca', en: 'Unit Capacity' },
-  SessionsCount: { vi: 'Số buổi / Số ca', en: 'Sessions Count' },
-  TotalSessions: { vi: 'Tổng số ca học', en: 'Total Sessions' },
-  SportId: { vi: 'Mã bộ môn', en: 'Sport ID' },
-  SportName: { vi: 'Bộ môn thể thao', en: 'Sport Discipline' },
-  RoomId: { vi: 'Mã sân / phòng', en: 'Room ID' },
-  RoomName: { vi: 'Sân / Phòng tập', en: 'Court / Studio' },
-  CoachId: { vi: 'Mã HLV', en: 'Coach ID' },
-  CoachName: { vi: 'Huấn luyện viên', en: 'Coach' },
-  ScheduleId: { vi: 'Mã lịch hoạt động', en: 'Schedule ID' },
-  Date: { vi: 'Ngày tập', en: 'Session Date' },
-  SessionDate: { vi: 'Ngày tập', en: 'Session Date' },
-  StartTime: { vi: 'Giờ bắt đầu', en: 'Start Time' },
-  EndTime: { vi: 'Giờ kết thúc', en: 'End Time' },
-
-  // Facility & Rooms
-  Type: { vi: 'Loại hình', en: 'Type' },
-  Location: { vi: 'Vị trí', en: 'Location' },
-  CenterId: { vi: 'Mã cơ sở', en: 'Center ID' },
-  CenterName: { vi: 'Tên cơ sở', en: 'Campus Name' },
-
-  // Booking & Session
-  SessionId: { vi: 'Mã ca tập', en: 'Session ID' },
-  BookingId: { vi: 'Mã đặt chỗ', en: 'Booking ID' },
-  MemberId: { vi: 'Mã hội viên', en: 'Member ID' },
-  Slot: { vi: 'Ca tập', en: 'Slot' },
-
-  // Financial
-  InvoiceId: { vi: 'Mã hóa đơn', en: 'Invoice ID' },
-  Amount: { vi: 'Số tiền thanh toán', en: 'Payment Amount' },
-  PaymentMethod: { vi: 'Phương thức thanh toán', en: 'Payment Method' },
-  Method: { vi: 'Hình thức', en: 'Method' },
-  PaidAt: { vi: 'Thời điểm thanh toán', en: 'Paid At' },
-
-  // Permissions & Roles
-  Permissions: { vi: 'Danh sách quyền hạn', en: 'Permissions' },
-
-  // General Status
-  Status: { vi: 'Trạng thái', en: 'Status' },
-  OldStatus: { vi: 'Trạng thái cũ', en: 'Previous Status' },
-  NewStatus: { vi: 'Trạng thái mới', en: 'New Status' },
-  IsActive: { vi: 'Kích hoạt', en: 'Active Status' },
-  Reason: { vi: 'Lý do thao tác', en: 'Reason' },
-  Notes: { vi: 'Ghi chú', en: 'Notes' },
-  Timestamp: { vi: 'Thời gian ghi nhận', en: 'Timestamp' }
-};
-
-function formatFriendlyValue(key, value, isEn) {
-  if (value === null || value === undefined || value === '') {
-    return <span className="text-slate-400 italic">{isEn ? 'None / Empty' : '— Không có —'}</span>;
-  }
-
-  // Boolean
-  if (typeof value === 'boolean') {
-    return value ? (
-      <span className="inline-flex items-center gap-1 text-emerald-700 dark:text-emerald-400 font-bold">
-        <span>✅</span>
-        <span>{isEn ? 'Yes / Enabled' : 'Có / Đang bật'}</span>
-      </span>
-    ) : (
-      <span className="inline-flex items-center gap-1 text-slate-500 font-medium">
-        <span>⚪</span>
-        <span>{isEn ? 'No / Disabled' : 'Không / Đang tắt'}</span>
-      </span>
-    );
-  }
-
-  // Money / Currency
-  if (/^(Price|Amount|Fee|RefundAmount)$/i.test(key) && !Number.isNaN(Number(value))) {
-    return (
-      <span className="font-bold text-[#2D6A4F] dark:text-[#81B29A] font-chivo">
-        {Number(value).toLocaleString('vi-VN')} đ
-      </span>
-    );
-  }
-
-  // Registration source
-  if (key === 'RegistrationSource') {
-    const valStr = String(value).toLowerCase();
-    if (valStr === 'self') return <span className="font-bold text-emerald-700 dark:text-emerald-300">🌐 {isEn ? 'Online Web Self-Registration' : 'Khách tự đăng ký trực tuyến (Website)'}</span>;
-    if (valStr === 'counter') return <span className="font-bold text-blue-700 dark:text-blue-300">🏢 {isEn ? 'Counter Front-Desk Registration' : 'Lễ tân đăng ký tại quầy'}</span>;
-    if (valStr === 'admin') return <span className="font-bold text-purple-700 dark:text-purple-300">👤 {isEn ? 'Created by Administrator' : 'Quản trị viên tạo trực tiếp'}</span>;
-  }
-
-  // Payment Method
-  if (/^(Method|PaymentMethod)$/i.test(key)) {
-    const valStr = String(value).toLowerCase();
-    if (valStr === 'cash') return <span className="font-bold text-emerald-700 dark:text-emerald-300">💵 {isEn ? 'Cash Payment' : 'Tiền mặt tại quầy'}</span>;
-    if (valStr === 'vnpay') return <span className="font-bold text-blue-700 dark:text-blue-300">💳 {isEn ? 'VNPay Gateway' : 'Cổng thanh toán VNPay'}</span>;
-    if (valStr === 'bank_transfer') return <span className="font-bold text-indigo-700 dark:text-indigo-300">🏦 {isEn ? 'Bank Transfer' : 'Chuyển khoản ngân hàng'}</span>;
-  }
-
-  // Status mapping
-  if (/Status/i.test(key)) {
-    const valStr = String(value);
-    const statusMap = {
-      Active: { label: isEn ? 'Active' : 'Đang hoạt động', color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800', icon: 'check_circle' },
-      Inactive: { label: isEn ? 'Inactive' : 'Ngừng hoạt động', color: 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700', icon: 'pause_circle' },
-      Suspended: { label: isEn ? 'Suspended' : 'Đang tạm khóa', color: 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800', icon: 'block' },
-      Published: { label: isEn ? 'Published' : 'Đã mở đăng ký', color: 'text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/40 border-teal-200 dark:border-teal-800', icon: 'publish' },
-      Cancelled: { label: isEn ? 'Cancelled' : 'Đã hủy bỏ', color: 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800', icon: 'cancel' },
-      Confirmed: { label: isEn ? 'Confirmed' : 'Đã xác nhận', color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800', icon: 'check' },
-      Waiting: { label: isEn ? 'Waiting' : 'Đang trong hàng chờ', color: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800', icon: 'hourglass_empty' },
-      Draft: { label: isEn ? 'Draft' : 'Bản nháp', color: 'text-slate-600 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 border-slate-200 dark:border-slate-700', icon: 'edit_note' },
-      Booked: { label: isEn ? 'Booked' : 'Đã đặt chỗ', color: 'text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800', icon: 'event_seat' },
-      Attended: { label: isEn ? 'Attended' : 'Đã tham gia (Check-in)', color: 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-800', icon: 'fact_check' }
-    };
-    if (statusMap[valStr]) {
-      const sm = statusMap[valStr];
-      return (
-        <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${sm.color}`}>
-          <span className="material-symbols-outlined text-[13px]">{sm.icon}</span>
-          <span>{sm.label}</span>
-        </span>
-      );
-    }
-  }
-
-  // Array of permissions or items
-  if (Array.isArray(value)) {
-    if (!value.length) return <span className="text-slate-400 italic">{isEn ? 'None' : 'Không có'}</span>;
-    return (
-      <div className="flex flex-wrap gap-1 max-w-md">
-        {value.map((item, idx) => (
-          <span key={idx} className="inline-block px-2 py-0.5 rounded text-[11px] font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-            {typeof item === 'object' ? JSON.stringify(item) : String(item)}
-          </span>
-        ))}
-      </div>
-    );
-  }
-
-  // Object
-  if (typeof value === 'object') {
-    return (
-      <div className="space-y-1">
-        {Object.entries(value).map(([k, v]) => (
-          <div key={k} className="text-[11px]">
-            <span className="font-semibold text-slate-600 dark:text-slate-400">{FIELD_DICT[k]?.[isEn ? 'en' : 'vi'] || k}: </span>
-            <span className="font-bold text-slate-800 dark:text-slate-200">{String(v)}</span>
-          </div>
-        ))}
-      </div>
-    );
-  }
-
-  // IDs with #
-  if (/^(UserId|MemberId|CoachId|ClassId|PackageId|RoomId|SportId|InvoiceId|ScheduleId)$/i.test(key) && !Number.isNaN(Number(value))) {
-    return <span className="font-bold font-mono text-slate-800 dark:text-slate-200">#{value}</span>;
-  }
-
-  // MemberCode / Code
-  if (/Code$/i.test(key)) {
-    return (
-      <span className="font-bold font-mono text-slate-900 dark:text-white bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
-        {String(value)}
-      </span>
-    );
-  }
-
-  return <span className="font-medium text-slate-800 dark:text-slate-200">{String(value)}</span>;
-}
-
-function parseValues(val) {
-  if (!val) return null;
-  if (typeof val === 'object') return val;
-  try {
-    const parsed = JSON.parse(val);
-    return typeof parsed === 'object' ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
-/**
- * Hiển thị dữ liệu so sánh trước / sau một cách thân thiện với nhà quản lý (không hiển thị JSON code thô)
- */
-function AuditDiffViewer({ oldRaw, newRaw, isEn }) {
-  const [showRawJson, setShowRawJson] = useState(false);
-  const oldObj = parseValues(oldRaw);
-  const newObj = parseValues(newRaw);
-
-  const hasOld = oldObj && Object.keys(oldObj).length > 0;
-  const hasNew = newObj && Object.keys(newObj).length > 0;
-
-  if (!hasOld && !hasNew) {
-    if (!oldRaw && !newRaw) return null;
-    return (
-      <div className="mt-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs">
-        {oldRaw && <div><span className="font-bold text-slate-500">{isEn ? 'Before:' : 'Trước:'}</span> {oldRaw}</div>}
-        {newRaw && <div><span className="font-bold text-slate-500">{isEn ? 'After:' : 'Sau:'}</span> {newRaw}</div>}
-      </div>
-    );
-  }
-
-  // 1. Trường hợp TẠO MỚI (Tất cả thuộc tính nằm trong newObj, oldObj rỗng)
-  if (!hasOld && hasNew) {
-    return (
-      <div className="mt-2.5 p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/25 border border-emerald-200/80 dark:border-emerald-800/50 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-emerald-800 dark:text-emerald-300">
-            <span className="material-symbols-outlined text-[16px]">add_circle</span>
-            <span>{isEn ? 'Newly Initialized System Data' : 'Thông tin được thiết lập mới trên hệ thống'}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowRawJson(!showRawJson)}
-            className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline cursor-pointer"
-          >
-            {showRawJson ? (isEn ? 'Hide Code' : 'Ẩn mã JSON') : (isEn ? 'Raw JSON' : 'Xem mã JSON')}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-          {Object.entries(newObj).map(([key, val]) => {
-            const label = FIELD_DICT[key]?.[isEn ? 'en' : 'vi'] || key;
-            return (
-              <div key={key} className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-emerald-100 dark:border-slate-800 shadow-2xs">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">{label}:</span>
-                <div>{formatFriendlyValue(key, val, isEn)}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {showRawJson && (
-          <pre className="text-[10px] font-mono p-2.5 rounded-lg bg-slate-900 text-slate-200 overflow-x-auto whitespace-pre-wrap">
-            {JSON.stringify(newObj, null, 2)}
-          </pre>
-        )}
-      </div>
-    );
-  }
-
-  // 2. Trường hợp XÓA / HỦY (Chỉ có oldObj, newObj rỗng)
-  if (hasOld && !hasNew) {
-    return (
-      <div className="mt-2.5 p-3 rounded-xl bg-rose-50/60 dark:bg-rose-950/25 border border-rose-200/80 dark:border-rose-800/50 space-y-2.5">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-1.5 text-xs font-bold text-rose-800 dark:text-rose-300">
-            <span className="material-symbols-outlined text-[16px]">delete_sweep</span>
-            <span>{isEn ? 'Data Removed / Cancelled from System' : 'Dữ liệu đã bị xóa hoặc hủy khỏi hệ thống'}</span>
-          </div>
-          <button
-            type="button"
-            onClick={() => setShowRawJson(!showRawJson)}
-            className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline cursor-pointer"
-          >
-            {showRawJson ? (isEn ? 'Hide Code' : 'Ẩn mã JSON') : (isEn ? 'Raw JSON' : 'Xem mã JSON')}
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 text-xs">
-          {Object.entries(oldObj).map(([key, val]) => {
-            const label = FIELD_DICT[key]?.[isEn ? 'en' : 'vi'] || key;
-            return (
-              <div key={key} className="bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-rose-100 dark:border-slate-800 shadow-2xs">
-                <span className="text-[11px] text-slate-500 dark:text-slate-400 block mb-0.5 font-medium">{label}:</span>
-                <div>{formatFriendlyValue(key, val, isEn)}</div>
-              </div>
-            );
-          })}
-        </div>
-
-        {showRawJson && (
-          <pre className="text-[10px] font-mono p-2.5 rounded-lg bg-slate-900 text-slate-200 overflow-x-auto whitespace-pre-wrap">
-            {JSON.stringify(oldObj, null, 2)}
-          </pre>
-        )}
-      </div>
-    );
-  }
-
-  // 3. Trường hợp CẬP NHẬT / SỬA ĐỔI (Có cả oldObj và newObj)
-  const allKeys = Array.from(new Set([...Object.keys(oldObj || {}), ...Object.keys(newObj || {})]));
-
-  return (
-    <div className="mt-2.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/90 dark:border-slate-700/80 space-y-2.5">
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-1.5 text-xs font-bold text-slate-800 dark:text-slate-200">
-          <span className="material-symbols-outlined text-[16px] text-blue-600 dark:text-blue-400">compare_arrows</span>
-          <span>{isEn ? 'Detailed Attribute Comparison (Before vs. After)' : 'Bảng đối soát chi tiết trước và sau khi thay đổi'}</span>
-        </div>
-        <button
-          type="button"
-          onClick={() => setShowRawJson(!showRawJson)}
-          className="text-[10px] text-slate-400 hover:text-slate-600 dark:hover:text-slate-300 underline cursor-pointer"
-        >
-          {showRawJson ? (isEn ? 'Hide Code' : 'Ẩn mã JSON') : (isEn ? 'Raw JSON' : 'Xem mã JSON')}
-        </button>
-      </div>
-
-      <div className="overflow-x-auto border border-slate-200 dark:border-slate-700 rounded-lg">
-        <table className="w-full text-xs text-left border-collapse">
-          <thead>
-            <tr className="bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-bold border-b border-slate-200 dark:border-slate-700">
-              <th className="py-2 px-3 w-1/3">{isEn ? 'Information Field' : 'Thông tin dữ liệu'}</th>
-              <th className="py-2 px-3 w-1/3">{isEn ? 'Before Modification' : 'Trước khi đổi (Cũ)'}</th>
-              <th className="py-2 px-3 w-1/3">{isEn ? 'After Modification' : 'Sau khi đổi (Mới)'}</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-slate-100 dark:divide-slate-800 bg-white dark:bg-slate-900">
-            {allKeys.map(key => {
-              const label = FIELD_DICT[key]?.[isEn ? 'en' : 'vi'] || key;
-              const oldVal = oldObj[key];
-              const newVal = newObj[key];
-              const isDifferent = JSON.stringify(oldVal) !== JSON.stringify(newVal);
-
-              return (
-                <tr key={key} className={isDifferent ? 'bg-amber-50/50 dark:bg-amber-950/20' : ''}>
-                  <td className="py-2 px-3 font-semibold text-slate-700 dark:text-slate-300">
-                    <div className="flex items-center gap-1.5">
-                      {isDifferent ? (
-                        <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0" title={isEn ? 'Modified' : 'Đã thay đổi'} />
-                      ) : (
-                        <span className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600 shrink-0" />
-                      )}
-                      <span>{label}</span>
-                    </div>
-                  </td>
-                  <td className="py-2 px-3 text-slate-600 dark:text-slate-400">
-                    {formatFriendlyValue(key, oldVal, isEn)}
-                  </td>
-                  <td className="py-2 px-3 font-bold text-slate-900 dark:text-white">
-                    <div className="flex items-center gap-1.5">
-                      {isDifferent && <span className="text-emerald-600 dark:text-emerald-400 font-black">➔</span>}
-                      {formatFriendlyValue(key, newVal, isEn)}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-
-      {showRawJson && (
-        <pre className="text-[10px] font-mono p-2.5 rounded-lg bg-slate-900 text-slate-200 overflow-x-auto whitespace-pre-wrap">
-          {`${isEn ? 'Before' : 'Trước'}: ${JSON.stringify(oldObj, null, 2)}\n${isEn ? 'After' : 'Sau'}: ${JSON.stringify(newObj, null, 2)}`}
-        </pre>
-      )}
-    </div>
-  );
-}
-
-function renderAuditDetails(row, isEn) {
-  const raw = row.newValues || row.oldValues || row.details;
-  if (!raw) return <span className="text-slate-400 italic text-xs">{isEn ? 'No details' : 'Không có chi tiết'}</span>;
-
-  let parsed = null;
-  if (typeof raw === 'object') {
-    parsed = raw;
-  } else if (typeof raw === 'string') {
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{raw}</span>;
-    }
-  }
-
-  if (!parsed || typeof parsed !== 'object') {
-    return <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{String(raw)}</span>;
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 py-0.5">
-      {parsed.MemberCode && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold font-mono bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] border border-[#81B29A]/30">
-          <span className="text-[10px] uppercase font-sans font-medium text-slate-500 dark:text-slate-400">{isEn ? 'Card:' : 'Mã thẻ:'}</span>
-          {parsed.MemberCode}
-        </span>
-      )}
-      {parsed.UserId && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-          <span className="text-[10px] text-slate-400 font-medium">User:</span>
-          #{parsed.UserId}
-        </span>
-      )}
-      {parsed.RegistrationSource && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-          <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Channel:' : 'Kênh:'}</span>
-          <span className="font-semibold">{parsed.RegistrationSource === 'self' ? (isEn ? 'Web Self-signup' : 'Tự đăng ký Web') : parsed.RegistrationSource}</span>
-        </span>
-      )}
-      {parsed.Email && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          {parsed.Email}
-        </span>
-      )}
-      {parsed.FullName && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          {parsed.FullName}
-        </span>
-      )}
-      {parsed.RoleName && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800">
-          {isEn ? 'Role' : 'Vai trò'}: {parsed.RoleName}
-        </span>
-      )}
-      {parsed.PackageName && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
-          {isEn ? 'Package' : 'Gói'}: {parsed.PackageName}
-        </span>
-      )}
-      {parsed.ClassName && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800">
-          {isEn ? 'Class' : 'Lớp'}: {parsed.ClassName}
-        </span>
-      )}
-      {parsed.Amount && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-chivo">
-          {Number(parsed.Amount).toLocaleString('vi-VN')} đ
-        </span>
-      )}
-      {parsed.Status && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          {isEn ? 'Status' : 'Trạng thái'}: {parsed.Status}
-        </span>
-      )}
-      {parsed.Reason && (
-        <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 italic">
-          "{parsed.Reason}"
-        </span>
-      )}
-
-      {/* Other fields */}
-      {Object.entries(parsed)
-        .filter(([k]) => !['MemberCode', 'UserId', 'RegistrationSource', 'Email', 'FullName', 'RoleName', 'PackageName', 'ClassName', 'Amount', 'Status', 'Reason', 'EmailPresent', 'PhonePresent'].includes(k))
-        .map(([k, v]) => {
-          const label = FIELD_DICT[k]?.[isEn ? 'en' : 'vi'] || k;
-          return (
-            <span key={k} className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-              <span className="text-slate-400 font-medium">{label}:</span>
-              <span className="font-bold text-slate-800 dark:text-slate-200">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
-            </span>
-          );
-        })}
-    </div>
-  );
-}
-
 
 export function AuditLogs() {
   const { language } = useLanguage();
@@ -626,38 +160,16 @@ export function AuditLogs() {
       }
     },
     {
-      header: isEn ? 'Audit Details' : 'Chi Tiết Thao Tác',
-      render: row => {
-        const hasDiff = Boolean(row.oldValues || row.newValues);
-        const isCreate = !row.oldValues && Boolean(row.newValues);
-        const isDelete = Boolean(row.oldValues) && !row.newValues;
-
-        const summaryLabel = isCreate
-          ? (isEn ? '✨ View Initialized Data Details' : '📋 Xem chi tiết dữ liệu khởi tạo')
-          : isDelete
-          ? (isEn ? '🗑️ View Removed Record Details' : '🗑️ Xem thông tin dữ liệu đã hủy/xóa')
-          : (isEn ? '🔄 Compare Changes (Before vs. After)' : '🔄 So sánh chi tiết trước & sau thay đổi');
-
-        return (
-          <div className="space-y-1.5 py-1">
-            {/* Quick summary badges */}
-            {renderAuditDetails(row, isEn)}
-
-            {/* Non-technical human friendly diff details */}
-            {hasDiff && (
-              <details className="group text-xs mt-1">
-                <summary className="cursor-pointer inline-flex items-center gap-1 font-bold text-[#2D6A4F] dark:text-[#81B29A] hover:text-[#1E4D38] dark:hover:text-[#A7D7C5] transition-colors py-0.5 select-none">
-                  <span className="material-symbols-outlined text-[15px] transition-transform duration-200 group-open:rotate-90">
-                    arrow_right
-                  </span>
-                  <span>{summaryLabel}</span>
-                </summary>
-                <AuditDiffViewer oldRaw={row.oldValues} newRaw={row.newValues} isEn={isEn} />
-              </details>
-            )}
+      header: isEn ? 'Affected Object' : 'Đối Tượng Tác Động',
+      render: row => (
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px] text-slate-400">target</span>
+          <div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{row.entityType || (isEn ? 'System' : 'Hệ thống')}</div>
+            <div className="text-[11px] text-slate-400">{row.entityId ? `${isEn ? 'ID' : 'Mã'} #${row.entityId}` : (isEn ? 'No object ID' : 'Không có mã đối tượng')}</div>
           </div>
-        );
-      }
+        </div>
+      )
     },
     {
       header: isEn ? 'Status' : 'Ghi nhận',
@@ -680,42 +192,29 @@ export function AuditLogs() {
     { id: 'ROOM', label: isEn ? 'Rooms' : 'Phòng tập' },
     { id: 'SESSION', label: isEn ? 'Bookings' : 'Đặt chỗ' },
     { id: 'PAYMENT', label: isEn ? 'Payments' : 'Thanh toán' },
-    { id: 'ROLE', label: isEn ? 'Permissions' : 'Phân quyền' }
+    { id: 'ROLE', label: isEn ? 'Permissions' : 'Phân quyền' },
+    { id: 'SUPPORT', label: isEn ? 'Support' : 'Hỗ trợ' },
+    { id: 'NOTIFICATION', label: isEn ? 'Notifications' : 'Thông báo' }
   ];
 
   if (loading) return <LoadingSpinner text={isEn ? 'Loading system audit logs...' : 'Đang tải nhật ký kiểm toán hệ thống...'} />;
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
-      {/* Top Banner Header (Olympic Multi-stop Gradient matching Image 1) */}
-      <section
-        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-[#24828F]/25 border border-white/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
-        style={{
-          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
-        }}
-      >
-        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/35 rounded-full blur-3xl" />
+      {/* Top Banner Header */}
+      <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-white/10 relative overflow-hidden">
+        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[#81B29A]/15 blur-2xl pointer-events-none" />
+        <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-[#F2CC8F]/10 blur-2xl pointer-events-none" />
 
-        {/* Subtle decorative Olympic curved motion lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
-        </svg>
-
-        <div className="relative z-10 space-y-2 max-w-xl">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs">
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-            <span>{isEn ? 'SYSTEM AUDIT & SECURITY TRAIL' : 'NHẬT KÝ KIỂM TOÁN & BẢO MẬT HỆ THỐNG'}</span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+        <div className="relative z-10 space-y-1">
+          <span className="font-chivo text-xs uppercase tracking-widest text-[#F2CC8F] font-bold flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
+            {isEn ? 'SYSTEM AUDIT & SECURITY TRAIL' : 'NHẬT KÝ KIỂM TOÁN & BẢO MẬT HỆ THỐNG'}
+          </span>
+          <h1 className="font-chivo text-2xl md:text-3xl font-black mt-1 text-white tracking-tight">
             {isEn ? 'System Audit Trails (Audit Logs)' : 'Nhật Ký Kiểm Toán Hệ Thống (Audit Logs)'}
           </h1>
-          <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-medium drop-shadow-xs">
+          <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
             {isEn
               ? 'Trace all critical activities: membership registrations, staff appointments, class openings, payments, and permission changes.'
               : 'Theo dõi truy vết toàn bộ hoạt động đăng ký, đăng nhập, giao dịch, mở lớp, phân công và kiểm tra tại quầy.'}
@@ -724,12 +223,12 @@ export function AuditLogs() {
 
         <button
           onClick={() => setRevision(x => x + 1)}
-          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/40 transition-all hover-lift cursor-pointer shadow-xs shrink-0 relative z-10"
+          className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all border border-white/15 hover-lift flex items-center gap-2 backdrop-blur-sm cursor-pointer relative z-10"
         >
-          <span className="material-symbols-outlined text-[16px] text-amber-200">refresh</span>
+          <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">refresh</span>
           <span>{isEn ? 'Refresh Logs' : 'Làm Mới'}</span>
         </button>
-      </section>
+      </div>
 
       {/* Action Filters */}
       <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">

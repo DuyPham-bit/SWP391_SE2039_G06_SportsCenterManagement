@@ -76,7 +76,7 @@ public sealed class AuditLogService(IUnitOfWork unitOfWork) : IAuditLogService
             .Take(pageSize)
             .Select(log => new AuditResponses.AuditLogEntry(
                 log.Id, log.UserId, log.CenterId, log.Action, log.EntityType, log.EntityId,
-                log.OldValues, log.NewValues, log.CreatedAt))
+                log.CreatedAt))
             .ToListAsync(cancellationToken);
         return new AuditResponses.AuditLogPageResponse(items, page, pageSize, totalCount);
     }

@@ -5,10 +5,12 @@ using SportsCenterManagement.DAL.Context;
 namespace SportsCenterManagement.BLL.Services;
 
 public sealed record CenterRoleOverride(string[] PermissionCodes, string[] CapabilityIds);
+public sealed record CenterUserOverride(string[] PermissionCodes, string[] CapabilityIds);
 
 public static class CenterRolePolicy
 {
     public static string Key(long centerId, long roleId) => $"center.rbac.{centerId}.{roleId}";
+    public static string UserKey(long centerId, long userId) => $"center.rbac.user.{centerId}.{userId}";
 
     // Managers can delegate within each role's business boundary, never grant administrative roles.
     public static string[] Capabilities(string role) => role.ToUpperInvariant() switch
@@ -36,5 +38,12 @@ public static class CenterRolePolicy
         var key = Key(centerId, roleId);
         var value = await db.SystemSettings.Where(s => s.SettingKey == key).Select(s => s.SettingValue).SingleOrDefaultAsync(ct);
         return value is null ? null : JsonSerializer.Deserialize<CenterRoleOverride>(value);
+    }
+
+    public static async Task<CenterUserOverride?> ReadUser(SportsCenterDbContext db, long centerId, long userId, CancellationToken ct)
+    {
+        var value = await db.SystemSettings.Where(s => s.SettingKey == UserKey(centerId, userId))
+            .Select(s => s.SettingValue).SingleOrDefaultAsync(ct);
+        return value is null ? null : JsonSerializer.Deserialize<CenterUserOverride>(value);
     }
 }

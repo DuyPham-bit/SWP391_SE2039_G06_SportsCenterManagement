@@ -67,6 +67,7 @@ builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 builder.Services.AddScoped<IStaffManagementService, StaffManagementService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<ICenterNotificationService, CenterNotificationService>();
 
 // Flow 2 Services
 builder.Services.AddScoped<IClassManagementService, ClassManagementService>();

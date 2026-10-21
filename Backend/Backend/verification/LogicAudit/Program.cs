@@ -238,6 +238,66 @@ try {
             return current.Packages!.Single(p => p.Id == package.Id).RevenueInPeriod == 1250000
                 && later.Packages!.Single(p => p.Id == package.Id).RevenueInPeriod == -100000;
         });
+        await Check("successful full cash refund updates invoice and subscription atomically", async () => {
+            var subscription = new MemberSubscription { MemberId = member.Id, PackageId = package.Id,
+                Price = 300000, DurationDays = 30, Status = "Active", StartDate = today, EndDate = today.AddDays(29), CreatedAt = DateTime.UtcNow };
+            db.Add(subscription); await db.SaveChangesAsync();
+            var invoice = new Invoice { InvoiceNumber = "SC-AUDIT-REFUND", MemberId = member.Id, CenterId = center.Id,
+                CreatedBy = owner.Id, Subtotal = 300000, TotalAmount = 300000, Status = "Paid",
+                IssuedAt = DateTime.UtcNow, PaidAt = DateTime.UtcNow };
+            db.Add(invoice); await db.SaveChangesAsync();
+            var payment = new Payment { InvoiceId = invoice.Id, MemberId = member.Id, PaymentMethod = "CASH",
+                Amount = 300000, AmountReceived = 300000, PaymentStatus = "Succeeded", PaidAt = DateTime.UtcNow,
+                AttemptedAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
+            db.AddRange(new InvoiceItem { InvoiceId = invoice.Id, PackageId = package.Id, SubscriptionId = subscription.Id,
+                Description = "Full refund fixture", Quantity = 1, UnitPrice = 300000, Amount = 300000 }, payment);
+            await db.SaveChangesAsync(); db.ChangeTracker.Clear();
+
+            var result = await new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build())
+                .RefundPaymentAsync(manager.Id, center.Id, payment.Id, "full-cash-refund",
+                    new CreateRefundRequest { Amount = 300000, Reason = "Approved full refund" }, "127.0.0.1");
+            db.ChangeTracker.Clear();
+            return result.Status == "Succeeded"
+                && await db.Invoices.AnyAsync(i => i.Id == invoice.Id && i.Status == "Refunded")
+                && await db.MemberSubscriptions.AnyAsync(s => s.Id == subscription.Id && s.Status == "Refunded")
+                && await db.PaymentRefunds.CountAsync(r => r.PaymentId == payment.Id && r.Status == "Succeeded") == 1;
+        });
+        await Check("gateway refund reconciliation requires evidence and finalizes membership state", async () => {
+            var subscription = new MemberSubscription { MemberId = member.Id, PackageId = package.Id,
+                Price = 450000, DurationDays = 30, Status = "Active", StartDate = today, EndDate = today.AddDays(29), CreatedAt = DateTime.UtcNow };
+            db.Add(subscription); await db.SaveChangesAsync();
+            var invoice = new Invoice { InvoiceNumber = "SC-AUDIT-REFUND-RECONCILE", MemberId = member.Id, CenterId = center.Id,
+                CreatedBy = owner.Id, Subtotal = 450000, TotalAmount = 450000, Status = "Paid",
+                IssuedAt = DateTime.UtcNow, PaidAt = DateTime.UtcNow };
+            db.Add(invoice); await db.SaveChangesAsync();
+            var payment = new Payment { InvoiceId = invoice.Id, MemberId = member.Id, PaymentMethod = "VNPAY",
+                Amount = 450000, AmountReceived = 450000, PaymentStatus = "Succeeded", GatewayReference = "AUDIT-GATEWAY-REFUND",
+                ProviderTransactionId = "VNPAY:123456789", PaidAt = DateTime.UtcNow, AttemptedAt = DateTime.UtcNow, CreatedAt = DateTime.UtcNow };
+            db.Add(payment); await db.SaveChangesAsync();
+            var refund = new PaymentRefund { PaymentId = payment.Id, Amount = 450000, Status = "Pending",
+                IdempotencyKey = "audit-pending-refund", Reason = "Provider timeout requires reconciliation",
+                RequestedBy = manager.Id, CreatedAt = DateTime.UtcNow };
+            db.AddRange(new InvoiceItem { InvoiceId = invoice.Id, PackageId = package.Id, SubscriptionId = subscription.Id,
+                Description = "Gateway refund fixture", Quantity = 1, UnitPrice = 450000, Amount = 450000 }, refund);
+            await db.SaveChangesAsync(); db.ChangeTracker.Clear();
+
+            var service = new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build());
+            var missingReferenceRejected = false;
+            try {
+                await service.ReconcileRefundAsync(manager.Id, center.Id, refund.Id,
+                    new ReconcileRefundRequest { Status = "Succeeded", EvidenceNote = "Verified provider record" });
+            } catch (BusinessException) {
+                missingReferenceRejected = true;
+            }
+            db.ChangeTracker.Clear();
+            var result = await service.ReconcileRefundAsync(manager.Id, center.Id, refund.Id,
+                new ReconcileRefundRequest { Status = "Succeeded", ProviderRefundId = "987654321", EvidenceNote = "Verified provider refund statement" });
+            db.ChangeTracker.Clear();
+            return missingReferenceRejected && result.Status == "Succeeded"
+                && await db.Invoices.AnyAsync(i => i.Id == invoice.Id && i.Status == "Refunded")
+                && await db.MemberSubscriptions.AnyAsync(s => s.Id == subscription.Id && s.Status == "Refunded")
+                && await db.PaymentRefunds.AnyAsync(r => r.Id == refund.Id && r.ProviderRefundId == "VNPAY:987654321");
+        });
         async Task<bool> ConcurrentAttempt(Func<CoachProfessionalService, Task<long>> action) {
             await using var isolated = new SportsCenterDbContext(options);
             try { return await action(new CoachProfessionalService(isolated, clock)) > 0; }

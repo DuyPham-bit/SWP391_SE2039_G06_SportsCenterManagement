@@ -4,6 +4,7 @@ import { Modal } from '../../components/common/Modal.jsx';
 import { formatMemberDateTime } from '../member/memberOverview.js';
 import { counterButton, counterInput, CounterError, CounterMemberPicker } from './ReceptionistShared.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const getStatusConfig = isEn => ({
   Open: {
@@ -83,9 +84,11 @@ const extractTopic = (subject = '') => {
   return { topic: null, cleanSubject: subject };
 };
 
-export function SupportRequests() {
+export function SupportRequests({ allowCreate = true, showHeader = true }) {
   const { language } = useLanguage();
+  const { currentUser } = useAuth();
   const isEn = language === 'en';
+  const canCreate = allowCreate && String(currentUser?.role || '').toUpperCase() === 'RECEPTIONIST';
 
   const statusConfig = useMemo(() => getStatusConfig(isEn), [isEn]);
   const priorityConfig = useMemo(() => getPriorityConfig(isEn), [isEn]);
@@ -262,51 +265,55 @@ export function SupportRequests() {
   return (
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner Header */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
-        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl pointer-events-none" />
+      {showHeader && (
+        <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+          {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+          <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl pointer-events-none" />
 
-        {/* Subtle decorative Olympic curved motion lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-        </svg>
+          {/* Subtle decorative Olympic curved motion lines */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+            <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+            <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+            <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          </svg>
 
-        <div className="relative z-10 space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-xs font-black uppercase tracking-wider shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{isEn ? 'FRONT DESK & MEMBER CARE' : 'QUẦY LỄ TÂN & CHĂM SÓC KHÁCH HÀNG'}</span>
+          <div className="relative z-10 space-y-1">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-xs font-black uppercase tracking-wider shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{isEn ? 'FRONT DESK & MEMBER CARE' : 'QUẦY LỄ TÂN & CHĂM SÓC KHÁCH HÀNG'}</span>
+            </div>
+            <h1 className="font-chivo text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2.5 mt-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+              <span className="material-symbols-outlined text-[28px] text-amber-300">support_agent</span>
+              <span>{isEn ? 'Support Requests & Inquiries' : 'Yêu Cầu Hỗ Trợ & Khiếu Nại'}</span>
+            </h1>
+            <p className="text-xs sm:text-sm text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
+              {isEn
+                ? 'Receive, triage, and track the progress of member inquiries, equipment reports, and coaching issues.'
+                : 'Tiếp nhận, phân loại và theo dõi tiến độ xử lý các thắc mắc, sự cố của hội viên và huấn luyện viên tại trung tâm.'}
+            </p>
           </div>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black tracking-tight text-white flex items-center gap-2.5 mt-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-            <span className="material-symbols-outlined text-[28px] text-amber-300">support_agent</span>
-            <span>{isEn ? 'Support Requests & Inquiries' : 'Yêu Cầu Hỗ Trợ & Khiếu Nại'}</span>
-          </h1>
-          <p className="text-xs sm:text-sm text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
-            {isEn
-              ? 'Receive, triage, and track the progress of member inquiries, equipment reports, and coaching issues.'
-              : 'Tiếp nhận, phân loại và theo dõi tiến độ xử lý các thắc mắc, sự cố của hội viên và huấn luyện viên tại trung tâm.'}
-          </p>
-        </div>
 
-        <button
-          className="px-5 py-3 bg-slate-950 hover:bg-slate-900 active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover:shadow-lg hover-lift flex items-center gap-2 shrink-0 cursor-pointer relative z-10"
-          disabled={busy}
-          onClick={() => {
-            setCreateError('');
-            setMember(null);
-            setCreateSubject('');
-            setCreateDescription('');
-            setCreatePriority('Normal');
-            setCreating(true);
-          }}
-        >
-          <span className="material-symbols-outlined text-[20px] text-amber-300">add_circle</span>
-          <span>{isEn ? 'New Support Ticket' : 'Tiếp Nhận Yêu Cầu Mới'}</span>
-        </button>
-      </div>
+          {canCreate && (
+            <button
+              className="px-5 py-3 bg-slate-950 hover:bg-slate-900 active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover:shadow-lg hover-lift flex items-center gap-2 shrink-0 cursor-pointer relative z-10"
+              disabled={busy}
+              onClick={() => {
+                setCreateError('');
+                setMember(null);
+                setCreateSubject('');
+                setCreateDescription('');
+                setCreatePriority('Normal');
+                setCreating(true);
+              }}
+            >
+              <span className="material-symbols-outlined text-[20px] text-amber-300">add_circle</span>
+              <span>{isEn ? 'New Support Ticket' : 'Tiếp Nhận Yêu Cầu Mới'}</span>
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Quick KPI Stat Cards Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -951,7 +958,7 @@ export function SupportRequests() {
                   ? 'Click any ticket on the left list to read full description, view conversation history, and update resolution.'
                   : 'Nhấp vào bất kỳ yêu cầu nào ở danh sách bên trái để đọc nội dung đầy đủ, xem lịch sử trao đổi và cập nhật tiến độ xử lý cho hội viên.'}
               </p>
-              <button
+              {canCreate && <button
                 type="button"
                 onClick={() => {
                   setCreateError('');
@@ -965,14 +972,14 @@ export function SupportRequests() {
               >
                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
                 {isEn ? 'Create New Ticket' : 'Tạo yêu cầu mới'}
-              </button>
+              </button>}
             </div>
           )}
         </div>
       </div>
 
       {/* Modal: Tiếp nhận yêu cầu hỗ trợ mới */}
-      <Modal
+      {canCreate && <Modal
         isOpen={creating}
         onClose={() => {
           if (!busy) setCreating(false);
@@ -1114,7 +1121,7 @@ export function SupportRequests() {
             </button>
           </div>
         </form>
-      </Modal>
+      </Modal>}
     </div>
   );
 }

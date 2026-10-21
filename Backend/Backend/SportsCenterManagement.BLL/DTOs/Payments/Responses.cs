@@ -411,7 +411,8 @@ public sealed record InvoicePaymentResponse(
     string? ProviderTransactionId,
     DateTime CreatedAtUtc,
     DateTime? PaidAtUtc,
-    IReadOnlyList<InvoiceRefundResponse> Refunds);
+    IReadOnlyList<InvoiceRefundResponse> Refunds,
+    string? GatewayReference = null);
 
 public sealed record InvoiceRefundResponse(
     long Id,
