@@ -31,5 +31,8 @@ Bỏ các thuật ngữ role trong db như “view_teaching_schedule”,... đi
 7/ Có thêm phần thêm thông báo. Chia ra thông báo theo role. Cập nhật đúng cấu trúc cả BE và FE
 
 8/ Audit (Bỏ phần giá trị trước sau)
-9/ Tiếp nhận yêu cầu hỗ trợ
-Manager là người xử lý yêu cầu hỗ trợ mà? Sao lại có phần Tạo yêu cầu mới? Xoá phần đó đi. Manager chỉ tiếp nhận xử lý các yêu cầu thôi. Chú ý logic gửi yêu cầu cho các role khác, cả BE và FE.
+9/ Tiếp nhận yêu cầu hỗ trợ & Gửi thông báo
+Thêm tính năng Manager tiếp nhận xử lý các yêu cầu và có thể gửi thông báo cho toàn hệ thống/ cho các role được phân. Chú ý logic gửi yêu cầu cho các role khác, cả BE và FE.
+
+
+10/ Check lại thêm cơ chế hoàn tiền, và các cơ chế liên quan phần Resolution Mechanisms. Xem logics BE đã đúng chưa, FE đã chuẩn chưa?

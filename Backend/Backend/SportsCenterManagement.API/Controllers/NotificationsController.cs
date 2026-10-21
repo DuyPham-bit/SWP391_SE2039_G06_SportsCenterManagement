@@ -2,13 +2,27 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Authorization;
+using SportsCenterManagement.API.Filters;
+using SportsCenterManagement.BLL.DTOs.Notifications;
+using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Context;
 
 namespace SportsCenterManagement.API.Controllers;
 
 [Authorize]
-public sealed class NotificationsController(SportsCenterDbContext db) : FlowControllerBase
+[FlowExceptionFilter]
+public sealed class NotificationsController(
+    SportsCenterDbContext db,
+    ICenterNotificationService centerNotificationService) : FlowControllerBase
 {
+    [HttpPost("centers/{centerId:long}/notifications")]
+    [Authorize(Roles = "MANAGER")]
+    public async Task<ActionResult<SendCenterNotificationResponse>> SendToCenter(
+        long centerId,
+        SendCenterNotificationRequest request,
+        CancellationToken ct) =>
+        Ok(await centerNotificationService.SendAsync(CurrentUserId, centerId, request, ct));
+
     [HttpGet("notifications/me")]
     public async Task<IActionResult> Mine(CancellationToken ct) => Ok(await (
         from link in db.UserNotifications join n in db.Notifications on link.NotificationId equals n.Id

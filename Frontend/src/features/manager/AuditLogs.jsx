@@ -41,6 +41,10 @@ const getActionMetaMap = isEn => ({
   'JOIN_SESSION_WAITLIST': { label: isEn ? 'Join Waitlist' : 'Vào Hàng Chờ Lớp', color: 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 border-amber-200 dark:border-amber-800', icon: 'hourglass_empty' },
   'PAYMENT.CASH.RECORDED': { label: isEn ? 'Counter Cash Payment' : 'Thu Tiền Mặt Tại Quầy', color: 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border-emerald-200 dark:border-emerald-800', icon: 'payments' },
   'ROLE.PERMISSIONS.REPLACED': { label: isEn ? 'Role Permissions Updated' : 'Phân Quyền Vai Trò', color: 'bg-indigo-50 dark:bg-indigo-950/40 text-indigo-700 dark:text-indigo-300 border-indigo-200 dark:border-indigo-800', icon: 'security' },
+  'SUPPORT.SUBMITTED': { label: isEn ? 'Support Request Submitted' : 'Gửi Yêu Cầu Hỗ Trợ', color: 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800', icon: 'support_agent' },
+  'SUPPORT.UPDATED': { label: isEn ? 'Support Request Updated' : 'Cập Nhật Yêu Cầu Hỗ Trợ', color: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800', icon: 'published_with_changes' },
+  'SUPPORT.REPLIED': { label: isEn ? 'Support Reply Added' : 'Phản Hồi Yêu Cầu Hỗ Trợ', color: 'bg-cyan-50 dark:bg-cyan-950/40 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800', icon: 'forum' },
+  'CENTER_NOTIFICATION_SENT': { label: isEn ? 'Center Notification Sent' : 'Gửi Thông Báo Trung Tâm', color: 'bg-violet-50 dark:bg-violet-950/40 text-violet-700 dark:text-violet-300 border-violet-200 dark:border-violet-800', icon: 'campaign' },
 });
 
 function getActionMeta(actionCode = '', isEn = false) {
@@ -55,99 +59,6 @@ function getActionMeta(actionCode = '', isEn = false) {
     color: 'bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-200 border-slate-200 dark:border-slate-700',
     icon: 'history'
   };
-}
-
-function renderAuditDetails(row, isEn) {
-  const raw = row.newValues || row.oldValues || row.details;
-  if (!raw) return <span className="text-slate-400 italic text-xs">{isEn ? 'No details' : 'Không có chi tiết'}</span>;
-
-  let parsed = null;
-  if (typeof raw === 'object') {
-    parsed = raw;
-  } else if (typeof raw === 'string') {
-    try {
-      parsed = JSON.parse(raw);
-    } catch {
-      return <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{raw}</span>;
-    }
-  }
-
-  if (!parsed || typeof parsed !== 'object') {
-    return <span className="text-xs text-slate-700 dark:text-slate-300 font-medium">{String(raw)}</span>;
-  }
-
-  return (
-    <div className="flex flex-wrap items-center gap-1.5 py-0.5">
-      {parsed.MemberCode && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold font-mono bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] border border-[#81B29A]/30">
-          <span className="text-[10px] uppercase font-sans font-medium">{isEn ? 'Card' : 'Mã thẻ'}:</span>
-          {parsed.MemberCode}
-        </span>
-      )}
-      {parsed.UserId && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
-          <span className="text-[10px] text-slate-400 font-medium">User:</span>
-          #{parsed.UserId}
-        </span>
-      )}
-      {parsed.RegistrationSource && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-medium bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
-          <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Channel:' : 'Kênh:'}</span>
-          <span className="font-semibold">{parsed.RegistrationSource === 'self' ? (isEn ? 'Web Self-signup' : 'Tự đăng ký Web') : parsed.RegistrationSource}</span>
-        </span>
-      )}
-      {parsed.Email && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          {parsed.Email}
-        </span>
-      )}
-      {parsed.FullName && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold text-slate-800 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          {parsed.FullName}
-        </span>
-      )}
-      {parsed.RoleName && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold text-blue-700 dark:text-blue-300 bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800">
-          {isEn ? 'Role' : 'Vai trò'}: {parsed.RoleName}
-        </span>
-      )}
-      {parsed.PackageName && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold text-purple-700 dark:text-purple-300 bg-purple-50 dark:bg-purple-950/40 border border-purple-200 dark:border-purple-800">
-          {isEn ? 'Package' : 'Gói'}: {parsed.PackageName}
-        </span>
-      )}
-      {parsed.ClassName && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold text-orange-700 dark:text-orange-300 bg-orange-50 dark:bg-orange-950/40 border border-orange-200 dark:border-orange-800">
-          {isEn ? 'Class' : 'Lớp'}: {parsed.ClassName}
-        </span>
-      )}
-      {parsed.Amount && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-bold text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 font-mono">
-          {Number(parsed.Amount).toLocaleString('vi-VN')}đ
-        </span>
-      )}
-      {parsed.Status && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-          {isEn ? 'Status' : 'Trạng thái'}: {parsed.Status}
-        </span>
-      )}
-      {parsed.Reason && (
-        <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 italic">
-          "{parsed.Reason}"
-        </span>
-      )}
-
-      {/* Other fields */}
-      {Object.entries(parsed)
-        .filter(([k]) => !['MemberCode', 'UserId', 'RegistrationSource', 'Email', 'FullName', 'RoleName', 'PackageName', 'ClassName', 'Amount', 'Status', 'Reason', 'EmailPresent', 'PhonePresent'].includes(k))
-        .map(([k, v]) => (
-          <span key={k} className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[11px] text-slate-600 dark:text-slate-400 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
-            <span className="text-slate-400">{k}:</span>
-            <span className="font-medium">{typeof v === 'object' ? JSON.stringify(v) : String(v)}</span>
-          </span>
-        ))}
-    </div>
-  );
 }
 
 export function AuditLogs() {
@@ -249,16 +160,14 @@ export function AuditLogs() {
       }
     },
     {
-      header: isEn ? 'Audit Details' : 'Chi Tiết Thao Tác',
+      header: isEn ? 'Affected Object' : 'Đối Tượng Tác Động',
       render: row => (
-        <div className="space-y-2">
-          {renderAuditDetails(row, isEn)}
-          <details className="text-xs">
-            <summary className="cursor-pointer text-[#2D6A4F] dark:text-[#81B29A] font-bold hover:underline">
-              {isEn ? 'View Diff (Before / After)' : 'Giá trị trước / sau'}
-            </summary>
-            <pre className="text-xs whitespace-pre-wrap break-all mt-2 p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 font-mono text-slate-700 dark:text-slate-300">{`${isEn ? 'Before' : 'Trước'}: ${row.oldValues || '—'}\n${isEn ? 'After' : 'Sau'}: ${row.newValues || '—'}`}</pre>
-          </details>
+        <div className="flex items-center gap-2">
+          <span className="material-symbols-outlined text-[18px] text-slate-400">target</span>
+          <div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{row.entityType || (isEn ? 'System' : 'Hệ thống')}</div>
+            <div className="text-[11px] text-slate-400">{row.entityId ? `${isEn ? 'ID' : 'Mã'} #${row.entityId}` : (isEn ? 'No object ID' : 'Không có mã đối tượng')}</div>
+          </div>
         </div>
       )
     },
@@ -283,7 +192,9 @@ export function AuditLogs() {
     { id: 'ROOM', label: isEn ? 'Rooms' : 'Phòng tập' },
     { id: 'SESSION', label: isEn ? 'Bookings' : 'Đặt chỗ' },
     { id: 'PAYMENT', label: isEn ? 'Payments' : 'Thanh toán' },
-    { id: 'ROLE', label: isEn ? 'Permissions' : 'Phân quyền' }
+    { id: 'ROLE', label: isEn ? 'Permissions' : 'Phân quyền' },
+    { id: 'SUPPORT', label: isEn ? 'Support' : 'Hỗ trợ' },
+    { id: 'NOTIFICATION', label: isEn ? 'Notifications' : 'Thông báo' }
   ];
 
   if (loading) return <LoadingSpinner text={isEn ? 'Loading system audit logs...' : 'Đang tải nhật ký kiểm toán hệ thống...'} />;

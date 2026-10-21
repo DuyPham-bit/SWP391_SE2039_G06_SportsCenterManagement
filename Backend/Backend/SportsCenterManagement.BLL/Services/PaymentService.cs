@@ -339,8 +339,10 @@ public sealed class PaymentService(
 
         await using var transaction = await _unitOfWork.Context.Database
             .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var isNumericId = long.TryParse(gatewayReference, NumberStyles.None, CultureInfo.InvariantCulture, out var paymentId);
         var payment = await _unitOfWork.Context.Payments
-            .SingleOrDefaultAsync(candidate => candidate.GatewayReference == gatewayReference, cancellationToken)
+            .SingleOrDefaultAsync(candidate => candidate.GatewayReference == gatewayReference
+                || (isNumericId && candidate.Id == paymentId), cancellationToken)
             ?? throw BusinessException.NotFound("Không tìm thấy lần thử thanh toán.");
         var invoice = await _unitOfWork.Context.Invoices
             .SingleAsync(candidate => candidate.Id == payment.InvoiceId, cancellationToken);
@@ -1017,6 +1019,13 @@ public sealed class PaymentService(
             if (refund.Status == "Succeeded")
             {
                 payment.RefundApprovedBy = managerUserId;
+            }
+            // Persist the terminal refund state before recomputing the invoice aggregate.
+            // UpdateInvoiceRefundStatusAsync uses a database SUM, so an unsaved Succeeded
+            // refund would otherwise be omitted and leave the invoice/subscription active.
+            await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+            if (refund.Status == "Succeeded")
+            {
                 await UpdateInvoiceRefundStatusAsync(invoice, DateTime.UtcNow, cancellationToken);
             }
             _unitOfWork.Context.AuditLogs.Add(CreateAudit(managerUserId, "Payment.Refund" + refund.Status,
@@ -1578,13 +1587,16 @@ public sealed class PaymentService(
             }
             return FailedCallback("Amount hoặc transaction id không khớp payment attempt.", invoice.InvoiceNumber);
         }
+
         var normalizedId = NormalizeProviderTransactionId(provider, providerTransactionId);
+        // Nếu Transaction ID này đã tồn tại ở một Payment khác...
         if (await _unitOfWork.Context.Payments.AnyAsync(
                 candidate => candidate.ProviderTransactionId == normalizedId && candidate.Id != payment.Id,
                 cancellationToken))
         {
             if (isSuccess && payment.PaymentStatus != "Succeeded")
             {
+                // thì hệ thống chuyển sang trạng thái chờ đối soát thay vì kích hoạt!
                 var review = await MarkPaymentReviewRequiredAsync(payment, provider,
                     "Provider transaction ID đã gắn với payment khác", amount, providerTransactionId, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -1717,7 +1729,8 @@ public sealed class PaymentService(
             refundRows.Where(refund => refund.PaymentId == payment.Id)
                 .Select(refund => new InvoiceRefundResponse(refund.Id, refund.Amount, refund.Status,
                     refund.Reason, refund.ProviderRefundId, refund.ExternalReference, refund.CreatedAt, refund.ProcessedAt))
-                .ToArray())).ToArray();
+                .ToArray(),
+            payment.GatewayReference)).ToArray();
         var member = await _unitOfWork.Context.MemberProfiles.SingleAsync(m => m.Id == invoice.MemberId, cancellationToken);
         var center = await _unitOfWork.Context.Centers.SingleAsync(c => c.Id == invoice.CenterId, cancellationToken);
         return new InvoiceDetailsResponse(
@@ -1859,12 +1872,12 @@ public sealed class PaymentService(
         string message,
         string? invoiceNumber = null,
         string providerAckCode = "99") => new()
-    {
-        Success = false,
-        Message = message,
-        InvoiceNumber = invoiceNumber,
-        ProviderAckCode = providerAckCode
-    };
+        {
+            Success = false,
+            Message = message,
+            InvoiceNumber = invoiceNumber,
+            ProviderAckCode = providerAckCode
+        };
 
     private static string CreateInvoiceNumber(DateTime now) =>
         $"SC-{now:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..30];
@@ -2120,10 +2133,10 @@ public sealed class PaymentService(
     private async Task EnsureCanCancelPendingAsync(long actorId, long memberId, long centerId, CancellationToken ct)
     {
         var actor = await (from user in _unitOfWork.Context.Users
-            join role in _unitOfWork.Context.Roles on user.RoleId equals role.Id
-            where user.Id == actorId && user.Status == "Active"
-                && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)
-            select new { user.RoleId, Role = role.Name }).SingleOrDefaultAsync(ct);
+                           join role in _unitOfWork.Context.Roles on user.RoleId equals role.Id
+                           where user.Id == actorId && user.Status == "Active"
+                               && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)
+                           select new { user.RoleId, Role = role.Name }).SingleOrDefaultAsync(ct);
         if (actor is null) throw BusinessException.Forbidden("Tài khoản không hoạt động.");
 
         var owner = actor.Role == RoleNames.Member && await _unitOfWork.Context.MemberProfiles
@@ -2141,7 +2154,8 @@ public sealed class PaymentService(
         var permission = owner ? PermissionCodes.PaymentSelfCreate : PermissionCodes.PaymentCenterCash;
         if (!await (from grant in _unitOfWork.Context.RolePermissions
                     join p in _unitOfWork.Context.Permissions on grant.PermissionId equals p.Id
-                    where grant.RoleId == actor.RoleId && p.Code == permission select p.Id).AnyAsync(ct))
+                    where grant.RoleId == actor.RoleId && p.Code == permission
+                    select p.Id).AnyAsync(ct))
             throw BusinessException.Forbidden("Bạn không có quyền xử lý hóa đơn chờ thanh toán.");
         if (actor.Role is RoleNames.Member or RoleNames.Receptionist)
         {

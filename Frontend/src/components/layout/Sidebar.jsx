@@ -242,11 +242,23 @@ export function Sidebar({ isOpen, onClose, currentPath }) {
               { label: isEn ? 'Membership Packages' : 'Gói tập hội viên', path: '#/manager/packages' },
               { label: isEn ? 'Coach Assignment' : 'Phân công HLV', path: '#/manager/coach-assignment' },
               { label: isEn ? 'Coach Operations' : 'Vận hành đội ngũ HLV', path: '#/manager/coach-operations' },
+              ...(normalizedRole === 'MANAGER' ? [{ label: isEn ? 'Support & Announcements' : 'Hỗ trợ & Thông báo', path: '#/manager/support-communications' }] : []),
               { label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', path: '#/manager/home-content' }
             ]
           }
         ]
       },
+      ...(normalizedRole === 'SYSTEMADMIN' ? [] : [{
+        category: isEn ? 'FINANCE & BILLING' : 'TÀI CHÍNH & HÓA ĐƠN',
+        items: [
+          {
+            id: 'mgr_invoices',
+            label: isEn ? 'Invoices & Payments' : 'Quản lý Hóa đơn & Thu tiền',
+            icon: 'receipt_long',
+            path: '#/manager/invoices'
+          }
+        ]
+      }]),
       {
         category: isEn ? 'HR & PERMISSIONS' : 'NHÂN SỰ & PHÂN QUYỀN',
         items: [

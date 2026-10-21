@@ -336,13 +336,16 @@ export function getDynamicNavItems(role) {
       ];
 
       if (normalized === 'MANAGER') items.push({ path: '#/manager/members', icon: 'group', label: 'Quản Lý Thành Viên' });
-      if (normalized === 'MANAGER') items.push({ path: '#/receptionist/support', icon: 'support_agent', label: 'Tiếp Nhận Yêu Cầu Hỗ Trợ' });
+      if (normalized === 'MANAGER') items.push({ path: '#/manager/support-communications', icon: 'campaign', label: 'Hỗ Trợ & Thông Báo' });
       if (perms.includes('manage_staff')) items.push({ path: '#/manager/staff', icon: 'badge', label: 'Quản Lý Nhân Viên' });
       if (perms.includes('manage_packages')) items.push({ path: '#/manager/packages', icon: 'card_membership', label: 'Gói Tập Hội Viên' });
       if (perms.includes('manage_classes')) items.push({ path: '#/manager/classes-rooms', icon: 'sports_score', label: 'Lớp, Bộ Môn & Phòng' });
       if (perms.includes('assign_coach')) items.push({ path: '#/manager/coach-assignment', icon: 'assignment_ind', label: 'Phân Công HLV' });
       if (perms.includes('manage_coach_operations')) items.push({ path: '#/manager/coach-operations', icon: 'manage_accounts', label: 'Vận Hành Đội Ngũ HLV' });
       items.push({ path: '#/manager/home-content', icon: 'dashboard_customize', label: 'QUẢN LÝ NỘI DUNG TRANG CHỦ & ĐA PHƯƠNG TIỆN' });
+
+      items.push({ label: 'TÀI CHÍNH & HÓA ĐƠN', isHeader: true });
+      items.push({ path: '#/manager/invoices', icon: 'receipt_long', label: 'Quản Lý Hóa Đơn & Thu Tiền' });
 
       items.push({ label: 'BÁO CÁO & BẢO MẬT', isHeader: true });
       if (perms.includes('view_reports')) items.push({ path: '#/manager/reports', icon: 'analytics', label: 'Báo Cáo & Thống Kê' });

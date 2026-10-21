@@ -662,6 +662,49 @@ export const receptionApi = {
     });
   },
 
+  async reconcilePayment(gatewayReference, { status, providerTransactionId, confirmedAmount, evidenceNote }) {
+    return apiRequest(`payments/${encodeURIComponent(gatewayReference)}/reconcile`, {
+      method: 'POST',
+      body: {
+        status,
+        providerTransactionId: providerTransactionId?.trim() || null,
+        confirmedAmount: confirmedAmount != null && confirmedAmount !== '' ? Number(confirmedAmount) : null,
+        evidenceNote: evidenceNote?.trim() || ''
+      }
+    });
+  },
+
+  async refundPayment(paymentId, { amount, reason, externalRefundReference, idempotencyKey }) {
+    if (!idempotencyKey) throw new Error('Thiếu mã chống tạo lệnh hoàn tiền trùng.');
+    return apiRequest(`payments/${paymentId}/refunds`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body: {
+        amount: Number(amount),
+        reason: reason?.trim() || '',
+        externalRefundReference: externalRefundReference?.trim() || null
+      }
+    });
+  },
+
+  async reconcileRefund(refundId, { status, providerRefundId, evidenceNote }) {
+    return apiRequest(`payments/refunds/${Number(refundId)}/reconcile`, {
+      method: 'POST',
+      body: {
+        status,
+        providerRefundId: providerRefundId?.trim() || null,
+        evidenceNote: evidenceNote?.trim() || ''
+      }
+    });
+  },
+
+  async voidCounterInvoice(invoiceNumber, reason) {
+    return apiRequest(`payments/counter-void/${encodeURIComponent(invoiceNumber)}`, {
+      method: 'POST',
+      body: { reason: reason?.trim() || '' }
+    });
+  },
+
   async getSupportRequests({ query = '', status = '', page = 1 } = {}) {
     return apiRequest(`centers/${centerId()}/support-requests?${new URLSearchParams({ query: query.trim(), status, page: String(page), pageSize: '20' })}`);
   },
@@ -730,6 +773,12 @@ export const memberApi = {
     });
   },
 
+  async syncVietQr(orderCode) {
+    return apiRequest(`payments/vietqr/${orderCode}/sync`, {
+      method: 'POST'
+    });
+  },
+
   async getMyProgress() {
     return asArray(await apiRequest('members/me/progress'));
   },
@@ -768,13 +817,14 @@ export const reportApi = {
       throw new Error('Chọn khoảng ngày hợp lệ, tối đa 366 ngày, nhóm theo ngày hoặc tháng.');
     }
     const query = new URLSearchParams({ from, to, groupBy, centerId: String(centerId()) });
-    const checkinQuery = new URLSearchParams({ from: today, to: today });
-    const [revenue, sportRevenue, membership, classes, rawSessionItems, checkins, rawRooms, rawClasses] = await Promise.all([
+    const checkinQuery = new URLSearchParams({ from: today, to: today, centerId: String(centerId()) });
+    const [revenue, sportRevenue, membership, classes, rawSessionItems, operations, checkins, rawRooms, rawClasses] = await Promise.all([
       apiRequest(`reports/revenue?${query}`),
       apiRequest(`reports/revenue-by-sport?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
       apiRequest(`reports/membership?${query}`),
       apiRequest(`reports/classes?${query}`),
       loadSessionsBetween(from, to),
+      apiRequest(`reports/operations?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
       apiRequest(`reports/checkins?${checkinQuery}`),
       apiRequest(`centers/${centerId()}/rooms`),
       apiRequest(`centers/${centerId()}/classes/all`)
@@ -922,6 +972,16 @@ export const reportApi = {
       }))
       .sort((a, b) => b.booked - a.booked || b.percentage - a.percentage);
 
+    // The operation report is calculated in the BLL from the scoped SQL data.
+    // Keep the UI's rankings and personnel figures on the same source of truth as the API.
+    const reportClasses = operations.classes || topClasses;
+    const reportRooms = operations.rooms || topRooms;
+    const reportSports = (operations.sports || []).map(item => ({
+      ...item,
+      percentage: item.occupancyRate,
+      share: item.bookingShare
+    }));
+
     return {
       from, to, groupBy,
       totalMembers: membership.totalMembers,
@@ -930,10 +990,17 @@ export const reportApi = {
       membershipPeriods: membership.periods || [],
       classStatusCounts: classes.currentStatusCounts || {},
       classPeriods: classes.periods || [],
-      totalClasses: sessionItems.length,
+      totalStaff: operations.totalStaff || 0,
+      activeStaff: operations.activeStaff || 0,
+      managerCount: operations.managerCount || 0,
+      coachCount: operations.coachCount || 0,
+      receptionistCount: operations.receptionistCount || 0,
+      totalRooms: operations.totalRooms || 0,
+      activeRooms: operations.activeRooms || 0,
+      totalClasses: operations.sessionsCount ?? sessionItems.length,
       totalBookings: activeBookingCount,
       todayCheckins: checkins.count,
-      occupancyRate: capacity ? Math.round((booked / capacity) * 100) : 0,
+      occupancyRate: Number(operations.occupancyRate ?? (capacity ? Math.round((booked / capacity) * 100) : 0)),
       netRevenue: revenue.net,
       monthlyRevenue: revenue.net,
       grossRevenue: revenue.gross,
@@ -943,20 +1010,21 @@ export const reportApi = {
       revenueBySport: sportRevenue.sports || [],
       allocatedSportRevenue: sportRevenue.allocatedNet || 0,
       unallocatedSportRevenue: sportRevenue.unallocatedNet || 0,
-      utilizationBySport: topSports.map(item => ({
+      utilizationBySport: reportSports.map(item => ({
         name: item.name,
         capacity: item.capacity,
         booked: item.booked,
         percentage: item.percentage
       })),
-      topSports,
-      topClasses,
-      topRooms,
+      topSports: reportSports,
+      topClasses: reportClasses,
+      topRooms: reportRooms,
+      coaches: operations.coaches || [],
       highlights: {
-        mostPopularClass: topClasses[0] || null,
-        mostPopularSport: topSports[0] || null,
+        mostPopularClass: reportClasses[0] || null,
+        mostPopularSport: reportSports[0] || null,
         highestRevenueSport: (sportRevenue.sports || []).find(item => item.sportId != null) || null,
-        mostBookedRoom: topRooms[0] || null
+        mostBookedRoom: reportRooms[0] || null
       }
     };
   }
@@ -983,8 +1051,7 @@ export const systemApi = {
         item.action,
         item.actorUserId ? `User #${item.actorUserId}` : 'Hệ thống',
         item.entityType,
-        item.newValues,
-        item.oldValues
+        item.entityId
       ].filter(Boolean).join(' ').toLowerCase();
 
       return {
@@ -992,9 +1059,6 @@ export const systemApi = {
         userId: item.actorUserId,
         userName,
         role,
-        details: item.newValues || item.oldValues || item.entityType,
-        newValues: item.newValues,
-        oldValues: item.oldValues,
         status: 'SUCCESS',
         timestamp: item.createdAt,
         searchIndex: searchContent
@@ -1016,6 +1080,36 @@ export const systemApi = {
     return apiRequest(isManager ? `centers/${centerId()}/roles/${roleId}/permissions` : `admin/roles/${roleId}/permissions`, {
       method: 'PUT',
       body: isManager ? { permissionCodes, capabilityIds } : { permissionCodes }
+    });
+  },
+
+  async getUserPermissions() {
+    return asArray(await apiRequest(`centers/${centerId()}/user-permissions`));
+  },
+
+  async updateUserPermissions(userId, permissionCodes, capabilityIds) {
+    return apiRequest(`centers/${centerId()}/users/${Number(userId)}/permissions`, {
+      method: 'PUT', body: { permissionCodes, capabilityIds }
+    });
+  },
+
+  async resetUserPermissions(userId) {
+    return apiRequest(`centers/${centerId()}/users/${Number(userId)}/permissions`, { method: 'DELETE' });
+  },
+
+  async resetRoleUserOverrides(roleId) {
+    return apiRequest(`centers/${centerId()}/roles/${Number(roleId)}/user-permissions`, { method: 'DELETE' });
+  },
+
+  async sendCenterNotification({ title, message, sendToAll, targetRoles }) {
+    return apiRequest(`centers/${centerId()}/notifications`, {
+      method: 'POST',
+      body: {
+        title: title.trim(),
+        message: message.trim(),
+        sendToAll: Boolean(sendToAll),
+        targetRoles: sendToAll ? [] : targetRoles
+      }
     });
   },
 

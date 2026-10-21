@@ -225,6 +225,22 @@ public sealed class PaymentsController : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Đồng bộ trạng thái giao dịch VietQR / PayOS cho hội viên sở hữu giao dịch.
+    /// POST /api/payments/vietqr/{orderCode:long}/sync
+    /// </summary>
+    [Authorize]
+    [HttpPost("vietqr/{orderCode:long}/sync")]
+    public async Task<ActionResult<PaymentResultResponse>> SyncVietQrPayment(
+        [FromRoute] long orderCode,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetRequiredUserId();
+        var memberId = await GetCurrentMemberIdAsync(userId, cancellationToken);
+        var result = await _paymentService.SyncVietQrPaymentAsync(memberId, orderCode, cancellationToken);
+        return Ok(result);
+    }
+
     [Authorize(Roles = "MANAGER,ADMIN")]
     [HttpPost("{gatewayReference}/reconcile")]
     public async Task<ActionResult<PaymentResultResponse>> ReconcilePendingPayment(

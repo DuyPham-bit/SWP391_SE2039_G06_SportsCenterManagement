@@ -43,6 +43,13 @@ const server = http.createServer(async (req, res) => {
     if (route === '/api/access/me/capabilities') return json(res, ['manage_staff', 'manage_members', 'manage_classes', 'manage_packages', 'assign_coach', 'view_reports']);
     if (route === '/api/notifications/me') return json(res, []);
     if (route === '/api/centers/1/roles') return json(res, roleMatrix);
+    if (route === '/api/centers/1/user-permissions') return json(res, [{
+      userId: 10, fullName: 'Coach Yoga', roleName: 'Coach', status: 'Active',
+      availableCapabilities: ['view_teaching_schedule'], capabilityIds: ['view_teaching_schedule'],
+      availablePermissions: [], permissionCodes: [], hasCustomOverride: false
+    }]);
+    if (route === '/api/centers/1/users/10/permissions' && (req.method === 'PUT' || req.method === 'DELETE')) return json(res, {}, 204);
+    if (route === '/api/centers/1/roles/2/user-permissions' && req.method === 'DELETE') return json(res, { resetCount: 1 });
     if (route === '/api/centers/1/roles/2/permissions' && req.method === 'PUT') {
       roleMatrix[0].capabilityIds = body.capabilityIds;
       return json(res, roleMatrix[0]);
@@ -66,6 +73,11 @@ const server = http.createServer(async (req, res) => {
     if (route === '/api/reports/revenue-by-sport') return json(res, { allocatedNet: 12345, unallocatedNet: 77655, sports: [{ sportId: 1, sportName: 'Yoga', net: 12345, gross: 12345, refunds: 0, share: 13.7 }] });
     if (route === '/api/reports/membership') return json(res, { totalMembers: 1, activeMembers: 1, newMembers: 1, periods: [{ periodStart: today, newMembers: 1 }] });
     if (route === '/api/reports/classes') return json(res, { currentStatusCounts: { Booked: 4 }, periods: [] });
+    if (route === '/api/reports/operations') return json(res, {
+      totalStaff: 2, activeStaff: 2, managerCount: 1, coachCount: 1, receptionistCount: 0,
+      totalRooms: 1, activeRooms: 1, sessionsCount: 1, bookedSeats: 4, capacitySeats: 20, occupancyRate: 20,
+      classes: [], sports: [], rooms: [], coaches: []
+    });
     if (route === '/api/reports/checkins') return json(res, { count: 0 });
     if (route === '/api/class-sessions') return json(res, { items: [{ sessionId: 1, classId: 1, className: classes[0].name, sportName: 'Yoga', roomId: 1, capacity: 20, bookedCount: 4, sessionDate: today }], totalCount: 1, pageSize: 100 });
     errors.push(`Unexpected API: ${req.method} ${route}`);
@@ -269,13 +281,25 @@ async function closeDialog() {
   checks.push('Report rankings show API sport revenue, and the daily filter sends the correct date range');
 
   await route('#/manager/roles-permissions', 'Phân Quyền Theo Vai Trò');
-  assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Theo Từng Người')`), false);
+  assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Theo Từng Người')`), true);
+  await until('individual permissions', () => evaluate(`document.querySelector('main')?.textContent.includes('Coach Yoga') && document.querySelector('main')?.textContent.includes('Lưu quyền cho tài khoản này')`));
+  await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
+  await click('Lưu quyền cho tài khoản này', 'document.querySelector("main")');
+  await until('individual permission API save', () => requests.some(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT'));
+  assert.deepEqual(requests.find(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT').body.capabilityIds, []);
+  checks.push('An individual account can receive a restricted permission override through the backend API');
+
+  await click('2. Quyền Nền Theo Vai Trò (1)', 'document.querySelector("main")');
+  await until('role defaults', () => evaluate(`document.querySelector('main')?.textContent.includes('Sửa một lần, áp dụng chung cho cả vai trò')`));
   await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
   await click('Lưu Phân Quyền Vai Trò [Coach]', 'document.querySelector("main")');
   await until('role API save', () => requests.some(r => r.route === '/api/centers/1/roles/2/permissions' && r.method === 'PUT'));
   assert.deepEqual(requests.find(r => r.route === '/api/centers/1/roles/2/permissions').body.capabilityIds, []);
+  await evaluate(`window.confirm = () => true`);
+  await click('Đồng bộ tất cả theo vai trò', 'document.querySelector("main")');
+  await until('role user overrides reset', () => requests.some(r => r.route === '/api/centers/1/roles/2/user-permissions' && r.method === 'DELETE'));
   assert.equal(await evaluate(`Object.keys(localStorage).some(key => key.startsWith('scms_user_perm_override_'))`), false);
-  checks.push('Role permissions save to the backend API and no per-user local override UI remains');
+  checks.push('Role defaults save once and bulk synchronization removes individual overrides without local-storage authorization');
 
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, session);
   for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', classes[0].name], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói'], ['roles-permissions', 'Phân Quyền Theo Vai Trò']]) await route(`#/manager/${hash}`, text);

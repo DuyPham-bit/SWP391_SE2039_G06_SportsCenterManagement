@@ -21,7 +21,9 @@ public sealed class CenterCapabilityAttribute(string capability) : Attribute, IA
         var baseline = CenterRolePolicy.Capabilities(row.Name);
         var centerId = await CenterRolePolicy.CenterForUser(db, userId, ct);
         var policy = centerId.HasValue ? await CenterRolePolicy.Read(db, centerId.Value, row.RoleId, ct) : null;
-        if (!baseline.Contains(capability) || (policy is not null && !policy.CapabilityIds.Contains(capability)))
+        var userPolicy = centerId.HasValue ? await CenterRolePolicy.ReadUser(db, centerId.Value, userId, ct) : null;
+        if (!baseline.Contains(capability) || (policy is not null && !policy.CapabilityIds.Contains(capability))
+            || (userPolicy is not null && !userPolicy.CapabilityIds.Contains(capability)))
             context.Result = new ForbidResult();
     }
 }

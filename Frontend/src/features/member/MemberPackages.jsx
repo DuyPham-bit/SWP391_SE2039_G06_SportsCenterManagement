@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { packageApi, memberApi } from '../../services/api.js';
+import { packageApi, memberApi, receptionApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useToast } from '../../context/ToastContext.js';
@@ -19,6 +19,7 @@ export function MemberPackages() {
   const [packages, setPackages] = useState([]);
   const [pendingInvoices, setPendingInvoices] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [syncingInvoice, setSyncingInvoice] = useState('');
 
   // Checkout Modal State
   const [modalOpen, setModalOpen] = useState(false);
@@ -74,6 +75,46 @@ export function MemberPackages() {
       showError(err.message || (isEn ? 'Cannot cancel invoice.' : 'Không thể hủy hóa đơn.'));
     } finally {
       setCancelling(false);
+    }
+  };
+
+  const handleCheckOrSyncPending = async (invoiceNumber) => {
+    setSyncingInvoice(invoiceNumber);
+    try {
+      const invDetails = await receptionApi.getInvoice(invoiceNumber);
+      if (invDetails && (invDetails.status === 'Paid' || invDetails.amountPaid >= invDetails.totalAmount)) {
+        showSuccess(isEn ? 'Payment confirmed! Your package is now active.' : 'Giao dịch đã được ghi nhận thành công! Gói tập của bạn đã kích hoạt.');
+        await loadData();
+        await refreshUser();
+        return;
+      }
+
+      const payOsPayment = (invDetails?.payments || []).find(p => p.paymentMethod === 'PAYOS' || p.paymentMethod === 'VIETQR');
+      if (payOsPayment) {
+        try {
+          const syncRes = await memberApi.syncVietQr(payOsPayment.id);
+          if (syncRes?.success) {
+            showSuccess(syncRes.message || (isEn ? 'VietQR synced successfully! Package active.' : 'Đã đồng bộ giao dịch VietQR thành công! Gói tập đã kích hoạt.'));
+            await loadData();
+            await refreshUser();
+            return;
+          }
+        } catch {
+          // Fallback to general advice
+        }
+      }
+
+      await loadData();
+      await refreshUser();
+      showInfo(
+        isEn
+          ? 'Invoice is still pending confirmation. If your account was already debited, please contact reception with your invoice code for instant reconciliation.'
+          : 'Hóa đơn đang chờ ngân hàng xác nhận. Nếu bạn đã bị trừ tiền, vui lòng liên hệ quầy lễ tân để đối soát kích hoạt ngay lập tức!'
+      );
+    } catch (err) {
+      showError(err.message || (isEn ? 'Failed to check invoice status.' : 'Không thể kiểm tra trạng thái hóa đơn.'));
+    } finally {
+      setSyncingInvoice('');
     }
   };
 
@@ -167,19 +208,28 @@ export function MemberPackages() {
                     <span className="text-slate-400 mx-1.5">•</span>
                     <span className="text-slate-500 dark:text-slate-400 font-mono">{isEn ? 'Code:' : 'Mã:'} {inv.invoiceNumber}</span>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <button
+                      type="button"
+                      onClick={() => handleCheckOrSyncPending(inv.invoiceNumber)}
+                      disabled={syncingInvoice === inv.invoiceNumber}
+                      className="px-3 py-1.5 text-xs font-bold font-chivo uppercase rounded-lg border border-indigo-300 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 hover:bg-indigo-50 dark:hover:bg-indigo-950/30 transition flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className={`material-symbols-outlined text-[15px] ${syncingInvoice === inv.invoiceNumber ? 'animate-spin' : ''}`}>sync</span>
+                      <span>{syncingInvoice === inv.invoiceNumber ? (isEn ? 'Checking...' : 'Đang kiểm tra...') : (isEn ? 'Check / Sync' : 'Kiểm Tra / Đồng Bộ')}</span>
+                    </button>
                     <button
                       type="button"
                       onClick={() => handleCancelPending(inv.invoiceNumber)}
                       disabled={cancelling}
-                      className="px-3 py-1.5 text-xs font-bold font-chivo uppercase rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition"
+                      className="px-3 py-1.5 text-xs font-bold font-chivo uppercase rounded-lg border border-red-300 dark:border-red-800 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-950/30 transition cursor-pointer"
                     >
                       {cancelling ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel This Invoice' : 'Hủy Hóa Đơn Này')}
                     </button>
                     <button
                       type="button"
                       onClick={() => handleOpenCheckout(matchedPkg || { id: inv.packageId, name: inv.packageName, price: inv.amount, durationDays: inv.durationDays }, inv.invoiceNumber)}
-                      className="px-3.5 py-1.5 text-xs font-bold font-chivo uppercase rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow transition"
+                      className="px-3.5 py-1.5 text-xs font-bold font-chivo uppercase rounded-lg bg-amber-600 hover:bg-amber-700 text-white shadow transition cursor-pointer"
                     >
                       {isEn ? 'Continue Payment' : 'Tiếp Tục Thanh Toán'}
                     </button>

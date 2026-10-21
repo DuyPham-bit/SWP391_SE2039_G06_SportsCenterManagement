@@ -43,6 +43,7 @@ const CoachSalaryKPI = lazy(() => import('./features/coach/CoachSalaryKPI.jsx').
 const CoachResources = lazy(() => import('./features/coach/CoachResources.jsx').then(m => ({ default: m.CoachResources })));
 const CoachProfessionalHub = lazy(() => import('./features/coach/CoachProfessionalHub.jsx').then(m => ({ default: m.CoachProfessionalHub })));
 const ManagerCoachOperations = lazy(() => import('./features/manager/ManagerCoachOperations.jsx').then(m => ({ default: m.ManagerCoachOperations })));
+const ManagerSupportCommunications = lazy(() => import('./features/manager/ManagerSupportCommunications.jsx').then(m => ({ default: m.ManagerSupportCommunications })));
 
 // Member Pages (Lazy Loaded)
 const MemberDashboard = lazy(() => import('./features/member/MemberDashboard.js').then(m => ({ default: m.MemberDashboard })));
@@ -107,10 +108,14 @@ function AppRouter() {
   </div>;
 
   // Helper bọc layout & guard cho role Manager & Admin/SystemAdmin
-  const renderManagerRoute = (Component, requiredCapability) => (
+  const renderManagerRoute = (
+    Component,
+    requiredCapability,
+    allowedRoles = ['MANAGER', 'ADMIN', 'SYSTEMADMIN']
+  ) => (
     <AppLayout currentPath={path}>
       <ProtectedRoute>
-        <RoleGuard allowedRoles={['MANAGER', 'ADMIN', 'SYSTEMADMIN']} requiredCapability={requiredCapability}>
+        <RoleGuard allowedRoles={allowedRoles} requiredCapability={requiredCapability}>
           <Component />
         </RoleGuard>
       </ProtectedRoute>
@@ -178,6 +183,8 @@ function AppRouter() {
       case '#/manager':
       case '#/manager/dashboard':
         return renderManagerRoute(ManagerDashboard);
+      case '#/manager/invoices':
+        return renderManagerRoute(CounterInvoices, undefined, ['MANAGER', 'ADMIN']);
       case '#/manager/members':
         return renderManagerRoute(MemberManagement, 'lookup_member');
       case '#/manager/staff':
@@ -198,6 +205,8 @@ function AppRouter() {
         return renderManagerRoute(HomeContentManagement, 'manage_landing_content');
       case '#/manager/coach-operations':
         return renderManagerRoute(ManagerCoachOperations, 'manage_coach_operations');
+      case '#/manager/support-communications':
+        return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MANAGER']}><ManagerSupportCommunications /></RoleGuard></ProtectedRoute></AppLayout>;
 
       // RECEPTIONIST ROUTES (4 chức năng)
       case '#/receptionist':

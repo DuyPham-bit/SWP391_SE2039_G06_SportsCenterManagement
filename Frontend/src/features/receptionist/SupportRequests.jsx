@@ -4,6 +4,7 @@ import { Modal } from '../../components/common/Modal.jsx';
 import { formatMemberDateTime } from '../member/memberOverview.js';
 import { counterButton, counterInput, CounterError, CounterMemberPicker } from './ReceptionistShared.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 
 const getStatusConfig = isEn => ({
   Open: {
@@ -83,9 +84,11 @@ const extractTopic = (subject = '') => {
   return { topic: null, cleanSubject: subject };
 };
 
-export function SupportRequests() {
+export function SupportRequests({ allowCreate = true, showHeader = true }) {
   const { language } = useLanguage();
+  const { currentUser } = useAuth();
   const isEn = language === 'en';
+  const canCreate = allowCreate && String(currentUser?.role || '').toUpperCase() === 'RECEPTIONIST';
 
   const statusConfig = useMemo(() => getStatusConfig(isEn), [isEn]);
   const priorityConfig = useMemo(() => getPriorityConfig(isEn), [isEn]);
@@ -262,7 +265,7 @@ export function SupportRequests() {
   return (
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner Header */}
-      <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-white/10 relative overflow-hidden">
+      {showHeader && <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-white/10 relative overflow-hidden">
         <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-[#81B29A]/15 blur-2xl pointer-events-none" />
         <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-[#F2CC8F]/10 blur-2xl pointer-events-none" />
 
@@ -284,7 +287,7 @@ export function SupportRequests() {
           </p>
         </div>
 
-        <button
+        {canCreate && <button
           className="px-5 py-3 bg-[#2D6A4F] hover:bg-[#1B4332] active:scale-[0.98] text-white rounded-xl text-xs sm:text-sm font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover-lift flex items-center gap-2 shrink-0 cursor-pointer relative z-10"
           disabled={busy}
           onClick={() => {
@@ -298,8 +301,8 @@ export function SupportRequests() {
         >
           <span className="material-symbols-outlined text-[20px]">add_circle</span>
           <span>{isEn ? 'New Support Ticket' : 'Tiếp Nhận Yêu Cầu Mới'}</span>
-        </button>
-      </div>
+        </button>}
+      </div>}
 
       {/* Quick KPI Stat Cards Bar */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
@@ -931,7 +934,7 @@ export function SupportRequests() {
                   ? 'Click any ticket on the left list to read full description, view conversation history, and update resolution.'
                   : 'Nhấp vào bất kỳ yêu cầu nào ở danh sách bên trái để đọc nội dung đầy đủ, xem lịch sử trao đổi và cập nhật tiến độ xử lý cho hội viên.'}
               </p>
-              <button
+              {canCreate && <button
                 type="button"
                 onClick={() => {
                   setCreateError('');
@@ -945,14 +948,14 @@ export function SupportRequests() {
               >
                 <span className="material-symbols-outlined text-[16px]">add_circle</span>
                 {isEn ? 'Create New Ticket' : 'Tạo yêu cầu mới'}
-              </button>
+              </button>}
             </div>
           )}
         </div>
       </div>
 
       {/* Modal: Tiếp nhận yêu cầu hỗ trợ mới */}
-      <Modal
+      {canCreate && <Modal
         isOpen={creating}
         onClose={() => {
           if (!busy) setCreating(false);
@@ -1094,7 +1097,7 @@ export function SupportRequests() {
             </button>
           </div>
         </form>
-      </Modal>
+      </Modal>}
     </div>
   );
 }

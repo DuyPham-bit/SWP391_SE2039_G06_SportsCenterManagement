@@ -36,8 +36,20 @@ internal static class FlowNotificationWriter
         string type,
         CancellationToken cancellationToken)
     {
+        await CreateWithResultAsync(db, senderId, recipientUserIds, title, message, type, cancellationToken);
+    }
+
+    public static async Task<Notification?> CreateWithResultAsync(
+        SportsCenterDbContext db,
+        long senderId,
+        IEnumerable<long> recipientUserIds,
+        string title,
+        string message,
+        string type,
+        CancellationToken cancellationToken)
+    {
         var recipients = recipientUserIds.Distinct().Where(id => id > 0).ToList();
-        if (recipients.Count == 0) return;
+        if (recipients.Count == 0) return null;
 
         var now = DateTime.UtcNow;
         var notification = new Notification
@@ -62,5 +74,6 @@ internal static class FlowNotificationWriter
             }, cancellationToken);
         }
         await db.SaveChangesAsync(cancellationToken);
+        return notification;
     }
 }

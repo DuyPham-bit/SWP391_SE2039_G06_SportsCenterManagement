@@ -16,6 +16,14 @@ const CAPABILITY_CATEGORIES = [
   'BÁO CÁO & BẢO MẬT'
 ];
 
+// Manager permissions are fixed by the server and are deliberately not part of
+// the center-level delegation matrix. Only these staff/member roles can vary.
+const DELEGABLE_CAPABILITY_IDS = new Set(
+  SYSTEM_CAPABILITIES
+    .filter(capability => capability.defaultRole !== 'MANAGER')
+    .map(capability => capability.id)
+);
+
 const getCategoryLabel = (category, isEn) => {
   const map = {
     'VẬN HÀNH & NHÂN SỰ': isEn ? 'OPERATIONS & STAFF' : 'VẬN HÀNH & NHÂN SỰ',
@@ -35,11 +43,12 @@ export function RolesPermissions() {
   const { showError, showSuccess } = useToast();
 
   // Navigation tab
-  const [activeTab, setActiveTab] = useState('ROLES'); // 'ROLES' | 'MATRIX'
+  const [activeTab, setActiveTab] = useState('USERS'); // 'USERS' | 'ROLES' | 'MATRIX'
 
   // Data states
   const [matrix, setMatrix] = useState([]);
   const [staffList, setStaffList] = useState([]);
+  const [userRows, setUserRows] = useState([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -53,6 +62,10 @@ export function RolesPermissions() {
 
   // Matrix tab state
   const [matrixSearchQuery, setMatrixSearchQuery] = useState('');
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [selectedUserId, setSelectedUserId] = useState('');
+  const [userCaps, setUserCaps] = useState([]);
+  const [userCodes, setUserCodes] = useState([]);
 
   const centerId = currentUser?.centerId;
   const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
@@ -64,18 +77,25 @@ export function RolesPermissions() {
       setLoading(true);
       setLoadError('');
       try {
-        const [matrixRows, staffData] = await Promise.all([
+        const [matrixRows, staffData, permissionUsers] = await Promise.all([
           systemApi.getPermissions(),
           staffApi.getAll().catch(err => {
             console.warn('Could not load staff list:', err);
             return [];
-          })
+          }),
+          centerId ? systemApi.getUserPermissions() : Promise.resolve([])
         ]);
 
         if (!isMounted) return;
 
         setMatrix(matrixRows || []);
         setStaffList(staffData || []);
+        setUserRows(permissionUsers || []);
+        if (permissionUsers?.length) {
+          setSelectedUserId(permissionUsers[0].userId);
+          setUserCaps(permissionUsers[0].capabilityIds || []);
+          setUserCodes(permissionUsers[0].permissionCodes || []);
+        }
 
         // Default select first role (prefer Coach or first available)
         if (matrixRows && matrixRows.length > 0) {
@@ -104,6 +124,46 @@ export function RolesPermissions() {
   const selectedRole = useMemo(() => {
     return matrix.find(r => String(r.roleId) === String(selectedRoleId)) || null;
   }, [matrix, selectedRoleId]);
+
+  const selectedUser = useMemo(() => userRows.find(row => String(row.userId) === String(selectedUserId)) || null,
+    [userRows, selectedUserId]);
+  const filteredUsers = useMemo(() => {
+    const query = userSearchQuery.trim().toLocaleLowerCase('vi');
+    return userRows.filter(row => !query || `${row.fullName} ${row.roleName}`.toLocaleLowerCase('vi').includes(query));
+  }, [userRows, userSearchQuery]);
+
+  const selectUser = row => {
+    setSelectedUserId(row.userId);
+    setUserCaps(row.capabilityIds || []);
+    setUserCodes(row.permissionCodes || []);
+  };
+
+  const refreshUsers = async preferredUserId => {
+    const rows = await systemApi.getUserPermissions();
+    setUserRows(rows);
+    const selected = rows.find(row => String(row.userId) === String(preferredUserId)) || rows[0];
+    if (selected) selectUser(selected);
+  };
+
+  const saveUserPermissions = async () => {
+    if (!selectedUser) return;
+    setBusy(true);
+    try {
+      await systemApi.updateUserPermissions(selectedUser.userId, userCodes, userCaps);
+      await refreshUsers(selectedUser.userId);
+      showSuccess(isEn ? 'User permissions saved.' : `Đã lưu quyền riêng cho ${selectedUser.fullName}.`);
+    } catch (error) { showError(error); } finally { setBusy(false); }
+  };
+
+  const resetUserPermissions = async () => {
+    if (!selectedUser) return;
+    setBusy(true);
+    try {
+      await systemApi.resetUserPermissions(selectedUser.userId);
+      await refreshUsers(selectedUser.userId);
+      showSuccess(isEn ? 'Role defaults restored.' : 'Đã khôi phục quyền mặc định theo vai trò.');
+    } catch (error) { showError(error); } finally { setBusy(false); }
+  };
 
   // Toggle role capability (Tab 1)
   const toggleRoleCap = (capId) => {
@@ -153,6 +213,22 @@ export function RolesPermissions() {
     }
   };
 
+  const syncAllUsersToRole = async () => {
+    if (!selectedRole) return;
+    const confirmed = window.confirm(isEn
+      ? `Remove every individual exception for ${selectedRole.roleName} and apply the role defaults to all users?`
+      : `Xóa toàn bộ quyền riêng của người dùng thuộc vai trò ${selectedRole.roleName} và đồng bộ tất cả theo quyền chung?`);
+    if (!confirmed) return;
+    setBusy(true);
+    try {
+      const result = await systemApi.resetRoleUserOverrides(selectedRole.roleId);
+      await refreshUsers(selectedUserId);
+      showSuccess(isEn
+        ? `Synchronized all users. ${result?.resetCount || 0} individual overrides removed.`
+        : `Đã đồng bộ toàn bộ người dùng. Đã xóa ${result?.resetCount || 0} cấu hình riêng.`);
+    } catch (error) { showError(error); } finally { setBusy(false); }
+  };
+
   // Filtered capabilities for Tab 1
   const filteredRoleCaps = useMemo(() => {
     if (!selectedRole) return [];
@@ -164,7 +240,6 @@ export function RolesPermissions() {
         const q = roleSearchQuery.trim().toLowerCase();
         const matchesQuery = !q ||
           cap.label.toLowerCase().includes(q) ||
-          cap.id.toLowerCase().includes(q) ||
           (cap.desc || '').toLowerCase().includes(q);
         return matchesCategory && matchesQuery;
       });
@@ -178,7 +253,6 @@ export function RolesPermissions() {
     if (!q) return list;
     return list.filter(p =>
       (p.name || '').toLowerCase().includes(q) ||
-      (p.code || '').toLowerCase().includes(q) ||
       (p.description || '').toLowerCase().includes(q)
     );
   }, [selectedRole, roleSearchQuery]);
@@ -186,11 +260,8 @@ export function RolesPermissions() {
   // Matrix Filtered Capabilities
   const filteredMatrixCaps = useMemo(() => {
     const q = matrixSearchQuery.trim().toLowerCase();
-    if (!q) return SYSTEM_CAPABILITIES;
-    return SYSTEM_CAPABILITIES.filter(c =>
-      c.label.toLowerCase().includes(q) ||
-      c.id.toLowerCase().includes(q) ||
-      c.category.toLowerCase().includes(q)
+    return SYSTEM_CAPABILITIES.filter(c => DELEGABLE_CAPABILITY_IDS.has(c.id)).filter(c =>
+      !q || c.label.toLowerCase().includes(q) || c.desc.toLowerCase().includes(q) || c.category.toLowerCase().includes(q)
     );
   }, [matrixSearchQuery]);
 
@@ -259,6 +330,15 @@ export function RolesPermissions() {
         {/* Master Navigation Tabs */}
         <div className="relative z-10 flex flex-wrap gap-2 mt-6 pt-4 border-t border-white/10">
           <button
+            onClick={() => setActiveTab('USERS')}
+            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
+              activeTab === 'USERS' ? 'bg-[#2D6A4F] text-white shadow-lg shadow-[#2D6A4F]/30' : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+            }`}
+          >
+            <span className="material-symbols-outlined text-[18px]">person_check</span>
+            {isEn ? `1. Individual Users (${userRows.length})` : `1. Theo Từng Người (${userRows.length})`}
+          </button>
+          <button
             onClick={() => setActiveTab('ROLES')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'ROLES'
@@ -267,7 +347,7 @@ export function RolesPermissions() {
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            {isEn ? `1. Role Access Permissions (${matrix.length})` : `1. Phân Quyền Theo Vai Trò (${matrix.length})`}
+            {isEn ? `2. Role Defaults (${matrix.length})` : `2. Quyền Nền Theo Vai Trò (${matrix.length})`}
           </button>
 
           <button
@@ -279,16 +359,103 @@ export function RolesPermissions() {
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">grid_view</span>
-            {isEn ? '2. Full RBAC Matrix Grid' : '2. Ma Trận Toàn Cảnh (Full RBAC Grid)'}
+            {isEn ? '3. Delegation Matrix' : '3. Ma Trận Phân Quyền'}
           </button>
         </div>
       </div>
+
+      {activeTab === 'USERS' && (
+        <div className="grid lg:grid-cols-[320px_minmax(0,1fr)] gap-5">
+          <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm h-fit">
+            <h2 className="font-bold text-slate-900 dark:text-white">{isEn ? 'Select an account' : 'Chọn tài khoản'}</h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-3">
+              {isEn ? 'Managers are excluded and cannot edit themselves.' : 'Không liệt kê Manager; người quản lý không thể tự sửa quyền.'}
+            </p>
+            <input value={userSearchQuery} onChange={event => setUserSearchQuery(event.target.value)}
+              placeholder={isEn ? 'Search name or role...' : 'Tìm theo tên hoặc vai trò...'}
+              className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs mb-3" />
+            <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
+              {filteredUsers.map(row => (
+                <button key={row.userId} onClick={() => selectUser(row)}
+                  className={`w-full text-left p-3 rounded-xl border transition ${String(row.userId) === String(selectedUserId)
+                    ? 'border-[#2D6A4F] bg-emerald-50 dark:bg-emerald-950/30'
+                    : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-bold text-sm text-slate-900 dark:text-white truncate">{row.fullName}</span>
+                    {row.hasCustomOverride && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">{isEn ? 'CUSTOM' : 'RIÊNG'}</span>}
+                  </div>
+                  <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{row.roleName} · {row.status}</div>
+                </button>
+              ))}
+              {!filteredUsers.length && <div className="p-6 text-center text-xs text-slate-400">{isEn ? 'No account found.' : 'Không tìm thấy tài khoản.'}</div>}
+            </div>
+          </section>
+
+          <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-5 shadow-sm">
+            {!selectedUser ? <div className="py-16 text-center text-slate-400">{isEn ? 'Select an account to configure.' : 'Chọn một tài khoản để cấu hình quyền.'}</div> : <>
+              <div className="flex flex-wrap items-start justify-between gap-3 pb-4 border-b border-slate-100 dark:border-slate-800">
+                <div>
+                  <h2 className="text-lg font-black text-slate-900 dark:text-white">{selectedUser.fullName}</h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">{selectedUser.roleName} · {isEn ? 'individual access configuration' : 'cấu hình quyền riêng theo tài khoản'}</p>
+                </div>
+                <button disabled={busy || !selectedUser.hasCustomOverride} onClick={resetUserPermissions}
+                  className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold disabled:opacity-40">
+                  {isEn ? 'Use role defaults' : 'Dùng quyền mặc định vai trò'}
+                </button>
+              </div>
+
+              <div className="mt-5">
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-3">{isEn ? 'Business features' : 'Chức năng nghiệp vụ'}</h3>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {(selectedUser.availableCapabilities || []).map(id => {
+                    const cap = SYSTEM_CAPABILITIES.find(item => item.id === id);
+                    if (!cap) return null;
+                    const checked = userCaps.includes(id);
+                    return <label key={id} className={`flex gap-3 p-3 rounded-xl border cursor-pointer ${checked ? 'border-[#2D6A4F]/50 bg-emerald-50/60 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-800'}`}>
+                      <input type="checkbox" checked={checked} onChange={() => setUserCaps(values => checked ? values.filter(value => value !== id) : [...values, id])} className="mt-1 accent-[#2D6A4F]" />
+                      <span><strong className="block text-xs text-slate-900 dark:text-white">{cap.label}</strong><span className="text-[11px] text-slate-500 dark:text-slate-400">{cap.desc}</span></span>
+                    </label>;
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-5 border-t border-slate-100 dark:border-slate-800">
+                <h3 className="font-bold text-sm text-slate-900 dark:text-white mb-3">{isEn ? 'Data access' : 'Phạm vi dữ liệu'}</h3>
+                <div className="grid md:grid-cols-2 gap-3">
+                  {(selectedUser.availablePermissions || []).map(permission => {
+                    const checked = userCodes.includes(permission.code);
+                    return <label key={permission.code} className={`flex gap-3 p-3 rounded-xl border cursor-pointer ${checked ? 'border-slate-400 bg-slate-50 dark:bg-slate-800' : 'border-slate-200 dark:border-slate-800'}`}>
+                      <input type="checkbox" checked={checked} onChange={() => setUserCodes(values => checked ? values.filter(value => value !== permission.code) : [...values, permission.code])} className="mt-1" />
+                      <span><strong className="block text-xs text-slate-900 dark:text-white">{permission.name}</strong><span className="text-[11px] text-slate-500 dark:text-slate-400">{permission.description}</span></span>
+                    </label>;
+                  })}
+                </div>
+              </div>
+
+              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
+                <button disabled={busy} onClick={saveUserPermissions} className="px-5 py-2.5 rounded-xl bg-[#2D6A4F] text-white text-xs font-bold disabled:opacity-50">
+                  {busy ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save individual permissions' : 'Lưu quyền cho tài khoản này')}
+                </button>
+              </div>
+            </>}
+          </section>
+        </div>
+      )}
 
       {/* ========================================================================= */}
       {/* TAB 1: PHÂN QUYỀN THEO TỪNG VAI TRÒ (ROLE-BASED PERMISSIONS)              */}
       {/* ========================================================================= */}
       {activeTab === 'ROLES' && (
         <div className="space-y-6">
+          <div className="rounded-2xl border border-blue-200 dark:border-blue-900 bg-blue-50/70 dark:bg-blue-950/20 p-4 flex gap-3">
+            <span className="material-symbols-outlined text-blue-600 dark:text-blue-300">groups</span>
+            <div>
+              <h2 className="font-bold text-sm text-blue-950 dark:text-blue-100">{isEn ? 'Change once, apply to the whole role' : 'Sửa một lần, áp dụng chung cho cả vai trò'}</h2>
+              <p className="text-xs text-blue-800 dark:text-blue-200 mt-1">{isEn
+                ? 'Role defaults affect every account. Existing individual exceptions remain restricted; use Sync all users when everyone must be identical.'
+                : 'Quyền nền áp dụng cho mọi tài khoản. Các ngoại lệ cá nhân đang có vẫn được giữ; dùng “Đồng bộ tất cả” khi muốn mọi người giống hoàn toàn quyền chung.'}</p>
+            </div>
+          </div>
           {/* Role Selection Cards */}
           <div>
             <div className="flex items-center justify-between mb-3">
@@ -445,7 +612,7 @@ export function RolesPermissions() {
                     type="text"
                     value={roleSearchQuery}
                     onChange={e => setRoleSearchQuery(e.target.value)}
-                    placeholder={isEn ? 'Search permissions by name, code or description...' : 'Tìm kiếm quyền theo tên, mã code hoặc mô tả...'}
+                    placeholder={isEn ? 'Search features by name or description...' : 'Tìm chức năng theo tên hoặc mô tả...'}
                     className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]"
                   />
                   {roleSearchQuery && (
@@ -528,9 +695,6 @@ export function RolesPermissions() {
                               <h5 className="font-bold text-xs text-slate-900 dark:text-white leading-tight">
                                 {cap.label}
                               </h5>
-                              <span className="px-1.5 py-0.5 rounded text-[10px] font-mono bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-semibold">
-                                {cap.id}
-                              </span>
                             </div>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-snug">
                               {cap.desc}
@@ -566,12 +730,12 @@ export function RolesPermissions() {
                     <span className="material-symbols-outlined text-[#1E2235] dark:text-[#81B29A] text-[20px]">database</span>
                     <h4 className="font-bold text-slate-900 dark:text-white text-sm uppercase tracking-wider">
                       {isEn
-                        ? `2. Data Permissions & API Operations (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`
-                        : `2. Quyền Dữ Liệu & Thao Tác API (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`}
+                        ? `2. Data Access Scope (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`
+                        : `2. Phạm Vi Truy Cập Dữ Liệu (${roleCodes.length}/${(selectedRole.availablePermissions || []).length})`}
                     </h4>
                   </div>
                   <span className="text-xs text-slate-500 dark:text-slate-400">
-                    {isEn ? 'Database query & operation scope for role' : 'Phạm vi truy xuất dữ liệu database của vai trò'}
+                    {isEn ? 'Data access available to this role' : 'Dữ liệu mà vai trò này được phép truy cập'}
                   </span>
                 </div>
 
@@ -600,12 +764,7 @@ export function RolesPermissions() {
                             className="mt-0.5 h-4 w-4 rounded text-[#1E2235] dark:text-[#81B29A] focus:ring-[#1E2235] border-slate-300 dark:border-slate-700 cursor-pointer accent-[#1E2235]"
                           />
                           <div className="flex-1 min-w-0">
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="font-bold text-xs text-slate-900 dark:text-white">{p.name}</span>
-                              <span className="px-1.5 py-0.5 rounded text-[9px] font-mono font-bold bg-slate-100 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
-                                {p.code}
-                              </span>
-                            </div>
+                            <span className="font-bold text-xs text-slate-900 dark:text-white">{p.name}</span>
                             <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 line-clamp-2">
                               {p.description || (isEn ? 'System data operation capability' : 'Quyền thao tác dữ liệu hệ thống')}
                             </p>
@@ -628,10 +787,15 @@ export function RolesPermissions() {
                   </span>
                 </div>
 
+                <div className="w-full sm:w-auto flex flex-wrap gap-2">
+                  <button disabled={busy} onClick={syncAllUsersToRole}
+                    className="flex-1 sm:flex-none px-4 py-2.5 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-bold rounded-xl text-xs disabled:opacity-50">
+                    {isEn ? 'Sync all users to role' : 'Đồng bộ tất cả theo vai trò'}
+                  </button>
                 <button
                   disabled={busy}
                   onClick={handleSaveRole}
-                  className="w-full sm:w-auto px-6 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold rounded-xl shadow-md shadow-[#2D6A4F]/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 hover-lift"
+                  className="flex-1 sm:flex-none px-6 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold rounded-xl shadow-md shadow-[#2D6A4F]/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 hover-lift"
                 >
                   {busy ? (
                     <>
@@ -649,6 +813,7 @@ export function RolesPermissions() {
                     </>
                   )}
                 </button>
+                </div>
               </div>
             </div>
           ) : (
@@ -671,13 +836,13 @@ export function RolesPermissions() {
             <div>
               <h3 className="font-bold text-slate-900 dark:text-white text-base">
                 {isEn
-                  ? 'Enterprise RBAC Matrix Overview'
-                  : 'Bảng Ma Trận Phân Quyền Toàn Cảnh (Enterprise RBAC Matrix)'}
+                  ? 'Center Delegation Matrix'
+                  : 'Ma Trận Phân Quyền Có Thể Ủy Quyền'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                 {isEn
-                  ? 'Cross-role matrix comparing system capabilities and permissions in SCMS.'
-                  : 'Bảng đối chiếu tổng thể quyền truy cập giữa các vai trò trong hệ thống SCMS.'}
+                  ? 'Only permissions that a center manager may configure for Member, Coach and Receptionist are shown.'
+                  : 'Chỉ hiển thị quyền mà Quản lý trung tâm được phép cấu hình cho Hội viên, HLV và Lễ tân. Quyền của Quản lý là cố định theo hệ thống.'}
               </p>
             </div>
 
@@ -703,9 +868,6 @@ export function RolesPermissions() {
                   <th className="py-3 px-4 uppercase tracking-wider text-[11px] font-bold min-w-[260px]">
                     {isEn ? 'Feature & System Capability' : 'Chức Năng & Quyền Hệ Thống'}
                   </th>
-                  <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36">
-                    {isEn ? 'Manager' : 'Quản Lý (Manager)'}
-                  </th>
                   <th className="py-3 px-3 uppercase tracking-wider text-[11px] font-bold text-center w-36 bg-amber-950/60 text-amber-300">
                     {isEn ? 'Coach' : 'Huấn Luyện Viên'}
                   </th>
@@ -726,16 +888,13 @@ export function RolesPermissions() {
                     <React.Fragment key={category}>
                       {/* Category Header Row */}
                       <tr className="bg-slate-100/80 dark:bg-slate-800/80 font-bold text-slate-800 dark:text-slate-200">
-                        <td colSpan={5} className="py-2.5 px-4 text-[11px] uppercase tracking-wider text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800">
+                        <td colSpan={4} className="py-2.5 px-4 text-[11px] uppercase tracking-wider text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800">
                           {category} ({capsInCategory.length} {isEn ? 'features' : 'chức năng'})
                         </td>
                       </tr>
 
                       {/* Capabilities in this category */}
                       {capsInCategory.map(cap => {
-                        // Manager has all caps
-                        const managerHas = true;
-
                         // Check coach
                         const coachRole = matrix.find(r => r.roleName?.toUpperCase() === 'COACH');
                         const coachHas = coachRole ? (coachRole.capabilityIds || []).includes(cap.id) : false;
@@ -757,16 +916,9 @@ export function RolesPermissions() {
                                 </span>
                                 <div>
                                   <div className="font-bold text-slate-900 dark:text-white">{cap.label}</div>
-                                  <div className="text-[10px] text-slate-500 dark:text-slate-400 font-mono">ID: {cap.id}</div>
+                                  <div className="text-[10px] text-slate-500 dark:text-slate-400">{cap.desc}</div>
                                 </div>
                               </div>
-                            </td>
-
-                            {/* Manager cell */}
-                            <td className="py-2.5 px-3 text-center">
-                              <span className="inline-flex items-center justify-center w-7 h-7 rounded-lg bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800">
-                                <span className="material-symbols-outlined text-[16px]">check</span>
-                              </span>
                             </td>
 
                             {/* Coach cell */}

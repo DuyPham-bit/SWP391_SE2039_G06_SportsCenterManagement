@@ -263,7 +263,7 @@ export function ReportsAnalytics() {
       ) : metrics && (
         <>
           {/* 3. EXECUTIVE TOP KPI CARDS */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
               title={isEn ? 'Net Revenue' : 'Doanh thu thuần'}
               value={`${Number(metrics.netRevenue || 0).toLocaleString('vi-VN')}đ`}
@@ -285,6 +285,15 @@ export function ReportsAnalytics() {
               value={metrics.newMembers}
               subtitle={isEn ? 'Accounts registered in period' : 'Đăng ký tài khoản trong kỳ'}
               icon="person_add"
+              color="slate"
+            />
+            <StatCard
+              title={isEn ? 'Active Staff' : 'Nhân sự đang hoạt động'}
+              value={metrics.activeStaff}
+              subtitle={isEn
+                ? `${metrics.coachCount} coaches · ${metrics.receptionistCount} receptionists`
+                : `${metrics.coachCount} HLV · ${metrics.receptionistCount} lễ tân`}
+              icon="badge"
               color="slate"
             />
             <StatCard
@@ -320,22 +329,21 @@ export function ReportsAnalytics() {
             </div>
           </div>
 
-          {/* 4. 🏆 BỘ 3 QUÁN QUÂN HOẠT ĐỘNG (TOP OPERATIONAL PERFORMERS) */}
-          <div className="bg-gradient-to-br from-[#1E2235] via-[#242A42] to-[#1E2235] rounded-3xl p-6 text-white shadow-xl relative overflow-hidden border border-slate-700/60">
-            <div className="absolute -right-10 -bottom-10 h-48 w-48 rounded-full bg-[#F2CC8F]/10 blur-3xl pointer-events-none" />
-            <div className="relative z-10 flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-white/10 pb-4">
+          {/* 4. Tổng quan vận hành */}
+          <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 lg:p-6 shadow-sm border border-slate-200 dark:border-slate-800">
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-5 border-b border-slate-100 dark:border-slate-800 pb-4">
               <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-2xl bg-[#F2CC8F]/20 border border-[#F2CC8F]/30 flex items-center justify-center text-[#F2CC8F]">
-                  <span className="material-symbols-outlined text-[24px]">emoji_events</span>
+                <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-100 dark:border-emerald-900 flex items-center justify-center text-[#2D6A4F] dark:text-[#81B29A]">
+                  <span className="material-symbols-outlined text-[22px]">analytics</span>
                 </div>
                 <div>
-                  <h2 className="text-lg font-black tracking-tight font-chivo text-white flex items-center gap-2">
-                    {isEn ? 'TOP 3 OPERATIONAL PERFORMERS' : 'BỘ 3 DẪN ĐẦU TRUNG TÂM'}
-                    <span className="text-xs font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-[#F2CC8F]/20 text-[#F2CC8F] border border-[#F2CC8F]/30">
-                      LEADERBOARD
+                  <h2 className="text-lg font-black tracking-tight font-chivo text-slate-900 dark:text-white flex items-center gap-2">
+                    {isEn ? 'CENTER OPERATIONS AT A GLANCE' : 'TỔNG QUAN VẬN HÀNH TRUNG TÂM'}
+                    <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-300 border border-slate-200 dark:border-slate-700">
+                      {isEn ? 'Current period' : 'Kỳ đang xem'}
                     </span>
                   </h2>
-                  <p className="text-xs text-slate-300">
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {isEn
                       ? `Analysis from ${metrics.from} to ${metrics.to} · Total ${metrics.totalClasses} scheduled sessions`
                       : `Phân tích từ ${metrics.from} đến ${metrics.to} · Tổng ${metrics.totalClasses} ca học đã phân bổ`}
@@ -343,38 +351,38 @@ export function ReportsAnalytics() {
                 </div>
               </div>
               <div className="text-right">
-                <span className="text-xs font-semibold text-slate-400">
+                <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
                   {isEn ? 'Center-wide Occupancy' : 'Tỷ lệ lấp đầy trung tâm'}
                 </span>
-                <p className="text-xl font-black text-[#81B29A]">{metrics.occupancyRate}%</p>
+                <p className="text-2xl font-black text-[#2D6A4F] dark:text-[#81B29A]">{metrics.occupancyRate}%</p>
               </div>
             </div>
 
-            <div className="relative z-10 grid md:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-3 gap-4">
               {/* Top 1 Lớp học */}
-              <div className="bg-white/5 hover:bg-white/10 transition-all rounded-2xl p-4 border border-white/10 flex flex-col justify-between hover-lift">
+              <div className="bg-rose-50/70 dark:bg-rose-950/20 rounded-2xl p-4 border border-rose-100 dark:border-rose-900/40 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#F2CC8F] flex items-center gap-1">
-                      🥇 {isEn ? 'MOST BOOKED CLASS' : 'LỚP HỌC ĐẶT NHIỀU NHẤT'}
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300 flex items-center gap-1">
+                      {isEn ? 'CLASS DEMAND' : 'NHU CẦU LỚP HỌC'}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/30">
-                      #1 CLASS
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white dark:bg-slate-900 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                      CLASS UTILIZATION
                     </span>
                   </div>
-                  <h3 className="font-bold text-base text-white line-clamp-1">
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-1">
                     {topClass ? topClass.name : (isEn ? 'No class yet' : 'Chưa có lớp')}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-300">
-                    <span className="font-semibold text-[#F2CC8F]">{topClass?.sportName || 'N/A'}</span>
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
+                    <span className="font-semibold text-rose-700 dark:text-rose-300">{topClass?.sportName || 'N/A'}</span>
                     <span>•</span>
                     <span className="truncate">{topClass?.roomName || 'N/A'}</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                <div className="mt-4 pt-3 border-t border-rose-100 dark:border-rose-900/40 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-slate-400">{isEn ? 'Booked / Capacity' : 'Lượt đặt / Sức chứa'}</span>
-                    <p className="text-sm font-bold text-white">
+                    <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Booked / Capacity' : 'Lượt đặt / Sức chứa'}</span>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
                       {topClass ? `${topClass.booked} / ${topClass.capacity} ${isEn ? 'slots' : 'chỗ'}` : '0/0'}
                     </p>
                   </div>
@@ -388,27 +396,27 @@ export function ReportsAnalytics() {
               </div>
 
               {/* Top 1 doanh thu bộ môn */}
-              <div className="bg-white/5 hover:bg-white/10 transition-all rounded-2xl p-4 border border-white/10 flex flex-col justify-between hover-lift">
+              <div className="bg-sky-50/70 dark:bg-sky-950/20 rounded-2xl p-4 border border-sky-100 dark:border-sky-900/40 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#F2CC8F] flex items-center gap-1">
-                      🥇 {isEn ? 'HIGHEST REVENUE SPORT' : 'BỘ MÔN DOANH THU CAO NHẤT'}
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-sky-700 dark:text-sky-300 flex items-center gap-1">
+                      {isEn ? 'REVENUE MIX' : 'CƠ CẤU DOANH THU'}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-sky-500/20 text-sky-300 border border-sky-500/30">
-                      #1 SPORT
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white dark:bg-slate-900 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800">
+                      REVENUE BY SPORT
                     </span>
                   </div>
-                  <h3 className="font-bold text-base text-white line-clamp-1">
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-1">
                     {topRevenueSport ? topRevenueSport.sportName : (isEn ? 'No revenue yet' : 'Chưa có doanh thu')}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-300">
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <span>{isEn ? 'Revenue Share:' : 'Tỷ trọng doanh thu:'} <strong className="text-sky-300">{topRevenueSport?.share || 0}%</strong></span>
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                <div className="mt-4 pt-3 border-t border-sky-100 dark:border-sky-900/40 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-slate-400">{isEn ? 'Net Revenue' : 'Doanh thu thuần'}</span>
-                    <p className="text-sm font-bold text-white">
+                    <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Net Revenue' : 'Doanh thu thuần'}</span>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
                       {topRevenueSport ? `${Number(topRevenueSport.net || 0).toLocaleString('vi-VN')}đ` : '0đ'}
                     </p>
                   </div>
@@ -422,29 +430,29 @@ export function ReportsAnalytics() {
               </div>
 
               {/* Top 1 Sân / Phòng */}
-              <div className="bg-white/5 hover:bg-white/10 transition-all rounded-2xl p-4 border border-white/10 flex flex-col justify-between hover-lift">
+              <div className="bg-emerald-50/70 dark:bg-emerald-950/20 rounded-2xl p-4 border border-emerald-100 dark:border-emerald-900/40 flex flex-col justify-between">
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <span className="text-xs font-bold uppercase tracking-wider text-[#F2CC8F] flex items-center gap-1">
-                      🥇 {isEn ? 'HIGHEST UTILIZED COURT' : 'SÂN / PHÒNG TẢI CAO NHẤT'}
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300 flex items-center gap-1">
+                      {isEn ? 'FACILITY USE' : 'KHAI THÁC SÂN / PHÒNG'}
                     </span>
-                    <span className="px-2 py-0.5 rounded-full text-[11px] font-bold bg-emerald-500/20 text-emerald-300 border border-emerald-500/30">
-                      #1 COURT
+                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-white dark:bg-slate-900 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+                      FACILITY LOAD
                     </span>
                   </div>
-                  <h3 className="font-bold text-base text-white line-clamp-1">
+                  <h3 className="font-bold text-base text-slate-900 dark:text-white line-clamp-1">
                     {topRoom ? topRoom.name : (isEn ? 'No court yet' : 'Chưa có sân')}
                   </h3>
-                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-300">
+                  <div className="flex items-center gap-2 mt-1.5 text-xs text-slate-500 dark:text-slate-400">
                     <span>{topRoom?.type || (isEn ? 'Court' : 'Sân')}</span>
                     <span>•</span>
                     <span className="truncate">{topRoom?.location || (isEn ? 'Center' : 'Trung tâm')}</span>
                   </div>
                 </div>
-                <div className="mt-4 pt-3 border-t border-white/10 flex items-center justify-between text-xs">
+                <div className="mt-4 pt-3 border-t border-emerald-100 dark:border-emerald-900/40 flex items-center justify-between text-xs">
                   <div>
-                    <span className="text-slate-400">{isEn ? 'Sessions Hosted' : 'Ca học đã tổ chức'}</span>
-                    <p className="text-sm font-bold text-white">
+                    <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Sessions Hosted' : 'Ca học đã tổ chức'}</span>
+                    <p className="text-sm font-bold text-slate-900 dark:text-white">
                       {topRoom ? `${topRoom.sessionsCount} ${isEn ? 'sessions' : 'ca'}` : '0'}
                     </p>
                   </div>
