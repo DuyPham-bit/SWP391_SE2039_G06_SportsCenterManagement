@@ -12,6 +12,19 @@ import { useToast } from '../../context/ToastContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 const cloneContent = content => JSON.parse(JSON.stringify(content));
+const MANAGER_DRAFT_KEY = 'SCMS_MANAGER_LANDING_DRAFT_V2';
+
+const saveDraft = (updatedContent) => {
+  try {
+    localStorage.setItem(MANAGER_DRAFT_KEY, JSON.stringify(updatedContent));
+  } catch { /* storage quota or private browsing */ }
+};
+
+const clearDraft = () => {
+  try {
+    localStorage.removeItem(MANAGER_DRAFT_KEY);
+  } catch { /* storage disabled */ }
+};
 
 export function HomeContentManagement() {
   const { language } = useLanguage();
@@ -45,16 +58,35 @@ export function HomeContentManagement() {
     loadLandingContent({ signal: controller.signal }).then(result => {
       if (!active) return;
       savedContentRef.current = cloneContent(result.content);
-      const legacy = !result.hasPublishedContent ? getLegacyLandingContent() : null;
-      setContent(legacy || result.content);
-      setIsDirty(Boolean(legacy));
-      if (legacy) {
+
+      // Check for local draft preserved across F5
+      let localDraft = null;
+      try {
+        const raw = localStorage.getItem(MANAGER_DRAFT_KEY);
+        if (raw) localDraft = JSON.parse(raw);
+      } catch { localDraft = null; }
+
+      if (localDraft && JSON.stringify(localDraft) !== JSON.stringify(result.content)) {
+        setContent(localDraft);
+        setIsDirty(true);
         addToast(
           isEn
-            ? 'Loaded previous browser content as draft. Click Save to publish.'
-            : 'Đã tải nội dung cũ trên trình duyệt thành bản nháp. Bấm Lưu để công bố cho mọi người.',
+            ? 'Restored your unsaved draft across reload. Click "Save All Changes" to publish to server.'
+            : 'Đã tự động giữ lại số liệu bạn vừa chỉnh sửa (Bản nháp F5). Bấm "Lưu Toàn Bộ Thay Đổi" để công bố lên hệ thống.',
           'info'
         );
+      } else {
+        const legacy = !result.hasPublishedContent ? getLegacyLandingContent() : null;
+        setContent(legacy || result.content);
+        setIsDirty(Boolean(legacy));
+        if (legacy) {
+          addToast(
+            isEn
+              ? 'Loaded previous browser content as draft. Click Save to publish.'
+              : 'Đã tải nội dung cũ trên trình duyệt thành bản nháp. Bấm Lưu để công bố cho mọi người.',
+            'info'
+          );
+        }
       }
     }).catch(error => {
       if (active) setLoadError(error.message || (isEn ? 'Failed to load homepage content.' : 'Không thể tải nội dung trang chủ.'));
@@ -62,24 +94,44 @@ export function HomeContentManagement() {
     return () => { active = false; controller.abort(); };
   }, [reloadKey, isEn]);
 
-  // Đánh dấu có thay đổi
-  const updateContentField = (section, key, value) => {
-    setContent(prev => ({
-      ...prev,
-      [section]: {
-        ...(prev[section] || {}),
-        [key]: value
+  // Prevent accidental loss of edits when hitting F5
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (isDirty) {
+        event.preventDefault();
+        event.returnValue = '';
       }
-    }));
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Đánh dấu có thay đổi và lưu bản nháp ngay vào localStorage (không bị mất khi F5)
+  const updateContentField = (section, key, value) => {
+    setContent(prev => {
+      const updated = {
+        ...prev,
+        [section]: {
+          ...(prev[section] || {}),
+          [key]: value
+        }
+      };
+      saveDraft(updated);
+      return updated;
+    });
     setIsDirty(true);
   };
 
   // Cập nhật danh sách thẻ trong bản nháp
   const updateCatalogCards = (section, key, items) => {
-    setContent(prev => ({
-      ...prev,
-      [section]: { ...prev[section], [key]: items, catalogSource: 'custom' }
-    }));
+    setContent(prev => {
+      const updated = {
+        ...prev,
+        [section]: { ...(prev[section] || {}), [key]: items, catalogSource: 'custom' }
+      };
+      saveDraft(updated);
+      return updated;
+    });
     setIsDirty(true);
   };
 
@@ -88,7 +140,7 @@ export function HomeContentManagement() {
       const section = prev.coursesSection;
       const sports = section.sportsList.length || section.catalogSource === 'custom' ? section.sportsList : fallbackSports;
       const hasLinks = sports.some(sport => String(sport.facilityId) === String(record.id));
-      return {
+      const updated = {
         ...prev,
         facilitiesSection: { ...prev.facilitiesSection, facilitiesList: items, catalogSource: 'custom' },
         coursesSection: hasLinks ? {
@@ -97,6 +149,8 @@ export function HomeContentManagement() {
           catalogSource: 'custom'
         } : section
       };
+      saveDraft(updated);
+      return updated;
     });
     setIsDirty(true);
   };
@@ -109,6 +163,7 @@ export function HomeContentManagement() {
       const saved = await saveLandingContent(content);
       savedContentRef.current = cloneContent(saved);
       setContent(saved);
+      clearDraft();
       setIsDirty(false);
       addToast(
         isEn
@@ -124,6 +179,7 @@ export function HomeContentManagement() {
   const handleDiscardChanges = () => {
     if (isSaving || !isDirty || !savedContentRef.current) return;
     setContent(cloneContent(savedContentRef.current));
+    clearDraft();
     setIsDirty(false);
     setDiscardKey(previous => previous + 1);
     setMediaPickerConfig(previous => ({ ...previous, isOpen: false, callback: null, onClose: undefined }));
@@ -143,6 +199,39 @@ export function HomeContentManagement() {
       addToast(error.message || (isEn ? 'Cannot open preview.' : 'Không thể mở bản xem trước.'), 'error');
     }
   };
+
+  // Nút lưu trực tiếp tại chân mỗi mục để không cần cuộn lên trên cùng
+  const renderTabSaveFooter = () => (
+    <div className="border-t border-slate-100 dark:border-slate-800 pt-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-xl">
+      <div className="flex items-center gap-2 text-xs">
+        <span className={`w-2.5 h-2.5 rounded-full ${isDirty ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+        <span className="font-semibold text-slate-600 dark:text-slate-300">
+          {isDirty
+            ? (isEn ? 'Draft modified locally. Save to apply.' : 'Số liệu đã thay đổi trong bản nháp F5. Bấm lưu để áp dụng chính thức.')
+            : (isEn ? 'All changes synchronized with server.' : 'Toàn bộ số liệu đã đồng bộ với máy chủ.')}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleDiscardChanges}
+          disabled={!isDirty || isSaving}
+          className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isEn ? 'Discard Changes' : 'Hủy thay đổi'}
+        </button>
+        <button
+          type="button"
+          onClick={handleSaveAll}
+          disabled={isSaving}
+          className="px-5 py-2 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-md shadow-[#2D6A4F]/25 transition-all flex items-center gap-1.5 cursor-pointer hover-lift"
+        >
+          <span className="material-symbols-outlined text-[16px]">save</span>
+          <span>{isSaving ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save All Changes' : 'Lưu Thay Đổi Ngay')}</span>
+        </button>
+      </div>
+    </div>
+  );
 
   // Mở Cloud Media Picker
   const openMediaPicker = (title, currentUrl, callback, onClose) => {
@@ -466,6 +555,8 @@ export function HomeContentManagement() {
               ))}
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
@@ -643,6 +734,8 @@ export function HomeContentManagement() {
               </div>
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
@@ -777,6 +870,8 @@ export function HomeContentManagement() {
               ))}
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
@@ -979,6 +1074,8 @@ export function HomeContentManagement() {
               </div>
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
@@ -1339,6 +1436,8 @@ export function HomeContentManagement() {
               </div>
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
@@ -1357,6 +1456,52 @@ export function HomeContentManagement() {
           }
         }}
       />
+
+      {/* 5. STICKY FLOATING ACTION BAR FOR INSTANT SAVING */}
+      {isDirty && (
+        <aside
+          role="status"
+          aria-label={isEn ? 'Unsaved changes alert bar' : 'Thanh cảnh báo thay đổi số liệu chưa lưu'}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-2xl bg-[#1E2235]/95 text-white backdrop-blur-xl border-2 border-emerald-500/80 rounded-2xl px-5 py-3.5 shadow-[0_10px_35px_rgba(0,0,0,0.5)] flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-slide-up"
+        >
+          <div className="flex items-center gap-3 text-left">
+            <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+            <div>
+              <div className="text-xs font-black uppercase tracking-wide text-emerald-300 flex items-center gap-1.5">
+                <span>{isEn ? 'Unsaved Changes Detected' : 'Phát hiện thay đổi số liệu mới'}</span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                  {isEn ? 'Auto-draft active' : 'Đã giữ trong nháp F5'}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-300 mt-0.5">
+                {isEn
+                  ? 'Your edits survive F5 reload. Click Save to apply to server & live pages.'
+                  : 'Dữ liệu được tự động lưu tạm trên trình duyệt. Hãy bấm nút xanh để áp dụng chính thức lên hệ thống.'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleDiscardChanges}
+              disabled={isSaving}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold transition-all disabled:opacity-40 cursor-pointer"
+            >
+              {isEn ? 'Discard' : 'Hủy thay đổi'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveAll}
+              disabled={isSaving}
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-600/40 transition-all flex items-center gap-2 cursor-pointer hover-lift"
+            >
+              <span className="material-symbols-outlined text-[17px]">save</span>
+              <span>{isSaving ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save All Changes' : 'Lưu Thay Đổi Ngay')}</span>
+            </button>
+          </div>
+        </aside>
+      )}
     </fieldset>
   );
 }
