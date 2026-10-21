@@ -164,19 +164,54 @@ export function MemberCoachPortal() {
 
   return (
     <div className="space-y-5 animate-fade-slide-up">
-      <header className="relative rounded-2xl bg-gradient-to-br from-[#121624] via-[#181D2F] to-[#1E2235] p-6 text-white border border-slate-700/60 shadow-xl overflow-hidden">
-        <div className="absolute -top-16 -right-16 w-64 h-64 bg-[#81B29A]/15 rounded-full blur-2xl pointer-events-none animate-float" />
-        <div className="absolute -bottom-16 -left-16 w-48 h-48 bg-[#F2CC8F]/10 rounded-full blur-2xl pointer-events-none animate-float" />
-        <div className="relative z-10">
-          <p className="text-xs font-black uppercase tracking-widest text-[#F2CC8F]">Coach Connection</p>
-          <h1 className="mt-2 text-2xl font-black">{isEn ? 'Coach Connection & Personal Training' : 'Đồng hành cùng huấn luyện viên'}</h1>
-          <p className="mt-1 text-sm text-slate-200">
-            {isEn
-              ? 'Confirm PT appointments, check in homework, monitor nutrition plans, and message coaches privately.'
-              : 'Xác nhận lịch PT, check-in bài tập, theo dõi dinh dưỡng và trao đổi riêng tư.'}
-          </p>
+      {/* 1. Olympic Coach Portal Masterpiece Banner */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl pointer-events-none" />
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
+
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                <span className="material-symbols-outlined text-[13px] text-amber-500">sports</span>
+                OLYMPIC COACH CONNECTION
+              </span>
+              <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-slate-800 dark:text-slate-200 border border-white/80 dark:border-white/20 text-[11px] font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                {isEn ? '1-on-1 PT Support' : 'Đồng hành 1-1 cùng HLV'}
+              </span>
+            </div>
+
+            <h1 className="font-chivo text-2xl lg:text-3xl font-black text-white tracking-tight mt-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+              {isEn ? 'Coach Connection & Personal Training' : 'Đồng Hành Cùng Huấn Luyện Viên'}
+            </h1>
+            <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
+              {isEn
+                ? 'Confirm PT appointments, check in homework, monitor nutrition plans, and message coaches privately.'
+                : 'Xác nhận lịch PT, check-in bài tập, theo dõi dinh dưỡng và trao đổi trực tiếp cùng HLV.'}
+            </p>
+          </div>
+
+          <div className="flex items-center gap-2.5 shrink-0">
+            <a
+              href="#/member/schedule"
+              className="px-4 py-2.5 bg-slate-950 hover:bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg hover:shadow-xl shrink-0 border border-white/20 active:scale-95 cursor-pointer backdrop-blur-md"
+            >
+              <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">calendar_month</span>
+              <span>{isEn ? 'Class Timetable' : 'Thời Khóa Biểu'}</span>
+            </a>
+          </div>
         </div>
-      </header>
+      </div>
 
       <nav className="flex gap-2 overflow-auto rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-2 shadow-xs">
         {navTabs.map(([id, label]) => (

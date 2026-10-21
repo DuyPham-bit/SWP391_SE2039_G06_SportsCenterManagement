@@ -218,33 +218,54 @@ export function MemberPackages() {
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
-      {/* Page Header */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 pb-2 border-b border-slate-200/80 dark:border-slate-800">
-        <div className="space-y-1">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] text-[11px] font-bold uppercase tracking-widest border border-[#81B29A]/30">
-            <span className="w-2 h-2 rounded-full bg-[#2D6A4F] dark:bg-[#81B29A] animate-pulse" />
-            {isEn ? 'Olympic Membership & Plans' : 'Gói Tập & Thẻ Hội Viên Olympic'}
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 dark:text-white tracking-tight font-chivo">
-            {isEn ? 'Subscribe & Renew Membership Online' : 'Đăng Ký & Gia Hạn Gói Tập Trực Tuyến'}
-          </h1>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl">
-            {isEn
-              ? 'Select the optimal training curriculum for your personal fitness goals. Instant automated online activation.'
-              : 'Lựa chọn gói rèn luyện phù hợp với mục tiêu thể lực của bạn. Thanh toán bảo mật và kích hoạt trực tuyến tức thì.'}
-          </p>
-        </div>
+      {/* 1. Olympic Packages Masterpiece Banner */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl pointer-events-none" />
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
 
-        {/* Trust Badges */}
-        <div className="hidden lg:flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 shrink-0">
-          <span className="flex items-center gap-1 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
-            <span>{isEn ? 'VNPay / MoMo Secure' : 'Cổng bảo mật VNPay / MoMo'}</span>
-          </span>
-          <span className="flex items-center gap-1 bg-white dark:bg-slate-900 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-800 shadow-2xs">
-            <span className="material-symbols-outlined text-[16px] text-amber-500">bolt</span>
-            <span>{isEn ? 'Instant Activation' : 'Kích hoạt ngay'}</span>
-          </span>
+        <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                <span className="material-symbols-outlined text-[13px] text-amber-500">card_membership</span>
+                OLYMPIC MEMBERSHIP & PACKAGES
+              </span>
+              <span className="px-3 py-1 rounded-full bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-slate-800 dark:text-slate-200 border border-white/80 dark:border-white/20 text-[11px] font-bold uppercase tracking-wide flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                {packages.length} {isEn ? 'tiers available' : 'gói tập tiêu chuẩn'}
+              </span>
+            </div>
+
+            <h1 className="font-chivo text-2xl lg:text-3xl font-black text-white tracking-tight mt-2 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+              {isEn ? 'Subscribe & Renew Membership Online' : 'Đăng Ký & Gia Hạn Gói Tập Trực Tuyến'}
+            </h1>
+            <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
+              {isEn
+                ? 'Select the optimal training curriculum for your personal fitness goals. Instant automated online activation.'
+                : 'Lựa chọn gói rèn luyện phù hợp với mục tiêu thể lực của bạn. Thanh toán bảo mật và kích hoạt trực tuyến tức thì.'}
+            </p>
+          </div>
+
+          {/* Trust Badges */}
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <span className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-slate-900 px-3.5 py-2 rounded-xl border border-white text-xs font-bold shadow-md backdrop-blur-md">
+              <span className="material-symbols-outlined text-[18px] text-emerald-600">verified_user</span>
+              <span>{isEn ? 'VNPay / MoMo Secure' : 'Cổng bảo mật VNPay / MoMo'}</span>
+            </span>
+            <span className="flex items-center gap-1.5 bg-slate-950 hover:bg-slate-900 text-white px-3.5 py-2 rounded-xl border border-white/20 text-xs font-bold shadow-lg">
+              <span className="material-symbols-outlined text-[18px] text-amber-400">bolt</span>
+              <span>{isEn ? 'Instant Activation' : 'Kích hoạt ngay'}</span>
+            </span>
+          </div>
         </div>
       </div>
 
@@ -305,42 +326,47 @@ export function MemberPackages() {
       )}
 
       {/* Current Active Package Card (Olympic Pass Membership Visual) */}
-      <div className="p-6 rounded-3xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white border border-emerald-700/30 shadow-xl relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
-        {/* Ambient Glows */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
-        <div className="pointer-events-none absolute left-1/3 -bottom-16 w-48 h-48 rounded-full bg-emerald-300/15 blur-3xl" />
+      <div className="p-6 rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 relative overflow-hidden flex flex-col md:flex-row md:items-center justify-between gap-5">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-64 h-64 rounded-full bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
 
         <div className="relative z-10 flex items-start gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#81B29A] to-[#F2CC8F] p-0.5 shadow-md shrink-0 flex items-center justify-center">
-            <div className="w-full h-full rounded-[14px] bg-[#1B4332] flex items-center justify-center">
-              <span className="material-symbols-outlined text-[24px] text-[#F2CC8F]">workspace_premium</span>
+          <div className="w-12 h-12 rounded-2xl bg-white/20 backdrop-blur-md border border-white/40 p-0.5 shadow-md shrink-0 flex items-center justify-center">
+            <div className="w-full h-full rounded-[14px] bg-slate-950/25 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[24px] text-amber-300">workspace_premium</span>
             </div>
           </div>
 
           <div className="space-y-1">
             <div className="flex items-center gap-2">
-              <span className="text-[11px] uppercase font-bold text-[#F2CC8F] tracking-widest flex items-center gap-1.5">
-                <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                {isEn ? 'Active Membership Tier' : 'Gói Tập Hiện Tại Đang Sử Dụng'}
+              <span className="px-2.5 py-0.5 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                {isEn ? 'Active Membership Tier' : 'GÓI TẬP HIỆN TẠI ĐANG SỬ DỤNG'}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 text-[10px] font-bold">
+              <span className="px-2 py-0.5 rounded-full bg-emerald-400 text-slate-950 text-[10px] font-black tracking-wider uppercase shadow-xs">
                 ACTIVE
               </span>
             </div>
-            <h2 className="text-xl sm:text-2xl font-black font-chivo text-white">
+            <h2 className="text-xl sm:text-2xl font-black font-chivo text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
               {translatePackageName(currentUser?.packageName, isEn) || (isEn ? 'No active package' : 'Chưa có gói tập')}
             </h2>
-            <p className="text-xs text-slate-300">
+            <p className="text-xs text-white/90 font-medium max-w-2xl drop-shadow-xs">
               {isEn ? 'Full privilege rights apply to all enrolled class schedules & center facilities.' : 'Đặc quyền hội viên áp dụng cho toàn bộ lịch học và dịch vụ thể thao của trung tâm.'}
             </p>
           </div>
         </div>
 
         <div className="relative z-10 flex items-center gap-3 self-start md:self-center shrink-0">
-          <div className="text-xs text-slate-300 bg-white/10 px-4 py-2.5 rounded-2xl border border-white/10 backdrop-blur-md flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">event_available</span>
+          <div className="text-xs text-white bg-white/20 px-4 py-2.5 rounded-2xl border border-white/30 backdrop-blur-md flex items-center gap-2.5 shadow-xs">
+            <span className="material-symbols-outlined text-[20px] text-amber-300">event_available</span>
             <div>
-              <span className="text-[10px] text-slate-400 uppercase tracking-wider block">{isEn ? 'Valid Until' : 'Thời hạn sử dụng'}</span>
+              <span className="text-[10px] text-white/80 uppercase font-bold tracking-wider block">{isEn ? 'Valid Until' : 'Thời hạn sử dụng'}</span>
               <strong className="text-white text-sm font-chivo font-black">{formatMemberDate(currentUser?.packageExpiry, isEn) || (isEn ? 'N/A' : 'Chưa kích hoạt')}</strong>
             </div>
           </div>

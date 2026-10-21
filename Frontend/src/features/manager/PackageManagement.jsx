@@ -164,20 +164,35 @@ export function PackageManagement() {
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
-      {/* Top Banner Header */}
-      <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-emerald-700/30 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-300/15 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-[#F2CC8F]/15 blur-2xl pointer-events-none" />
+      {/* Top Banner Header (Olympic Multi-stop Gradient matching Image 1) */}
+      <section
+        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-[#24828F]/25 border border-white/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/35 rounded-full blur-3xl" />
 
-        <div className="relative z-10 space-y-1">
-          <span className="font-chivo text-xs uppercase tracking-widest text-[#F2CC8F] font-bold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
-            {isEn ? 'MEMBERSHIP & PRICING PLANS' : 'CHÍNH SÁCH GÓI TẬP & BIỂU PHÍ'}
-          </span>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black mt-1 text-white tracking-tight">
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
+
+        <div className="relative z-10 space-y-2 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span>{isEn ? 'MEMBERSHIP & PRICING PLANS' : 'CHÍNH SÁCH GÓI TẬP & BIỂU PHÍ'}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? 'Membership Packages Management' : 'Quản Lý Gói Tập Hội Viên'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-medium drop-shadow-xs">
             {isEn
               ? 'Configure pricing plans, validity duration, sport discipline quotas, and catalog availability.'
               : 'Thiết lập giá cước, thời hạn và phân quyền bộ môn cho các gói tập rèn luyện.'}
@@ -186,12 +201,12 @@ export function PackageManagement() {
 
         <button
           onClick={openCreateModal}
-          className="px-5 py-3 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-2 shrink-0 cursor-pointer hover-lift relative z-10"
+          className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/95 hover:bg-white text-[#1B4332] text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover-lift cursor-pointer border border-white/80 shrink-0 relative z-10"
         >
-          <span className="material-symbols-outlined text-[18px]">add_card</span>
+          <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">add_card</span>
           <span>{isEn ? 'Create New Package' : 'Tạo Gói Tập Mới'}</span>
         </button>
-      </div>
+      </section>
 
       {/* Packages Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

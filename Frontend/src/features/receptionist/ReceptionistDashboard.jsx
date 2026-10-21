@@ -30,20 +30,29 @@ export function ReceptionistDashboard() {
   return (
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner */}
-      <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-emerald-700/30 relative overflow-hidden">
-        {/* Ambient background glows */}
-        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-300/15 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-[#F2CC8F]/15 blur-2xl pointer-events-none" />
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
 
         <div className="relative z-10">
-          <span className="font-chivo text-xs uppercase tracking-widest text-[#F2CC8F] font-bold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
-            {isEn ? 'RECEPTION DESK & GUEST SERVICES' : 'QUẦY LỄ TÂN & ĐÓN TIẾP KHÁCH'}
-          </span>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black mt-1 text-white tracking-tight">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-xs font-black uppercase tracking-wider shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{isEn ? 'RECEPTION DESK & GUEST SERVICES' : 'QUẦY LỄ TÂN & ĐÓN TIẾP KHÁCH'}</span>
+          </div>
+          <h1 className="font-chivo text-2xl md:text-3xl font-black mt-2 text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? 'Reception Shift Overview (Front Desk)' : 'Tổng Quan Ca Trực Lễ Tân (Reception Desk)'}
           </h1>
-          <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-white/95 mt-1 max-w-xl font-medium leading-relaxed drop-shadow-xs">
             {isEn
               ? 'Fast member lookup, on-counter package renewal, automated receipt issuing, and gate access check-in.'
               : 'Tra cứu hội viên nhanh, đăng ký gia hạn gói tập tại quầy và kiểm soát check-in vào sân.'}
@@ -53,44 +62,82 @@ export function ReceptionistDashboard() {
         <div className="flex flex-wrap gap-2.5 relative z-10 shrink-0">
           <a
             href="#/receptionist/check-in"
-            className="px-4 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover-lift flex items-center gap-2"
+            className="px-4 py-2.5 bg-slate-950 hover:bg-slate-900 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover:shadow-lg hover-lift flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>
+            <span className="material-symbols-outlined text-[18px] text-emerald-400">qr_code_scanner</span>
             <span>{isEn ? 'Court Check-in' : 'Check-in Vào Sân'}</span>
           </a>
           <a
             href="#/receptionist/counter-register"
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all border border-white/15 hover-lift flex items-center gap-2 backdrop-blur-sm"
+            className="px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all border border-white/30 hover-lift flex items-center gap-2 backdrop-blur-md shadow-xs"
           >
-            <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">point_of_sale</span>
+            <span className="material-symbols-outlined text-[18px] text-amber-300">point_of_sale</span>
             <span>{isEn ? 'Cashier / Renewal' : 'Thu Ngân / Gia Hạn'}</span>
           </a>
         </div>
       </div>
 
-      {/* KPI Cards */}
+      {/* KPI Cards (Olympic Brand Tints) */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <StatCard
-          title={isEn ? 'Today Check-ins' : 'Lượt Check-in Hôm Nay'}
-          value={history.length}
-          subtitle={isEn ? 'Successful member scans' : 'Hội viên quét thẻ thành công'}
-          icon="fact_check"
-          color="green"
-        />
-        <StatCard
-          title={isEn ? 'Desk Status' : 'Trạng Thái Quầy'}
-          value={isEn ? 'ACTIVE' : 'HOẠT ĐỘNG'}
-          subtitle={isEn ? 'Turnstile gate open' : 'Cổng kiểm soát mở liên tục'}
-          icon="check_circle"
-          color="green"
-        />
-        <StatCard
-          title={isEn ? 'Validity Rate' : 'Tỷ Lệ Hợp Lệ'}
-          value="100%"
-          subtitle={isEn ? 'No unauthorized access' : 'Không có vi phạm thẻ giả mạo'}
-          icon="verified"
-          color="slate"
-        />
+        {/* Card 1: Check-ins (Mint Green) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-emerald-50/80 via-white to-teal-50/60 dark:from-emerald-950/20 dark:via-slate-900 dark:to-teal-950/20 border border-emerald-200/80 dark:border-emerald-800/40 shadow-xs hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider font-bold text-emerald-900 dark:text-emerald-300">
+              {isEn ? 'Today Check-ins' : 'Lượt Check-in Hôm Nay'}
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-[#2F7B5D] text-white flex items-center justify-center shadow-md shadow-[#2F7B5D]/25">
+              <span className="material-symbols-outlined text-[20px]">fact_check</span>
+            </div>
+          </div>
+          <div className="text-3xl font-black font-chivo text-slate-900 dark:text-white mt-2.5">
+            {history.length}
+          </div>
+          <div className="flex items-center gap-1.5 mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-400">
+            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{isEn ? 'Successful member scans' : 'Hội viên quét thẻ thành công'}</span>
+          </div>
+        </div>
+
+        {/* Card 2: Desk Status (Honey Gold) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-amber-50/80 via-white to-orange-50/60 dark:from-amber-950/20 dark:via-slate-900 dark:to-orange-950/20 border border-amber-200/80 dark:border-amber-800/40 shadow-xs hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider font-bold text-amber-900 dark:text-amber-300">
+              {isEn ? 'Desk Status' : 'Trạng Thái Quầy'}
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-[#E5A33C] text-white flex items-center justify-center shadow-md shadow-[#E5A33C]/25">
+              <span className="material-symbols-outlined text-[20px]">check_circle</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 mt-2.5">
+            <span className="text-2xl sm:text-3xl font-black font-chivo text-slate-900 dark:text-white">
+              {isEn ? 'ACTIVE' : 'HOẠT ĐỘNG'}
+            </span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-300 text-[10px] font-black uppercase tracking-wider border border-emerald-300 dark:border-emerald-700">
+              ONLINE
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5 mt-2 text-xs font-medium text-amber-700 dark:text-amber-400">
+            <span>{isEn ? 'Turnstile gate open' : 'Cổng kiểm soát mở liên tục'}</span>
+          </div>
+        </div>
+
+        {/* Card 3: Validity Rate (Cyan Ocean) */}
+        <div className="p-5 rounded-2xl bg-gradient-to-br from-cyan-50/80 via-white to-teal-50/60 dark:from-cyan-950/20 dark:via-slate-900 dark:to-teal-950/20 border border-cyan-200/80 dark:border-cyan-800/40 shadow-xs hover:shadow-md transition-all">
+          <div className="flex items-center justify-between">
+            <span className="text-xs uppercase tracking-wider font-bold text-cyan-900 dark:text-cyan-300">
+              {isEn ? 'Validity Rate' : 'Tỷ Lệ Hợp Lệ'}
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-[#24828F] text-white flex items-center justify-center shadow-md shadow-[#24828F]/25">
+              <span className="material-symbols-outlined text-[20px]">verified</span>
+            </div>
+          </div>
+          <div className="text-3xl font-black font-chivo text-slate-900 dark:text-white mt-2.5">
+            100%
+          </div>
+          <div className="flex items-center gap-1.5 mt-2 text-xs font-medium text-cyan-700 dark:text-cyan-400">
+            <span>{isEn ? 'No unauthorized access' : 'Không có vi phạm thẻ giả mạo'}</span>
+          </div>
+        </div>
       </div>
 
       {/* Quick Action Cards & Live Check-in Feed */}

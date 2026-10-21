@@ -192,24 +192,29 @@ export function RolesPermissions() {
 
   return (
     <div className="space-y-6 pb-16 animate-fade-slide-up">
-      {/* Top Banner / Header - Olympic Midnight Navy */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] p-6 lg:p-8 text-white shadow-xl">
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#81B29A]/10 blur-3xl pointer-events-none" />
-        <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-[#F2CC8F]/10 blur-2xl pointer-events-none" />
+      {/* Top Banner / Header - Olympic Logo Gradient */}
+      <div
+        className="relative overflow-hidden rounded-3xl p-6 lg:p-8 text-white shadow-xl shadow-[#24828F]/25 border border-white/30"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/40 via-[#E5A33C]/25 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/25 to-transparent blur-3xl" />
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-[#2D6A4F] text-white uppercase shadow-sm">
+              <span className="px-3 py-1 rounded-full text-xs font-black tracking-wider bg-white/20 backdrop-blur-md text-white uppercase border border-white/30 shadow-xs">
                 {isManager ? (isEn ? 'Center Access Control' : 'Phân Quyền Trung Tâm') : (isEn ? 'System Admin' : 'Quản Trị Toàn Hệ Thống')}
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md text-[#F2CC8F] border border-white/10">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/30">
                 {centerId ? `${isEn ? 'Facility' : 'Cơ sở'} #${centerId}` : (isEn ? 'Enterprise-wide' : 'Toàn hệ thống')}
               </span>
             </div>
-            <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white">
+            <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white drop-shadow-sm">
               {isEn ? 'Role-Based Access Control (RBAC)' : 'Phân Quyền Theo Vai Trò'}
             </h1>
-            <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
+            <p className="text-sm text-white/95 mt-1 max-w-3xl leading-relaxed font-medium">
               {isEn
                 ? 'Configure role capabilities, manage data permissions, and govern delegation across center staff.'
                 : 'Thiết lập quyền truy cập theo vai trò và lưu cấu hình tại trung tâm an toàn theo chính sách Safe Delegation.'}

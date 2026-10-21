@@ -168,19 +168,28 @@ export function CounterInvoices() {
   return (
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner */}
-      <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-emerald-700/30 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-300/15 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-[#F2CC8F]/15 blur-2xl pointer-events-none" />
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl pointer-events-none" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
 
         <div className="relative z-10">
-          <span className="font-chivo text-xs uppercase tracking-widest text-[#F2CC8F] font-bold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
-            {isEn ? 'BILLING & CASHIER OPERATIONS' : 'HÓA ĐƠN & NGHIỆP VỤ THU NGÂN'}
-          </span>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black mt-1 text-white tracking-tight">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-xs font-black uppercase tracking-wider shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{isEn ? 'BILLING & CASHIER OPERATIONS' : 'HÓA ĐƠN & NGHIỆP VỤ THU NGÂN'}</span>
+          </div>
+          <h1 className="font-chivo text-2xl md:text-3xl font-black mt-2 text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? 'Invoices & Counter Cashiering' : 'Hóa Đơn & Thu Tiền Tại Quầy'}
           </h1>
-          <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-white/95 mt-1 max-w-xl font-medium leading-relaxed drop-shadow-xs">
             {isEn
               ? 'Look up receipts, collect outstanding balance, and print or export customer invoices.'
               : 'Tra cứu chứng từ, thu số dư và in hoặc xuất hóa đơn đã lưu.'}
@@ -190,16 +199,16 @@ export function CounterInvoices() {
         <div className="flex flex-wrap gap-2.5 relative z-10 shrink-0">
           <a
             href="#/receptionist/counter-register"
-            className="px-4 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover-lift flex items-center gap-2"
+            className="px-4 py-2.5 bg-slate-950 hover:bg-slate-900 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover:shadow-lg hover-lift flex items-center gap-2"
           >
-            <span className="material-symbols-outlined text-[18px]">point_of_sale</span>
+            <span className="material-symbols-outlined text-[18px] text-amber-300">point_of_sale</span>
             <span>{isEn ? 'New Sign-up / Renewal' : 'Đăng Ký / Gia Hạn'}</span>
           </a>
           <a
             href="#/receptionist/lookup"
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all border border-white/15 hover-lift flex items-center gap-2 backdrop-blur-sm"
+            className="px-4 py-2.5 bg-white/20 hover:bg-white/30 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all border border-white/30 hover-lift flex items-center gap-2 backdrop-blur-md shadow-xs"
           >
-            <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">person_search</span>
+            <span className="material-symbols-outlined text-[18px] text-white">person_search</span>
             <span>{isEn ? 'Member Lookup' : 'Tra Cứu'}</span>
           </a>
         </div>

@@ -312,25 +312,34 @@ export function MySupportRequests() {
   return (
     <div className="space-y-6 pb-12 font-lexend">
       {/* 1. Olympic Hero Masterpiece Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-[#32354D] via-[#2B2D42] to-[#1E2235] text-white p-6 sm:p-8 border border-white/10 shadow-xl overflow-hidden">
-        {/* Glow ambient background accents */}
-        <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 bg-[#81B29A]/15 rounded-full blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-[#F2CC8F]/15 rounded-full blur-3xl" />
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-8 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden">
+        {/* Glow ambient background accents matching Olympic logo palette */}
+        <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(242,204,143,0.15)] border border-[rgba(242,204,143,0.3)] text-[#F2CC8F] text-xs font-bold uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-xs font-black uppercase tracking-wider shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
               <span>
                 {isCoach
                   ? (isEn ? 'SCMS COACH SUPPORT CHANNEL' : 'KÊNH HỖ TRỢ HUẤN LUYỆN VIÊN SCMS')
                   : (isEn ? 'SCMS MEMBER SUPPORT CENTER' : 'TRUNG TÂM HỖ TRỢ HỘI VIÊN SCMS')}
               </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
+            <h1 className="text-2xl sm:text-3xl font-chivo font-black text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
               {isEn ? 'Support Requests & Inquiries' : 'Yêu Cầu Hỗ Trợ & Khiếu Nại'}
             </h1>
-            <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+            <p className="text-sm text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
               {isCoach
                 ? (isEn
                     ? 'Submit equipment proposals, report room/facility issues, adjust class schedules, or consult directly with Management.'
@@ -351,16 +360,16 @@ export function MySupportRequests() {
                 setCreatePriority('Normal');
                 setCreating(true);
               }}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-950 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[20px]">add_circle</span>
+              <span className="material-symbols-outlined text-[20px] text-amber-400">add_circle</span>
               <span>{isEn ? 'Submit Support Request' : 'Gửi Yêu Cầu Hỗ Trợ'}</span>
             </button>
             <button
               type="button"
               disabled={loading}
               onClick={reload}
-              className="p-3 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
+              className="p-3 rounded-xl border border-white/20 bg-white/15 hover:bg-white/25 text-white backdrop-blur-md transition-colors"
               title={isEn ? "Reload data" : "Tải lại dữ liệu"}
             >
               <span className={`material-symbols-outlined text-[20px] ${loading ? 'animate-spin' : ''}`}>
@@ -371,14 +380,14 @@ export function MySupportRequests() {
         </div>
 
         {/* Quick Hotline Bar */}
-        <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
+        <div className="mt-6 pt-5 border-t border-white/20 flex flex-wrap items-center justify-between gap-4 text-xs text-white/90">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-red-400 text-[18px]">verified</span>
-            <span>{isEn ? 'Committed to response & resolution within 24 business hours.' : 'Cam kết tiếp nhận & xử lý phản hồi trong vòng 24 giờ làm việc.'}</span>
+            <span className="material-symbols-outlined text-amber-300 text-[18px]">verified</span>
+            <span className="font-medium drop-shadow-xs">{isEn ? 'Committed to response & resolution within 24 business hours.' : 'Cam kết tiếp nhận & xử lý phản hồi trong vòng 24 giờ làm việc.'}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-amber-400 text-[18px]">call</span>
-            <span>{isEn ? 'Front Desk Emergency Hotline: ' : 'Hotline khẩn cấp quầy Lễ tân: '}<strong className="text-white font-mono">0901 234 567</strong></span>
+            <span className="material-symbols-outlined text-amber-300 text-[18px]">call</span>
+            <span className="font-medium drop-shadow-xs">{isEn ? 'Front Desk Emergency Hotline: ' : 'Hotline khẩn cấp quầy Lễ tân: '}<strong className="text-white font-mono font-bold">0901 234 567</strong></span>
           </div>
         </div>
       </div>

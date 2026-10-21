@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.DTOs.Checkins;
 using SportsCenterManagement.BLL.Interfaces;
+using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 
@@ -230,7 +231,7 @@ public sealed class CheckinService(IUnitOfWork unitOfWork) : ICheckinService
             throw new InvalidOperationException("Tài khoản không hoạt động.") { Data = { ["StatusCode"] = 403 } };
 
         var role = await unitOfWork.Repository<Role>().GetByIdAsync(user.RoleId, cancellationToken);
-        if (role?.Name is "Admin" or "SystemAdmin")
+        if (role?.Name == RoleNames.Admin)
         {
             return;
         }

@@ -26,10 +26,10 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
         var center = await CenterRolePolicy.CenterForUser(db, CurrentUserId, ct);
         var baseline = CenterRolePolicy.Capabilities(role.Name);
         var policy = center.HasValue ? await CenterRolePolicy.Read(db, center.Value, role.Id, ct) : null;
-        return Ok(role.Name is "Manager" or "SystemAdmin" or "Admin" || policy is null ? baseline : baseline.Intersect(policy.CapabilityIds).ToArray());
+        return Ok(role.Name is "Manager" or "Admin" || policy is null ? baseline : baseline.Intersect(policy.CapabilityIds).ToArray());
     }
 
-    [Authorize(Roles = "MANAGER,ADMIN")]
+    [Authorize(Roles = "ADMIN")]
     [HttpGet("centers/{centerId:long}/roles")]
     public async Task<IActionResult> Matrix(long centerId, CancellationToken ct)
     {
@@ -40,7 +40,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
         return Ok(result);
     }
 
-    [Authorize(Roles = "MANAGER,ADMIN")]
+    [Authorize(Roles = "ADMIN")]
     [HttpPut("centers/{centerId:long}/roles/{roleId:long}/permissions")]
     public async Task<IActionResult> Replace(long centerId, long roleId, CenterRoleOverride request, CancellationToken ct)
     {
@@ -50,7 +50,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
             throw new InvalidOperationException("Danh sách quyền không hợp lệ.") { Data = { ["StatusCode"] = 400 } };
         await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         var role = await db.Roles.SingleOrDefaultAsync(r => r.Id == roleId && (r.Name == "Member" || r.Name == "Coach" || r.Name == "Receptionist"), ct)
-            ?? throw new InvalidOperationException("Manager chỉ phân quyền cho Member, Coach và Receptionist trong trung tâm.") { Data = { ["StatusCode"] = 403 } };
+            ?? throw new InvalidOperationException("Chỉ Admin được cấu hình quyền cho Member, Coach và Receptionist.") { Data = { ["StatusCode"] = 403 } };
         var allowedCodes = await (from rp in db.RolePermissions join p in db.Permissions on rp.PermissionId equals p.Id
             where rp.RoleId == roleId && p.Code != "roles.permissions.manage" select p.Code).ToArrayAsync(ct);
         if (request.PermissionCodes.Except(allowedCodes).Any() || request.CapabilityIds.Except(CenterRolePolicy.Capabilities(role.Name)).Any())

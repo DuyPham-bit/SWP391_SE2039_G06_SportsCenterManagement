@@ -182,19 +182,46 @@ function generateFallbackPlan(goal, level, notes, isEn) {
 
   return (
     <div className="space-y-6">
-      <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-50 text-blue-700 border border-blue-200 text-xs font-bold uppercase tracking-wider mb-2">
-          <span className="w-2 h-2 rounded-full bg-blue-600 animate-pulse" />
-          <span>{isEn ? 'Smart Recommendations' : 'Gợi ý thông minh'}</span>
+      {/* 1. TOP HEADER BANNER */}
+      <div className="rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-8 relative overflow-hidden border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
+
+        <div className="space-y-1 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#1B4332] dark:text-emerald-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 mb-2 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{isEn ? 'Smart AI Assistant' : 'Trợ lý AI thông minh'}</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-chivo font-black tracking-tight text-white flex items-center gap-2.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+            <span className="material-symbols-outlined text-[28px] text-amber-300">psychology</span>
+            <span>{isEn ? 'AI Fitness Training Plan Assistant' : 'Trợ Lý AI Đề Xuất Giáo Án Thể Lực'}</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
+            {isEn
+              ? 'Personalized workout regimen suggestions based on student goals, fitness level, and recent performance history in the selected class.'
+              : 'Gợi ý phác đồ rèn luyện dựa trên mục tiêu, trình độ, thể trạng và tối đa 10 kết quả gần nhất trong lớp bạn đang chọn.'}
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
-          {isEn ? 'AI Fitness Training Plan Assistant' : 'Trợ Lý AI Đề Xuất Giáo Án Thể Lực'}
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
-          {isEn
-            ? 'Personalized workout regimen suggestions based on student goals, fitness level, and recent performance history in the selected class.'
-            : 'Gợi ý phác đồ rèn luyện dựa trên mục tiêu, trình độ, thể trạng và tối đa 10 kết quả gần nhất trong lớp bạn đang chọn.'}
-        </p>
+
+        <div className="flex items-center gap-2 shrink-0 relative z-10">
+          <button
+            type="button"
+            onClick={load}
+            className="px-4 py-2.5 rounded-xl border border-white/30 bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md shadow-xs hover-lift"
+          >
+            <span className="material-symbols-outlined text-[16px] text-amber-300">sync</span>
+            <span>{isEn ? 'Sync Classes' : 'Đồng Bộ Lớp'}</span>
+          </button>
+        </div>
       </div>
 
       <CoachError message={loadError} retry={load} />

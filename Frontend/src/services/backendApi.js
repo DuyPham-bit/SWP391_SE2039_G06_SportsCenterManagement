@@ -989,7 +989,7 @@ export const systemApi = {
   async getAuditPage(page = 1) {
     const user = getAuthUser();
     const params = new URLSearchParams({ page: String(page), pageSize: '50' });
-    const isAdmin = ['ADMIN', 'SYSTEMADMIN'].includes(String(user?.role || '').toUpperCase());
+    const isAdmin = String(user?.role || '').toUpperCase() === 'ADMIN';
     const path = isAdmin
       ? `admin/audit-logs?${params}`
       : `centers/${centerId()}/audit-logs?${params}`;
@@ -1023,22 +1023,39 @@ export const systemApi = {
   },
 
   async getPermissions() {
-    const isManager = String(getAuthUser()?.role || '').toUpperCase() === 'MANAGER';
-    if (isManager) return asArray(await apiRequest(`centers/${centerId()}/roles`));
     const [matrix, catalog] = await Promise.all([apiRequest('admin/roles'), apiRequest('admin/permissions')]);
     return asArray(matrix).map(row => ({ ...row, availablePermissions: asArray(catalog) }));
   },
 
   // Cập nhật quyền theo roleId (PUT /api/admin/roles/{roleId}/permissions)
   async updatePermissions(roleId, permissionCodes, capabilityIds = []) {
-    const isManager = String(getAuthUser()?.role || '').toUpperCase() === 'MANAGER';
-    return apiRequest(isManager ? `centers/${centerId()}/roles/${roleId}/permissions` : `admin/roles/${roleId}/permissions`, {
+    return apiRequest(`admin/roles/${roleId}/permissions`, {
       method: 'PUT',
-      body: isManager ? { permissionCodes, capabilityIds } : { permissionCodes }
+      body: { permissionCodes, capabilityIds }
     });
   },
 
   resetAllData() {
     throw new Error('Hệ thống không cho phép thực hiện thao tác xóa dữ liệu này.');
   }
+};
+
+export const adminApi = {
+  getOverview: () => apiRequest('admin/overview'),
+  getCenters: () => apiRequest('admin/centers'),
+  createCenter: body => apiRequest('admin/centers', { method: 'POST', body }),
+  updateCenter: (id, body) => apiRequest(`admin/centers/${Number(id)}`, { method: 'PATCH', body }),
+  getManagers: () => apiRequest('admin/managers'),
+  createManager: body => apiRequest('admin/managers', { method: 'POST', body }),
+  updateManager: (id, body) => apiRequest(`admin/managers/${Number(id)}`, { method: 'PATCH', body }),
+  getAccounts: ({ role = '', status = '', query = '', page = 1, pageSize = 50 } = {}) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (role) params.set('role', role);
+    if (status) params.set('status', status);
+    if (query.trim()) params.set('query', query.trim());
+    return apiRequest(`admin/accounts?${params}`);
+  },
+  lockAccount: (id, reason) => apiRequest(`admin/accounts/${Number(id)}/lock`, { method: 'POST', body: { reason } }),
+  unlockAccount: (id, reason) => apiRequest(`admin/accounts/${Number(id)}/unlock`, { method: 'POST', body: { reason } }),
+  revokeSessions: (id, reason) => apiRequest(`admin/accounts/${Number(id)}/revoke-sessions`, { method: 'POST', body: { reason } })
 };

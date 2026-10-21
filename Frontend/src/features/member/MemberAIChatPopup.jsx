@@ -872,24 +872,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
             </div>
           </div>
 
-          {/* Quick Prompts Strip */}
-          <div className="px-3 py-2 bg-[#FAF8F5] border-b border-slate-200/80 flex items-center gap-1.5 overflow-x-auto no-scrollbar shrink-0">
-            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider shrink-0 pl-1 font-sans">
-              {isEn ? 'Suggestions:' : 'Gợi ý:'}
-            </span>
-            {(isEn ? QUICK_SUGGESTIONS_EN : QUICK_SUGGESTIONS_VI).map((item, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => handleSend(item.query)}
-                disabled={isAsking}
-                className="shrink-0 px-2.5 py-1 rounded-full bg-white hover:bg-[#81B29A]/15 hover:text-[#2D6A4F] hover:border-[#81B29A]/50 border border-slate-200/90 text-slate-700 text-[11px] font-medium transition shadow-2xs disabled:opacity-50 active:scale-95 cursor-pointer font-sans"
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
           {/* Messages Stream Container */}
           <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-4 bg-[#FAF8F5]/50">
             {messages.map((msg) => (

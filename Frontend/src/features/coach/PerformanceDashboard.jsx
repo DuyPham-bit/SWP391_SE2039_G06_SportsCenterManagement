@@ -142,20 +142,30 @@ export function PerformanceDashboard() {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* 1. Top Header Banner */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white p-5 sm:p-7 shadow-xl border border-emerald-700/30">
-        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-emerald-300/15 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 shadow-xl shadow-[#24828F]/20 border border-white/30 dark:border-white/10">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
+
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#81B29A] text-xs font-bold uppercase tracking-wider backdrop-blur-xs border border-white/20 shadow-2xs">
-              <span className="material-symbols-outlined text-[15px]">monitoring</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#1B4332] dark:text-emerald-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 shadow-xs">
+              <span className="material-symbols-outlined text-[15px] text-emerald-600">monitoring</span>
               {isEn ? 'Teaching Performance Stats' : 'Báo cáo Hiệu suất Giảng dạy'}
             </span>
 
             <button
               onClick={loadData}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 hover:bg-white/25 px-3.5 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-xs border border-white/20 cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 px-3.5 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-md border border-white/30 cursor-pointer shadow-xs hover-lift"
             >
               <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>
                 refresh
@@ -164,10 +174,10 @@ export function PerformanceDashboard() {
             </button>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
+          <h1 className="text-xl sm:text-2xl font-chivo font-black tracking-tight text-white mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? `Teaching Performance Dashboard · Coach ${coachName}` : `Báo cáo Hiệu suất Giảng dạy · HLV ${coachName}`}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+          <p className="mt-1 text-xs sm:text-sm text-white/95 max-w-3xl font-medium leading-relaxed drop-shadow-xs">
             {isEn
               ? 'Real-time coaching analytics based on student attendance, class management, and member evaluation ratings.'
               : 'Thống kê hiệu suất giảng dạy chuyên môn dựa trên số liệu điểm danh thực tế, quản lý phân công học viên và đánh giá phản hồi từ hội viên.'}

@@ -2,6 +2,7 @@ using System.Data;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.CoachProfessional;
+using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 
@@ -33,7 +34,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             .Select(x => new { x.CenterId, x.UserId }).SingleOrDefaultAsync(ct);
         if (row is not null) return (row.CenterId, row.UserId);
         var role = await (from user in db.Users join r in db.Roles on user.RoleId equals r.Id
-            where user.Id == userId && (r.Name == "Admin" || r.Name == "SystemAdmin")
+            where user.Id == userId && r.Name == RoleNames.Admin
             select r.Name).SingleOrDefaultAsync(ct);
         if (role is null) throw BusinessException.Forbidden("Chỉ quản lý trung tâm mới được thực hiện thao tác này.", "MANAGER-ONLY");
         var centerId = await db.Centers.OrderBy(x => x.Id).Select(x => x.Id).FirstOrDefaultAsync(ct);

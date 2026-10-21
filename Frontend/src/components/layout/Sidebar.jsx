@@ -14,6 +14,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
     role || (
       currentPath?.startsWith('#/member') ? 'MEMBER' :
       currentPath?.startsWith('#/coach') ? 'COACH' :
+      currentPath?.startsWith('#/admin') ? 'ADMIN' :
       currentPath?.startsWith('#/manager') ? 'MANAGER' :
       currentPath?.startsWith('#/receptionist') ? 'RECEPTIONIST' :
       'MEMBER'
@@ -23,7 +24,6 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
   const getRoleLabel = (r) => {
     switch (String(r || '').toUpperCase()) {
       case 'ADMIN':
-      case 'SYSTEMADMIN':
         return isEn ? 'System Admin' : 'Quản trị hệ thống';
       case 'MANAGER':
         return isEn ? 'Manager' : 'Quản lý (Manager)';
@@ -69,7 +69,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
               id: 'member_dashboard',
               label: isEn ? 'Member Dashboard' : 'Trang cá nhân',
               icon: 'dashboard',
-              path: '#/member'
+              path: '#/member/dashboard'
             },
             {
               id: 'member_schedule_group',
@@ -94,13 +94,6 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
               label: isEn ? 'Coach Interaction' : 'Tương tác với HLV',
               icon: 'connect_without_contact',
               path: '#/member/coach-portal'
-            },
-            {
-              id: 'member_ai_assistant',
-              label: isEn ? 'AI Sports Assistant' : 'Trợ lý thể thao AI',
-              icon: 'smart_toy',
-              path: '#/member/ai-assistant',
-              isPopup: true
             }
           ]
         },
@@ -129,12 +122,6 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
               label: isEn ? 'Packages & Billing' : 'Gói tập & Thanh toán',
               icon: 'credit_card',
               path: '#/member/packages'
-            },
-            {
-              id: 'member_payment_result',
-              label: isEn ? 'Transaction History' : 'Lịch sử giao dịch',
-              icon: 'receipt_long',
-              path: '#/payment-result'
             }
           ]
         }
@@ -272,14 +259,45 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
       ];
     }
 
-    // MANAGER / ADMIN / SYSTEMADMIN
+    if (normalizedRole === 'ADMIN') {
+      return [
+        {
+          category: isEn ? 'SYSTEM OVERVIEW' : 'TỔNG QUAN HỆ THỐNG',
+          items: [
+            { id: 'admin_dashboard', label: isEn ? 'Admin Dashboard' : 'Bảng quản trị', icon: 'admin_panel_settings', path: '#/admin/dashboard' }
+          ]
+        },
+        {
+          category: isEn ? 'SYSTEM GOVERNANCE' : 'QUẢN TRỊ HỆ THỐNG',
+          items: [
+            {
+              id: 'admin_structure', label: isEn ? 'Centers & Managers' : 'Cơ sở & Manager', icon: 'account_tree',
+              subItems: [
+                { label: isEn ? 'Centers' : 'Quản lý cơ sở', path: '#/admin/centers' },
+                { label: isEn ? 'Managers' : 'Tài khoản Manager', path: '#/admin/managers' },
+                { label: isEn ? 'Accounts & Sessions' : 'Tài khoản & phiên đăng nhập', path: '#/admin/accounts' }
+              ]
+            }
+          ]
+        },
+        {
+          category: isEn ? 'SECURITY & CONTENT' : 'BẢO MẬT & NỘI DUNG',
+          items: [
+            { id: 'admin_roles', label: isEn ? 'Roles & Permissions' : 'Vai trò & phân quyền', icon: 'policy', path: '#/admin/roles-permissions' },
+            { id: 'admin_audit', label: isEn ? 'System Audit Log' : 'Nhật ký audit hệ thống', icon: 'history', path: '#/admin/audit-logs' },
+            { id: 'admin_content', label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', icon: 'dashboard_customize', path: '#/admin/home-content' }
+          ]
+        }
+      ];
+    }
+
     return [
       {
         category: isEn ? 'OVERVIEW' : 'TỔNG QUAN',
         items: [
           {
             id: 'mgr_dashboard',
-            label: isEn ? 'Admin Dashboard' : 'Bảng quản trị hệ thống',
+            label: isEn ? 'Manager Dashboard' : 'Bảng quản lý cơ sở',
             icon: 'dashboard',
             path: '#/manager/dashboard'
           }
@@ -297,26 +315,19 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
               { label: isEn ? 'Classes, Sports & Courts' : 'Lớp, bộ môn & phòng', path: '#/manager/classes-rooms' },
               { label: isEn ? 'Membership Packages' : 'Gói tập hội viên', path: '#/manager/packages' },
               { label: isEn ? 'Coach Assignment' : 'Phân công HLV', path: '#/manager/coach-assignment' },
-              { label: isEn ? 'Coach Operations' : 'Vận hành đội ngũ HLV', path: '#/manager/coach-operations' },
-              { label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', path: '#/manager/home-content' }
+              { label: isEn ? 'Coach Operations' : 'Vận hành đội ngũ HLV', path: '#/manager/coach-operations' }
             ]
           }
         ]
       },
       {
-        category: isEn ? 'HR & PERMISSIONS' : 'NHÂN SỰ & PHÂN QUYỀN',
+        category: isEn ? 'CENTER STAFF' : 'NHÂN SỰ CƠ SỞ',
         items: [
           {
             id: 'mgr_staff',
             label: isEn ? 'Staff Management' : 'Quản lý nhân sự',
             icon: 'badge',
             path: '#/manager/staff'
-          },
-          {
-            id: 'mgr_roles',
-            label: isEn ? 'Roles & Permissions' : 'Vai trò & Phân quyền',
-            icon: 'admin_panel_settings',
-            path: '#/manager/roles-permissions'
           }
         ]
       },
@@ -449,12 +460,28 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
                   currentPath === sub.path ||
                   (currentPath?.startsWith(sub.path) && sub.path !== '#/manager/dashboard')
                 );
+                const isMemberDashboard =
+                  (item.path === '#/member' || item.path === '#/member/dashboard') &&
+                  (currentPath === '#/member' || currentPath === '#/member/dashboard');
+                const isCoachDashboard =
+                  (item.path === '#/coach' || item.path === '#/coach/dashboard') &&
+                  (currentPath === '#/coach' || currentPath === '#/coach/dashboard');
+                const isManagerDashboard =
+                  (item.path === '#/manager' || item.path === '#/manager/dashboard') &&
+                  (currentPath === '#/manager' || currentPath === '#/manager/dashboard');
+
                 const isActive =
                   currentPath === item.path ||
-                  (item.path === '#/member' && currentPath === '#/member/dashboard') ||
-                  (item.path === '#/coach/dashboard' && currentPath === '#/coach') ||
-                  (item.path === '#/manager/dashboard' && currentPath === '#/manager') ||
-                  (currentPath?.startsWith(item.path) && item.path !== '#/manager/dashboard' && item.path !== '#/member');
+                  isMemberDashboard ||
+                  isCoachDashboard ||
+                  isManagerDashboard ||
+                  (currentPath?.startsWith(item.path) &&
+                    item.path !== '#/manager/dashboard' &&
+                    item.path !== '#/manager' &&
+                    item.path !== '#/member' &&
+                    item.path !== '#/member/dashboard' &&
+                    item.path !== '#/coach' &&
+                    item.path !== '#/coach/dashboard');
 
                 /* ─────────────────────────────────────────────────────────────
                    MODE 1: COLLAPSED MINI-SIDEBAR (MATCHING USER REFERENCE)

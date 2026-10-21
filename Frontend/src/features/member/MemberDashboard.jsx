@@ -40,6 +40,14 @@ function getSportMeta(className = '', spec = '', isEn = false) {
   const sSpec = spec.toLowerCase();
 
   // 1. Check class name first
+  if (cName.includes('golf') || cName.includes('swing') || cName.includes('trackman') || cName.includes('driving range')) {
+    return {
+      name: isEn ? 'Golf & Precision' : 'Golf & Thể thao cao cấp',
+      icon: 'sports_golf',
+      badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      gradient: 'from-emerald-600 to-teal-700'
+    };
+  }
   if (cName.includes('cầu lông') || cName.includes('badminton')) {
     return {
       name: isEn ? 'Badminton' : 'Cầu lông',
@@ -130,6 +138,14 @@ function getSportMeta(className = '', spec = '', isEn = false) {
       gradient: 'from-purple-500 to-indigo-600'
     };
   }
+  if (sSpec.includes('golf') || sSpec.includes('trackman')) {
+    return {
+      name: isEn ? 'Golf & Precision' : 'Golf & Thể thao cao cấp',
+      icon: 'sports_golf',
+      badgeBg: 'bg-emerald-50 text-emerald-800 border-emerald-200',
+      gradient: 'from-emerald-600 to-teal-700'
+    };
+  }
   if (sSpec.includes('tennis') || sSpec.includes('pickleball')) {
     return {
       name: isEn ? 'Tennis & Racket' : 'Tennis & Quần vợt',
@@ -171,7 +187,7 @@ function getTimeGreeting(isEn = false) {
 }
 
 export function MemberDashboard() {
-  const { currentUser } = useAuth();
+  const { currentUser, refreshUser } = useAuth();
   const { language } = useLanguage();
   const isEn = language === 'en';
 
@@ -228,6 +244,9 @@ export function MemberDashboard() {
       return;
     }
     setLoading(true);
+    if (typeof refreshUser === 'function') {
+      refreshUser().catch(() => {});
+    }
     const sources = [
       ['bookings', canBook ? bookingApi.getMemberBookings(currentUser.id) : Promise.resolve([])],
       ['progress', canProgress ? memberApi.getMyProgress() : Promise.resolve([])],
@@ -313,7 +332,7 @@ export function MemberDashboard() {
             title: isEn ? 'Classes & Booking' : 'Xem & Đăng ký lớp',
             subtitle: isEn ? 'Sports Timetable' : 'Thời khóa biểu thể thao',
             color: 'from-[#2D6A4F] to-[#81B29A]',
-            badge: isEn ? '4 Sports' : '4 bộ môn',
+            badge: isEn ? '5 Sports' : '5 bộ môn',
             badgeColor: 'bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] font-bold'
           },
           {
@@ -373,23 +392,34 @@ export function MemberDashboard() {
 
   return (
     <div className="space-y-6 pb-12 font-lexend">
-      {/* 1. Olympic Hero Masterpiece Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#344E41] text-white p-6 sm:p-8 border border-emerald-700/40 shadow-xl overflow-hidden animate-fade-slide-up">
-        {/* Glow accents */}
-        <div className="absolute -top-24 -right-24 w-96 h-96 bg-emerald-300/15 rounded-full blur-3xl pointer-events-none animate-float" />
-        <div className="absolute -bottom-24 -left-24 w-80 h-80 bg-[#F2CC8F]/15 rounded-full blur-3xl pointer-events-none animate-float" />
+      {/* 1. Olympic Hero Masterpiece Banner (Rich Logo-Themed Gradient Background) */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden animate-fade-slide-up">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl pointer-events-none" />
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
-            {/* Avatar block with initial & verified dot */}
+            {/* White VIP Avatar Squircle with vibrant Olympic logo gradient text */}
             <div className="relative shrink-0">
-              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-gradient-to-tr from-[#F2CC8F] via-[#81B29A] to-[#E07A5F] p-0.5 shadow-lg shadow-black/20">
-                <div className="w-full h-full rounded-[14px] bg-[#1B4332] flex items-center justify-center text-[#F2CC8F] font-black text-2xl sm:text-3xl uppercase tracking-wider">
+              <div
+                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 text-[#1B4332] dark:text-[#81B29A] flex items-center justify-center font-black text-2xl sm:text-3xl uppercase tracking-wider shadow-lg border-2 border-white/90 dark:border-white/20 select-none transition-transform duration-300 hover:scale-105"
+                style={{ boxShadow: '0 8px 24px rgba(0, 0, 0, 0.16)' }}
+              >
+                <span className="bg-gradient-to-tr from-[#2D6A4F] via-[#24828F] to-[#D99A38] bg-clip-text text-transparent font-black">
                   {currentUser?.fullName?.charAt(0) || 'M'}
-                </div>
+                </span>
               </div>
               <span
-                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-500 border-2 border-[#1B4332] flex items-center justify-center shadow animate-pulse-ring"
+                className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-xs animate-pulse-ring"
                 title={isEn ? 'Account Online' : 'Tài khoản đang trực tuyến'}
               >
                 <span className="material-symbols-outlined text-[12px] text-white font-bold">check</span>
@@ -399,82 +429,87 @@ export function MemberDashboard() {
             {/* Member Greeting and Identity Details */}
             <div className="min-w-0">
               <div className="flex flex-wrap items-center gap-2">
-                <span className="px-2.5 py-0.5 rounded-full bg-[#F2CC8F]/15 text-[#F2CC8F] border border-[#F2CC8F]/35 text-[11px] font-extrabold uppercase tracking-widest flex items-center gap-1">
-                  <span className="material-symbols-outlined text-[13px] text-[#F2CC8F]">workspace_premium</span>
+                <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                  <span className="material-symbols-outlined text-[13px] text-amber-500">workspace_premium</span>
                   {isEn ? 'OFFICIAL ATHLETE • SCMS PRO' : 'HỘI VIÊN CHÍNH THỨC • SCMS PRO'}
                 </span>
                 <span
-                  className={`px-2.5 py-0.5 rounded-full text-[11px] font-bold border flex items-center gap-1 ${
+                  className={`px-3 py-1 rounded-full text-[11px] font-bold border backdrop-blur-md flex items-center gap-1.5 shadow-xs ${
                     membership.active
-                      ? 'bg-[#81B29A]/20 text-[#81B29A] border-[#81B29A]/40'
-                      : 'bg-[#E07A5F]/20 text-[#E07A5F] border-[#E07A5F]/40'
+                      ? 'bg-white/90 dark:bg-slate-900/90 text-[#1B4332] dark:text-emerald-300 border-white/80 dark:border-white/20'
+                      : 'bg-rose-50/95 dark:bg-rose-950/90 text-rose-700 dark:text-rose-300 border-rose-200'
                   }`}
                 >
-                  <span className={`w-1.5 h-1.5 rounded-full ${membership.active ? 'bg-emerald-400 animate-pulse' : 'bg-red-400'}`} />
+                  <span className={`w-2 h-2 rounded-full ${membership.active ? 'bg-emerald-500 animate-pulse' : 'bg-red-500'}`} />
                   {membership.label} {membership.active && (isEn ? `(${membership.daysLeft} days left)` : `(Còn ${membership.daysLeft} ngày)`)}
                 </span>
               </div>
 
-              <h1 className="text-2xl sm:text-3xl font-black text-white mt-1.5 tracking-tight truncate">
+              <h1 className="font-chivo text-2xl sm:text-3xl font-black text-white mt-2 tracking-tight truncate drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
                 {greeting}, {currentUser?.fullName}!
               </h1>
 
-              <div className="flex flex-wrap items-center gap-3 sm:gap-4 text-xs text-slate-300 mt-2">
+              <div className="flex flex-wrap items-center gap-2.5 sm:gap-3 text-xs mt-2.5">
                 <button
                   type="button"
                   onClick={handleCopyMemberCode}
-                  className="flex items-center gap-1.5 bg-[#24293D] hover:bg-[#2C324B] px-2.5 py-1 rounded-lg border border-slate-700 hover:border-[#81B29A]/50 text-slate-200 transition font-mono group cursor-pointer active:scale-95"
+                  className="flex items-center gap-1.5 bg-white/90 hover:bg-white dark:bg-slate-900/90 dark:hover:bg-slate-900 px-3 py-1 rounded-lg border border-white/80 dark:border-white/20 text-slate-800 dark:text-slate-100 transition font-mono group cursor-pointer active:scale-95 shadow-xs backdrop-blur-md"
                   title={isEn ? 'Click to copy code' : 'Bấm để sao chép mã'}
                 >
-                  <span className="material-symbols-outlined text-[14px] text-[#F2CC8F] group-hover:scale-110 transition">badge</span>
-                  <span>{isEn ? 'Card' : 'Mã thẻ'}: <strong className="text-white">{currentUser?.memberCode || (isEn ? 'Unassigned' : 'Chưa cấp')}</strong></span>
-                  <span className="material-symbols-outlined text-[13px] text-slate-400 group-hover:text-white transition">
+                  <span className="material-symbols-outlined text-[14px] text-[#24828F] group-hover:scale-110 transition">badge</span>
+                  <span>{isEn ? 'Card' : 'Mã thẻ'}: <strong className="text-slate-950 dark:text-white font-extrabold">{currentUser?.memberCode || (isEn ? 'Unassigned' : 'Chưa cấp')}</strong></span>
+                  <span className="material-symbols-outlined text-[13px] text-slate-500 group-hover:text-slate-800 dark:group-hover:text-white transition">
                     {copiedCode ? 'done' : 'content_copy'}
                   </span>
                 </button>
 
-                <span className="flex items-center gap-1 text-slate-300">
-                  <span className="material-symbols-outlined text-[14px] text-slate-400">call</span>
-                  {currentUser?.phone || (isEn ? 'No phone added' : 'Chưa cập nhật SĐT')}
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-white/80 dark:border-white/20 text-slate-800 dark:text-slate-200 shadow-xs font-medium">
+                  <span className="material-symbols-outlined text-[14px] text-[#24828F]">call</span>
+                  <span>{currentUser?.phone || (isEn ? 'No phone added' : 'Chưa cập nhật SĐT')}</span>
                 </span>
 
-                <span className="flex items-center gap-1 text-slate-300">
-                  <span className="material-symbols-outlined text-[14px] text-[#F2CC8F]">card_membership</span>
-                  {translatePackageName(currentUser?.packageName, isEn)}
+                <span className="flex items-center gap-1.5 px-3 py-1 rounded-lg bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 font-bold border border-white/80 dark:border-white/20 shadow-xs">
+                  <span className="material-symbols-outlined text-[14px] text-amber-500">card_membership</span>
+                  <span>{translatePackageName(currentUser?.packageName, isEn)}</span>
                 </span>
               </div>
             </div>
           </div>
 
-          {/* Action CTAs */}
+          {/* Action CTAs with high-contrast buttons */}
           <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 lg:pt-0">
             <button
               type="button"
               onClick={() => setQrModalOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-[#F2CC8F]/15 hover:bg-[#F2CC8F]/25 border border-[#F2CC8F]/40 text-[#F2CC8F] hover:text-white text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shadow-xs hover:shadow-md active:scale-95 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-white hover:bg-white/95 text-slate-900 border border-white text-xs font-bold transition-all duration-200 flex items-center gap-1.5 shadow-md hover:shadow-lg active:scale-95 cursor-pointer backdrop-blur-md"
             >
-              <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">qr_code_scanner</span>
+              <span className="material-symbols-outlined text-[18px] text-[#24828F]">qr_code_scanner</span>
               <span>{isEn ? 'Check-in QR' : 'Mã Check-in'}</span>
             </button>
 
             <button
               type="button"
               onClick={() => setProfileOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-[#2D6A4F] to-[#81B29A] hover:from-[#245841] hover:to-[#729F89] text-white text-xs font-bold shadow-md shadow-[#2D6A4F]/25 hover:shadow-lg transition-all duration-200 flex items-center gap-1.5 active:scale-95 cursor-pointer"
+              className="px-4 py-2.5 rounded-xl bg-slate-950 hover:bg-slate-900 text-white text-xs font-bold shadow-lg hover:shadow-xl transition-all duration-200 flex items-center gap-1.5 active:scale-95 cursor-pointer border border-white/20"
             >
-              <span className="material-symbols-outlined text-[17px]">edit</span>
+              <span className="material-symbols-outlined text-[17px] text-[#F2CC8F]">edit</span>
               <span>{isEn ? 'Personal Profile' : 'Hồ sơ cá nhân'}</span>
             </button>
 
             <button
               type="button"
-              onClick={() => {
+              onClick={async () => {
                 setReload(v => v + 1);
                 refreshNotifications();
-                showInfo(isEn ? 'Refreshing data...' : 'Đang làm mới dữ liệu...');
+                try {
+                  if (typeof refreshUser === 'function') await refreshUser();
+                  showSuccess(isEn ? 'Data and membership synced successfully!' : 'Đã đồng bộ dữ liệu và gói tập thành công!');
+                } catch {
+                  showInfo(isEn ? 'Refreshed member data.' : 'Đã làm mới dữ liệu hội viên.');
+                }
               }}
-              className="p-2.5 rounded-xl bg-[#24293D] hover:bg-[#2C324B] border border-slate-700 text-slate-300 hover:text-white transition active:rotate-180 duration-300 cursor-pointer"
-              title={isEn ? 'Refresh Data' : 'Tải lại dữ liệu'}
+              className="p-2.5 rounded-xl bg-white hover:bg-white/95 text-slate-800 hover:text-[#24828F] border border-white transition active:rotate-180 duration-300 shadow-md cursor-pointer"
+              title={isEn ? 'Sync & Refresh Data' : 'Đồng bộ & Tải lại dữ liệu'}
             >
               <span className="material-symbols-outlined text-[18px]">sync</span>
             </button>
@@ -530,7 +565,7 @@ export function MemberDashboard() {
                   window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
                 }
               }}
-              className="group relative p-3.5 bg-white dark:bg-slate-900 hover:bg-[#FAF8F5]/80 dark:hover:bg-slate-800/80 border border-slate-200/90 dark:border-slate-800 hover:border-[#81B29A]/50 dark:hover:border-[#81B29A]/40 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between active:scale-[0.98] hover-lift"
+              className="group relative p-3.5 bg-gradient-to-br from-white via-white to-[#FAF8F5] dark:from-slate-900 dark:via-slate-900 dark:to-slate-800/80 hover:to-[#81B29A]/15 border border-slate-200/90 dark:border-slate-800 hover:border-[#81B29A] dark:hover:border-[#81B29A]/60 rounded-2xl shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between active:scale-[0.98] hover-lift"
             >
               <div className="flex items-start justify-between">
                 <div className={`w-10 h-10 rounded-xl bg-gradient-to-tr ${item.color} text-white flex items-center justify-center shadow-xs group-hover:scale-110 group-hover:rotate-2 transition-transform duration-300`}>
@@ -557,15 +592,15 @@ export function MemberDashboard() {
         </section>
       </div>
 
-      {/* 3. 4 Bento KPI Metric Cards */}
+      {/* 3. 4 Bento KPI Metric Cards (Rich Olympic Brand Color Gradients) */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-slide-up stagger-2">
-        {/* KPI 1: Upcoming Classes */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden group hover:border-[#81B29A]/50 dark:hover:border-[#81B29A]/40 transition hover-lift">
+        {/* KPI 1: Upcoming Classes (Olympic Mint Green Theme) */}
+        <div className="bg-gradient-to-br from-[#81B29A]/15 via-white to-white dark:from-[#1B4332]/40 dark:via-slate-900 dark:to-slate-900 rounded-2xl p-5 border border-[#81B29A]/35 dark:border-[#81B29A]/30 shadow-xs relative overflow-hidden group hover:border-[#2F7B5D] dark:hover:border-[#81B29A] transition hover-lift">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#2D6A4F] dark:text-[#81B29A]">
               {isEn ? 'Upcoming Classes' : 'Lịch tập sắp tới'}
             </span>
-            <div className="w-10 h-10 rounded-xl bg-[#81B29A]/15 border border-[#81B29A]/30 text-[#2D6A4F] dark:text-[#81B29A] flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#2F7B5D] to-[#81B29A] text-white shadow-md shadow-[#2F7B5D]/25 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform">
               <span className="material-symbols-outlined text-[22px]">calendar_month</span>
             </div>
           </div>
@@ -577,54 +612,52 @@ export function MemberDashboard() {
               {isEn ? 'confirmed sessions' : 'buổi đã xác nhận'}
             </span>
           </div>
-          <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800">
             <span className="truncate">
               {upcoming.length > 0
                 ? (isEn ? `Next: ${upcoming[0].timeSlot}` : `Ca gần nhất: ${upcoming[0].timeSlot}`)
                 : (isEn ? 'No upcoming workouts' : 'Chưa có buổi học mới')}
             </span>
-            <a href="#/member/schedule" className="text-[#2D6A4F] dark:text-[#81B29A] font-bold hover:underline shrink-0">
-              {isEn ? 'Book Class' : 'Đặt lớp'}
+            <a href="#/member/schedule" className="text-[#2D6A4F] dark:text-[#81B29A] font-extrabold hover:underline shrink-0">
+              {isEn ? 'Book Class' : 'Đặt lớp'} →
             </a>
           </div>
         </div>
 
-        {/* KPI 2: Membership Expiry Status */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden group hover:border-[#81B29A]/50 dark:hover:border-[#81B29A]/40 transition hover-lift">
+        {/* KPI 2: Membership Expiry Status (Olympic Honey Gold Theme) */}
+        <div className="bg-gradient-to-br from-[#F2CC8F]/25 via-white to-white dark:from-[#5E4014]/40 dark:via-slate-900 dark:to-slate-900 rounded-2xl p-5 border border-[#F2CC8F]/50 dark:border-[#F2CC8F]/30 shadow-xs relative overflow-hidden group hover:border-[#E5A33C] dark:hover:border-[#F2CC8F] transition hover-lift">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#B45309] dark:text-[#F2CC8F]">
               {isEn ? 'Package Status' : 'Trạng thái gói tập'}
             </span>
-            <div className={`w-10 h-10 rounded-xl flex items-center justify-center border group-hover:scale-110 transition-transform ${
-              membership.active ? 'bg-[#81B29A]/15 border-[#81B29A]/30 text-[#2D6A4F] dark:text-[#81B29A]' : 'bg-[#E07A5F]/15 border-[#E07A5F]/30 text-[#C85A3F] dark:text-[#E07A5F]'
-            }`}>
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#D99A38] to-[#F2CC8F] text-white shadow-md shadow-amber-500/25 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform">
               <span className="material-symbols-outlined text-[22px]">credit_card</span>
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className={`text-2xl font-black tracking-tight ${membership.active ? 'text-[#2D6A4F] dark:text-[#81B29A]' : 'text-[#C85A3F] dark:text-[#E07A5F]'}`}>
+            <span className={`text-2xl font-black tracking-tight ${membership.active ? 'text-[#B45309] dark:text-[#F2CC8F]' : 'text-[#C85A3F] dark:text-[#E07A5F]'}`}>
               {membership.label}
             </span>
           </div>
-          <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800">
             <span className="truncate">
               {membership.active
                 ? (isEn ? `Expires: ${formatMemberDate(currentUser?.packageExpiry, isEn)}` : `Hạn: ${formatMemberDate(currentUser?.packageExpiry)}`)
                 : (isEn ? 'Please renew package' : 'Vui lòng gia hạn')}
             </span>
-            <a href="#/member/packages" className="text-[#2D6A4F] dark:text-[#81B29A] font-bold hover:underline shrink-0">
-              {isEn ? 'Renew' : 'Gia hạn'}
+            <a href="#/member/packages" className="text-[#B45309] dark:text-[#F2CC8F] font-extrabold hover:underline shrink-0">
+              {isEn ? 'Renew' : 'Gia hạn'} →
             </a>
           </div>
         </div>
 
-        {/* KPI 3: Body Progress & InBody */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden group hover:border-purple-300 dark:hover:border-purple-700 transition hover-lift">
+        {/* KPI 3: Body Progress & InBody (Olympic Cyan Ocean Theme) */}
+        <div className="bg-gradient-to-br from-[#3FAEB8]/20 via-white to-white dark:from-[#144850]/40 dark:via-slate-900 dark:to-slate-900 rounded-2xl p-5 border border-[#3FAEB8]/40 dark:border-[#3FAEB8]/30 shadow-xs relative overflow-hidden group hover:border-[#24828F] dark:hover:border-[#3FAEB8] transition hover-lift">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#16697A] dark:text-[#48CAE4]">
               {isEn ? 'Body Progress' : 'Tiến độ thể chất'}
             </span>
-            <div className="w-10 h-10 rounded-xl bg-purple-50 dark:bg-purple-950/40 border border-purple-100 dark:border-purple-800 text-purple-600 dark:text-purple-400 flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#1B6B78] to-[#48CAE4] text-white shadow-md shadow-cyan-500/25 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform">
               <span className="material-symbols-outlined text-[22px]">vital_signs</span>
             </div>
           </div>
@@ -633,30 +666,30 @@ export function MemberDashboard() {
               {errors.progress ? '—' : (latest ? `${latest.weight || '--'} kg` : (isEn ? 'Pending' : 'Chờ đo'))}
             </span>
             {latest?.bodyFat && (
-              <span className="text-xs font-bold text-purple-700 dark:text-purple-300">
+              <span className="text-xs font-bold text-cyan-800 dark:text-cyan-300">
                 ({latest.bodyFat}% {isEn ? 'fat' : 'mỡ'})
               </span>
             )}
           </div>
-          <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800">
             <span className="truncate">
               {latest
                 ? (isEn ? `Measured: ${formatMemberDate(latest.date, isEn)}` : `Đo ngày: ${formatMemberDate(latest.date)}`)
                 : (isEn ? 'No InBody records yet' : 'Chưa có dữ liệu InBody')}
             </span>
-            <a href="#/member/progress" className="text-purple-700 dark:text-purple-400 font-bold hover:underline shrink-0">
-              {isEn ? 'Details' : 'Chi tiết'}
+            <a href="#/member/progress" className="text-[#16697A] dark:text-[#48CAE4] font-extrabold hover:underline shrink-0">
+              {isEn ? 'Details' : 'Chi tiết'} →
             </a>
           </div>
         </div>
 
-        {/* KPI 4: Unread Notifications */}
-        <div className="bg-white dark:bg-slate-900 rounded-2xl p-5 border border-slate-200 dark:border-slate-800 shadow-xs relative overflow-hidden group hover:border-[#F2CC8F]/50 dark:hover:border-[#F2CC8F]/40 transition hover-lift">
+        {/* KPI 4: Unread Notifications (Olympic Sunset Coral Theme) */}
+        <div className="bg-gradient-to-br from-[#E07A5F]/20 via-white to-white dark:from-[#5A2419]/40 dark:via-slate-900 dark:to-slate-900 rounded-2xl p-5 border border-[#E07A5F]/40 dark:border-[#E07A5F]/30 shadow-xs relative overflow-hidden group hover:border-[#C85A3F] dark:hover:border-[#E07A5F] transition hover-lift">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+            <span className="text-xs font-bold uppercase tracking-wider text-[#C85A3F] dark:text-[#E07A5F]">
               {isEn ? 'Inbox & News' : 'Hộp thư & Thông báo'}
             </span>
-            <div className="w-10 h-10 rounded-xl bg-[#F2CC8F]/20 dark:bg-amber-950/40 border border-[#F2CC8F]/40 dark:border-amber-800 text-[#B45309] dark:text-[#F2CC8F] flex items-center justify-center group-hover:scale-110 transition-transform">
+            <div className="w-11 h-11 rounded-xl bg-gradient-to-tr from-[#C85A3F] to-[#E07A5F] text-white shadow-md shadow-rose-500/25 flex items-center justify-center group-hover:scale-110 group-hover:rotate-3 transition-transform">
               <span className="material-symbols-outlined text-[22px]">notifications</span>
             </div>
           </div>
@@ -668,12 +701,12 @@ export function MemberDashboard() {
               {isEn ? 'unread alerts' : 'tin nhắn chưa đọc'}
             </span>
           </div>
-          <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-100 dark:border-slate-800">
+          <div className="mt-2 text-xs text-slate-600 dark:text-slate-400 flex items-center justify-between pt-2 border-t border-slate-200/60 dark:border-slate-800">
             <span className="truncate">
               {isEn ? 'Schedule & package notices' : 'Cập nhật lịch & gói dịch vụ'}
             </span>
-            <a href="#/member/notifications" className="text-[#B45309] dark:text-[#F2CC8F] font-bold hover:underline shrink-0">
-              {isEn ? 'View all' : 'Xem hết'}
+            <a href="#/member/notifications" className="text-[#C85A3F] dark:text-[#E07A5F] font-extrabold hover:underline shrink-0">
+              {isEn ? 'View all' : 'Xem hết'} →
             </a>
           </div>
         </div>

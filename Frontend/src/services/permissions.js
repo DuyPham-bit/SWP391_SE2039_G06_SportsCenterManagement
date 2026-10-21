@@ -305,8 +305,6 @@ export function getPermissionsForRole(role) {
 
 // Helper to check if a role or user has a specific capability
 export function hasCapability(role, capId) {
-  const normalized = String(role || '').toUpperCase();
-  if (normalized === 'MANAGER' || normalized === 'ADMIN' || normalized === 'SYSTEMADMIN') return true; // Superuser access
   if (!capId) return true;
   const perms = getPermissionsForRole(role);
   return perms.includes(capId);
@@ -323,30 +321,39 @@ export function getDynamicNavItems(role) {
   const perms = getPermissionsForRole(role);
 
   switch (normalized) {
-    case 'SYSTEMADMIN':
-    case 'ADMIN':
+    case 'ADMIN': {
+      return [
+        { label: 'TỔNG QUAN HỆ THỐNG', isHeader: true },
+        { path: '#/admin/dashboard', icon: 'admin_panel_settings', label: 'Bảng Quản Trị Admin' },
+        { label: 'QUẢN TRỊ HỆ THỐNG', isHeader: true },
+        { path: '#/admin/centers', icon: 'account_tree', label: 'Quản Lý Cơ Sở' },
+        { path: '#/admin/managers', icon: 'manage_accounts', label: 'Tài Khoản Manager' },
+        { path: '#/admin/accounts', icon: 'group', label: 'Tài Khoản & Phiên' },
+        { label: 'BẢO MẬT & NỘI DUNG', isHeader: true },
+        { path: '#/admin/roles-permissions', icon: 'policy', label: 'Vai Trò & Phân Quyền' },
+        { path: '#/admin/audit-logs', icon: 'history', label: 'Nhật Ký Audit Hệ Thống' },
+        { path: '#/admin/home-content', icon: 'dashboard_customize', label: 'Nội Dung Trang Chủ' }
+      ];
+    }
+
     case 'MANAGER': {
-      // Base manager & admin nav
-      const isSystemAdmin = normalized === 'SYSTEMADMIN';
-      const isAnyAdmin = normalized === 'ADMIN' || isSystemAdmin;
       const items = [
         { label: 'TỔNG QUAN', isHeader: true },
-        { path: '#/manager/dashboard', icon: 'dashboard', label: isSystemAdmin ? 'Bảng Quản Trị Hệ Thống' : (isAnyAdmin ? 'Bảng Quản Trị Admin' : 'Bảng Quản Lý') },
+        { path: '#/manager/dashboard', icon: 'dashboard', label: 'Bảng Quản Lý Cơ Sở' },
         { label: 'VẬN HÀNH & NHÂN SỰ', isHeader: true }
       ];
 
-      if (normalized === 'MANAGER') items.push({ path: '#/manager/members', icon: 'group', label: 'Quản Lý Thành Viên' });
-      if (normalized === 'MANAGER') items.push({ path: '#/receptionist/support', icon: 'support_agent', label: 'Tiếp Nhận Yêu Cầu Hỗ Trợ' });
+      items.push({ path: '#/manager/members', icon: 'group', label: 'Quản Lý Thành Viên' });
+      items.push({ path: '#/receptionist/support', icon: 'support_agent', label: 'Tiếp Nhận Yêu Cầu Hỗ Trợ' });
       if (perms.includes('manage_staff')) items.push({ path: '#/manager/staff', icon: 'badge', label: 'Quản Lý Nhân Viên' });
       if (perms.includes('manage_packages')) items.push({ path: '#/manager/packages', icon: 'card_membership', label: 'Gói Tập Hội Viên' });
       if (perms.includes('manage_classes')) items.push({ path: '#/manager/classes-rooms', icon: 'sports_score', label: 'Lớp, Bộ Môn & Phòng' });
       if (perms.includes('assign_coach')) items.push({ path: '#/manager/coach-assignment', icon: 'assignment_ind', label: 'Phân Công HLV' });
       if (perms.includes('manage_coach_operations')) items.push({ path: '#/manager/coach-operations', icon: 'manage_accounts', label: 'Vận Hành Đội Ngũ HLV' });
-      items.push({ path: '#/manager/home-content', icon: 'dashboard_customize', label: 'QUẢN LÝ NỘI DUNG TRANG CHỦ & ĐA PHƯƠNG TIỆN' });
+      items.push({ path: '#/manager/home-content', icon: 'dashboard_customize', label: 'Quản Lý Nội Dung Trang Chủ' });
 
       items.push({ label: 'BÁO CÁO & BẢO MẬT', isHeader: true });
       if (perms.includes('view_reports')) items.push({ path: '#/manager/reports', icon: 'analytics', label: 'Báo Cáo & Thống Kê' });
-      if (perms.includes('manage_roles')) items.push({ path: '#/manager/roles-permissions', icon: 'admin_panel_settings', label: 'Vai Trò & Phân Quyền' });
       if (perms.includes('view_audit_logs')) items.push({ path: '#/manager/audit-logs', icon: 'history', label: 'Nhật Ký Audit Logs' });
 
       return items;

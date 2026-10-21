@@ -499,21 +499,36 @@ export function StaffManagement() {
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
-      {/* 1. Header Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] p-6 sm:p-8 text-white shadow-xl">
-        <div className="absolute right-0 top-0 -mr-16 -mt-16 h-64 w-64 rounded-full bg-emerald-300/15 blur-3xl pointer-events-none" />
-        <div className="absolute right-32 bottom-0 -mb-16 h-48 w-48 rounded-full bg-[#F2CC8F]/15 blur-2xl pointer-events-none" />
+      {/* 1. Header Banner (Olympic Multi-stop Gradient matching Image 1) */}
+      <section
+        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-[#24828F]/25 border border-white/30"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/35 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#F2CC8F]/20 backdrop-blur-md text-[#F2CC8F] text-xs font-black uppercase tracking-wider mb-2">
-              <span className="material-symbols-outlined text-[14px]">badge</span>
-              {isEn ? 'Human Resources · SCMS' : 'Quản trị nhân sự · Olympic SCMS'}
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs mb-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>{isEn ? 'Human Resources · SCMS' : 'Quản trị nhân sự · Olympic SCMS'}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white">
+            <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
               {isEn ? 'Staff & Team Management' : 'Quản lý tài khoản nhân viên'}
             </h1>
-            <p className="text-sm text-slate-300 mt-1.5 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-white/95 mt-1.5 max-w-2xl leading-relaxed font-medium drop-shadow-xs">
               {isEn
                 ? 'Manage coaches, front desk receptionists, and system managers with granular role assignments.'
                 : 'Quản lý đội ngũ Huấn luyện viên, Lễ tân và Quản trị viên đạt chuẩn Olympic SCMS với phân quyền chuyên nghiệp.'}
@@ -524,21 +539,22 @@ export function StaffManagement() {
             <button
               onClick={loadStaff}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10 transition-all hover-lift disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/40 transition-all hover-lift cursor-pointer disabled:opacity-50 shadow-xs"
+              title={isEn ? 'Refresh' : 'Làm mới'}
             >
-              <span className={`material-symbols-outlined text-[18px] ${loading ? 'animate-spin' : ''}`}>refresh</span>
+              <span className={`material-symbols-outlined text-[16px] text-amber-200 ${loading ? 'animate-spin' : ''}`}>refresh</span>
               <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
             </button>
             <button
               onClick={openCreateModal}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-[#2D6A4F]/30 transition-all hover-lift"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/95 hover:bg-white text-[#1B4332] text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover-lift cursor-pointer border border-white/80"
             >
-              <span className="material-symbols-outlined text-[18px]">person_add</span>
+              <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">person_add</span>
               <span>{isEn ? 'Add Staff' : 'Thêm nhân viên mới'}</span>
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* 2. Bento KPI Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -2160,7 +2160,7 @@ public sealed class PaymentService(
             .AnyAsync(m => m.Id == memberId && m.UserId == actorId, ct);
         if (!owner)
         {
-            if (actor.Role is not (RoleNames.Manager or RoleNames.Receptionist or RoleNames.SystemAdmin or "Admin"))
+            if (actor.Role is not (RoleNames.Manager or RoleNames.Receptionist or RoleNames.Admin))
                 throw BusinessException.Forbidden("Bạn không có quyền hủy hóa đơn này.");
             if (actor.Role is RoleNames.Manager or RoleNames.Receptionist &&
                 !await _unitOfWork.Context.StaffProfiles.AnyAsync(s => s.UserId == actorId

@@ -687,20 +687,35 @@ export function AuditLogs() {
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
-      {/* Top Banner Header */}
-      <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-emerald-700/30 relative overflow-hidden">
-        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-300/15 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-[#F2CC8F]/15 blur-2xl pointer-events-none" />
+      {/* Top Banner Header (Olympic Multi-stop Gradient matching Image 1) */}
+      <section
+        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-[#24828F]/25 border border-white/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/35 rounded-full blur-3xl" />
 
-        <div className="relative z-10 space-y-1">
-          <span className="font-chivo text-xs uppercase tracking-widest text-[#F2CC8F] font-bold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
-            {isEn ? 'SYSTEM AUDIT & SECURITY TRAIL' : 'NHẬT KÝ KIỂM TOÁN & BẢO MẬT HỆ THỐNG'}
-          </span>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black mt-1 text-white tracking-tight">
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
+
+        <div className="relative z-10 space-y-2 max-w-xl">
+          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs">
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+            <span>{isEn ? 'SYSTEM AUDIT & SECURITY TRAIL' : 'NHẬT KÝ KIỂM TOÁN & BẢO MẬT HỆ THỐNG'}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? 'System Audit Trails (Audit Logs)' : 'Nhật Ký Kiểm Toán Hệ Thống (Audit Logs)'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-medium drop-shadow-xs">
             {isEn
               ? 'Trace all critical activities: membership registrations, staff appointments, class openings, payments, and permission changes.'
               : 'Theo dõi truy vết toàn bộ hoạt động đăng ký, đăng nhập, giao dịch, mở lớp, phân công và kiểm tra tại quầy.'}
@@ -709,12 +724,12 @@ export function AuditLogs() {
 
         <button
           onClick={() => setRevision(x => x + 1)}
-          className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all border border-white/15 hover-lift flex items-center gap-2 backdrop-blur-sm cursor-pointer relative z-10"
+          className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/40 transition-all hover-lift cursor-pointer shadow-xs shrink-0 relative z-10"
         >
-          <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">refresh</span>
+          <span className="material-symbols-outlined text-[16px] text-amber-200">refresh</span>
           <span>{isEn ? 'Refresh Logs' : 'Làm Mới'}</span>
         </button>
-      </div>
+      </section>
 
       {/* Action Filters */}
       <div className="flex flex-wrap items-center gap-2 p-1.5 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-xs">

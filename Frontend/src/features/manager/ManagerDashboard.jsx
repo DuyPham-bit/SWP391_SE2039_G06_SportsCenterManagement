@@ -104,40 +104,109 @@ export function ManagerDashboard() {
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
-      {/* Top Banner Header */}
-      <div className="p-6 sm:p-7 rounded-2xl bg-gradient-to-r from-[#1B4332] via-[#2D6A4F] to-[#40916C] text-white shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5 border border-emerald-700/30 relative overflow-hidden">
-        {/* Ambient background glows */}
-        <div className="absolute -top-12 -right-12 w-48 h-48 rounded-full bg-emerald-300/15 blur-2xl pointer-events-none" />
-        <div className="absolute -bottom-12 -left-12 w-48 h-48 rounded-full bg-[#F2CC8F]/15 blur-2xl pointer-events-none" />
+      {/* Top Banner Header (Exact Image 1 Olympic Multi-stop Gradient with 3 Frosted KPI Cards) */}
+      <section
+        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-[#24828F]/25 border border-white/30 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/35 rounded-full blur-3xl" />
 
-        <div className="relative z-10 space-y-1">
-          <span className="font-chivo text-xs uppercase tracking-widest text-[#F2CC8F] font-bold flex items-center gap-2">
-            <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
-            {isEn ? 'SCMS EXECUTIVE OPERATIONS CENTER' : 'TRUNG TÂM ĐIỀU HÀNH SCMS OLYMPIC'}
-          </span>
-          <h1 className="font-chivo text-2xl md:text-3xl font-black mt-1 text-white tracking-tight">
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
+
+        {/* Left column: Badge, Title & Description */}
+        <div className="relative z-10 space-y-2 max-w-xl">
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>{isEn ? 'Olympic Operations Center' : 'Trung Tâm Điều Hành SCMS Olympic'}</span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setRevision(x => x + 1)}
+              disabled={loading}
+              className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/40 transition-all cursor-pointer disabled:opacity-50 shadow-xs hover-lift"
+              title={isEn ? 'Refresh dashboard metrics' : 'Làm mới chỉ số'}
+            >
+              <span className={`material-symbols-outlined text-[15px] text-amber-200 ${loading ? 'animate-spin' : ''}`}>
+                refresh
+              </span>
+              <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
+            </button>
+          </div>
+
+          <h1 className="text-2xl sm:text-3xl font-chivo font-black tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? 'Management Overview Dashboard' : 'Bảng Quản Trị Hệ Thống Tổng Quan'}
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-medium drop-shadow-xs">
             {isEn
               ? 'Real-time athletic center supervision: active members, revenue streams, coaching operations, and audit logs.'
               : 'Theo dõi thành viên, lớp học, tài chính và các hoạt động vận hành của trung tâm trong thời gian thực.'}
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5 relative z-10 shrink-0">
-          <button
-            className="px-4 py-2.5 bg-white/10 hover:bg-white/20 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all border border-white/15 hover-lift flex items-center gap-2 backdrop-blur-sm cursor-pointer disabled:opacity-50"
-            disabled={loading}
-            onClick={() => setRevision(x => x + 1)}
-          >
-            <span className={`material-symbols-outlined text-[18px] text-[#F2CC8F] ${loading ? 'animate-spin' : ''}`}>
-              refresh
+        {/* Right column: 3 Frosted KPI Cards matching Image 1 */}
+        <div className="w-full lg:w-auto grid grid-cols-3 gap-3 sm:gap-4 shrink-0 relative z-10">
+          {/* Card 1: Tổng Hội Viên */}
+          <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-xs hover:bg-white/25 transition-all">
+            <span className="text-[11px] font-bold text-white/85 uppercase tracking-wider block truncate">
+              {isEn ? 'Total Members' : 'Tổng hội viên'}
             </span>
-            <span>{isEn ? 'Refresh Metrics' : 'Làm mới'}</span>
-          </button>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-chivo font-black text-white">
+                {loading ? '...' : (metrics?.totalMembers ?? 0)}
+              </span>
+              <span className="text-xs text-amber-200 font-bold">{isEn ? 'members' : 'người'}</span>
+            </div>
+            <span className="mt-1 text-[10px] text-white font-bold flex items-center gap-1 truncate">
+              ● {metrics?.activeMembers || 0} {isEn ? 'active' : 'có gói'}
+            </span>
+          </div>
+
+          {/* Card 2: Lượt Check-in Hôm Nay */}
+          <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-xs hover:bg-white/25 transition-all">
+            <span className="text-[11px] font-bold text-white/85 uppercase tracking-wider block truncate">
+              {isEn ? 'Check-ins Today' : 'Lượt check-in'}
+            </span>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-chivo font-black text-white">
+                {loading ? '...' : (metrics?.todayCheckins ?? 0)}
+              </span>
+              <span className="text-xs text-white/80 font-bold">{isEn ? 'entries' : 'lượt'}</span>
+            </div>
+            <span className="mt-1 text-[10px] text-amber-200 font-bold flex items-center gap-1 truncate">
+              ↑ {isEn ? 'Turnstile gate' : 'Cổng tự động'}
+            </span>
+          </div>
+
+          {/* Card 3: Đăng Ký Ca Lớp */}
+          <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-xs hover:bg-white/25 transition-all">
+            <span className="text-[11px] font-bold text-white/85 uppercase tracking-wider block truncate">
+              {isEn ? 'Class Bookings' : 'Đăng ký lớp'}
+            </span>
+            <div className="mt-2 flex items-baseline gap-1.5">
+              <span className="text-2xl sm:text-3xl font-chivo font-black text-white">
+                {loading ? '...' : (metrics?.totalBookings ?? 0)}
+              </span>
+              <span className="text-xs text-amber-200 font-bold">{isEn ? 'slots' : 'ca'}</span>
+            </div>
+            <span className="mt-1 text-[10px] text-white font-bold flex items-center gap-1 truncate">
+              ● {isEn ? 'Scheduled' : 'Theo lịch học'}
+            </span>
+          </div>
         </div>
-      </div>
+      </section>
 
       {loading ? (
         <LoadingSpinner text={isEn ? 'Loading management overview...' : 'Đang tải tổng quan...'} />

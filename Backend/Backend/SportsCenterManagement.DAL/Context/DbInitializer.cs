@@ -23,7 +23,7 @@ public static class DbInitializer
         foreach (var roleName in new[]
                  {
                      RoleNames.Member, RoleNames.Coach, RoleNames.Manager,
-                     RoleNames.Receptionist, RoleNames.SystemAdmin, "Admin"
+                     RoleNames.Receptionist, RoleNames.Admin
                  })
         {
             if (await context.Roles.AnyAsync(role => role.Name == roleName))
@@ -37,8 +37,7 @@ public static class DbInitializer
                 Description = roleName switch
                 {
                     RoleNames.Member => "Khách hàng hội viên",
-                    RoleNames.SystemAdmin => "Quản trị viên toàn hệ thống",
-                    "Admin" => "Quản trị viên hệ thống",
+                    RoleNames.Admin => "Quản trị viên toàn hệ thống",
                     _ => "Nhân sự trung tâm"
                 },
                 CreatedAt = DateTime.UtcNow
@@ -147,8 +146,7 @@ public static class DbInitializer
                 ["Manager"] = managerCodes,
                 [RoleNames.Receptionist] = receptionistCodes,
                 ["Receptionist"] = receptionistCodes,
-                [RoleNames.SystemAdmin] = [PermissionCodes.RolePermissionManage, "ROLE_MANAGE"],
-                ["Admin"] = managerCodes.Concat(new[] { "ROLE_MANAGE" }).Distinct().ToArray()
+                [RoleNames.Admin] = [PermissionCodes.RolePermissionManage, "ROLE_MANAGE"]
             };
 
             foreach (var (roleName, codes) in grants)
@@ -173,29 +171,31 @@ public static class DbInitializer
             await context.SaveChangesAsync();
         }
 
-        var systemAdminRole = await context.Roles.FirstOrDefaultAsync(role => role.Name == RoleNames.SystemAdmin);
+        await ConsolidateLegacySystemAdminAsync(context);
+
+        var adminRole = await context.Roles.SingleAsync(role => role.Name == RoleNames.Admin);
         var permManage = await context.Permissions.FirstOrDefaultAsync(
             permission => permission.Code == PermissionCodes.RolePermissionManage);
-        if (systemAdminRole is not null && permManage is not null)
+        if (permManage is not null)
         {
             if (!await context.RolePermissions.AnyAsync(link =>
-                    link.RoleId == systemAdminRole.Id && link.PermissionId == permManage.Id))
+                    link.RoleId == adminRole.Id && link.PermissionId == permManage.Id))
             {
                 context.RolePermissions.Add(new RolePermission
                 {
-                    RoleId = systemAdminRole.Id,
+                    RoleId = adminRole.Id,
                     PermissionId = permManage.Id
                 });
                 await context.SaveChangesAsync();
             }
 
-            // Legacy seed data granted this permission to Admin/custom roles; the current policy reserves it for SystemAdmin.
-            var nonSystemAdminRoleIds = await context.Roles
-                .Where(role => role.Id != systemAdminRole.Id)
+            // Role-management belongs to the single Admin role only. This also removes grants left by legacy seeds.
+            var nonAdminRoleIds = await context.Roles
+                .Where(role => role.Id != adminRole.Id)
                 .Select(role => role.Id)
                 .ToListAsync();
             var invalidGrants = await context.RolePermissions
-                .Where(link => nonSystemAdminRoleIds.Contains(link.RoleId) && link.PermissionId == permManage.Id)
+                .Where(link => nonAdminRoleIds.Contains(link.RoleId) && link.PermissionId == permManage.Id)
                 .ToListAsync();
             if (invalidGrants.Count > 0)
             {
@@ -204,6 +204,64 @@ public static class DbInitializer
             }
         }
 
+    }
+
+    /// <summary>
+    /// Upgrades installations that still have the legacy SystemAdmin role. The upgrade is intentionally
+    /// fail-closed: an ambiguous installation with more than one privileged account must be resolved by
+    /// an operator instead of silently choosing an Admin account.
+    /// </summary>
+    private static async Task ConsolidateLegacySystemAdminAsync(SportsCenterDbContext context)
+    {
+        const string legacyRoleName = "SystemAdmin";
+        var adminRole = await context.Roles.SingleAsync(role => role.Name == RoleNames.Admin);
+        var legacyRole = await context.Roles.SingleOrDefaultAsync(role => role.Name == legacyRoleName);
+        if (legacyRole is null)
+        {
+            return;
+        }
+
+        await using var transaction = await context.Database.BeginTransactionAsync();
+        var privilegedUserIds = await context.Users
+            .Where(user => user.RoleId == adminRole.Id || user.RoleId == legacyRole.Id)
+            .Select(user => user.Id)
+            .ToArrayAsync();
+        if (privilegedUserIds.Length > 1)
+        {
+            throw new InvalidOperationException(
+                "Phát hiện nhiều tài khoản Admin/SystemAdmin cũ. Hãy giữ lại đúng một tài khoản trước khi khởi động lại hệ thống.");
+        }
+
+        if (privilegedUserIds.Length == 1)
+        {
+            var legacyUsers = await context.Users.Where(user => user.RoleId == legacyRole.Id).ToListAsync();
+            foreach (var user in legacyUsers)
+            {
+                user.RoleId = adminRole.Id;
+                user.AuthVersion++;
+                user.UpdatedAt = DateTime.UtcNow;
+            }
+        }
+
+        var legacyPermissions = await context.RolePermissions
+            .Where(link => link.RoleId == legacyRole.Id)
+            .ToListAsync();
+        var adminPermissionIds = await context.RolePermissions
+            .Where(link => link.RoleId == adminRole.Id)
+            .Select(link => link.PermissionId)
+            .ToListAsync();
+        foreach (var legacyPermission in legacyPermissions.Where(link => !adminPermissionIds.Contains(link.PermissionId)))
+        {
+            context.RolePermissions.Add(new RolePermission
+            {
+                RoleId = adminRole.Id,
+                PermissionId = legacyPermission.PermissionId
+            });
+        }
+        context.RolePermissions.RemoveRange(legacyPermissions);
+        context.Roles.Remove(legacyRole);
+        await context.SaveChangesAsync();
+        await transaction.CommitAsync();
     }
 
     private static async Task EnsureAuthAndReceptionPermissionsAsync(SportsCenterDbContext context)

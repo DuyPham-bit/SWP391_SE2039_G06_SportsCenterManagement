@@ -17,13 +17,9 @@ export function RoleGuard({ allowedRoles = [], requiredCapability, children }) {
   const normalizedRole = String(role || '').toUpperCase();
   const normalizedAllowed = allowedRoles.map(r => String(r).toUpperCase());
 
-  // 1. Manager and Admin/SystemAdmin have superuser access
-  const isSuperUser = normalizedRole === 'MANAGER' || normalizedRole === 'ADMIN' || normalizedRole === 'SYSTEMADMIN';
-  // 2. Direct role match
-  // 3. User's role has the specific capability granted via Roles & Permissions matrix
   const isRoleAllowed = normalizedAllowed.includes(normalizedRole);
-  const hasCap = requiredCapability ? hasCapability(normalizedRole, requiredCapability) : false;
-  const isAllowed = isSuperUser || (isRoleAllowed && (!requiredCapability || hasCap));
+  const hasCap = requiredCapability ? hasCapability(normalizedRole, requiredCapability) : true;
+  const isAllowed = isRoleAllowed && hasCap;
 
   if (!isAllowed) {
     const capInfo = requiredCapability ? getCapabilityById(requiredCapability) : null;
@@ -71,8 +67,7 @@ export function RoleGuard({ allowedRoles = [], requiredCapability, children }) {
         <button
           onClick={() => {
             switch (normalizedRole) {
-              case 'SYSTEMADMIN':
-              case 'ADMIN':
+              case 'ADMIN': window.location.hash = '#/admin/dashboard'; break;
               case 'MANAGER': window.location.hash = '#/manager/dashboard'; break;
               case 'RECEPTIONIST': window.location.hash = '#/receptionist/dashboard'; break;
               case 'COACH': window.location.hash = '#/coach/dashboard'; break;

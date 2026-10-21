@@ -186,21 +186,26 @@ export function HomeContentManagement() {
 
   return (
     <fieldset disabled={isSaving} aria-busy={isSaving} className="space-y-6 pb-20 font-inter min-w-0 animate-fade-slide-up">
-      {/* 1. TOP HEADER BANNER (Midnight Navy gradient with Olympic Accents) */}
-      <div className="bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] text-white rounded-2xl p-6 sm:p-8 border border-white/10 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-[#2D6A4F]/20 to-transparent pointer-events-none" />
-        <div className="absolute -left-12 -bottom-12 w-48 h-48 bg-[#F2CC8F]/5 rounded-full blur-2xl pointer-events-none" />
+      {/* 1. TOP HEADER BANNER (Olympic Logo Gradient) */}
+      <div
+        className="text-white rounded-3xl p-6 sm:p-8 border border-white/30 shadow-xl shadow-[#24828F]/25 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/40 via-[#E5A33C]/25 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/25 to-transparent blur-3xl" />
 
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#2D6A4F]/20 border border-[#2D6A4F]/40 text-[#81B29A] text-[11px] font-black uppercase tracking-wider mb-2">
-              <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white text-[11px] font-black uppercase tracking-wider mb-2 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               <span>DYNAMIC CONTENT MANAGEMENT &amp; CLOUD STORAGE</span>
             </div>
-            <h1 className="font-chivo text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
+            <h1 className="font-chivo text-2xl sm:text-3xl font-black text-white uppercase tracking-tight drop-shadow-sm">
               {isEn ? 'Homepage Content & Media Management' : 'Quản Lý Nội Dung Trang Chủ & Đa Phương Tiện'}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
+            <p className="text-xs sm:text-sm text-white/95 mt-1 max-w-2xl leading-relaxed font-medium">
               {isEn
                 ? 'Customize public landing page content: edit headlines, upload cloud media, and toggle visibility of sports and court facilities.'
                 : 'Tùy biến toàn bộ nội dung hiển thị ở Landing Page: chỉnh sửa văn bản, cập nhật ảnh đám mây, chủ động ẩn hoặc hiển thị các thẻ môn học và cụm sân thi đấu.'}
