@@ -58,13 +58,10 @@ export function HomeContentManagement() {
   const [isDirty, setIsDirty] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
-  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
-  const [lastSavedTime, setLastSavedTime] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const savedContentRef = useRef(null);
   const latestContentRef = useRef(content);
-  const autoSaveTimerRef = useRef(null);
   const [discardKey, setDiscardKey] = useState(0);
 
   useEffect(() => {
@@ -102,8 +99,8 @@ export function HomeContentManagement() {
         setIsDirty(true);
         addToast(
           isEn
-            ? 'Restored your unsaved draft across reload. Click "Save All Changes" to publish to server.'
-            : 'Đã tự động giữ lại số liệu bạn vừa chỉnh sửa (Bản nháp F5). Bấm "Lưu Toàn Bộ Thay Đổi" để công bố lên hệ thống.',
+            ? 'Restored your unsaved draft. Click "Save All Changes" to publish to server.'
+            : 'Đã giữ lại số liệu bạn đang chỉnh sửa (Bản nháp). Bấm "Lưu Toàn Bộ Thay Đổi" để công bố lên máy chủ.',
           'info'
         );
       } else {
@@ -137,7 +134,7 @@ export function HomeContentManagement() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  // Đánh dấu có thay đổi và lưu bản nháp ngay vào localStorage (không bị mất khi F5)
+  // Đánh dấu có thay đổi và lưu bản nháp vào localStorage
   const updateContentField = (section, key, value) => {
     setContent(prev => {
       const updated = {
@@ -151,7 +148,6 @@ export function HomeContentManagement() {
       return updated;
     });
     setIsDirty(true);
-    setAutoSaveStatus('dirty');
   };
 
   // Cập nhật danh sách thẻ trong bản nháp
@@ -165,7 +161,6 @@ export function HomeContentManagement() {
       return updated;
     });
     setIsDirty(true);
-    setAutoSaveStatus('dirty');
   };
 
   const deleteFacilityCard = (record, items, fallbackSports) => {
@@ -186,14 +181,12 @@ export function HomeContentManagement() {
       return updated;
     });
     setIsDirty(true);
-    setAutoSaveStatus('dirty');
   };
 
-  // Lưu toàn bộ nội dung (hỗ trợ silent mode khi tự động đồng bộ)
-  const handleSaveAll = async (silent = false) => {
+  // Lưu toàn bộ nội dung thủ công khi người dùng bấm nút Lưu
+  const handleSaveAll = async () => {
     if (isSaving) return;
     setIsSaving(true);
-    setAutoSaveStatus('saving');
     try {
       const target = latestContentRef.current || content;
       const saved = await saveLandingContent(target);
@@ -201,47 +194,24 @@ export function HomeContentManagement() {
       setContent(saved);
       clearDraft();
       setIsDirty(false);
-      setAutoSaveStatus('saved');
-      const now = new Date();
-      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
-      setLastSavedTime(timeStr);
-      if (!silent) {
-        addToast(
-          isEn
-            ? 'Homepage content saved and synchronized successfully!'
-            : 'Đã lưu và đồng bộ toàn bộ nội dung thành công!',
-          'success'
-        );
-      }
+      addToast(
+        isEn
+          ? 'Homepage content saved and published successfully!'
+          : 'Đã lưu và công bố toàn bộ nội dung thành công!',
+        'success'
+      );
     } catch (error) {
-      setAutoSaveStatus('error');
-      if (!silent) {
-        addToast(error.message || (isEn ? 'Error saving content. Please try again.' : 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.'), 'error');
-      }
+      addToast(error.message || (isEn ? 'Error saving content. Please try again.' : 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.'), 'error');
     } finally {
       setIsSaving(false);
     }
   };
 
-  // Tự động lưu lên máy chủ sau 1.2s kể từ khi người dùng ngừng gõ (debounced auto-save)
-  useEffect(() => {
-    if (!isDirty) return;
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    autoSaveTimerRef.current = setTimeout(() => {
-      handleSaveAll(true);
-    }, 1200);
-    return () => {
-      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
-    };
-  }, [isDirty, content]);
-
   const handleDiscardChanges = () => {
     if (isSaving || !isDirty || !savedContentRef.current) return;
-    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     setContent(cloneContent(savedContentRef.current));
     clearDraft();
     setIsDirty(false);
-    setAutoSaveStatus('idle');
     setDiscardKey(previous => previous + 1);
     setMediaPickerConfig(previous => ({ ...previous, isOpen: false, callback: null, onClose: undefined }));
     addToast(
@@ -265,21 +235,11 @@ export function HomeContentManagement() {
   const renderTabSaveFooter = () => (
     <div className="border-t border-slate-100 dark:border-slate-800 pt-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-xl">
       <div className="flex items-center gap-2 text-xs">
-        <span className={`w-2.5 h-2.5 rounded-full ${
-          autoSaveStatus === 'saving'
-            ? 'bg-blue-400 animate-spin'
-            : isDirty
-            ? 'bg-amber-400 animate-pulse'
-            : 'bg-emerald-500'
-        }`} />
+        <span className={`w-2.5 h-2.5 rounded-full ${isDirty ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
         <span className="font-semibold text-slate-600 dark:text-slate-300">
-          {autoSaveStatus === 'saving'
-            ? (isEn ? 'Auto-saving changes to server...' : 'Đang tự động lưu số liệu lên máy chủ...')
-            : isDirty
-            ? (isEn ? 'Edits detected (auto-saving in 1s)...' : 'Có số liệu mới sửa (hệ thống sẽ tự lưu sau 1s)...')
-            : lastSavedTime
-            ? (isEn ? `All changes auto-saved to server at ${lastSavedTime}.` : `Đã tự động lưu lên máy chủ lúc ${lastSavedTime}.`)
-            : (isEn ? 'All changes synchronized with server.' : 'Toàn bộ số liệu đã đồng bộ với máy chủ.')}
+          {isDirty
+            ? (isEn ? 'Unsaved changes. Click "Save All Changes" to apply.' : 'Có thay đổi chưa lưu. Hãy bấm "Lưu Toàn Bộ Thay Đổi" để áp dụng.')
+            : (isEn ? 'All changes synchronized with server.' : 'Toàn bộ số liệu đã được lưu và đồng bộ với máy chủ.')}
         </span>
       </div>
       <div className="flex items-center gap-2">
@@ -293,19 +253,17 @@ export function HomeContentManagement() {
         </button>
         <button
           type="button"
-          onClick={() => handleSaveAll(false)}
-          disabled={isSaving}
-          className="px-5 py-2 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-md shadow-[#2D6A4F]/25 transition-all flex items-center gap-1.5 cursor-pointer hover-lift"
+          onClick={handleSaveAll}
+          disabled={!isDirty || isSaving}
+          className="px-5 py-2 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-md shadow-[#2D6A4F]/25 transition-all flex items-center gap-1.5 cursor-pointer hover-lift disabled:opacity-40 disabled:cursor-not-allowed"
         >
           <span className="material-symbols-outlined text-[16px]">
-            {isSaving ? 'sync' : !isDirty && autoSaveStatus === 'saved' ? 'check_circle' : 'save'}
+            {isSaving ? 'sync' : 'save'}
           </span>
           <span>
             {isSaving
               ? (isEn ? 'Saving...' : 'Đang lưu...')
-              : !isDirty && autoSaveStatus === 'saved'
-              ? (isEn ? 'All Saved' : 'Đã Lưu Tất Cả')
-              : (isEn ? 'Save Now' : 'Lưu Thay Đổi Ngay')}
+              : (isEn ? 'Save All Changes' : 'Lưu Toàn Bộ Thay Đổi')}
           </span>
         </button>
       </div>
@@ -379,7 +337,7 @@ export function HomeContentManagement() {
                 : 'Tùy biến toàn bộ nội dung hiển thị ở Landing Page: chỉnh sửa văn bản, cập nhật ảnh đám mây, chủ động ẩn hoặc hiển thị các thẻ môn học và cụm sân thi đấu.'}
             </p>
 
-            {/* Metrics Chips & Auto-Save Status */}
+            {/* Metrics Chips */}
             <div className="flex flex-wrap items-center gap-3 mt-4 text-xs font-semibold">
               <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px] text-[#81B29A]">sports_score</span>
@@ -394,24 +352,10 @@ export function HomeContentManagement() {
                 </span>
               </div>
 
-              {autoSaveStatus === 'saving' && (
-                <div className="px-3 py-1.5 rounded-xl bg-blue-500/25 border border-blue-400/50 text-blue-200 flex items-center gap-1.5 animate-pulse">
-                  <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
-                  <span>{isEn ? 'Auto-saving to server...' : 'Đang tự động lưu lên máy chủ...'}</span>
-                </div>
-              )}
-
-              {autoSaveStatus === 'saved' && !isDirty && (
-                <div className="px-3 py-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px] text-emerald-300">check_circle</span>
-                  <span>{isEn ? `Auto-saved to server (${lastSavedTime})` : `Đã tự động lưu (${lastSavedTime})`}</span>
-                </div>
-              )}
-
-              {isDirty && autoSaveStatus !== 'saving' && (
+              {isDirty && (
                 <div className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 animate-pulse">
                   <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                  <span>{isEn ? 'Edits detected (auto-saving in 1s)...' : 'Có số liệu mới sửa (sẽ tự lưu sau 1s)...'}</span>
+                  <span>{isEn ? 'Unsaved changes' : 'Có thay đổi chưa lưu (Bấm Lưu để áp dụng)'}</span>
                 </div>
               )}
             </div>
@@ -442,18 +386,20 @@ export function HomeContentManagement() {
 
             <button
               type="button"
-              onClick={() => handleSaveAll(false)}
-              disabled={isSaving}
-              className="px-6 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-[#2D6A4F]/30 transition-all flex items-center gap-2 cursor-pointer hover-lift"
+              onClick={handleSaveAll}
+              disabled={isSaving || !isDirty}
+              className={`px-6 py-2.5 rounded-xl text-white text-xs font-black uppercase tracking-wider shadow-lg transition-all flex items-center gap-2 cursor-pointer hover-lift ${
+                isDirty
+                  ? 'bg-[#2D6A4F] hover:bg-[#1B4332] shadow-[#2D6A4F]/30 ring-2 ring-emerald-400/50'
+                  : 'bg-white/10 text-white/50 border border-white/15 cursor-not-allowed opacity-60 shadow-none'
+              }`}
             >
               <span className="material-symbols-outlined text-[18px]">
-                {isSaving ? 'sync' : !isDirty && autoSaveStatus === 'saved' ? 'check_circle' : 'save'}
+                {isSaving ? 'sync' : 'save'}
               </span>
               <span>
                 {isSaving
                   ? (isEn ? 'Saving...' : 'Đang lưu...')
-                  : !isDirty && autoSaveStatus === 'saved'
-                  ? (isEn ? 'All Saved' : 'Đã Lưu Toàn Bộ')
                   : (isEn ? 'Save All Changes' : 'Lưu Toàn Bộ Thay Đổi')}
               </span>
             </button>
@@ -813,7 +759,6 @@ export function HomeContentManagement() {
                       <input
                         type="number"
                         value={st.number}
-                        onBlur={() => { if (isDirty) handleSaveAll(true); }}
                         onChange={(e) => {
                           const updated = [...content.whyUs.stats];
                           updated[idx] = { ...updated[idx], number: Number(e.target.value) };
@@ -825,7 +770,6 @@ export function HomeContentManagement() {
                         type="text"
                         value={st.suffix || ''}
                         placeholder={isEn ? 'Suffix' : 'Hậu tố'}
-                        onBlur={() => { if (isDirty) handleSaveAll(true); }}
                         onChange={(e) => {
                           const updated = [...content.whyUs.stats];
                           updated[idx] = { ...updated[idx], suffix: e.target.value };
@@ -837,7 +781,6 @@ export function HomeContentManagement() {
                     <input
                       type="text"
                       value={st.title}
-                      onBlur={() => { if (isDirty) handleSaveAll(true); }}
                       onChange={(e) => {
                         const updated = [...content.whyUs.stats];
                         updated[idx] = { ...updated[idx], title: e.target.value };
@@ -848,7 +791,6 @@ export function HomeContentManagement() {
                     <input
                       type="text"
                       value={st.subtitle}
-                      onBlur={() => { if (isDirty) handleSaveAll(true); }}
                       onChange={(e) => {
                         const updated = [...content.whyUs.stats];
                         updated[idx] = { ...updated[idx], subtitle: e.target.value };
@@ -1525,7 +1467,6 @@ export function HomeContentManagement() {
                     return updated;
                   });
                   setIsDirty(true);
-                  setAutoSaveStatus('dirty');
                   addToast(
                     isEn
                       ? 'Synchronized 3 stats from "Why Choose SCMS" (Tab 2)!'
@@ -1551,7 +1492,6 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat1Value || ''}
-                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat1Value', e.target.value)}
                     placeholder="10"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
@@ -1564,7 +1504,6 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat1Label || ''}
-                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat1Label', e.target.value)}
                     placeholder="Bộ môn thi đấu"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
@@ -1582,7 +1521,6 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat2Value || ''}
-                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat2Value', e.target.value)}
                     placeholder="10"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
@@ -1595,7 +1533,6 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat2Label || ''}
-                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat2Label', e.target.value)}
                     placeholder="Khu tập luyện"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
@@ -1613,7 +1550,6 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat3Value || ''}
-                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat3Value', e.target.value)}
                     placeholder="2.5K+"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
@@ -1626,7 +1562,6 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat3Label || ''}
-                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat3Label', e.target.value)}
                     placeholder="Hội viên active"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
