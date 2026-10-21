@@ -31,14 +31,45 @@ export function HomeContentManagement() {
   const isEn = language === 'en';
   const { showToast: addToast } = useToast();
   const [content, setContent] = useState(() => getLandingContent());
-  const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'whyUs' | 'sports' | 'facilities' | 'zones' | 'footer' | 'authShowcase'
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const hash = window.location.hash || '';
+      const query = hash.includes('?') ? hash.split('?')[1] : '';
+      const tabFromQuery = new URLSearchParams(query).get('tab');
+      if (tabFromQuery) return tabFromQuery;
+      const tabFromSession = sessionStorage.getItem('SCMS_MANAGER_ACTIVE_TAB');
+      if (tabFromSession) return tabFromSession;
+    } catch { /* ignore */ }
+    return 'hero';
+  });
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    try {
+      sessionStorage.setItem('SCMS_MANAGER_ACTIVE_TAB', tabId);
+      const hash = window.location.hash || '';
+      const [path, queryString] = hash.split('?');
+      const params = new URLSearchParams(queryString || '');
+      params.set('tab', tabId);
+      window.history.replaceState(null, '', `${path}?${params.toString()}`);
+    } catch { /* ignore */ }
+  };
+
   const [isDirty, setIsDirty] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
+  const [lastSavedTime, setLastSavedTime] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
   const savedContentRef = useRef(null);
+  const latestContentRef = useRef(content);
+  const autoSaveTimerRef = useRef(null);
   const [discardKey, setDiscardKey] = useState(0);
+
+  useEffect(() => {
+    latestContentRef.current = content;
+  }, [content]);
 
   // States cho Modal chọn ảnh đám mây
   const [mediaPickerConfig, setMediaPickerConfig] = useState({
@@ -120,6 +151,7 @@ export function HomeContentManagement() {
       return updated;
     });
     setIsDirty(true);
+    setAutoSaveStatus('dirty');
   };
 
   // Cập nhật danh sách thẻ trong bản nháp
@@ -133,6 +165,7 @@ export function HomeContentManagement() {
       return updated;
     });
     setIsDirty(true);
+    setAutoSaveStatus('dirty');
   };
 
   const deleteFacilityCard = (record, items, fallbackSports) => {
@@ -153,34 +186,62 @@ export function HomeContentManagement() {
       return updated;
     });
     setIsDirty(true);
+    setAutoSaveStatus('dirty');
   };
 
-  // Lưu toàn bộ nội dung
-  const handleSaveAll = async () => {
+  // Lưu toàn bộ nội dung (hỗ trợ silent mode khi tự động đồng bộ)
+  const handleSaveAll = async (silent = false) => {
     if (isSaving) return;
     setIsSaving(true);
+    setAutoSaveStatus('saving');
     try {
-      const saved = await saveLandingContent(content);
+      const target = latestContentRef.current || content;
+      const saved = await saveLandingContent(target);
       savedContentRef.current = cloneContent(saved);
       setContent(saved);
       clearDraft();
       setIsDirty(false);
-      addToast(
-        isEn
-          ? 'Homepage content saved and synchronized successfully!'
-          : 'Đã lưu và đồng bộ toàn bộ nội dung Trang chủ thành công!',
-        'success'
-      );
+      setAutoSaveStatus('saved');
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      setLastSavedTime(timeStr);
+      if (!silent) {
+        addToast(
+          isEn
+            ? 'Homepage content saved and synchronized successfully!'
+            : 'Đã lưu và đồng bộ toàn bộ nội dung thành công!',
+          'success'
+        );
+      }
     } catch (error) {
-      addToast(error.message || (isEn ? 'Error saving content. Please try again.' : 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.'), 'error');
-    } finally { setIsSaving(false); }
+      setAutoSaveStatus('error');
+      if (!silent) {
+        addToast(error.message || (isEn ? 'Error saving content. Please try again.' : 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.'), 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
+
+  // Tự động lưu lên máy chủ sau 1.2s kể từ khi người dùng ngừng gõ (debounced auto-save)
+  useEffect(() => {
+    if (!isDirty) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSaveAll(true);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [isDirty, content]);
 
   const handleDiscardChanges = () => {
     if (isSaving || !isDirty || !savedContentRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
     setContent(cloneContent(savedContentRef.current));
     clearDraft();
     setIsDirty(false);
+    setAutoSaveStatus('idle');
     setDiscardKey(previous => previous + 1);
     setMediaPickerConfig(previous => ({ ...previous, isOpen: false, callback: null, onClose: undefined }));
     addToast(
@@ -204,10 +265,20 @@ export function HomeContentManagement() {
   const renderTabSaveFooter = () => (
     <div className="border-t border-slate-100 dark:border-slate-800 pt-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-xl">
       <div className="flex items-center gap-2 text-xs">
-        <span className={`w-2.5 h-2.5 rounded-full ${isDirty ? 'bg-amber-400 animate-pulse' : 'bg-emerald-500'}`} />
+        <span className={`w-2.5 h-2.5 rounded-full ${
+          autoSaveStatus === 'saving'
+            ? 'bg-blue-400 animate-spin'
+            : isDirty
+            ? 'bg-amber-400 animate-pulse'
+            : 'bg-emerald-500'
+        }`} />
         <span className="font-semibold text-slate-600 dark:text-slate-300">
-          {isDirty
-            ? (isEn ? 'Draft modified locally. Save to apply.' : 'Số liệu đã thay đổi trong bản nháp F5. Bấm lưu để áp dụng chính thức.')
+          {autoSaveStatus === 'saving'
+            ? (isEn ? 'Auto-saving changes to server...' : 'Đang tự động lưu số liệu lên máy chủ...')
+            : isDirty
+            ? (isEn ? 'Edits detected (auto-saving in 1s)...' : 'Có số liệu mới sửa (hệ thống sẽ tự lưu sau 1s)...')
+            : lastSavedTime
+            ? (isEn ? `All changes auto-saved to server at ${lastSavedTime}.` : `Đã tự động lưu lên máy chủ lúc ${lastSavedTime}.`)
             : (isEn ? 'All changes synchronized with server.' : 'Toàn bộ số liệu đã đồng bộ với máy chủ.')}
         </span>
       </div>
@@ -222,12 +293,20 @@ export function HomeContentManagement() {
         </button>
         <button
           type="button"
-          onClick={handleSaveAll}
+          onClick={() => handleSaveAll(false)}
           disabled={isSaving}
           className="px-5 py-2 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-md shadow-[#2D6A4F]/25 transition-all flex items-center gap-1.5 cursor-pointer hover-lift"
         >
-          <span className="material-symbols-outlined text-[16px]">save</span>
-          <span>{isSaving ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save All Changes' : 'Lưu Thay Đổi Ngay')}</span>
+          <span className="material-symbols-outlined text-[16px]">
+            {isSaving ? 'sync' : !isDirty && autoSaveStatus === 'saved' ? 'check_circle' : 'save'}
+          </span>
+          <span>
+            {isSaving
+              ? (isEn ? 'Saving...' : 'Đang lưu...')
+              : !isDirty && autoSaveStatus === 'saved'
+              ? (isEn ? 'All Saved' : 'Đã Lưu Tất Cả')
+              : (isEn ? 'Save Now' : 'Lưu Thay Đổi Ngay')}
+          </span>
         </button>
       </div>
     </div>
@@ -300,7 +379,7 @@ export function HomeContentManagement() {
                 : 'Tùy biến toàn bộ nội dung hiển thị ở Landing Page: chỉnh sửa văn bản, cập nhật ảnh đám mây, chủ động ẩn hoặc hiển thị các thẻ môn học và cụm sân thi đấu.'}
             </p>
 
-            {/* Metrics Chips */}
+            {/* Metrics Chips & Auto-Save Status */}
             <div className="flex flex-wrap items-center gap-3 mt-4 text-xs font-semibold">
               <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center gap-2">
                 <span className="material-symbols-outlined text-[16px] text-[#81B29A]">sports_score</span>
@@ -314,10 +393,25 @@ export function HomeContentManagement() {
                   {isEn ? 'Facilities:' : 'Cụm sân bãi:'} <strong>{visibleFacilities}/{totalFacilities}</strong> {isEn ? 'visible' : 'đang hiển thị'}
                 </span>
               </div>
-              {isDirty && (
+
+              {autoSaveStatus === 'saving' && (
+                <div className="px-3 py-1.5 rounded-xl bg-blue-500/25 border border-blue-400/50 text-blue-200 flex items-center gap-1.5 animate-pulse">
+                  <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                  <span>{isEn ? 'Auto-saving to server...' : 'Đang tự động lưu lên máy chủ...'}</span>
+                </div>
+              )}
+
+              {autoSaveStatus === 'saved' && !isDirty && (
+                <div className="px-3 py-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-emerald-300">check_circle</span>
+                  <span>{isEn ? `Auto-saved to server (${lastSavedTime})` : `Đã tự động lưu (${lastSavedTime})`}</span>
+                </div>
+              )}
+
+              {isDirty && autoSaveStatus !== 'saving' && (
                 <div className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 animate-pulse">
                   <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                  <span>{isEn ? 'Unsaved changes' : 'Có thay đổi chưa lưu'}</span>
+                  <span>{isEn ? 'Edits detected (auto-saving in 1s)...' : 'Có số liệu mới sửa (sẽ tự lưu sau 1s)...'}</span>
                 </div>
               )}
             </div>
@@ -348,40 +442,69 @@ export function HomeContentManagement() {
 
             <button
               type="button"
-              onClick={handleSaveAll}
+              onClick={() => handleSaveAll(false)}
+              disabled={isSaving}
               className="px-6 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-[#2D6A4F]/30 transition-all flex items-center gap-2 cursor-pointer hover-lift"
             >
-              <span className="material-symbols-outlined text-[18px]">save</span>
-              <span>{isSaving ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save All Changes' : 'Lưu Toàn Bộ Thay Đổi')}</span>
+              <span className="material-symbols-outlined text-[18px]">
+                {isSaving ? 'sync' : !isDirty && autoSaveStatus === 'saved' ? 'check_circle' : 'save'}
+              </span>
+              <span>
+                {isSaving
+                  ? (isEn ? 'Saving...' : 'Đang lưu...')
+                  : !isDirty && autoSaveStatus === 'saved'
+                  ? (isEn ? 'All Saved' : 'Đã Lưu Toàn Bộ')
+                  : (isEn ? 'Save All Changes' : 'Lưu Toàn Bộ Thay Đổi')}
+              </span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 2. TAB NAVIGATION (7 Scientific Editorial Sections) */}
-      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-2 flex items-center gap-1.5 overflow-x-auto">
+      {/* 2. TAB NAVIGATION (7 Sections - All 7 tabs fully visible in responsive grid) */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-2.5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-2">
         {[
           { id: 'hero', label: isEn ? '1. Hero Banner' : '1. Hero Banner', icon: 'crop_original', desc: isEn ? 'Main Banner & Media' : 'Banner chính & Video' },
-          { id: 'whyUs', label: isEn ? '2. Why SCMS' : '2. Tại Sao Chọn SCMS', icon: 'verified', desc: isEn ? '3 Advantages & 4 Stats' : '3 Ưu thế & 4 Số liệu' },
-          { id: 'sports', label: isEn ? '3. Sports Catalog' : '3. Thẻ Môn Thể Thao', icon: 'sports_kabaddi', desc: `${totalSports} ${isEn ? 'Sports' : 'Bộ môn'}` },
-          { id: 'facilities', label: isEn ? '4. Court Facilities' : '4. Thẻ Cụm Sân', icon: 'stadium', desc: `${totalFacilities} ${isEn ? 'Facilities' : 'Khu liên hợp'}` },
-          { id: 'zones', label: isEn ? '5. Zones Layout' : '5. Sơ Đồ Phân Khu', icon: 'apartment', desc: isEn ? 'Zones A-B-C Layout' : 'Bố trí khu A-B-C' },
-          { id: 'footer', label: isEn ? '6. Call-to-Action & Footer' : '6. Banner Kêu Gọi & Footer', icon: 'contact_support', desc: isEn ? 'Events & Contacts' : 'Sự kiện & Liên hệ' },
-          { id: 'authShowcase', label: isEn ? '7. Auth Showcase' : '7. Banner Đăng Nhập & Đăng Ký', icon: 'badge', desc: isEn ? 'Login/Register Banner' : 'Cột giới thiệu đăng nhập' }
+          { id: 'whyUs', label: isEn ? '2. Why SCMS' : '2. Tại Sao Chọn SCMS', icon: 'verified', desc: isEn ? '3 Merits & 4 Stats' : '3 Ưu thế & 4 Số liệu' },
+          { id: 'sports', label: isEn ? '3. Sports' : '3. Môn Thể Thao', icon: 'sports_kabaddi', desc: `${totalSports} ${isEn ? 'Sports' : 'Bộ môn'}` },
+          { id: 'facilities', label: isEn ? '4. Facilities' : '4. Thẻ Cụm Sân', icon: 'stadium', desc: `${totalFacilities} ${isEn ? 'Facilities' : 'Khu liên hợp'}` },
+          { id: 'zones', label: isEn ? '5. Zones' : '5. Sơ Đồ Phân Khu', icon: 'apartment', desc: isEn ? 'Zones A-B-C' : 'Bố trí khu A-B-C' },
+          { id: 'footer', label: isEn ? '6. CTA & Footer' : '6. Kêu Gọi & Footer', icon: 'contact_support', desc: isEn ? 'Events & Info' : 'Sự kiện & Liên hệ' },
+          {
+            id: 'authShowcase',
+            label: isEn ? '7. Auth Showcase' : '7. Banner Đăng Nhập',
+            icon: 'badge',
+            desc: isEn ? 'Login Page (3 Stats)' : 'Trang Đăng Nhập (3 số liệu)',
+            badge: isEn ? 'Login Stats' : '3 Số liệu Login'
+          }
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2.5 px-4 py-3 rounded-xl text-xs font-bold uppercase transition-all whitespace-nowrap cursor-pointer hover-lift ${
+            type="button"
+            onClick={() => handleTabChange(tab.id)}
+            className={`flex flex-col items-start justify-between p-3 rounded-xl text-xs font-bold transition-all cursor-pointer relative hover-lift text-left ${
               activeTab === tab.id
-                ? 'bg-[#2D6A4F] text-white shadow-md shadow-[#2D6A4F]/25'
-                : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800'
+                ? 'bg-[#2D6A4F] text-white shadow-md shadow-[#2D6A4F]/25 ring-2 ring-[#2D6A4F]/30'
+                : 'text-slate-700 dark:text-slate-200 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60'
             }`}
           >
-            <span className="material-symbols-outlined text-[19px] shrink-0">{tab.icon}</span>
-            <div className="flex flex-col text-left">
-              <span>{tab.label}</span>
-              <span className={`text-[10px] font-medium ${activeTab === tab.id ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'}`}>
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className={`material-symbols-outlined text-[20px] ${activeTab === tab.id ? 'text-white' : 'text-[#2D6A4F] dark:text-[#81B29A]'}`}>
+                {tab.icon}
+              </span>
+              {tab.badge && (
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase ${
+                  activeTab === tab.id
+                    ? 'bg-white/25 text-white'
+                    : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                }`}>
+                  {tab.badge}
+                </span>
+              )}
+            </div>
+            <div className="w-full">
+              <span className="block truncate font-black tracking-tight">{tab.label}</span>
+              <span className={`block text-[10px] font-medium truncate mt-0.5 ${activeTab === tab.id ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'}`}>
                 {tab.desc}
               </span>
             </div>
@@ -649,8 +772,33 @@ export function HomeContentManagement() {
 
             {/* 4 Stat Cards */}
             <div className="space-y-4">
+              {/* Quick Jump to Tab 7 for Login Stats */}
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[22px] shrink-0">info</span>
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {isEn ? 'Looking to change stats on Login / Register page?' : 'Bạn muốn đổi 3 số liệu hiển thị trên trang Đăng nhập & Đăng ký?'}
+                    </span>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px] mt-0.5">
+                      {isEn
+                        ? 'The 4 cards below appear on the Homepage "Why Choose SCMS". To edit the 3 stats on Login page (10 Sports, 10 Courts, 2.5K+ Members), jump to Tab 7.'
+                        : '4 thẻ dưới đây hiển thị ở mục "Tại sao chọn SCMS" trên Trang chủ. Để đổi 3 số liệu trên trang Đăng nhập (10 Bộ môn, 10 Khu tập luyện, 2.5K+ Hội viên), hãy chuyển sang Tab 7.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('authShowcase')}
+                  className="px-3.5 py-1.5 rounded-lg bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-bold shrink-0 flex items-center gap-1.5 cursor-pointer shadow-sm hover-lift"
+                >
+                  <span>{isEn ? 'Go to Tab 7' : 'Sang Tab 7: Banner Đăng Nhập'}</span>
+                  <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                </button>
+              </div>
+
               <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">
-                {isEn ? '4 Highlight Statistics Cards:' : '4 Thẻ Thống Kê Số Liệu Nổi Bật:'}
+                {isEn ? '4 Highlight Statistics Cards (Homepage "Why Choose SCMS"):' : '4 Thẻ Thống Kê Số Liệu Nổi Bật (Mục "Tại sao chọn SCMS" trên Trang chủ):'}
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {content.whyUs.stats.map((st, idx) => (
@@ -665,6 +813,7 @@ export function HomeContentManagement() {
                       <input
                         type="number"
                         value={st.number}
+                        onBlur={() => { if (isDirty) handleSaveAll(true); }}
                         onChange={(e) => {
                           const updated = [...content.whyUs.stats];
                           updated[idx] = { ...updated[idx], number: Number(e.target.value) };
@@ -676,6 +825,7 @@ export function HomeContentManagement() {
                         type="text"
                         value={st.suffix || ''}
                         placeholder={isEn ? 'Suffix' : 'Hậu tố'}
+                        onBlur={() => { if (isDirty) handleSaveAll(true); }}
                         onChange={(e) => {
                           const updated = [...content.whyUs.stats];
                           updated[idx] = { ...updated[idx], suffix: e.target.value };
@@ -687,6 +837,7 @@ export function HomeContentManagement() {
                     <input
                       type="text"
                       value={st.title}
+                      onBlur={() => { if (isDirty) handleSaveAll(true); }}
                       onChange={(e) => {
                         const updated = [...content.whyUs.stats];
                         updated[idx] = { ...updated[idx], title: e.target.value };
@@ -697,6 +848,7 @@ export function HomeContentManagement() {
                     <input
                       type="text"
                       value={st.subtitle}
+                      onBlur={() => { if (isDirty) handleSaveAll(true); }}
                       onChange={(e) => {
                         const updated = [...content.whyUs.stats];
                         updated[idx] = { ...updated[idx], subtitle: e.target.value };
@@ -1342,15 +1494,56 @@ export function HomeContentManagement() {
 
           {/* 3 Stats Metrics */}
           <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
-            <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">analytics</span>
-              <span>{isEn ? '3 Bottom Quick Stat Numbers' : '3 Chỉ Số Thống Kê Dưới Cùng (Bottom Stats)'}</span>
-            </h3>
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">analytics</span>
+                  <span>{isEn ? '3 Quick Stat Numbers on Login Page' : '3 Số Liệu Thống Kê Chân Trang Đăng Nhập & Đăng Ký'}</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  {isEn ? 'Directly controls the numbers displayed at the bottom of the Login & Register hero column.' : 'Chính là 3 số liệu hiển thị tại chân trang cột giới thiệu của màn hình Đăng nhập và Đăng ký.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const s1 = content.whyUs?.stats?.[1]?.number || content.coursesSection?.sportsList?.length || 10;
+                  const s2 = content.whyUs?.stats?.[0]?.number || content.facilitiesSection?.facilitiesList?.length || 10;
+                  const s3 = content.whyUs?.stats?.[2] ? `${content.whyUs.stats[2].number}${content.whyUs.stats[2].suffix || ''}` : '2.5K+';
+                  setContent(prev => {
+                    const updated = {
+                      ...prev,
+                      authShowcase: {
+                        ...(prev.authShowcase || {}),
+                        stat1Value: String(s1),
+                        stat2Value: String(s2),
+                        stat3Value: String(s3)
+                      }
+                    };
+                    saveDraft(updated);
+                    return updated;
+                  });
+                  setIsDirty(true);
+                  setAutoSaveStatus('dirty');
+                  addToast(
+                    isEn
+                      ? 'Synchronized 3 stats from "Why Choose SCMS" (Tab 2)!'
+                      : 'Đã sao chép nhanh số liệu từ Tab 2 (Tại sao chọn SCMS) sang đây!',
+                    'success'
+                  );
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-all shadow-xs cursor-pointer hover-lift shrink-0"
+              >
+                <span className="material-symbols-outlined text-[16px] text-emerald-600">sync_alt</span>
+                <span>{isEn ? 'Sync numbers from Tab 2' : 'Sao chép số liệu từ Tab 2 sang'}</span>
+              </button>
+            </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {/* Stat 1 */}
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #1' : 'Chỉ số 1'}</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #1 (Sports)' : 'Chỉ số 1 (Bộ môn)'}</span>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
                     {isEn ? 'Value:' : 'Con số:'}
@@ -1358,8 +1551,9 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat1Value || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat1Value', e.target.value)}
-                    placeholder="09"
+                    placeholder="10"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
@@ -1370,6 +1564,7 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat1Label || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat1Label', e.target.value)}
                     placeholder="Bộ môn thi đấu"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
@@ -1379,7 +1574,7 @@ export function HomeContentManagement() {
 
               {/* Stat 2 */}
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #2' : 'Chỉ số 2'}</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #2 (Courts/Zones)' : 'Chỉ số 2 (Khu tập/Sân)'}</span>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
                     {isEn ? 'Value:' : 'Con số:'}
@@ -1387,8 +1582,9 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat2Value || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat2Value', e.target.value)}
-                    placeholder="09"
+                    placeholder="10"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
@@ -1399,6 +1595,7 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat2Label || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat2Label', e.target.value)}
                     placeholder="Khu tập luyện"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
@@ -1408,7 +1605,7 @@ export function HomeContentManagement() {
 
               {/* Stat 3 */}
               <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
-                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #3' : 'Chỉ số 3'}</span>
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #3 (Members)' : 'Chỉ số 3 (Hội viên)'}</span>
                 <div>
                   <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
                     {isEn ? 'Value:' : 'Con số:'}
@@ -1416,6 +1613,7 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat3Value || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat3Value', e.target.value)}
                     placeholder="2.5K+"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
@@ -1428,12 +1626,46 @@ export function HomeContentManagement() {
                   <input
                     type="text"
                     value={content.authShowcase?.stat3Label || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
                     onChange={(e) => updateContentField('authShowcase', 'stat3Label', e.target.value)}
                     placeholder="Hội viên active"
                     className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
               </div>
+            </div>
+
+            {/* Live Preview Box as seen on Login screen */}
+            <div className="mt-5 p-4 rounded-2xl bg-[#2D3047] text-white border border-white/10 shadow-inner flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{isEn ? 'Live Preview as displayed on Login & Register screen' : 'Xem trước trực tiếp hiển thị tại chân trang Đăng Nhập / Đăng Ký'}</span>
+                </div>
+                <div className="flex items-center gap-8 sm:gap-12 mt-2.5">
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{content.authShowcase?.stat1Value || '09'}</div>
+                    <div className="text-[11px] text-slate-400 font-medium mt-0.5">{content.authShowcase?.stat1Label || 'Bộ môn thi đấu'}</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{content.authShowcase?.stat2Value || '09'}</div>
+                    <div className="text-[11px] text-slate-400 font-medium mt-0.5">{content.authShowcase?.stat2Label || 'Khu tập luyện'}</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-bold text-[#F2CC8F] tracking-tight">{content.authShowcase?.stat3Value || '2.5K+'}</div>
+                    <div className="text-[11px] text-slate-400 font-medium mt-0.5">{content.authShowcase?.stat3Label || 'Hội viên active'}</div>
+                  </div>
+                </div>
+              </div>
+              <a
+                href="#/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover-lift"
+              >
+                <span>{isEn ? 'Open Login Page in New Tab' : 'Mở xem Trang Đăng Nhập'}</span>
+                <span className="material-symbols-outlined text-[15px]">open_in_new</span>
+              </a>
             </div>
           </div>
 
