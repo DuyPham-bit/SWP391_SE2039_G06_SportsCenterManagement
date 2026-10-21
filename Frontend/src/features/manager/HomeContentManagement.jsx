@@ -1,5 +1,5 @@
 import { LandingCatalogEditor } from './LandingCatalogEditor.jsx';
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   getLandingContent,
   getLegacyLandingContent,
@@ -10,6 +10,8 @@ import {
 import { CloudMediaPickerModal } from '../../components/common/CloudMediaPickerModal.jsx';
 import { useToast } from '../../context/ToastContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+
+const cloneContent = content => JSON.parse(JSON.stringify(content));
 
 export function HomeContentManagement() {
   const { language } = useLanguage();
@@ -22,6 +24,8 @@ export function HomeContentManagement() {
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const savedContentRef = useRef(null);
+  const [discardKey, setDiscardKey] = useState(0);
 
   // States cho Modal chọn ảnh đám mây
   const [mediaPickerConfig, setMediaPickerConfig] = useState({
@@ -40,6 +44,7 @@ export function HomeContentManagement() {
     setLoadError('');
     loadLandingContent({ signal: controller.signal }).then(result => {
       if (!active) return;
+      savedContentRef.current = cloneContent(result.content);
       const legacy = !result.hasPublishedContent ? getLegacyLandingContent() : null;
       setContent(legacy || result.content);
       setIsDirty(Boolean(legacy));
@@ -69,12 +74,40 @@ export function HomeContentManagement() {
     setIsDirty(true);
   };
 
+  // Cập nhật danh sách thẻ trong bản nháp
+  const updateCatalogCards = (section, key, items) => {
+    setContent(prev => ({
+      ...prev,
+      [section]: { ...prev[section], [key]: items, catalogSource: 'custom' }
+    }));
+    setIsDirty(true);
+  };
+
+  const deleteFacilityCard = (record, items, fallbackSports) => {
+    setContent(prev => {
+      const section = prev.coursesSection;
+      const sports = section.sportsList.length || section.catalogSource === 'custom' ? section.sportsList : fallbackSports;
+      const hasLinks = sports.some(sport => String(sport.facilityId) === String(record.id));
+      return {
+        ...prev,
+        facilitiesSection: { ...prev.facilitiesSection, facilitiesList: items, catalogSource: 'custom' },
+        coursesSection: hasLinks ? {
+          ...section,
+          sportsList: sports.map(sport => String(sport.facilityId) === String(record.id) ? { ...sport, facilityId: '' } : sport),
+          catalogSource: 'custom'
+        } : section
+      };
+    });
+    setIsDirty(true);
+  };
+
   // Lưu toàn bộ nội dung
   const handleSaveAll = async () => {
     if (isSaving) return;
     setIsSaving(true);
     try {
       const saved = await saveLandingContent(content);
+      savedContentRef.current = cloneContent(saved);
       setContent(saved);
       setIsDirty(false);
       addToast(
@@ -88,6 +121,20 @@ export function HomeContentManagement() {
     } finally { setIsSaving(false); }
   };
 
+  const handleDiscardChanges = () => {
+    if (isSaving || !isDirty || !savedContentRef.current) return;
+    setContent(cloneContent(savedContentRef.current));
+    setIsDirty(false);
+    setDiscardKey(previous => previous + 1);
+    setMediaPickerConfig(previous => ({ ...previous, isOpen: false, callback: null, onClose: undefined }));
+    addToast(
+      isEn
+        ? 'Unsaved changes discarded. Content restored to the last successful save.'
+        : 'Đã hủy thay đổi chưa lưu và khôi phục nội dung từ lần lưu thành công gần nhất.',
+      'info'
+    );
+  };
+
   // Xem trước trang chủ ở tab mới an toàn mà không làm thay đổi URL/hash của tab hiện tại
   const handlePreview = () => {
     try {
@@ -98,12 +145,13 @@ export function HomeContentManagement() {
   };
 
   // Mở Cloud Media Picker
-  const openMediaPicker = (title, currentUrl, callback) => {
+  const openMediaPicker = (title, currentUrl, callback, onClose) => {
     setMediaPickerConfig({
       isOpen: true,
       title,
       currentUrl,
-      callback
+      callback,
+      onClose
     });
   };
 
@@ -191,6 +239,17 @@ export function HomeContentManagement() {
             >
               <span className="material-symbols-outlined text-[17px]">visibility</span>
               <span>{isEn ? 'Preview Homepage' : 'Xem Trước Trang Chủ'}</span>
+            </button>
+
+            <button
+              type="button"
+              onClick={handleDiscardChanges}
+              disabled={!isDirty || isSaving}
+              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/15 text-slate-200 text-xs font-bold uppercase transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              title={isEn ? 'Restore content from the last successful save' : 'Trở về nội dung ở lần lưu thành công gần nhất'}
+            >
+              <span className="material-symbols-outlined text-[17px]">undo</span>
+              <span>{isEn ? 'Discard Changes' : 'Hủy thay đổi'}</span>
             </button>
 
             <button
@@ -584,9 +643,12 @@ export function HomeContentManagement() {
       {/* TAB 3: SPORTS CATALOG */}
       {activeTab === 'sports' && (
         <LandingCatalogEditor
+          key={`sports-${discardKey}`}
           type="sports"
           metadata={content.coursesSection.sportsList}
-          onChange={items => updateContentField('coursesSection', 'sportsList', items)}
+          fallbackToCatalog={content.coursesSection.catalogSource !== 'custom'}
+          facilities={content.facilitiesSection.facilitiesList.length || content.facilitiesSection.catalogSource === 'custom' ? content.facilitiesSection.facilitiesList : undefined}
+          onChange={items => updateCatalogCards('coursesSection', 'sportsList', items)}
           openMediaPicker={openMediaPicker}
         />
       )}
@@ -594,9 +656,13 @@ export function HomeContentManagement() {
       {/* TAB 4: COURT FACILITIES */}
       {activeTab === 'facilities' && (
         <LandingCatalogEditor
+          key={`facilities-${discardKey}`}
           type="facilities"
           metadata={content.facilitiesSection.facilitiesList}
-          onChange={items => updateContentField('facilitiesSection', 'facilitiesList', items)}
+          fallbackToCatalog={content.facilitiesSection.catalogSource !== 'custom'}
+          sports={content.coursesSection.sportsList.length || content.coursesSection.catalogSource === 'custom' ? content.coursesSection.sportsList : undefined}
+          onChange={items => updateCatalogCards('facilitiesSection', 'facilitiesList', items)}
+          onDelete={deleteFacilityCard}
           openMediaPicker={openMediaPicker}
         />
       )}
@@ -915,7 +981,10 @@ export function HomeContentManagement() {
         isOpen={mediaPickerConfig.isOpen}
         title={mediaPickerConfig.title}
         currentImage={mediaPickerConfig.currentUrl}
-        onClose={() => setMediaPickerConfig(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => {
+          setMediaPickerConfig(prev => ({ ...prev, isOpen: false }));
+          mediaPickerConfig.onClose?.();
+        }}
         onSelectImage={(url) => {
           if (mediaPickerConfig.callback) {
             mediaPickerConfig.callback(url);
