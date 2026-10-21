@@ -12,7 +12,8 @@ public sealed record LandingContentResponse(JsonElement? Content, DateTime? Upda
 public sealed class LandingContentService(SportsCenterDbContext db)
 {
     private const string SettingKey = "site.landing-content";
-    private static readonly string[] Sections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter"];
+    private static readonly string[] RequiredSections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter"];
+    private static readonly string[] Sections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter", "authShowcase"];
     private static readonly HashSet<string> ObjectArrays = ["metrics", "features", "stats", "sportsList", "facilitiesList", "zones", "serviceAmenities", "specs", "trustBadges"];
     private static readonly HashSet<string> TextArrays = ["tags", "badges", "amenities", "items"];
     private static readonly HashSet<string> Booleans = ["isVisible", "isAutoCount", "formatThousands"];
@@ -45,7 +46,7 @@ public sealed class LandingContentService(SportsCenterDbContext db)
     {
         if (content.ValueKind != JsonValueKind.Object || Encoding.UTF8.GetByteCount(content.GetRawText()) > 1024 * 1024)
             throw InvalidContent();
-        foreach (var section in Sections)
+        foreach (var section in RequiredSections)
             if (!content.TryGetProperty(section, out var value) || value.ValueKind != JsonValueKind.Object) throw InvalidContent();
         foreach (var section in content.EnumerateObject())
         {

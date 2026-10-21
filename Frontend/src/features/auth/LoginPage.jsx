@@ -9,6 +9,7 @@ import { GoogleLoginModal } from './GoogleLoginModal.js';
 import { Logo } from '../../components/common/Logo.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../services/membershipEntry.js';
 import { authApi } from '../../services/api.js';
+import { useLandingContent } from '../../hooks/useLandingContent.js';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -33,6 +34,33 @@ function saveRememberedEmail(email) {
 export function LoginPage() {
   const { login, register, logout, loginWithGoogle, isAuthenticated, role } = useAuth();
   const { showSuccess, showError } = useToast();
+  const landingContent = useLandingContent();
+  const authShowcase = landingContent?.authShowcase || {};
+
+  const showcaseBadge = authShowcase.badge || 'Sân tập mở cửa 24/7';
+  const showcaseTagline = authShowcase.tagline || 'Khởi đầu bứt phá';
+  const showcaseLoginTitle = authShowcase.loginTitle || 'Tập luyện hôm nay, \nbứt phá mỗi ngày.';
+  const showcaseRegisterTitle = authShowcase.registerTitle || 'Hành trình mới, \nphiên bản khỏe hơn.';
+  const showcaseDescription = authShowcase.description || 'Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.';
+  const showcasePosterUrl = authShowcase.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=800&auto=format&fit=crop';
+  
+  const feature1Title = authShowcase.feature1Title || 'Đặt chỗ trong 30s';
+  const feature1Desc = authShowcase.feature1Desc || 'Giữ sân & lớp học 7 ngày';
+  const feature1Icon = authShowcase.feature1Icon || 'bolt';
+
+  const feature2Title = authShowcase.feature2Title || 'Chuẩn Olympic 5★';
+  const feature2Desc = authShowcase.feature2Desc || 'Hệ thống sân bãi cao cấp';
+  const feature2Icon = authShowcase.feature2Icon || 'verified';
+
+  const stat1Value = authShowcase.stat1Value || '09';
+  const stat1Label = authShowcase.stat1Label || 'Bộ môn thi đấu';
+
+  const stat2Value = authShowcase.stat2Value || '09';
+  const stat2Label = authShowcase.stat2Label || 'Khu tập luyện';
+
+  const stat3Value = authShowcase.stat3Value || '2.5K+';
+  const stat3Label = authShowcase.stat3Label || 'Hội viên active';
+
   const membershipIntent = useRef(getMembershipIntent(window.location.hash));
   const redirectToRoleDashboard = role => {
     window.location.hash = getPostLoginRoute(role, membershipIntent.current);
@@ -289,7 +317,7 @@ export function LoginPage() {
           loading="lazy"
           decoding="async"
           className="absolute inset-0 object-cover w-full h-full opacity-35 scale-105 transition-transform duration-1000 ease-out hover:scale-100"
-          src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=800&auto=format&fit=crop"
+          src={showcasePosterUrl}
         />
         {/* Gradient mờ ảo Tiya Slate Navy & Sage */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#27293D] via-[#3D405B]/85 to-[#3D405B]/50" />
@@ -302,7 +330,7 @@ export function LoginPage() {
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold uppercase tracking-wider text-slate-200 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[var(--primary-color)] animate-pulse shadow-[0_0_8px_rgba(129,178,154,0.8)]" aria-hidden="true" />
-            <span>Sân tập mở cửa 24/7</span>
+            <span>{showcaseBadge}</span>
           </div>
         </div>
 
@@ -310,29 +338,29 @@ export function LoginPage() {
         <div className="relative z-10 py-4 max-w-xl">
           <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--custom-btn-bg-color)] mb-2">
             <span className="w-4 h-0.5 bg-[var(--custom-btn-bg-color)] inline-block" />
-            <span>Khởi đầu bứt phá</span>
+            <span>{showcaseTagline}</span>
           </div>
 
-          <h2 className="font-dm-sans text-3xl sm:text-4xl xl:text-5xl font-bold leading-[1.15] tracking-tight text-white">
+          <h2 className="font-dm-sans text-3xl sm:text-4xl xl:text-5xl font-bold leading-[1.15] tracking-tight text-white whitespace-pre-line">
             {isRegister ? (
               <>
-                Hành trình mới, <br />
+                {showcaseRegisterTitle.split('\n')[0]} <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[var(--custom-btn-bg-color)] to-[var(--primary-color)]">
-                  phiên bản khỏe hơn.
+                  {showcaseRegisterTitle.split('\n').slice(1).join('\n') || ''}
                 </span>
               </>
             ) : (
               <>
-                Tập luyện hôm nay, <br />
+                {showcaseLoginTitle.split('\n')[0]} <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[var(--custom-btn-bg-color)] to-[#F4A261]">
-                  bứt phá mỗi ngày.
+                  {showcaseLoginTitle.split('\n').slice(1).join('\n') || ''}
                 </span>
               </>
             )}
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-300 mt-3.5 leading-relaxed max-w-lg font-normal">
-            Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.
+            {showcaseDescription}
           </p>
 
           {/* 2 Thẻ kính Frosted Glass Cards */}
@@ -340,11 +368,11 @@ export function LoginPage() {
             <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm hover:bg-white/15 transition-colors">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-[var(--custom-btn-bg-color)]/25 text-[var(--custom-btn-bg-color)] flex items-center justify-center shadow-sm shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">bolt</span>
+                  <span className="material-symbols-outlined text-[18px]">{feature1Icon}</span>
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-white tracking-wide">Đặt chỗ trong 30s</h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5">Giữ sân &amp; lớp học 7 ngày</p>
+                  <h4 className="text-xs font-bold text-white tracking-wide">{feature1Title}</h4>
+                  <p className="text-[11px] text-slate-300 mt-0.5">{feature1Desc}</p>
                 </div>
               </div>
             </div>
@@ -352,11 +380,11 @@ export function LoginPage() {
             <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm hover:bg-white/15 transition-colors">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-[var(--primary-color)]/25 text-[var(--primary-color)] flex items-center justify-center shadow-sm shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">verified</span>
+                  <span className="material-symbols-outlined text-[18px]">{feature2Icon}</span>
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-white tracking-wide">Chuẩn Olympic 5★</h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5">Hệ thống sân bãi cao cấp</p>
+                  <h4 className="text-xs font-bold text-white tracking-wide">{feature2Title}</h4>
+                  <p className="text-[11px] text-slate-300 mt-0.5">{feature2Desc}</p>
                 </div>
               </div>
             </div>
@@ -367,16 +395,16 @@ export function LoginPage() {
         <div className="relative z-10 border-t border-white/10 pt-4 flex items-center justify-between gap-6">
           <div className="flex gap-8 sm:gap-10">
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">09</div>
-              <div className="text-[11px] text-slate-400 font-medium mt-0.5">Bộ môn thi đấu</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">{stat1Value}</div>
+              <div className="text-[11px] text-slate-400 font-medium mt-0.5">{stat1Label}</div>
             </div>
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">09</div>
-              <div className="text-[11px] text-slate-400 font-medium mt-0.5">Khu tập luyện</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">{stat2Value}</div>
+              <div className="text-[11px] text-slate-400 font-medium mt-0.5">{stat2Label}</div>
             </div>
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-[var(--custom-btn-bg-color)] tracking-tight">2.5K+</div>
-              <div className="text-[11px] text-slate-400 font-medium mt-0.5">Hội viên active</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-[var(--custom-btn-bg-color)] tracking-tight">{stat3Value}</div>
+              <div className="text-[11px] text-slate-400 font-medium mt-0.5">{stat3Label}</div>
             </div>
           </div>
 

@@ -230,6 +230,8 @@ function AppRouter() {
         return renderManagerRoute(ManagerCoachOperations, 'manage_coach_operations');
       case '#/manager/support-communications':
         return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MANAGER']}><ManagerSupportCommunications /></RoleGuard></ProtectedRoute></AppLayout>;
+      case '#/manager/home-content':
+        return renderManagerRoute(HomeContentManagement, undefined, ['MANAGER', 'ADMIN']);
 
       // RECEPTIONIST ROUTES (4 chức năng)
       case '#/receptionist':

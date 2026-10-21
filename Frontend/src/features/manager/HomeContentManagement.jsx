@@ -18,7 +18,7 @@ export function HomeContentManagement() {
   const isEn = language === 'en';
   const { showToast: addToast } = useToast();
   const [content, setContent] = useState(() => getLandingContent());
-  const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'whyUs' | 'sports' | 'facilities' | 'zones' | 'footer'
+  const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'whyUs' | 'sports' | 'facilities' | 'zones' | 'footer' | 'authShowcase'
   const [isDirty, setIsDirty] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
@@ -67,7 +67,7 @@ export function HomeContentManagement() {
     setContent(prev => ({
       ...prev,
       [section]: {
-        ...prev[section],
+        ...(prev[section] || {}),
         [key]: value
       }
     }));
@@ -269,7 +269,7 @@ export function HomeContentManagement() {
         </div>
       </div>
 
-      {/* 2. TAB NAVIGATION (6 Scientific Editorial Sections) */}
+      {/* 2. TAB NAVIGATION (7 Scientific Editorial Sections) */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-2 flex items-center gap-1.5 overflow-x-auto">
         {[
           { id: 'hero', label: isEn ? '1. Hero Banner' : '1. Hero Banner', icon: 'crop_original', desc: isEn ? 'Main Banner & Media' : 'Banner chính & Video' },
@@ -277,7 +277,8 @@ export function HomeContentManagement() {
           { id: 'sports', label: isEn ? '3. Sports Catalog' : '3. Thẻ Môn Thể Thao', icon: 'sports_kabaddi', desc: `${totalSports} ${isEn ? 'Sports' : 'Bộ môn'}` },
           { id: 'facilities', label: isEn ? '4. Court Facilities' : '4. Thẻ Cụm Sân', icon: 'stadium', desc: `${totalFacilities} ${isEn ? 'Facilities' : 'Khu liên hợp'}` },
           { id: 'zones', label: isEn ? '5. Zones Layout' : '5. Sơ Đồ Phân Khu', icon: 'apartment', desc: isEn ? 'Zones A-B-C Layout' : 'Bố trí khu A-B-C' },
-          { id: 'footer', label: isEn ? '6. Call-to-Action & Footer' : '6. Banner Kêu Gọi & Footer', icon: 'contact_support', desc: isEn ? 'Events & Contacts' : 'Sự kiện & Liên hệ' }
+          { id: 'footer', label: isEn ? '6. Call-to-Action & Footer' : '6. Banner Kêu Gọi & Footer', icon: 'contact_support', desc: isEn ? 'Events & Contacts' : 'Sự kiện & Liên hệ' },
+          { id: 'authShowcase', label: isEn ? '7. Auth Showcase' : '7. Banner Đăng Nhập & Đăng Ký', icon: 'badge', desc: isEn ? 'Login/Register Banner' : 'Cột giới thiệu đăng nhập' }
         ].map(tab => (
           <button
             key={tab.id}
@@ -975,6 +976,366 @@ export function HomeContentManagement() {
                   onChange={(e) => updateContentField('ctaAndFooter', 'copyright', e.target.value)}
                   className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 7: AUTH SHOWCASE (Login & Register Column) */}
+      {activeTab === 'authShowcase' && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wide">
+              {isEn ? 'Section 7: Login & Register Showcase Banner' : 'Khu Vực 7: Banner Giới Thiệu Đăng Nhập & Đăng Ký'}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {isEn
+                ? 'Customize the athletic showcase banner, headline, frosted cards, and live metrics on Login and Register pages.'
+                : 'Chỉnh sửa cột giới thiệu thể thao Olympic, tiêu đề truyền cảm hứng, thẻ nổi và 3 chỉ số thống kê trên màn hình Đăng nhập và Đăng ký.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Badge Pill:' : 'Huy hiệu mở cửa (Badge):'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.badge || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'badge', e.target.value)}
+                    placeholder="Sân tập mở cửa 24/7"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Tagline / Category:' : 'Dòng phụ (Tagline):'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.tagline || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'tagline', e.target.value)}
+                    placeholder="Khởi đầu bứt phá"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Login Page Headline:' : 'Tiêu đề trang Đăng nhập:'}
+                </label>
+                <textarea
+                  rows={2}
+                  value={content.authShowcase?.loginTitle || ''}
+                  onChange={(e) => updateContentField('authShowcase', 'loginTitle', e.target.value)}
+                  placeholder={"Tập luyện hôm nay, \nbứt phá mỗi ngày."}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                />
+                <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                  {isEn ? 'Tip: Enter a new line to apply the multi-color highlight effect to the second line.' : 'Mẹo: Xuống dòng để áp dụng hiệu ứng chuyển màu rực rỡ cho dòng thứ hai.'}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Register Page Headline:' : 'Tiêu đề trang Đăng ký:'}
+                </label>
+                <textarea
+                  rows={2}
+                  value={content.authShowcase?.registerTitle || ''}
+                  onChange={(e) => updateContentField('authShowcase', 'registerTitle', e.target.value)}
+                  placeholder={"Hành trình mới, \nphiên bản khỏe hơn."}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Showcase Description:' : 'Đoạn văn mô tả giới thiệu:'}
+                </label>
+                <textarea
+                  rows={3}
+                  value={content.authShowcase?.description || ''}
+                  onChange={(e) => updateContentField('authShowcase', 'description', e.target.value)}
+                  placeholder="Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs leading-relaxed focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Media background preview */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Showcase Background Image / Poster (Cloud):' : 'Ảnh nền Cột Đăng nhập / Poster Đám mây:'}
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={content.authShowcase?.posterUrl || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'posterUrl', e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs truncate focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openMediaPicker(
+                      isEn ? 'Select Showcase Background Image' : 'Chọn Ảnh Nền Cột Đăng Nhập',
+                      content.authShowcase?.posterUrl || '',
+                      (url) => updateContentField('authShowcase', 'posterUrl', url)
+                    )}
+                    className="px-3.5 py-2 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all hover-lift shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                    <span>{isEn ? 'Upload/Change' : 'Tải/Đổi Ảnh'}</span>
+                  </button>
+                </div>
+
+                {/* Live Preview Box like Login left column */}
+                <div className="h-64 rounded-2xl overflow-hidden bg-[#2D3047] relative border border-slate-700 p-5 flex flex-col justify-between text-white shadow-inner">
+                  {content.authShowcase?.posterUrl && (
+                    <img
+                      src={content.authShowcase.posterUrl}
+                      alt="Showcase preview"
+                      className="absolute inset-0 w-full h-full object-cover opacity-35"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#27293D] via-[#3D405B]/80 to-transparent pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-white/10 px-2.5 py-1 rounded-full border border-white/10">
+                      {content.authShowcase?.badge || 'Sân tập mở cửa 24/7'}
+                    </span>
+                    <span className="text-[10px] bg-black/50 text-white/70 px-2 py-0.5 rounded font-mono">
+                      {isEn ? 'Preview' : 'Xem trước'}
+                    </span>
+                  </div>
+
+                  <div className="relative z-10 space-y-1">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-[#F2CC8F]">
+                      {content.authShowcase?.tagline || 'Khởi đầu bứt phá'}
+                    </div>
+                    <div className="text-sm font-black text-white leading-tight line-clamp-2">
+                      {content.authShowcase?.loginTitle || 'Tập luyện hôm nay, bứt phá mỗi ngày.'}
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 flex gap-4 pt-2 border-t border-white/10 text-xs">
+                    <div>
+                      <span className="font-bold text-white">{content.authShowcase?.stat1Value || '09'}</span>
+                      <span className="text-[10px] text-slate-300 block">{content.authShowcase?.stat1Label || 'Bộ môn'}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-white">{content.authShowcase?.stat2Value || '09'}</span>
+                      <span className="text-[10px] text-slate-300 block">{content.authShowcase?.stat2Label || 'Khu tập'}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-white">{content.authShowcase?.stat3Value || '2.5K+'}</span>
+                      <span className="text-[10px] text-slate-300 block">{content.authShowcase?.stat3Label || 'Hội viên'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 2 Feature Cards */}
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+            <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">featured_play_list</span>
+              <span>{isEn ? '2 Frosted Showcase Feature Cards' : '2 Thẻ Kính Nổi Bật (Feature Cards)'}</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  {isEn ? 'Feature Card 1' : 'Thẻ tính năng 1'}
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                      {isEn ? 'Icon (Material):' : 'Biểu tượng:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={content.authShowcase?.feature1Icon || ''}
+                      onChange={(e) => updateContentField('authShowcase', 'feature1Icon', e.target.value)}
+                      placeholder="bolt"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                      {isEn ? 'Title:' : 'Tiêu đề:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={content.authShowcase?.feature1Title || ''}
+                      onChange={(e) => updateContentField('authShowcase', 'feature1Title', e.target.value)}
+                      placeholder="Đặt chỗ trong 30s"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Description:' : 'Mô tả ngắn:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.feature1Desc || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'feature1Desc', e.target.value)}
+                    placeholder="Giữ sân & lớp học 7 ngày"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Card 2 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  {isEn ? 'Feature Card 2' : 'Thẻ tính năng 2'}
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                      {isEn ? 'Icon (Material):' : 'Biểu tượng:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={content.authShowcase?.feature2Icon || ''}
+                      onChange={(e) => updateContentField('authShowcase', 'feature2Icon', e.target.value)}
+                      placeholder="verified"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                      {isEn ? 'Title:' : 'Tiêu đề:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={content.authShowcase?.feature2Title || ''}
+                      onChange={(e) => updateContentField('authShowcase', 'feature2Title', e.target.value)}
+                      placeholder="Chuẩn Olympic 5★"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Description:' : 'Mô tả ngắn:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.feature2Desc || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'feature2Desc', e.target.value)}
+                    placeholder="Hệ thống sân bãi cao cấp"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3 Stats Metrics */}
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+            <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">analytics</span>
+              <span>{isEn ? '3 Bottom Quick Stat Numbers' : '3 Chỉ Số Thống Kê Dưới Cùng (Bottom Stats)'}</span>
+            </h3>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Stat 1 */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #1' : 'Chỉ số 1'}</span>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Value:' : 'Con số:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat1Value || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'stat1Value', e.target.value)}
+                    placeholder="09"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Label:' : 'Nhãn mô tả:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat1Label || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'stat1Label', e.target.value)}
+                    placeholder="Bộ môn thi đấu"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Stat 2 */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #2' : 'Chỉ số 2'}</span>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Value:' : 'Con số:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat2Value || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'stat2Value', e.target.value)}
+                    placeholder="09"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Label:' : 'Nhãn mô tả:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat2Label || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'stat2Label', e.target.value)}
+                    placeholder="Khu tập luyện"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Stat 3 */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #3' : 'Chỉ số 3'}</span>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Value:' : 'Con số:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat3Value || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'stat3Value', e.target.value)}
+                    placeholder="2.5K+"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Label:' : 'Nhãn mô tả:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat3Label || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'stat3Label', e.target.value)}
+                    placeholder="Hội viên active"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
               </div>
             </div>
           </div>

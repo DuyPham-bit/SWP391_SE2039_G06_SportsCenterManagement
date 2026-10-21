@@ -18,7 +18,7 @@ public sealed class LandingContentController(LandingContentService contentServic
     public async Task<ActionResult<LandingContentResponse>> Get(CancellationToken ct) => Ok(await contentService.GetAsync(ct));
 
     [HttpPut]
-    [Authorize(Roles = "ADMIN")]
+    [Authorize(Roles = "ADMIN,MANAGER")]
     [RequestSizeLimit(2 * 1024 * 1024)]
     public async Task<ActionResult<LandingContentResponse>> Save(SaveRequest request, CancellationToken ct) =>
         Ok(await contentService.SaveAsync(request.Content, CurrentUserId, ct));

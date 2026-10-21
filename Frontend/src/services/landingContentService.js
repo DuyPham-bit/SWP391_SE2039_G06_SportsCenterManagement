@@ -80,6 +80,26 @@ export const DEFAULT_LANDING_CONTENT = {
     "hoursHolidays": "",
     "hoursNote": "",
     "copyright": ""
+  },
+  "authShowcase": {
+    "badge": "Sân tập mở cửa 24/7",
+    "tagline": "Khởi đầu bứt phá",
+    "loginTitle": "Tập luyện hôm nay, bứt phá mỗi ngày.",
+    "registerTitle": "Hành trình mới, phiên bản khỏe hơn.",
+    "description": "Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.",
+    "posterUrl": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=800&auto=format&fit=crop",
+    "feature1Title": "Đặt chỗ trong 30s",
+    "feature1Desc": "Giữ sân & lớp học 7 ngày",
+    "feature1Icon": "bolt",
+    "feature2Title": "Chuẩn Olympic 5★",
+    "feature2Desc": "Hệ thống sân bãi cao cấp",
+    "feature2Icon": "verified",
+    "stat1Value": "09",
+    "stat1Label": "Bộ môn thi đấu",
+    "stat2Value": "09",
+    "stat2Label": "Khu tập luyện",
+    "stat3Value": "2.5K+",
+    "stat3Label": "Hội viên active"
   }
 };
 
