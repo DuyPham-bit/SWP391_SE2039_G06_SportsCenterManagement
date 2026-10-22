@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$SenderEmail,
-    [string]$SmtpHost = 'smtp.gmail.com',
+    [string]$SmtpHost,
     [ValidateRange(1, 65535)]
     [int]$SmtpPort = 587,
     [string]$SmtpUsername,
@@ -59,11 +59,18 @@ $SenderEmail = $SenderEmail.Trim()
 try { $senderAddress = New-Object System.Net.Mail.MailAddress($SenderEmail) }
 catch { throw 'Dia chi email gui khong hop le.' }
 if ($senderAddress.Address -ne $SenderEmail) { throw 'Chi nhap dia chi email, khong kem ten hien thi.' }
+if (-not $SmtpHost) { $SmtpHost = Read-Host 'SMTP host (vi du: smtp.gmail.com)' }
 if ([string]::IsNullOrWhiteSpace($SmtpHost)) { throw 'SmtpHost khong duoc de trong.' }
-if (-not $SmtpUsername) { $SmtpUsername = $SenderEmail }
+if (-not $SmtpUsername) { $SmtpUsername = Read-Host 'SMTP login/username' }
+if ([string]::IsNullOrWhiteSpace($SmtpUsername)) { throw 'SMTP login khong duoc de trong.' }
 
-Write-Host "SMTP: ${SmtpHost}:$SmtpPort (STARTTLS). Gmail can mat khau ung dung, khong dung mat khau dang nhap."
-$securePassword = Read-Host 'Mat khau ung dung/SMTP (an ky tu khi nhap)' -AsSecureString
+$credentialHint = if ($SmtpHost -eq 'smtp.gmail.com') {
+    'Dung dia chi Gmail va App Password; khong dung mat khau dang nhap.'
+} else {
+    'Dung thong tin SMTP do nha cung cap cap.'
+}
+Write-Host "SMTP: ${SmtpHost}:$SmtpPort (STARTTLS). $credentialHint"
+$securePassword = Read-Host 'SMTP password/key (an ky tu khi nhap)' -AsSecureString
 if ($securePassword.Length -eq 0) { throw 'Chua nhap mat khau SMTP.' }
 $passwordPointer = [IntPtr]::Zero
 $plainPassword = $null

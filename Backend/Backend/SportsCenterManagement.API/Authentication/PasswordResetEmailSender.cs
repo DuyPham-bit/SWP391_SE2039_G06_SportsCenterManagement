@@ -5,16 +5,23 @@ using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 
+using Microsoft.Extensions.Logging;
+
 namespace SportsCenterManagement.API.Authentication;
 
 public sealed class PasswordResetEmailSender(
-    SportsCenterDbContext db, IHttpClientFactory clients, IConfiguration configuration)
+    SportsCenterDbContext db, IHttpClientFactory clients, IConfiguration configuration,
+    ILogger<PasswordResetEmailSender>? logger = null)
 {
     private Uri? Endpoint => Uri.TryCreate(configuration["ExternalCommunications:Email:WebhookUrl"], UriKind.Absolute, out var uri)
         && (uri.Scheme == Uri.UriSchemeHttps || (uri.Scheme == Uri.UriSchemeHttp && uri.IsLoopback)) ? uri : null;
 
-    private string? SmtpHost => configuration["ExternalCommunications:Email:Smtp:Host"];
-    private string? SmtpFrom => configuration["ExternalCommunications:Email:Smtp:From"];
+    private string? SmtpHost => string.IsNullOrWhiteSpace(configuration["ExternalCommunications:Email:Smtp:Host"])
+        ? configuration["MailSettings:Host"]
+        : configuration["ExternalCommunications:Email:Smtp:Host"];
+    private string? SmtpFrom => string.IsNullOrWhiteSpace(configuration["ExternalCommunications:Email:Smtp:From"])
+        ? configuration["MailSettings:Mail"]
+        : configuration["ExternalCommunications:Email:Smtp:From"];
     private bool SmtpConfigured => !string.IsNullOrWhiteSpace(SmtpHost) && MailAddress.TryCreate(SmtpFrom, out _);
     public bool IsConfigured => Endpoint is not null || SmtpConfigured;
 
@@ -73,18 +80,34 @@ public sealed class PasswordResetEmailSender(
             if (Endpoint is not { } endpoint)
             {
                 if (!SmtpConfigured) return (false, "Email sender unavailable.");
-                using var smtp = new SmtpClient(SmtpHost, configuration.GetValue("ExternalCommunications:Email:Smtp:Port", 587));
-                // Require STARTTLS for mailbox credentials; loopback-only fixtures may opt out.
-                smtp.EnableSsl = configuration.GetValue("ExternalCommunications:Email:Smtp:EnableSsl", true);
-                if (!smtp.EnableSsl && !string.Equals(SmtpHost, "localhost", StringComparison.OrdinalIgnoreCase)
+                var port = configuration.GetValue("ExternalCommunications:Email:Smtp:Port", 0);
+                if (port <= 0) port = configuration.GetValue("MailSettings:Port", 587);
+                var enableSsl = configuration.GetValue("ExternalCommunications:Email:Smtp:EnableSsl", true);
+                if (!enableSsl && !string.Equals(SmtpHost, "localhost", StringComparison.OrdinalIgnoreCase)
                     && !(IPAddress.TryParse(SmtpHost, out var address) && IPAddress.IsLoopback(address)))
                     return (false, "SMTP requires TLS.");
-                smtp.UseDefaultCredentials = false;
                 var username = configuration["ExternalCommunications:Email:Smtp:Username"];
-                if (!string.IsNullOrWhiteSpace(username))
-                    smtp.Credentials = new NetworkCredential(username, configuration["ExternalCommunications:Email:Smtp:Password"]);
-                using var mail = new MailMessage(SmtpFrom!, email, title, message);
-                await smtp.SendMailAsync(mail, timeout.Token);
+                if (string.IsNullOrWhiteSpace(username)) username = configuration["MailSettings:Mail"];
+                var password = configuration["ExternalCommunications:Email:Smtp:Password"];
+                if (string.IsNullOrWhiteSpace(password)) password = configuration["MailSettings:Password"];
+
+                using var client = new MailKit.Net.Smtp.SmtpClient();
+                var secureOption = enableSsl
+                    ? MailKit.Security.SecureSocketOptions.StartTls
+                    : MailKit.Security.SecureSocketOptions.Auto;
+                await client.ConnectAsync(SmtpHost, port, secureOption, timeout.Token);
+                if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
+                {
+                    await client.AuthenticateAsync(username, password, timeout.Token);
+                }
+                var mime = new MimeKit.MimeMessage();
+                mime.From.Add(MimeKit.MailboxAddress.Parse(SmtpFrom!));
+                mime.To.Add(MimeKit.MailboxAddress.Parse(email));
+                mime.Subject = title;
+                var builder = new MimeKit.BodyBuilder { TextBody = message };
+                mime.Body = builder.ToMessageBody();
+                await client.SendAsync(mime, timeout.Token);
+                await client.DisconnectAsync(true, timeout.Token);
                 return (true, "SMTP accepted");
             }
             using var request = new HttpRequestMessage(HttpMethod.Post, endpoint);
@@ -96,8 +119,9 @@ public sealed class PasswordResetEmailSender(
             using var response = await clients.CreateClient(nameof(PasswordResetEmailSender)).SendAsync(request, timeout.Token);
             return (response.IsSuccessStatusCode, $"HTTP {(int)response.StatusCode}");
         }
-        catch (Exception exception) when (exception is HttpRequestException or OperationCanceledException or SmtpException or FormatException or ArgumentException)
+        catch (Exception exception)
         {
+            logger?.LogWarning("Email delivery failed for {Email}: {Error}", email, exception.Message);
             // Provider errors can contain credentials, email content or OTPs. Keep only a safe status.
             return (false, "Email gateway unavailable.");
         }

@@ -26,9 +26,9 @@ Thiết lập nhanh trên Windows: mở PowerShell ở thư mục gốc dự án
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\configure-email.ps1
 ```
 
-Script hỏi email **gửi** và mật khẩu SMTP ở ô nhập ẩn, mặc định dùng `smtp.gmail.com:587` với STARTTLS. Không cần sửa source hoặc gửi mật khẩu qua chat. Script lưu SMTP vào .NET User Secrets qua stdin, giữ các secret khác và để trống email webhook để chọn SMTP. Script không gửi email và không khởi động lại backend. `ExecutionPolicy Bypass` chỉ áp dụng cho tiến trình chạy lệnh, không đổi chính sách PowerShell của máy. Muốn dùng SMTP khác, thêm `-SmtpHost smtp.example.com -SmtpPort 587 -SenderEmail sender@example.com` vào lệnh trên.
+Script hỏi SMTP host, email **gửi**, SMTP login và mật khẩu/app-password ở ô nhập ẩn. Không cần sửa source hoặc gửi bí mật qua chat. Script lưu SMTP vào .NET User Secrets qua stdin, giữ các secret khác và để trống email webhook để chọn SMTP. Script không gửi email và không khởi động lại backend. `ExecutionPolicy Bypass` chỉ áp dụng cho tiến trình chạy lệnh, không đổi chính sách PowerShell của máy.
 
-Với Gmail, bật Xác minh 2 bước rồi [tạo mật khẩu ứng dụng](https://myaccount.google.com/apppasswords) cho SCMS và nhập mật khẩu đó vào script. Đây là mật khẩu ứng dụng của email gửi, không phải mật khẩu tài khoản SCMS. Tham khảo [hướng dẫn chính thức của Google](https://support.google.com/mail/answer/185833?hl=vi). Nút đăng nhập Google trên form SCMS không tự cấp quyền gửi mail cho backend.
+Dùng Gmail: bật Xác minh 2 bước rồi [tạo mật khẩu ứng dụng](https://myaccount.google.com/apppasswords) cho SCMS và chạy script với `-SmtpHost smtp.gmail.com -SmtpUsername <gmail-gui>`. Nhập App Password thay vì mật khẩu đăng nhập. Nút đăng nhập Google trên form SCMS không tự cấp quyền gửi mail cho backend. Với SMTP khác, truyền `-SmtpHost smtp.example.com -SmtpPort 587 -SenderEmail sender@example.com -SmtpUsername <username>`.
 
 Kiểm tra đã lưu đủ giá trị, chỉ in trạng thái và không hiện mật khẩu:
 

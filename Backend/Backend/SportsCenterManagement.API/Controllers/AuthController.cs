@@ -70,7 +70,8 @@ public sealed class AuthController(
         if (await dbContext.Users.AnyAsync(user => user.Email == email, cancellationToken))
             return Ok(new { message = sentMessage });
 
-        var latest = await dbContext.EmailVerificationTokens.Where(token => token.Email == email)
+        var latest = await dbContext.EmailVerificationTokens
+            .Where(token => token.Email == email && token.UsedAt == null)
             .OrderByDescending(token => token.Id).FirstOrDefaultAsync(cancellationToken);
         if (latest is not null && latest.CreatedAt > now.AddMinutes(-1))
         {

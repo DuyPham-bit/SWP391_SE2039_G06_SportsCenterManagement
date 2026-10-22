@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   sqlserver:
     image: mcr.microsoft.com/mssql/server:2022-latest
@@ -7,14 +5,12 @@ services:
     restart: unless-stopped
     environment:
       - ACCEPT_EULA=Y
-      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:-YourStrong@Password123}
+      - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in docker/.env}
       - MSSQL_PID=Developer
-    ports:
-      - "${SQLSERVER_PORT:-1433}:1433"
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
-      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\""]
+      test: ["CMD-SHELL", "/opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -C -Q \"SELECT 1\" || /opt/mssql-tools/bin/sqlcmd -S localhost -U sa -P \"$$MSSQL_SA_PASSWORD\" -Q \"SELECT 1\""]
       interval: 10s
       timeout: 5s
       retries: 10
@@ -30,23 +26,34 @@ services:
       sqlserver:
         condition: service_healthy
     ports:
-      - "${BACKEND_PORT:-5000}:8080"
+      - "127.0.0.1:${BACKEND_PORT:-5000}:8080"
     environment:
-      - ASPNETCORE_ENVIRONMENT=Development
+      - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=http://+:8080
-      - ConnectionStrings__SportsCenter=Server=sqlserver,1433;Database=SportsCenterManagement;User Id=sa;Password=${MSSQL_SA_PASSWORD:-YourStrong@Password123};TrustServerCertificate=True;MultipleActiveResultSets=true;
-      - Database__BaselineLegacySchema=true
-      - Jwt__Key=${JWT_KEY:-SCMS_Secret_Key_For_JWT_Authentication_SportsCenter_2026_Secure!}
+      - ConnectionStrings__SportsCenter=Server=sqlserver,1433;Database=SportsCenterManagement;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in docker/.env};TrustServerCertificate=True;MultipleActiveResultSets=true;
+      - Database__BaselineLegacySchema=${DATABASE_BASELINE_LEGACY_SCHEMA:-false}
+      - Jwt__Key=${JWT_KEY:?Set JWT_KEY in docker/.env}
       - Jwt__Issuer=SportsCenterManagement.API
       - Jwt__Audience=SportsCenterManagement.FE
       - Jwt__ExpiresMinutes=60
-      - Bootstrap__Admin__Username=${ADMIN_USERNAME:-admin}
-      - Bootstrap__Admin__Email=${ADMIN_EMAIL:-admin@sportscenter.vn}
-      - Bootstrap__Admin__Password=${ADMIN_PASSWORD:-Admin@SCMS2026!Secure}
-      - Cors__AllowedOrigins__0=http://localhost:3004
-      - Cors__AllowedOrigins__1=http://localhost:5173
-      - Cors__AllowedOrigins__2=http://localhost:5000
-      - Cors__AllowedOrigins__3=http://localhost:80
+      - Bootstrap__SystemAdmin__Username=${ADMIN_USERNAME:?Set ADMIN_USERNAME in docker/.env}
+      - Bootstrap__SystemAdmin__Email=${ADMIN_EMAIL:?Set ADMIN_EMAIL in docker/.env}
+      - Bootstrap__SystemAdmin__Password=${ADMIN_PASSWORD:?Set ADMIN_PASSWORD in docker/.env}
+      - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN:-http://localhost:3004}
+      - Cors__AllowedOrigins__1=http://localhost:3004
+      - Cors__AllowedOrigins__2=http://localhost:5173
+      - ExternalCommunications__Email__WebhookUrl=
+      - ExternalCommunications__Email__Smtp__Host=${EMAIL_SMTP_HOST:-}
+      - ExternalCommunications__Email__Smtp__Port=${EMAIL_SMTP_PORT:-587}
+      - ExternalCommunications__Email__Smtp__EnableSsl=${EMAIL_SMTP_ENABLE_SSL:-true}
+      - ExternalCommunications__Email__Smtp__From=${EMAIL_SMTP_FROM:-}
+      - ExternalCommunications__Email__Smtp__Username=${EMAIL_SMTP_USERNAME:-}
+      - ExternalCommunications__Email__Smtp__Password=${EMAIL_SMTP_PASSWORD:-}
+      - MailSettings__Mail=${EMAIL_SMTP_FROM:-}
+      - MailSettings__DisplayName=Hệ Thống SCMS
+      - MailSettings__Password=${EMAIL_SMTP_PASSWORD:-}
+      - MailSettings__Host=${EMAIL_SMTP_HOST:-}
+      - MailSettings__Port=${EMAIL_SMTP_PORT:-587}
     volumes:
       - backend_media:/app/App_Data/media
 
@@ -59,7 +66,7 @@ services:
     depends_on:
       - backend
     ports:
-      - "${FRONTEND_PORT:-3004}:80"
+      - "127.0.0.1:${FRONTEND_PORT:-3004}:80"
 
 volumes:
   sqlserver_data:

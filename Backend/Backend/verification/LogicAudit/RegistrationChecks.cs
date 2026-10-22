@@ -68,13 +68,15 @@ static class RegistrationChecks
             var fresh = await Latest();
             return fresh.Id != old.Id && !await db.EmailVerificationTokens.AnyAsync(t => t.Email == email && t.Id != fresh.Id && t.UsedAt == null);
         });
-        await check("registration email provider failure invalidates its code and returns 503", async () => {
+        await check("registration email provider failure invalidates its code and does not throttle immediate retry", async () => {
             await AllowResend(); mail.Reject = true;
             try {
                 var response = await Issue();
-                return response.StatusCode == HttpStatusCode.ServiceUnavailable && (await Latest()).UsedAt != null
-                    && !await db.Users.AnyAsync(u => u.Email == email);
+                if (response.StatusCode != HttpStatusCode.ServiceUnavailable || (await Latest()).UsedAt == null
+                    || await db.Users.AnyAsync(u => u.Email == email)) return false;
             } finally { mail.Reject = false; }
+            var retry = await Issue();
+            return retry.StatusCode == HttpStatusCode.OK && (await Latest()).UsedAt == null;
         });
         await check("registration creates an active member only after valid email verification", async () => {
             await AllowResend(); await Issue(); code = mail.Otp;

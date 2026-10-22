@@ -1,5 +1,22 @@
 # Để mọi máy dùng chung
 
+## Deploy một domain cho Wi-Fi và 4G
+
+Compose đã sẵn sàng cho mô hình một domain: trình duyệt chỉ mở `https://app.example.com`; Nginx của Frontend chuyển `/api/*` và `/uploads/*` tới Backend trong mạng Docker. Vì API không được gọi trực tiếp từ trình duyệt, người dùng dùng Wi-Fi hay 4G đều truy cập cùng một URL, không cần biết IP hoặc cổng API.
+
+1. Tạo DNS cho domain trỏ tới máy chủ, rồi cấu hình reverse proxy/hosting quản lý TLS để chuyển toàn bộ `https://app.example.com` tới `http://127.0.0.1:3004`. Không mở cổng SQL Server hoặc Backend ra Internet.
+2. Sao chép `docker/.env.example` thành `docker/.env` và thay toàn bộ placeholder. Giá trị `FRONTEND_ORIGIN` phải đúng bằng domain HTTPS công khai, không có dấu `/` cuối. Giữ `DATABASE_BASELINE_LEGACY_SCHEMA=false` cho SQL Server Docker mới; chỉ bật `true` khi trỏ vào database SCMS cũ có schema legacy.
+3. Nếu dùng email OTP, điền SMTP host, sender, username và password/app-password của nhà cung cấp bạn chọn vào các biến `EMAIL_SMTP_*`. Nếu để trống, ứng dụng vẫn chạy nhưng chức năng OTP email trả về 503.
+4. Trên máy chủ, chạy từ thư mục gốc dự án:
+
+   ```powershell
+   docker compose --env-file docker/.env -f docker/docker-compose.yml up -d --build
+   ```
+
+5. Kiểm tra `https://app.example.com/api/health` trả `{"status":"ok"}`, sau đó thử đăng ký bằng một email mới để nhận OTP. Nếu SMTP key có ký tự `$`, đặt giá trị trong `docker/.env` bằng dấu nháy đơn để Docker Compose không nội suy nó.
+
+Backend và SQL Server chỉ bind vào `127.0.0.1`; reverse proxy HTTPS trên máy chủ là điểm vào công khai duy nhất. Nếu nhà cung cấp SMTP có chặn IP, chỉ cho phép IP công khai của **máy chủ**, không phải IP Wi-Fi/4G của khách dùng website.
+
 1. Đưa Frontend, Backend và một SQL Server lên cùng dịch vụ máy chủ.
 2. Gắn tên miền và bật HTTPS.
 3. Cấu hình web server để `/api` chuyển tới Backend. Frontend đã dùng `/api` tự động.

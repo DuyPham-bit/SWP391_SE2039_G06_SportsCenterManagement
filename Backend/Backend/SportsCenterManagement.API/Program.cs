@@ -16,6 +16,8 @@ using SportsCenterManagement.BLL.Services;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Repositories.Implementations;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
+using SportsCenterManagement.API.Models;
+using SportsCenterManagement.API.Services;
 
 var builder = WebApplication.CreateBuilder(args);
 var connectionString = builder.Configuration.GetConnectionString("SportsCenter")
@@ -93,6 +95,11 @@ builder.Services.AddScoped<ClassReminderService>();
 builder.Services.AddHostedService<ClassReminderWorker>();
 builder.Services.AddHostedService<CommunicationDeliveryWorker>();
 builder.Services.AddScoped<LandingContentService>();
+
+// MailKit SendMailService
+builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
+builder.Services.AddTransient<ISendMailService, SendMailService>();
+
 var localMediaRoot = Path.GetFullPath(
     builder.Configuration["GoogleDrive:LocalStoragePath"] ?? Path.Combine("App_Data", "media"),
     builder.Environment.ContentRootPath);

@@ -136,6 +136,9 @@ export function LoginPage() {
       if (!active || !googleButtonRef.current) return;
       google.accounts.id.initialize({
         client_id: googleClientId,
+        error_callback: () => {
+          if (active) setGoogleRendered(false);
+        },
         callback: async ({ credential }) => {
           if (!active) return;
           setGoogleLoading(true);
