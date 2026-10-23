@@ -213,7 +213,7 @@ function AppRouter() {
       case '#/manager/invoices':
         return renderManagerRoute(CounterInvoices, undefined, ['MANAGER', 'ADMIN']);
       case '#/manager/members':
-        return renderManagerRoute(MemberManagement, 'lookup_member');
+        return renderManagerRoute(MemberManagement);
       case '#/manager/staff':
         return renderManagerRoute(StaffManagement, 'manage_staff');
       case '#/manager/packages':
