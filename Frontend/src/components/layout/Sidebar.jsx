@@ -186,6 +186,12 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
           category: isEn ? 'INTERACTION & OPS' : 'TƯƠNG TÁC & VẬN HÀNH',
           items: [
             {
+              id: 'coach_messages',
+              label: isEn ? 'Student Messages' : 'Tin nhắn học viên',
+              icon: 'chat',
+              path: '#/coach/messages'
+            },
+            {
               id: 'coach_notifications',
               label: isEn ? 'Notices & Homework' : 'Tương tác & Bài tập về nhà',
               icon: 'forum',

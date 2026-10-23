@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { coachApi, coachProfessionalApi } from '../../services/api.js';
 import { uploadMediaFileToCloud } from '../../services/cloudMediaStorage.js';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -78,6 +78,7 @@ export function CoachProfessionalHub() {
 
   const getInitialTab = () => {
     const hash = window.location.hash || '';
+    if (hash.startsWith('#/coach/messages') || hash.includes('tab=communication')) return 'communication';
     if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) return 'facilities';
     return 'performance';
   };
@@ -89,6 +90,7 @@ export function CoachProfessionalHub() {
   const [error, setError] = useState('');
 
   const tabsConfig = [
+    { id: 'communication', icon: 'chat', label: isEn ? 'Student Messages' : 'Tin nhắn học viên' },
     { id: 'performance', icon: 'monitoring', label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất' },
     { id: 'facilities', icon: 'inventory_2', label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị' }
   ];
@@ -110,7 +112,9 @@ export function CoachProfessionalHub() {
     load();
     const handleHash = () => {
       const hash = window.location.hash || '';
-      if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) {
+      if (hash.startsWith('#/coach/messages') || hash.includes('tab=communication')) {
+        setTab('communication');
+      } else if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) {
         setTab('facilities');
       } else if (hash.includes('tab=performance') || hash.includes('tab=kpi')) {
         setTab('performance');
@@ -120,7 +124,7 @@ export function CoachProfessionalHub() {
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  const act = async (fn, successMsg) => {
+  const act = async (fn, successMsg, onError) => {
     setWorking(true);
     try {
       await fn();
@@ -128,6 +132,7 @@ export function CoachProfessionalHub() {
       await load();
       return true;
     } catch (e) {
+      onError?.(e);
       showError(e);
       return false;
     } finally {
@@ -1228,29 +1233,67 @@ function ProgramsTab({ data, act, working, isEn }) {
 // TAB 4: COMMUNICATION (TƯƠNG TÁC & CHAT)
 // ─────────────────────────────────────────────────────────────
 function CommunicationTab({ data, act, working, isEn }) {
-  const [memberId, setMemberId] = useState(data.clients[0]?.id || '');
+  const requestedMember = () => {
+    const sender = new URLSearchParams(window.location.hash.split('?')[1] || '').get('senderUserId');
+    return sender ? (data.clients.find(x => String(x.userId) === sender)?.id || '')
+      : (data.threads?.find(x => x.unread > 0)?.memberId || data.clients[0]?.id || '');
+  };
+  const [memberId, setMemberId] = useState(requestedMember);
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
+  const [messageError, setMessageError] = useState('');
+  const [sendError, setSendError] = useState('');
+  const messageRequest = useRef(0);
+
+  useEffect(() => {
+    const handleHash = () => {
+      if (new URLSearchParams(window.location.hash.split('?')[1] || '').has('senderUserId')) {
+        setMemberId(requestedMember());
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [data.clients]);
 
   const loadMessages = async (id) => {
     if (!id) return;
+    const request = ++messageRequest.current;
     setLoadingMessages(true);
     try {
       const res = await coachProfessionalApi.getMessages(data.profile.id, id);
-      setMessages(res);
+      if (request === messageRequest.current) {
+        setMessages(res);
+        setMessageError('');
+      }
+    } catch (e) {
+      if (request === messageRequest.current) setMessageError(e);
     } finally {
-      setLoadingMessages(false);
+      if (request === messageRequest.current) setLoadingMessages(false);
     }
   };
 
   useEffect(() => {
+    setMessages([]);
+    setInputMessage('');
+    setMessageError('');
+    setSendError('');
+    setLoadingMessages(false);
     loadMessages(memberId);
-  }, [memberId]);
+    const refresh = () => { if (!document.hidden) loadMessages(memberId); };
+    const timer = window.setInterval(refresh, 15000);
+    window.addEventListener('focus', refresh);
+    return () => {
+      ++messageRequest.current;
+      window.clearInterval(timer);
+      window.removeEventListener('focus', refresh);
+    };
+  }, [memberId, data.profile.id]);
 
   const send = (e) => {
     e.preventDefault();
-    if (!inputMessage.trim()) return;
+    if (working || !memberId || !inputMessage.trim()) return;
+    setSendError('');
     return act(
       () =>
         coachProfessionalApi.sendMessage({
@@ -1258,7 +1301,8 @@ function CommunicationTab({ data, act, working, isEn }) {
           memberId: Number(memberId),
           content: inputMessage.trim()
         }),
-      isEn ? 'Message sent.' : 'Đã gửi tin nhắn.'
+      isEn ? 'Message sent.' : 'Đã gửi tin nhắn.',
+      setSendError
     ).then((ok) => {
       if (ok) {
         setInputMessage('');
@@ -1306,22 +1350,33 @@ function CommunicationTab({ data, act, working, isEn }) {
         icon="chat"
         action={
           <select
+            aria-label={isEn ? 'Student conversation' : 'Cuộc trò chuyện với học viên'}
             value={memberId}
-            onChange={e => setMemberId(e.target.value)}
+            onChange={e => {
+              setMemberId(e.target.value);
+              const client = data.clients.find(x => String(x.id) === e.target.value);
+              if (client) window.location.hash = `#/coach/messages?tab=communication&senderUserId=${encodeURIComponent(client.userId)}`;
+            }}
+            disabled={working}
             className={`${selectClass} max-w-56`}
           >
+            {!memberId && <option value="">{isEn ? 'Select an assigned student' : 'Chọn học viên đang phụ trách'}</option>}
             {data.clients.map(x => (
               <option key={x.id} value={x.id}>{x.fullName}</option>
             ))}
           </select>
         }
       >
+        <CoachError message={messageError} retry={() => loadMessages(memberId)} />
+        <CoachError message={sendError} />
         <div className="h-[400px] space-y-2.5 overflow-y-auto rounded-2xl bg-slate-50 dark:bg-slate-750/50 p-4 border border-slate-100 dark:border-slate-700">
           {loadingMessages ? (
             <p className="text-xs text-slate-400 text-center py-8">{isEn ? 'Loading conversation...' : 'Đang tải đoạn hội thoại...'}</p>
           ) : !messages.length ? (
             <EmptyState icon="forum" isEn={isEn}>
-              {isEn ? `Start conversation with student ${selectedClient?.fullName || ''}.` : `Bắt đầu cuộc trò chuyện với học viên ${selectedClient?.fullName || ''}.`}
+              {!memberId
+                ? (isEn ? 'Select an assigned student to view and reply to messages.' : 'Chọn học viên đang phụ trách để xem và trả lời tin nhắn.')
+                : (isEn ? `Start conversation with student ${selectedClient?.fullName || ''}.` : `Bắt đầu cuộc trò chuyện với học viên ${selectedClient?.fullName || ''}.`)}
             </EmptyState>
           ) : (
             messages.map(x => {
@@ -1335,7 +1390,7 @@ function CommunicationTab({ data, act, working, isEn }) {
                       : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-bl-xs shadow-2xs'
                   }`}
                 >
-                  <p>{x.content}</p>
+                  <p className="whitespace-pre-wrap break-words">{x.content}</p>
                   <span className={`text-[10px] block mt-1 ${isCoach ? 'text-[#F2CC8F]' : 'text-slate-400'}`}>
                     {formatDate(x.createdAt, isEn)}
                   </span>
@@ -1363,6 +1418,8 @@ function CommunicationTab({ data, act, working, isEn }) {
           <input
             value={inputMessage}
             onChange={e => setInputMessage(e.target.value)}
+            aria-label={isEn ? 'Reply to student' : 'Trả lời học viên'}
+            disabled={!memberId || working}
             required
             maxLength="4000"
             placeholder={isEn ? 'Type a supportive message to student...' : 'Nhập tin nhắn hướng dẫn, nhắc nhở học viên...'}

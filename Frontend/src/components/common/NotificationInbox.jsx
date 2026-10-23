@@ -4,6 +4,7 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useNotifications } from './useNotifications.js';
 import { formatMemberDateTime } from '../../features/member/memberOverview.js';
 import { translateNotificationTitle, translateNotificationContent } from '../../services/i18nHelper.js';
+import { notificationTarget } from './notificationNavigation.js';
 
 export function NotificationInbox() {
   const [open, setOpen] = useState(false);
@@ -37,7 +38,14 @@ export function NotificationInbox() {
     setOpen(prev => !prev);
   };
 
-  const handleMarkItemRead = item => apiMarkRead(item);
+  const handleMarkItemRead = item => {
+    apiMarkRead(item);
+    const target = notificationTarget(item, role);
+    if (target) {
+      setOpen(false);
+      window.location.hash = target;
+    }
+  };
 
   const handleMarkAllRead = () => apiMarkAllRead();
 
@@ -120,6 +128,11 @@ export function NotificationInbox() {
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 block font-medium">
                     {formatMemberDateTime ? formatMemberDateTime(item.createdAt, isEn) : new Date(item.createdAt).toLocaleString(isEn ? 'en-US' : 'vi-VN')} · {item.isRead ? (isEn ? 'Read' : 'Đã đọc') : (isEn ? 'Unread' : 'Chưa đọc')}
                   </span>
+                  {notificationTarget(item, role) && (
+                    <span className="block mt-2 text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A]">
+                      {isEn ? 'Open conversation & reply →' : 'Mở cuộc trò chuyện & trả lời →'}
+                    </span>
+                  )}
                 </button>
               );
             })}

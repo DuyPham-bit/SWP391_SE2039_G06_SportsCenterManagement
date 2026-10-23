@@ -642,7 +642,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
                  db.CoachWorkEvents.Any(e => e.CoachId == coach.Id && e.MemberId == member.Id)))
             .Select(x => x.Id).Distinct().ToArrayAsync(ct);
         var coaches = await db.CoachProfiles.AsNoTracking().Where(x => coachIds.Contains(x.Id))
-            .Select(x => new { x.Id, x.FullName, x.CoachCode, x.Specialization, x.Certification, x.ExperienceYears }).ToArrayAsync(ct);
+            .Select(x => new { x.Id, x.UserId, x.FullName, x.CoachCode, x.Specialization, x.Certification, x.ExperienceYears }).ToArrayAsync(ct);
         var events = await (from e in db.CoachWorkEvents.AsNoTracking() join coach in db.CoachProfiles on e.CoachId equals coach.Id
             where e.MemberId == member.Id orderby e.StartAt descending
             select new { e.Id, e.CoachId, CoachName = coach.FullName, e.Title, e.EventType, e.StartAt, e.EndAt, e.Status, e.Notes }).ToArrayAsync(ct);

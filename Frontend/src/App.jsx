@@ -283,6 +283,7 @@ function AppRouter() {
       case '#/coach/equipment':
         return renderCoachRoute(CoachResources, 'manage_coach_workspace');
       case '#/coach/professional':
+      case '#/coach/messages':
         return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');
 
       // MEMBER ROUTES

@@ -70,6 +70,7 @@ export function AppLayout({ children, currentPath }) {
       '#/coach/training-plan': 'nav.coach_training_plan',
       '#/coach/progress': 'nav.coach_progress',
       '#/coach/notifications': 'nav.coach_notifications',
+      '#/coach/messages': 'nav.coach_messages',
       '#/coach/ai-recommendation': 'nav.coach_ai_recommendation',
       '#/coach/performance': 'nav.coach_performance',
       '#/coach/salary-kpi': 'nav.coach_performance',

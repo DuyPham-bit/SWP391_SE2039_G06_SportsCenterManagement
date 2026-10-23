@@ -27,7 +27,7 @@ public sealed class NotificationsController(
     public async Task<IActionResult> Mine(CancellationToken ct) => Ok(await (
         from link in db.UserNotifications join n in db.Notifications on link.NotificationId equals n.Id
         where link.UserId == CurrentUserId orderby n.CreatedAt descending, n.Id descending
-        select new { n.Id, n.Title, Content = n.Message, n.NotificationType, n.CreatedAt, link.IsRead }
+        select new { n.Id, n.Title, Content = n.Message, n.NotificationType, n.SenderId, n.CreatedAt, link.IsRead }
     ).Take(200).ToListAsync(ct));
 
     [HttpPut("notifications/{notificationId:long}/read")]

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { memberCoachApi } from '../../services/api.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -39,16 +39,18 @@ export function MemberCoachPortal() {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
-  const [tab, setTab] = useState('appointments');
+  const [tab, setTab] = useState(() => new URLSearchParams(window.location.hash.split('?')[1] || '').get('tab') === 'chat' ? 'chat' : 'appointments');
   const [coachId, setCoachId] = useState('');
   const [messages, setMessages] = useState([]);
+  const messageRequest = useRef(0);
 
   const load = async () => {
     setLoading(true);
     try {
       const d = await memberCoachApi.getPortal();
       setData(d);
-      setCoachId(x => x || d.coaches?.[0]?.id || '');
+      const sender = new URLSearchParams(window.location.hash.split('?')[1] || '').get('senderUserId');
+      setCoachId(x => x || (sender ? d.coaches?.find(coach => String(coach.userId) === sender)?.id : d.coaches?.[0]?.id) || '');
     } catch (e) {
       showError(e);
     } finally {
@@ -59,6 +61,19 @@ export function MemberCoachPortal() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    const handleHash = () => {
+      const query = new URLSearchParams(window.location.hash.split('?')[1] || '');
+      if (query.get('tab') === 'chat') {
+        setTab('chat');
+        const sender = query.get('senderUserId');
+        if (sender) setCoachId(data?.coaches?.find(coach => String(coach.userId) === sender)?.id || '');
+      }
+    };
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [data?.coaches]);
 
   const act = async (fn, msg) => {
     setWorking(true);
@@ -77,15 +92,19 @@ export function MemberCoachPortal() {
 
   const loadMessages = async id => {
     if (!id || !data?.member?.id) return;
+    const request = ++messageRequest.current;
     try {
-      setMessages(await memberCoachApi.getMessages(id, data.member.id));
+      const result = await memberCoachApi.getMessages(id, data.member.id);
+      if (request === messageRequest.current) setMessages(result);
     } catch (e) {
-      showError(e);
+      if (request === messageRequest.current) showError(e);
     }
   };
 
   useEffect(() => {
+    setMessages([]);
     if (coachId && data) loadMessages(coachId);
+    return () => { ++messageRequest.current; };
   }, [coachId, data?.member?.id]);
 
   if (loading && !data) return <LoadingSpinner text={isEn ? "Loading coach interaction portal..." : "Đang mở cổng tương tác HLV..."} />;
@@ -400,7 +419,12 @@ export function MemberCoachPortal() {
 
       {tab === 'chat' && (
         <Card title={isEn ? "Private Chat with Coach" : "Chat riêng với HLV"}>
-          <select value={coachId} onChange={e => setCoachId(e.target.value)} className={`${input} mb-3 max-w-sm`}>
+          <select value={coachId} aria-label={isEn ? 'Coach conversation' : 'Cuộc trò chuyện với HLV'} disabled={working} onChange={e => {
+            setCoachId(e.target.value);
+            const coach = data?.coaches?.find(x => String(x.id) === e.target.value);
+            if (coach) window.location.hash = `#/member/coach-portal?tab=chat&senderUserId=${encodeURIComponent(coach.userId)}`;
+          }} className={`${input} mb-3 max-w-sm`}>
+            {!coachId && <option value="">{isEn ? 'Select your coach' : 'Chọn HLV của bạn'}</option>}
             {data?.coaches?.map(x => (
               <option key={x.id} value={x.id}>
                 {translateCoachName(x.fullName, isEn)} · {x.specialization}

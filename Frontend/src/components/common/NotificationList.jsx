@@ -2,8 +2,11 @@ import React, { useState } from 'react';
 import { formatMemberDateTime } from '../../features/member/memberOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { translateNotificationTitle, translateNotificationContent } from '../../services/i18nHelper.js';
+import { useAuth } from '../../context/AuthContext.js';
+import { notificationTarget } from './notificationNavigation.js';
 
 export function NotificationList({ notifications, title }) {
+  const { role } = useAuth();
   const { language } = useLanguage();
   const isEn = language === 'en';
   const displayTitle = title || (isEn ? 'My Notifications' : 'Thông báo của tôi');
@@ -148,6 +151,11 @@ export function NotificationList({ notifications, title }) {
                 <span className="material-symbols-outlined text-[13px]">schedule</span>
                 {formatMemberDateTime(item.createdAt, isEn)}
               </time>
+              {notificationTarget(item, role) && (
+                <a href={notificationTarget(item, role)} onClick={() => markRead(item)} className="font-bold text-[#2D6A4F] hover:underline">
+                  {isEn ? 'Open conversation & reply' : 'Mở cuộc trò chuyện & trả lời'}
+                </a>
+              )}
               {!item.isRead && (
                 <button
                   type="button"
