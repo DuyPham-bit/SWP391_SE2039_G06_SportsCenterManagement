@@ -256,7 +256,8 @@ public sealed class AdminManagementController(SportsCenterDbContext db) : Contro
                    from staff in staffRows.DefaultIfEmpty()
                    join center in db.Centers.AsNoTracking() on staff.CenterId equals center.Id into centerRows
                    from center in centerRows.DefaultIfEmpty()
-                   select new { user, userRole, staff, center };
+                    where user.Status != "Deleted"
+                    select new { user, userRole, staff, center };
         if (normalizedRole is not null) rows = rows.Where(row => row.userRole.Name == normalizedRole);
         if (normalizedStatus is not null) rows = rows.Where(row => row.user.Status == normalizedStatus);
         if (normalizedQuery is not null)
@@ -292,6 +293,79 @@ public sealed class AdminManagementController(SportsCenterDbContext db) : Contro
     [HttpPost("accounts/{accountId:long}/revoke-sessions")]
     public Task<IActionResult> RevokeSessions(long accountId, AccountActionRequest request, CancellationToken ct) =>
         ChangeAccountSecurity(accountId, request, "revoke", ct);
+
+    [HttpDelete("accounts/{accountId:long}")]
+    public async Task<IActionResult> DeleteMemberAccount(
+        long accountId,
+        [FromBody(EmptyBodyBehavior = Microsoft.AspNetCore.Mvc.ModelBinding.EmptyBodyBehavior.Allow)] AccountActionRequest? request = null,
+        [FromQuery] string? reason = null,
+        CancellationToken ct = default)
+    {
+        var finalReason = !string.IsNullOrWhiteSpace(request?.Reason)
+            ? request.Reason.Trim()
+            : (!string.IsNullOrWhiteSpace(reason) ? reason.Trim() : "Admin xoa tai khoan");
+
+        if (finalReason.Length > 500)
+            return BadRequest(new { message = "Lý do xóa tài khoản là bắt buộc và tối đa 500 ký tự." });
+
+        var member = await (from user in db.Users
+                            join role in db.Roles on user.RoleId equals role.Id
+                            join profile in db.MemberProfiles on user.Id equals profile.UserId into profiles
+                            from profile in profiles.DefaultIfEmpty()
+                            where user.Id == accountId && role.Name == RoleNames.Member
+                            select new { User = user, Profile = profile }).SingleOrDefaultAsync(ct);
+        if (member is null)
+            return NotFound(new { message = "Không tìm thấy tài khoản Member." });
+        if (member.User.Status == "Deleted")
+            return NoContent();
+
+        await using var transaction = await db.Database.BeginTransactionAsync(ct);
+        var now = DateTime.UtcNow;
+        var originalEmail = member.User.Email;
+        var deletedUsername = $"deleted-member-{member.User.Id}";
+        var deletedEmail = $"deleted-member-{member.User.Id}@deleted.invalid";
+
+        // Financial and audit records reference this account, so retain the keys while removing access and identifiers.
+        member.User.Username = deletedUsername;
+        member.User.Email = deletedEmail;
+        member.User.Phone = null;
+        member.User.GoogleSubject = null;
+        member.User.PasswordHash = PasswordHashing.Hash(Guid.NewGuid().ToString("N"));
+        member.User.Status = "Deleted";
+        member.User.FailedLoginAttempts = 0;
+        member.User.LockedUntil = now;
+        member.User.AuthVersion++;
+        member.User.UpdatedAt = now;
+
+        if (member.Profile is not null)
+        {
+            member.Profile.FullName = "Deleted member";
+            member.Profile.DateOfBirth = null;
+            member.Profile.Gender = null;
+            member.Profile.Address = null;
+            member.Profile.EmergencyContactName = null;
+            member.Profile.EmergencyContactPhone = null;
+            member.Profile.FitnessGoal = null;
+            member.Profile.FitnessLevel = null;
+            member.Profile.MedicalNote = null;
+            member.Profile.HeightCm = null;
+            member.Profile.WeightKg = null;
+            member.Profile.BookingSuspendedUntil = null;
+            member.Profile.UpdatedAt = now;
+        }
+
+        await db.PasswordResetTokens
+            .Where(token => token.UserId == member.User.Id && token.UsedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(token => token.UsedAt, now), ct);
+        await db.EmailVerificationTokens
+            .Where(token => token.Email == originalEmail && token.UsedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(token => token.UsedAt, now), ct);
+        AddAudit("admin.member.deleted", "User", member.User.Id, null,
+            new { Reason = finalReason, PersonalDataAnonymized = true });
+        await db.SaveChangesAsync(ct);
+        await transaction.CommitAsync(ct);
+        return NoContent();
+    }
 
     private async Task<IActionResult> ChangeAccountSecurity(long accountId, AccountActionRequest request, string action, CancellationToken ct)
     {

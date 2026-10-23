@@ -145,6 +145,7 @@ using (var scope = app.Services.CreateScope())
     var dbContext = scope.ServiceProvider.GetRequiredService<SportsCenterDbContext>();
     var baselineLegacySchema = app.Configuration.GetValue<bool>("Database:BaselineLegacySchema");
     await DbInitializer.SeedAsync(dbContext, baselineLegacySchema);
+    await DevelopmentAccountBootstrapper.SeedAsync(dbContext, app.Configuration, app.Environment);
     await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
 }
 

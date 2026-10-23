@@ -56,7 +56,7 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
     response = await fetch(getApiUrl(path), {
       method,
       headers: requestHeaders,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      body: body === undefined ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)),
       signal
     });
   } catch (cause) {

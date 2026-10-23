@@ -116,7 +116,7 @@ async function screenshot(name, width, height) {
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false }, session);
   await cdp.send('Page.navigate', { url: `${origin}/#/register` }, session);
   await until('registration', () => evaluate('Boolean(document.querySelector("#register-email"))'));
-  await input('#register-name', 'Hội viên kiểm thử'); await input('#register-email', 'member@example.test');
+  await input('#register-name', 'Hội viên kiểm thử'); await input('#register-phone', '0901234567'); await input('#register-email', 'member@example.test');
   await input('#register-password', 'Valid_Register42!'); await input('#register-confirm', 'Valid_Register42!');
   await evaluate('document.querySelector("#register-agree").click()');
   failEmail = true; await submit();
@@ -125,6 +125,7 @@ async function screenshot(name, width, height) {
   failEmail = false; await submit();
   await until('OTP step', () => evaluate('Boolean(document.querySelector("#register-otp"))'));
   assert.equal(requests.filter(r => r.route === '/api/auth/register').length, 0);
+  assert.equal(requests.filter(r => r.route === '/api/auth/request-email-verification').at(-1).body.phone, '0901234567');
   assert.equal(await evaluate('document.activeElement.id'), 'register-otp');
   checks.push('Registration requests delivery first, keeps failures retryable, and focuses the OTP field.');
   await submit();
@@ -141,10 +142,14 @@ async function screenshot(name, width, height) {
   assert.equal(await evaluate('Boolean(document.querySelector("#register-otp"))'), false);
   await input('#register-email', 'member@example.test'); await submit();
   await until('OTP requested again', () => evaluate('Boolean(document.querySelector("#register-otp"))'));
+  await input('#register-phone', '0901234568');
+  assert.equal(await evaluate('Boolean(document.querySelector("#register-otp"))'), false);
+  await input('#register-phone', '0901234567'); await submit();
+  await until('OTP requested after phone change', () => evaluate('Boolean(document.querySelector("#register-otp"))'));
   await input('#register-otp', '123456'); await submit();
   await until('registered and logged in', () => evaluate('location.hash.startsWith("#/member/")'));
   assert.equal(requests.filter(r => r.route === '/api/auth/register').at(-1).body.emailOtp, '123456');
-  checks.push('Changing email discards the previous challenge; a valid OTP is sent with registration and then logs in.');
+  checks.push('Changing email or phone discards the previous challenge; a valid OTP is sent with registration and then logs in.');
   await evaluate('sessionStorage.clear(); location.hash = "#/login?logout=true"');
   await until('login', () => evaluate('Boolean(document.querySelector("#login-email"))'));
   await click('Quên mật khẩu?');

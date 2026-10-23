@@ -163,26 +163,64 @@ function PasswordResetForm({ onClose, onResetSuccess }) {
           </div>
 
           <div>
-            <label htmlFor="reset-otp" className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1">
-              Mã xác thực OTP (6 chữ số) *
-            </label>
-            <input
-              id="reset-otp"
-              autoFocus
-              type="text"
-              required
-              inputMode="numeric"
-              autoComplete="one-time-code"
-              pattern="[0-9]{6}"
-              minLength={6}
-              maxLength={6}
-              disabled={loading}
-              placeholder="Nhập mã OTP"
-              value={otp}
-              onChange={e => setOtp(e.target.value)}
-              className="w-full px-3.5 py-2.5 text-center font-dm-sans text-lg tracking-widest rounded-xl border border-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A] focus:border-[#81B29A] bg-white"
-            />
-            <div className="mt-1">
+            <div className="flex items-center justify-between mb-1">
+              <label htmlFor="reset-otp" className="block text-xs font-bold uppercase tracking-wider text-slate-700">
+                Mã xác thực OTP (6 chữ số) *
+              </label>
+              <span className="text-[10px] text-amber-700 font-semibold bg-amber-100/80 px-2 py-0.5 rounded-full">
+                Hạn 10 phút
+              </span>
+            </div>
+
+            <div className="relative flex justify-center items-center my-2.5">
+              <input
+                id="reset-otp"
+                autoFocus
+                type="text"
+                required
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                pattern="[0-9]{6}"
+                minLength={6}
+                maxLength={6}
+                disabled={loading}
+                placeholder="Nhập 6 chữ số"
+                value={otp}
+                onChange={e => setOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-center"
+              />
+
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 w-full">
+                {[0, 1, 2, 3, 4, 5].map((index) => {
+                  const digit = otp[index] || '';
+                  const isCurrent = otp.length === index;
+                  const isFilled = Boolean(digit);
+                  return (
+                    <div
+                      key={index}
+                      className={`flex-1 h-12 rounded-2xl flex items-center justify-center text-xl font-black font-mono transition-all duration-150 border-2 select-none ${
+                        isCurrent
+                          ? 'border-[var(--primary-color,#1A3B8B)] bg-white text-[var(--primary-color,#1A3B8B)] ring-4 ring-[var(--primary-color,#1A3B8B)]/20 shadow-md scale-[1.04]'
+                          : isFilled
+                          ? 'border-slate-300 bg-slate-50/70 text-slate-900 shadow-2xs'
+                          : 'border-slate-200 bg-white text-slate-300'
+                      }`}
+                    >
+                      {digit ? (
+                        digit
+                      ) : isCurrent ? (
+                        <span className="w-0.5 h-5 bg-[var(--primary-color,#1A3B8B)] animate-pulse rounded-full" />
+                      ) : (
+                        <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            <div className="mt-1 flex items-center justify-between text-xs">
+              <span className="text-slate-400 text-[11px]">Không chia sẻ mã với người khác</span>
               <button type="button" disabled={loading || resendSeconds > 0} onClick={handleRequestOtp} className="min-h-11 text-xs text-slate-700 underline disabled:opacity-60">{resendSeconds > 0 ? `Gửi lại mã sau ${resendSeconds}s` : 'Gửi lại mã'}</button>
             </div>
           </div>

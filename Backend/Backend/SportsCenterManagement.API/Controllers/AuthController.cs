@@ -57,18 +57,23 @@ public sealed class AuthController(
     [EnableRateLimiting("password-reset")]
     [AllowAnonymous]
     public async Task<IActionResult> RequestEmailVerification(
-        [FromBody] RequestPasswordResetRequest request, CancellationToken cancellationToken)
+        [FromBody] RequestRegistrationEmailVerificationRequest request, CancellationToken cancellationToken)
     {
         if (!resetEmail.IsConfigured)
             return StatusCode(503, new { message = "Hiện chưa thể gửi email xác thực. Vui lòng thử lại sau hoặc liên hệ trung tâm." });
 
         var email = request.Email.Trim().ToLowerInvariant();
+        var phone = PhoneNumberNormalization.Normalize(request.Phone);
+        if (phone is not null && !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^\+?[0-9]{8,15}$"))
+            return BadRequest(new { message = "Số điện thoại phải gồm từ 8 đến 15 chữ số." });
+
         var now = DateTime.UtcNow;
         await using var transaction = await dbContext.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.Serializable, cancellationToken);
-        const string sentMessage = "Nếu email có thể đăng ký, mã xác thực đã được gửi. Vui lòng kiểm tra hộp thư và thư rác. Mã có hạn 10 phút.";
         if (await dbContext.Users.AnyAsync(user => user.Email == email, cancellationToken))
-            return Ok(new { message = sentMessage });
+            return Conflict(new { message = "Email này đã được đăng ký." });
+        if (phone is not null && await dbContext.Users.AnyAsync(user => user.Phone == phone, cancellationToken))
+            return Conflict(new { message = "Số điện thoại này đã được đăng ký." });
 
         var latest = await dbContext.EmailVerificationTokens
             .Where(token => token.Email == email && token.UsedAt == null)
@@ -91,7 +96,7 @@ public sealed class AuthController(
         await transaction.CommitAsync(cancellationToken);
         if (!await resetEmail.SendVerificationAsync(verification, otp, cancellationToken))
             return StatusCode(503, new { message = "Chưa gửi được email xác thực. Vui lòng thử lại sau." });
-        return Ok(new { message = sentMessage });
+        return Ok(new { message = "Mã xác thực đã được gửi. Vui lòng kiểm tra hộp thư và thư rác. Mã có hạn 10 phút." });
     }
 
     [HttpPost("login")]

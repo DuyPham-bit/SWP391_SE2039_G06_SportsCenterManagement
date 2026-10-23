@@ -36,6 +36,7 @@ const DEFAULT_PACKAGES = [
     badgeEn: 'Starter',
     accessType: '1 môn tự chọn',
     accessTypeEn: '1 Selected Sport',
+    allowedSports: 1,
     features: ['1 bộ môn tự chọn', 'Sân bãi tiêu chuẩn Olympic', 'Tủ đồ & tiện ích cơ bản']
   },
   {
@@ -49,6 +50,7 @@ const DEFAULT_PACKAGES = [
     popular: true,
     accessType: '3 môn tự chọn',
     accessTypeEn: '3 Selected Sports',
+    allowedSports: 3,
     features: ['3 bộ môn kết hợp', 'Ưu tiên giữ ca học tại sân', 'Kèm 1 buổi phân tích InBody']
   },
   {
@@ -61,6 +63,7 @@ const DEFAULT_PACKAGES = [
     badgeEn: 'Intensive',
     accessType: '6 môn tự chọn',
     accessTypeEn: '6 Selected Sports',
+    allowedSports: 6,
     features: ['6 bộ môn thể thao', 'Quyền dùng phòng Sauna & Phục hồi', 'Hỗ trợ giáo trình HLV riêng']
   },
   {
@@ -73,6 +76,7 @@ const DEFAULT_PACKAGES = [
     badgeEn: 'VIP All-Access',
     accessType: 'Toàn quyền 10+ môn',
     accessTypeEn: 'All Disciplines & Courts',
+    allowedSports: 15,
     features: ['Toàn quyền 10+ môn & cụm sân', 'Huấn luyện viên đồng hành', 'Full quyền lợi VIP không giới hạn']
   }
 ];

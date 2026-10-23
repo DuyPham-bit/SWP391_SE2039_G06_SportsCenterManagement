@@ -67,7 +67,7 @@ export function RolesPermissions() {
   const [userCaps, setUserCaps] = useState([]);
   const [userCodes, setUserCodes] = useState([]);
 
-  const centerId = currentUser?.centerId;
+  const centerId = currentUser?.centerId || Number(import.meta.env.VITE_SPORTS_CENTER_ID) || 15;
   const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
 
   // Load initial permissions and staff directory
@@ -83,7 +83,10 @@ export function RolesPermissions() {
             console.warn('Could not load staff list:', err);
             return [];
           }),
-          centerId ? systemApi.getUserPermissions() : Promise.resolve([])
+          systemApi.getUserPermissions().catch(err => {
+            console.warn('Could not load user permissions:', err);
+            return [];
+          })
         ]);
 
         if (!isMounted) return;
@@ -280,24 +283,39 @@ export function RolesPermissions() {
 
   return (
     <div className="space-y-6 pb-16 animate-fade-slide-up">
-      {/* Top Banner / Header - Olympic Midnight Navy */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#1E2235] via-[#242A42] to-[#1E2235] p-6 lg:p-8 text-white shadow-xl">
-        <div className="absolute -right-16 -top-16 h-64 w-64 rounded-full bg-[#81B29A]/10 blur-3xl pointer-events-none" />
-        <div className="absolute right-32 -bottom-16 h-48 w-48 rounded-full bg-[#F2CC8F]/10 blur-2xl pointer-events-none" />
+      {/* Top Banner / Header - Olympic Multi-stop Gradient */}
+      <section
+        className="relative overflow-hidden rounded-3xl text-white p-6 lg:p-8 shadow-xl shadow-[#24828F]/20 border border-white/30"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
+
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
             <div className="flex items-center gap-2 mb-3">
-              <span className="px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-[#2D6A4F] text-white uppercase shadow-sm">
+              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-white/20 text-white uppercase backdrop-blur-md border border-white/30 shadow-xs">
+                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
                 {isManager ? (isEn ? 'Center Access Control' : 'Phân Quyền Trung Tâm') : (isEn ? 'System Admin' : 'Quản Trị Toàn Hệ Thống')}
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/10 backdrop-blur-md text-[#F2CC8F] border border-white/10">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/30">
                 {centerId ? `${isEn ? 'Facility' : 'Cơ sở'} #${centerId}` : (isEn ? 'Enterprise-wide' : 'Toàn hệ thống')}
               </span>
             </div>
-            <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white">
+            <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
               {isEn ? 'Role-Based Access Control (RBAC)' : 'Phân Quyền Theo Vai Trò'}
             </h1>
-            <p className="text-sm text-slate-300 mt-1 max-w-3xl leading-relaxed">
+            <p className="text-sm text-white/95 mt-1 max-w-3xl leading-relaxed drop-shadow-xs">
               {isEn
                 ? 'Configure role capabilities, manage data permissions, and govern delegation across center staff.'
                 : 'Thiết lập quyền truy cập theo vai trò và lưu cấu hình tại trung tâm an toàn theo chính sách Safe Delegation.'}
@@ -305,22 +323,22 @@ export function RolesPermissions() {
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-3 gap-3 bg-white/5 p-3 rounded-2xl border border-white/10 backdrop-blur-md">
+          <div className="grid grid-cols-3 gap-3 bg-white/20 p-3 rounded-2xl border border-white/30 backdrop-blur-md shadow-xs">
             <div className="text-center px-3">
-              <div className="text-xl font-black text-[#81B29A]">{matrix.length}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              <div className="text-xl font-black text-white">{matrix.length}</div>
+              <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">
                 {isEn ? 'Roles' : 'Vai trò'}
               </div>
             </div>
-            <div className="text-center px-3 border-l border-white/10">
-              <div className="text-xl font-black text-[#F2CC8F]">{staffList.length}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+            <div className="text-center px-3 border-l border-white/20">
+              <div className="text-xl font-black text-white">{staffList.length}</div>
+              <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">
                 {isEn ? 'Staff' : 'Nhân sự'}
               </div>
             </div>
-            <div className="text-center px-3 border-l border-white/10">
+            <div className="text-center px-3 border-l border-white/20">
               <div className="text-xl font-black text-white">{SYSTEM_CAPABILITIES.length}</div>
-              <div className="text-[10px] text-slate-400 uppercase tracking-wider font-semibold">
+              <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">
                 {isEn ? 'Features' : 'Chức năng'}
               </div>
             </div>
@@ -328,11 +346,13 @@ export function RolesPermissions() {
         </div>
 
         {/* Master Navigation Tabs */}
-        <div className="relative z-10 flex flex-wrap gap-2 mt-6 pt-4 border-t border-white/10">
+        <div className="relative z-10 flex flex-wrap gap-2 mt-6 pt-4 border-t border-white/20">
           <button
             onClick={() => setActiveTab('USERS')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
-              activeTab === 'USERS' ? 'bg-[#2D6A4F] text-white shadow-lg shadow-[#2D6A4F]/30' : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+              activeTab === 'USERS'
+                ? 'bg-white text-[#1B4332] shadow-lg shadow-black/15 font-black scale-102'
+                : 'bg-white/20 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md'
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">person_check</span>
@@ -342,8 +362,8 @@ export function RolesPermissions() {
             onClick={() => setActiveTab('ROLES')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'ROLES'
-                ? 'bg-[#2D6A4F] text-white shadow-lg shadow-[#2D6A4F]/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+                ? 'bg-white text-[#1B4332] shadow-lg shadow-black/15 font-black scale-102'
+                : 'bg-white/20 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md'
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">verified_user</span>
@@ -354,15 +374,15 @@ export function RolesPermissions() {
             onClick={() => setActiveTab('MATRIX')}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'MATRIX'
-                ? 'bg-[#2D6A4F] text-white shadow-lg shadow-[#2D6A4F]/30'
-                : 'bg-white/10 text-slate-300 hover:bg-white/20 hover:text-white'
+                ? 'bg-white text-[#1B4332] shadow-lg shadow-black/15 font-black scale-102'
+                : 'bg-white/20 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md'
             }`}
           >
             <span className="material-symbols-outlined text-[18px]">grid_view</span>
             {isEn ? '3. Delegation Matrix' : '3. Ma Trận Phân Quyền'}
           </button>
         </div>
-      </div>
+      </section>
 
       {activeTab === 'USERS' && (
         <div className="grid lg:grid-cols-[320px_minmax(0,1fr)] gap-5">
@@ -378,7 +398,7 @@ export function RolesPermissions() {
               {filteredUsers.map(row => (
                 <button key={row.userId} onClick={() => selectUser(row)}
                   className={`w-full text-left p-3 rounded-xl border transition ${String(row.userId) === String(selectedUserId)
-                    ? 'border-[#2D6A4F] bg-emerald-50 dark:bg-emerald-950/30'
+                    ? 'border-[#2F7B5D] bg-emerald-50/80 dark:bg-emerald-950/40 ring-2 ring-[#2F7B5D]/30 shadow-xs'
                     : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-bold text-sm text-slate-900 dark:text-white truncate">{row.fullName}</span>
@@ -411,8 +431,8 @@ export function RolesPermissions() {
                     const cap = SYSTEM_CAPABILITIES.find(item => item.id === id);
                     if (!cap) return null;
                     const checked = userCaps.includes(id);
-                    return <label key={id} className={`flex gap-3 p-3 rounded-xl border cursor-pointer ${checked ? 'border-[#2D6A4F]/50 bg-emerald-50/60 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-800'}`}>
-                      <input type="checkbox" checked={checked} onChange={() => setUserCaps(values => checked ? values.filter(value => value !== id) : [...values, id])} className="mt-1 accent-[#2D6A4F]" />
+                    return <label key={id} className={`flex gap-3 p-3 rounded-xl border cursor-pointer ${checked ? 'border-[#2F7B5D]/50 bg-emerald-50/60 dark:bg-emerald-950/20' : 'border-slate-200 dark:border-slate-800'}`}>
+                      <input type="checkbox" checked={checked} onChange={() => setUserCaps(values => checked ? values.filter(value => value !== id) : [...values, id])} className="mt-1 accent-[#2F7B5D]" />
                       <span><strong className="block text-xs text-slate-900 dark:text-white">{cap.label}</strong><span className="text-[11px] text-slate-500 dark:text-slate-400">{cap.desc}</span></span>
                     </label>;
                   })}
@@ -433,7 +453,7 @@ export function RolesPermissions() {
               </div>
 
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-                <button disabled={busy} onClick={saveUserPermissions} className="px-5 py-2.5 rounded-xl bg-[#2D6A4F] text-white text-xs font-bold disabled:opacity-50">
+                <button disabled={busy} onClick={saveUserPermissions} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#2F7B5D] to-[#24828F] hover:from-[#246A4F] hover:to-[#1B6F7A] text-white text-xs font-bold shadow-md shadow-[#2F7B5D]/20 disabled:opacity-50 transition-all">
                   {busy ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save individual permissions' : 'Lưu quyền cho tài khoản này')}
                 </button>
               </div>
@@ -795,7 +815,7 @@ export function RolesPermissions() {
                 <button
                   disabled={busy}
                   onClick={handleSaveRole}
-                  className="flex-1 sm:flex-none px-6 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-bold rounded-xl shadow-md shadow-[#2D6A4F]/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 hover-lift"
+                  className="flex-1 sm:flex-none px-6 py-2.5 bg-gradient-to-r from-[#2F7B5D] to-[#24828F] hover:from-[#246A4F] hover:to-[#1B6F7A] text-white font-bold rounded-xl shadow-md shadow-[#2F7B5D]/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 hover-lift"
                 >
                   {busy ? (
                     <>

@@ -190,9 +190,14 @@ export const authApi = {
     return loginAndLoad('auth/login', { email: email.trim(), password });
   },
 
-  async requestEmailVerification(email, { signal } = {}) {
+  async requestEmailVerification(email, phoneOrOptions, options = {}) {
+    const phone = typeof phoneOrOptions === 'string' ? phoneOrOptions : null;
+    const signal = typeof phoneOrOptions === 'object' && phoneOrOptions !== null
+      ? phoneOrOptions.signal
+      : options.signal;
     return apiRequest('auth/request-email-verification', {
-      method: 'POST', token: null, signal, body: { email: email.trim().toLowerCase() }
+      method: 'POST', token: null, signal,
+      body: { email: email.trim().toLowerCase(), phone: phone?.trim() || null }
     });
   },
 

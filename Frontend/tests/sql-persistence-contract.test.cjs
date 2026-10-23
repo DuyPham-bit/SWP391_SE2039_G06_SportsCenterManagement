@@ -36,12 +36,13 @@ test('registration is sent to SQL-backed API and is not reported successful when
   assert.equal(f.calls[0].options.body.centerId, 15);
 });
 
-test('email verification normalizes the address and preserves request cancellation', async () => {
+test('email verification submits the normalized address and phone before requesting delivery', async () => {
   const f = loadApi(() => ({ message: 'Sent' }));
   const controller = new AbortController();
-  await f.authApi.requestEmailVerification(' MEMBER@Example.Test ', { signal: controller.signal });
+  await f.authApi.requestEmailVerification(' MEMBER@Example.Test ', ' 0901 234 567 ', { signal: controller.signal });
   assert.equal(f.calls[0].route, 'auth/request-email-verification');
   assert.equal(f.calls[0].options.body.email, 'member@example.test');
+  assert.equal(f.calls[0].options.body.phone, '0901 234 567');
   assert.equal(f.calls[0].options.token, null);
   assert.equal(f.calls[0].options.signal, controller.signal);
 });
