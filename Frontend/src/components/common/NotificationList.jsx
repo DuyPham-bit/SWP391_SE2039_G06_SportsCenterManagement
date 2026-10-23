@@ -1,7 +1,13 @@
 import React, { useState } from 'react';
 import { formatMemberDateTime } from '../../features/member/memberOverview.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translateNotificationTitle, translateNotificationContent } from '../../services/i18nHelper.js';
 
-export function NotificationList({ notifications, title = 'Thông báo của tôi' }) {
+export function NotificationList({ notifications, title }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const displayTitle = title || (isEn ? 'My Notifications' : 'Thông báo của tôi');
+
   const { items = [], loading, error, readingId, readingAll, refresh, markRead, markAllRead } = notifications || {};
   const [unreadOnly, setUnreadOnly] = useState(false);
   const unread = items.filter(item => !item.isRead).length;
@@ -16,15 +22,15 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
             <span className="material-symbols-outlined text-[20px]">notifications</span>
           </div>
           <h2 className="font-chivo font-black text-slate-900 text-base">
-            {title}
+            {displayTitle}
           </h2>
           {unread > 0 ? (
             <span className="px-2 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-700 border border-red-200 animate-pulse">
-              {unread} chưa đọc
+              {unread} {isEn ? 'unread' : 'chưa đọc'}
             </span>
           ) : (
             <span className="px-2 py-0.5 rounded-full text-xs font-semibold bg-slate-100 text-slate-600">
-              Đã đọc hết
+              {isEn ? 'All read' : 'Đã đọc hết'}
             </span>
           )}
         </div>
@@ -42,7 +48,7 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
             <span className="material-symbols-outlined text-[16px]">
               {unreadOnly ? 'check_box' : 'check_box_outline_blank'}
             </span>
-            <span>Chỉ xem chưa đọc</span>
+            <span>{isEn ? 'Unread only' : 'Chỉ xem chưa đọc'}</span>
           </button>
 
           {unread > 0 && (
@@ -53,7 +59,7 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
               className="px-3.5 py-1.5 rounded-xl border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer flex items-center gap-1"
             >
               <span className="material-symbols-outlined text-[16px]">done_all</span>
-              <span>{readingAll ? 'Đang lưu...' : 'Đọc tất cả'}</span>
+              <span>{readingAll ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Mark all as read' : 'Đọc tất cả')}</span>
             </button>
           )}
 
@@ -62,7 +68,7 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
             disabled={loading || busy}
             onClick={refresh}
             className="p-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-600 hover:text-slate-900 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
-            title="Tải lại danh sách"
+            title={isEn ? 'Refresh list' : 'Tải lại danh sách'}
           >
             <span className={`material-symbols-outlined text-[18px] ${loading ? 'animate-spin' : ''}`}>
               refresh
@@ -76,7 +82,7 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
           <span className="material-symbols-outlined text-red-600 text-[28px] animate-spin">
             progress_activity
           </span>
-          <p className="text-xs font-semibold text-slate-500">Đang tải thông báo...</p>
+          <p className="text-xs font-semibold text-slate-500">{isEn ? 'Loading notifications...' : 'Đang tải thông báo...'}</p>
         </div>
       )}
 
@@ -93,10 +99,14 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
             <span className="material-symbols-outlined text-[28px]">notifications_off</span>
           </div>
           <p className="text-sm font-bold text-slate-700">
-            {unreadOnly ? 'Bạn đã đọc hết mọi thông báo.' : 'Hộp thư đến đang trống.'}
+            {unreadOnly
+              ? (isEn ? 'You have read all notifications.' : 'Bạn đã đọc hết mọi thông báo.')
+              : (isEn ? 'Inbox is empty.' : 'Hộp thư đến đang trống.')}
           </p>
           <p className="text-xs text-slate-400">
-            {unreadOnly ? 'Tắt bộ lọc để xem lại các thông báo trước đó.' : 'Các thông báo mới từ trung tâm sẽ xuất hiện tại đây.'}
+            {unreadOnly
+              ? (isEn ? 'Turn off filter to see previous announcements.' : 'Tắt bộ lọc để xem lại các thông báo trước đó.')
+              : (isEn ? 'New announcements from the center will appear here.' : 'Các thông báo mới từ trung tâm sẽ xuất hiện tại đây.')}
           </p>
         </div>
       )}
@@ -114,10 +124,10 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
             <div className="flex flex-wrap items-center justify-between gap-2">
               <div className="flex items-center gap-2 min-w-0">
                 {!item.isRead && (
-                  <span className="w-2 h-2 rounded-full bg-red-600 shrink-0" title="Chưa đọc" />
+                  <span className="w-2 h-2 rounded-full bg-red-600 shrink-0" title={isEn ? 'Unread' : 'Chưa đọc'} />
                 )}
                 <h3 className="font-bold text-sm text-slate-900 break-words">
-                  {item.title}
+                  {translateNotificationTitle(item.title, isEn)}
                 </h3>
               </div>
               <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full border ${
@@ -125,18 +135,18 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
                   ? 'bg-slate-100 text-slate-600 border-slate-200'
                   : 'bg-red-50 text-red-700 border-red-200'
               }`}>
-                {item.isRead ? 'Đã đọc' : 'Chưa đọc'}
+                {item.isRead ? (isEn ? 'Read' : 'Đã đọc') : (isEn ? 'Unread' : 'Chưa đọc')}
               </span>
             </div>
 
             <p className="text-xs sm:text-sm text-slate-700 whitespace-pre-wrap break-words leading-relaxed">
-              {item.content}
+              {translateNotificationContent(item.content, isEn)}
             </p>
 
             <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-black/5 text-xs text-slate-500">
               <time className="flex items-center gap-1 font-mono text-[11px]">
                 <span className="material-symbols-outlined text-[13px]">schedule</span>
-                {formatMemberDateTime(item.createdAt)}
+                {formatMemberDateTime(item.createdAt, isEn)}
               </time>
               {!item.isRead && (
                 <button
@@ -146,7 +156,7 @@ export function NotificationList({ notifications, title = 'Thông báo của tô
                   className="font-bold text-red-600 hover:text-red-700 hover:underline disabled:opacity-50 cursor-pointer flex items-center gap-1"
                 >
                   <span className="material-symbols-outlined text-[14px]">check</span>
-                  <span>{readingId === item.id ? 'Đang lưu...' : 'Đánh dấu đã đọc'}</span>
+                  <span>{readingId === item.id ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Mark as read' : 'Đánh dấu đã đọc')}</span>
                 </button>
               )}
             </div>

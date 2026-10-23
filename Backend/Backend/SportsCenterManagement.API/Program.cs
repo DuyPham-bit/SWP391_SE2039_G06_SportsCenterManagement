@@ -67,6 +67,7 @@ builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 builder.Services.AddScoped<IStaffManagementService, StaffManagementService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
+builder.Services.AddScoped<ICenterNotificationService, CenterNotificationService>();
 
 // Flow 2 Services
 builder.Services.AddScoped<IClassManagementService, ClassManagementService>();
@@ -111,6 +112,9 @@ builder.Services.AddRateLimiter(options =>
     options.AddPolicy("ai", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
+    options.AddPolicy("admin-management", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? context.Connection.RemoteIpAddress?.ToString() ?? "anonymous",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 30, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
 });
 
 // Layer 1: Presentation (API Controllers & Swagger UI)
@@ -128,14 +132,13 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Khởi tạo Database và nạp dữ liệu mẫu nếu chưa có
+// Đồng bộ schema/quyền; chỉ tạo dữ liệu demo khi cấu hình yêu cầu rõ ràng.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<SportsCenterDbContext>();
     var baselineLegacySchema = app.Configuration.GetValue<bool>("Database:BaselineLegacySchema");
-    var seedDemoData = app.Configuration.GetValue<bool?>("Database:SeedDemoData") ?? app.Environment.IsDevelopment();
-    await DbInitializer.SeedAsync(dbContext, baselineLegacySchema, seedDemoData);
-    await SystemAdminBootstrapper.SeedAsync(dbContext, app.Configuration);
+    await DbInitializer.SeedAsync(dbContext, baselineLegacySchema);
+    await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
 }
 
 if (app.Environment.IsDevelopment())

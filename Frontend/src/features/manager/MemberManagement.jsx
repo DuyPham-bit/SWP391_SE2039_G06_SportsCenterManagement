@@ -3,19 +3,25 @@ import { memberApi, receptionApi } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
 import { useToast } from '../../context/ToastContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { formatMemberDate, formatMemberDateTime } from '../member/memberOverview.js';
-import { buildMemberUpdatePayload, getSubscriptionPresentation, normalizeSubscriptionHistory,
-  formatMembershipPrice, formatMembershipDuration } from './memberManagementView.js';
+import {
+  buildMemberUpdatePayload,
+  getSubscriptionPresentation,
+  normalizeSubscriptionHistory,
+  formatMembershipPrice,
+  formatMembershipDuration
+} from './memberManagementView.js';
 
 // Color palette gradients for member initials
 const AVATAR_GRADIENTS = [
-  'from-rose-500 to-red-600',
-  'from-blue-600 to-indigo-700',
-  'from-emerald-500 to-teal-700',
-  'from-amber-500 to-orange-600',
-  'from-purple-600 to-violet-700',
-  'from-cyan-600 to-blue-600',
-  'from-pink-500 to-rose-600'
+  'from-[#2D6A4F] to-[#1B4332]',
+  'from-[#1E2235] to-[#2B2D42]',
+  'from-teal-600 to-emerald-800',
+  'from-amber-600 to-amber-700',
+  'from-indigo-600 to-slate-800',
+  'from-cyan-600 to-blue-700',
+  'from-rose-600 to-rose-800'
 ];
 
 function getAvatarGradient(name = '') {
@@ -42,12 +48,16 @@ function calculateDaysLeft(expiryStr) {
   return Math.ceil(diffTime / (1000 * 60 * 60 * 24));
 }
 
-const inputClass = 'w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm text-slate-900 placeholder:text-slate-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all';
-const labelClass = 'block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5';
+const inputClass =
+  'w-full px-3.5 py-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A] transition-all';
+const labelClass = 'block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5';
 const today = () => new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
 
 export function MemberManagement() {
   const { showSuccess, showError } = useToast();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState({ query: '', page: 1 });
   const [data, setData] = useState({ items: [], totalCount: 0, pageSize: 20 });
@@ -56,11 +66,11 @@ export function MemberManagement() {
   const [revision, setRevision] = useState(0);
 
   // Active filter tab & sorting
-  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'DISABLED' | 'HAS_PACKAGE' | 'NO_PACKAGE'
-  const [sortBy, setSortBy] = useState('DEFAULT'); // 'DEFAULT' | 'NAME_ASC' | 'NAME_DESC' | 'EXPIRY'
+  const [statusFilter, setStatusFilter] = useState('ALL');
+  const [sortBy, setSortBy] = useState('DEFAULT');
 
   // Modals & detail drawer
-  const [modal, setModal] = useState(null); // { type: 'edit' | 'detail' | 'status' | 'subscriptions', row }
+  const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [busy, setBusy] = useState(false);
   const [subscriptions, setSubscriptions] = useState([]);
@@ -74,25 +84,28 @@ export function MemberManagement() {
     let active = true;
     setLoading(true);
     setError('');
-    memberApi.getCenterMembers(filter.query, filter.page)
-      .then(value => {
+    memberApi
+      .getCenterMembers(filter.query, filter.page)
+      .then((value) => {
         if (active) setData(value);
       })
-      .catch(e => {
+      .catch((e) => {
         if (active) setError(e.message);
       })
       .finally(() => {
         if (active) setLoading(false);
       });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [filter, revision]);
 
   // Derived KPI statistics
   const stats = useMemo(() => {
     const items = data.items || [];
-    const activeCount = items.filter(m => m.accountStatus === 'Active').length;
-    const packageCount = items.filter(m => m.packageStatus === 'ACTIVE').length;
-    const disabledCount = items.filter(m => m.accountStatus !== 'Active').length;
+    const activeCount = items.filter((m) => m.accountStatus === 'Active').length;
+    const packageCount = items.filter((m) => m.packageStatus === 'ACTIVE').length;
+    const disabledCount = items.filter((m) => m.accountStatus !== 'Active').length;
     return {
       total: data.totalCount || items.length,
       active: activeCount,
@@ -106,13 +119,13 @@ export function MemberManagement() {
     let list = [...(data.items || [])];
 
     if (statusFilter === 'ACTIVE') {
-      list = list.filter(m => m.accountStatus === 'Active');
+      list = list.filter((m) => m.accountStatus === 'Active');
     } else if (statusFilter === 'DISABLED') {
-      list = list.filter(m => m.accountStatus !== 'Active');
+      list = list.filter((m) => m.accountStatus !== 'Active');
     } else if (statusFilter === 'HAS_PACKAGE') {
-      list = list.filter(m => m.packageStatus === 'ACTIVE');
+      list = list.filter((m) => m.packageStatus === 'ACTIVE');
     } else if (statusFilter === 'NO_PACKAGE') {
-      list = list.filter(m => !m.packageName || m.packageStatus !== 'ACTIVE');
+      list = list.filter((m) => !m.packageName || m.packageStatus !== 'ACTIVE');
     }
 
     if (sortBy === 'NAME_ASC') {
@@ -132,30 +145,34 @@ export function MemberManagement() {
     if (!code) return;
     navigator.clipboard?.writeText(code);
     setCopiedCode(code);
-    showSuccess(`Đã sao chép mã hội viên: ${code}`);
+    showSuccess(isEn ? `Copied member ID: ${code}` : `Đã sao chép mã hội viên: ${code}`);
     setTimeout(() => setCopiedCode(null), 2000);
   };
 
   // Modal open handlers
   const openEdit = (row, e) => {
     e?.stopPropagation();
-    setForm(row ? {
-      fullName: row.fullName || '',
-      email: row.email || '',
-      phone: row.phone || '',
-      dateOfBirth: row.dateOfBirth || '',
-      gender: row.gender || '',
-      address: row.address || ''
-    } : {
-      username: '',
-      fullName: '',
-      email: '',
-      password: '',
-      phone: '',
-      dateOfBirth: '',
-      gender: '',
-      address: ''
-    });
+    setForm(
+      row
+        ? {
+            fullName: row.fullName || '',
+            email: row.email || '',
+            phone: row.phone || '',
+            dateOfBirth: row.dateOfBirth || '',
+            gender: row.gender || '',
+            address: row.address || ''
+          }
+        : {
+            username: '',
+            fullName: '',
+            email: '',
+            password: '',
+            phone: '',
+            dateOfBirth: '',
+            gender: '',
+            address: ''
+          }
+    );
     setModal({ type: 'edit', row });
   };
 
@@ -178,11 +195,11 @@ export function MemberManagement() {
     try {
       const subs = await receptionApi.getMemberSubscriptions(row.memberId);
       if (subscriptionRequest.current === requestId) {
-        setSubscriptions(normalizeSubscriptionHistory(Array.isArray(subs) ? subs : (subs?.items || [])));
+        setSubscriptions(normalizeSubscriptionHistory(Array.isArray(subs) ? subs : subs?.items || []));
       }
     } catch (err) {
       if (subscriptionRequest.current === requestId) {
-        setSubscriptionError(err.message || 'Không thể tải lịch sử gói tập');
+        setSubscriptionError(err.message || (isEn ? 'Cannot load subscription history' : 'Không thể tải lịch sử gói tập'));
       }
     } finally {
       if (subscriptionRequest.current === requestId) setLoadingSubs(false);
@@ -191,7 +208,7 @@ export function MemberManagement() {
 
   const handleFormChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
+    setForm((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleSaveMember = async (e) => {
@@ -200,7 +217,7 @@ export function MemberManagement() {
     try {
       if (modal.row) {
         await memberApi.updateAtCenter(modal.row.memberId, buildMemberUpdatePayload(form));
-        showSuccess('Cập nhật hồ sơ thành viên thành công!');
+        showSuccess(isEn ? 'Member profile updated successfully!' : 'Cập nhật hồ sơ thành viên thành công!');
       } else {
         await receptionApi.createMember({
           username: form.username.trim(),
@@ -210,10 +227,10 @@ export function MemberManagement() {
           phone: form.phone?.trim() || null,
           dateOfBirth: form.dateOfBirth || null
         });
-        showSuccess('Đã thêm thành viên mới thành công!');
+        showSuccess(isEn ? 'New member registered successfully!' : 'Đã thêm thành viên mới thành công!');
       }
       setModal(null);
-      setRevision(x => x + 1);
+      setRevision((x) => x + 1);
     } catch (err) {
       showError(err.message);
     } finally {
@@ -227,9 +244,17 @@ export function MemberManagement() {
     try {
       const newStatus = modal.row.accountStatus === 'Active' ? 'Disabled' : 'Active';
       await memberApi.setAccountStatus(modal.row.memberId, newStatus);
-      showSuccess(newStatus === 'Active' ? 'Đã mở khóa tài khoản thành viên.' : 'Đã tạm khóa tài khoản thành viên.');
+      showSuccess(
+        newStatus === 'Active'
+          ? isEn
+            ? 'Member account activated successfully.'
+            : 'Đã mở khóa tài khoản thành viên.'
+          : isEn
+          ? 'Member account locked.'
+          : 'Đã tạm khóa tài khoản thành viên.'
+      );
       setModal(null);
-      setRevision(x => x + 1);
+      setRevision((x) => x + 1);
     } catch (err) {
       showError(err.message);
     } finally {
@@ -240,7 +265,7 @@ export function MemberManagement() {
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (query.trim().length === 1) {
-      showError('Vui lòng nhập ít nhất 2 ký tự để tìm kiếm.');
+      showError(isEn ? 'Please enter at least 2 characters to search.' : 'Vui lòng nhập ít nhất 2 ký tự để tìm kiếm.');
       return;
     }
     setFilter({ query: query.trim(), page: 1 });
@@ -256,135 +281,167 @@ export function MemberManagement() {
   const totalPages = Math.max(1, Math.ceil(data.totalCount / data.pageSize));
 
   return (
-    <div className="space-y-6">
-      {/* 1. Header Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-900 via-slate-800 to-slate-950 p-6 sm:p-8 rounded-2xl text-white shadow-xl border border-slate-800">
-        <div className="absolute right-0 top-0 translate-x-12 -translate-y-6 w-96 h-96 bg-red-600/10 rounded-full blur-3xl pointer-events-none" />
+    <div className="space-y-6 animate-fade-slide-up">
+      {/* 1. Header Banner (Olympic Multi-stop Gradient matching Image 1) */}
+      <section
+        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-[#24828F]/25 border border-white/30"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/35 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
+
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md text-red-400 text-xs font-bold uppercase tracking-wider mb-2 border border-white/10">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              Quản Trị Thành Viên SCMS
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs mb-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>{isEn ? 'Member Operations' : 'Quản trị thành viên SCMS'}</span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white">
-              Quản lý thành viên
+            <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+              {isEn ? 'Member Management' : 'Quản lý thành viên'}
             </h1>
-            <p className="text-sm text-slate-300 mt-1.5 max-w-2xl leading-relaxed">
-              Theo dõi hồ sơ hội viên, trạng thái tài khoản, lịch sử gói tập và quyền lợi thể thao toàn trung tâm.
+            <p className="text-xs sm:text-sm text-white/95 mt-1.5 max-w-2xl leading-relaxed font-medium drop-shadow-xs">
+              {isEn
+                ? 'Track member profiles, account statuses, subscription packages, and center-wide athletic privileges.'
+                : 'Theo dõi hồ sơ hội viên, trạng thái tài khoản, lịch sử gói tập và quyền lợi thể thao toàn trung tâm.'}
             </p>
           </div>
 
           <div className="flex flex-wrap items-center gap-3">
             <button
-              onClick={() => setRevision(x => x + 1)}
+              onClick={() => setRevision((x) => x + 1)}
               disabled={loading}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/10 transition-all hover:scale-105 active:scale-95 disabled:opacity-50"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/40 transition-all hover-lift cursor-pointer disabled:opacity-50 shadow-xs"
+              title={isEn ? 'Refresh' : 'Làm mới'}
             >
-              <span className={`material-symbols-outlined text-[18px] ${loading ? 'animate-spin' : ''}`}>
-                refresh
-              </span>
-              <span>Làm mới</span>
+              <span className={`material-symbols-outlined text-[16px] text-amber-200 ${loading ? 'animate-spin' : ''}`}>refresh</span>
+              <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
             </button>
             <button
               onClick={() => openEdit(null)}
               disabled={busy}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-500 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-red-600/30 transition-all hover:scale-105 active:scale-95"
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/95 hover:bg-white text-[#1B4332] text-xs font-black uppercase tracking-wider shadow-md hover:shadow-lg transition-all hover-lift cursor-pointer border border-white/80"
             >
-              <span className="material-symbols-outlined text-[18px]">person_add</span>
-              <span>Thêm thành viên mới</span>
+              <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">person_add</span>
+              <span>{isEn ? 'Add Member' : 'Thêm thành viên mới'}</span>
             </button>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* 2. Bento KPI Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         {/* Total Members */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover-lift transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Tổng thành viên</span>
-            <div className="w-10 h-10 rounded-xl bg-slate-100 flex items-center justify-center text-slate-800">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isEn ? 'Total Members' : 'Tổng thành viên'}
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-800 dark:text-slate-200">
               <span className="material-symbols-outlined text-[20px]">groups</span>
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black font-chivo text-slate-900">{stats.total}</span>
-            <span className="text-xs text-slate-400 font-medium">hội viên</span>
+            <span className="text-3xl font-black font-chivo text-slate-900 dark:text-slate-100">{stats.total}</span>
+            <span className="text-xs text-slate-400 font-medium">{isEn ? 'members' : 'hội viên'}</span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Toàn bộ hồ sơ trong cơ sở</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {isEn ? 'Registered profiles in center' : 'Toàn bộ hồ sơ trong cơ sở'}
+          </p>
         </div>
 
         {/* Active Accounts */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover-lift transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Đang hoạt động</span>
-            <div className="w-10 h-10 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isEn ? 'Active Accounts' : 'Đang hoạt động'}
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 dark:text-emerald-400 flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">verified_user</span>
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black font-chivo text-emerald-600">{stats.active}</span>
-            <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-bold border border-emerald-200">
+            <span className="text-3xl font-black font-chivo text-emerald-600 dark:text-emerald-400">{stats.active}</span>
+            <span className="px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 text-xs font-bold border border-emerald-200 dark:border-emerald-800">
               {stats.total > 0 ? `${Math.round((stats.active / stats.total) * 100)}%` : '100%'}
             </span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Tài khoản hợp lệ và sẵn sàng</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {isEn ? 'Verified & ready to train' : 'Tài khoản hợp lệ và sẵn sàng'}
+          </p>
         </div>
 
         {/* Active Packages */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover-lift transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Gói tập hiệu lực</span>
-            <div className="w-10 h-10 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isEn ? 'Active Subscriptions' : 'Gói tập hiệu lực'}
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-[#2D6A4F]/10 text-[#2D6A4F] dark:text-[#81B29A] flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">card_membership</span>
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black font-chivo text-blue-600">{stats.hasPackage}</span>
-            <span className="text-xs text-slate-400 font-medium">gói active</span>
+            <span className="text-3xl font-black font-chivo text-[#2D6A4F] dark:text-[#81B29A]">{stats.hasPackage}</span>
+            <span className="text-xs text-slate-400 font-medium">{isEn ? 'active' : 'gói active'}</span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Đủ điều kiện check-in và đặt lớp</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {isEn ? 'Eligible for check-in & booking' : 'Đủ điều kiện check-in và đặt lớp'}
+          </p>
         </div>
 
         {/* Locked Accounts */}
-        <div className="p-5 rounded-2xl bg-white border border-slate-200/80 shadow-sm hover:shadow-md transition-shadow">
+        <div className="p-5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200/80 dark:border-slate-800 shadow-sm hover-lift transition-all">
           <div className="flex items-center justify-between">
-            <span className="text-xs font-bold uppercase tracking-wider text-slate-500">Tài khoản bị khóa</span>
-            <div className="w-10 h-10 rounded-xl bg-rose-50 text-rose-600 flex items-center justify-center">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">
+              {isEn ? 'Locked Accounts' : 'Tài khoản bị khóa'}
+            </span>
+            <div className="w-10 h-10 rounded-xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center">
               <span className="material-symbols-outlined text-[20px]">lock</span>
             </div>
           </div>
           <div className="mt-3 flex items-baseline gap-2">
-            <span className="text-3xl font-black font-chivo text-rose-600">{stats.disabled}</span>
-            <span className="text-xs text-slate-400 font-medium">tạm dừng</span>
+            <span className="text-3xl font-black font-chivo text-rose-600 dark:text-rose-400">{stats.disabled}</span>
+            <span className="text-xs text-slate-400 font-medium">{isEn ? 'suspended' : 'tạm dừng'}</span>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Cần xác minh mở khóa</p>
+          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {isEn ? 'Requires review to unlock' : 'Cần xác minh mở khóa'}
+          </p>
         </div>
       </div>
 
       {/* 3. Search Bar & Filter Controls */}
-      <div className="bg-white p-4 sm:p-5 rounded-2xl border border-slate-200/80 shadow-sm space-y-4">
+      <div className="bg-white dark:bg-slate-900 p-4 sm:p-5 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm space-y-4">
         <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
           {/* Search form */}
           <form onSubmit={handleSearchSubmit} className="relative flex-1">
-            <span className="material-symbols-outlined absolute left-3.5 top-3 text-slate-400 text-[18px]">
-              search
-            </span>
+            <span className="material-symbols-outlined absolute left-3.5 top-3 text-slate-400 text-[18px]">search</span>
             <input
               type="text"
-              aria-label="Tìm thành viên"
-              placeholder="Tìm kiếm theo họ tên, mã thẻ (MEM-...), email, số điện thoại..."
+              aria-label={isEn ? 'Search members' : 'Tìm thành viên'}
+              placeholder={isEn ? 'Search by name, ID (MEM-...), email, phone...' : 'Tìm kiếm theo họ tên, mã thẻ (MEM-...), email, số điện thoại...'}
               maxLength={100}
               value={query}
-              onChange={e => setQuery(e.target.value)}
-              className="w-full pl-10 pr-24 py-2.5 rounded-xl border border-slate-200 bg-slate-50/70 text-sm focus:bg-white focus:outline-none focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"
+              onChange={(e) => setQuery(e.target.value)}
+              className="w-full pl-10 pr-24 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/70 dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:bg-white dark:focus:bg-slate-900 focus:outline-none focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A] transition-all"
             />
             {query && (
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute right-20 top-2.5 p-1 text-slate-400 hover:text-slate-600 rounded-lg hover:bg-slate-200 transition-colors"
-                title="Xóa tìm kiếm"
+                className="absolute right-20 top-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                title={isEn ? 'Clear search' : 'Xóa tìm kiếm'}
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
@@ -392,25 +449,25 @@ export function MemberManagement() {
             <button
               type="submit"
               disabled={loading}
-              className="absolute right-1.5 top-1.5 px-3 py-1.5 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
+              className="absolute right-1.5 top-1.5 px-3 py-1.5 bg-[#1E2235] hover:bg-[#2B2D42] text-white rounded-lg text-xs font-bold transition-colors disabled:opacity-50"
             >
-              Tìm
+              {isEn ? 'Search' : 'Tìm'}
             </button>
           </form>
 
           {/* Quick Actions & Sorting */}
           <div className="flex items-center gap-2">
-            <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 font-medium">
+            <div className="flex items-center gap-1.5 px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl text-xs text-slate-600 dark:text-slate-300 font-medium">
               <span className="material-symbols-outlined text-[16px] text-slate-400">sort</span>
               <select
                 value={sortBy}
-                onChange={e => setSortBy(e.target.value)}
-                className="bg-transparent focus:outline-none font-semibold text-slate-800 cursor-pointer"
+                onChange={(e) => setSortBy(e.target.value)}
+                className="bg-transparent focus:outline-none font-semibold text-slate-800 dark:text-slate-200 cursor-pointer"
               >
-                <option value="DEFAULT">Sắp xếp: Mặc định</option>
-                <option value="NAME_ASC">Họ tên: A → Z</option>
-                <option value="NAME_DESC">Họ tên: Z → A</option>
-                <option value="EXPIRY">Hạn gói gần nhất</option>
+                <option value="DEFAULT" className="dark:bg-slate-800">{isEn ? 'Sort: Default' : 'Sắp xếp: Mặc định'}</option>
+                <option value="NAME_ASC" className="dark:bg-slate-800">{isEn ? 'Name: A → Z' : 'Họ tên: A → Z'}</option>
+                <option value="NAME_DESC" className="dark:bg-slate-800">{isEn ? 'Name: Z → A' : 'Họ tên: Z → A'}</option>
+                <option value="EXPIRY" className="dark:bg-slate-800">{isEn ? 'Expiring soonest' : 'Hạn gói gần nhất'}</option>
               </select>
             </div>
 
@@ -418,106 +475,106 @@ export function MemberManagement() {
               <button
                 type="button"
                 onClick={handleResetSearch}
-                className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 bg-slate-100 hover:bg-slate-200 transition-colors"
+                className="inline-flex items-center gap-1 px-3 py-2 rounded-xl text-xs font-bold text-slate-600 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
               >
                 <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-                <span className="hidden sm:inline">Đặt lại</span>
+                <span className="hidden sm:inline">{isEn ? 'Reset' : 'Đặt lại'}</span>
               </button>
             )}
           </div>
         </div>
 
         {/* Filter Tabs */}
-        <div className="flex items-center justify-between border-t border-slate-100 pt-3">
+        <div className="flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-3">
           <div className="flex items-center gap-1.5 overflow-x-auto pb-1 sm:pb-0 text-xs">
             <button
               onClick={() => setStatusFilter('ALL')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 statusFilter === 'ALL'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  ? 'bg-[#1E2235] text-white shadow-sm'
+                  : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
               }`}
             >
-              Tất cả ({data.items?.length || 0})
+              {isEn ? 'All' : 'Tất cả'} ({data.items?.length || 0})
             </button>
             <button
               onClick={() => setStatusFilter('ACTIVE')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 statusFilter === 'ACTIVE'
                   ? 'bg-emerald-600 text-white shadow-sm shadow-emerald-600/20'
-                  : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
               }`}
             >
-              Đang hoạt động
+              {isEn ? 'Active' : 'Đang hoạt động'}
             </button>
             <button
               onClick={() => setStatusFilter('HAS_PACKAGE')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 statusFilter === 'HAS_PACKAGE'
-                  ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/20'
-                  : 'bg-blue-50 text-blue-700 hover:bg-blue-100'
+                  ? 'bg-[#2D6A4F] text-white shadow-sm shadow-[#2D6A4F]/20'
+                  : 'bg-[#2D6A4F]/10 text-[#2D6A4F] dark:text-[#81B29A] hover:bg-[#2D6A4F]/20'
               }`}
             >
-              Có gói tập
+              {isEn ? 'Has Package' : 'Có gói tập'}
             </button>
             <button
               onClick={() => setStatusFilter('NO_PACKAGE')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 statusFilter === 'NO_PACKAGE'
                   ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/20'
-                  : 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+                  : 'bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-300 hover:bg-amber-100 dark:hover:bg-amber-900/60'
               }`}
             >
-              Chưa có / Hết hạn
+              {isEn ? 'No Package / Expired' : 'Chưa có / Hết hạn'}
             </button>
             <button
               onClick={() => setStatusFilter('DISABLED')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 statusFilter === 'DISABLED'
                   ? 'bg-rose-600 text-white shadow-sm shadow-rose-600/20'
-                  : 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+                  : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/60'
               }`}
             >
-              Đã khóa
+              {isEn ? 'Locked' : 'Đã khóa'}
             </button>
           </div>
 
-          <div className="hidden sm:block text-xs font-medium text-slate-500">
-            Hiển thị <span className="font-bold text-slate-800">{filteredAndSortedItems.length}</span> / {data.totalCount} hội viên
+          <div className="hidden sm:block text-xs font-medium text-slate-500 dark:text-slate-400">
+            {isEn ? 'Showing' : 'Hiển thị'} <span className="font-bold text-slate-800 dark:text-slate-200">{filteredAndSortedItems.length}</span> / {data.totalCount} {isEn ? 'members' : 'hội viên'}
           </div>
         </div>
       </div>
 
       {/* 4. Table & Loading/Error states */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-slate-200/80 p-12">
-          <LoadingSpinner text="Đang tải danh sách thành viên..." />
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-12">
+          <LoadingSpinner text={isEn ? 'Loading member directory...' : 'Đang tải danh sách thành viên...'} />
         </div>
       ) : error ? (
-        <div role="alert" className="p-6 bg-red-50 rounded-2xl border border-red-200 text-center space-y-3">
-          <span className="material-symbols-outlined text-4xl text-red-500">error</span>
-          <p className="text-sm font-bold text-red-800">{error}</p>
+        <div role="alert" className="p-6 bg-red-50 dark:bg-red-950/30 rounded-2xl border border-red-200 dark:border-red-900/60 text-center space-y-3">
+          <span className="material-symbols-outlined text-4xl text-rose-500">error</span>
+          <p className="text-sm font-bold text-rose-800 dark:text-rose-300">{error}</p>
           <button
-            onClick={() => setRevision(x => x + 1)}
-            className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold shadow-md"
+            onClick={() => setRevision((x) => x + 1)}
+            className="px-4 py-2 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-xl text-xs font-bold shadow-md transition-all"
           >
-            Thử lại
+            {isEn ? 'Retry' : 'Thử lại'}
           </button>
         </div>
       ) : (
-        <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-left border-collapse min-w-[900px]">
               <thead>
-                <tr className="border-b border-slate-200 bg-slate-50/80 text-slate-600 font-chivo text-xs uppercase tracking-wider">
-                  <th className="py-3.5 px-5 font-bold whitespace-nowrap">Thành viên</th>
-                  <th className="py-3.5 px-4 font-bold whitespace-nowrap">Liên hệ</th>
-                  <th className="py-3.5 px-4 font-bold whitespace-nowrap">Tài khoản</th>
-                  <th className="py-3.5 px-4 font-bold whitespace-nowrap">Gói tập & Hạn dùng</th>
-                  <th className="py-3.5 px-4 font-bold text-center whitespace-nowrap">Thao tác</th>
+                <tr className="border-b border-slate-200 dark:border-slate-800 bg-slate-50/80 dark:bg-slate-800/60 text-slate-600 dark:text-slate-300 font-chivo text-xs uppercase tracking-wider">
+                  <th className="py-3.5 px-5 font-bold whitespace-nowrap">{isEn ? 'Member' : 'Thành viên'}</th>
+                  <th className="py-3.5 px-4 font-bold whitespace-nowrap">{isEn ? 'Contact' : 'Liên hệ'}</th>
+                  <th className="py-3.5 px-4 font-bold whitespace-nowrap">{isEn ? 'Account' : 'Tài khoản'}</th>
+                  <th className="py-3.5 px-4 font-bold whitespace-nowrap">{isEn ? 'Package & Expiry' : 'Gói tập & Hạn dùng'}</th>
+                  <th className="py-3.5 px-4 font-bold text-center whitespace-nowrap">{isEn ? 'Actions' : 'Thao tác'}</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-slate-100 text-sm text-slate-700">
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800 text-sm text-slate-700 dark:text-slate-300">
                 {filteredAndSortedItems.length > 0 ? (
                   filteredAndSortedItems.map((r) => {
                     const daysRemaining = calculateDaysLeft(r.packageExpiry);
@@ -528,31 +585,45 @@ export function MemberManagement() {
                       <tr
                         key={r.memberId}
                         onClick={() => openDetail(r)}
-                        className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                        className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors cursor-pointer group"
                       >
                         {/* Member Column */}
                         <td className="py-3.5 px-5">
                           <div className="flex items-center gap-3">
-                            <div className={`w-10 h-10 rounded-full bg-gradient-to-tr ${getAvatarGradient(r.fullName)} flex items-center justify-center text-white font-black text-xs shadow-sm flex-shrink-0`}>
+                            <div
+                              className={`w-10 h-10 rounded-full bg-gradient-to-tr ${getAvatarGradient(
+                                r.fullName
+                              )} flex items-center justify-center text-white font-black text-xs shadow-sm flex-shrink-0`}
+                            >
                               {getInitials(r.fullName)}
                             </div>
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
-                                <span className="font-bold text-slate-900 group-hover:text-red-600 transition-colors whitespace-nowrap">
+                                <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#2D6A4F] dark:group-hover:text-[#81B29A] transition-colors whitespace-nowrap">
                                   {r.fullName}
                                 </span>
                                 {r.gender && (
-                                  <span className="text-[10px] text-slate-500 font-semibold px-1.5 py-0.5 rounded bg-slate-100 whitespace-nowrap">
-                                    {r.gender === 'Male' ? 'Nam' : r.gender === 'Female' ? 'Nữ' : 'Khác'}
+                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800 whitespace-nowrap">
+                                    {r.gender === 'Male'
+                                      ? isEn
+                                        ? 'Male'
+                                        : 'Nam'
+                                      : r.gender === 'Female'
+                                      ? isEn
+                                        ? 'Female'
+                                        : 'Nữ'
+                                      : isEn
+                                      ? 'Other'
+                                      : 'Khác'}
                                   </span>
                                 )}
                               </div>
-                              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 whitespace-nowrap">
+                              <div className="flex items-center gap-2 mt-0.5 text-xs text-slate-500 dark:text-slate-400 whitespace-nowrap">
                                 <button
                                   type="button"
                                   onClick={(e) => copyMemberCode(r.memberCode, e)}
-                                  className="inline-flex items-center gap-1 font-mono font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 px-1.5 py-0.5 rounded transition-colors"
-                                  title="Nhấn để sao chép mã"
+                                  className="inline-flex items-center gap-1 font-mono font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 px-1.5 py-0.5 rounded transition-colors"
+                                  title={isEn ? 'Click to copy ID' : 'Nhấn để sao chép mã'}
                                 >
                                   <span>{r.memberCode}</span>
                                   <span className="material-symbols-outlined text-[12px] text-slate-400">
@@ -569,16 +640,16 @@ export function MemberManagement() {
                         {/* Contact Column */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           <div className="space-y-1">
-                            <div className="flex items-center gap-1.5 text-xs text-slate-700">
+                            <div className="flex items-center gap-1.5 text-xs text-slate-700 dark:text-slate-300">
                               <span className="material-symbols-outlined text-[14px] text-slate-400">mail</span>
                               <span className="truncate max-w-[200px]">{r.email}</span>
                             </div>
                             <div className="flex items-center gap-1.5 text-xs">
                               <span className="material-symbols-outlined text-[14px] text-slate-400">call</span>
                               {r.phone ? (
-                                <span className="font-semibold text-slate-800">{r.phone}</span>
+                                <span className="font-semibold text-slate-800 dark:text-slate-200">{r.phone}</span>
                               ) : (
-                                <span className="text-slate-400 italic">Chưa có điện thoại</span>
+                                <span className="text-slate-400 italic">{isEn ? 'No phone' : 'Chưa có điện thoại'}</span>
                               )}
                             </div>
                           </div>
@@ -587,14 +658,14 @@ export function MemberManagement() {
                         {/* Account Status Column */}
                         <td className="py-3.5 px-4 whitespace-nowrap">
                           {isAccountActive ? (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
                               <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-                              Hoạt động
+                              {isEn ? 'Active' : 'Hoạt động'}
                             </span>
                           ) : (
-                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
                               <span className="material-symbols-outlined text-[13px]">lock</span>
-                              Đã khóa
+                              {isEn ? 'Locked' : 'Đã khóa'}
                             </span>
                           )}
                         </td>
@@ -604,29 +675,29 @@ export function MemberManagement() {
                           {r.packageName ? (
                             <div className="space-y-1">
                               <div className="flex items-center gap-1.5">
-                                <span className="material-symbols-outlined text-[16px] text-red-600">
+                                <span className="material-symbols-outlined text-[16px] text-[#2D6A4F] dark:text-[#81B29A]">
                                   fitness_center
                                 </span>
-                                <span className="font-bold text-slate-900 text-xs">
-                                  {r.packageName}
-                                </span>
+                                <span className="font-bold text-slate-900 dark:text-slate-100 text-xs">{r.packageName}</span>
                               </div>
                               <div className="flex items-center gap-1.5 text-xs">
-                                <span className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
-                                  isPackageActive
-                                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-200'
-                                    : r.packageStatus === 'CANCELLED'
-                                    ? 'bg-rose-100 text-rose-800 border border-rose-200'
-                                    : 'bg-amber-100 text-amber-800 border border-amber-200'
-                                }`}>
+                                <span
+                                  className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider ${
+                                    isPackageActive
+                                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                                      : r.packageStatus === 'CANCELLED'
+                                      ? 'bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                                      : 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800'
+                                  }`}
+                                >
                                   {r.packageStatus || 'ACTIVE'}
                                 </span>
                                 {r.packageExpiry && (
-                                  <span className="text-slate-500 text-[11px]">
-                                    Hạn: <strong className="text-slate-700">{formatMemberDate(r.packageExpiry)}</strong>
+                                  <span className="text-slate-500 dark:text-slate-400 text-[11px]">
+                                    {isEn ? 'Exp:' : 'Hạn:'} <strong className="text-slate-700 dark:text-slate-300">{formatMemberDate(r.packageExpiry)}</strong>
                                     {daysRemaining !== null && isPackageActive && (
                                       <span className={`ml-1 font-semibold ${daysRemaining <= 7 ? 'text-amber-600' : 'text-slate-500'}`}>
-                                        ({daysRemaining > 0 ? `còn ${daysRemaining} ngày` : 'hết hạn hôm nay'})
+                                        ({daysRemaining > 0 ? (isEn ? `${daysRemaining}d left` : `còn ${daysRemaining} ngày`) : isEn ? 'expires today' : 'hết hạn hôm nay'})
                                       </span>
                                     )}
                                   </span>
@@ -636,19 +707,19 @@ export function MemberManagement() {
                           ) : (
                             <span className="inline-flex items-center gap-1 text-xs text-slate-400 italic">
                               <span className="material-symbols-outlined text-[14px]">remove_circle_outline</span>
-                              Chưa có gói tập
+                              {isEn ? 'No active package' : 'Chưa có gói tập'}
                             </span>
                           )}
                         </td>
 
                         {/* Actions Column */}
-                        <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                        <td className="py-3.5 px-4 text-center whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                           <div className="flex items-center justify-center gap-1.5">
                             <button
                               type="button"
                               onClick={() => openDetail(r)}
-                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-colors"
-                              title="Xem chi tiết hồ sơ"
+                              className="p-1.5 rounded-lg text-slate-500 hover:text-slate-800 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                              title={isEn ? 'View member details' : 'Xem chi tiết hồ sơ'}
                             >
                               <span className="material-symbols-outlined text-[18px]">visibility</span>
                             </button>
@@ -656,21 +727,21 @@ export function MemberManagement() {
                               type="button"
                               onClick={(e) => openEdit(r, e)}
                               disabled={busy}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 bg-slate-100 hover:bg-slate-200 transition-colors disabled:opacity-50 whitespace-nowrap"
-                              title="Chỉnh sửa thông tin"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title={isEn ? 'Edit information' : 'Chỉnh sửa thông tin'}
                             >
                               <span className="material-symbols-outlined text-[15px]">edit</span>
-                              <span>Sửa</span>
+                              <span>{isEn ? 'Edit' : 'Sửa'}</span>
                             </button>
                             <button
                               type="button"
                               onClick={(e) => openSubscriptions(r, e)}
                               disabled={busy}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100 transition-colors disabled:opacity-50 whitespace-nowrap"
-                              title="Xem toàn bộ lịch sử gói tập"
+                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A] bg-[#2D6A4F]/10 hover:bg-[#2D6A4F]/20 transition-colors disabled:opacity-50 whitespace-nowrap"
+                              title={isEn ? 'View subscription history' : 'Xem toàn bộ lịch sử gói tập'}
                             >
                               <span className="material-symbols-outlined text-[15px]">history</span>
-                              <span>Lịch sử gói</span>
+                              <span>{isEn ? 'History' : 'Lịch sử gói'}</span>
                             </button>
                             <button
                               type="button"
@@ -678,15 +749,13 @@ export function MemberManagement() {
                               disabled={busy}
                               className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-bold transition-colors disabled:opacity-50 whitespace-nowrap ${
                                 isAccountActive
-                                  ? 'text-rose-700 bg-rose-50 hover:bg-rose-100'
-                                  : 'text-emerald-700 bg-emerald-50 hover:bg-emerald-100'
+                                  ? 'text-rose-700 dark:text-rose-400 bg-rose-50 dark:bg-rose-950/40 hover:bg-rose-100 dark:hover:bg-rose-900/60'
+                                  : 'text-emerald-700 dark:text-emerald-300 bg-emerald-50 dark:bg-emerald-950/40 hover:bg-emerald-100 dark:hover:bg-emerald-900/60'
                               }`}
-                              title={isAccountActive ? 'Tạm khóa tài khoản' : 'Mở khóa tài khoản'}
+                              title={isAccountActive ? (isEn ? 'Lock account' : 'Tạm khóa tài khoản') : isEn ? 'Unlock account' : 'Mở khóa tài khoản'}
                             >
-                              <span className="material-symbols-outlined text-[15px]">
-                                {isAccountActive ? 'lock' : 'lock_open'}
-                              </span>
-                              <span>{isAccountActive ? 'Khóa' : 'Mở khóa'}</span>
+                              <span className="material-symbols-outlined text-[15px]">{isAccountActive ? 'lock' : 'lock_open'}</span>
+                              <span>{isAccountActive ? (isEn ? 'Lock' : 'Khóa') : isEn ? 'Unlock' : 'Mở khóa'}</span>
                             </button>
                           </div>
                         </td>
@@ -697,21 +766,29 @@ export function MemberManagement() {
                   <tr>
                     <td colSpan={5} className="py-16 text-center text-slate-400">
                       <div className="flex flex-col items-center justify-center gap-3">
-                        <div className="w-16 h-16 rounded-full bg-slate-100 flex items-center justify-center text-slate-400">
+                        <div className="w-16 h-16 rounded-full bg-slate-100 dark:bg-slate-800 flex items-center justify-center text-slate-400">
                           <span className="material-symbols-outlined text-3xl">person_search</span>
                         </div>
                         <div>
-                          <p className="text-base font-bold text-slate-700">Không tìm thấy thành viên nào</p>
-                          <p className="text-xs text-slate-500 mt-1">
-                            {filter.query ? `Không có kết quả nào khớp với "${filter.query}"` : 'Danh sách thành viên hiện đang trống.'}
+                          <p className="text-base font-bold text-slate-700 dark:text-slate-300">
+                            {isEn ? 'No members found' : 'Không tìm thấy thành viên nào'}
+                          </p>
+                          <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                            {filter.query
+                              ? isEn
+                                ? `No results match "${filter.query}"`
+                                : `Không có kết quả nào khớp với "${filter.query}"`
+                              : isEn
+                              ? 'Member directory is currently empty.'
+                              : 'Danh sách thành viên hiện đang trống.'}
                           </p>
                         </div>
                         {(filter.query || statusFilter !== 'ALL') && (
                           <button
                             onClick={handleResetSearch}
-                            className="mt-2 px-4 py-2 bg-slate-900 text-white rounded-xl text-xs font-bold hover:bg-slate-800 transition-colors shadow-sm"
+                            className="mt-2 px-4 py-2 bg-[#1E2235] text-white rounded-xl text-xs font-bold hover:bg-[#2B2D42] transition-colors shadow-sm"
                           >
-                            Xóa bộ lọc & Xem tất cả
+                            {isEn ? 'Clear filters & show all' : 'Xóa bộ lọc & Xem tất cả'}
                           </button>
                         )}
                       </div>
@@ -723,31 +800,35 @@ export function MemberManagement() {
           </div>
 
           {/* Pagination Footer */}
-          <div className="p-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500">
+          <div className="p-4 border-t border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-slate-500 dark:text-slate-400">
             <div>
-              Hiển thị <span className="font-bold text-slate-800">{(filter.page - 1) * data.pageSize + 1}</span> - <span className="font-bold text-slate-800">{Math.min(filter.page * data.pageSize, data.totalCount)}</span> trên tổng số <span className="font-bold text-slate-800">{data.totalCount}</span> thành viên
+              {isEn ? 'Showing' : 'Hiển thị'}{' '}
+              <span className="font-bold text-slate-800 dark:text-slate-200">{(filter.page - 1) * data.pageSize + 1}</span> -{' '}
+              <span className="font-bold text-slate-800 dark:text-slate-200">{Math.min(filter.page * data.pageSize, data.totalCount)}</span>{' '}
+              {isEn ? 'of' : 'trên tổng số'}{' '}
+              <span className="font-bold text-slate-800 dark:text-slate-200">{data.totalCount}</span> {isEn ? 'members' : 'thành viên'}
             </div>
 
             <div className="flex items-center gap-1.5">
               <button
                 disabled={filter.page <= 1 || loading}
-                onClick={() => setFilter(f => ({ ...f, page: f.page - 1 }))}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                onClick={() => setFilter((f) => ({ ...f, page: f.page - 1 }))}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
                 <span className="material-symbols-outlined text-[16px]">chevron_left</span>
-                <span>Trước</span>
+                <span>{isEn ? 'Previous' : 'Trước'}</span>
               </button>
 
-              <span className="px-3 py-1.5 font-bold text-slate-800 bg-white border border-slate-200 rounded-lg">
-                Trang {filter.page} / {totalPages}
+              <span className="px-3 py-1.5 font-bold text-slate-800 dark:text-slate-200 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+                {isEn ? `Page ${filter.page} / ${totalPages}` : `Trang ${filter.page} / ${totalPages}`}
               </span>
 
               <button
                 disabled={filter.page >= totalPages || loading}
-                onClick={() => setFilter(f => ({ ...f, page: f.page + 1 }))}
-                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 text-slate-700 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                onClick={() => setFilter((f) => ({ ...f, page: f.page + 1 }))}
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
               >
-                <span>Sau</span>
+                <span>{isEn ? 'Next' : 'Sau'}</span>
                 <span className="material-symbols-outlined text-[16px]">chevron_right</span>
               </button>
             </div>
@@ -755,19 +836,31 @@ export function MemberManagement() {
         </div>
       )}
 
-      {/* 5. Modal: Sửa / Thêm thành viên */}
+      {/* 5. Modal: Edit / Add Member */}
       <Modal
         isOpen={modal?.type === 'edit'}
         onClose={() => !busy && setModal(null)}
-        title={modal?.row ? `Cập nhật hồ sơ · ${modal.row.fullName}` : 'Thêm thành viên mới'}
+        title={
+          modal?.row
+            ? isEn
+              ? `Update Profile · ${modal.row.fullName}`
+              : `Cập nhật hồ sơ · ${modal.row.fullName}`
+            : isEn
+            ? 'Add New Member'
+            : 'Thêm thành viên mới'
+        }
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleSaveMember} className="space-y-4">
-          <div className="p-3 bg-red-50/70 border border-red-200/60 rounded-xl text-xs text-red-900 flex items-start gap-2.5">
-            <span className="material-symbols-outlined text-red-600 text-[18px] flex-shrink-0 mt-0.5">info</span>
+          <div className="p-3 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200/60 dark:border-emerald-800/60 rounded-xl text-xs text-emerald-900 dark:text-emerald-300 flex items-start gap-2.5">
+            <span className="material-symbols-outlined text-[#2D6A4F] dark:text-[#81B29A] text-[18px] flex-shrink-0 mt-0.5">info</span>
             <span>
               {modal?.row
-                ? 'Thông tin cập nhật sẽ được lưu trực tiếp vào cơ sở dữ liệu của trung tâm và đồng bộ đến tài khoản người dùng.'
+                ? isEn
+                  ? 'Updated information will be saved directly to the center system and synchronized with the user account.'
+                  : 'Thông tin cập nhật sẽ được lưu trực tiếp vào hệ thống trung tâm và đồng bộ đến tài khoản người dùng.'
+                : isEn
+                ? 'New members will receive an automatic member code (MEM-...) and can log in immediately after creation.'
                 : 'Thành viên mới sẽ được cấp mã hội viên tự động (MEM-...) và có thể đăng nhập ngay sau khi tạo.'}
             </span>
           </div>
@@ -776,22 +869,24 @@ export function MemberManagement() {
             {!modal?.row && (
               <>
                 <div>
-                  <label className={labelClass}>Tên đăng nhập *</label>
+                  <label className={labelClass}>{isEn ? 'Username *' : 'Tên đăng nhập *'}</label>
                   <input
                     className={inputClass}
                     name="username"
                     required
                     minLength={3}
                     maxLength={100}
-                    placeholder="ví dụ: nguyenvana"
+                    placeholder={isEn ? 'e.g. johndoe' : 'ví dụ: nguyenvana'}
                     pattern="[a-zA-Z0-9._-]+"
                     value={form.username || ''}
                     onChange={handleFormChange}
                   />
-                  <span className="text-[11px] text-slate-500 mt-1 block">Chỉ gồm chữ cái, số, dấu chấm hoặc gạch dưới.</span>
+                  <span className="text-[11px] text-slate-500 mt-1 block">
+                    {isEn ? 'Letters, numbers, dots or underscores only.' : 'Chỉ gồm chữ cái, số, dấu chấm hoặc gạch dưới.'}
+                  </span>
                 </div>
                 <div>
-                  <label className={labelClass}>Mật khẩu ban đầu *</label>
+                  <label className={labelClass}>{isEn ? 'Initial Password *' : 'Mật khẩu ban đầu *'}</label>
                   <input
                     className={inputClass}
                     type="password"
@@ -800,30 +895,32 @@ export function MemberManagement() {
                     required
                     minLength={6}
                     maxLength={128}
-                    placeholder="Tối thiểu 6 ký tự"
+                    placeholder={isEn ? 'Minimum 6 characters' : 'Tối thiểu 6 ký tự'}
                     value={form.password || ''}
                     onChange={handleFormChange}
                   />
-                  <span className="text-[11px] text-slate-500 mt-1 block">Khuyến nghị kết hợp chữ, số và ký tự đặc biệt.</span>
+                  <span className="text-[11px] text-slate-500 mt-1 block">
+                    {isEn ? 'Recommend letters, numbers and special characters.' : 'Khuyến nghị kết hợp chữ, số và ký tự đặc biệt.'}
+                  </span>
                 </div>
               </>
             )}
 
             <div>
-              <label className={labelClass}>Họ và tên đầy đủ *</label>
+              <label className={labelClass}>{isEn ? 'Full Name *' : 'Họ và tên đầy đủ *'}</label>
               <input
                 className={inputClass}
                 name="fullName"
                 required
                 maxLength={150}
-                placeholder="ví dụ: Nguyễn Văn A"
+                placeholder={isEn ? 'e.g. John Doe' : 'ví dụ: Nguyễn Văn A'}
                 value={form.fullName || ''}
                 onChange={handleFormChange}
               />
             </div>
 
             <div>
-              <label className={labelClass}>Email liên hệ *</label>
+              <label className={labelClass}>{isEn ? 'Contact Email *' : 'Email liên hệ *'}</label>
               <input
                 className={inputClass}
                 name="email"
@@ -838,20 +935,20 @@ export function MemberManagement() {
             </div>
 
             <div>
-              <label className={labelClass}>Số điện thoại</label>
+              <label className={labelClass}>{isEn ? 'Phone Number' : 'Số điện thoại'}</label>
               <input
                 className={inputClass}
                 name="phone"
                 type="tel"
                 maxLength={20}
-                placeholder="ví dụ: 0912345678"
+                placeholder={isEn ? 'e.g. 0912345678' : 'ví dụ: 0912345678'}
                 value={form.phone || ''}
                 onChange={handleFormChange}
               />
             </div>
 
             <div>
-              <label className={labelClass}>Ngày sinh</label>
+              <label className={labelClass}>{isEn ? 'Date of Birth' : 'Ngày sinh'}</label>
               <input
                 className={inputClass}
                 name="dateOfBirth"
@@ -864,56 +961,51 @@ export function MemberManagement() {
             </div>
 
             <div>
-              <label className={labelClass}>Giới tính</label>
-              <select
-                className={inputClass}
-                name="gender"
-                value={form.gender || ''}
-                onChange={handleFormChange}
-              >
-                <option value="">-- Chưa cung cấp --</option>
-                <option value="Male">Nam</option>
-                <option value="Female">Nữ</option>
-                <option value="Other">Khác</option>
+              <label className={labelClass}>{isEn ? 'Gender' : 'Giới tính'}</label>
+              <select className={inputClass} name="gender" value={form.gender || ''} onChange={handleFormChange}>
+                <option value="">{isEn ? '-- Not specified --' : '-- Chưa cung cấp --'}</option>
+                <option value="Male">{isEn ? 'Male' : 'Nam'}</option>
+                <option value="Female">{isEn ? 'Female' : 'Nữ'}</option>
+                <option value="Other">{isEn ? 'Other' : 'Khác'}</option>
               </select>
             </div>
 
             <div className="sm:col-span-2">
-              <label className={labelClass}>Địa chỉ liên lạc</label>
+              <label className={labelClass}>{isEn ? 'Residential Address' : 'Địa chỉ liên lạc'}</label>
               <input
                 className={inputClass}
                 name="address"
                 maxLength={255}
-                placeholder="Số nhà, tên đường, phường/xã, quận/huyện..."
+                placeholder={isEn ? 'House number, street, ward, city...' : 'Số nhà, tên đường, phường/xã, quận/huyện...'}
                 value={form.address || ''}
                 onChange={handleFormChange}
               />
             </div>
           </div>
 
-          <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+          <div className="pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-end gap-3">
             <button
               type="button"
               disabled={busy}
               onClick={() => setModal(null)}
-              className="px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
             >
-              Hủy bỏ
+              {isEn ? 'Cancel' : 'Hủy bỏ'}
             </button>
             <button
               type="submit"
               disabled={busy}
-              className="inline-flex items-center gap-2 px-6 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-red-600/30 transition-all disabled:opacity-50"
+              className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-xl text-xs font-bold uppercase tracking-wider shadow-lg shadow-[#2D6A4F]/30 transition-all disabled:opacity-50"
             >
               {busy ? (
                 <>
                   <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                  <span>Đang lưu...</span>
+                  <span>{isEn ? 'Saving...' : 'Đang lưu...'}</span>
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[16px]">save</span>
-                  <span>{modal?.row ? 'Lưu thay đổi' : 'Tạo thành viên'}</span>
+                  <span>{modal?.row ? (isEn ? 'Save Changes' : 'Lưu thay đổi') : isEn ? 'Create Member' : 'Tạo thành viên'}</span>
                 </>
               )}
             </button>
@@ -921,86 +1013,104 @@ export function MemberManagement() {
         </form>
       </Modal>
 
-      {/* 6. Modal: Xem chi tiết hồ sơ thành viên */}
+      {/* 6. Modal: View member details */}
       <Modal
         isOpen={modal?.type === 'detail'}
         onClose={() => setModal(null)}
-        title="Hồ sơ chi tiết thành viên"
+        title={isEn ? 'Member Profile Details' : 'Hồ sơ chi tiết thành viên'}
         maxWidth="max-w-2xl"
       >
         {modal?.row && (
           <div className="space-y-6">
             {/* Header info */}
-            <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
-              <div className={`w-16 h-16 rounded-2xl bg-gradient-to-tr ${getAvatarGradient(modal.row.fullName)} flex items-center justify-center text-white font-black text-xl shadow-md flex-shrink-0`}>
+            <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
+              <div
+                className={`w-16 h-16 rounded-2xl bg-gradient-to-tr ${getAvatarGradient(
+                  modal.row.fullName
+                )} flex items-center justify-center text-white font-black text-xl shadow-md flex-shrink-0`}
+              >
                 {getInitials(modal.row.fullName)}
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-lg font-black text-slate-900">{modal.row.fullName}</h3>
-                  <span className={`px-2 py-0.5 rounded-full text-xs font-bold ${
-                    modal.row.accountStatus === 'Active'
-                      ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                      : 'bg-rose-50 text-rose-700 border border-rose-200'
-                  }`}>
-                    {modal.row.accountStatus === 'Active' ? 'Hoạt động' : 'Đã khóa'}
+                  <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">{modal.row.fullName}</h3>
+                  <span
+                    className={`px-2 py-0.5 rounded-full text-xs font-bold ${
+                      modal.row.accountStatus === 'Active'
+                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800'
+                        : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800'
+                    }`}
+                  >
+                    {modal.row.accountStatus === 'Active' ? (isEn ? 'Active' : 'Hoạt động') : isEn ? 'Locked' : 'Đã khóa'}
                   </span>
                 </div>
-                <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500">
-                  <span className="font-mono font-bold text-slate-700 bg-white px-2 py-0.5 rounded border border-slate-200">
+                <div className="flex flex-wrap items-center gap-3 mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  <span className="font-mono font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 px-2 py-0.5 rounded border border-slate-200 dark:border-slate-700">
                     {modal.row.memberCode}
                   </span>
                   <span>Username: @{modal.row.username}</span>
-                  <span>Ngày tham gia: {formatMemberDate(modal.row.createdAt)}</span>
+                  <span>
+                    {isEn ? 'Joined:' : 'Ngày tham gia:'} {formatMemberDate(modal.row.createdAt)}
+                  </span>
                 </div>
               </div>
             </div>
 
             {/* Grid details */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px] text-red-600">badge</span>
-                  Thông tin cá nhân
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-[#2D6A4F] dark:text-[#81B29A]">badge</span>
+                  {isEn ? 'Personal Information' : 'Thông tin cá nhân'}
                 </h4>
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-500">Giới tính:</span>
-                    <span className="font-semibold text-slate-800">
-                      {modal.row.gender === 'Male' ? 'Nam' : modal.row.gender === 'Female' ? 'Nữ' : modal.row.gender || 'Chưa cung cấp'}
+                  <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Gender:' : 'Giới tính:'}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">
+                      {modal.row.gender === 'Male'
+                        ? isEn
+                          ? 'Male'
+                          : 'Nam'
+                        : modal.row.gender === 'Female'
+                        ? isEn
+                          ? 'Female'
+                          : 'Nữ'
+                        : modal.row.gender || (isEn ? 'Not specified' : 'Chưa cung cấp')}
                     </span>
                   </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-500">Ngày sinh:</span>
-                    <span className="font-semibold text-slate-800">{formatMemberDate(modal.row.dateOfBirth)}</span>
+                  <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Date of birth:' : 'Ngày sinh:'}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200">{formatMemberDate(modal.row.dateOfBirth)}</span>
                   </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-500">Địa chỉ:</span>
-                    <span className="font-semibold text-slate-800 text-right">{modal.row.address || 'Chưa cung cấp'}</span>
+                  <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Address:' : 'Địa chỉ:'}</span>
+                    <span className="font-semibold text-slate-800 dark:text-slate-200 text-right">
+                      {modal.row.address || (isEn ? 'Not specified' : 'Chưa cung cấp')}
+                    </span>
                   </div>
                 </div>
               </div>
 
-              <div className="p-4 rounded-xl bg-white border border-slate-200 space-y-3">
-                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 flex items-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px] text-red-600">contact_phone</span>
-                  Thông tin liên hệ
+              <div className="p-4 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-3">
+                <h4 className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-[#2D6A4F] dark:text-[#81B29A]">contact_phone</span>
+                  {isEn ? 'Contact Info' : 'Thông tin liên hệ'}
                 </h4>
                 <div className="space-y-2 text-xs">
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-500">Email:</span>
-                    <a href={`mailto:${modal.row.email}`} className="font-semibold text-blue-600 hover:underline">
+                  <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span className="text-slate-500 dark:text-slate-400">Email:</span>
+                    <a href={`mailto:${modal.row.email}`} className="font-semibold text-blue-600 dark:text-blue-400 hover:underline">
                       {modal.row.email}
                     </a>
                   </div>
-                  <div className="flex justify-between border-b border-slate-100 pb-1.5">
-                    <span className="text-slate-500">Số điện thoại:</span>
+                  <div className="flex justify-between border-b border-slate-100 dark:border-slate-800 pb-1.5">
+                    <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Phone:' : 'Số điện thoại:'}</span>
                     {modal.row.phone ? (
-                      <a href={`tel:${modal.row.phone}`} className="font-semibold text-slate-800 hover:text-red-600">
+                      <a href={`tel:${modal.row.phone}`} className="font-semibold text-slate-800 dark:text-slate-200 hover:text-[#2D6A4F]">
                         {modal.row.phone}
                       </a>
                     ) : (
-                      <span className="text-slate-400 italic">Chưa có</span>
+                      <span className="text-slate-400 italic">{isEn ? 'None' : 'Chưa có'}</span>
                     )}
                   </div>
                 </div>
@@ -1008,125 +1118,129 @@ export function MemberManagement() {
             </div>
 
             {/* Current Package Card */}
-            <div className="p-4 rounded-xl bg-gradient-to-br from-slate-900 to-slate-950 text-white space-y-3 shadow-md">
+            <div className="p-4 rounded-xl bg-gradient-to-r from-[#1E2235] to-[#242A42] text-white space-y-3 shadow-md">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-red-400">fitness_center</span>
-                  <span className="text-xs font-bold uppercase tracking-wider text-slate-400">Gói tập hiện tại</span>
+                  <span className="material-symbols-outlined text-[#F2CC8F]">fitness_center</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-slate-300">
+                    {isEn ? 'Current Subscription' : 'Gói tập hiện tại'}
+                  </span>
                 </div>
                 {modal.row.packageStatus && (
-                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-red-600 text-white">
+                  <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#2D6A4F] text-white">
                     {modal.row.packageStatus}
                   </span>
                 )}
               </div>
               <div>
                 <p className="text-lg font-black text-white">
-                  {modal.row.packageName || 'Chưa đăng ký gói tập nào'}
+                  {modal.row.packageName || (isEn ? 'No active package registered' : 'Chưa đăng ký gói tập nào')}
                 </p>
                 {modal.row.packageExpiry && (
                   <div className="flex flex-wrap items-center gap-3 mt-1.5 text-xs text-slate-300">
-                    <span>Hiệu lực đến: <strong className="text-white">{formatMemberDate(modal.row.packageExpiry)}</strong></span>
-                    {modal.row.packageStartDate && (
-                      <span>(Bắt đầu: {formatMemberDate(modal.row.packageStartDate)})</span>
-                    )}
+                    <span>
+                      {isEn ? 'Valid until:' : 'Hiệu lực đến:'} <strong className="text-white">{formatMemberDate(modal.row.packageExpiry)}</strong>
+                    </span>
+                    {modal.row.packageStartDate && <span>({isEn ? 'Started:' : 'Bắt đầu:'} {formatMemberDate(modal.row.packageStartDate)})</span>}
                   </div>
                 )}
               </div>
             </div>
 
             {/* Modal actions footer */}
-            <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-end gap-2.5">
+            <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex flex-wrap items-center justify-end gap-2.5">
               <button
                 type="button"
                 onClick={() => setModal(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50"
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800"
               >
-                Đóng
+                {isEn ? 'Close' : 'Đóng'}
               </button>
               <button
                 type="button"
                 onClick={() => openSubscriptions(modal.row)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-blue-700 bg-blue-50 hover:bg-blue-100"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A] bg-[#2D6A4F]/10 hover:bg-[#2D6A4F]/20"
               >
                 <span className="material-symbols-outlined text-[16px]">history</span>
-                <span>Lịch sử gói tập</span>
+                <span>{isEn ? 'Package History' : 'Lịch sử gói tập'}</span>
               </button>
               <button
                 type="button"
                 onClick={() => openEdit(modal.row)}
-                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-slate-900 bg-slate-100 hover:bg-slate-200"
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700"
               >
                 <span className="material-symbols-outlined text-[16px]">edit</span>
-                <span>Sửa thông tin</span>
+                <span>{isEn ? 'Edit Profile' : 'Sửa thông tin'}</span>
               </button>
             </div>
           </div>
         )}
       </Modal>
 
-      {/* 7. Modal: Lịch sử gói tập */}
+      {/* 7. Modal: Subscription history */}
       <Modal
         isOpen={modal?.type === 'subscriptions'}
         onClose={() => !busy && setModal(null)}
-        title={modal?.row ? `Lịch sử gói tập · ${modal.row.fullName}` : 'Lịch sử gói tập'}
+        title={modal?.row ? (isEn ? `Subscription History · ${modal.row.fullName}` : `Lịch sử gói tập · ${modal.row.fullName}`) : isEn ? 'Subscription History' : 'Lịch sử gói tập'}
         maxWidth="max-w-2xl"
       >
         <div className="space-y-4">
-          <div className="flex items-center justify-between pb-3 border-b border-slate-100">
-            <div className="text-xs text-slate-500">
-              Tổng số gói từng đăng ký: <strong className="text-slate-800">{subscriptions.length}</strong>
+          <div className="flex items-center justify-between pb-3 border-b border-slate-100 dark:border-slate-800">
+            <div className="text-xs text-slate-500 dark:text-slate-400">
+              {isEn ? 'Total subscriptions purchased:' : 'Tổng số gói từng đăng ký:'}{' '}
+              <strong className="text-slate-800 dark:text-slate-200">{subscriptions.length}</strong>
             </div>
             {modal?.row && (
-              <span className="font-mono text-xs font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded">
+              <span className="font-mono text-xs font-bold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">
                 {modal.row.memberCode}
               </span>
             )}
           </div>
 
           {loadingSubs ? (
-            <LoadingSpinner text="Đang tải lịch sử đăng ký..." />
+            <LoadingSpinner text={isEn ? 'Loading subscription history...' : 'Đang tải lịch sử đăng ký...'} />
           ) : subscriptionError ? (
-            <div role="alert" className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-800">
+            <div role="alert" className="rounded-xl border border-rose-200 dark:border-rose-900/60 bg-rose-50 dark:bg-rose-950/40 p-4 text-sm text-rose-800 dark:text-rose-300">
               <p>{subscriptionError}</p>
-              <button type="button" className="mt-2 font-bold underline" onClick={() => openSubscriptions(modal.row)}>Thử lại</button>
+              <button type="button" className="mt-2 font-bold underline" onClick={() => openSubscriptions(modal.row)}>
+                {isEn ? 'Retry' : 'Thử lại'}
+              </button>
             </div>
           ) : subscriptions.length > 0 ? (
             <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-              {subscriptions.map(s => {
+              {subscriptions.map((s) => {
                 const status = getSubscriptionPresentation(s.status);
                 return (
                   <article
                     key={s.subscriptionId}
-                    className="p-4 rounded-xl border border-slate-200 hover:border-slate-300 transition-colors bg-white shadow-sm space-y-2"
+                    className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700 transition-colors bg-white dark:bg-slate-900 shadow-sm space-y-2"
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-red-600 text-[18px]">
-                          workspace_premium
-                        </span>
-                        <h4 className="font-bold text-sm text-slate-900">{s.packageName || 'Gói chưa có tên'}</h4>
+                        <span className="material-symbols-outlined text-[#2D6A4F] dark:text-[#81B29A] text-[18px]">workspace_premium</span>
+                        <h4 className="font-bold text-sm text-slate-900 dark:text-slate-100">{s.packageName || (isEn ? 'Unnamed Package' : 'Gói chưa có tên')}</h4>
                       </div>
                       <span className={`px-2 py-0.5 rounded border text-[10px] font-bold tracking-wider ${status.className}`}>
                         {status.label}
                       </span>
                     </div>
 
-                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600">
-                      <span className="font-bold text-slate-900">
-                        {formatMembershipPrice(s.price)}
+                    <div className="flex flex-wrap items-center gap-3 text-xs text-slate-600 dark:text-slate-300">
+                      <span className="font-bold text-slate-900 dark:text-slate-100">{formatMembershipPrice(s.price)}</span>
+                      <span>·</span>
+                      <span>
+                        {isEn ? 'Duration:' : 'Thời hạn:'} <strong>{formatMembershipDuration(s.durationDays)}</strong>
                       </span>
                       <span>·</span>
-                      <span>Thời hạn: <strong>{formatMembershipDuration(s.durationDays)}</strong></span>
-                      <span>·</span>
-                      <span className="text-slate-500">
-                        Hiệu lực: {s.startDate ? formatMemberDate(s.startDate) : 'Chưa kích hoạt'} – {s.endDate ? formatMemberDate(s.endDate) : 'Chưa có'}
+                      <span className="text-slate-500 dark:text-slate-400">
+                        {isEn ? 'Valid:' : 'Hiệu lực:'} {s.startDate ? formatMemberDate(s.startDate) : isEn ? 'Not activated' : 'Chưa kích hoạt'} –{' '}
+                        {s.endDate ? formatMemberDate(s.endDate) : isEn ? 'None' : 'Chưa có'}
                       </span>
                     </div>
 
                     {s.createdAt && (
-                      <div className="text-[11px] text-slate-400">
-                        Ngày tạo giao dịch: {formatMemberDateTime(s.createdAt)}
+                      <div className="text-[11px] text-slate-400 dark:text-slate-500">
+                        {isEn ? 'Created at:' : 'Ngày tạo giao dịch:'} {formatMemberDateTime(s.createdAt)}
                       </div>
                     )}
                   </article>
@@ -1136,62 +1250,72 @@ export function MemberManagement() {
           ) : (
             <div className="py-12 text-center text-slate-400 space-y-2">
               <span className="material-symbols-outlined text-4xl text-slate-300">receipt_long</span>
-              <p className="text-sm font-semibold text-slate-600">Chưa có lịch sử đăng ký gói nào</p>
-              <p className="text-xs text-slate-400">Hội viên chưa mua gói tập tại trung tâm hoặc trực tuyến.</p>
+              <p className="text-sm font-semibold text-slate-600 dark:text-slate-300">{isEn ? 'No subscription records found' : 'Chưa có lịch sử đăng ký gói nào'}</p>
+              <p className="text-xs text-slate-400">{isEn ? 'This member has not purchased any packages yet.' : 'Hội viên chưa mua gói tập tại trung tâm hoặc trực tuyến.'}</p>
             </div>
           )}
 
-          <div className="pt-3 border-t border-slate-100 flex justify-end">
+          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex justify-end">
             <button
               type="button"
               onClick={() => setModal(null)}
-              className="px-5 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold transition-colors shadow-sm"
+              className="px-5 py-2 rounded-xl bg-[#1E2235] hover:bg-[#2B2D42] text-white text-xs font-bold transition-colors shadow-sm"
             >
-              Đóng
+              {isEn ? 'Close' : 'Đóng'}
             </button>
           </div>
         </div>
       </Modal>
 
-      {/* 8. Modal: Khóa / Mở khóa tài khoản */}
+      {/* 8. Modal: Lock / Unlock account */}
       <Modal
         isOpen={modal?.type === 'status'}
         onClose={() => !busy && setModal(null)}
-        title="Xác nhận trạng thái tài khoản"
+        title={isEn ? 'Confirm Account Status Change' : 'Xác nhận trạng thái tài khoản'}
         maxWidth="max-w-md"
       >
         {modal?.row && (
           <div className="space-y-4">
-            <div className={`p-4 rounded-xl border flex items-start gap-3 ${
-              modal.row.accountStatus === 'Active'
-                ? 'bg-rose-50 border-rose-200 text-rose-900'
-                : 'bg-emerald-50 border-emerald-200 text-emerald-900'
-            }`}>
+            <div
+              className={`p-4 rounded-xl border flex items-start gap-3 ${
+                modal.row.accountStatus === 'Active'
+                  ? 'bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-900/60 text-rose-900 dark:text-rose-200'
+                  : 'bg-emerald-50 dark:bg-emerald-950/40 border-emerald-200 dark:border-emerald-900/60 text-emerald-900 dark:text-emerald-200'
+              }`}
+            >
               <span className="material-symbols-outlined text-[24px] flex-shrink-0">
                 {modal.row.accountStatus === 'Active' ? 'warning' : 'lock_open'}
               </span>
               <div className="text-xs space-y-1">
                 <p className="font-bold text-sm">
                   {modal.row.accountStatus === 'Active'
-                    ? `Khóa tài khoản của "${modal.row.fullName}"?`
+                    ? isEn
+                      ? `Lock account of "${modal.row.fullName}"?`
+                      : `Khóa tài khoản của "${modal.row.fullName}"?`
+                    : isEn
+                    ? `Unlock account of "${modal.row.fullName}"?`
                     : `Mở khóa tài khoản của "${modal.row.fullName}"?`}
                 </p>
                 <p className="leading-relaxed">
                   {modal.row.accountStatus === 'Active'
-                    ? 'Khi bị khóa, thành viên sẽ không thể đăng nhập hệ thống, không thể đặt lịch lớp học hoặc check-in vào trung tâm.'
+                    ? isEn
+                      ? 'When locked, the member cannot log in, book class sessions, or check-in to sports facilities.'
+                      : 'Khi bị khóa, thành viên sẽ không thể đăng nhập hệ thống, không thể đặt lịch lớp học hoặc check-in vào trung tâm.'
+                    : isEn
+                    ? 'When unlocked, the member will regain login access, class booking, and athletic check-in privileges.'
                     : 'Khi mở khóa, thành viên sẽ khôi phục quyền đăng nhập, đặt lịch và sử dụng dịch vụ trung tâm bình thường.'}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100">
+            <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
               <button
                 type="button"
                 disabled={busy}
                 onClick={() => setModal(null)}
-                className="px-4 py-2 rounded-xl border border-slate-200 text-slate-700 text-xs font-bold hover:bg-slate-50 transition-colors"
+                className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-xs font-bold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
               >
-                Hủy bỏ
+                {isEn ? 'Cancel' : 'Hủy bỏ'}
               </button>
               <button
                 type="button"
@@ -1200,10 +1324,20 @@ export function MemberManagement() {
                 className={`px-5 py-2 rounded-xl text-xs font-bold text-white transition-all shadow-md ${
                   modal.row.accountStatus === 'Active'
                     ? 'bg-rose-600 hover:bg-rose-700 shadow-rose-600/30'
-                    : 'bg-emerald-600 hover:bg-emerald-700 shadow-emerald-600/30'
+                    : 'bg-[#2D6A4F] hover:bg-[#1B4332] shadow-[#2D6A4F]/30'
                 }`}
               >
-                {busy ? 'Đang cập nhật...' : (modal.row.accountStatus === 'Active' ? 'Xác nhận khóa' : 'Xác nhận mở khóa')}
+                {busy
+                  ? isEn
+                    ? 'Updating...'
+                    : 'Đang cập nhật...'
+                  : modal.row.accountStatus === 'Active'
+                  ? isEn
+                    ? 'Confirm Lock'
+                    : 'Xác nhận khóa'
+                  : isEn
+                  ? 'Confirm Unlock'
+                  : 'Xác nhận mở khóa'}
               </button>
             </div>
           </div>

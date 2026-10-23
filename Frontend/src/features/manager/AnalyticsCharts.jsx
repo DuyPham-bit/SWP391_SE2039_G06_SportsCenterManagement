@@ -1,35 +1,38 @@
 import React, { useState } from 'react';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 
 // Format currency
 const formatVnd = (num) => `${Number(num || 0).toLocaleString('vi-VN')}đ`;
 const formatShortVnd = (num) => {
   const n = Number(num || 0);
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)} Tr`;
-  if (n >= 1000) return `${(n / 1000).toFixed(0)} K`;
+  if (n >= 1000000) return `${(n / 1000000).toFixed(1)}M`;
+  if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
   return `${n}đ`;
 };
 
 // Colors for sports
 const sportColors = {
-  'Bơi lội': { stroke: '#0284c7', fill: '#e0f2fe', text: 'text-sky-700', bg: 'bg-sky-500' },
-  'Gym & Fitness': { stroke: '#dc2626', fill: '#fee2e2', text: 'text-red-700', bg: 'bg-red-500' },
-  'Yoga & Pilates': { stroke: '#059669', fill: '#d1fae5', text: 'text-emerald-700', bg: 'bg-emerald-500' },
-  'Cầu lông': { stroke: '#d97706', fill: '#fef3c7', text: 'text-amber-700', bg: 'bg-amber-500' },
-  'Boxing & Võ thuật': { stroke: '#7c3aed', fill: '#ede9fe', text: 'text-purple-700', bg: 'bg-purple-500' }
+  'Bơi lội': { stroke: '#0284c7', fill: '#e0f2fe', text: 'text-sky-700 dark:text-sky-400', bg: 'bg-sky-500' },
+  'Gym & Fitness': { stroke: '#dc2626', fill: '#fee2e2', text: 'text-rose-700 dark:text-rose-400', bg: 'bg-rose-500' },
+  'Yoga & Pilates': { stroke: '#2D6A4F', fill: '#d1fae5', text: 'text-[#2D6A4F] dark:text-[#81B29A]', bg: 'bg-[#2D6A4F]' },
+  'Cầu lông': { stroke: '#d97706', fill: '#fef3c7', text: 'text-amber-700 dark:text-amber-400', bg: 'bg-amber-500' },
+  'Boxing & Võ thuật': { stroke: '#7c3aed', fill: '#ede9fe', text: 'text-purple-700 dark:text-purple-400', bg: 'bg-purple-500' }
 };
 
-const getSportColor = (name) => sportColors[name] || { stroke: '#475569', fill: '#f1f5f9', text: 'text-slate-700', bg: 'bg-slate-500' };
+const getSportColor = (name) => sportColors[name] || { stroke: '#475569', fill: '#f1f5f9', text: 'text-slate-700 dark:text-slate-300', bg: 'bg-slate-500' };
 
 /**
  * 1. BIỂU ĐỒ DOANH THU THUẦN (REVENUE TREND BAR CHART)
  */
 export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   if (!data || !data.length) {
     return (
-      <div className="py-12 text-center text-xs text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-        Chưa có dữ liệu doanh thu trong kỳ đã chọn.
+      <div className="py-12 text-center text-xs text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+        {isEn ? 'No revenue data in selected period.' : 'Chưa có dữ liệu doanh thu trong kỳ đã chọn.'}
       </div>
     );
   }
@@ -59,15 +62,19 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
   return (
     <div className="space-y-4">
       {/* Metric summary top bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200/70">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
         <div>
-          <span className="text-slate-500 block text-[11px]">Tổng doanh thu kỳ:</span>
-          <strong className="text-base font-black text-red-600 font-chivo">{formatVnd(totalRevenue)}</strong>
+          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">
+            {isEn ? 'Period Net Revenue:' : 'Tổng doanh thu kỳ:'}
+          </span>
+          <strong className="text-base font-black text-[#2D6A4F] dark:text-[#81B29A] font-chivo">{formatVnd(totalRevenue)}</strong>
         </div>
         {peakIdx >= 0 && values[peakIdx] > 0 && (
           <div className="text-right">
-            <span className="text-slate-500 block text-[11px]">Ngày doanh thu cao nhất:</span>
-            <span className="font-bold text-slate-900 bg-amber-100 text-amber-900 px-2 py-0.5 rounded text-[11px] border border-amber-300">
+            <span className="text-slate-500 dark:text-slate-400 block text-[11px]">
+              {isEn ? (groupBy === 'month' ? 'Highest Month:' : 'Highest Day:') : (groupBy === 'month' ? 'Tháng cao nhất:' : 'Ngày cao nhất:')}
+            </span>
+            <span className="font-bold text-[#1E2235] dark:text-[#F2CC8F] bg-[#F2CC8F]/30 dark:bg-[#F2CC8F]/20 px-2 py-0.5 rounded text-[11px] border border-[#F2CC8F]/60">
               🌟 {data[peakIdx].periodStart}: {formatVnd(values[peakIdx])}
             </span>
           </div>
@@ -76,15 +83,15 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
 
       {/* SVG Interactive Chart */}
       <div className="relative overflow-x-auto">
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
+        <svg data-chart-id="chart-revenue" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
           <defs>
             <linearGradient id="revenueBarGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#dc2626" />
-              <stop offset="100%" stopColor="#ef4444" stopOpacity="0.85" />
+              <stop offset="0%" stopColor="#2D6A4F" />
+              <stop offset="100%" stopColor="#81B29A" stopOpacity="0.85" />
             </linearGradient>
             <linearGradient id="revenuePeakGrad" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="0%" stopColor="#f59e0b" />
-              <stop offset="100%" stopColor="#ef4444" />
+              <stop offset="0%" stopColor="#F2CC8F" />
+              <stop offset="100%" stopColor="#2D6A4F" />
             </linearGradient>
           </defs>
 
@@ -98,12 +105,13 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
                 y2={tick.y}
                 stroke="#e2e8f0"
                 strokeDasharray={i === 0 ? '0' : '4 4'}
+                className="dark:stroke-slate-800"
               />
               <text
                 x={paddingLeft - 8}
                 y={tick.y + 4}
                 textAnchor="end"
-                className="text-[10px] fill-slate-400 font-medium"
+                className="text-[10px] fill-slate-400 dark:fill-slate-500 font-medium"
               >
                 {formatShortVnd(tick.val)}
               </text>
@@ -118,7 +126,7 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
             const y = paddingTop + innerHeight - h;
             const isHovered = hoveredIdx === i;
             const isPeak = i === peakIdx && val > 0;
-            const dateLabel = item.periodStart.slice(5); // e.g. '10-01'
+            const dateLabel = item.periodStart.slice(5);
 
             return (
               <g
@@ -143,7 +151,7 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
                     y={paddingTop}
                     width={barWidth * 1.8}
                     height={innerHeight}
-                    fill="#fee2e2"
+                    fill="#d1fae5"
                     opacity="0.35"
                     rx="4"
                   />
@@ -179,7 +187,7 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
                     x={x}
                     y={chartHeight - 12}
                     textAnchor="middle"
-                    className={`text-[10px] ${isHovered ? 'fill-red-600 font-bold' : 'fill-slate-500'}`}
+                    className={`text-[10px] ${isHovered ? 'fill-[#2D6A4F] dark:fill-[#81B29A] font-bold' : 'fill-slate-500 dark:fill-slate-400'}`}
                   >
                     {dateLabel}
                   </text>
@@ -198,7 +206,7 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
             }}
           >
             <span className="text-slate-300 font-medium">{data[hoveredIdx].periodStart}:</span>
-            <strong className="text-amber-300 font-black">{formatVnd(data[hoveredIdx].net)}</strong>
+            <strong className="text-emerald-300 font-black">{formatVnd(data[hoveredIdx].net)}</strong>
           </div>
         )}
       </div>
@@ -210,12 +218,14 @@ export function RevenueTrendChart({ data = [], groupBy = 'day' }) {
  * 2. BIỂU ĐỒ MIỀN THÀNH VIÊN MỚI (NEW MEMBERS AREA SPLINE CHART)
  */
 export function NewMembersAreaChart({ data = [] }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   if (!data || !data.length) {
     return (
-      <div className="py-12 text-center text-xs text-slate-400 bg-slate-50/50 rounded-xl border border-dashed border-slate-200">
-        Chưa có dữ liệu thành viên mới trong kỳ đã chọn.
+      <div className="py-12 text-center text-xs text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+        {isEn ? 'No new members data in selected period.' : 'Chưa có dữ liệu thành viên mới trong kỳ đã chọn.'}
       </div>
     );
   }
@@ -271,22 +281,26 @@ export function NewMembersAreaChart({ data = [] }) {
   return (
     <div className="space-y-4">
       {/* Metric summary top bar */}
-      <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 p-3 rounded-xl border border-slate-200/70">
+      <div className="flex flex-wrap items-center justify-between gap-3 text-xs bg-slate-50 dark:bg-slate-800/60 p-3 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
         <div>
-          <span className="text-slate-500 block text-[11px]">Tổng thành viên mới:</span>
-          <strong className="text-base font-black text-blue-600 font-chivo">+{totalNew} người</strong>
+          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">
+            {isEn ? 'Total New Members:' : 'Tổng thành viên mới:'}
+          </span>
+          <strong className="text-base font-black text-blue-600 dark:text-blue-400 font-chivo">+{totalNew} {isEn ? 'members' : 'người'}</strong>
         </div>
         <div>
-          <span className="text-slate-500 block text-[11px]">Đỉnh tăng trưởng:</span>
-          <span className="font-bold text-blue-900 bg-blue-100 px-2 py-0.5 rounded text-[11px] border border-blue-200">
-            +{maxVal} người / ngày
+          <span className="text-slate-500 dark:text-slate-400 block text-[11px]">
+            {isEn ? 'Peak Growth:' : 'Đỉnh tăng trưởng:'}
+          </span>
+          <span className="font-bold text-blue-900 dark:text-blue-200 bg-blue-100 dark:bg-blue-900/40 px-2 py-0.5 rounded text-[11px] border border-blue-200 dark:border-blue-800">
+            +{maxVal} {isEn ? 'members / day' : 'người / ngày'}
           </span>
         </div>
       </div>
 
       {/* SVG Chart */}
       <div className="relative overflow-x-auto">
-        <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
+        <svg data-chart-id="chart-members" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
           <defs>
             <linearGradient id="memberAreaGrad" x1="0" y1="0" x2="0" y2="1">
               <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.45" />
@@ -304,12 +318,13 @@ export function NewMembersAreaChart({ data = [] }) {
                 y2={tick.y}
                 stroke="#e2e8f0"
                 strokeDasharray={i === 0 ? '0' : '4 4'}
+                className="dark:stroke-slate-800"
               />
               <text
                 x={paddingLeft - 8}
                 y={tick.y + 4}
                 textAnchor="end"
-                className="text-[10px] fill-slate-400 font-medium"
+                className="text-[10px] fill-slate-400 dark:fill-slate-500 font-medium"
               >
                 {tick.val}
               </text>
@@ -374,7 +389,7 @@ export function NewMembersAreaChart({ data = [] }) {
                     x={pt.x}
                     y={chartHeight - 12}
                     textAnchor="middle"
-                    className={`text-[10px] ${isHovered ? 'fill-blue-600 font-bold' : 'fill-slate-500'}`}
+                    className={`text-[10px] ${isHovered ? 'fill-blue-600 dark:fill-blue-400 font-bold' : 'fill-slate-500 dark:fill-slate-400'}`}
                   >
                     {dateLabel}
                   </text>
@@ -393,7 +408,7 @@ export function NewMembersAreaChart({ data = [] }) {
             }}
           >
             <span className="text-slate-300 font-medium">{data[hoveredIdx].periodStart}:</span>
-            <strong className="text-cyan-300 font-black">+{data[hoveredIdx].newMembers} thành viên</strong>
+            <strong className="text-cyan-300 font-black">+{data[hoveredIdx].newMembers} {isEn ? 'members' : 'thành viên'}</strong>
           </div>
         )}
       </div>
@@ -405,10 +420,16 @@ export function NewMembersAreaChart({ data = [] }) {
  * 3. BIỂU ĐỒ DONUT PHÂN BỔ THỊ PHẦN BỘ MÔN (SPORTS DONUT CHART)
  */
 export function SportsDonutChart({ sports = [] }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [activeIdx, setActiveIdx] = useState(null);
 
   if (!sports || !sports.length) {
-    return <div className="text-xs text-slate-400 py-8 text-center">Chưa có dữ liệu bộ môn.</div>;
+    return (
+      <div className="text-xs text-slate-400 dark:text-slate-500 py-8 text-center">
+        {isEn ? 'No sports data available.' : 'Chưa có dữ liệu bộ môn.'}
+      </div>
+    );
   }
 
   const totalBooked = sports.reduce((sum, s) => sum + (s.booked || 0), 0) || 1;
@@ -436,87 +457,70 @@ export function SportsDonutChart({ sports = [] }) {
 
   return (
     <div className="flex flex-col md:flex-row items-center justify-between gap-6 p-2">
-      {/* SVG Donut */}
-      <div className="relative w-48 h-48 flex-shrink-0">
-        <svg viewBox="0 0 200 200" className="w-full h-full transform -rotate-90">
-          {/* Base empty ring */}
-          <circle
-            cx="100"
-            cy="100"
-            r={radius}
-            fill="transparent"
-            stroke="#f1f5f9"
-            strokeWidth="24"
-          />
-
-          {/* Slices */}
-          {slices.map((slice) => {
-            const isHovered = activeIdx === slice.idx;
-            return (
-              <circle
-                key={slice.name}
-                cx="100"
-                cy="100"
-                r={radius}
-                fill="transparent"
-                stroke={slice.color.stroke}
-                strokeWidth={isHovered ? 28 : 22}
-                strokeDasharray={`${slice.strokeDash} ${circumference - slice.strokeDash}`}
-                strokeDashoffset={-slice.offset}
-                strokeLinecap="round"
-                className="cursor-pointer transition-all duration-300 hover:opacity-90"
-                onMouseEnter={() => setActiveIdx(slice.idx)}
-                onMouseLeave={() => setActiveIdx(null)}
-              />
-            );
-          })}
-        </svg>
-
-        {/* Center label */}
-        <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none px-2">
-          <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider line-clamp-1">
-            {currentHovered?.name || 'Tổng Đặt Chỗ'}
-          </span>
-          <span className="text-xl font-black text-slate-900 font-chivo leading-tight">
-            {currentHovered?.booked || totalBooked}
-            <span className="text-xs font-normal text-slate-500 ml-0.5">lượt</span>
-          </span>
-          <span className="text-[11px] font-bold text-red-600 bg-red-50 px-1.5 py-0.2 rounded border border-red-200 mt-0.5">
-            {currentHovered?.share || Math.round(((currentHovered?.booked || 0) / totalBooked) * 100)}% thị phần
-          </span>
-        </div>
-      </div>
-
-      {/* Interactive Legend List */}
-      <div className="w-full space-y-2">
-        {slices.map((slice) => {
-          const isHovered = activeIdx === slice.idx;
-          return (
-            <div
+      {/* Unified SVG: ring + center label + legend — all capturable for PDF */}
+      <svg
+        data-chart-id="chart-donut"
+        viewBox="0 0 460 210"
+        className="w-full h-auto"
+        style={{ fontFamily: 'Arial, sans-serif' }}
+      >
+        {/* ── Donut ring (left, centred at 105,105) ── */}
+        <g transform="rotate(-90,105,105)">
+          <circle cx="105" cy="105" r={radius} fill="none" stroke="#f1f5f9" strokeWidth="24" />
+          {slices.map((slice) => (
+            <circle
               key={slice.name}
+              cx="105" cy="105" r={radius}
+              fill="none"
+              stroke={slice.color.stroke}
+              strokeWidth="22"
+              strokeDasharray={`${slice.strokeDash} ${circumference - slice.strokeDash}`}
+              strokeDashoffset={-slice.offset}
+              strokeLinecap="round"
+              className="cursor-pointer transition-all duration-300 hover:opacity-90"
               onMouseEnter={() => setActiveIdx(slice.idx)}
               onMouseLeave={() => setActiveIdx(null)}
-              className={`p-2.5 rounded-xl border transition-all cursor-pointer flex items-center justify-between text-xs ${
-                isHovered
-                  ? 'bg-slate-50 border-slate-400 shadow-sm'
-                  : 'bg-white border-slate-100 hover:border-slate-200'
-              }`}
-            >
-              <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: slice.color.stroke }} />
-                <span className="font-bold text-slate-900">{slice.name}</span>
-                <span className="text-slate-400 text-[11px]">({slice.sessionsCount || 0} ca)</span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-extrabold text-slate-800">{slice.booked} lượt</span>
-                <span className="w-12 text-right font-black text-slate-900 bg-slate-100 px-1.5 py-0.5 rounded text-[11px]">
-                  {slice.share}%
-                </span>
-              </div>
-            </div>
+            />
+          ))}
+        </g>
+
+        {/* ── Center label ── */}
+        <text x="105" y="97" textAnchor="middle" fontSize="9" fontWeight="700" fill="#64748b"
+          style={{ textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+          {isEn ? 'Total Bookings' : 'Tổng Đặt Chỗ'}
+        </text>
+        <text x="105" y="117" textAnchor="middle" fontSize="22" fontWeight="900" fill="#1e293b">
+          {String(currentHovered?.booked ?? totalBooked)}
+        </text>
+        <text x="105" y="133" textAnchor="middle" fontSize="9" fill="#64748b">
+          {currentHovered?.share ?? Math.round(((currentHovered?.booked ?? 0) / totalBooked) * 100)}% {isEn ? 'share' : 'thị phần'}
+        </text>
+
+        {/* ── Legend rows (right side, starting x=220) ── */}
+        {slices.map((slice, i) => {
+          const ly = 28 + i * 38;
+          const pct = slice.share ?? Math.round((slice.booked / totalBooked) * 100);
+          return (
+            <g key={slice.name}
+              onMouseEnter={() => setActiveIdx(slice.idx)}
+              onMouseLeave={() => setActiveIdx(null)}
+              style={{ cursor: 'pointer' }}>
+              {/* Color dot */}
+              <circle cx="224" cy={ly + 8} r="6" fill={slice.color.stroke} />
+              {/* Sport name */}
+              <text x="236" y={ly + 13} fontSize="10" fontWeight="700" fill="#0f172a">{slice.name}</text>
+              {/* Sessions */}
+              <text x="236" y={ly + 26} fontSize="8.5" fill="#94a3b8">
+                {slice.booked} {isEn ? 'bookings' : 'lượt'} · {slice.sessionsCount || 0} {isEn ? 'sessions' : 'ca'}
+              </text>
+              {/* % badge background */}
+              <rect x="406" y={ly} width="44" height="20" rx="5" fill="#f1f5f9" />
+              {/* % text */}
+              <text x="428" y={ly + 14} textAnchor="middle" fontSize="10" fontWeight="900" fill="#0f172a">{pct}%</text>
+            </g>
           );
         })}
-      </div>
+      </svg>
     </div>
   );
 }
@@ -525,6 +529,8 @@ export function SportsDonutChart({ sports = [] }) {
  * 4. BIỂU ĐỒ THANH SO SÁNH LỚP HỌC (CLASSES COMPARISON BARS)
  */
 export function ClassCapacityBarChart({ classes = [] }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   if (!classes || !classes.length) return null;
   const maxCapacity = Math.max(1, ...classes.map(c => c.capacity || 0));
 
@@ -536,21 +542,21 @@ export function ClassCapacityBarChart({ classes = [] }) {
         const isLeader = idx === 0;
 
         return (
-          <div key={cls.id} className="p-3 bg-white rounded-xl border border-slate-200/80 shadow-xs space-y-2">
+          <div key={cls.id} className="p-3 bg-white dark:bg-slate-900 rounded-xl border border-slate-200/80 dark:border-slate-800 shadow-xs space-y-2">
             <div className="flex items-center justify-between text-xs">
               <div className="flex items-center gap-2">
                 <span className={`w-5 h-5 rounded-full flex items-center justify-center font-bold text-[11px] ${
-                  isLeader ? 'bg-amber-400 text-slate-950 font-black' : 'bg-slate-100 text-slate-700'
+                  isLeader ? 'bg-[#F2CC8F] text-slate-950 font-black' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
                 }`}>
                   {idx + 1}
                 </span>
-                <strong className="text-slate-900 font-bold">{cls.name}</strong>
-                <span className="text-[11px] text-slate-400">({cls.sportName})</span>
+                <strong className="text-slate-900 dark:text-white font-bold">{cls.name}</strong>
+                <span className="text-[11px] text-slate-400 dark:text-slate-500">({cls.sportName})</span>
               </div>
               <div className="flex items-center gap-2">
-                <span className="font-black text-slate-900">{cls.booked} / {cls.capacity} chỗ</span>
+                <span className="font-black text-slate-900 dark:text-white">{cls.booked} / {cls.capacity} {isEn ? 'slots' : 'chỗ'}</span>
                 <span className={`px-2 py-0.5 rounded font-bold text-[11px] border ${
-                  cls.occupancyRate >= 20 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'
+                  cls.occupancyRate >= 20 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                 }`}>
                   {cls.occupancyRate}%
                 </span>
@@ -558,16 +564,16 @@ export function ClassCapacityBarChart({ classes = [] }) {
             </div>
 
             {/* Comparison progress track */}
-            <div className="relative w-full h-3 bg-slate-100 rounded-full overflow-hidden">
+            <div className="relative w-full h-3 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
               {/* Capacity outline fill */}
               <div
-                className="absolute top-0 bottom-0 left-0 bg-slate-200 rounded-full"
+                className="absolute top-0 bottom-0 left-0 bg-slate-200 dark:bg-slate-700 rounded-full"
                 style={{ width: `${Math.min(100, capacityWidth)}%` }}
               />
               {/* Actual Booked bar */}
               <div
                 className={`absolute top-0 bottom-0 left-0 rounded-full transition-all duration-500 ${
-                  isLeader ? 'bg-gradient-to-r from-red-600 to-amber-500' : 'bg-red-600'
+                  isLeader ? 'bg-gradient-to-r from-[#2D6A4F] to-[#F2CC8F]' : 'bg-[#2D6A4F]'
                 }`}
                 style={{ width: `${Math.min(100, bookedWidth)}%` }}
               />
@@ -583,10 +589,16 @@ export function ClassCapacityBarChart({ classes = [] }) {
  * 5. BIỂU ĐỒ XẾP HẠNG BỘ MÔN: DOANH THU & LƯỢT ĐẶT (TOP SPORTS BY REVENUE / BOOKINGS)
  */
 export function SportRevenueRankingChart({ sports = [], revenueBySport = [] }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [metricMode, setMetricMode] = useState('revenue'); // 'revenue' | 'booked'
 
   if (!sports || !sports.length) {
-    return <div className="text-xs text-slate-400 py-8 text-center">Chưa có dữ liệu bộ môn.</div>;
+    return (
+      <div className="text-xs text-slate-400 dark:text-slate-500 py-8 text-center">
+        {isEn ? 'No sports data available.' : 'Chưa có dữ liệu bộ môn.'}
+      </div>
+    );
   }
 
   const sportsWithMetrics = sports.map(sport => ({
@@ -607,33 +619,35 @@ export function SportRevenueRankingChart({ sports = [], revenueBySport = [] }) {
     <div className="space-y-4">
       {/* Toggle mode controller */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="text-slate-500 font-medium">
-          {metricMode === 'revenue' ? 'Xếp hạng theo doanh thu thực nhận:' : 'Xếp hạng theo tổng lượt đặt chỗ:'}
+        <span className="text-slate-500 dark:text-slate-400 font-medium">
+          {metricMode === 'revenue'
+            ? (isEn ? 'Ranked by net revenue received:' : 'Xếp hạng theo doanh thu thực nhận:')
+            : (isEn ? 'Ranked by total bookings:' : 'Xếp hạng theo tổng lượt đặt chỗ:')}
         </span>
-        <div className="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+        <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
           <button
             type="button"
             onClick={() => setMetricMode('revenue')}
             className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
               metricMode === 'revenue'
-                ? 'bg-red-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#2D6A4F] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-[14px]">payments</span>
-            <span>Doanh Thu</span>
+            <span>{isEn ? 'Revenue' : 'Doanh Thu'}</span>
           </button>
           <button
             type="button"
             onClick={() => setMetricMode('booked')}
             className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
               metricMode === 'booked'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#1E2235] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-[14px]">confirmation_number</span>
-            <span>Lượt Đặt Chỗ</span>
+            <span>{isEn ? 'Bookings' : 'Lượt Đặt Chỗ'}</span>
           </button>
         </div>
       </div>
@@ -646,16 +660,16 @@ export function SportRevenueRankingChart({ sports = [], revenueBySport = [] }) {
           const barWidth = Math.min(100, Math.round((Math.abs(Number(val || 0)) / maxVal) * 100));
 
           let rankBadge = `#${idx + 1}`;
-          let rankColor = 'bg-slate-100 text-slate-700';
-          if (idx === 0) { rankBadge = '🥇 #1'; rankColor = 'bg-amber-100 text-amber-900 border border-amber-300 font-black'; }
-          else if (idx === 1) { rankBadge = '🥈 #2'; rankColor = 'bg-slate-200 text-slate-800 font-bold'; }
-          else if (idx === 2) { rankBadge = '🥉 #3'; rankColor = 'bg-amber-50 text-amber-800 font-bold'; }
+          let rankColor = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
+          if (idx === 0) { rankBadge = '🥇 #1'; rankColor = 'bg-[#F2CC8F]/30 text-amber-900 dark:text-[#F2CC8F] border border-[#F2CC8F]/60 font-black'; }
+          else if (idx === 1) { rankBadge = '🥈 #2'; rankColor = 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold'; }
+          else if (idx === 2) { rankBadge = '🥉 #3'; rankColor = 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 font-bold'; }
 
           return (
             <div
               key={s.name}
               className={`p-3 rounded-xl border transition-all ${
-                isTop1 ? 'bg-amber-50/30 border-amber-200/80 shadow-xs' : 'bg-white border-slate-200/80 hover:border-slate-300'
+                isTop1 ? 'bg-amber-50/30 dark:bg-slate-800/80 border-[#F2CC8F]/60 shadow-xs' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
               <div className="flex items-center justify-between text-xs mb-1.5">
@@ -663,34 +677,36 @@ export function SportRevenueRankingChart({ sports = [], revenueBySport = [] }) {
                   <span className={`px-1.5 py-0.5 rounded text-[10px] ${rankColor}`}>
                     {rankBadge}
                   </span>
-                  <span className="font-bold text-slate-900">{s.name}</span>
-                  <span className="text-[11px] text-slate-400">({s.sessionsCount || 0} ca · {s.classesCount || 0} lớp)</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{s.name}</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                    ({s.sessionsCount || 0} {isEn ? 'sessions' : 'ca'} · {s.classesCount || 0} {isEn ? 'classes' : 'lớp'})
+                  </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <strong className={`font-chivo font-black text-sm ${metricMode === 'revenue' ? 'text-red-600' : 'text-slate-900'}`}>
-                    {metricMode === 'revenue' ? (s.revenue === null ? 'Chưa có phân bổ' : formatVnd(s.revenue)) : `${s.booked} lượt`}
+                  <strong className={`font-chivo font-black text-sm ${metricMode === 'revenue' ? 'text-[#2D6A4F] dark:text-[#81B29A]' : 'text-slate-900 dark:text-white'}`}>
+                    {metricMode === 'revenue' ? (s.revenue === null ? (isEn ? 'Unallocated' : 'Chưa có phân bổ') : formatVnd(s.revenue)) : `${s.booked} ${isEn ? 'bookings' : 'lượt'}`}
                   </strong>
-                  <span className="text-[11px] font-semibold text-slate-500 bg-slate-100 px-1.5 py-0.5 rounded">
-                    {s.share}% thị phần
+                  <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-800 px-1.5 py-0.5 rounded">
+                    {s.share}% {isEn ? 'share' : 'thị phần'}
                   </span>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
                 <div
                   className={`h-2.5 rounded-full transition-all duration-500 ${
                     metricMode === 'revenue'
-                      ? isTop1 ? 'bg-gradient-to-r from-red-600 to-amber-500' : 'bg-red-600'
+                      ? isTop1 ? 'bg-gradient-to-r from-[#2D6A4F] to-[#F2CC8F]' : 'bg-[#2D6A4F]'
                       : isTop1 ? 'bg-gradient-to-r from-sky-600 to-emerald-500' : 'bg-sky-600'
                   }`}
                   style={{ width: `${barWidth}%` }}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                <span>Lấp đầy: <strong className="text-slate-700">{s.percentage}%</strong> ({s.booked}/{s.capacity} chỗ)</span>
-                <span>{metricMode === 'revenue' ? `${s.booked} lượt đặt chỗ` : s.revenue === null ? 'Chưa có phân bổ' : formatVnd(s.revenue)}</span>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                <span>{isEn ? 'Occupancy:' : 'Lấp đầy:'} <strong className="text-slate-700 dark:text-slate-300">{s.percentage}%</strong> ({s.booked}/{s.capacity} {isEn ? 'slots' : 'chỗ'})</span>
+                <span>{metricMode === 'revenue' ? `${s.booked} ${isEn ? 'bookings' : 'lượt đặt chỗ'}` : s.revenue === null ? (isEn ? 'Unallocated' : 'Chưa có phân bổ') : formatVnd(s.revenue)}</span>
               </div>
             </div>
           );
@@ -704,10 +720,16 @@ export function SportRevenueRankingChart({ sports = [], revenueBySport = [] }) {
  * 6. BIỂU ĐỒ XẾP HẠNG SÂN BÃI / PHÒNG TẬP: SỐ CA HỌC & LƯỢT KHÁCH
  */
 export function RoomUsageRankingChart({ rooms = [] }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const [metricMode, setMetricMode] = useState('sessions'); // 'sessions' | 'booked'
 
   if (!rooms || !rooms.length) {
-    return <div className="text-xs text-slate-400 py-8 text-center">Chưa có dữ liệu sân bãi.</div>;
+    return (
+      <div className="text-xs text-slate-400 dark:text-slate-500 py-8 text-center">
+        {isEn ? 'No court/room data available.' : 'Chưa có dữ liệu sân bãi.'}
+      </div>
+    );
   }
 
   const roomsWithMetrics = rooms;
@@ -724,33 +746,35 @@ export function RoomUsageRankingChart({ rooms = [] }) {
     <div className="space-y-4">
       {/* Toggle mode controller */}
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-        <span className="text-slate-500 font-medium">
-          {metricMode === 'sessions' ? 'Xếp hạng theo số ca học:' : 'Xếp hạng theo lượt khách tiếp nhận:'}
+        <span className="text-slate-500 dark:text-slate-400 font-medium">
+          {metricMode === 'sessions'
+            ? (isEn ? 'Ranked by sessions hosted:' : 'Xếp hạng theo số ca học:')
+            : (isEn ? 'Ranked by visitors received:' : 'Xếp hạng theo lượt khách tiếp nhận:')}
         </span>
-        <div className="inline-flex rounded-lg bg-slate-100 p-1 border border-slate-200">
+        <div className="inline-flex rounded-lg bg-slate-100 dark:bg-slate-800 p-1 border border-slate-200 dark:border-slate-700">
           <button
             type="button"
             onClick={() => setMetricMode('sessions')}
             className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
               metricMode === 'sessions'
-                ? 'bg-emerald-600 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#2D6A4F] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-[14px]">calendar_month</span>
-            <span>Số Ca Học</span>
+            <span>{isEn ? 'Sessions' : 'Số Ca Học'}</span>
           </button>
           <button
             type="button"
             onClick={() => setMetricMode('booked')}
             className={`px-3 py-1 rounded-md text-[11px] font-bold transition-all flex items-center gap-1 ${
               metricMode === 'booked'
-                ? 'bg-slate-900 text-white shadow-xs'
-                : 'text-slate-600 hover:text-slate-900'
+                ? 'bg-[#1E2235] text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
             }`}
           >
             <span className="material-symbols-outlined text-[14px]">stadium</span>
-            <span>Lượt Khách</span>
+            <span>{isEn ? 'Visitors' : 'Lượt Khách'}</span>
           </button>
         </div>
       </div>
@@ -763,16 +787,16 @@ export function RoomUsageRankingChart({ rooms = [] }) {
           const barWidth = Math.min(100, Math.round((Number(val || 0) / maxVal) * 100));
 
           let rankBadge = `#${idx + 1}`;
-          let rankColor = 'bg-slate-100 text-slate-700';
-          if (idx === 0) { rankBadge = '🥇 #1'; rankColor = 'bg-emerald-100 text-emerald-900 border border-emerald-300 font-black'; }
-          else if (idx === 1) { rankBadge = '🥈 #2'; rankColor = 'bg-slate-200 text-slate-800 font-bold'; }
-          else if (idx === 2) { rankBadge = '🥉 #3'; rankColor = 'bg-amber-50 text-amber-800 font-bold'; }
+          let rankColor = 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300';
+          if (idx === 0) { rankBadge = '🥇 #1'; rankColor = 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-900 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-800 font-black'; }
+          else if (idx === 1) { rankBadge = '🥈 #2'; rankColor = 'bg-slate-200 dark:bg-slate-700 text-slate-800 dark:text-slate-200 font-bold'; }
+          else if (idx === 2) { rankBadge = '🥉 #3'; rankColor = 'bg-amber-50 dark:bg-amber-950/40 text-amber-800 dark:text-amber-400 font-bold'; }
 
           return (
             <div
               key={r.id}
               className={`p-3 rounded-xl border transition-all ${
-                isTop1 ? 'bg-emerald-50/30 border-emerald-200/80 shadow-xs' : 'bg-white border-slate-200/80 hover:border-slate-300'
+                isTop1 ? 'bg-emerald-50/30 dark:bg-slate-800/80 border-emerald-300/80 dark:border-emerald-700 shadow-xs' : 'bg-white dark:bg-slate-900 border-slate-200/80 dark:border-slate-800 hover:border-slate-300 dark:hover:border-slate-700'
               }`}
             >
               <div className="flex items-center justify-between text-xs mb-1.5">
@@ -780,36 +804,36 @@ export function RoomUsageRankingChart({ rooms = [] }) {
                   <span className={`px-1.5 py-0.5 rounded text-[10px] ${rankColor}`}>
                     {rankBadge}
                   </span>
-                  <span className="font-bold text-slate-900">{r.name}</span>
-                  <span className="text-[11px] text-slate-400">({r.type})</span>
+                  <span className="font-bold text-slate-900 dark:text-white">{r.name}</span>
+                  <span className="text-[11px] text-slate-400 dark:text-slate-500">({r.type})</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <strong className={`font-chivo font-black text-sm ${metricMode === 'sessions' ? 'text-emerald-700' : 'text-slate-900'}`}>
-                    {metricMode === 'sessions' ? `${r.sessionsCount || 0} ca` : `${r.booked} khách`}
+                  <strong className={`font-chivo font-black text-sm ${metricMode === 'sessions' ? 'text-[#2D6A4F] dark:text-[#81B29A]' : 'text-slate-900 dark:text-white'}`}>
+                    {metricMode === 'sessions' ? `${r.sessionsCount || 0} ${isEn ? 'sessions' : 'ca'}` : `${r.booked} ${isEn ? 'visitors' : 'khách'}`}
                   </strong>
                   <span className={`text-[11px] font-bold px-1.5 py-0.5 rounded border ${
-                    r.occupancyRate >= 20 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : 'bg-slate-100 text-slate-700 border-slate-200'
+                    r.occupancyRate >= 20 ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800' : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
                   }`}>
-                    {r.occupancyRate}% tải
+                    {r.occupancyRate}% {isEn ? 'load' : 'tải'}
                   </span>
                 </div>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full bg-slate-100 rounded-full h-2.5 overflow-hidden">
+              <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-2.5 overflow-hidden">
                 <div
                   className={`h-2.5 rounded-full transition-all duration-500 ${
                     metricMode === 'sessions'
-                      ? isTop1 ? 'bg-gradient-to-r from-emerald-600 to-teal-500' : 'bg-emerald-600'
+                      ? isTop1 ? 'bg-gradient-to-r from-[#2D6A4F] to-[#81B29A]' : 'bg-[#2D6A4F]'
                       : isTop1 ? 'bg-gradient-to-r from-blue-600 to-indigo-500' : 'bg-blue-600'
                   }`}
                   style={{ width: `${barWidth}%` }}
                 />
               </div>
 
-              <div className="flex items-center justify-between text-[11px] text-slate-400 mt-1">
-                <span>{r.location || 'Khu chính'} · Đã chạy <strong className="text-slate-700">{r.sessionsCount} ca</strong></span>
-                <span>{metricMode === 'sessions' ? `${r.booked} lượt khách` : `${r.sessionsCount || 0} ca`}</span>
+              <div className="flex items-center justify-between text-[11px] text-slate-400 dark:text-slate-500 mt-1">
+                <span>{r.location || (isEn ? 'Main Zone' : 'Khu chính')} · {isEn ? 'Hosted' : 'Đã chạy'} <strong className="text-slate-700 dark:text-slate-300">{r.sessionsCount} {isEn ? 'sessions' : 'ca'}</strong></span>
+                <span>{metricMode === 'sessions' ? `${r.booked} ${isEn ? 'visitors' : 'lượt khách'}` : `${r.sessionsCount || 0} ${isEn ? 'sessions' : 'ca'}`}</span>
               </div>
             </div>
           );
@@ -820,23 +844,30 @@ export function RoomUsageRankingChart({ rooms = [] }) {
 }
 
 export function SportRevenueBarChart({ sports = [] }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const rows = sports.filter(item => Number(item.net || 0) !== 0);
-  if (!rows.length) return <div className="text-xs text-slate-400 py-8 text-center">Chưa có doanh thu bộ môn trong kỳ.</div>;
+  if (!rows.length) return (
+    <div className="text-xs text-slate-400 dark:text-slate-500 py-8 text-center">
+      {isEn ? 'No sport revenue in selected period.' : 'Chưa có doanh thu bộ môn trong kỳ.'}
+    </div>
+  );
   const max = Math.max(1, ...rows.map(item => Math.abs(Number(item.net || 0))));
   return (
     <div className="space-y-3">
       {rows.map((item, index) => (
-        <div key={item.sportId ?? 'unallocated'} className="rounded-xl border border-slate-200 p-3 bg-white">
+        <div key={item.sportId ?? 'unallocated'} className="rounded-xl border border-slate-200 dark:border-slate-800 p-3 bg-white dark:bg-slate-900">
           <div className="flex justify-between gap-3 text-xs mb-2">
-            <span className="font-bold text-slate-900">{index === 0 && item.sportId ? '🥇 ' : ''}{item.sportName}</span>
-            <span className="font-black text-red-700">{formatVnd(item.net)} · {Number(item.share || 0).toLocaleString('vi-VN')}%</span>
+            <span className="font-bold text-slate-900 dark:text-white">{index === 0 && item.sportId ? '🥇 ' : ''}{item.sportName}</span>
+            <span className="font-black text-[#2D6A4F] dark:text-[#81B29A]">{formatVnd(item.net)} · {Number(item.share || 0).toLocaleString('vi-VN')}%</span>
           </div>
-          <div className="h-2.5 rounded-full bg-slate-100 overflow-hidden">
-            <div className={`h-full rounded-full ${item.sportId ? 'bg-gradient-to-r from-red-600 to-amber-500' : 'bg-slate-400'}`}
+          <div className="h-2.5 rounded-full bg-slate-100 dark:bg-slate-800 overflow-hidden">
+            <div className={`h-full rounded-full ${item.sportId ? 'bg-gradient-to-r from-[#2D6A4F] to-[#F2CC8F]' : 'bg-slate-400'}`}
               style={{ width: `${Math.max(item.net ? 2 : 0, Math.abs(Number(item.net || 0)) / max * 100)}%` }} />
           </div>
-          <div className="mt-1.5 flex justify-between text-[10px] text-slate-500">
-            <span>Thu: {formatVnd(item.gross)}</span><span>Hoàn: {formatVnd(item.refunds)}</span>
+          <div className="mt-1.5 flex justify-between text-[10px] text-slate-500 dark:text-slate-400">
+            <span>{isEn ? 'Gross:' : 'Thu:'} {formatVnd(item.gross)}</span>
+            <span>{isEn ? 'Refunds:' : 'Hoàn:'} {formatVnd(item.refunds)}</span>
           </div>
         </div>
       ))}

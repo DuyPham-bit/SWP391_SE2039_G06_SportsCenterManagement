@@ -126,11 +126,49 @@ public sealed class TrainingService(SportsCenterDbContext db)
                 SportName = (from c in db.Classes join s in db.Sports on c.SportId equals s.Id where c.Id == p.ClassId select s.Name).FirstOrDefault(),
                 MemberName = db.MemberProfiles.Where(m => m.Id == p.MemberId).Select(m => m.FullName).FirstOrDefault()
             }).ToListAsync(ct);
-        return rows.Select(x => new TrainingPlanResponse(x.Plan.Id, x.Plan.ClassId, x.ClassName, x.SportName,
-            x.Plan.MemberId, x.MemberName, x.Plan.CoachId, x.CoachName, x.Plan.Name, x.Plan.Goal,
-            x.Plan.StartDate, x.Plan.EndDate, x.Plan.FitnessCondition, x.Plan.MemberId.HasValue,
-            x.Plan.Status.ToUpperInvariant(), x.Plan.CreatedAt,
-            x.Plan.ExercisesJson is null ? [] : JsonSerializer.Deserialize<PlanExercise[]>(x.Plan.ExercisesJson) ?? [])).ToArray();
+
+        var planIds = rows.Select(x => x.Plan.Id).ToArray();
+        var tableExercises = await (from tpe in db.TrainingPlanExercises
+            join ex in db.Exercises on tpe.ExerciseId equals ex.Id
+            where planIds.Contains(tpe.TrainingPlanId)
+            orderby tpe.SortOrder, tpe.Id
+            select new {
+                tpe.TrainingPlanId,
+                Exercise = new PlanExercise(
+                    ex.Name,
+                    tpe.Sets.HasValue ? tpe.Sets.Value.ToString() : null,
+                    tpe.Repetitions.HasValue ? tpe.Repetitions.Value.ToString() : (tpe.DurationSeconds.HasValue ? $"{tpe.DurationSeconds}s" : null),
+                    tpe.Notes ?? ex.Description,
+                    null,
+                    null
+                )
+            }).ToListAsync(ct);
+
+        var exercisesByPlanId = tableExercises
+            .GroupBy(x => x.TrainingPlanId)
+            .ToDictionary(g => g.Key, g => g.Select(x => x.Exercise).ToArray());
+
+        var jsonOpts = new JsonSerializerOptions { PropertyNameCaseInsensitive = true };
+
+        return rows.Select(x => {
+            PlanExercise[] exercises = [];
+            if (!string.IsNullOrWhiteSpace(x.Plan.ExercisesJson))
+            {
+                try
+                {
+                    exercises = JsonSerializer.Deserialize<PlanExercise[]>(x.Plan.ExercisesJson, jsonOpts) ?? [];
+                }
+                catch { }
+            }
+            if (exercises.Length == 0 && exercisesByPlanId.TryGetValue(x.Plan.Id, out var fromTable))
+            {
+                exercises = fromTable;
+            }
+            return new TrainingPlanResponse(x.Plan.Id, x.Plan.ClassId, x.ClassName, x.SportName,
+                x.Plan.MemberId, x.MemberName, x.Plan.CoachId, x.CoachName, x.Plan.Name, x.Plan.Goal,
+                x.Plan.StartDate, x.Plan.EndDate, x.Plan.FitnessCondition, x.Plan.MemberId.HasValue,
+                x.Plan.Status.ToUpperInvariant(), x.Plan.CreatedAt, exercises);
+        }).ToArray();
     }
 
     public async Task<long> SavePlanAsync(long userId, SaveTrainingPlanRequest request, bool personal, CancellationToken ct)
@@ -236,7 +274,52 @@ public sealed class TrainingService(SportsCenterDbContext db)
             .OrderByDescending(r => r.ResultDate).ThenByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id).Take(10)
             .Select(r => new RecommendationHistory(r.ResultDate, r.Weight, r.BodyFatPercentage, r.MuscleMass,
                 r.WorkoutResult ?? r.Notes, r.CoachFeedback)).ToArrayAsync(ct);
-        return new RecommendationContext(sport, profile.FitnessGoal, profile.FitnessLevel, profile.MedicalNote, history);
+
+        int? age = null;
+        if (profile.DateOfBirth.HasValue)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            age = today.Year - profile.DateOfBirth.Value.Year;
+            if (profile.DateOfBirth.Value > today.AddYears(-age.Value)) age--;
+        }
+
+        var latestWeight = history.FirstOrDefault()?.Weight ?? profile.WeightKg;
+        decimal? bmi = null;
+        string? bmiCategory = null;
+        if (profile.HeightCm.HasValue && profile.HeightCm.Value > 0 && latestWeight.HasValue && latestWeight.Value > 0)
+        {
+            var hM = profile.HeightCm.Value / 100m;
+            bmi = Math.Round(latestWeight.Value / (hM * hM), 1);
+            bmiCategory = bmi switch
+            {
+                < 18.5m => "Underweight (Gầy / Thiếu cân)",
+                < 25.0m => "Normal (Cân đối / Thể hình chuẩn)",
+                < 30.0m => "Overweight (Thừa cân / Cần kiểm soát mỡ)",
+                _ => "Obese (Béo phì / Cần giảm cân an toàn)"
+            };
+        }
+
+        var healthRecords = await db.MemberHealthRecords.AsNoTracking()
+            .Where(x => x.MemberId == memberId && x.Status == "Active")
+            .OrderByDescending(x => x.OccurredOn)
+            .Select(x => new HealthRecordSummary(x.RecordType, x.Title, x.Details, x.OccurredOn))
+            .ToArrayAsync(ct);
+
+        return new RecommendationContext(
+            sport,
+            profile.FitnessGoal,
+            profile.FitnessLevel,
+            profile.MedicalNote,
+            history,
+            profile.HeightCm,
+            latestWeight,
+            profile.Gender,
+            profile.DateOfBirth,
+            age,
+            bmi,
+            bmiCategory,
+            healthRecords
+        );
     }
 
     public async Task SendNotificationAsync(long userId, SendNotificationRequest request, CancellationToken ct)

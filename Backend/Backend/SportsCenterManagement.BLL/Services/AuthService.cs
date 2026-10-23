@@ -81,8 +81,30 @@ public sealed class AuthService(IUnitOfWork unitOfWork) : IAuthService
         }
 
         // Begin transaction: User and MemberProfile must succeed or roll back together
-        await using var transaction = await unitOfWork.BeginTransactionAsync(cancellationToken);
+        await using var transaction = await unitOfWork.Context.Database.BeginTransactionAsync(
+            System.Data.IsolationLevel.Serializable, cancellationToken);
         var now = DateTime.UtcNow;
+
+        // Self-registration proves mailbox ownership; staff-created memberships retain their existing workflow.
+        if (!actorUserId.HasValue)
+        {
+            var verification = await unitOfWork.Context.EmailVerificationTokens
+                .Where(item => item.Email == email && item.UsedAt == null && item.ExpiresAt > now)
+                .OrderByDescending(item => item.Id).FirstOrDefaultAsync(cancellationToken);
+            if (verification is null || verification.FailedAttempts >= 5
+                || request.EmailOtp is null || !Regex.IsMatch(request.EmailOtp, "^[0-9]{6}$"))
+                throw new ValidationException("Vui lòng nhập mã xác thực email hợp lệ. Mã có thể đã hết hạn hoặc đã được sử dụng.");
+
+            if (!BCrypt.Net.BCrypt.Verify(request.EmailOtp, verification.Token))
+            {
+                verification.FailedAttempts++;
+                if (verification.FailedAttempts >= 5) verification.UsedAt = now;
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+                throw new ValidationException("Mã xác thực email không đúng. Sau 5 lần nhập sai, bạn cần yêu cầu mã mới.");
+            }
+            verification.UsedAt = now;
+        }
 
         // Create new user entity with hashed password
         var user = new User

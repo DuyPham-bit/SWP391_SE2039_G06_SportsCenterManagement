@@ -1,144 +1,89 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
-import { SUPPORTED_SPORTS } from '../../services/sportsCatalog.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { FacilitiesSection } from './FacilitiesSection.js';
-import { SCMS_FACILITIES } from '../../services/facilitiesCatalog.js';
+import { usePublicCatalog } from '../../hooks/usePublicCatalog.js';
+import { getLandingPresentation } from '../../services/landingPresentation.js';
 import { useLandingContent } from '../../hooks/useLandingContent.js';
 import { getExternalContactUrl, normalizeZaloPhone } from '../../services/landingContentService.js';
 import { Logo } from '../../components/common/Logo.jsx';
+import { getMembershipAction } from '../../services/membershipEntry.js';
+import {
+  translateLandingContent,
+  translateSportName,
+  translateFacilityName,
+  translateFacilityBadge,
+  translateFacilityCategory,
+  translateLocation,
+  translateCourseHighlight,
+  translateCoachName,
+  translateOpenHours,
+  translatePriceRate,
+  translateMetricLabel,
+  translateMetricValue
+} from '../../services/i18nHelper.js';
 
 // Danh mục trang chủ và cơ sở tập luyện tương ứng cho từng môn.
-export const LANDING_SPORTS = SUPPORTED_SPORTS.map(sport => ({
-  ...sport,
-  venue: SCMS_FACILITIES.find(facility => facility.id === sport.facilityId).name
-}));
-
-export const SPORT_FACILITY_MAP = Object.fromEntries(
-  LANDING_SPORTS.map(sport => [sport.id, sport.facilityId])
-);
-
 export const SPORT_CATEGORY_CONFIG = {
   'Thể thao đối kháng': {
     badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
     iconColor: 'text-rose-400',
     gradientHover: 'group-hover:from-red-600 group-hover:to-rose-500',
-    label: 'Đối Kháng'
+    label: 'Đối Kháng',
+    labelEn: 'Combat'
+  },
+  'Combat & Martial Arts': {
+    badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
+    iconColor: 'text-rose-400',
+    gradientHover: 'group-hover:from-red-600 group-hover:to-rose-500',
+    label: 'Đối Kháng',
+    labelEn: 'Combat'
   },
   'Bóng & Vợt': {
     badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
     iconColor: 'text-amber-400',
     gradientHover: 'group-hover:from-amber-500 group-hover:to-rose-500',
-    label: 'Bóng & Vợt'
+    label: 'Bóng & Vợt',
+    labelEn: 'Ball & Racket'
+  },
+  'Ball & Racket': {
+    badge: 'bg-amber-500/15 text-amber-300 border-amber-500/30',
+    iconColor: 'text-amber-400',
+    gradientHover: 'group-hover:from-amber-500 group-hover:to-rose-500',
+    label: 'Bóng & Vợt',
+    labelEn: 'Ball & Racket'
   },
   'Sức bền & Tĩnh tâm': {
     badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
     iconColor: 'text-emerald-400',
     gradientHover: 'group-hover:from-emerald-500 group-hover:to-teal-500',
-    label: 'Sức Bền'
+    label: 'Sức Bền',
+    labelEn: 'Endurance'
+  },
+  'Endurance & Mindful': {
+    badge: 'bg-emerald-500/15 text-emerald-300 border-emerald-500/30',
+    iconColor: 'text-emerald-400',
+    gradientHover: 'group-hover:from-emerald-500 group-hover:to-teal-500',
+    label: 'Sức Bền',
+    labelEn: 'Endurance'
+  },
+  'Golf & Thể thao cao cấp': {
+    badge: 'bg-teal-500/15 text-teal-300 border-teal-500/30',
+    iconColor: 'text-teal-400',
+    gradientHover: 'group-hover:from-teal-600 group-hover:to-emerald-500',
+    label: 'Golf & Cao Cấp',
+    labelEn: 'Golf & Precision'
+  },
+  'Golf & Precision': {
+    badge: 'bg-teal-500/15 text-teal-300 border-teal-500/30',
+    iconColor: 'text-teal-400',
+    gradientHover: 'group-hover:from-teal-600 group-hover:to-emerald-500',
+    label: 'Golf & Cao Cấp',
+    labelEn: 'Golf & Precision'
   }
 };
 
-export const SPORT_CATALOG_DETAILS = {
-  'boi-loi': {
-    rating: '4.9',
-    ratingCount: '128',
-    level: 'Mọi lứa tuổi • Nhập môn đến Thi đấu',
-    coach: 'Kiện tướng Bơi lội Quốc Gia',
-    schedule: '06:00 - 21:00 hàng ngày',
-    highlight: 'Bể bơi 25m tiêu chuẩn tập luyện, 5 làn bơi nước ấm 4 mùa, lọc ozone an toàn tuyệt đối.',
-    price: 'Từ 50.000đ/buổi',
-    capacity: '25 - 35 người/ca',
-    badges: ['Nước Ấm 4 Mùa', '5 Làn Chuẩn']
-  },
-  'gym-fitness': {
-    rating: '5.0',
-    ratingCount: '240',
-    level: 'Tăng cơ • Giảm mỡ • Thể lực toàn diện',
-    coach: 'Master Trainer & Chuyên gia Thể Hình',
-    schedule: '05:30 - 21:30 hàng ngày',
-    highlight: 'Không gian 250m² trang bị giàn máy kháng lực Matrix, dàn tạ tự do đa dạng và máy đo InBody 770.',
-    price: 'Từ 30.000đ/ngày',
-    capacity: '30 - 45 hội viên/ca',
-    badges: ['Máy Tập Đầy Đủ', 'InBody Miễn Phí']
-  },
-  'yoga-pilates': {
-    rating: '4.9',
-    ratingCount: '165',
-    level: 'Tĩnh tâm • Dẻo dai • Cân bằng cột sống',
-    coach: 'Giảng viên Yoga Alliance Quốc Tế',
-    schedule: '06:00 - 21:00 hàng ngày',
-    highlight: 'Không gian yên tĩnh sàn gỗ tự nhiên, trang bị máy Pilates Reformer và thảm tập cao cấp lớp nhóm nhỏ.',
-    price: 'Từ 50.000đ/buổi',
-    capacity: '15 - 20 học viên/lớp',
-    badges: ['Reformer Nhập Khẩu', 'Thư Giãn Chuyên Sâu']
-  },
-  'vo-thuat': {
-    rating: '4.9',
-    ratingCount: '98',
-    level: 'Boxing • Muay Thai • Vovinam • Tự vệ',
-    coach: 'Võ sư Đai Đen & HLV Đội tuyển',
-    schedule: '06:00 - 21:30 hàng ngày',
-    highlight: 'Sàn tập trải thảm xốp EVA dày 3cm chống trơn, dàn bao cát thi đấu kiên cố và trang bị bảo hộ đầy đủ.',
-    price: 'Từ 300.000đ/tháng',
-    capacity: '15 - 25 võ sinh/ca',
-    badges: ['Sàn Thảm An Toàn', 'Đấu Tập Chuẩn']
-  },
-  'bong-da': {
-    rating: '4.8',
-    ratingCount: '310',
-    level: 'Sân 5 & Sân 7 • Phong trào & Năng khiếu',
-    coach: 'Cựu Cầu Thủ Chuyên Nghiệp',
-    schedule: '06:00 - 22:30 hàng ngày',
-    highlight: 'Mặt cỏ nhân tạo dày êm chân rải hạt cao su giảm chấn, thoát nước nhanh và dàn đèn LED cao áp đêm.',
-    price: 'Từ 180.000đ/giờ',
-    capacity: '10 - 20 cầu thủ/sân',
-    badges: ['Cỏ Tiêu Chuẩn', 'Đèn LED Ban Đêm']
-  },
-  'cau-long': {
-    rating: '4.9',
-    ratingCount: '280',
-    level: 'Kỹ thuật • Tốc độ • Đánh đơn & Đánh đôi',
-    coach: 'HLV Liên đoàn Cầu Lông Cấp 1',
-    schedule: '06:00 - 22:00 hàng ngày',
-    highlight: '4 sân cầu lông trong nhà với thảm PVC vân kim cương chống trơn, trần 8m không gió tạt, đèn chống lóa.',
-    price: 'Từ 60.000đ/giờ',
-    capacity: '16 - 24 người chơi',
-    badges: ['Thảm Chuyên Dụng', 'Trần Cao 8m']
-  },
-  'bong-ro': {
-    rating: '4.8',
-    ratingCount: '190',
-    level: 'Dẫn bóng • Sức bật • Chiến thuật nhóm',
-    coach: 'VĐV Bóng Rổ Giải Quốc Gia',
-    schedule: '06:00 - 22:00 hàng ngày',
-    highlight: 'Mặt sân sơn thể thao Acrylic chống trượt, trụ rổ kiên cố bảng kính cường lực độ nảy tốt, mái che mát.',
-    price: 'Từ 80.000đ/nửa sân',
-    capacity: '15 - 20 người chơi',
-    badges: ['Bảng Kính Cường Lực', 'Mái Che Mát']
-  },
-  'bong-ban': {
-    rating: '4.8',
-    ratingCount: '115',
-    level: 'Phản xạ • Kỹ thuật giật bóng & cắt bóng',
-    coach: 'Kiện tướng Bóng Bàn Quốc Gia',
-    schedule: '06:00 - 22:00 hàng ngày',
-    highlight: '4 bàn thi đấu đạt chuẩn quốc tế, ánh sáng đều hạn chế chói mắt, khoảng trống di chuyển an toàn.',
-    price: 'Từ 40.000đ/giờ',
-    capacity: '8 - 16 người chơi',
-    badges: ['Bàn Chuẩn Thi Đấu', 'Phòng Máy Lạnh']
-  },
-  'pickleball': {
-    rating: '5.0',
-    ratingCount: '210',
-    level: 'Nhập môn • Dinking • Giao lưu phong trào',
-    coach: 'HLV Chứng chỉ Pickleball Pro',
-    schedule: '05:30 - 22:00 hàng ngày',
-    highlight: 'Cụm 4 sân ngoài trời mới nhất, mặt sơn Acrylic chống trơn, vạch bếp chuẩn và rào chắn bóng kiên cố.',
-    price: 'Từ 50.000đ/giờ',
-    capacity: '8 - 16 người chơi',
-    badges: ['Sơn Đạt Chuẩn', 'Bộ Môn Hot 2026']
-  }
-};
+
 
 // Component đếm số nhảy động khi mới lướt trúng (chỉ nhảy 1 lần duy nhất khi F5 hay mới vào trang)
 export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '', formatThousands = false }) {
@@ -221,7 +166,16 @@ export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '
 
 export function LandingPage() {
   const { isAuthenticated, role, logout } = useAuth();
-  const landingContent = useLandingContent();
+  const { language, setLanguage } = useLanguage();
+  const isEn = language === 'en';
+  const membershipAction = getMembershipAction(isAuthenticated, role, isEn);
+  const editorialContent = useLandingContent();
+  const { catalog, loading: catalogLoading, error: catalogError } = usePublicCatalog();
+  const rawLandingContent = getLandingPresentation(editorialContent, catalog);
+  const landingContent = useMemo(() => isEn ? translateLandingContent(rawLandingContent, true) : rawLandingContent, [rawLandingContent, isEn]);
+  const facilitiesList = landingContent.facilitiesSection.facilitiesList;
+  const catalogSportList = landingContent.coursesSection.sportsList;
+  const hours = landingContent.ctaAndFooter?.hoursWeekdays || (catalog?.center.openingTime && catalog?.center.closingTime ? catalog.center.openingTime.slice(0, 5) + ' - ' + catalog.center.closingTime.slice(0, 5) : 'Chưa cập nhật');
   const zaloPhone = normalizeZaloPhone(landingContent.ctaAndFooter?.contactZaloPhone);
   const socialContacts = [
     { label: `Zalo: ${zaloPhone}`, icon: 'chat', url: zaloPhone ? `https://zalo.me/${zaloPhone}` : '' },
@@ -270,37 +224,37 @@ export function LandingPage() {
       });
     }, { threshold: 0.08, rootMargin: '0px 0px -40px 0px' });
 
-    const elements = document.querySelectorAll('.tiya-reveal, .tiya-reveal--scale');
+  const elements = document.querySelectorAll('.tiya-reveal, .tiya-reveal--scale');
     elements.forEach(el => observer.observe(el));
 
     return () => observer.disconnect();
-  }, []);
+  }, [catalog, editorialContent]);
 
   // Danh sách các môn học (Chủ động ẩn/hiện bởi manager qua isVisible)
-  const sportsList = landingContent.coursesSection?.sportsList || LANDING_SPORTS;
+  const sportsList = catalogSportList;
   const visibleSports = useMemo(() => {
     return sportsList.filter(s => s.isVisible !== false);
   }, [sportsList]);
 
   const leftSports = useMemo(() => {
-    const items = [{ id: 'all', name: 'Tất cả' }];
-    visibleSports.slice(0, Math.ceil(visibleSports.length / 2)).forEach(s => items.push({ id: s.id, name: s.name }));
+    const items = [{ id: 'all', name: isEn ? 'All Sports' : 'Tất cả' }];
+    visibleSports.slice(0, Math.ceil(visibleSports.length / 2)).forEach(s => items.push({ id: s.id, name: isEn ? translateSportName(s.name, true) : s.name }));
     return items;
-  }, [visibleSports]);
+  }, [visibleSports, isEn]);
 
   const rightSports = useMemo(() => {
-    return visibleSports.slice(Math.ceil(visibleSports.length / 2)).map(s => ({ id: s.id, name: s.name }));
-  }, [visibleSports]);
+    return visibleSports.slice(Math.ceil(visibleSports.length / 2)).map(s => ({ id: s.id, name: isEn ? translateSportName(s.name, true) : s.name }));
+  }, [visibleSports, isEn]);
 
   const navItems = [
-    { id: 'trang-chu', href: '#/', label: 'TRANG CHỦ', targetId: 'trang-chu' },
-    { id: 've-chung-toi', href: '#ve-chung-toi', label: 'VỀ CHÚNG TÔI', targetId: 've-chung-toi' },
-    { id: 'khoa-hoc', href: '#khoa-hoc', label: 'KHÓA HỌC', targetId: 'khoa-hoc', hasDropdown: true },
-    { id: 'co-so-vat-chat', href: '#co-so-vat-chat', label: 'CƠ SỞ VẬT CHẤT', targetId: 'co-so-vat-chat' },
+    { id: 'trang-chu', href: '#/', label: isEn ? 'HOME' : 'TRANG CHỦ', targetId: 'trang-chu' },
+    { id: 've-chung-toi', href: '#ve-chung-toi', label: isEn ? 'ABOUT US' : 'VỀ CHÚNG TÔI', targetId: 've-chung-toi' },
+    { id: 'khoa-hoc', href: '#khoa-hoc', label: isEn ? 'COURSES' : 'KHÓA HỌC', targetId: 'khoa-hoc', hasDropdown: true },
+    { id: 'co-so-vat-chat', href: '#co-so-vat-chat', label: isEn ? 'FACILITIES' : 'CƠ SỞ VẬT CHẤT', targetId: 'co-so-vat-chat' },
   ];
 
   const handleSportClick = (sport) => {
-    const facility = SCMS_FACILITIES.find(f => f.id === SPORT_FACILITY_MAP[sport.id]);
+    const facility = facilitiesList.find(f => f.id === sport.facilityId);
     if (facility) setSelectedFacilityForModal(facility);
   };
 
@@ -347,7 +301,7 @@ export function LandingPage() {
       return;
     }
 
-    const sport = LANDING_SPORTS.find(s => s.id === item.id);
+    const sport = sportsList.find(s => s.id === item.id);
     if (sport) {
       setSelectedCategory('Tất cả');
       setHighlightedSportId(sport.id);
@@ -360,7 +314,7 @@ export function LandingPage() {
         window.scrollTo({ top: offsetPosition, behavior: 'smooth' });
       }
 
-      const facility = SCMS_FACILITIES.find(f => f.id === SPORT_FACILITY_MAP[sport.id]);
+      const facility = facilitiesList.find(f => f.id === sport.facilityId);
       if (facility) {
         setTimeout(() => {
           setSelectedFacilityForModal(facility);
@@ -492,18 +446,14 @@ export function LandingPage() {
     };
   }, []);
 
-  const categoryConfig = useMemo(() => {
-    const counts = { 'Thể thao đối kháng': 0, 'Bóng & Vợt': 0, 'Sức bền & Tĩnh tâm': 0 };
-    visibleSports.forEach(s => {
-      if (counts[s.category] !== undefined) counts[s.category]++;
-    });
-    return [
-      { id: 'Tất cả', label: 'Tất cả', icon: 'grid_view', count: visibleSports.length },
-      { id: 'Thể thao đối kháng', label: 'Đối kháng', icon: 'sports_mma', count: counts['Thể thao đối kháng'] || 0 },
-      { id: 'Bóng & Vợt', label: 'Bóng & Vợt', icon: 'sports_tennis', count: counts['Bóng & Vợt'] || 0 },
-      { id: 'Sức bền & Tĩnh tâm', label: 'Sức bền', icon: 'self_improvement', count: counts['Sức bền & Tĩnh tâm'] || 0 },
-    ];
-  }, [visibleSports]);
+  const categoryConfig = useMemo(() => [
+    { id: 'Tất cả', label: isEn ? 'All Sports' : 'Tất cả', icon: 'grid_view', count: visibleSports.length },
+    ...[...new Set(visibleSports.map(sport => sport.category).filter(Boolean))].map(category => {
+      const cfg = SPORT_CATEGORY_CONFIG[category];
+      const label = isEn ? (cfg?.labelEn || category) : (cfg?.label || category);
+      return { id: category, label, icon: 'sports', count: visibleSports.filter(sport => sport.category === category).length };
+    })
+  ], [visibleSports, isEn]);
 
   const filteredSports = selectedCategory === 'Tất cả'
     ? visibleSports
@@ -603,7 +553,7 @@ export function LandingPage() {
               onClick={(e) => handleNavClick(navItems[0], e)}
               className={`tiya-nav-link ${activeNav === 'trang-chu' ? 'active' : ''}`}
             >
-              TRANG CHỦ
+              {isEn ? 'HOME' : 'TRANG CHỦ'}
             </a>
 
             {/* VỀ CHÚNG TÔI */}
@@ -612,7 +562,7 @@ export function LandingPage() {
               onClick={(e) => handleNavClick(navItems[1], e)}
               className={`tiya-nav-link ${activeNav === 've-chung-toi' ? 'active' : ''}`}
             >
-              VỀ CHÚNG TÔI
+              {isEn ? 'ABOUT US' : 'VỀ CHÚNG TÔI'}
             </a>
 
             {/* KHÓA HỌC with 2-Column Sports Dropdown */}
@@ -630,7 +580,7 @@ export function LandingPage() {
                 }}
                 className={`tiya-nav-link ${isCoursesDropdownOpen || activeNav === 'khoa-hoc' ? 'active' : ''}`}
               >
-                KHÓA HỌC
+                {isEn ? 'COURSES' : 'KHÓA HỌC'}
                 <span className="material-symbols-outlined" style={{fontSize:'16px',transition:'transform 0.2s',transform:isCoursesDropdownOpen?'rotate(180deg)':'none'}}>
                   keyboard_arrow_down
                 </span>
@@ -674,12 +624,34 @@ export function LandingPage() {
               onClick={(e) => handleNavClick(navItems[3], e)}
               className={`tiya-nav-link ${activeNav === 'co-so-vat-chat' ? 'active' : ''}`}
             >
-              CƠ SỞ VẬT CHẤT
+              {isEn ? 'FACILITIES' : 'CƠ SỞ VẬT CHẤT'}
             </a>
           </nav>
 
           {/* Action / Auth Buttons */}
           <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
+            {/* Minimalist Refined Language Toggle */}
+            <div className="tiya-lang-toggle" role="group" aria-label="Language selector">
+              <button
+                type="button"
+                onClick={() => setLanguage('vi')}
+                className={`tiya-lang-toggle__btn ${language === 'vi' ? 'active' : ''}`}
+                aria-label="Tiếng Việt"
+                title="Tiếng Việt"
+              >
+                <span className="lang-code">VI</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setLanguage('en')}
+                className={`tiya-lang-toggle__btn ${language === 'en' ? 'active' : ''}`}
+                aria-label="English"
+                title="English"
+              >
+                <span className="lang-code">EN</span>
+              </button>
+            </div>
+
             {isAuthenticated ? (
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
                 <a
@@ -687,7 +659,7 @@ export function LandingPage() {
                   className="custom-btn"
                 >
                   <span className="material-symbols-outlined" style={{fontSize:'18px'}}>space_dashboard</span>
-                  <span>Vào Dashboard ({role})</span>
+                  <span>{isEn ? `Dashboard (${role})` : `Vào Dashboard (${role})`}</span>
                 </a>
                 <button
                   type="button"
@@ -696,17 +668,17 @@ export function LandingPage() {
                     window.location.hash = '#/login';
                   }}
                   className="custom-border-btn"
-                  title="Đăng xuất tài khoản"
+                  title={isEn ? 'Sign out' : 'Đăng xuất tài khoản'}
                 >
                   <span className="material-symbols-outlined" style={{fontSize:'18px'}}>logout</span>
-                  <span>Đăng xuất</span>
+                  <span>{isEn ? 'Logout' : 'Đăng xuất'}</span>
                 </button>
               </div>
             ) : (
               <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
-                <a href="#/login" className="custom-border-btn">ĐĂNG NHẬP</a>
+                <a href="#/login" className="custom-border-btn">{isEn ? 'SIGN IN' : 'ĐĂNG NHẬP'}</a>
                 <a href="#/register" className="custom-btn">
-                  ĐĂNG KÝ
+                  {isEn ? 'REGISTER' : 'ĐĂNG KÝ'}
                   <span className="material-symbols-outlined" style={{fontSize:'16px'}}>arrow_forward</span>
                 </a>
               </div>
@@ -729,19 +701,41 @@ export function LandingPage() {
         {/* Mobile Navigation Drawer */}
         {isMobileMenuOpen && (
           <div className="tiya-mobile-drawer">
+            {/* Mobile Language Selector */}
+            <div style={{display:'flex',justifyContent:'flex-end',marginBottom:'12px'}}>
+              <div className="tiya-lang-toggle" role="group" aria-label="Language selector">
+                <button
+                  type="button"
+                  onClick={() => setLanguage('vi')}
+                  className={`tiya-lang-toggle__btn ${language === 'vi' ? 'active' : ''}`}
+                  aria-label="Tiếng Việt"
+                >
+                  <span className="lang-code">VI</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setLanguage('en')}
+                  className={`tiya-lang-toggle__btn ${language === 'en' ? 'active' : ''}`}
+                  aria-label="English"
+                >
+                  <span className="lang-code">EN</span>
+                </button>
+              </div>
+            </div>
+
             <a href="#/" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(navItems[0], e); }}
               className={`tiya-mobile-drawer__link ${activeNav === 'trang-chu' ? 'active' : ''}`}>
-              TRANG CHỦ
+              {isEn ? 'HOME' : 'TRANG CHỦ'}
             </a>
             <a href="#ve-chung-toi" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(navItems[1], e); }}
               className={`tiya-mobile-drawer__link ${activeNav === 've-chung-toi' ? 'active' : ''}`}>
-              VỀ CHÚNG TÔI
+              {isEn ? 'ABOUT US' : 'VỀ CHÚNG TÔI'}
             </a>
             {/* Mobile Courses Accordion */}
             <button type="button" onClick={() => setIsMobileCoursesOpen(!isMobileCoursesOpen)}
               className={`tiya-mobile-drawer__link ${activeNav === 'khoa-hoc' || isMobileCoursesOpen ? 'active' : ''}`}
               style={{display:'flex',justifyContent:'space-between',width:'100%'}}>
-              <span>KHÓA HỌC</span>
+              <span>{isEn ? 'COURSES' : 'KHÓA HỌC'}</span>
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>
                 {isMobileCoursesOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
               </span>
@@ -759,7 +753,7 @@ export function LandingPage() {
             )}
             <a href="#co-so-vat-chat" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(navItems[3], e); }}
               className={`tiya-mobile-drawer__link ${activeNav === 'co-so-vat-chat' ? 'active' : ''}`}>
-              CƠ SỞ VẬT CHẤT
+              {isEn ? 'FACILITIES' : 'CƠ SỞ VẬT CHẤT'}
             </a>
             <hr className="tiya-mobile-drawer__divider" />
             {isAuthenticated ? (
@@ -767,20 +761,24 @@ export function LandingPage() {
                 <a href={getDashboardLink()} onClick={() => setIsMobileMenuOpen(false)}
                   className="custom-btn" style={{width:'100%',justifyContent:'center',borderRadius:'10px'}}>
                   <span className="material-symbols-outlined" style={{fontSize:'18px'}}>space_dashboard</span>
-                  <span>Vào Dashboard ({role})</span>
+                  <span>{isEn ? `Dashboard (${role})` : `Vào Dashboard (${role})`}</span>
                 </a>
                 <button type="button" onClick={() => { setIsMobileMenuOpen(false); logout(); window.location.hash = '#/login'; }}
                   className="custom-border-btn" style={{width:'100%',marginTop:'8px',borderRadius:'10px',justifyContent:'center'}}>
                   <span className="material-symbols-outlined" style={{fontSize:'18px'}}>logout</span>
-                  Đăng xuất tài khoản
+                  {isEn ? 'Sign out' : 'Đăng xuất tài khoản'}
                 </button>
               </>
             ) : (
               <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
                 <a href="#/login" onClick={() => setIsMobileMenuOpen(false)}
-                  className="custom-border-btn" style={{width:'100%',justifyContent:'center',borderRadius:'10px'}}>ĐĂNG NHẬP</a>
+                  className="custom-border-btn" style={{width:'100%',justifyContent:'center',borderRadius:'10px'}}>
+                  {isEn ? 'SIGN IN' : 'ĐĂNG NHẬP'}
+                </a>
                 <a href="#/register" onClick={() => setIsMobileMenuOpen(false)}
-                  className="custom-btn" style={{width:'100%',justifyContent:'center',borderRadius:'10px'}}>ĐĂNG KÝ HỘI VIÊN MỚI</a>
+                  className="custom-btn" style={{width:'100%',justifyContent:'center',borderRadius:'10px'}}>
+                  {isEn ? 'REGISTER NEW MEMBER' : 'ĐĂNG KÝ HỘI VIÊN MỚI'}
+                </a>
               </div>
             )}
           </div>
@@ -813,7 +811,7 @@ export function LandingPage() {
             {/* Badge */}
             <div className="hero-badge">
               <span className="hero-badge-dot" />
-              {landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO ĐẲNG CẤP QUỐC TẾ SCMS'}
+              {isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
             </div>
 
             {/* Headline */}
@@ -823,31 +821,28 @@ export function LandingPage() {
 
             {/* Subtext */}
             <p className="hero-desc">
-              {landingContent.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${SCMS_FACILITIES.length} cụm sân, phòng tập phục vụ ${visibleSports.length} bộ môn thể thao.`}
+              {isEn
+                ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList.length} sports facilities and ${visibleSports.length} disciplines.`
+                : (landingContent.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList.length} cụm sân, phòng tập phục vụ ${visibleSports.length} bộ môn thể thao.`)}
             </p>
 
             {/* CTA Buttons */}
             <div className="custom-btn-group" style={{justifyContent:'center'}}>
               <a href={landingContent.heroBanner?.primaryCtaLink || '#/register'}
                 className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
-                {landingContent.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI'}
+                {isEn ? 'REGISTER NEW MEMBER' : (landingContent.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>arrow_forward</span>
               </a>
               <a href={landingContent.heroBanner?.secondaryCtaLink || '#khoa-hoc'}
                 className="link">
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
-                {landingContent.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports.length} MÔN HỌC`}
+                {isEn ? `EXPLORE ${visibleSports.length} DISCIPLINES` : (landingContent.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports.length} MÔN HỌC`)}
               </a>
             </div>
 
             {/* Metrics Strip */}
             <div className="tiya-metrics-strip" style={{width:'100%'}}>
-              {(landingContent.heroBanner?.metrics || [
-                { value: '100%', label: 'Chuẩn Thi Đấu' },
-                { value: '24/7', label: 'Lọc Khí & Điều Hòa' },
-                { value: '50+', label: 'Chuyên Gia Huấn Luyện' },
-                { value: '5.0 ★', label: 'Đánh Giá Hội Viên' }
-              ]).map((metric, idx) => (
+              {(landingContent.heroBanner?.metrics || []).map((metric, idx) => (
                 <div key={metric.id || idx} className="tiya-metrics-item">
                   <span className="tiya-metrics-value">{metric.value}</span>
                   <span className="tiya-metrics-label">{metric.label}</span>
@@ -857,7 +852,7 @@ export function LandingPage() {
 
             <div style={{display:'flex',justifyContent:'center',marginTop:'18px'}}>
               <a href="#ve-chung-toi" className="tiya-hero__scroll-cue">
-                Cuộn xuống khám phá
+                {isEn ? 'Scroll down to explore' : 'Cuộn xuống khám phá'}
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>keyboard_arrow_down</span>
               </a>
             </div>
@@ -874,13 +869,13 @@ export function LandingPage() {
               setIsVideoMuted(nextMuted);
             }
           }}
-          aria-label={isVideoMuted ? 'Bật âm thanh video' : 'Tắt âm thanh video'}
+          aria-label={isVideoMuted ? (isEn ? 'Unmute video audio' : 'Bật âm thanh video') : (isEn ? 'Mute video audio' : 'Tắt âm thanh video')}
           className="hero-sound-btn"
         >
           <span className="material-symbols-outlined" style={{fontSize:'18px'}}>
             {isVideoMuted ? 'volume_off' : 'volume_up'}
           </span>
-          {isVideoMuted ? 'Bật âm thanh' : 'Tắt âm thanh'}
+          {isVideoMuted ? (isEn ? 'Unmute' : 'Bật âm thanh') : (isEn ? 'Mute' : 'Tắt âm thanh')}
         </button>
 
         {/* Bottom Wave: Pure White #ffffff (Tiya Wave styled with compact height) */}
@@ -899,57 +894,99 @@ export function LandingPage() {
             <div className="tiya-reveal" style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
               <div className="about-badge">
                 <span className="material-symbols-outlined" style={{fontSize:'16px'}}>verified</span>
-                {landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN SCMS'}
+                {isEn ? 'WHY CHOOSE SCMS' : (landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN SCMS')}
               </div>
               <h2 className="about-title">
-                {landingContent.whyUs?.title || 'Nền Tảng Vững Chắc Cho Hành Trình Chinh Phục Đỉnh Cao'}
+                {isEn
+                  ? 'Solid Foundation For Your Journey To Athletic Excellence'
+                  : (landingContent.whyUs?.title || 'Nền Tảng Vững Chắc Cho Hành Trình Chinh Phục Đỉnh Cao')}
               </h2>
               <p className="about-desc">
-                {landingContent.whyUs?.description || 'SCMS tự hào là tổ hợp thể thao đa năng chuẩn quốc tế, mang đến không gian tập luyện chuyên nghiệp, đội ngũ huấn luyện viên chứng chỉ AFC & NASM cùng quy trình cá nhân hóa toàn diện cho từng học viên.'}
+                {isEn
+                  ? (catalog?.center?.description || 'Modern athletic center equipped with international standard courts, certified coaching staff, and comprehensive sports training ecosystems.')
+                  : (landingContent.whyUs?.description || 'Hệ thống cơ sở vật chất chuẩn quốc tế, huấn luyện viên tận tâm và phương pháp đào tạo hiện đại giúp bạn phát triển toàn diện.')}
               </p>
 
               <div style={{width:'100%',marginTop:'20px'}}>
-                {(landingContent.whyUs?.features || [
-                  { id: 'f1', icon: 'workspace_premium', title: 'Huấn luyện viên đạt chuẩn quốc tế', description: '100% đội ngũ huấn luyện sở hữu chứng chỉ AFC, FIBA, BWF hoặc NASM với kinh nghiệm đào tạo thực chiến.' },
-                  { id: 'f2', icon: 'tune', title: 'Giáo án cá nhân hóa theo từng thể trạng', description: 'Đo lường chỉ số InBody định kỳ, thiết lập biểu đồ vận động riêng biệt và AI Workout Recommender theo mục tiêu.' },
-                  { id: 'f3', icon: 'local_fire_department', title: 'Môi trường năng động và truyền cảm hứng', description: 'Cộng đồng hội viên văn minh, các giải đấu nội bộ định kỳ và hệ thống sân bãi đạt chuẩn thi đấu Olympic.' }
-                ]).map((feat, idx) => (
-                  <div key={feat.id || idx} className="about-feature-item">
-                    <div className="about-feature-icon">
-                      <span className="material-symbols-outlined" style={{fontSize:'22px'}}>{feat.icon}</span>
+                {(landingContent.whyUs?.features?.length ? landingContent.whyUs.features : [
+                  { id: 'f1', icon: 'verified', title: isEn ? 'Olympic Standard Facilities' : 'Tiêu Chuẩn Thi Đấu Olympic', description: isEn ? 'High-grade synthetic courts, anti-glare illumination, and international competition specifications.' : 'Mặt sàn cao cấp, ánh sáng chống chói và trang thiết bị đạt chuẩn thi đấu quốc tế.' },
+                  { id: 'f2', icon: 'military_tech', title: isEn ? 'Certified Coaching Staff' : 'Đội Ngũ HLV Chuyên Nghiệp', description: isEn ? 'Experienced coaches holding national and international athletic certificates.' : 'Giàu kinh nghiệm thi đấu thực chiến, sở hữu chứng chỉ huấn luyện chuyên môn.' },
+                  { id: 'f3', icon: 'schedule', title: isEn ? 'Smart & Flexible Booking' : 'Thời Gian Linh Hoạt & Đặt Lịch Dễ Dàng', description: isEn ? 'Easily reserve courts, sign up for classes, and manage schedules through our portal.' : 'Chủ động sắp xếp thời gian biểu rèn luyện, đăng ký trực tuyến nhanh chóng qua hệ thống.' }
+                ]).map((feat, idx) => {
+                  let title = feat.title;
+                  let desc = feat.description;
+                  if (isEn) {
+                    if (feat.title?.toLowerCase().includes('tiêu chuẩn') || feat.title?.toLowerCase().includes('olympic')) {
+                      title = 'Olympic Standard Facilities';
+                      desc = 'High-grade synthetic courts, anti-glare illumination, and international competition specifications.';
+                    } else if (feat.title?.toLowerCase().includes('huấn luyện') || feat.title?.toLowerCase().includes('hlv')) {
+                      title = 'Certified Coaching Staff';
+                      desc = 'Experienced coaches holding national and international athletic certificates.';
+                    } else if (feat.title?.toLowerCase().includes('linh hoạt') || feat.title?.toLowerCase().includes('đặt lịch')) {
+                      title = 'Smart & Flexible Booking';
+                      desc = 'Easily reserve courts, sign up for classes, and manage schedules through our portal.';
+                    }
+                  }
+                  return (
+                    <div key={feat.id || idx} className="about-feature-item">
+                      <div className="about-feature-icon">
+                        <span className="material-symbols-outlined" style={{fontSize:'22px'}}>{feat.icon}</span>
+                      </div>
+                      <div>
+                        <div className="about-feature-title">{title}</div>
+                        <p className="about-feature-desc">{desc}</p>
+                      </div>
                     </div>
-                    <div>
-                      <div className="about-feature-title">{feat.title}</div>
-                      <p className="about-feature-desc">{feat.description}</p>
-                    </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
 
             {/* Right Column: 4 Stat Cards */}
             <div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px'}}>
-                {(landingContent.whyUs?.stats || [
-                  { number: SCMS_FACILITIES.length, suffix: '', title: 'CỤM SÂN & PHÒNG TẬP', subtitle: 'Tiêu chuẩn thi đấu chuyên nghiệp', icon: 'stadium' },
-                  { number: visibleSports.length, suffix: '', title: 'MÔN THỂ THAO', subtitle: 'Đa dạng lựa chọn cho mọi lứa tuổi', icon: 'sports_kabaddi' },
-                  { number: 400, suffix: '+', title: 'HỌC VIÊN', subtitle: 'Thường xuyên rèn luyện mỗi ngày', icon: 'diversity_3' },
-                  { number: 13000, suffix: ' m²', title: 'DIỆN TÍCH', subtitle: 'Tổ hợp liên hợp khép kín hiện đại', icon: 'domain', formatThousands: true }
-                ]).map((st, idx) => (
-                  <div key={st.id || idx} className={`about-stat-card tiya-reveal tiya-delay-${idx + 1}`}>
-                    <div className="about-stat-card__bg-icon">
-                      <span className="material-symbols-outlined" style={{fontSize:'90px'}}>{st.icon}</span>
+                {(landingContent.whyUs?.stats?.length ? landingContent.whyUs.stats : [
+                  { id: 'rooms', number: catalog?.rooms?.length || facilitiesList.length || 10, suffix: '', title: isEn ? 'ROOMS & COURTS' : 'CỤM SÂN & PHÒNG TẬP', subtitle: isEn ? 'Olympic standard' : 'Tiêu chuẩn thi đấu chuyên nghiệp', icon: 'stadium' },
+                  { id: 'sports', number: visibleSports.length || 10, suffix: '', title: isEn ? 'SPORTS DISCIPLINES' : 'MÔN THỂ THAO', subtitle: isEn ? 'Diverse options for all ages' : 'Đa dạng lựa chọn cho mọi lứa tuổi', icon: 'sports' },
+                  { id: 'members', number: 400, suffix: '+', title: isEn ? 'ACTIVE ATHLETES' : 'HỌC VIÊN', subtitle: isEn ? 'Daily regular training' : 'Thường xuyên rèn luyện mỗi ngày', icon: 'groups' },
+                  { id: 'area', number: 13000, suffix: ' m²', formatThousands: true, title: isEn ? 'TOTAL AREA' : 'DIỆN TÍCH', subtitle: isEn ? 'Modern integrated sports complex' : 'Tổ hợp liên hợp khép kín hiện đại', icon: 'domain' }
+                ]).map((st, idx) => {
+                  let title = st.title;
+                  let subtitle = st.subtitle;
+                  if (isEn) {
+                    if (st.id === 'rooms' || st.id === 's1' || st.title?.includes('PHÒNG') || st.title?.includes('CỤM SÂN')) {
+                      title = 'ROOMS & COURTS';
+                      subtitle = 'Olympic competition standards';
+                    } else if (st.id === 'sports' || st.id === 's2' || st.title?.includes('BỘ MÔN') || st.title?.includes('MÔN THỂ THAO')) {
+                      title = 'SPORTS DISCIPLINES';
+                      subtitle = 'Diverse options for all ages';
+                    } else if (st.id === 'coaches' || st.title?.includes('HLV')) {
+                      title = 'CERTIFIED COACHES';
+                      subtitle = 'International certificates';
+                    } else if (st.id === 'members' || st.id === 's3' || st.title?.includes('HỘI VIÊN') || st.title?.includes('HỌC VIÊN')) {
+                      title = 'ACTIVE ATHLETES';
+                      subtitle = 'Daily regular training';
+                    } else if (st.id === 'area' || st.id === 's4' || st.title?.includes('DIỆN TÍCH')) {
+                      title = 'TOTAL AREA';
+                      subtitle = 'Modern integrated sports complex';
+                    }
+                  }
+                  return (
+                    <div key={st.id || idx} className={`about-stat-card tiya-reveal tiya-delay-${idx + 1}`}>
+                      <div className="about-stat-card__bg-icon">
+                        <span className="material-symbols-outlined" style={{fontSize:'90px'}}>{st.icon}</span>
+                      </div>
+                      <div className="about-stat-card__icon">
+                        <span className="material-symbols-outlined" style={{fontSize:'22px'}}>{st.icon}</span>
+                      </div>
+                      <div className="about-stat-card__number">
+                        <AnimatedNumber value={st.number} duration={1200} suffix={st.suffix} formatThousands={Boolean(st.formatThousands)} />
+                      </div>
+                      <div className="about-stat-card__title">{title}</div>
+                      <div className="about-stat-card__sub">{subtitle}</div>
                     </div>
-                    <div className="about-stat-card__icon">
-                      <span className="material-symbols-outlined" style={{fontSize:'22px'}}>{st.icon}</span>
-                    </div>
-                    <div className="about-stat-card__number">
-                      <AnimatedNumber value={st.number} duration={1200} suffix={st.suffix} formatThousands={Boolean(st.formatThousands)} />
-                    </div>
-                    <div className="about-stat-card__title">{st.title}</div>
-                    <div className="about-stat-card__sub">{st.subtitle}</div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
 
               {/* Trust Strip */}
@@ -958,15 +995,15 @@ export function LandingPage() {
                   <span className="material-symbols-outlined" style={{fontSize:'28px',color:'var(--primary-color)'}}>verified_user</span>
                   <div>
                     <div style={{fontWeight:700,fontSize:'13px',color:'var(--dark-color)'}}>
-                      {landingContent.whyUs?.trustBanner?.title || 'Bảo hiểm rèn luyện toàn diện'}
+                      {isEn ? 'Verified Olympic Training Quality' : (landingContent.whyUs?.trustBanner?.title || 'Chất Lượng Chuẩn Olympic Đã Được Kiểm Định')}
                     </div>
                     <div style={{fontSize:'12px',color:'var(--p-color)'}}>
-                      {landingContent.whyUs?.trustBanner?.description || 'Tất cả hội viên được trang bị y tế sơ cấp cứu tại sân 24/7'}
+                      {isEn ? 'Certified sports management and athletic curriculum meeting national and international benchmarks.' : (landingContent.whyUs?.trustBanner?.description || 'Hệ thống vận hành đạt chuẩn và chứng chỉ đào tạo thể thao quốc tế.')}
                     </div>
                   </div>
                 </div>
                 <span className="tiya-trust-strip__badge">
-                  {landingContent.whyUs?.trustBanner?.certificate || 'ISO 9001'}
+                  {landingContent.whyUs?.trustBanner?.certificate || 'ISO 9001:2026'}
                 </span>
               </div>
             </div>
@@ -994,28 +1031,30 @@ export function LandingPage() {
               {/* Status Badge */}
               <div className="section-bg-badge">
                 <span className="section-bg-badge-dot" aria-hidden="true" />
-                Cụm Sân Quốc Tế • Mở Cửa 24/7
+                {isEn ? 'Facilities & Courts on Campus' : 'Phòng và sân tập tại trung tâm'}
               </div>
 
-              <h2>Bạn Cần Thuê Sân Tự Do Hoặc Tổ Chức Giải Đấu?</h2>
+              <h2>{isEn ? 'Find Your Sport & Training Package' : 'Chọn Bộ Môn & Gói Tập Phù Hợp'}</h2>
 
               <p>
-                Hệ thống {SCMS_FACILITIES.length} khu liên hợp thể thao tiêu chuẩn: Bể bơi 4 mùa, sân bóng đá cỏ nhân tạo, cụm sân cầu lông, bóng rổ, pickleball, võ thuật &amp; gym. Đặt chỗ trực tuyến nhanh trong 30 giây với đầy đủ tiện ích tủ đồ, phòng tắm nước nóng, trọng tài &amp; y tế.
+                {isEn
+                  ? 'Explore the facilities, choose a membership package, then book available classes covered by your package.'
+                  : 'Khám phá cơ sở tập luyện, đăng ký gói tập rồi chọn ca học còn chỗ theo quyền lợi của gói.'}
               </p>
 
               {/* 3 Key Highlights with High-Contrast Chips */}
               <div className="section-bg-features">
                 <span className="section-bg-feature-chip">
                   <span className="material-symbols-outlined chip-icon chip-icon--amber" aria-hidden="true">bolt</span>
-                  <span>Giữ Chỗ Tức Thì</span>
+                  <span>{isEn ? 'Class Schedules' : 'Xem lịch lớp'}</span>
                 </span>
                 <span className="section-bg-feature-chip">
                   <span className="material-symbols-outlined chip-icon chip-icon--emerald" aria-hidden="true">groups</span>
-                  <span>Ưu Đãi Đội Nhóm 20%</span>
+                  <span>{isEn ? 'Official Info' : 'Thông tin từ trung tâm'}</span>
                 </span>
                 <span className="section-bg-feature-chip">
                   <span className="material-symbols-outlined chip-icon chip-icon--sky" aria-hidden="true">light_mode</span>
-                  <span>Đèn LED Ban Đêm</span>
+                  <span>{isEn ? 'Nighttime LED' : 'Đèn LED Ban Đêm'}</span>
                 </span>
               </div>
 
@@ -1027,11 +1066,11 @@ export function LandingPage() {
                   </div>
                   <div className="section-bg-cta-text-group">
                     <span className="section-bg-cta-title">
-                      Hệ thống {SCMS_FACILITIES.length} cụm sân &amp; phòng tập
+                      {isEn ? `System of ${facilitiesList.length} courts & halls` : `Hệ thống ${facilitiesList.length} cụm sân & phòng tập`}
                     </span>
                     <span className="section-bg-cta-sub">
                       <span className="section-bg-cta-sub-dot" aria-hidden="true" />
-                      Sẵn sàng phục vụ 24/7
+                      {hours === 'Chưa cập nhật' && isEn ? '06:00 - 22:00 Daily' : hours}
                     </span>
                   </div>
                 </div>
@@ -1042,9 +1081,9 @@ export function LandingPage() {
                     const el = document.getElementById('co-so-vat-chat');
                     if (el) el.scrollIntoView({ behavior: 'smooth' });
                   }}
-                  aria-label="Xem 9 khu vực cơ sở vật chất và đặt chỗ ngay"
+                  aria-label={isEn ? "View courts and rooms at center" : "Xem phòng và sân tập của trung tâm"}
                 >
-                  <span>Xem 9 Khu Vực &amp; Đặt Chỗ Ngay</span>
+                  <span>{isEn ? `View ${facilitiesList.length} Courts / Rooms` : `Xem ${facilitiesList.length} Phòng / Sân`}</span>
                   <span className="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
                 </button>
               </div>
@@ -1066,26 +1105,28 @@ export function LandingPage() {
           4. COURSES CATALOG SECTION (Tiya Warm Cream #F4F1DE Background)
       ───────────────────────────────────────────────────────────── */}
       <section className="courses-section" id="khoa-hoc">
+        {catalogLoading && !editorialContent.coursesSection?.sportsList?.length && <p role="status">{isEn ? 'Loading center catalog...' : 'Đang tải danh mục trung tâm...'}</p>}
+        {(editorialContent._loadError || (catalogError && !editorialContent.coursesSection?.sportsList?.length)) && <p role="alert">{editorialContent._loadError || catalogError}</p>}
+        {!catalogLoading && !catalogError && sportsList.length === 0 && <p role="status">{isEn ? 'No sports currently active.' : 'Chưa có bộ môn đang hoạt động.'}</p>}
         <div className="courses-container">
           <div className="tiya-reveal courses-section-header">
             <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'6px 16px',background:'rgba(129,178,154,0.15)',border:'1px solid rgba(129,178,154,0.4)',borderRadius:'100px',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
               <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--primary-color)',animation:'tiyaPulse 2s infinite'}} />
-              {landingContent.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp'}
+              {isEn ? 'PROFESSIONAL TRAINING PROGRAMS' : (landingContent.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp')}
             </div>
             <h2 className="courses-title">
-              <span>{visibleSports.length} Khóa Học</span> {(landingContent.coursesSection?.title || 'Thể Thao Đa Năng').replace(/^Khóa Học\s*/i, '')}
+              <span>{visibleSports.length} {isEn ? 'Sports' : 'Bộ Môn'}</span> {isEn ? 'Disciplines' : (landingContent.coursesSection?.title || 'Thể Thao').replace(/^(Khóa Học|Bộ môn)\s*/i, '')}
             </h2>
             <p className="courses-desc">
-              {landingContent.coursesSection?.description || 'Thiết kế bài bản từ nền tảng đến chuyên sâu thi đấu, đáp ứng mọi nhu cầu rèn luyện thể chất chuẩn Olympic cùng đội ngũ huấn luyện viên kiện tướng quốc gia.'}
+              {isEn ? 'Curated athletic courses taught by certified instructors with modern facilities and structured curricula.' : (landingContent.coursesSection?.description || 'Các khóa đào tạo thể thao chuyên sâu, huấn luyện viên đạt chuẩn quốc gia.')}
+            </p>
+            <p className="text-sm text-slate-600 mt-3">
+              {isEn ? 'Choose a package and complete payment before booking classes. Class access depends on your package benefits and available places.' : 'Đăng ký và thanh toán gói tập trước khi đặt ca học. Quyền tham gia lớp phụ thuộc quyền lợi gói và số chỗ còn trống.'}
             </p>
 
             {/* Trust Badges */}
             <div style={{display:'flex',flexWrap:'wrap',gap:'10px',justifyContent:'center',marginTop:'12px'}}>
-              {(landingContent.coursesSection?.trustBadges || [
-                { id: 'tb1', icon: 'military_tech', text: 'Chuẩn Đào Tạo Olympic' },
-                { id: 'tb2', icon: 'verified', text: '100% HLV Chứng Chỉ Quốc Tế' },
-                { id: 'tb3', icon: 'shield', text: 'Bảo Hiểm & Y Tế 24/7' }
-              ]).map((tb, idx) => (
+              {(landingContent.coursesSection?.trustBadges || []).map((tb, idx) => (
                 <span key={tb.id || idx} style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 14px',borderRadius:'100px',background:'var(--white-color)',border:'1px solid rgba(0,0,0,0.06)',fontSize:'12px',fontWeight:600,color:'var(--p-color)',boxShadow:'0 2px 6px rgba(0,0,0,0.04)'}}>
                   <span className="material-symbols-outlined" style={{fontSize:'16px',color:'var(--primary-color)'}}>{tb.icon}</span>
                   {tb.text}
@@ -1117,23 +1158,21 @@ export function LandingPage() {
               style={{display:'flex',gap:'24px',overflowX:'auto',scrollBehavior:'smooth',scrollSnapType:'x mandatory',paddingBottom:'20px',paddingTop:'4px',msOverflowStyle:'none',scrollbarWidth:'none'}}
             >
               {filteredSports.map(sport => {
-                const facility = SCMS_FACILITIES.find(f => f.id === (sport.facilityId || SPORT_FACILITY_MAP[sport.id])) || {};
-                const staticDetails = SPORT_CATALOG_DETAILS[sport.id] || {};
+                const facility = facilitiesList.find(f => f.id === (sport.facilityId || sport.facilityId)) || {};
                 const details = {
-                  rating: sport.rating || staticDetails.rating || '4.9',
-                  ratingCount: sport.ratingCount || staticDetails.ratingCount || '150',
-                  level: sport.level || staticDetails.level || 'Mọi trình độ',
-                  coach: sport.coach || staticDetails.coach || 'HLV Chuyên Nghiệp',
-                  schedule: sport.schedule || staticDetails.schedule || facility.openHours || '06:00 - 22:00',
-                  highlight: sport.highlight || staticDetails.highlight || facility.highlights || facility.description,
-                  price: sport.price || staticDetails.price || facility.priceRate?.split('•')[0]?.trim() || 'Học phí ưu đãi',
-                  capacity: sport.capacity || staticDetails.capacity || facility.capacity || 'Tiêu chuẩn',
-                  badges: (sport.badges && sport.badges.length > 0) ? sport.badges : (staticDetails.badges || [facility.badge || 'Đạt Chuẩn'])
+                  level: sport.level || (isEn ? 'All levels' : 'Chưa cập nhật'),
+                  coach: sport.coach || (isEn ? 'Class Schedule' : 'Xem lịch lớp'),
+                  schedule: sport.schedule || facility.openHours || hours,
+                  highlight: sport.highlight || '',
+                  price: membershipAction.label,
+                  capacity: sport.capacity || (isEn ? 'Standard' : 'Chưa cập nhật'),
+                  badges: []
                 };
                 const catCfg = SPORT_CATEGORY_CONFIG[sport.category] || {
                   badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
                   iconColor: 'text-rose-400',
-                  label: sport.category
+                  label: sport.category,
+                  labelEn: sport.category
                 };
                 const isHighlighted = highlightedSportId === sport.id;
 
@@ -1149,48 +1188,48 @@ export function LandingPage() {
                       className={`tiya-course-card tiya-reveal ${isHighlighted ? 'highlighted' : ''}`}
                     >
                       <div className="tiya-course-card__image-wrap">
-                        <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" />
+                        {sport.image || facility.image || facility.secondaryImage ? <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" /> : <div className="h-full grid place-items-center bg-slate-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
                         <div style={{position:'absolute',top:'12px',left:'12px',right:'12px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',zIndex:2}}>
                           <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(0,0,0,0.65)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,textTransform:'uppercase',backdropFilter:'blur(4px)'}}>
                             <span className="material-symbols-outlined" style={{fontSize:'13px'}}>{sport.icon}</span>
-                            {catCfg.label}
+                            {isEn ? (catCfg.labelEn || catCfg.label) : catCfg.label}
                           </span>
                           <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(129,178,154,0.9)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,backdropFilter:'blur(4px)'}}>
-                            {facility.badge || 'Tiêu chuẩn'}
+                            {isEn ? translateFacilityBadge(facility.badge, true) : (facility.badge || (isEn ? 'Court / Hall' : 'Phòng / sân'))}
                           </span>
                         </div>
                         <div style={{position:'absolute',bottom:'10px',right:'12px',padding:'4px 12px',borderRadius:'8px',background:'rgba(0,0,0,0.7)',color:'var(--custom-btn-bg-color)',fontSize:'12px',fontWeight:700,backdropFilter:'blur(4px)'}}>
-                          {details.price}
+                          <a href={membershipAction.href} onClick={event => event.stopPropagation()} style={{color:'inherit'}}>{details.price}</a>
                         </div>
                       </div>
 
                       <div className="tiya-course-card__body">
                         <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'8px',marginBottom:'6px',minHeight:'30px'}}>
-                          <h3 className="tiya-course-card__title" style={{margin:0}}>{sport.name}</h3>
-                          <span style={{display:'inline-flex',alignItems:'center',gap:'3px',fontSize:'12px',fontWeight:700,color:'var(--custom-btn-bg-hover-color)',flexShrink:0}}>
+                          <h3 className="tiya-course-card__title" style={{margin:0}}>{isEn ? translateSportName(sport.name, true) : sport.name}</h3>
+                          {sport.rating && <span style={{display:'inline-flex',alignItems:'center',gap:'3px',fontSize:'12px',fontWeight:700,color:'var(--custom-btn-bg-hover-color)',flexShrink:0}}>
                             <span className="material-symbols-outlined" style={{fontSize:'14px',color:'var(--custom-btn-bg-color)'}}>star</span>
-                            {details.rating}
-                            <span style={{fontSize:'10px',color:'var(--p-color)'}}>({details.ratingCount})</span>
-                          </span>
+                            {sport.rating}
+                            {sport.ratingCount && <span style={{fontSize:'10px',color:'var(--p-color)'}}>({sport.ratingCount})</span>}
+                          </span>}
                         </div>
 
                         <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:600,color:'var(--primary-color)',marginBottom:'10px',minHeight:'20px'}}>
                           <span className="material-symbols-outlined" style={{fontSize:'15px',flexShrink:0}}>location_on</span>
-                          <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{facility.name} • {facility.location}</span>
+                          <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{isEn ? translateFacilityName(facility.name, true) : facility.name} • {isEn ? translateLocation(facility.location, true) : facility.location}</span>
                         </div>
 
                         <p style={{fontSize:'13px',lineHeight:1.6,color:'var(--p-color)',marginBottom:'14px',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',minHeight:'42px'}}>
-                          {details.highlight}
+                          {isEn ? (translateCourseHighlight(details.highlight, true) || details.highlight) : details.highlight}
                         </p>
 
                         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'16px',fontSize:'11px',color:'var(--p-color)',minHeight:'36px'}}>
                           <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 8px',background:'#F9FAFB',borderRadius:'6px'}}>
                             <span className="material-symbols-outlined" style={{fontSize:'15px',color:'var(--primary-color)'}}>sports</span>
-                            <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{details.coach}</span>
+                            <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{isEn ? translateCoachName(details.coach, true) : details.coach}</span>
                           </div>
                           <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 8px',background:'#F9FAFB',borderRadius:'6px'}}>
                             <span className="material-symbols-outlined" style={{fontSize:'15px',color:'var(--custom-btn-bg-color)'}}>schedule</span>
-                            <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{facility.openHours ? facility.openHours.replace('hàng ngày', '') : 'Linh hoạt'}</span>
+                            <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{details.schedule ? (isEn ? translateOpenHours(details.schedule, true) : details.schedule.replace('hàng ngày', '')) : (isEn ? 'Flexible' : 'Linh hoạt')}</span>
                           </div>
                         </div>
 
@@ -1200,7 +1239,7 @@ export function LandingPage() {
                           style={{width:'100%',justifyContent:'center'}}
                           onClick={(e) => { e.stopPropagation(); handleSportClick(sport); }}
                         >
-                          Xem Chi Tiết &amp; Đặt Lịch
+                          {isEn ? 'View Details & Book' : 'Xem Chi Tiết & Đặt Lịch'}
                           <span className="material-symbols-outlined" style={{fontSize:'16px'}}>arrow_forward</span>
                         </button>
                       </div>
@@ -1217,7 +1256,7 @@ export function LandingPage() {
                   key={sport.id}
                   type="button"
                   onClick={() => handleScrollSportsToIndex(idx)}
-                  aria-label={`Chuyển đến môn ${sport.name}`}
+                  aria-label={isEn ? `Go to ${sport.name}` : `Chuyển đến môn ${sport.name}`}
                   className={`tiya-carousel-dot ${sportCarouselIndex === idx ? 'active' : ''}`}
                   style={{width: sportCarouselIndex === idx ? '36px' : '8px', background: sportCarouselIndex === idx ? 'var(--primary-color)' : 'rgba(0,0,0,0.15)'}}
                 />
@@ -1241,49 +1280,51 @@ export function LandingPage() {
           onModalClose={() => setSelectedFacilityForModal(null)}
         />
 
-        {/* Bottom Wave: Dark Slate Navy #3D405B flowing into Footer */}
+        {/* Bottom Wave: Deep Slate #0F172A flowing seamlessly into Footer */}
         <svg className="facilities-bottom-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <path fill="#3D405B" fillOpacity="1" d="M0,224L34.3,192C68.6,160,137,96,206,90.7C274.3,85,343,139,411,144C480,149,549,107,617,122.7C685.7,139,754,235,823,280C891.4,318,960,285,1029,224C1097.1,203,1166,181,1234,160C1302.9,139,1371,117,1406,106.7L1440,96L1440,320L1405.7,320C1371.4,320,1303,320,1234,320C1165.7,320,1097,320,1029,320C960,320,891,320,823,320C754.3,320,686,320,617,320C548.6,320,480,320,411,320C342.9,320,274,320,206,320C137.1,320,69,320,34,320L0,320Z" />
+          <path fill="#0F172A" fillOpacity="1" d="M0,224L34.3,192C68.6,160,137,96,206,90.7C274.3,85,343,139,411,144C480,149,549,107,617,122.7C685.7,139,754,235,823,280C891.4,318,960,285,1029,224C1097.1,203,1166,181,1234,160C1302.9,139,1371,117,1406,106.7L1440,96L1440,320L1405.7,320C1371.4,320,1303,320,1234,320C1165.7,320,1097,320,1029,320C960,320,891,320,823,320C754.3,320,686,320,617,320C548.6,320,480,320,411,320C342.9,320,274,320,206,320C137.1,320,69,320,34,320L0,320Z" />
         </svg>
       </div>
 
       {/* ─────────────────────────────────────────────────────────────
-          6. SITE FOOTER (Tiya .site-footer with Bottom #81B29A SVG Wave)
+          6. SITE FOOTER (SCMS Modern Olympic Dark Theme)
       ───────────────────────────────────────────────────────────── */}
       <footer className="site-footer">
         <div className="footer-container tiya-reveal">
-          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))',gap:'40px',marginBottom:'40px'}}>
+          <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))',gap:'40px',marginBottom:'36px'}}>
             {/* Col 1: Brand */}
             <div>
               <div className="mb-4">
                 <Logo variant="dark" size="md" onClick={e => handleNavClick(navItems[0], e)} />
               </div>
-              <p style={{fontSize:'14px',lineHeight:1.7,color:'rgba(255,255,255,0.65)'}}>
-                Không gian học tập và rèn luyện thể thao dành cho mọi lứa tuổi. Cùng SCMS chọn bộ môn yêu thích, nâng cao thể lực và kết nối cộng đồng.
+              <p style={{fontSize:'13.5px',lineHeight:1.7,color:'#CBD5E1',maxWidth:'320px'}}>
+                {isEn
+                  ? 'Premier sports learning and training ground for all ages. Join SCMS to pursue your passion, enhance physical health, and connect with fellow athletes.'
+                  : 'Không gian học tập và rèn luyện thể thao dành cho mọi lứa tuổi. Cùng SCMS chọn bộ môn yêu thích, nâng cao thể lực và kết nối cộng đồng.'}
               </p>
-              <div style={{display:'inline-flex',alignItems:'center',gap:'8px',marginTop:'12px',padding:'6px 14px',border:'1px solid rgba(255,255,255,0.15)',borderRadius:'100px',fontSize:'11px',fontWeight:600,color:'rgba(255,255,255,0.7)'}}>
-                <span className="material-symbols-outlined" style={{fontSize:'16px',color:'var(--primary-color)'}}>sports_score</span>
-                {visibleSports.length} bộ môn · {(landingContent.facilitiesSection?.facilitiesList || SCMS_FACILITIES).filter(f => f.isVisible !== false).length} khu tập luyện
+              <div style={{display:'inline-flex',alignItems:'center',gap:'8px',marginTop:'16px',padding:'7px 16px',background:'rgba(129,178,154,0.12)',border:'1px solid rgba(129,178,154,0.3)',borderRadius:'100px',fontSize:'12px',fontWeight:600,color:'#A7F3D0'}}>
+                <span className="material-symbols-outlined" style={{fontSize:'16px',color:'#81B29A'}}>sports_score</span>
+                {visibleSports.length} {isEn ? 'disciplines' : 'bộ môn'} · {(landingContent.facilitiesSection?.facilitiesList || facilitiesList).filter(f => f.isVisible !== false).length} {isEn ? 'facilities' : 'khu tập luyện'}
               </div>
             </div>
 
             {/* Col 2: Contact */}
             <div>
-              <h4 className="site-footer-title">Thông Tin Liên Hệ</h4>
-              <div>
+              <h4 className="site-footer-title">{isEn ? 'Contact Info' : 'Thông Tin Liên Hệ'}</h4>
+              <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
                 <div className="footer-link">
-                  <span className="material-symbols-outlined" style={{fontSize:'18px',color:'var(--primary-color)',flexShrink:0}}>location_on</span>
-                  {landingContent.ctaAndFooter?.contactAddress || 'Khu công nghệ cao, Thủ Đức, TP. Hồ Chí Minh'}
+                  <span className="footer-icon-pill material-symbols-outlined">location_on</span>
+                  <span>{isEn ? translateLocation(landingContent.ctaAndFooter?.contactAddress, true) : (landingContent.ctaAndFooter?.contactAddress || 'Chưa cập nhật')}</span>
                 </div>
-                <a href={`tel:${(landingContent.ctaAndFooter?.contactPhone || '0859859367').replace(/\s+/g, '')}`} className="footer-link">
-                  <span className="material-symbols-outlined" style={{fontSize:'18px',color:'var(--primary-color)',flexShrink:0}}>call</span>
-                  {landingContent.ctaAndFooter?.contactPhone || '0859 859 367'}
+                <a href={`tel:${(landingContent.ctaAndFooter?.contactPhone || 'Chưa cập nhật').replace(/\s+/g, '')}`} className="footer-link">
+                  <span className="footer-icon-pill material-symbols-outlined">call</span>
+                  <span>{landingContent.ctaAndFooter?.contactPhone || (isEn ? '(028) 7300 5588' : 'Chưa cập nhật')}</span>
                 </a>
-                <a href={`mailto:${landingContent.ctaAndFooter?.contactEmail || 'lienhe@scmsportscenter.vn'}`} className="footer-link" style={{wordBreak:'break-all'}}>
-                  <span className="material-symbols-outlined" style={{fontSize:'18px',color:'var(--primary-color)',flexShrink:0}}>mail</span>
-                  {landingContent.ctaAndFooter?.contactEmail || 'lienhe@scmsportscenter.vn'}
+                <a href={`mailto:${landingContent.ctaAndFooter?.contactEmail || 'Chưa cập nhật'}`} className="footer-link" style={{wordBreak:'break-all'}}>
+                  <span className="footer-icon-pill material-symbols-outlined">mail</span>
+                  <span>{landingContent.ctaAndFooter?.contactEmail || (isEn ? 'contact@scms.vn' : 'Chưa cập nhật')}</span>
                 </a>
-                <div className="social-icon" style={{marginTop:'16px'}}>
+                <div className="social-icon" style={{marginTop:'8px'}}>
                   {socialContacts.map(contact => (
                     <a key={contact.label} href={contact.url} target="_blank" rel="noopener noreferrer" className="social-icon-link" title={contact.label}>
                       <span className="material-symbols-outlined" style={{fontSize:'18px'}}>{contact.icon}</span>
@@ -1295,66 +1336,64 @@ export function LandingPage() {
 
             {/* Col 3: Hours */}
             <div>
-              <h4 className="site-footer-title">Thời Gian Hoạt Động</h4>
-              <div className="footer-hours-row">
-                <span>Thứ Hai - Thứ Sáu:</span>
-                <span className="footer-hours-value">{landingContent.ctaAndFooter?.hoursWeekdays || '05:30 - 22:30'}</span>
+              <h4 className="site-footer-title">{isEn ? 'Opening Hours' : 'Thời Gian Hoạt Động'}</h4>
+              <div className="footer-hours-card">
+                <div className="footer-hours-row">
+                  <span className="footer-hours-label">{isEn ? 'Monday - Friday:' : 'Thứ Hai - Thứ Sáu:'}</span>
+                  <span className="footer-hours-value">{landingContent.ctaAndFooter?.hoursWeekdays || (isEn ? '05:30 - 22:30' : 'Chưa cập nhật')}</span>
+                </div>
+                <div className="footer-hours-row">
+                  <span className="footer-hours-label">{isEn ? 'Saturday - Sunday:' : 'Thứ Bảy - Chủ Nhật:'}</span>
+                  <span className="footer-hours-value">{landingContent.ctaAndFooter?.hoursWeekend || (isEn ? '06:00 - 22:00' : 'Chưa cập nhật')}</span>
+                </div>
+                <div className="footer-hours-row">
+                  <span className="footer-hours-label">{isEn ? 'Holidays:' : 'Ngày Lễ:'}</span>
+                  <span className="footer-hours-value footer-hours-gold">{isEn ? translateOpenHours(landingContent.ctaAndFooter?.hoursHolidays, true) : (landingContent.ctaAndFooter?.hoursHolidays || (isEn ? 'Flexible Opening' : 'Chưa cập nhật'))}</span>
+                </div>
               </div>
-              <div className="footer-hours-row">
-                <span>Thứ Bảy - Chủ Nhật:</span>
-                <span className="footer-hours-value">{landingContent.ctaAndFooter?.hoursWeekend || '06:00 - 22:00'}</span>
-              </div>
-              <div className="footer-hours-row">
-                <span>Ngày Lễ:</span>
-                <span className="footer-hours-value" style={{color:'var(--custom-btn-bg-color)'}}>{landingContent.ctaAndFooter?.hoursHolidays || 'Mở cửa linh hoạt'}</span>
-              </div>
-              <p style={{fontSize:'11px',color:'rgba(255,255,255,0.45)',marginTop:'10px',lineHeight:1.6}}>
-                Giờ hoạt động cụ thể được ghi trong thông tin từng sân và phòng tập.
+              <p style={{fontSize:'12px',color:'#94A3B8',marginTop:'12px',lineHeight:1.6}}>
+                {isEn ? 'Specific opening hours are listed in each facility & court detail.' : 'Giờ hoạt động cụ thể được ghi trong thông tin từng sân và phòng tập.'}
               </p>
             </div>
 
             {/* Col 4: Sports List */}
             <div>
-              <h4 className="site-footer-title">Bộ Môn &amp; Cơ Sở</h4>
-              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 10px'}}>
-                {visibleSports.map(sport => (
-                  <button key={sport.id} type="button" onClick={() => handleSportClick(sport)}
-                    title={`Xem cơ sở tập luyện ${sport.name}`}
-                    style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'13px',color:'rgba(255,255,255,0.7)',background:'none',border:'none',cursor:'pointer',textAlign:'left',padding:'4px 0',transition:'color 0.2s'}}
-                    onMouseEnter={e => e.currentTarget.style.color='var(--custom-btn-bg-color)'}
-                    onMouseLeave={e => e.currentTarget.style.color='rgba(255,255,255,0.7)'}
-                  >
-                    <span style={{width:'6px',height:'6px',borderRadius:'50%',background:'var(--primary-color)',flexShrink:0}} />
-                    {sport.name}
-                  </button>
-                ))}
+              <h4 className="site-footer-title">{isEn ? 'Disciplines & Facilities' : 'Bộ Môn & Cơ Sở'}</h4>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 14px'}}>
+                {visibleSports.map(sport => {
+                  const sName = isEn ? translateSportName(sport.name, true) : sport.name;
+                  return (
+                    <button key={sport.id} type="button" onClick={() => handleSportClick(sport)}
+                      title={isEn ? `View facility for ${sName}` : `Xem cơ sở tập luyện ${sName}`}
+                      className="footer-sport-btn"
+                    >
+                      <span className="footer-sport-dot" />
+                      <span className="truncate">{sName}</span>
+                    </button>
+                  );
+                })}
               </div>
             </div>
           </div>
 
-          <div style={{borderTop:'1px solid rgba(255,255,255,0.1)',paddingTop:'24px',display:'flex',alignItems:'center',justifyContent:'space-between',flexWrap:'wrap',gap:'14px'}}>
-            <p style={{fontSize:'12px',color:'rgba(255,255,255,0.5)',margin:0}}>{landingContent.ctaAndFooter?.copyright || '© 2026 SCMS Sports Center. Bảo lưu mọi quyền.'}</p>
-            <nav aria-label="Liên kết cuối trang" style={{display:'flex',flexWrap:'wrap',alignItems:'center',gap:'12px 20px',justifyContent:'flex-end'}}>
+          {/* Bottom Copyright & Navigation */}
+          <div className="footer-bottom-bar">
+            <p className="footer-copyright">
+              {isEn ? '© 2026 SCMS Sports Center. All rights reserved.' : (landingContent.ctaAndFooter?.copyright || '© 2026 SCMS Sports Center. Bảo lưu mọi quyền.')}
+            </p>
+            <nav aria-label={isEn ? "Footer navigation" : "Liên kết cuối trang"} className="footer-bottom-nav">
               {navItems.filter(item => item.id !== 'trang-chu').map(item => (
-                <a key={item.id} href={item.href} onClick={e => handleNavClick(item, e)}
-                  style={{fontSize:'12px',color:'rgba(255,255,255,0.6)',textDecoration:'none',transition:'color 0.2s'}}
-                  onMouseEnter={e => e.target.style.color='var(--custom-btn-bg-color)'}
-                  onMouseLeave={e => e.target.style.color='rgba(255,255,255,0.6)'}>
+                <a key={item.id} href={item.href} onClick={e => handleNavClick(item, e)} className="footer-nav-link">
                   {item.label}
                 </a>
               ))}
-              <a href="#/register" className="custom-border-btn" style={{fontSize:'12px',padding:'6px 16px'}}>
-                Đăng ký hội viên
-                <span className="material-symbols-outlined" style={{fontSize:'15px'}}>arrow_forward</span>
+              <a href="#/register" className="custom-border-btn footer-register-btn">
+                <span>{isEn ? 'Register Member' : 'Đăng ký hội viên'}</span>
+                <span className="material-symbols-outlined" style={{fontSize:'16px'}}>arrow_forward</span>
               </a>
             </nav>
           </div>
         </div>
-
-        {/* Tiya Signature Bottom Wave: #81B29A (Sage Green) */}
-        <svg className="site-footer-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
-          <path fill="#81B29A" fillOpacity="1" d="M0,224L34.3,192C68.6,160,137,96,206,90.7C274.3,85,343,139,411,144C480,149,549,107,617,122.7C685.7,139,754,213,823,240C891.4,267,960,245,1029,224C1097.1,203,1166,181,1234,160C1302.9,139,1371,117,1406,106.7L1440,96L1440,320L1405.7,320C1371.4,320,1303,320,1234,320C1165.7,320,1097,320,1029,320C960,320,891,320,823,320C754.3,320,686,320,617,320C548.6,320,480,320,411,320C342.9,320,274,320,206,320C137.1,320,69,320,34,320L0,320Z" />
-        </svg>
       </footer>
     </div>
   );

@@ -8,7 +8,7 @@ using SportsCenterManagement.BLL.Services;
 namespace SportsCenterManagement.API.Controllers;
 
 [Route("api/media")]
-[Authorize(Roles = "COACH,MANAGER,ADMIN,SYSTEMADMIN")]
+[Authorize(Roles = "COACH,MANAGER,ADMIN")]
 [FlowExceptionFilter]
 public class MediaUploadController : FlowControllerBase
 {

@@ -4,6 +4,7 @@ import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { NotificationInbox } from '../common/NotificationInbox.jsx';
 import { Logo } from '../common/Logo.jsx';
+import { translateCoachName } from '../../services/i18nHelper.js';
 
 // Thông tin cơ sở duy nhất của hệ thống trung tâm thể thao SCMS
 export const SINGLE_BRANCH = {
@@ -67,14 +68,10 @@ function UKFlagIcon({ className = "w-4 h-3" }) {
   );
 }
 
-export function Header({ onOpenProfile, onToggleSidebar }) {
+export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = false }) {
   const { currentUser, role, logout } = useAuth();
   const { showSuccess, showInfo, showWarning } = useToast();
   const { language, setLanguage, t } = useLanguage();
-
-  // State 1: Modal chi tiết cơ sở duy nhất
-  const [showBranchModal, setShowBranchModal] = useState(false);
-  const branchRef = useRef(null);
 
   // State 2: Dropdown chọn ngôn ngữ
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -141,9 +138,6 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
   // Xử lý đóng tất cả dropdown khi click ra ngoài
   useEffect(() => {
     const handleClickOutside = (e) => {
-      if (branchRef.current && !branchRef.current.contains(e.target)) {
-        setShowBranchModal(false);
-      }
       if (langMenuRef.current && !langMenuRef.current.contains(e.target)) {
         setShowLangMenu(false);
       }
@@ -256,113 +250,54 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
     return (parts[0][0] + parts[parts.length - 1][0]).toUpperCase();
   };
 
-  const displayName = currentUser?.fullName || (role === 'COACH' ? (language === 'vi' ? 'Huấn luyện viên 01' : 'Coach 01') : 'Huỳnh Nhật Huy');
+  const rawDisplayName = currentUser?.fullName || (role === 'COACH' ? (language === 'vi' ? 'Huấn luyện viên 01' : 'Coach 01') : 'Huỳnh Nhật Huy');
+  const displayName = role === 'COACH' ? translateCoachName(rawDisplayName, language === 'en') : rawDisplayName;
   const roleLabel = getRoleLabel(role);
   const userInitials = getUserInitials(displayName);
 
-  const branchDisplayName = language === 'en' ? SINGLE_BRANCH.nameEn : SINGLE_BRANCH.nameVi;
   const currentLangObj = LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
 
   return (
-    <header className="h-16 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 px-3 sm:px-6 flex items-center justify-between shadow-xs transition-colors">
-      {/* Left: Brand Logo SCMS & Hamburger Toggle */}
-      <div className="flex items-center gap-2 sm:gap-4">
-        {/* SCMS Brand Logo */}
-        <Logo variant="auto" size="md" />
-
-        {/* Sidebar Toggle Button */}
-        <button
-          onClick={onToggleSidebar}
-          type="button"
-          className="w-9 h-9 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50/80 dark:bg-slate-800 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer shadow-2xs"
-          title={t('header.menu_toggle', 'Ẩn / Hiện Menu')}
+    <header className="h-16 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 pr-3 sm:pr-6 flex items-center justify-between shadow-xs transition-colors">
+      {/* Left: Brand Logo SCMS & Hamburger Toggle matching FPT Portal */}
+      <div className="flex items-center h-full">
+        {/* Brand Logo Column: switches width between w-20 and w-64 */}
+        <div
+          className={`h-full flex items-center border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out ${
+            isSidebarCollapsed
+              ? 'w-16 lg:w-20 justify-center px-1'
+              : 'w-56 lg:w-64 justify-start px-3 sm:px-4'
+          }`}
         >
-          <span className="material-symbols-outlined text-[20px]">menu</span>
-        </button>
-      </div>
-
-      {/* Right Controls: Branch (1 cơ sở duy nhất), Language, Notification, DarkMode, Fullscreen, User Profile */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5">
-        {/* 1. Facility / Campus (1 cơ sở duy nhất - SCMS TP. Hồ Chí Minh) */}
-        <div className="relative hidden md:block" ref={branchRef}>
-          <button
-            type="button"
-            onClick={() => {
-              setShowBranchModal(prev => !prev);
-              setShowLangMenu(false);
-              setShowUserMenu(false);
-            }}
-            className="flex items-center gap-2 text-xs font-semibold text-slate-700 dark:text-slate-200 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-750 transition-all cursor-pointer shadow-2xs hover:border-slate-300 dark:hover:border-slate-600"
-            title={t('branch.title', 'Thông tin cơ sở hoạt động')}
-          >
-            <span className="material-symbols-outlined text-[18px] text-slate-400">location_on</span>
-            <span className="truncate max-w-[210px]">{branchDisplayName}</span>
-            <span className={`material-symbols-outlined text-[16px] text-slate-400 transition-transform duration-200 ${showBranchModal ? 'rotate-180' : ''}`}>
-              keyboard_arrow_down
-            </span>
-          </button>
-
-          {showBranchModal && (
-            <div className="absolute left-0 mt-2 w-88 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-3.5 z-50 animate-modal-entrance">
-              <div className="flex items-center justify-between pb-2.5 border-b border-slate-100 dark:border-slate-700">
-                <div className="flex items-center gap-2">
-                  <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
-                  <span className="text-xs font-bold text-slate-900 dark:text-white">
-                    {language === 'en' ? SINGLE_BRANCH.tagEn : SINGLE_BRANCH.tagVi}
-                  </span>
-                </div>
-                <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 font-bold border border-emerald-200 dark:border-emerald-800">
-                  {language === 'en' ? SINGLE_BRANCH.statusEn : SINGLE_BRANCH.statusVi}
-                </span>
-              </div>
-
-              <div className="mt-3 space-y-2.5 text-xs text-slate-600 dark:text-slate-300">
-                <div className="p-2.5 rounded-xl bg-[#FAF8F5] dark:bg-slate-800/80 border border-[#81B29A]/30 dark:border-slate-700">
-                  <p className="font-bold text-xs text-[#1E2235] dark:text-emerald-300">
-                    {language === 'en' ? 'SCMS Sports Center - Ho Chi Minh City' : 'Trung tâm Thể thao SCMS - TP. Hồ Chí Minh'}
-                  </p>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">
-                    {language === 'en' ? SINGLE_BRANCH.addressEn : SINGLE_BRANCH.addressVi}
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-2 gap-2 text-[11px]">
-                  <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-750 border border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-400 block font-medium">Hotline:</span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">{SINGLE_BRANCH.hotline}</span>
-                  </div>
-                  <div className="p-2 rounded-lg bg-slate-50 dark:bg-slate-750 border border-slate-100 dark:border-slate-700">
-                    <span className="text-slate-400 block font-medium">
-                      {language === 'en' ? 'Opening Hours:' : 'Giờ hoạt động:'}
-                    </span>
-                    <span className="font-bold text-slate-800 dark:text-slate-200">
-                      {language === 'en' ? SINGLE_BRANCH.hoursEn : SINGLE_BRANCH.hoursVi}
-                    </span>
-                  </div>
-                </div>
-
-                <div className="pt-2 border-t border-slate-100 dark:border-slate-700 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 block mb-0.5">
-                    {language === 'en' ? 'Olympic Facilities:' : 'Khu phức hợp sân bãi:'}
-                  </span>
-                  {language === 'en' ? SINGLE_BRANCH.facilitiesEn : SINGLE_BRANCH.facilitiesVi}
-                </div>
-              </div>
-            </div>
-          )}
+          <Logo variant="auto" size="md" compact={isSidebarCollapsed} />
         </div>
 
-        {/* 2. Language Selector Dropdown (Chuyển đổi Tiếng Việt & English thực tế) */}
+        {/* Sidebar Toggle Button (Hamburger) placed right next to the border */}
+        <div className="px-2.5 sm:px-3.5">
+          <button
+            onClick={onToggleSidebar}
+            type="button"
+            className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer shadow-2xs"
+            title={isSidebarCollapsed ? (language === 'vi' ? 'Mở thanh menu dọc' : 'Show vertical sidebar') : (language === 'vi' ? 'Thu gọn thanh menu dọc' : 'Collapse vertical sidebar')}
+            aria-label={isSidebarCollapsed ? 'Show sidebar' : 'Collapse sidebar'}
+          >
+            <span className="material-symbols-outlined text-[22px]">menu</span>
+          </button>
+        </div>
+      </div>
+
+      {/* Right Controls: Language, Notification, DarkMode, Fullscreen, User Profile */}
+      <div className="flex items-center gap-1.5 sm:gap-2.5">
+        {/* 1. Language Selector Dropdown (Chuyển đổi Tiếng Việt & English thực tế) */}
         <div className="relative hidden sm:block" ref={langMenuRef}>
           <button
             type="button"
             onClick={() => {
               setShowLangMenu(prev => !prev);
-              setShowBranchModal(false);
               setShowUserMenu(false);
             }}
             className="flex items-center gap-1.5 text-xs font-semibold text-slate-700 dark:text-slate-200 px-2.5 py-1.5 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors border border-transparent hover:border-slate-200 dark:hover:border-slate-700 cursor-pointer"
-            title="Chọn ngôn ngữ / Select Language"
+            title={language === 'en' ? "Select Language" : "Chọn ngôn ngữ"}
           >
             {language === 'vi' ? <VietnamFlagIcon /> : <UKFlagIcon />}
             <span>{currentLangObj.name}</span>
@@ -375,7 +310,7 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
             <div className="absolute right-0 sm:left-0 mt-2 w-56 bg-white dark:bg-slate-800 rounded-2xl shadow-xl border border-slate-200 dark:border-slate-700 p-2 z-50 animate-modal-entrance">
               <div className="px-3 py-1.5 border-b border-slate-100 dark:border-slate-700/80 mb-1">
                 <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block">
-                  Ngôn ngữ / Language
+                  {language === 'en' ? 'Language' : 'Ngôn ngữ'}
                 </span>
               </div>
 
@@ -437,12 +372,11 @@ export function Header({ onOpenProfile, onToggleSidebar }) {
           </span>
         </button>
 
-        {/* 6. User Profile Info & Dropdown */}
+        {/* 5. User Profile Info & Dropdown */}
         <div className="relative ml-1 sm:ml-2" ref={userMenuRef}>
           <button
             onClick={() => {
               setShowUserMenu(prev => !prev);
-              setShowBranchModal(false);
               setShowLangMenu(false);
             }}
             type="button"

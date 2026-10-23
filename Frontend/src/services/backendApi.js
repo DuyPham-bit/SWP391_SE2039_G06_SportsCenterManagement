@@ -190,7 +190,13 @@ export const authApi = {
     return loginAndLoad('auth/login', { email: email.trim(), password });
   },
 
-  async register({ fullName, email, phone, password }) {
+  async requestEmailVerification(email, { signal } = {}) {
+    return apiRequest('auth/request-email-verification', {
+      method: 'POST', token: null, signal, body: { email: email.trim().toLowerCase() }
+    });
+  },
+
+  async register({ fullName, email, phone, password, emailOtp }) {
     const cleanEmail = email.trim().toLowerCase();
     const registeredCenterId = Number(import.meta.env.VITE_SPORTS_CENTER_ID);
     if (!Number.isSafeInteger(registeredCenterId) || registeredCenterId <= 0) {
@@ -205,6 +211,7 @@ export const authApi = {
         username,
         email: cleanEmail,
         password,
+        emailOtp,
         fullName: fullName.trim(),
         phone: phone?.trim() || null,
         centerId: registeredCenterId
@@ -354,7 +361,7 @@ export const staffApi = {
   },
 
   previewRoleId() {
-    return 'Backend cấp mã nhân viên';
+    return 'Hệ thống tự động cấp mã';
   },
 
   async create(staffData) {
@@ -464,7 +471,7 @@ export const classApi = {
 
   async create(classData) {
     if (!Number.isSafeInteger(Number(classData.sportId)) || Number(classData.sportId) <= 0) {
-      throw new Error('Không thể tạo lớp: form hiện chưa cung cấp sportId của backend.');
+      throw new Error('Vui lòng chọn bộ môn hợp lệ trước khi tạo lớp.');
     }
     const result = await apiRequest('classes', {
       method: 'POST',
@@ -487,7 +494,7 @@ export const classApi = {
     const classId = Number(classData.classId || id);
     if (!Number.isSafeInteger(classId) || classId <= 0) throw new Error('Mã lớp không hợp lệ.');
     if (!Number.isSafeInteger(Number(classData.sportId)) || Number(classData.sportId) <= 0) {
-      throw new Error('Không thể sửa lớp: form hiện chưa cung cấp sportId của backend.');
+      throw new Error('Vui lòng chọn bộ môn hợp lệ trước khi cập nhật lớp.');
     }
     return apiRequest(`classes/${classId}`, {
       method: 'PUT',
@@ -566,7 +573,7 @@ export const receptionApi = {
 
   async registerCounterPackage({ memberId, packageId, paymentMethod = 'TIỀN MẶT', amountReceived, posApprovalCode, idempotencyKey, cancelPendingIfAny = false }) {
     const normalizedMethod = paymentMethod === 'TIỀN MẶT' ? 'CASH' : paymentMethod === 'THẺ POS' ? 'POS' : null;
-    if (!normalizedMethod) throw new Error('Backend checkout tại quầy chỉ hỗ trợ tiền mặt (CASH) hoặc thẻ POS.');
+    if (!normalizedMethod) throw new Error('Thanh toán tại quầy chỉ hỗ trợ phương thức tiền mặt hoặc quẹt thẻ POS.');
     if (normalizedMethod === 'POS' && !posApprovalCode?.trim()) {
       throw new Error('Nhập mã chuẩn chi POS trước khi thanh toán.');
     }
@@ -592,6 +599,18 @@ export const receptionApi = {
       member: result.member,
       package: result.package
     };
+  },
+
+  async createCounterVnPayUrl({ memberId, packageId, idempotencyKey, cancelPendingIfAny = false }) {
+    return apiRequest('payments/counter-vnpay-url', {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey || createIdempotencyKey() },
+      body: {
+        memberId: Number(memberId),
+        packageId: Number(packageId),
+        cancelPendingIfAny: cancelPendingIfAny === true
+      }
+    });
   },
 
   async cancelPendingInvoice({ invoiceNumber, packageId, memberId }) {
@@ -659,6 +678,49 @@ export const receptionApi = {
     return apiRequest(`invoices/${encodeURIComponent(invoiceNumber)}/payments`, {
       method: 'POST', headers: { 'Idempotency-Key': idempotencyKey },
       body: { amount: Number(amount), paymentMethod, posApprovalCode: posApprovalCode?.trim() || null, note: note?.trim() || null }
+    });
+  },
+
+  async reconcilePayment(gatewayReference, { status, providerTransactionId, confirmedAmount, evidenceNote }) {
+    return apiRequest(`payments/${encodeURIComponent(gatewayReference)}/reconcile`, {
+      method: 'POST',
+      body: {
+        status,
+        providerTransactionId: providerTransactionId?.trim() || null,
+        confirmedAmount: confirmedAmount != null && confirmedAmount !== '' ? Number(confirmedAmount) : null,
+        evidenceNote: evidenceNote?.trim() || ''
+      }
+    });
+  },
+
+  async refundPayment(paymentId, { amount, reason, externalRefundReference, idempotencyKey }) {
+    if (!idempotencyKey) throw new Error('Thiếu mã chống tạo lệnh hoàn tiền trùng.');
+    return apiRequest(`payments/${paymentId}/refunds`, {
+      method: 'POST',
+      headers: { 'Idempotency-Key': idempotencyKey },
+      body: {
+        amount: Number(amount),
+        reason: reason?.trim() || '',
+        externalRefundReference: externalRefundReference?.trim() || null
+      }
+    });
+  },
+
+  async reconcileRefund(refundId, { status, providerRefundId, evidenceNote }) {
+    return apiRequest(`payments/refunds/${Number(refundId)}/reconcile`, {
+      method: 'POST',
+      body: {
+        status,
+        providerRefundId: providerRefundId?.trim() || null,
+        evidenceNote: evidenceNote?.trim() || ''
+      }
+    });
+  },
+
+  async voidCounterInvoice(invoiceNumber, reason) {
+    return apiRequest(`payments/counter-void/${encodeURIComponent(invoiceNumber)}`, {
+      method: 'POST',
+      body: { reason: reason?.trim() || '' }
     });
   },
 
@@ -730,6 +792,12 @@ export const memberApi = {
     });
   },
 
+  async syncVietQr(orderCode) {
+    return apiRequest(`payments/vietqr/${orderCode}/sync`, {
+      method: 'POST'
+    });
+  },
+
   async getMyProgress() {
     return asArray(await apiRequest('members/me/progress'));
   },
@@ -768,13 +836,14 @@ export const reportApi = {
       throw new Error('Chọn khoảng ngày hợp lệ, tối đa 366 ngày, nhóm theo ngày hoặc tháng.');
     }
     const query = new URLSearchParams({ from, to, groupBy, centerId: String(centerId()) });
-    const checkinQuery = new URLSearchParams({ from: today, to: today });
-    const [revenue, sportRevenue, membership, classes, rawSessionItems, checkins, rawRooms, rawClasses] = await Promise.all([
+    const checkinQuery = new URLSearchParams({ from: today, to: today, centerId: String(centerId()) });
+    const [revenue, sportRevenue, membership, classes, rawSessionItems, operations, checkins, rawRooms, rawClasses] = await Promise.all([
       apiRequest(`reports/revenue?${query}`),
       apiRequest(`reports/revenue-by-sport?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
       apiRequest(`reports/membership?${query}`),
       apiRequest(`reports/classes?${query}`),
       loadSessionsBetween(from, to),
+      apiRequest(`reports/operations?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
       apiRequest(`reports/checkins?${checkinQuery}`),
       apiRequest(`centers/${centerId()}/rooms`),
       apiRequest(`centers/${centerId()}/classes/all`)
@@ -922,6 +991,16 @@ export const reportApi = {
       }))
       .sort((a, b) => b.booked - a.booked || b.percentage - a.percentage);
 
+    // The operation report is calculated in the BLL from the scoped SQL data.
+    // Keep the UI's rankings and personnel figures on the same source of truth as the API.
+    const reportClasses = operations.classes || topClasses;
+    const reportRooms = operations.rooms || topRooms;
+    const reportSports = (operations.sports || []).map(item => ({
+      ...item,
+      percentage: item.occupancyRate,
+      share: item.bookingShare
+    }));
+
     return {
       from, to, groupBy,
       totalMembers: membership.totalMembers,
@@ -930,10 +1009,17 @@ export const reportApi = {
       membershipPeriods: membership.periods || [],
       classStatusCounts: classes.currentStatusCounts || {},
       classPeriods: classes.periods || [],
-      totalClasses: sessionItems.length,
+      totalStaff: operations.totalStaff || 0,
+      activeStaff: operations.activeStaff || 0,
+      managerCount: operations.managerCount || 0,
+      coachCount: operations.coachCount || 0,
+      receptionistCount: operations.receptionistCount || 0,
+      totalRooms: operations.totalRooms || 0,
+      activeRooms: operations.activeRooms || 0,
+      totalClasses: operations.sessionsCount ?? sessionItems.length,
       totalBookings: activeBookingCount,
       todayCheckins: checkins.count,
-      occupancyRate: capacity ? Math.round((booked / capacity) * 100) : 0,
+      occupancyRate: Number(operations.occupancyRate ?? (capacity ? Math.round((booked / capacity) * 100) : 0)),
       netRevenue: revenue.net,
       monthlyRevenue: revenue.net,
       grossRevenue: revenue.gross,
@@ -943,20 +1029,21 @@ export const reportApi = {
       revenueBySport: sportRevenue.sports || [],
       allocatedSportRevenue: sportRevenue.allocatedNet || 0,
       unallocatedSportRevenue: sportRevenue.unallocatedNet || 0,
-      utilizationBySport: topSports.map(item => ({
+      utilizationBySport: reportSports.map(item => ({
         name: item.name,
         capacity: item.capacity,
         booked: item.booked,
         percentage: item.percentage
       })),
-      topSports,
-      topClasses,
-      topRooms,
+      topSports: reportSports,
+      topClasses: reportClasses,
+      topRooms: reportRooms,
+      coaches: operations.coaches || [],
       highlights: {
-        mostPopularClass: topClasses[0] || null,
-        mostPopularSport: topSports[0] || null,
+        mostPopularClass: reportClasses[0] || null,
+        mostPopularSport: reportSports[0] || null,
         highestRevenueSport: (sportRevenue.sports || []).find(item => item.sportId != null) || null,
-        mostBookedRoom: topRooms[0] || null
+        mostBookedRoom: reportRooms[0] || null
       }
     };
   }
@@ -970,7 +1057,8 @@ export const systemApi = {
   async getAuditPage(page = 1) {
     const user = getAuthUser();
     const params = new URLSearchParams({ page: String(page), pageSize: '50' });
-    const isAdmin = ['ADMIN', 'SYSTEMADMIN'].includes(String(user?.role || '').toUpperCase());
+    const roleName = String(user?.role || '').toUpperCase();
+    const isAdmin = roleName === 'ADMIN' || roleName === 'SYSTEMADMIN';
     const path = isAdmin
       ? `admin/audit-logs?${params}`
       : `centers/${centerId()}/audit-logs?${params}`;
@@ -983,8 +1071,7 @@ export const systemApi = {
         item.action,
         item.actorUserId ? `User #${item.actorUserId}` : 'Hệ thống',
         item.entityType,
-        item.newValues,
-        item.oldValues
+        item.entityId
       ].filter(Boolean).join(' ').toLowerCase();
 
       return {
@@ -992,9 +1079,6 @@ export const systemApi = {
         userId: item.actorUserId,
         userName,
         role,
-        details: item.newValues || item.oldValues || item.entityType,
-        newValues: item.newValues,
-        oldValues: item.oldValues,
         status: 'SUCCESS',
         timestamp: item.createdAt,
         searchIndex: searchContent
@@ -1004,22 +1088,69 @@ export const systemApi = {
   },
 
   async getPermissions() {
-    const isManager = String(getAuthUser()?.role || '').toUpperCase() === 'MANAGER';
-    if (isManager) return asArray(await apiRequest(`centers/${centerId()}/roles`));
     const [matrix, catalog] = await Promise.all([apiRequest('admin/roles'), apiRequest('admin/permissions')]);
     return asArray(matrix).map(row => ({ ...row, availablePermissions: asArray(catalog) }));
   },
 
   // Cập nhật quyền theo roleId (PUT /api/admin/roles/{roleId}/permissions)
   async updatePermissions(roleId, permissionCodes, capabilityIds = []) {
-    const isManager = String(getAuthUser()?.role || '').toUpperCase() === 'MANAGER';
-    return apiRequest(isManager ? `centers/${centerId()}/roles/${roleId}/permissions` : `admin/roles/${roleId}/permissions`, {
+    return apiRequest(`admin/roles/${roleId}/permissions`, {
       method: 'PUT',
-      body: isManager ? { permissionCodes, capabilityIds } : { permissionCodes }
+      body: { permissionCodes, capabilityIds }
+    });
+  },
+
+  async getUserPermissions() {
+    return asArray(await apiRequest(`centers/${centerId()}/user-permissions`));
+  },
+
+  async updateUserPermissions(userId, permissionCodes, capabilityIds) {
+    return apiRequest(`centers/${centerId()}/users/${Number(userId)}/permissions`, {
+      method: 'PUT', body: { permissionCodes, capabilityIds }
+    });
+  },
+
+  async resetUserPermissions(userId) {
+    return apiRequest(`centers/${centerId()}/users/${Number(userId)}/permissions`, { method: 'DELETE' });
+  },
+
+  async resetRoleUserOverrides(roleId) {
+    return apiRequest(`centers/${centerId()}/roles/${Number(roleId)}/user-permissions`, { method: 'DELETE' });
+  },
+
+  async sendCenterNotification({ title, message, sendToAll, targetRoles }) {
+    return apiRequest(`centers/${centerId()}/notifications`, {
+      method: 'POST',
+      body: {
+        title: title.trim(),
+        message: message.trim(),
+        sendToAll: Boolean(sendToAll),
+        targetRoles: sendToAll ? [] : targetRoles
+      }
     });
   },
 
   resetAllData() {
-    throw new Error('Không có API xóa toàn bộ dữ liệu.');
+    throw new Error('Hệ thống không cho phép thực hiện thao tác xóa dữ liệu này.');
   }
+};
+
+export const adminApi = {
+  getOverview: () => apiRequest('admin/overview'),
+  getCenters: () => apiRequest('admin/centers'),
+  createCenter: body => apiRequest('admin/centers', { method: 'POST', body }),
+  updateCenter: (id, body) => apiRequest(`admin/centers/${Number(id)}`, { method: 'PATCH', body }),
+  getManagers: () => apiRequest('admin/managers'),
+  createManager: body => apiRequest('admin/managers', { method: 'POST', body }),
+  updateManager: (id, body) => apiRequest(`admin/managers/${Number(id)}`, { method: 'PATCH', body }),
+  getAccounts: ({ role = '', status = '', query = '', page = 1, pageSize = 50 } = {}) => {
+    const params = new URLSearchParams({ page: String(page), pageSize: String(pageSize) });
+    if (role) params.set('role', role);
+    if (status) params.set('status', status);
+    if (query.trim()) params.set('query', query.trim());
+    return apiRequest(`admin/accounts?${params}`);
+  },
+  lockAccount: (id, reason) => apiRequest(`admin/accounts/${Number(id)}/lock`, { method: 'POST', body: { reason } }),
+  unlockAccount: (id, reason) => apiRequest(`admin/accounts/${Number(id)}/unlock`, { method: 'POST', body: { reason } }),
+  revokeSessions: (id, reason) => apiRequest(`admin/accounts/${Number(id)}/revoke-sessions`, { method: 'POST', body: { reason } })
 };

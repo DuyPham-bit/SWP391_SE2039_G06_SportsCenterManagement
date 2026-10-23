@@ -94,6 +94,32 @@ public sealed class PaymentsController : ControllerBase
     }
 
     /// <summary>
+    /// Khởi tạo giao dịch VNPay Sandbox tại quầy cho hội viên được nhân viên chọn.
+    /// </summary>
+    [Authorize(Roles = "RECEPTIONIST,MANAGER,ADMIN")]
+    [HttpPost("counter-vnpay-url")]
+    [SportsCenterManagement.API.Authorization.CenterCapability("register_counter_package")]
+    public async Task<IActionResult> CreateCounterVnPayPaymentUrl(
+        [FromBody] CounterOnlinePaymentRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+        {
+            return BadRequest(new { success = false, message = "Header Idempotency-Key là bắt buộc." });
+        }
+
+        var paymentUrl = await _paymentService.CreateCounterVnPayPaymentUrlAsync(
+            GetRequiredUserId(),
+            GetCenterScope(),
+            request,
+            HttpContext.Connection.RemoteIpAddress?.ToString() ?? "127.0.0.1",
+            idempotencyKey.Trim(),
+            cancellationToken);
+        return Ok(new { success = true, paymentUrl });
+    }
+
+    /// <summary>
     /// API 2: Nhận kết quả thanh toán khi VNPay gọi về (Return URL / Callback).
     /// </summary>
     [AllowAnonymous]
@@ -222,6 +248,22 @@ public sealed class PaymentsController : ControllerBase
     {
         var result = await _paymentService.VoidCounterPaymentAsync(
             GetRequiredUserId(), GetCenterScope(), invoiceNumber, request.Reason, cancellationToken);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Đồng bộ trạng thái giao dịch VietQR / PayOS cho hội viên sở hữu giao dịch.
+    /// POST /api/payments/vietqr/{orderCode:long}/sync
+    /// </summary>
+    [Authorize]
+    [HttpPost("vietqr/{orderCode:long}/sync")]
+    public async Task<ActionResult<PaymentResultResponse>> SyncVietQrPayment(
+        [FromRoute] long orderCode,
+        CancellationToken cancellationToken)
+    {
+        var userId = GetRequiredUserId();
+        var memberId = await GetCurrentMemberIdAsync(userId, cancellationToken);
+        var result = await _paymentService.SyncVietQrPaymentAsync(memberId, orderCode, cancellationToken);
         return Ok(result);
     }
 

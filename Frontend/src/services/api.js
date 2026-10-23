@@ -54,7 +54,8 @@ export const coachApi = {
   getAIRecommendation: data => apiRequest('ai/recommendations', {
     method: 'POST', body: {
       classId: Number(data.classId), memberId: Number(data.memberId),
-      fitnessGoal: data.fitnessGoal, currentLevel: data.currentLevel, notes: data.notes || null
+      fitnessGoal: data.fitnessGoal, currentLevel: data.currentLevel, notes: data.notes || null,
+      subjectiveTags: Array.isArray(data.subjectiveTags) ? data.subjectiveTags : []
     }
   })
 };
@@ -128,5 +129,5 @@ export const aiApi = {
   getMessages: id => apiRequest('ai/conversations/'+id+'/messages')
 };
 
-export { roomApi, authApi, packageApi, classApi, bookingApi, receptionApi, memberApi, staffApi, reportApi, systemApi } from './backendApi.js';
+export { roomApi, authApi, packageApi, classApi, bookingApi, receptionApi, memberApi, staffApi, reportApi, systemApi, adminApi } from './backendApi.js';
 

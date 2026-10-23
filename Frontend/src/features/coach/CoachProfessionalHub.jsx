@@ -65,6 +65,38 @@ function formatDate(value, isEn = false) {
   return value ? new Date(value).toLocaleString(isEn ? 'en-US' : 'vi-VN') : '—';
 }
 
+function issueStatusMeta(st, isEn = false) {
+  switch (st) {
+    case 'Resolved':
+    case 'Closed':
+      return {
+        label: isEn ? 'Resolved' : 'Đã giải quyết',
+        cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+      };
+    case 'OnHold':
+      return {
+        label: isEn ? 'On Hold (Waiting Parts)' : 'Chờ linh kiện / Tạm hoãn',
+        cls: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+      };
+    case 'InProgress':
+      return {
+        label: isEn ? 'In Progress' : 'Đang xử lý',
+        cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+      };
+    case 'Rejected':
+    case 'Cancelled':
+      return {
+        label: isEn ? 'Rejected / Void' : 'Đã từ chối / Báo sai',
+        cls: 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+      };
+    default:
+      return {
+        label: isEn ? 'Pending Review' : 'Chờ tiếp nhận',
+        cls: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
+      };
+  }
+}
+
 function dateInput(offset = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
@@ -145,20 +177,30 @@ export function CoachProfessionalHub() {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* 1. Header Banner in SCMS Olympic Arena Theme */}
-      <header className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-[#1E2235] via-[#2B2D42] to-[#3D405B] text-white p-5 sm:p-7 shadow-md border border-white/10">
-        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 shadow-xl shadow-[#24828F]/20 border border-white/30 dark:border-white/10">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
+
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/10 text-[#F2CC8F] text-xs font-bold uppercase tracking-wider backdrop-blur-xs border border-white/20 shadow-2xs">
-              <span className="material-symbols-outlined text-[15px]">workspace_premium</span>
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#1B4332] dark:text-emerald-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 shadow-xs">
+              <span className="material-symbols-outlined text-[15px] text-amber-500">workspace_premium</span>
               {isEn ? 'Coach Professional Workspace' : 'Phân hệ chuyên môn HLV cao cấp'}
             </span>
 
             <button
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/15 hover:bg-white/25 px-3.5 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-xs border border-white/20 cursor-pointer shadow-2xs"
+              className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 px-3.5 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-md border border-white/30 cursor-pointer shadow-xs hover-lift"
             >
               <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>
                 refresh
@@ -167,10 +209,10 @@ export function CoachProfessionalHub() {
             </button>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white mt-1">
+          <h1 className="text-xl sm:text-2xl font-chivo font-black tracking-tight text-white mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? `Command Hub · Coach ${coachName}` : `Trung tâm điều hành chuyên môn HLV ${coachName}`}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-slate-300 max-w-3xl leading-relaxed">
+          <p className="mt-1 text-xs sm:text-sm text-white/95 max-w-3xl font-medium leading-relaxed drop-shadow-xs">
             {isEn
               ? 'Consolidated operational workspace: schedule management, student profiles, workout syllabus, nutrition plans, secure messaging, transparent KPI income, and facility assets.'
               : 'Quản lý toàn diện trên một luồng dữ liệu chuẩn hóa: Lịch dạy, hồ sơ học viên, giáo án & dinh dưỡng, tương tác bảo mật, thu nhập KPI minh bạch và tài nguyên sân bãi.'}
@@ -1408,19 +1450,44 @@ function PerformanceTab() {
 // TAB 6: FACILITIES & ASSETS (TÀI NGUYÊN & THIẾT BỊ)
 // ─────────────────────────────────────────────────────────────
 function FacilitiesTab({ data, act, working, isEn }) {
+  const { showError } = useToast();
   const [photoUrl, setPhotoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
   const booking = (e) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    const startStr = f.get('startAt');
+    const endStr = f.get('endAt');
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    const now = new Date();
+
+    if (start < new Date(now.getTime() - 5 * 60 * 1000)) {
+      showError(isEn ? 'Start time cannot be in the past.' : 'Thời gian bắt đầu không được ở trong quá khứ.');
+      return;
+    }
+    if (end <= start) {
+      showError(isEn ? 'End time must be after start time.' : 'Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.');
+      return;
+    }
+    const diffHours = (end - start) / (1000 * 60 * 60);
+    if (diffHours > 12) {
+      showError(
+        isEn
+          ? `Resource booking duration cannot exceed 12 hours per session (currently ${Math.round(diffHours)}h).`
+          : `Thời gian đặt/mượn tài nguyên tối đa là 12 tiếng mỗi lượt (hiện chọn ${Math.round(diffHours)} tiếng). Vui lòng đặt theo từng ca/buổi tập.`
+      );
+      return;
+    }
+
     return act(
       () =>
         coachProfessionalApi.bookResource({
           resourceId: Number(f.get('resourceId')),
           workEventId: null,
-          startAt: f.get('startAt'),
-          endAt: f.get('endAt'),
+          startAt: startStr,
+          endAt: endStr,
           purpose: f.get('purpose')
         }),
       isEn ? 'Resource booked; schedule conflict checks passed.' : 'Đã đặt tài nguyên; hệ thống đã kiểm tra xung đột lịch.'
@@ -1478,7 +1545,7 @@ function FacilitiesTab({ data, act, working, isEn }) {
               <FormField title={isEn ? 'Start' : 'Bắt đầu'} required>
                 <input name="startAt" type="datetime-local" required className={inputClass} />
               </FormField>
-              <FormField title={isEn ? 'End' : 'Kết thúc'} required>
+              <FormField title={isEn ? 'End' : 'Kết thúc'} hint={isEn ? 'Max 12h/session' : 'Tối đa 12h/lượt'} required>
                 <input name="endAt" type="datetime-local" required className={inputClass} />
               </FormField>
             </div>
@@ -1571,15 +1638,31 @@ function FacilitiesTab({ data, act, working, isEn }) {
             <div className="space-y-2">
               {data.equipmentIssues.map(x => (
                 <div key={x.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-750 text-xs space-y-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <strong className="text-slate-900 dark:text-white">{x.title}</strong>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                      {x.severity} · {x.status}
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-50 text-red-600 border border-red-200">
+                        {x.severity}
+                      </span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${issueStatusMeta(x.status, isEn).cls}`}>
+                        {issueStatusMeta(x.status, isEn).label}
+                      </span>
+                    </div>
                   </div>
                   <span className="text-[11px] text-slate-400 block">
                     {x.resourceName || (isEn ? 'Other Equipment' : 'Thiết bị khác')} · {formatDate(x.reportedAt, isEn)}
                   </span>
+                  {x.photoUrl && (
+                    <a
+                      href={x.photoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1 pt-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">image</span>
+                      <span>{isEn ? 'View attached photo' : 'Xem ảnh hiện trường'}</span>
+                    </a>
+                  )}
                   {x.resolutionNote && (
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium pt-1">
                       {isEn ? 'Technician Response: ' : 'Kỹ thuật phản hồi: '}{x.resolutionNote}

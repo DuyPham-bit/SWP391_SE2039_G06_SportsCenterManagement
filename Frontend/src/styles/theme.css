@@ -328,6 +328,127 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
+   SCMS OLYMPIC ANIMATIONS & TRANSITIONS
+───────────────────────────────────────────────────────────── */
+@keyframes scmsFadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scmsScanBeam {
+  0% {
+    top: 4%;
+    opacity: 0.8;
+  }
+  50% {
+    top: 94%;
+    opacity: 1;
+  }
+  100% {
+    top: 4%;
+    opacity: 0.8;
+  }
+}
+
+@keyframes scmsGoldShimmer {
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
+}
+
+@keyframes scmsFloat {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes scmsPulseRing {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(129, 178, 154, 0.7);
+  }
+  70% {
+    transform: scale(1);
+    box-shadow: 0 0 0 8px rgba(129, 178, 154, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(129, 178, 154, 0);
+  }
+}
+
+.animate-fade-slide-up {
+  animation: scmsFadeSlideUp 0.45s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.stagger-1 { animation-delay: 50ms; }
+.stagger-2 { animation-delay: 100ms; }
+.stagger-3 { animation-delay: 150ms; }
+.stagger-4 { animation-delay: 200ms; }
+.stagger-5 { animation-delay: 250ms; }
+.stagger-6 { animation-delay: 300ms; }
+
+.animate-scanner-beam {
+  animation: scmsScanBeam 2.5s ease-in-out infinite;
+}
+
+.animate-gold-shimmer {
+  background: linear-gradient(90deg, rgba(242, 204, 143, 0.03) 0%, rgba(242, 204, 143, 0.2) 50%, rgba(242, 204, 143, 0.03) 100%);
+  background-size: 200% 100%;
+  animation: scmsGoldShimmer 4s infinite linear;
+}
+
+.animate-float {
+  animation: scmsFloat 5s ease-in-out infinite;
+}
+
+.animate-pulse-ring {
+  animation: scmsPulseRing 2s cubic-bezier(0.45, 0, 0.55, 1) infinite;
+}
+
+.hover-lift {
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s cubic-bezier(0.16, 1, 0.3, 1), border-color 0.25s ease-out;
+}
+
+.hover-lift:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px -6px rgba(30, 34, 53, 0.09), 0 8px 12px -6px rgba(30, 34, 53, 0.04);
+}
+
+html.dark .hover-lift:hover {
+  box-shadow: 0 14px 30px -6px rgba(0, 0, 0, 0.55);
+}
+
+.athletic-tag-gold {
+  background: rgba(242, 204, 143, 0.15);
+  color: #D4A373;
+  border: 1px solid rgba(242, 204, 143, 0.35);
+}
+
+.athletic-tag-sage {
+  background: rgba(129, 178, 154, 0.15);
+  color: #2D6A4F;
+  border: 1px solid rgba(129, 178, 154, 0.35);
+}
+
+html.dark .athletic-tag-sage {
+  color: #81B29A;
+}
+
+
+/* ─────────────────────────────────────────────────────────────
    DARK MODE THEME SYSTEM (Kích hoạt khi toggle Moon / Sun)
 ───────────────────────────────────────────────────────────── */
 html.dark {
@@ -447,120 +568,78 @@ body.scms-simulated-fullscreen #root {
 }
 
 /* ─────────────────────────────────────────────────────────────
-   DARK MODE THEME SYSTEM (Kích hoạt khi toggle Moon / Sun)
+   PRINT MEDIA STYLES (IN BÁO CÁO TRỰC TIẾP CHUẨN A4)
 ───────────────────────────────────────────────────────────── */
-html.dark {
-  color-scheme: dark;
-}
+@media print {
+  @page {
+    size: A4 portrait;
+    margin: 8mm 10mm;
+  }
 
-html.dark,
-html.dark body {
-  background-color: #0b1120 !important;
-  color: #f1f5f9 !important;
-}
+  /* Force exact background colors, gradients, and borders */
+  *, *::before, *::after {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+  }
 
-html.dark h1,
-html.dark h2,
-html.dark h3,
-html.dark h4,
-html.dark h5,
-html.dark h6 {
-  color: #f8fafc !important;
-}
+  /* Hide app navigation chrome, header, sidebar, footer, buttons, floating popups */
+  header,
+  aside,
+  footer,
+  nav,
+  .no-print,
+  #member-ai-chat-popup,
+  .member-ai-chat-popup,
+  [data-no-print="true"] {
+    display: none !important;
+  }
 
-html.dark .text-\[\#1E2235\],
-html.dark .text-\[\#0F172A\],
-html.dark .text-\[\#111827\],
-html.dark .text-slate-900,
-html.dark .text-slate-800,
-html.dark .text-slate-700 {
-  color: #f3f4f6 !important;
-}
+  /* Reset body and layout to full paper width */
+  html, body {
+    background-color: #FAF8F5 !important;
+    color: #1E2235 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
 
-html.dark .text-slate-600,
-html.dark .text-slate-500 {
-  color: #94a3af !important;
-}
+  #root, .min-h-screen {
+    background: transparent !important;
+    min-height: auto !important;
+  }
 
-html.dark .text-slate-400 {
-  color: #64748b !important;
-}
+  main {
+    padding: 0 !important;
+    margin: 0 !important;
+    max-width: 100% !important;
+    width: 100% !important;
+  }
 
-html.dark header {
-  background-color: #0f172a !important;
-  border-color: #1e293b !important;
-  color: #f8fafc !important;
-}
+  main > div {
+    max-width: 100% !important;
+    padding: 0 !important;
+  }
 
-html.dark aside {
-  background-color: #0f172a !important;
-  border-color: #1e293b !important;
-  color: #e2e8f0 !important;
-}
+  /* Avoid awkward page breaks across cards, charts, and table rows */
+  section,
+  .stat-card,
+  table,
+  tr,
+  svg,
+  .rounded-3xl,
+  .rounded-2xl {
+    break-inside: avoid !important;
+    page-break-inside: avoid !important;
+  }
 
-html.dark .fpt-card,
-html.dark .bg-white {
-  background-color: #1e293b !important;
-  border-color: #334155 !important;
-  color: #f8fafc !important;
-}
+  /* Prevent SVG or table horizontal overflow cutting off */
+  .overflow-x-auto {
+    overflow: visible !important;
+  }
 
-html.dark .bg-slate-50,
-html.dark .bg-\[\#F8FAFC\],
-html.dark .bg-\[\#F4F6FA\] {
-  background-color: #0b1120 !important;
-}
-
-html.dark .border-slate-200,
-html.dark .border-slate-100 {
-  border-color: #334155 !important;
-}
-
-html.dark input,
-html.dark select,
-html.dark textarea {
-  background-color: #0f172a !important;
-  border-color: #334155 !important;
-  color: #f8fafc !important;
-}
-
-html.dark .hover\:bg-slate-50:hover,
-html.dark .hover\:bg-slate-100:hover {
-  background-color: #334155 !important;
-}
-
-html.dark footer {
-  background-color: #0b1120 !important;
-  border-color: #1e293b !important;
-  color: #94a3af !important;
-}
-
-html.dark .bg-\[\#EBF2FC\] {
-  background-color: rgba(30, 58, 138, 0.4) !important;
-  color: #bfdbfe !important;
-}
-
-html.dark .text-\[\#1A3B8B\] {
-  color: #60a5fa !important;
-}
-
-/* ─────────────────────────────────────────────────────────────
-   SIMULATED FULLSCREEN FALLBACK
-   Dùng khi trình duyệt hạn chế quyền window.requestFullscreen
-───────────────────────────────────────────────────────────── */
-body.scms-simulated-fullscreen {
-  overflow: hidden !important;
-}
-
-body.scms-simulated-fullscreen #root {
-  position: fixed !important;
-  top: 0 !important;
-  left: 0 !important;
-  right: 0 !important;
-  bottom: 0 !important;
-  width: 100vw !important;
-  height: 100vh !important;
-  z-index: 99999 !important;
-  overflow-y: auto !important;
-  overflow-x: hidden !important;
+  /* Remove drop shadows for clean, crisp printing */
+  .shadow-xl, .shadow-lg, .shadow-md, .shadow-sm, .shadow-xs {
+    box-shadow: none !important;
+  }
 }

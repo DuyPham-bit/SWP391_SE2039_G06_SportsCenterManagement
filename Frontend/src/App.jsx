@@ -20,6 +20,7 @@ const ReportsAnalytics = lazy(() => import('./features/manager/ReportsAnalytics.
 const RolesPermissions = lazy(() => import('./features/manager/RolesPermissions.js').then(m => ({ default: m.RolesPermissions })));
 const AuditLogs = lazy(() => import('./features/manager/AuditLogs.js').then(m => ({ default: m.AuditLogs })));
 const HomeContentManagement = lazy(() => import('./features/manager/HomeContentManagement.jsx').then(m => ({ default: m.HomeContentManagement })));
+const AdminDashboard = lazy(() => import('./features/admin/AdminDashboard.jsx').then(m => ({ default: m.AdminDashboard })));
 
 // Receptionist Pages (Lazy Loaded)
 const ReceptionistDashboard = lazy(() => import('./features/receptionist/ReceptionistDashboard.js').then(m => ({ default: m.ReceptionistDashboard })));
@@ -44,6 +45,7 @@ const CoachSalaryKPI = PerformanceDashboard;
 const CoachResources = lazy(() => import('./features/coach/CoachResources.jsx').then(m => ({ default: m.CoachResources })));
 const CoachProfessionalHub = lazy(() => import('./features/coach/CoachProfessionalHub.jsx').then(m => ({ default: m.CoachProfessionalHub })));
 const ManagerCoachOperations = lazy(() => import('./features/manager/ManagerCoachOperations.jsx').then(m => ({ default: m.ManagerCoachOperations })));
+const ManagerSupportCommunications = lazy(() => import('./features/manager/ManagerSupportCommunications.jsx').then(m => ({ default: m.ManagerSupportCommunications })));
 
 // Member Pages (Lazy Loaded)
 const MemberDashboard = lazy(() => import('./features/member/MemberDashboard.js').then(m => ({ default: m.MemberDashboard })));
@@ -107,45 +109,56 @@ function AppRouter() {
     <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 rounded border">Thử lại</button>
   </div>;
 
-  // Helper bọc layout & guard cho role Manager & Admin/SystemAdmin
-  const renderManagerRoute = (Component, requiredCapability) => (
+  // Helper bọc layout & guard cho role Manager & Admin
+  const renderManagerRoute = (
+    Component,
+    requiredCapability,
+    allowedRoles = ['MANAGER', 'ADMIN']
+  ) => (
     <AppLayout currentPath={path}>
       <ProtectedRoute>
-        <RoleGuard allowedRoles={['MANAGER', 'ADMIN', 'SYSTEMADMIN']} requiredCapability={requiredCapability}>
+        <RoleGuard allowedRoles={allowedRoles} requiredCapability={requiredCapability}>
           <Component />
         </RoleGuard>
       </ProtectedRoute>
     </AppLayout>
   );
 
-  // Helper bọc layout & guard cho role Receptionist (Manager & Admin cũng có quyền xem)
   const renderReceptionistRoute = (Component, requiredCapability) => (
     <AppLayout currentPath={path}>
       <ProtectedRoute>
-        <RoleGuard allowedRoles={['RECEPTIONIST', 'MANAGER', 'ADMIN', 'SYSTEMADMIN']} requiredCapability={requiredCapability}>
+        <RoleGuard allowedRoles={['RECEPTIONIST']} requiredCapability={requiredCapability}>
           <Component />
         </RoleGuard>
       </ProtectedRoute>
     </AppLayout>
   );
 
-  // Helper bọc layout & guard cho role Coach (Manager & Admin cũng có quyền xem)
   const renderCoachRoute = (Component, requiredCapability) => (
     <AppLayout currentPath={path}>
       <ProtectedRoute>
-        <RoleGuard allowedRoles={['COACH', 'MANAGER', 'ADMIN', 'SYSTEMADMIN']} requiredCapability={requiredCapability}>
+        <RoleGuard allowedRoles={['COACH']} requiredCapability={requiredCapability}>
           <Component />
         </RoleGuard>
       </ProtectedRoute>
     </AppLayout>
   );
 
-  // Helper bọc layout & guard cho role Member (Manager & Admin cũng có quyền xem)
   const renderMemberRoute = (Component, requiredCapability) => (
     <AppLayout currentPath={path}>
       <ProtectedRoute>
-        <RoleGuard allowedRoles={['MEMBER', 'MANAGER', 'ADMIN', 'SYSTEMADMIN']} requiredCapability={requiredCapability}>
+        <RoleGuard allowedRoles={['MEMBER']} requiredCapability={requiredCapability}>
           <Component />
+        </RoleGuard>
+      </ProtectedRoute>
+    </AppLayout>
+  );
+
+  const renderAdminRoute = (Component, props = {}) => (
+    <AppLayout currentPath={path}>
+      <ProtectedRoute>
+        <RoleGuard allowedRoles={['ADMIN']}>
+          <Component {...props} />
         </RoleGuard>
       </ProtectedRoute>
     </AppLayout>
@@ -153,6 +166,7 @@ function AppRouter() {
 
   // Check if route is a dashboard or auth route
   const isDashboardOrAuth =
+    path.startsWith('#/admin') ||
     path.startsWith('#/manager') ||
     path.startsWith('#/receptionist') ||
     path.startsWith('#/coach') ||
@@ -175,9 +189,29 @@ function AppRouter() {
       case '#/payment-result':
         return <PaymentResult />;
 
-      // MANAGER ROUTES (8 chức năng)
+      // ADMIN ROUTES: global administration only.
+      case '#/admin':
+      case '#/admin/dashboard':
+        return renderAdminRoute(AdminDashboard);
+      case '#/admin/centers':
+        return renderAdminRoute(AdminDashboard, { initialSection: 'centers' });
+      case '#/admin/managers':
+        return renderAdminRoute(AdminDashboard, { initialSection: 'managers' });
+      case '#/admin/accounts':
+        return renderAdminRoute(AdminDashboard, { initialSection: 'accounts' });
+      case '#/admin/roles-permissions':
+        return renderAdminRoute(RolesPermissions);
+      case '#/admin/audit-logs':
+        return renderAdminRoute(AuditLogs);
+      case '#/admin/home-content':
+        return renderAdminRoute(HomeContentManagement);
+
+      // MANAGER ROUTES: operations of the assigned center only.
+      case '#/manager':
       case '#/manager/dashboard':
         return renderManagerRoute(ManagerDashboard);
+      case '#/manager/invoices':
+        return renderManagerRoute(CounterInvoices, undefined, ['MANAGER', 'ADMIN']);
       case '#/manager/members':
         return renderManagerRoute(MemberManagement, 'lookup_member');
       case '#/manager/staff':
@@ -190,16 +224,17 @@ function AppRouter() {
         return renderManagerRoute(CoachAssignment, 'assign_coach');
       case '#/manager/reports':
         return renderManagerRoute(ReportsAnalytics, 'view_reports');
-      case '#/manager/roles-permissions':
-        return renderManagerRoute(RolesPermissions, 'manage_roles');
       case '#/manager/audit-logs':
         return renderManagerRoute(AuditLogs, 'view_audit_logs');
-      case '#/manager/home-content':
-        return renderManagerRoute(HomeContentManagement, 'manage_landing_content');
       case '#/manager/coach-operations':
         return renderManagerRoute(ManagerCoachOperations, 'manage_coach_operations');
+      case '#/manager/support-communications':
+        return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MANAGER']}><ManagerSupportCommunications /></RoleGuard></ProtectedRoute></AppLayout>;
+      case '#/manager/home-content':
+        return renderManagerRoute(HomeContentManagement, undefined, ['MANAGER', 'ADMIN']);
 
       // RECEPTIONIST ROUTES (4 chức năng)
+      case '#/receptionist':
       case '#/receptionist/dashboard':
         return renderReceptionistRoute(ReceptionistDashboard);
       case '#/receptionist/lookup':
@@ -219,6 +254,11 @@ function AppRouter() {
         return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MEMBER', 'COACH']}><MySupportRequests /></RoleGuard></ProtectedRoute></AppLayout>;
 
       // COACH ROUTES (8 chức năng)
+      case '#/coach':
+        if (typeof window !== 'undefined' && window.location.hash === '#/coach') {
+          window.location.replace('#/coach/dashboard');
+        }
+        return renderCoachRoute(CoachDashboard);
       case '#/coach/dashboard':
         return renderCoachRoute(CoachDashboard);
       case '#/coach/schedule':
@@ -246,6 +286,11 @@ function AppRouter() {
         return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');
 
       // MEMBER ROUTES
+      case '#/member':
+        if (typeof window !== 'undefined' && window.location.hash === '#/member') {
+          window.location.replace('#/member/dashboard');
+        }
+        return renderMemberRoute(MemberDashboard);
       case '#/member/dashboard':
         return renderMemberRoute(MemberDashboard);
       case '#/member/packages':

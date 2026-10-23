@@ -1,4 +1,4 @@
-import { useAuth } from '../../context/AuthContext.js';
+                    import { useAuth } from '../../context/AuthContext.js';
 import { hasCapability, getCapabilityById } from '../../services/permissions.js';
 
 export function ProtectedRoute({ children }) {
@@ -17,13 +17,9 @@ export function RoleGuard({ allowedRoles = [], requiredCapability, children }) {
   const normalizedRole = String(role || '').toUpperCase();
   const normalizedAllowed = allowedRoles.map(r => String(r).toUpperCase());
 
-  // 1. Manager and Admin/SystemAdmin have superuser access
-  const isSuperUser = normalizedRole === 'MANAGER' || normalizedRole === 'ADMIN' || normalizedRole === 'SYSTEMADMIN';
-  // 2. Direct role match
-  // 3. User's role has the specific capability granted via Roles & Permissions matrix
   const isRoleAllowed = normalizedAllowed.includes(normalizedRole);
-  const hasCap = requiredCapability ? hasCapability(normalizedRole, requiredCapability) : false;
-  const isAllowed = isSuperUser || (isRoleAllowed && (!requiredCapability || hasCap));
+  const hasCap = requiredCapability ? hasCapability(normalizedRole, requiredCapability) : true;
+  const isAllowed = isRoleAllowed && hasCap;
 
   if (!isAllowed) {
     const capInfo = requiredCapability ? getCapabilityById(requiredCapability) : null;
@@ -42,7 +38,7 @@ export function RoleGuard({ allowedRoles = [], requiredCapability, children }) {
 
         {capInfo && (
           <div className="mt-4 p-3.5 bg-red-50 border border-red-200 rounded-xl text-left w-full text-xs">
-            <span className="font-bold text-red-800 block mb-1">Yêu cầu quyền hạn trong Ma trận phân quyền:</span>
+            <span className="font-bold text-red-800 block mb-1">Yêu cầu quyền hạn trong Cấu hình phân quyền:</span>
             <div className="flex items-center gap-2 text-slate-800 mt-1">
               <span className="material-symbols-outlined text-[18px] text-red-600">{capInfo.icon}</span>
               <strong className="font-bold">{capInfo.label}</strong>
@@ -71,8 +67,7 @@ export function RoleGuard({ allowedRoles = [], requiredCapability, children }) {
         <button
           onClick={() => {
             switch (normalizedRole) {
-              case 'SYSTEMADMIN':
-              case 'ADMIN':
+              case 'ADMIN': window.location.hash = '#/admin/dashboard'; break;
               case 'MANAGER': window.location.hash = '#/manager/dashboard'; break;
               case 'RECEPTIONIST': window.location.hash = '#/receptionist/dashboard'; break;
               case 'COACH': window.location.hash = '#/coach/dashboard'; break;

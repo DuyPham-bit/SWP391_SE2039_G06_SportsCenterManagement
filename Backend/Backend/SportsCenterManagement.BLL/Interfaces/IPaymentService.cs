@@ -12,6 +12,14 @@ public interface IPaymentService
         string idempotencyKey,
         CancellationToken cancellationToken = default);
 
+    Task<string> CreateCounterVnPayPaymentUrlAsync(
+        long staffUserId,
+        long? staffCenterId,
+        CounterOnlinePaymentRequest request,
+        string ipAddress,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default);
+
     Task<PaymentResultResponse> ProcessPaymentCallbackAsync(
         IDictionary<string, string> queryParams,
         CancellationToken cancellationToken = default);

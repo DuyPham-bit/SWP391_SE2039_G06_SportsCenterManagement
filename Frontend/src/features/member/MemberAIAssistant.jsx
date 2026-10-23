@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { aiApi } from '../../services/api.js';
 
 // Helper to render inline markdown (bold, italic, inline code)
@@ -137,18 +138,28 @@ function parseFormattedMarkdown(content = '') {
 export function MemberAIAssistant() {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
 
   const getInitialMessage = () => ({
     id: 'welcome',
     sender: 'ai',
-    text: `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi có thể hỗ trợ bạn tư vấn:
+    text: isEn
+      ? `Hello **${currentUser?.fullName || 'there'}**! I am your Olympic-standard **SCMS AI Sports Assistant**. I can assist you with:
+* **Class schedules and registration** (Swimming, Boxing, Badminton, Gym, Yoga).
+* **Workout plans tailored to your fitness goals** (Muscle gain, Fat loss, Recovery).
+* **Standardized sports nutrition** before and after workouts.
+* **Gym rules, facility check-in, and rescheduling policies**.
+
+What information would you like to explore today?`
+      : `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi có thể hỗ trợ bạn tư vấn:
 * **Lịch học và đăng ký các lớp thể thao** (Bơi lội, Boxing, Cầu lông, Gym, Yoga).
 * **Kế hoạch tập luyện theo mục tiêu** (Tăng cơ, Giảm mỡ, Phục hồi thể lực).
 * **Dinh dưỡng thể thao chuẩn hóa** trước và sau giờ tập.
 * **Quy định sử dụng phòng tập, check-in và đổi lịch**.
 
 Bạn muốn tìm hiểu thông tin nào hôm nay?`,
-    time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+    time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
   });
 
   const [messages, setMessages] = useState([getInitialMessage()]);
@@ -186,7 +197,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       id: `usr-${Date.now()}`,
       sender: 'user',
       text,
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -204,13 +215,13 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           id: `ai-${Date.now()}`,
           sender: 'ai',
           text: reply,
-          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
         }
       ]);
     } catch (err) {
       const errorText = err.proposedHandling
-        ? `${err.message || 'Lỗi kết nối Trợ lý AI'}\n\n💡 Hướng dẫn xử lý: ${err.proposedHandling}`
-        : `${err.message || 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.'}`;
+        ? `${err.message || (isEn ? 'AI Assistant connection error' : 'Lỗi kết nối Trợ lý AI')}\n\n💡 ${isEn ? 'Handling suggestion:' : 'Hướng dẫn xử lý:'} ${err.proposedHandling}`
+        : `${err.message || (isEn ? 'Connection error to the center AI service. Please try again later.' : 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.')}`;
 
       setMessages((prev) => [
         ...prev,
@@ -221,10 +232,10 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           code: err.code || (err.status === 429 ? 'AI-RATE-LIMIT' : 'AI-ERROR'),
           text: errorText,
           failedQuestion: text,
-          time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
         }
       ]);
-      showError(err.message || 'Không thể nhận phản hồi từ AI');
+      showError(err.message || (isEn ? 'Cannot receive AI response' : 'Không thể nhận phản hồi từ AI'));
     } finally {
       setIsAsking(false);
     }
@@ -240,20 +251,20 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     setMessages([getInitialMessage()]);
     setInputQuestion('');
     setIsAsking(false);
-    showSuccess('Đã làm mới cuộc hội thoại với Trợ lý AI!');
+    showSuccess(isEn ? 'AI Assistant conversation reset!' : 'Đã làm mới cuộc hội thoại với Trợ lý AI!');
   };
 
   const copyMessage = (msg) => {
     if (!msg?.text) return;
     navigator.clipboard?.writeText(msg.text);
     setCopiedId(msg.id);
-    showSuccess('Đã sao chép nội dung vào bộ nhớ tạm!');
+    showSuccess(isEn ? 'Content copied to clipboard!' : 'Đã sao chép nội dung vào bộ nhớ tạm!');
     setTimeout(() => setCopiedId(null), 2000);
   };
 
   const toggleSpeak = (msg) => {
     if (!('speechSynthesis' in window)) {
-      showError('Trình duyệt của bạn không hỗ trợ tính năng phát âm.');
+      showError(isEn ? 'Your browser does not support text-to-speech.' : 'Trình duyệt của bạn không hỗ trợ tính năng phát âm.');
       return;
     }
 
@@ -267,7 +278,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     // Clean markdown asterisks and backticks for clean speech
     const cleanText = msg.text.replace(/[\*`#]/g, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = 'vi-VN';
+    utterance.lang = isEn ? 'en-US' : 'vi-VN';
     utterance.rate = 1.0;
     utterance.onend = () => setSpeakingId(null);
     utterance.onerror = () => setSpeakingId(null);
@@ -281,55 +292,68 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       ...prev,
       [msgId]: prev[msgId] === type ? null : type
     }));
-    showSuccess(type === 'like' ? 'Cảm ơn bạn đã đánh giá phản hồi hữu ích!' : 'Cảm ơn bạn! SCMS sẽ cải thiện câu trả lời tốt hơn.');
+    showSuccess(type === 'like' ? (isEn ? 'Thank you for your feedback!' : 'Cảm ơn bạn đã đánh giá phản hồi hữu ích!') : (isEn ? 'Thank you! SCMS will improve its responses.' : 'Cảm ơn bạn! SCMS sẽ cải thiện câu trả lời tốt hơn.'));
   };
 
   return (
     <div className="space-y-6 pb-12 animate-in fade-in duration-300">
-      {/* 1. Olympic Luxury Dark Hero Banner */}
-      <div className="relative overflow-hidden bg-gradient-to-r from-slate-950 via-slate-900 to-slate-950 border border-slate-800/80 rounded-3xl p-6 md:p-8 shadow-2xl text-white">
-        <div className="absolute -right-20 -top-20 w-80 h-80 bg-red-600/15 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute right-40 -bottom-20 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none" />
+      {/* 1. Olympic AI Masterpiece Banner */}
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden animate-fade-slide-up">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl pointer-events-none" />
+        <div className="absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl pointer-events-none" />
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-3 max-w-2xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 bg-red-500/10 border border-red-500/30 text-red-400 rounded-full text-xs font-semibold uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-              SCMS AI FITNESS ASSISTANT · CHUẨN OLYMPIC
+          <div className="space-y-2 max-w-2xl min-w-0">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-[11px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
+                <span className="material-symbols-outlined text-[13px] text-amber-500">smart_toy</span>
+                SCMS AI FITNESS ASSISTANT · {isEn ? 'OLYMPIC STANDARD' : 'CHUẨN OLYMPIC'}
+              </span>
             </div>
-            <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-3">
-              Trợ Lý Thể Thao AI Độc Quyền
+            <h1 className="font-chivo text-2xl md:text-3xl font-black text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+              {isEn ? 'Exclusive AI Sports Assistant' : 'Trợ Lý Thể Thao AI Độc Quyền'}
             </h1>
-            <p className="text-slate-300 text-sm md:text-base leading-relaxed">
-              Hỏi lịch lớp theo ngày, giá gói tập, sân/phòng, giờ mở cửa và liên hệ trung tâm 24/7. Gợi ý bài tập cần được HLV xem xét trước khi áp dụng.
+            <p className="text-white/90 text-xs sm:text-sm leading-relaxed drop-shadow-xs font-medium">
+              {isEn
+                ? 'Inquire class schedules by date, package prices, facilities, opening hours, and contact center 24/7. Exercise suggestions should be reviewed by a coach.'
+                : 'Hỏi lịch lớp theo ngày, giá gói tập, sân/phòng, giờ mở cửa và liên hệ trung tâm 24/7. Gợi ý bài tập cần được HLV xem xét trước khi áp dụng.'}
             </p>
           </div>
 
-          <div className="flex flex-wrap items-center gap-3 shrink-0">
-            <div className="px-3.5 py-2 rounded-xl bg-slate-800/80 border border-slate-700/80 text-xs font-medium text-slate-300 flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-              <span>Sẵn sàng kết nối 24/7</span>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            <div className="px-3.5 py-2 rounded-xl bg-white/85 dark:bg-slate-900/85 backdrop-blur-md border border-white/80 dark:border-white/20 text-xs font-bold text-slate-800 dark:text-slate-200 flex items-center gap-2 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>{isEn ? 'Connected 24/7' : 'Sẵn sàng kết nối 24/7'}</span>
             </div>
 
             <button
               type="button"
               onClick={() => {
                 window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
-                showSuccess('Đã mở Trợ lý AI dạng popup ở góc phải màn hình!');
+                showSuccess(isEn ? 'Opened AI Assistant popup at bottom right!' : 'Đã mở Trợ lý AI dạng popup ở góc phải màn hình!');
               }}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white border border-[#81B29A]/40 text-xs font-bold rounded-xl transition duration-150 shadow-md active:scale-95 cursor-pointer font-sans"
+              className="px-4 py-2.5 bg-slate-950 hover:bg-slate-900 text-white rounded-xl text-xs font-bold uppercase tracking-wider transition-all flex items-center gap-2 shadow-lg hover:shadow-xl shrink-0 border border-white/20 active:scale-95 cursor-pointer backdrop-blur-md"
             >
-              <span className="material-symbols-outlined text-[16px] text-[#81B29A]">open_in_new</span>
-              <span>Mở Popup góc màn hình</span>
+              <span className="material-symbols-outlined text-[18px] text-[#F2CC8F]">open_in_new</span>
+              <span>{isEn ? 'Open Screen Corner Popup' : 'Mở Popup góc màn hình'}</span>
             </button>
 
             <button
               onClick={handleResetChat}
               disabled={isAsking}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-semibold rounded-xl transition duration-150 backdrop-blur-sm active:scale-95 disabled:opacity-50"
+              className="px-3.5 py-2.5 rounded-xl bg-white/90 hover:bg-white text-slate-800 border border-white text-xs font-bold flex items-center gap-1.5 transition shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[16px]">restart_alt</span>
-              <span>Làm mới hội thoại</span>
+              <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+              <span>{isEn ? 'Reset Chat' : 'Làm mới'}</span>
             </button>
           </div>
         </div>
@@ -351,7 +375,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                 </span>
               </h3>
               <p className="text-xs text-slate-500">
-                Lịch sử cuộc trò chuyện được mã hóa và bảo mật riêng cho tài khoản của bạn.
+                {isEn ? 'Chat history is encrypted and private to your account.' : 'Lịch sử cuộc trò chuyện được mã hóa và bảo mật riêng cho tài khoản của bạn.'}
               </p>
             </div>
           </div>
@@ -359,7 +383,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           <div className="flex items-center gap-2">
             <button
               onClick={handleResetChat}
-              title="Làm mới toàn bộ hội thoại"
+              title={isEn ? "Reset entire conversation" : "Làm mới toàn bộ hội thoại"}
               className="p-2 text-slate-400 hover:text-slate-700 hover:bg-slate-200/60 rounded-xl transition"
             >
               <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
@@ -402,7 +426,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                 {/* Error Code Tag */}
                 {msg.isError && msg.code && (
                   <span className="inline-block px-2 py-0.5 rounded text-[10px] font-mono font-bold bg-rose-200 text-rose-900 mb-2 border border-rose-300">
-                    MÃ LỖI: {msg.code}
+                    {isEn ? 'ERROR CODE:' : 'MÃ LỖI:'} {msg.code}
                   </span>
                 )}
 
@@ -424,7 +448,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                       className="px-3.5 py-1.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors inline-flex items-center gap-1.5 shadow-sm"
                     >
                       <span className="material-symbols-outlined text-[16px]">refresh</span>
-                      <span>Thử gửi lại câu hỏi này</span>
+                      <span>{isEn ? 'Retry sending this question' : 'Thử gửi lại câu hỏi này'}</span>
                     </button>
                   </div>
                 )}
@@ -444,7 +468,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                       {/* Copy Button */}
                       <button
                         onClick={() => copyMessage(msg)}
-                        title="Sao chép nội dung"
+                        title={isEn ? "Copy text" : "Sao chép nội dung"}
                         className="p-1 hover:text-slate-800 rounded-lg hover:bg-slate-100 transition"
                       >
                         <span className="material-symbols-outlined text-[15px]">
@@ -455,7 +479,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                       {/* Text-to-Speech Button */}
                       <button
                         onClick={() => toggleSpeak(msg)}
-                        title={speakingId === msg.id ? 'Dừng đọc' : 'Đọc câu trả lời'}
+                        title={speakingId === msg.id ? (isEn ? 'Stop reading' : 'Dừng đọc') : (isEn ? 'Read response' : 'Đọc câu trả lời')}
                         className={`p-1 rounded-lg transition ${
                           speakingId === msg.id
                             ? 'text-red-600 bg-red-50'
@@ -470,7 +494,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                       {/* Reaction Thumbs Up */}
                       <button
                         onClick={() => handleReaction(msg.id, 'like')}
-                        title="Phản hồi hữu ích"
+                        title={isEn ? "Helpful response" : "Phản hồi hữu ích"}
                         className={`p-1 rounded-lg transition ${
                           reactions[msg.id] === 'like'
                             ? 'text-emerald-600 bg-emerald-50'
@@ -483,7 +507,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                       {/* Reaction Thumbs Down */}
                       <button
                         onClick={() => handleReaction(msg.id, 'dislike')}
-                        title="Phản hồi chưa hài lòng"
+                        title={isEn ? "Unsatisfied response" : "Phản hồi chưa hài lòng"}
                         className={`p-1 rounded-lg transition ${
                           reactions[msg.id] === 'dislike'
                             ? 'text-rose-600 bg-rose-50'
@@ -511,7 +535,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                   <div className="w-2 h-2 rounded-full bg-red-600 animate-bounce" style={{ animationDelay: '150ms' }} />
                   <div className="w-2 h-2 rounded-full bg-red-600 animate-bounce" style={{ animationDelay: '300ms' }} />
                 </div>
-                <span className="font-medium text-slate-600">Trợ lý SCMS AI đang phân tích và soạn phản hồi...</span>
+                <span className="font-medium text-slate-600">{isEn ? 'SCMS AI assistant is analyzing and composing response...' : 'Trợ lý SCMS AI đang phân tích và soạn phản hồi...'}</span>
               </div>
             </div>
           )}
@@ -532,8 +556,8 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               <input
                 ref={inputRef}
                 type="text"
-                aria-label="Câu hỏi cho trợ lý AI"
-                placeholder="Ví dụ: Ngày mai có lớp gì? Giá gói tập? Trung tâm mở cửa lúc mấy giờ?..."
+                aria-label={isEn ? "Question for AI assistant" : "Câu hỏi cho trợ lý AI"}
+                placeholder={isEn ? "E.g. What classes are there tomorrow? Package pricing? Center opening hours?..." : "Ví dụ: Ngày mai có lớp gì? Giá gói tập? Trung tâm mở cửa lúc mấy giờ?..."}
                 value={inputQuestion}
                 onChange={(e) => setInputQuestion(e.target.value)}
                 disabled={isAsking}
@@ -555,14 +579,14 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               disabled={isAsking || !inputQuestion.trim()}
               className="px-6 py-3 bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 disabled:opacity-50 text-white rounded-2xl font-bold text-xs uppercase tracking-wider transition shadow-md shadow-red-600/25 flex items-center gap-1.5 shrink-0 active:scale-95"
             >
-              <span>Gửi</span>
+              <span>{isEn ? 'Send' : 'Gửi'}</span>
               <span className="material-symbols-outlined text-[18px]">send</span>
             </button>
           </form>
 
           <p className="text-[11px] text-slate-400 text-center flex items-center justify-center gap-1">
             <span className="material-symbols-outlined text-[13px] text-amber-500">info</span>
-            <span>Khuyến cáo an toàn: Gợi ý bài tập và dinh dưỡng cần được HLV chuyên trách xác nhận trước khi thực hiện.</span>
+            <span>{isEn ? 'Safety Notice: Workout and nutrition suggestions must be verified with your coach before practicing.' : 'Khuyến cáo an toàn: Gợi ý bài tập và dinh dưỡng cần được HLV chuyên trách xác nhận trước khi thực hiện.'}</span>
           </p>
         </div>
       </div>

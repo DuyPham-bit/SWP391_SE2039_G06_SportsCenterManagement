@@ -10,6 +10,7 @@
     "test:payment:browser": "node tests/payment-checkout.browser.cjs",
     "test:manager:browser": "node tests/manager-merge.browser.cjs",
     "test:landing:browser": "node tests/landing-content.browser.cjs",
+    "test:invoices:browser": "node tests/counter-invoices.browser.cjs",
     "test:api:live": "node tests/api-live.cjs",
     "test:api:proxy": "node tests/api-proxy.cjs",
     "build": "vite build",
@@ -26,6 +27,8 @@
   "author": "SCMS Development Team",
   "license": "MIT",
   "dependencies": {
+    "exceljs": "4.4.0",
+    "pdfmake": "0.2.20",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"

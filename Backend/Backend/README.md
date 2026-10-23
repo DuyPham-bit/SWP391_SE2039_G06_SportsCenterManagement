@@ -71,7 +71,7 @@ API được xây bằng ASP.NET Core MVC Controllers và trả JSON; không dù
 | GET | `/api/admin/roles` | System Admin xem ma trận quyền |
 | PUT | `/api/admin/roles/{roleId}/permissions` | System Admin thay ma trận quyền của role; quyền này luôn chỉ thuộc SystemAdmin |
 
-MVP tắt email verification; mật khẩu cần ít nhất 6 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt. API dùng JWT HS256 qua JwtBearer, kiểm tra chữ ký, issuer, audience và thời hạn (mặc định 60 phút, cấu hình `Jwt:ExpiresMinutes`); trạng thái tài khoản, role và center được đọc lại từ DB mỗi request. Token Data Protection cũ cần đăng nhập lại. Subscription chỉ bắt đầu khi invoice được thanh toán đủ.
+Tự đăng ký yêu cầu OTP xác thực email: gọi `POST /api/auth/request-email-verification` rồi gửi `emailOtp` cùng request đăng ký. Reset mật khẩu cũng gửi OTP qua email và không trả mã trong Development. Cấu hình SMTP hoặc email webhook theo [hướng dẫn xác thực email](../../docs/EMAIL_VERIFICATION.md). Mật khẩu cần ít nhất 6 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt. API dùng JWT HS256 qua JwtBearer, kiểm tra chữ ký, issuer, audience và thời hạn (mặc định 60 phút, cấu hình `Jwt:ExpiresMinutes`); trạng thái tài khoản, role và center được đọc lại từ DB mỗi request. Token Data Protection cũ cần đăng nhập lại. Subscription chỉ bắt đầu khi invoice được thanh toán đủ.
 
 Không sử dụng Session/cookie để đăng nhập. Frontend lưu JWT bằng sessionStorage riêng từng tab; F5 tải lại hồ sơ/quyền từ API và giữ đăng nhập nếu JWT còn hợp lệ. Nếu dùng frontend nhúng do API phục vụ, chạy `npm.cmd run build:api` tại `Frontend/` trước khi chạy/publish backend để cập nhật `SportsCenterManagement.API/wwwroot` và loại bỏ bundle cũ. `wwwroot` chỉ chứa tài nguyên build; sửa tài nguyên nguồn ở `Frontend/public/`.
 
@@ -137,6 +137,8 @@ $env:ConnectionStrings__SportsCenter = "Server=(localdb)\MSSQLLocalDB;Database=S
 ```
 
 Không commit thông tin đăng nhập hoặc secret thật. Dùng User Secrets hoặc environment variables ngoài máy local.
+
+Để dùng database đã có, đặt `ConnectionStrings:SportsCenter` tới đúng instance/database của bạn. Frontend gọi API, không kết nối SQL Server trực tiếp. Mã seed dữ liệu nghiệp vụ đã được gỡ; ứng dụng chỉ đồng bộ schema/quyền, không tự thêm tài khoản, lớp, gói tập hoặc tài nguyên demo. Cấu hình local đã kiểm tra cho workspace này và hướng dẫn chạy: [Kết nối DB thật](../../Frontend/docs/real-database.md).
 
 JWT cần secret riêng dài tối thiểu 32 byte. Cấu hình bắt buộc `Jwt__Key` trước khi chạy. Có thể tạo nhanh cho phiên PowerShell hiện tại:
 

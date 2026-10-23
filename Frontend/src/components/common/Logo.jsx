@@ -14,7 +14,8 @@ export function Logo({
   href = '#/',
   onClick,
   className = '',
-  showSubtitle = true
+  showSubtitle = true,
+  compact = false
 }) {
   const isDark = variant === 'dark';
   const isLight = variant === 'light';
@@ -64,27 +65,29 @@ export function Logo({
         S
       </div>
 
-      {/* Brand Text Block */}
-      <div className="flex flex-col justify-center leading-none">
-        <div className="flex items-center gap-1.5 leading-none">
-          <span className={`${titleSizeClass} tracking-tight ${titleColor}`}>
-            SCMS
-          </span>
-          <span
-            className={`text-[9px] sm:text-[10px] font-bold uppercase rounded-md px-1.5 py-0.5 tracking-wider leading-none ${pillClasses}`}
-          >
-            OLYMPIC
-          </span>
-        </div>
+      {/* Brand Text Block (hidden in compact mode) */}
+      {!compact && (
+        <div className="flex flex-col justify-center leading-none">
+          <div className="flex items-center gap-1.5 leading-none">
+            <span className={`${titleSizeClass} tracking-tight ${titleColor}`}>
+              SCMS
+            </span>
+            <span
+              className={`text-[9px] sm:text-[10px] font-bold uppercase rounded-md px-1.5 py-0.5 tracking-wider leading-none ${pillClasses}`}
+            >
+              OLYMPIC
+            </span>
+          </div>
 
-        {showSubtitle && (
-          <span
-            className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.18em] mt-1 leading-none ${subtitleColor}`}
-          >
-            OLYMPIC SPORTS ARENA
-          </span>
-        )}
-      </div>
+          {showSubtitle && (
+            <span
+              className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.18em] mt-1 leading-none ${subtitleColor}`}
+            >
+              OLYMPIC SPORTS ARENA
+            </span>
+          )}
+        </div>
+      )}
     </>
   );
 
@@ -95,7 +98,7 @@ export function Logo({
       <a
         href={href}
         onClick={onClick}
-        aria-label="SCMS Olympic Sports Arena - Trang chủ"
+        aria-label="SCMS Olympic Sports Arena"
         className={containerClasses}
       >
         {content}

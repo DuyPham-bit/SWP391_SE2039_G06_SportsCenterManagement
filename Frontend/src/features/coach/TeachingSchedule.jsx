@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo } from 'react';
 import { CoachError, useTeachingSessions, coachInput } from './CoachShared.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translateClassName, translateRoomName, translateSportName } from '../../services/i18nHelper.js';
 
 // --- TIỆN ÍCH NGÀY THÁNG VÀ LỊCH CHUẨN OLYMPIC ---
 
@@ -167,7 +168,7 @@ export function TeachingSchedule() {
 
   const schedule = useTeachingSessions(60);
 
-  // Chế độ xem: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu) | 'grid' (Lưới thẻ)
+  // Chế độ xem: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu)
   const [viewMode, setViewMode] = useState('week');
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
@@ -330,20 +331,29 @@ export function TeachingSchedule() {
   return (
     <div className="space-y-6">
       {/* 1. TOP HEADER BANNER */}
-      <div className="rounded-[24px] bg-gradient-to-br from-[#32354D] via-[#2B2D42] to-[#1E2235] text-white p-6 sm:p-8 relative overflow-hidden border border-white/10 shadow-xl flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div className="pointer-events-none absolute -right-16 -top-16 w-64 h-64 rounded-full bg-[#81B29A]/15 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-56 h-56 rounded-full bg-[#F2CC8F]/15 blur-3xl" />
+      <div className="rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-8 relative overflow-hidden border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
 
         <div className="space-y-1 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-[rgba(242,204,143,0.15)] text-[#F2CC8F] text-[11px] font-bold uppercase tracking-widest border border-[rgba(242,204,143,0.3)] mb-2">
-            <span className="w-2 h-2 rounded-full bg-[#F2CC8F] animate-pulse" />
-            {isEn ? 'Professional Teaching Schedule' : 'Lịch giảng dạy chuyên môn'}
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#1B4332] dark:text-emerald-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 mb-2 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{isEn ? 'Professional Teaching Schedule' : 'Lịch giảng dạy chuyên môn'}</span>
           </div>
-          <h1 className="text-2xl md:text-3xl font-extrabold tracking-tight text-white flex items-center gap-2.5">
-            <span className="material-symbols-outlined text-[28px] text-[#F2CC8F]">calendar_month</span>
-            {isEn ? 'Coach Teaching Schedule' : 'Lịch Giảng Dạy Của Huấn Luyện Viên'}
+          <h1 className="text-2xl md:text-3xl font-chivo font-black tracking-tight text-white flex items-center gap-2.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+            <span className="material-symbols-outlined text-[28px] text-amber-300">calendar_month</span>
+            <span>{isEn ? 'Coach Teaching Schedule' : 'Lịch Giảng Dạy Của Huấn Luyện Viên'}</span>
           </h1>
-          <p className="text-xs sm:text-sm text-slate-300 max-w-2xl leading-relaxed">
+          <p className="text-xs sm:text-sm text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
             {isEn
               ? 'Track assigned teaching sessions, student enrollment, and take attendance according to Olympic sports standards.'
               : 'Theo dõi các ca dạy, sĩ số học viên và thực hiện điểm danh lớp học được phân công theo chuẩn thể thao Olympic.'}
@@ -354,9 +364,9 @@ export function TeachingSchedule() {
           <button
             type="button"
             onClick={() => setShowPeriodConfig(!showPeriodConfig)}
-            className="px-4 py-2.5 rounded-xl border border-white/20 bg-white/10 hover:bg-white/20 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-sm"
+            className="px-4 py-2.5 rounded-xl border border-white/30 bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md shadow-xs hover-lift"
           >
-            <span className="material-symbols-outlined text-[16px] text-[#F2CC8F]">date_range</span>
+            <span className="material-symbols-outlined text-[16px] text-amber-300">date_range</span>
             <span>
               {isEn ? `Date Range (${schedule.from} → ${schedule.to})` : `Khoảng ngày (${schedule.from} → ${schedule.to})`}
             </span>
@@ -524,16 +534,6 @@ export function TeachingSchedule() {
               <span className="material-symbols-outlined text-[16px]">view_agenda</span>
               <span>{isEn ? 'Agenda' : 'Lịch Biểu'}</span>
             </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-600 hover:text-slate-900'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">grid_view</span>
-              <span>{isEn ? 'Grid View' : 'Lưới Thẻ'}</span>
-            </button>
           </div>
         </div>
 
@@ -629,7 +629,7 @@ export function TeachingSchedule() {
                 }`}
               >
                 <span className={`w-2 h-2 rounded-full ${isSelected ? 'bg-[#F2CC8F]' : theme.dot}`} />
-                <span>{s.name}</span>
+                <span>{translateSportName(s.name, isEn)}</span>
                 <span className={`text-[10px] px-1 rounded ${isSelected ? 'bg-[#F2CC8F] text-[#1E2235]' : 'bg-slate-100 text-slate-600'}`}>
                   {s.count}
                 </span>
@@ -753,14 +753,14 @@ export function TeachingSchedule() {
 
                               {/* Class Name */}
                               <h4 className="font-chivo font-black text-slate-900 leading-snug line-clamp-2">
-                                {s.name}
+                                {translateClassName(s.name, isEn)}
                               </h4>
 
                               {/* Room & Status */}
                               <div className="text-[11px] text-slate-600 space-y-1">
                                 <div className="truncate flex items-center gap-1 text-slate-600">
                                   <span className="material-symbols-outlined text-[13px] text-slate-400">meeting_room</span>
-                                  <span>{s.roomName}</span>
+                                  <span>{translateRoomName(s.roomName, isEn)}</span>
                                 </div>
 
                                 <div className="flex items-center justify-between gap-1 pt-1 border-t border-black/5">
@@ -879,7 +879,7 @@ export function TeachingSchedule() {
                                 className={`px-1.5 py-0.5 rounded text-[10px] font-bold truncate flex items-center gap-1 border ${theme.bg} ${theme.text} ${theme.border}`}
                               >
                                 <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${theme.dot}`} />
-                                <span className="truncate">{s.timeSlot.slice(0, 5)} {s.name}</span>
+                                <span className="truncate">{s.timeSlot.slice(0, 5)} {translateClassName(s.name, isEn)}</span>
                               </div>
                             );
                           })}
@@ -939,10 +939,10 @@ export function TeachingSchedule() {
                               <span className="font-bold text-slate-700">{s.timeSlot}</span>
                             </div>
                             <h4 className="font-chivo font-black text-sm text-slate-900 leading-snug">
-                              {s.name}
+                              {translateClassName(s.name, isEn)}
                             </h4>
                             <p className="text-[11px] text-slate-600 mt-1">
-                              {isEn ? 'Court / Room:' : 'Địa điểm:'} <strong>{s.roomName}</strong> · {isEn ? 'Enrolled:' : 'Sĩ số:'} <strong>{s.enrolledCount}/{s.capacity}</strong>
+                              {isEn ? 'Court / Room:' : 'Địa điểm:'} <strong>{translateRoomName(s.roomName, isEn)}</strong> · {isEn ? 'Enrolled:' : 'Sĩ số:'} <strong>{s.enrolledCount}/{s.capacity}</strong>
                             </p>
                           </div>
 
@@ -1023,11 +1023,11 @@ export function TeachingSchedule() {
                                       {theme.tag}
                                     </span>
                                     <h4 className="font-chivo font-black text-slate-900 text-sm truncate">
-                                      {s.name}
+                                      {translateClassName(s.name, isEn)}
                                     </h4>
                                   </div>
                                   <p className="text-slate-500 text-[11px]">
-                                    {isEn ? 'Room:' : 'Phòng:'} <strong className="text-slate-800">{s.roomName}</strong> · {isEn ? 'Status:' : 'Trạng thái:'} <strong className="text-slate-800">{statusInfo.label}</strong>
+                                    {isEn ? 'Room:' : 'Phòng:'} <strong className="text-slate-800">{translateRoomName(s.roomName, isEn)}</strong> · {isEn ? 'Status:' : 'Trạng thái:'} <strong className="text-slate-800">{statusInfo.label}</strong>
                                   </p>
                                 </div>
                               </div>
@@ -1067,104 +1067,6 @@ export function TeachingSchedule() {
               )}
             </div>
           )}
-
-          {/* --- D. CHẾ ĐỘ LƯỚI THẺ (RESPONSIVE CARDS GRID) --- */}
-          {viewMode === 'grid' && (
-            <div className="space-y-4">
-              {filteredSessions.length === 0 ? (
-                <div className="bg-white p-12 rounded-2xl border border-slate-200 text-center text-slate-400 text-xs">
-                  <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">event_busy</span>
-                  <p>{isEn ? 'No teaching sessions found matching the current filters.' : 'Không có ca dạy nào phù hợp với bộ lọc hiện tại.'}</p>
-                </div>
-              ) : (
-                <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  {filteredSessions.map(s => {
-                    const theme = getSportTheme(s.sportName, isEn);
-                    const statusInfo = STATUS_CONFIG[s.status] || STATUS_CONFIG.SCHEDULED;
-                    const percent = s.capacity > 0 ? Math.min(100, Math.round((s.enrolledCount / s.capacity) * 100)) : 0;
-                    const dayLabel = formatDayOfWeek(s.sessionDate, s.dayOfWeek);
-
-                    return (
-                      <article
-                        key={s.id}
-                        onClick={() => handleOpenDetail(s)}
-                        className="bg-white p-5 border border-slate-200 rounded-2xl space-y-3.5 shadow-xs hover:shadow-md transition-all cursor-pointer relative flex flex-col justify-between"
-                      >
-                        <div className="space-y-3">
-                          <div className="flex items-center justify-between gap-2 text-xs">
-                            <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                              {theme.tag}
-                            </span>
-                            <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold border ${statusInfo.badgeClass}`}>
-                              <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
-                              {statusInfo.label}
-                            </span>
-                          </div>
-
-                          <h2 className="font-chivo font-black text-slate-900 text-base leading-snug">
-                            {s.name}
-                          </h2>
-
-                          <div className="space-y-1.5 text-xs text-slate-600">
-                            <p className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[16px] text-[#81B29A]">calendar_today</span>
-                              <strong>{dayLabel} · {s.sessionDate}</strong>
-                            </p>
-                            <p className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[16px] text-slate-400">schedule</span>
-                              <span>{s.timeSlot}</span>
-                            </p>
-                            <p className="flex items-center gap-1.5">
-                              <span className="material-symbols-outlined text-[16px] text-slate-400">meeting_room</span>
-                              <span>{s.roomName}</span>
-                            </p>
-                          </div>
-
-                          {/* Enrollment bar */}
-                          <div className="space-y-1 pt-1 border-t border-slate-100">
-                            <div className="flex justify-between text-xs font-bold text-slate-700">
-                              <span>
-                                {isEn
-                                  ? `Bookings: ${s.enrolledCount}/${s.capacity} students`
-                                  : `Đặt chỗ: ${s.enrolledCount}/${s.capacity} học viên`}
-                              </span>
-                              <span className="text-slate-500">{percent}%</span>
-                            </div>
-                            <div className="w-full bg-slate-100 rounded-full h-1.5 overflow-hidden">
-                              <div
-                                className={`h-full rounded-full ${percent >= 100 ? 'bg-red-500' : 'bg-emerald-500'}`}
-                                style={{ width: `${percent}%` }}
-                              />
-                            </div>
-                          </div>
-                        </div>
-
-                        {/* Card actions */}
-                        <div className="flex items-center justify-between gap-2 pt-3 border-t border-slate-100 text-xs font-bold">
-                          <a
-                            href={`#/coach/members?classId=${s.classId}`}
-                            onClick={e => e.stopPropagation()}
-                            className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 transition-colors flex items-center gap-1"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">group</span>
-                            <span>{isEn ? 'Students' : 'Học viên'}</span>
-                          </a>
-                          <a
-                            href={`#/coach/attendance?sessionId=${s.id}&date=${s.sessionDate}`}
-                            onClick={e => e.stopPropagation()}
-                            className="px-3.5 py-1.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white transition-colors flex items-center gap-1 shadow-xs font-bold"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">how_to_reg</span>
-                            <span>{isEn ? 'Attendance' : 'Điểm danh'}</span>
-                          </a>
-                        </div>
-                      </article>
-                    );
-                  })}
-                </div>
-              )}
-            </div>
-          )}
         </>
       )}
 
@@ -1188,7 +1090,7 @@ export function TeachingSchedule() {
                 </span>
               </div>
               <h3 className="font-chivo font-black text-lg text-slate-900">
-                {activeSession.name}
+                {translateClassName(activeSession.name, isEn)}
               </h3>
             </div>
 
@@ -1216,7 +1118,7 @@ export function TeachingSchedule() {
                 <span className="text-slate-400 uppercase font-bold text-[10px] block">
                   {isEn ? 'Court / Room' : 'Phòng / Sân bãi'}
                 </span>
-                <strong className="text-slate-900 text-sm">{activeSession.roomName}</strong>
+                <strong className="text-slate-900 text-sm">{translateRoomName(activeSession.roomName, isEn)}</strong>
                 <p className="text-slate-600">{isEn ? 'Confirmed Schedule' : 'Đã chốt lịch'}</p>
               </div>
 

@@ -22,6 +22,7 @@ public sealed class SupportRequestsController(SupportRequestService service) : F
         Ok(await service.Get(CurrentUserId, centerId, id, ct));
 
     [HttpPost("centers/{centerId:long}/support-requests")]
+    [Authorize(Roles = "RECEPTIONIST")]
     public async Task<ActionResult<SupportDetails>> Create(long centerId, CreateSupportRequest body, CancellationToken ct) =>
         Ok(await service.Create(CurrentUserId, centerId, body, ct));
 

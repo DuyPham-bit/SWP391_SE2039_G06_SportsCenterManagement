@@ -7,6 +7,7 @@ import { Modal } from '../../components/common/Modal.jsx';
 import { CoachError, coachInput } from './CoachShared.jsx';
 import { coachDate } from './coachOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { translateClassName, translateSportName } from '../../services/i18nHelper.js';
 
 export function ClassMembers() {
   const { currentUser } = useAuth();
@@ -256,29 +257,37 @@ export function ClassMembers() {
     },
     {
       header: isEn ? 'Card / Code' : 'Mã Thẻ',
-      render: (row) => <span className="font-bold text-[#1E2235] bg-[#81B29A]/15 px-2 py-0.5 rounded-md border border-[#81B29A]/30 text-xs">{row.memberCode}</span>
+      className: 'whitespace-nowrap min-w-[130px]',
+      render: (row) => (
+        <span className="font-bold font-mono text-[#1E2235] bg-[#81B29A]/15 px-2.5 py-1 rounded-md border border-[#81B29A]/30 text-xs whitespace-nowrap inline-block">
+          {row.memberCode}
+        </span>
+      )
     },
     {
       header: isEn ? 'Phone Number' : 'Số Điện Thoại',
-      accessor: 'phone'
+      accessor: 'phone',
+      className: 'whitespace-nowrap min-w-[130px]'
     },
     {
       header: isEn ? 'Profile' : 'Hồ sơ',
+      className: 'whitespace-nowrap min-w-[90px]',
       render: row => (
-        <button onClick={() => setProfile(row)} className="text-[#3D405B] hover:text-[#E07A5F] font-semibold text-xs underline transition-colors cursor-pointer">
+        <button onClick={() => setProfile(row)} className="text-[#3D405B] hover:text-[#E07A5F] font-semibold text-xs underline transition-colors cursor-pointer whitespace-nowrap">
           {isEn ? 'View Profile' : 'Xem hồ sơ'}
         </button>
       )
     },
     {
       header: isEn ? 'Personal Plan (⭐)' : 'Giáo Án Riêng (⭐)',
+      className: 'whitespace-nowrap min-w-[180px]',
       render: (row) => {
         const hasCustomPlan = !!getPersonalPlanForMember(row.memberId);
         return (
           <button
             type="button"
             onClick={() => handleOpenPersonalPlanModal(row)}
-            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold ${
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl border transition-all text-xs font-semibold whitespace-nowrap ${
               hasCustomPlan
                 ? 'bg-amber-50 border-amber-300 text-amber-900 shadow-xs hover:bg-amber-100 ring-2 ring-amber-400/30'
                 : 'bg-white border-slate-200 text-slate-500 hover:text-amber-600 hover:border-amber-300 hover:bg-amber-50/50'
@@ -312,8 +321,9 @@ export function ClassMembers() {
     },
     {
       header: isEn ? 'Actions' : 'Thao Tác Chuyên Môn',
+      className: 'whitespace-nowrap min-w-[140px]',
       render: () => (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 whitespace-nowrap">
           <a
             href="#/coach/progress"
             className="px-3 py-1.5 rounded-lg bg-[#81B29A]/15 hover:bg-[#81B29A]/25 text-[#2D6A4F] text-xs font-bold uppercase tracking-wider transition-colors flex items-center gap-1"
@@ -330,20 +340,45 @@ export function ClassMembers() {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div>
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] border border-[#81B29A]/30 text-xs font-bold uppercase tracking-wider mb-2">
-          <span className="w-2 h-2 rounded-full bg-[#81B29A]" />
-          <span>{isEn ? 'Student Management' : 'Quản lý học viên'}</span>
+      {/* 1. TOP HEADER BANNER */}
+      <div className="rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-8 relative overflow-hidden border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
+
+        <div className="space-y-1 relative z-10">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#1B4332] dark:text-emerald-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 mb-2 shadow-xs">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+            <span>{isEn ? 'Student Management' : 'Quản lý học viên'}</span>
+          </div>
+          <h1 className="text-2xl md:text-3xl font-chivo font-black tracking-tight text-white flex items-center gap-2.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+            <span className="material-symbols-outlined text-[28px] text-amber-300">groups</span>
+            <span>{isEn ? 'Enrolled Students by Class' : 'Danh Sách Học Viên Theo Lớp Học'}</span>
+          </h1>
+          <p className="text-xs sm:text-sm text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
+            {isEn
+              ? 'Track student profiles in assigned classes and customize personal training plans (⭐) for special conditioning.'
+              : 'Theo dõi hồ sơ học viên theo từng lớp bạn đảm nhiệm và thiết lập giáo án riêng (⭐) cho học viên có thể chất đặc biệt.'}
+          </p>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1E2235] tracking-tight">
-          {isEn ? 'Enrolled Students by Class' : 'Danh Sách Học Viên Theo Lớp Học'}
-        </h1>
-        <p className="text-xs sm:text-sm text-slate-500 mt-1 max-w-2xl leading-relaxed">
-          {isEn
-            ? 'Track student profiles in assigned classes and customize personal training plans (⭐) for special conditioning.'
-            : 'Theo dõi hồ sơ học viên theo từng lớp bạn đảm nhiệm và thiết lập giáo án riêng (⭐) cho học viên có thể chất đặc biệt.'}
-        </p>
+
+        <div className="flex items-center gap-2 shrink-0 relative z-10">
+          <a
+            href="#/coach/progress"
+            className="px-4 py-2.5 rounded-xl border border-white/30 bg-white/20 hover:bg-white/30 text-white text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer backdrop-blur-md shadow-xs hover-lift"
+          >
+            <span className="material-symbols-outlined text-[16px] text-amber-300">monitor_heart</span>
+            <span>{isEn ? 'Log Vitals' : 'Ghi Chỉ Số'}</span>
+          </a>
+        </div>
       </div>
 
       {/* Class Selector Bar */}
@@ -366,7 +401,7 @@ export function ClassMembers() {
             >
               {classes.map(cls => (
                 <option key={cls.id} value={cls.id}>
-                  {cls.name} ({cls.sportName})
+                  {translateClassName(cls.name, isEn)} ({translateSportName(cls.sportName, isEn)})
                 </option>
               ))}
             </select>

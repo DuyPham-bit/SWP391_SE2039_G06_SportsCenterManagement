@@ -11,7 +11,7 @@ function resolveJsToJsx() {
       if (importer && source.startsWith('.') && source.endsWith('.js')) {
         const dir = path.dirname(importer);
         const resolvedPath = path.resolve(dir, source);
-        // Nếu file .js thực tế đã tồn tại (ví dụ api.js, dbStorage.js), giữ nguyên
+        // Nếu file .js thực tế đã tồn tại (ví dụ api.js), giữ nguyên
         if (fs.existsSync(resolvedPath)) {
           return null;
         }
@@ -48,7 +48,7 @@ function autoImportReact() {
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiTarget = env.SCMS_API_PROXY_TARGET || 'http://localhost:3003';
+  const apiTarget = env.SCMS_API_PROXY_TARGET || 'http://localhost:54162';
 
   return {
     plugins: [

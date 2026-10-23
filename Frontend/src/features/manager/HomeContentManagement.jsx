@@ -1,25 +1,75 @@
-import React, { useState, useEffect } from 'react';
+import { LandingCatalogEditor } from './LandingCatalogEditor.jsx';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   getLandingContent,
   getLegacyLandingContent,
   loadLandingContent,
   saveLandingContent,
-  resetLandingContentToDefault,
   openLandingPreview
 } from '../../services/landingContentService.js';
 import { CloudMediaPickerModal } from '../../components/common/CloudMediaPickerModal.jsx';
 import { useToast } from '../../context/ToastContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
+
+const cloneContent = content => JSON.parse(JSON.stringify(content));
+const MANAGER_DRAFT_KEY = 'SCMS_MANAGER_LANDING_DRAFT_V2';
+
+const saveDraft = (updatedContent) => {
+  try {
+    localStorage.setItem(MANAGER_DRAFT_KEY, JSON.stringify(updatedContent));
+  } catch { /* storage quota or private browsing */ }
+};
+
+const clearDraft = () => {
+  try {
+    localStorage.removeItem(MANAGER_DRAFT_KEY);
+  } catch { /* storage disabled */ }
+};
 
 export function HomeContentManagement() {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
   const { showToast: addToast } = useToast();
   const [content, setContent] = useState(() => getLandingContent());
-  const [activeTab, setActiveTab] = useState('hero'); // 'hero' | 'whyUs' | 'sports' | 'facilities' | 'zones' | 'footer'
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const hash = window.location.hash || '';
+      const query = hash.includes('?') ? hash.split('?')[1] : '';
+      const tabFromQuery = new URLSearchParams(query).get('tab');
+      if (tabFromQuery) return tabFromQuery;
+      const tabFromSession = sessionStorage.getItem('SCMS_MANAGER_ACTIVE_TAB');
+      if (tabFromSession) return tabFromSession;
+    } catch { /* ignore */ }
+    return 'hero';
+  });
+
+  const handleTabChange = (tabId) => {
+    setActiveTab(tabId);
+    try {
+      sessionStorage.setItem('SCMS_MANAGER_ACTIVE_TAB', tabId);
+      const hash = window.location.hash || '';
+      const [path, queryString] = hash.split('?');
+      const params = new URLSearchParams(queryString || '');
+      params.set('tab', tabId);
+      window.history.replaceState(null, '', `${path}?${params.toString()}`);
+    } catch { /* ignore */ }
+  };
+
   const [isDirty, setIsDirty] = useState(false);
-  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [autoSaveStatus, setAutoSaveStatus] = useState('idle'); // 'idle' | 'dirty' | 'saving' | 'saved' | 'error'
+  const [lastSavedTime, setLastSavedTime] = useState(null);
   const [loadError, setLoadError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
+  const savedContentRef = useRef(null);
+  const latestContentRef = useRef(content);
+  const autoSaveTimerRef = useRef(null);
+  const [discardKey, setDiscardKey] = useState(0);
+
+  useEffect(() => {
+    latestContentRef.current = content;
+  }, [content]);
 
   // States cho Modal chọn ảnh đám mây
   const [mediaPickerConfig, setMediaPickerConfig] = useState({
@@ -30,18 +80,6 @@ export function HomeContentManagement() {
     callback: null
   });
 
-  // States cho Modal sửa / thêm Môn học
-  const [editingSport, setEditingSport] = useState(null); // null = đóng, object = đang sửa/thêm
-  const [isNewSport, setIsNewSport] = useState(false);
-
-  // States cho Modal sửa / thêm Cụm sân
-  const [editingFacility, setEditingFacility] = useState(null); // null = đóng, object = đang sửa/thêm
-  const [isNewFacility, setIsNewFacility] = useState(false);
-
-  // Filter cho môn học & cụm sân trong manager
-  const [sportSearch, setSportSearch] = useState('');
-  const [facilitySearch, setFacilitySearch] = useState('');
-
   // Do not replace an unsaved draft with a background refresh.
   useEffect(() => {
     let active = true;
@@ -50,57 +88,168 @@ export function HomeContentManagement() {
     setLoadError('');
     loadLandingContent({ signal: controller.signal }).then(result => {
       if (!active) return;
-      const legacy = !result.hasPublishedContent ? getLegacyLandingContent() : null;
-      setContent(legacy || result.content);
-      setIsDirty(Boolean(legacy));
-      if (legacy) {
-        addToast('Đã tải nội dung cũ trên trình duyệt thành bản nháp. Bấm Lưu để công bố cho mọi người.', 'info');
+      savedContentRef.current = cloneContent(result.content);
+
+      // Check for local draft preserved across F5
+      let localDraft = null;
+      try {
+        const raw = localStorage.getItem(MANAGER_DRAFT_KEY);
+        if (raw) localDraft = JSON.parse(raw);
+      } catch { localDraft = null; }
+
+      if (localDraft && JSON.stringify(localDraft) !== JSON.stringify(result.content)) {
+        setContent(localDraft);
+        setIsDirty(true);
+        addToast(
+          isEn
+            ? 'Restored your unsaved draft across reload. Click "Save All Changes" to publish to server.'
+            : 'Đã tự động giữ lại số liệu bạn vừa chỉnh sửa (Bản nháp F5). Bấm "Lưu Toàn Bộ Thay Đổi" để công bố lên hệ thống.',
+          'info'
+        );
+      } else {
+        const legacy = !result.hasPublishedContent ? getLegacyLandingContent() : null;
+        setContent(legacy || result.content);
+        setIsDirty(Boolean(legacy));
+        if (legacy) {
+          addToast(
+            isEn
+              ? 'Loaded previous browser content as draft. Click Save to publish.'
+              : 'Đã tải nội dung cũ trên trình duyệt thành bản nháp. Bấm Lưu để công bố cho mọi người.',
+            'info'
+          );
+        }
       }
     }).catch(error => {
-      if (active) setLoadError(error.message || 'Không thể tải nội dung trang chủ.');
+      if (active) setLoadError(error.message || (isEn ? 'Failed to load homepage content.' : 'Không thể tải nội dung trang chủ.'));
     }).finally(() => { if (active) setIsLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [reloadKey]);
+  }, [reloadKey, isEn]);
 
-  // Đánh dấu có thay đổi
-  const updateContentField = (section, key, value) => {
-    setContent(prev => ({
-      ...prev,
-      [section]: {
-        ...prev[section],
-        [key]: value
+  // Prevent accidental loss of edits when hitting F5
+  useEffect(() => {
+    const handleBeforeUnload = (event) => {
+      if (isDirty) {
+        event.preventDefault();
+        event.returnValue = '';
       }
-    }));
+    };
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => window.removeEventListener('beforeunload', handleBeforeUnload);
+  }, [isDirty]);
+
+  // Đánh dấu có thay đổi và lưu bản nháp ngay vào localStorage (không bị mất khi F5)
+  const updateContentField = (section, key, value) => {
+    setContent(prev => {
+      const updated = {
+        ...prev,
+        [section]: {
+          ...(prev[section] || {}),
+          [key]: value
+        }
+      };
+      saveDraft(updated);
+      return updated;
+    });
     setIsDirty(true);
+    setAutoSaveStatus('dirty');
   };
 
-  // Lưu toàn bộ nội dung
-  const handleSaveAll = async () => {
+  // Cập nhật danh sách thẻ trong bản nháp
+  const updateCatalogCards = (section, key, items) => {
+    setContent(prev => {
+      const updated = {
+        ...prev,
+        [section]: { ...(prev[section] || {}), [key]: items, catalogSource: 'custom' }
+      };
+      saveDraft(updated);
+      return updated;
+    });
+    setIsDirty(true);
+    setAutoSaveStatus('dirty');
+  };
+
+  const deleteFacilityCard = (record, items, fallbackSports) => {
+    setContent(prev => {
+      const section = prev.coursesSection;
+      const sports = section.sportsList.length || section.catalogSource === 'custom' ? section.sportsList : fallbackSports;
+      const hasLinks = sports.some(sport => String(sport.facilityId) === String(record.id));
+      const updated = {
+        ...prev,
+        facilitiesSection: { ...prev.facilitiesSection, facilitiesList: items, catalogSource: 'custom' },
+        coursesSection: hasLinks ? {
+          ...section,
+          sportsList: sports.map(sport => String(sport.facilityId) === String(record.id) ? { ...sport, facilityId: '' } : sport),
+          catalogSource: 'custom'
+        } : section
+      };
+      saveDraft(updated);
+      return updated;
+    });
+    setIsDirty(true);
+    setAutoSaveStatus('dirty');
+  };
+
+  // Lưu toàn bộ nội dung (hỗ trợ silent mode khi tự động đồng bộ)
+  const handleSaveAll = async (silent = false) => {
     if (isSaving) return;
     setIsSaving(true);
+    setAutoSaveStatus('saving');
     try {
-      const saved = await saveLandingContent(content);
+      const target = latestContentRef.current || content;
+      const saved = await saveLandingContent(target);
+      savedContentRef.current = cloneContent(saved);
       setContent(saved);
+      clearDraft();
       setIsDirty(false);
-      addToast('Đã lưu và đồng bộ toàn bộ nội dung Trang chủ thành công!', 'success');
+      setAutoSaveStatus('saved');
+      const now = new Date();
+      const timeStr = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}:${String(now.getSeconds()).padStart(2, '0')}`;
+      setLastSavedTime(timeStr);
+      if (!silent) {
+        addToast(
+          isEn
+            ? 'Homepage content saved and synchronized successfully!'
+            : 'Đã lưu và đồng bộ toàn bộ nội dung thành công!',
+          'success'
+        );
+      }
     } catch (error) {
-      addToast(error.message || 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.', 'error');
-    } finally { setIsSaving(false); }
+      setAutoSaveStatus('error');
+      if (!silent) {
+        addToast(error.message || (isEn ? 'Error saving content. Please try again.' : 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.'), 'error');
+      }
+    } finally {
+      setIsSaving(false);
+    }
   };
 
-  // Khôi phục mặc định
-  const handleResetDefault = async () => {
-    if (isSaving) return;
-    setIsSaving(true);
-    try {
-      const defaultData = await resetLandingContentToDefault();
-      setContent(defaultData);
-      setIsDirty(false);
-      setIsResetConfirmOpen(false);
-      addToast('Đã khôi phục toàn bộ nội dung Trang chủ về chuẩn thiết kế ban đầu!', 'info');
-    } catch (error) {
-      addToast(error.message || 'Không thể khôi phục nội dung. Vui lòng thử lại.', 'error');
-    } finally { setIsSaving(false); }
+  // Tự động lưu lên máy chủ sau 1.2s kể từ khi người dùng ngừng gõ (debounced auto-save)
+  useEffect(() => {
+    if (!isDirty) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    autoSaveTimerRef.current = setTimeout(() => {
+      handleSaveAll(true);
+    }, 1200);
+    return () => {
+      if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    };
+  }, [isDirty, content]);
+
+  const handleDiscardChanges = () => {
+    if (isSaving || !isDirty || !savedContentRef.current) return;
+    if (autoSaveTimerRef.current) clearTimeout(autoSaveTimerRef.current);
+    setContent(cloneContent(savedContentRef.current));
+    clearDraft();
+    setIsDirty(false);
+    setAutoSaveStatus('idle');
+    setDiscardKey(previous => previous + 1);
+    setMediaPickerConfig(previous => ({ ...previous, isOpen: false, callback: null, onClose: undefined }));
+    addToast(
+      isEn
+        ? 'Unsaved changes discarded. Content restored to the last successful save.'
+        : 'Đã hủy thay đổi chưa lưu và khôi phục nội dung từ lần lưu thành công gần nhất.',
+      'info'
+    );
   };
 
   // Xem trước trang chủ ở tab mới an toàn mà không làm thay đổi URL/hash của tab hiện tại
@@ -108,191 +257,161 @@ export function HomeContentManagement() {
     try {
       openLandingPreview(content);
     } catch (error) {
-      addToast(error.message || 'Không thể mở bản xem trước.', 'error');
+      addToast(error.message || (isEn ? 'Cannot open preview.' : 'Không thể mở bản xem trước.'), 'error');
     }
   };
 
+  // Nút lưu trực tiếp tại chân mỗi mục để không cần cuộn lên trên cùng
+  const renderTabSaveFooter = () => (
+    <div className="border-t border-slate-100 dark:border-slate-800 pt-5 mt-6 flex flex-col sm:flex-row items-center justify-between gap-3 bg-slate-50/70 dark:bg-slate-800/40 p-4 rounded-xl">
+      <div className="flex items-center gap-2 text-xs">
+        <span className={`w-2.5 h-2.5 rounded-full ${
+          autoSaveStatus === 'saving'
+            ? 'bg-blue-400 animate-spin'
+            : isDirty
+            ? 'bg-amber-400 animate-pulse'
+            : 'bg-emerald-500'
+        }`} />
+        <span className="font-semibold text-slate-600 dark:text-slate-300">
+          {autoSaveStatus === 'saving'
+            ? (isEn ? 'Auto-saving changes to server...' : 'Đang tự động lưu số liệu lên máy chủ...')
+            : isDirty
+            ? (isEn ? 'Edits detected (auto-saving in 1s)...' : 'Có số liệu mới sửa (hệ thống sẽ tự lưu sau 1s)...')
+            : lastSavedTime
+            ? (isEn ? `All changes auto-saved to server at ${lastSavedTime}.` : `Đã tự động lưu lên máy chủ lúc ${lastSavedTime}.`)
+            : (isEn ? 'All changes synchronized with server.' : 'Toàn bộ số liệu đã đồng bộ với máy chủ.')}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={handleDiscardChanges}
+          disabled={!isDirty || isSaving}
+          className="px-3.5 py-2 rounded-xl bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 border border-slate-200 dark:border-slate-600 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+        >
+          {isEn ? 'Discard Changes' : 'Hủy thay đổi'}
+        </button>
+        <button
+          type="button"
+          onClick={() => handleSaveAll(false)}
+          disabled={isSaving}
+          className="px-5 py-2 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-md shadow-[#2D6A4F]/25 transition-all flex items-center gap-1.5 cursor-pointer hover-lift"
+        >
+          <span className="material-symbols-outlined text-[16px]">
+            {isSaving ? 'sync' : !isDirty && autoSaveStatus === 'saved' ? 'check_circle' : 'save'}
+          </span>
+          <span>
+            {isSaving
+              ? (isEn ? 'Saving...' : 'Đang lưu...')
+              : !isDirty && autoSaveStatus === 'saved'
+              ? (isEn ? 'All Saved' : 'Đã Lưu Tất Cả')
+              : (isEn ? 'Save Now' : 'Lưu Thay Đổi Ngay')}
+          </span>
+        </button>
+      </div>
+    </div>
+  );
+
   // Mở Cloud Media Picker
-  const openMediaPicker = (title, currentUrl, callback) => {
+  const openMediaPicker = (title, currentUrl, callback, onClose) => {
     setMediaPickerConfig({
       isOpen: true,
       title,
       currentUrl,
-      callback
+      callback,
+      onClose
     });
-  };
-
-  // Xử lý bật/tắt hiển thị môn học
-  const handleToggleSport = (sportId, e) => {
-    e.stopPropagation();
-    const updated = content.coursesSection.sportsList.map(s => {
-      if (s.id === sportId) return { ...s, isVisible: !s.isVisible };
-      return s;
-    });
-    setContent(prev => ({
-      ...prev,
-      coursesSection: {
-        ...prev.coursesSection,
-        sportsList: updated
-      }
-    }));
-    setIsDirty(true);
-  };
-
-  // Xử lý bật/tắt hiển thị cụm sân
-  const handleToggleFacility = (facilityId, e) => {
-    e.stopPropagation();
-    const updated = content.facilitiesSection.facilitiesList.map(f => {
-      if (f.id === facilityId) return { ...f, isVisible: !f.isVisible };
-      return f;
-    });
-    setContent(prev => ({
-      ...prev,
-      facilitiesSection: {
-        ...prev.facilitiesSection,
-        facilitiesList: updated
-      }
-    }));
-    setIsDirty(true);
-  };
-
-  // Lưu thẻ Môn học (Thêm mới hoặc Cập nhật)
-  const handleSaveSportModal = () => {
-    if (!editingSport.name?.trim()) {
-      addToast('Vui lòng nhập tên môn học', 'warning');
-      return;
-    }
-
-    let updatedList;
-    if (isNewSport) {
-      const newId = editingSport.id || `sport-${Date.now()}`;
-      updatedList = [...content.coursesSection.sportsList, { ...editingSport, id: newId, isVisible: true }];
-    } else {
-      updatedList = content.coursesSection.sportsList.map(s =>
-        s.id === editingSport.id ? editingSport : s
-      );
-    }
-
-    setContent(prev => ({
-      ...prev,
-      coursesSection: {
-        ...prev.coursesSection,
-        sportsList: updatedList
-      }
-    }));
-    setIsDirty(true);
-    setEditingSport(null);
-    addToast(isNewSport ? 'Đã thêm môn học mới' : 'Đã cập nhật môn học', 'success');
-  };
-
-  // Xóa thẻ môn học
-  const handleDeleteSport = (sportId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa thẻ môn học này không?')) {
-      const updatedList = content.coursesSection.sportsList.filter(s => s.id !== sportId);
-      setContent(prev => ({
-        ...prev,
-        coursesSection: {
-          ...prev.coursesSection,
-          sportsList: updatedList
-        }
-      }));
-      setIsDirty(true);
-      addToast('Đã xóa thẻ môn học', 'info');
-    }
-  };
-
-  // Lưu thẻ Cụm sân (Thêm mới hoặc Cập nhật)
-  const handleSaveFacilityModal = () => {
-    if (!editingFacility.name?.trim()) {
-      addToast('Vui lòng nhập tên cụm sân', 'warning');
-      return;
-    }
-
-    let updatedList;
-    if (isNewFacility) {
-      const newId = editingFacility.id || `room-${Date.now()}`;
-      updatedList = [...content.facilitiesSection.facilitiesList, { ...editingFacility, id: newId, isVisible: true }];
-    } else {
-      updatedList = content.facilitiesSection.facilitiesList.map(f =>
-        f.id === editingFacility.id ? editingFacility : f
-      );
-    }
-
-    setContent(prev => ({
-      ...prev,
-      facilitiesSection: {
-        ...prev.facilitiesSection,
-        facilitiesList: updatedList
-      }
-    }));
-    setIsDirty(true);
-    setEditingFacility(null);
-    addToast(isNewFacility ? 'Đã thêm cụm sân mới' : 'Đã cập nhật cụm sân', 'success');
-  };
-
-  // Xóa thẻ cụm sân
-  const handleDeleteFacility = (facilityId) => {
-    if (window.confirm('Bạn có chắc chắn muốn xóa thẻ cụm sân này không?')) {
-      const updatedList = content.facilitiesSection.facilitiesList.filter(f => f.id !== facilityId);
-      setContent(prev => ({
-        ...prev,
-        facilitiesSection: {
-          ...prev.facilitiesSection,
-          facilitiesList: updatedList
-        }
-      }));
-      setIsDirty(true);
-      addToast('Đã xóa thẻ cụm sân', 'info');
-    }
   };
 
   // Thống kê nhanh
-  const totalSports = content.coursesSection.sportsList.length;
-  const visibleSports = content.coursesSection.sportsList.filter(s => s.isVisible !== false).length;
-  const totalFacilities = content.facilitiesSection.facilitiesList.length;
-  const visibleFacilities = content.facilitiesSection.facilitiesList.filter(f => f.isVisible !== false).length;
+  const totalSports = content.coursesSection?.sportsList?.length || 0;
+  const visibleSports = (content.coursesSection?.sportsList || []).filter(s => s.isVisible !== false).length;
+  const totalFacilities = content.facilitiesSection?.facilitiesList?.length || 0;
+  const visibleFacilities = (content.facilitiesSection?.facilitiesList || []).filter(f => f.isVisible !== false).length;
 
-  if (isLoading) return <div role="status" className="p-8 text-center">Đang tải nội dung trang chủ...</div>;
-  if (loadError) return (
-    <div role="alert" className="p-8 rounded-xl bg-red-50 text-red-800 space-y-4">
-      <p>{loadError}</p>
-      <button type="button" onClick={() => setReloadKey(value => value + 1)} className="px-4 py-2 border rounded-lg">Thử lại</button>
-    </div>
-  );
+  if (isLoading) {
+    return (
+      <div role="status" className="p-12 text-center text-slate-500 dark:text-slate-400 font-medium animate-pulse">
+        {isEn ? 'Loading homepage content...' : 'Đang tải nội dung trang chủ...'}
+      </div>
+    );
+  }
+
+  if (loadError) {
+    return (
+      <div role="alert" className="p-8 rounded-2xl bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-900/50 text-red-800 dark:text-red-300 space-y-4">
+        <p className="font-semibold text-sm">{loadError}</p>
+        <button
+          type="button"
+          onClick={() => setReloadKey(value => value + 1)}
+          className="px-4 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
+        >
+          {isEn ? 'Try Again' : 'Thử lại'}
+        </button>
+      </div>
+    );
+  }
 
   return (
-    <fieldset disabled={isSaving} aria-busy={isSaving} className="space-y-6 pb-20 font-inter min-w-0">
-      {/* 1. TOP HEADER BANNER */}
-      <div className="bg-gradient-to-r from-slate-900 via-slate-800 to-slate-900 text-white rounded-2xl p-6 sm:p-8 border border-slate-700/60 shadow-xl relative overflow-hidden">
-        <div className="absolute right-0 top-0 bottom-0 w-96 bg-gradient-to-l from-red-600/20 to-transparent pointer-events-none" />
-        
+    <fieldset disabled={isSaving} aria-busy={isSaving} className="space-y-6 pb-20 font-inter min-w-0 animate-fade-slide-up">
+      {/* 1. TOP HEADER BANNER (Olympic Logo Gradient) */}
+      <div
+        className="text-white rounded-3xl p-6 sm:p-8 border border-white/30 shadow-xl shadow-[#24828F]/25 relative overflow-hidden"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/40 via-[#E5A33C]/25 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/25 to-transparent blur-3xl" />
+
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div>
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-red-600/20 border border-red-500/40 text-red-400 text-[11px] font-black uppercase tracking-wider mb-2">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/30 text-white text-[11px] font-black uppercase tracking-wider mb-2 shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
               <span>DYNAMIC CONTENT MANAGEMENT &amp; CLOUD STORAGE</span>
             </div>
-            <h1 className="font-chivo text-2xl sm:text-3xl font-black text-white uppercase tracking-tight">
-              Quản Lý Nội Dung Trang Chủ &amp; Đa Phương Tiện
+            <h1 className="font-chivo text-2xl sm:text-3xl font-black text-white uppercase tracking-tight drop-shadow-sm">
+              {isEn ? 'Homepage Content & Media Management' : 'Quản Lý Nội Dung Trang Chủ & Đa Phương Tiện'}
             </h1>
-            <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-2xl leading-relaxed">
-              Tùy biến toàn bộ nội dung hiển thị ở Landing Page: chỉnh sửa văn bản, cập nhật ảnh đám mây, chủ động ẩn hoặc hiển thị các thẻ môn học và cụm sân thi đấu.
+            <p className="text-xs sm:text-sm text-white/95 mt-1 max-w-2xl leading-relaxed font-medium">
+              {isEn
+                ? 'Customize public landing page content: edit headlines, upload cloud media, and toggle visibility of sports and court facilities.'
+                : 'Tùy biến toàn bộ nội dung hiển thị ở Landing Page: chỉnh sửa văn bản, cập nhật ảnh đám mây, chủ động ẩn hoặc hiển thị các thẻ môn học và cụm sân thi đấu.'}
             </p>
 
-            {/* Metrics Chips */}
+            {/* Metrics Chips & Auto-Save Status */}
             <div className="flex flex-wrap items-center gap-3 mt-4 text-xs font-semibold">
-              <div className="px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px] text-rose-400">sports_score</span>
-                <span>Môn thể thao: <strong>{visibleSports}/{totalSports}</strong> đang hiển thị</span>
+              <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px] text-[#81B29A]">sports_score</span>
+                <span>
+                  {isEn ? 'Sports:' : 'Môn thể thao:'} <strong>{visibleSports}/{totalSports}</strong> {isEn ? 'visible' : 'đang hiển thị'}
+                </span>
               </div>
-              <div className="px-3 py-1.5 rounded-lg bg-slate-800/80 border border-slate-700 flex items-center gap-2">
-                <span className="material-symbols-outlined text-[16px] text-amber-400">stadium</span>
-                <span>Cụm sân bãi: <strong>{visibleFacilities}/{totalFacilities}</strong> đang hiển thị</span>
+              <div className="px-3 py-1.5 rounded-xl bg-white/10 backdrop-blur-sm border border-white/10 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[16px] text-[#F2CC8F]">stadium</span>
+                <span>
+                  {isEn ? 'Facilities:' : 'Cụm sân bãi:'} <strong>{visibleFacilities}/{totalFacilities}</strong> {isEn ? 'visible' : 'đang hiển thị'}
+                </span>
               </div>
-              {isDirty && (
-                <div className="px-3 py-1.5 rounded-lg bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 animate-pulse">
+
+              {autoSaveStatus === 'saving' && (
+                <div className="px-3 py-1.5 rounded-xl bg-blue-500/25 border border-blue-400/50 text-blue-200 flex items-center gap-1.5 animate-pulse">
+                  <span className="material-symbols-outlined text-[16px] animate-spin">sync</span>
+                  <span>{isEn ? 'Auto-saving to server...' : 'Đang tự động lưu lên máy chủ...'}</span>
+                </div>
+              )}
+
+              {autoSaveStatus === 'saved' && !isDirty && (
+                <div className="px-3 py-1.5 rounded-xl bg-emerald-500/25 border border-emerald-400/50 text-emerald-200 flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[16px] text-emerald-300">check_circle</span>
+                  <span>{isEn ? `Auto-saved to server (${lastSavedTime})` : `Đã tự động lưu (${lastSavedTime})`}</span>
+                </div>
+              )}
+
+              {isDirty && autoSaveStatus !== 'saving' && (
+                <div className="px-3 py-1.5 rounded-xl bg-amber-500/20 border border-amber-500/40 text-amber-300 flex items-center gap-1.5 animate-pulse">
                   <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                  <span>Có thay đổi chưa lưu</span>
+                  <span>{isEn ? 'Edits detected (auto-saving in 1s)...' : 'Có số liệu mới sửa (sẽ tự lưu sau 1s)...'}</span>
                 </div>
               )}
             </div>
@@ -303,58 +422,89 @@ export function HomeContentManagement() {
             <button
               type="button"
               onClick={handlePreview}
-              className="px-4 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 border border-slate-600 text-slate-200 text-xs font-bold font-chivo uppercase transition-all flex items-center gap-1.5 cursor-pointer"
-              title="Mở xem trang chủ trong tab mới"
+              className="px-4 py-2.5 rounded-xl bg-white/10 hover:bg-white/20 border border-white/15 text-slate-200 text-xs font-bold uppercase transition-all flex items-center gap-1.5 cursor-pointer hover-lift"
+              title={isEn ? 'Open homepage preview in new tab' : 'Mở xem trang chủ trong tab mới'}
             >
               <span className="material-symbols-outlined text-[17px]">visibility</span>
-              <span>Xem Trước Trang Chủ</span>
+              <span>{isEn ? 'Preview Homepage' : 'Xem Trước Trang Chủ'}</span>
             </button>
 
             <button
               type="button"
-              onClick={() => setIsResetConfirmOpen(true)}
-              className="px-4 py-2.5 rounded-xl bg-slate-800/80 hover:bg-red-950/60 border border-slate-700 hover:border-red-500/50 text-slate-300 hover:text-red-400 text-xs font-bold font-chivo uppercase transition-all flex items-center gap-1.5"
-              title="Khôi phục lại nội dung chuẩn ban đầu"
+              onClick={handleDiscardChanges}
+              disabled={!isDirty || isSaving}
+              className="px-4 py-2.5 rounded-xl bg-white/5 hover:bg-white/15 border border-white/15 text-slate-200 text-xs font-bold uppercase transition-all flex items-center gap-1.5 disabled:opacity-40 disabled:cursor-not-allowed"
+              title={isEn ? 'Restore content from the last successful save' : 'Trở về nội dung ở lần lưu thành công gần nhất'}
             >
-              <span className="material-symbols-outlined text-[17px]">restart_alt</span>
-              <span>Khôi Phục Gốc</span>
+              <span className="material-symbols-outlined text-[17px]">undo</span>
+              <span>{isEn ? 'Discard Changes' : 'Hủy thay đổi'}</span>
             </button>
 
             <button
               type="button"
-              onClick={handleSaveAll}
-              className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-black uppercase tracking-wider shadow-lg shadow-red-600/30 transition-all flex items-center gap-2 cursor-pointer transform hover:-translate-y-0.5"
+              onClick={() => handleSaveAll(false)}
+              disabled={isSaving}
+              className="px-6 py-2.5 rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-[#2D6A4F]/30 transition-all flex items-center gap-2 cursor-pointer hover-lift"
             >
-              <span className="material-symbols-outlined text-[18px]">save</span>
-              <span>Lưu Toàn Bộ Thay Đổi</span>
+              <span className="material-symbols-outlined text-[18px]">
+                {isSaving ? 'sync' : !isDirty && autoSaveStatus === 'saved' ? 'check_circle' : 'save'}
+              </span>
+              <span>
+                {isSaving
+                  ? (isEn ? 'Saving...' : 'Đang lưu...')
+                  : !isDirty && autoSaveStatus === 'saved'
+                  ? (isEn ? 'All Saved' : 'Đã Lưu Toàn Bộ')
+                  : (isEn ? 'Save All Changes' : 'Lưu Toàn Bộ Thay Đổi')}
+              </span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 2. TAB NAVIGATION (6 KHU VỰC NHẬP LIỆU KHOA HỌC) */}
-      <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-2 flex items-center gap-1.5 overflow-x-auto">
+      {/* 2. TAB NAVIGATION (7 Sections - All 7 tabs fully visible in responsive grid) */}
+      <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-2.5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-2">
         {[
-          { id: 'hero', label: '1. Hero Banner', icon: 'crop_original', desc: 'Banner chính & Video' },
-          { id: 'whyUs', label: '2. Tại Sao Chọn SCMS', icon: 'verified', desc: '3 Ưu thế & 4 Số liệu' },
-          { id: 'sports', label: '3. Thẻ Môn Thể Thao', icon: 'sports_kabaddi', desc: `${totalSports} Bộ môn` },
-          { id: 'facilities', label: '4. Thẻ Cụm Sân', icon: 'stadium', desc: `${totalFacilities} Khu liên hợp` },
-          { id: 'zones', label: '5. Sơ Đồ Phân Khu', icon: 'apartment', desc: 'Bố trí khu A-B-C' },
-          { id: 'footer', label: '6. Banner Kêu Gọi & Footer', icon: 'contact_support', desc: 'Sự kiện & Liên hệ' }
+          { id: 'hero', label: isEn ? '1. Hero Banner' : '1. Hero Banner', icon: 'crop_original', desc: isEn ? 'Main Banner & Media' : 'Banner chính & Video' },
+          { id: 'whyUs', label: isEn ? '2. Why SCMS' : '2. Tại Sao Chọn SCMS', icon: 'verified', desc: isEn ? '3 Merits & 4 Stats' : '3 Ưu thế & 4 Số liệu' },
+          { id: 'sports', label: isEn ? '3. Sports' : '3. Môn Thể Thao', icon: 'sports_kabaddi', desc: `${totalSports} ${isEn ? 'Sports' : 'Bộ môn'}` },
+          { id: 'facilities', label: isEn ? '4. Facilities' : '4. Thẻ Cụm Sân', icon: 'stadium', desc: `${totalFacilities} ${isEn ? 'Facilities' : 'Khu liên hợp'}` },
+          { id: 'zones', label: isEn ? '5. Zones' : '5. Sơ Đồ Phân Khu', icon: 'apartment', desc: isEn ? 'Zones A-B-C' : 'Bố trí khu A-B-C' },
+          { id: 'footer', label: isEn ? '6. CTA & Footer' : '6. Kêu Gọi & Footer', icon: 'contact_support', desc: isEn ? 'Events & Info' : 'Sự kiện & Liên hệ' },
+          {
+            id: 'authShowcase',
+            label: isEn ? '7. Auth Showcase' : '7. Banner Đăng Nhập',
+            icon: 'badge',
+            desc: isEn ? 'Login Page (3 Stats)' : 'Trang Đăng Nhập (3 số liệu)',
+            badge: isEn ? 'Login Stats' : '3 Số liệu Login'
+          }
         ].map(tab => (
           <button
             key={tab.id}
-            onClick={() => setActiveTab(tab.id)}
-            className={`flex items-center gap-2.5 px-4 py-3 rounded-xl font-chivo text-xs font-bold uppercase transition-all whitespace-nowrap cursor-pointer ${
+            type="button"
+            onClick={() => handleTabChange(tab.id)}
+            className={`flex flex-col items-start justify-between p-3 rounded-xl text-xs font-bold transition-all cursor-pointer relative hover-lift text-left ${
               activeTab === tab.id
-                ? 'bg-red-600 text-white shadow-md shadow-red-600/25'
-                : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                ? 'bg-[#2D6A4F] text-white shadow-md shadow-[#2D6A4F]/25 ring-2 ring-[#2D6A4F]/30'
+                : 'text-slate-700 dark:text-slate-200 bg-slate-50/70 dark:bg-slate-800/40 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200/60 dark:border-slate-700/60'
             }`}
           >
-            <span className="material-symbols-outlined text-[19px] shrink-0">{tab.icon}</span>
-            <div className="flex flex-col text-left">
-              <span>{tab.label}</span>
-              <span className={`text-[10px] font-medium ${activeTab === tab.id ? 'text-white/80' : 'text-slate-400'}`}>
+            <div className="flex items-center justify-between w-full mb-1">
+              <span className={`material-symbols-outlined text-[20px] ${activeTab === tab.id ? 'text-white' : 'text-[#2D6A4F] dark:text-[#81B29A]'}`}>
+                {tab.icon}
+              </span>
+              {tab.badge && (
+                <span className={`text-[9px] px-1.5 py-0.5 rounded font-black tracking-wide uppercase ${
+                  activeTab === tab.id
+                    ? 'bg-white/25 text-white'
+                    : 'bg-emerald-100 dark:bg-emerald-950 text-emerald-800 dark:text-emerald-300 border border-emerald-300 dark:border-emerald-700'
+                }`}>
+                  {tab.badge}
+                </span>
+              )}
+            </div>
+            <div className="w-full">
+              <span className="block truncate font-black tracking-tight">{tab.label}</span>
+              <span className={`block text-[10px] font-medium truncate mt-0.5 ${activeTab === tab.id ? 'text-white/80' : 'text-slate-400 dark:text-slate-500'}`}>
                 {tab.desc}
               </span>
             </div>
@@ -362,71 +512,81 @@ export function HomeContentManagement() {
         ))}
       </div>
 
-      {/* 3. NỘI DUNG TỪNG TAB */}
+      {/* 3. SECTION CONTENT */}
 
       {/* TAB 1: HERO BANNER */}
       {activeTab === 'hero' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-200 pb-4 flex items-center justify-between">
-            <div>
-              <h2 className="font-chivo text-lg font-black text-slate-900 uppercase">
-                Khu Vực 1: Hero Banner Mở Đầu Trang Chủ (Ảnh 1)
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Chỉnh sửa dòng tiêu đề, phụ đề, đường dẫn video/ảnh nền và 4 chỉ số nhanh xuất hiện ở màn hình đầu tiên.
-              </p>
-            </div>
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wide">
+              {isEn ? 'Section 1: Hero Banner Header' : 'Khu Vực 1: Hero Banner Mở Đầu Trang Chủ'}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {isEn
+                ? 'Edit badge, headline, subtext, background video/image and 4 quick metrics on first viewport.'
+                : 'Chỉnh sửa dòng tiêu đề, phụ đề, đường dẫn video/ảnh nền và 4 chỉ số nhanh xuất hiện ở màn hình đầu tiên.'}
+            </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Huy hiệu trên tiêu đề (Badge):</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Header Badge:' : 'Huy hiệu trên tiêu đề (Badge):'}
+                </label>
                 <input
                   type="text"
                   value={content.heroBanner.badge}
                   onChange={(e) => updateContentField('heroBanner', 'badge', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tiêu đề chính (Main Heading):</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Main Headline:' : 'Tiêu đề chính (Main Heading):'}
+                </label>
                 <input
                   type="text"
                   value={content.heroBanner.title}
                   onChange={(e) => updateContentField('heroBanner', 'title', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-black uppercase text-slate-900 focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-black uppercase text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mô tả giới thiệu (Subtext):</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Introduction Subtext:' : 'Mô tả giới thiệu (Subtext):'}
+                </label>
                 <textarea
                   rows={3}
                   value={content.heroBanner.description}
                   onChange={(e) => updateContentField('heroBanner', 'description', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs leading-relaxed focus:ring-2 focus:ring-red-500 focus:outline-none"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs leading-relaxed focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Nút hành động chính:</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Primary CTA Button:' : 'Nút hành động chính:'}
+                  </label>
                   <input
                     type="text"
                     value={content.heroBanner.primaryCtaText}
                     onChange={(e) => updateContentField('heroBanner', 'primaryCtaText', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Liên kết nút chính:</label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Primary CTA Link:' : 'Liên kết nút chính:'}
+                  </label>
                   <input
                     type="text"
                     value={content.heroBanner.primaryCtaLink}
                     onChange={(e) => updateContentField('heroBanner', 'primaryCtaLink', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-600"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
               </div>
@@ -435,28 +595,28 @@ export function HomeContentManagement() {
             <div className="space-y-4">
               {/* Media background preview */}
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Hình ảnh / Poster nền Đám mây:
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Background Image / Poster (Cloud):' : 'Hình ảnh / Poster nền Đám mây:'}
                 </label>
                 <div className="flex gap-2 mb-2">
                   <input
                     type="text"
                     value={content.heroBanner.posterUrl}
                     onChange={(e) => updateContentField('heroBanner', 'posterUrl', e.target.value)}
-                    className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-xs truncate"
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs truncate focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                   <button
                     type="button"
-                    onClick={() => openMediaPicker('Chọn Ảnh Nền Hero Banner', content.heroBanner.posterUrl, (url) => {
+                    onClick={() => openMediaPicker(isEn ? 'Select Hero Banner Background' : 'Chọn Ảnh Nền Hero Banner', content.heroBanner.posterUrl, (url) => {
                       updateContentField('heroBanner', 'posterUrl', url);
                     })}
-                    className="px-3 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer"
+                    className="px-3.5 py-2 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all hover-lift"
                   >
                     <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
-                    <span>Tải/Đổi Ảnh</span>
+                    <span>{isEn ? 'Upload/Change' : 'Tải/Đổi Ảnh'}</span>
                   </button>
                 </div>
-                <div className="h-36 rounded-xl overflow-hidden bg-slate-900 relative border border-slate-200">
+                <div className="h-36 rounded-xl overflow-hidden bg-slate-900 relative border border-slate-200 dark:border-slate-800">
                   <img
                     src={content.heroBanner.posterUrl}
                     alt="Hero poster preview"
@@ -464,34 +624,36 @@ export function HomeContentManagement() {
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent flex items-end p-3">
                     <span className="text-[11px] text-white font-bold bg-black/60 px-2 py-0.5 rounded">
-                      Xem trước Poster Banner
+                      {isEn ? 'Hero Poster Preview' : 'Xem trước Poster Banner'}
                     </span>
                   </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Đường dẫn Video Nền (MP4):</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Background Video URL (MP4):' : 'Đường dẫn Video Nền (MP4):'}
+                </label>
                 <input
                   type="text"
                   value={content.heroBanner.videoUrl}
                   onChange={(e) => updateContentField('heroBanner', 'videoUrl', e.target.value)}
                   placeholder="./hero-video.mp4"
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
             </div>
           </div>
 
-          {/* 4 Chỉ số nhanh Hero */}
-          <div className="border-t border-slate-200 pt-5">
-            <h3 className="font-chivo text-xs font-bold text-slate-800 uppercase mb-3 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[18px] text-red-600">speed</span>
-              <span>4 Chỉ Số Nhanh Tại Dải Banner (Quick Metrics Strip)</span>
+          {/* 4 Quick Metrics */}
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-5">
+            <h3 className="text-xs font-bold text-slate-800 dark:text-slate-200 uppercase mb-3 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px] text-[#2D6A4F] dark:text-[#81B29A]">speed</span>
+              <span>{isEn ? '4 Quick Metrics Strip' : '4 Chỉ Số Nhanh Tại Dải Banner (Quick Metrics Strip)'}</span>
             </h3>
             <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
               {content.heroBanner.metrics.map((metric, idx) => (
-                <div key={metric.id || idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-1.5">
+                <div key={metric.id || idx} className="p-3 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-1.5 hover-lift transition-all">
                   <input
                     type="text"
                     value={metric.value}
@@ -500,7 +662,7 @@ export function HomeContentManagement() {
                       updated[idx] = { ...updated[idx], value: e.target.value };
                       updateContentField('heroBanner', 'metrics', updated);
                     }}
-                    className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-sm font-black text-red-600 text-center"
+                    className="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm font-black text-[#2D6A4F] dark:text-[#81B29A] text-center focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                   <input
                     type="text"
@@ -510,64 +672,76 @@ export function HomeContentManagement() {
                       updated[idx] = { ...updated[idx], label: e.target.value };
                       updateContentField('heroBanner', 'metrics', updated);
                     }}
-                    className="w-full px-2 py-1 bg-white border border-slate-300 rounded text-[11px] font-bold text-slate-700 text-center uppercase"
+                    className="w-full px-2 py-1 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-[11px] font-bold text-slate-700 dark:text-slate-300 text-center uppercase focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
               ))}
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
-      {/* TAB 2: TẠI SAO CHỌN SCMS & THỐNG KÊ */}
+      {/* TAB 2: WHY US & STATS */}
       {activeTab === 'whyUs' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <h2 className="font-chivo text-lg font-black text-slate-900 uppercase">
-              Khu Vực 2: Tại Sao Nên Chọn SCMS (Ảnh 2)
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wide">
+              {isEn ? 'Section 2: Why Choose SCMS' : 'Khu Vực 2: Tại Sao Nên Chọn SCMS'}
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Cập nhật tiêu đề, 3 ưu thế vượt trội và 4 thẻ thống kê số liệu màu đỏ bên phải.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {isEn
+                ? 'Update headline, 3 competitive advantages, and 4 highlight stat cards.'
+                : 'Cập nhật tiêu đề, 3 ưu thế vượt trội và 4 thẻ thống kê số liệu bên phải.'}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Huy hiệu (Badge):</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Badge:' : 'Huy hiệu (Badge):'}
+                </label>
                 <input
                   type="text"
                   value={content.whyUs.badge}
                   onChange={(e) => updateContentField('whyUs', 'badge', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs font-semibold"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tiêu đề phần Giới thiệu:</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Section Title:' : 'Tiêu đề phần Giới thiệu:'}
+                </label>
                 <input
                   type="text"
                   value={content.whyUs.title}
                   onChange={(e) => updateContentField('whyUs', 'title', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-extrabold text-slate-900"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-extrabold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mô tả chi tiết:</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Detailed Description:' : 'Mô tả chi tiết:'}
+                </label>
                 <textarea
                   rows={3}
                   value={content.whyUs.description}
                   onChange={(e) => updateContentField('whyUs', 'description', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs leading-relaxed"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs leading-relaxed focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
 
-              {/* 3 Khối ưu thế */}
+              {/* 3 Advantages */}
               <div className="space-y-3 pt-2">
-                <span className="block text-xs font-bold text-slate-800 uppercase">3 Điểm Nổi Bật Vượt Trội:</span>
+                <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">
+                  {isEn ? '3 Competitive Highlights:' : '3 Điểm Nổi Bật Vượt Trội:'}
+                </span>
                 {content.whyUs.features.map((feat, idx) => (
-                  <div key={feat.id || idx} className="p-3 rounded-xl bg-slate-50 border border-slate-200 space-y-2">
+                  <div key={feat.id || idx} className="p-3.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2 hover-lift transition-all">
                     <div className="flex items-center gap-2">
-                      <span className="w-8 h-8 rounded bg-red-600 text-white flex items-center justify-center shrink-0">
+                      <span className="w-8 h-8 rounded-lg bg-[#2D6A4F] text-white flex items-center justify-center shrink-0">
                         <span className="material-symbols-outlined text-[18px]">{feat.icon}</span>
                       </span>
                       <input
@@ -578,7 +752,7 @@ export function HomeContentManagement() {
                           updated[idx] = { ...updated[idx], title: e.target.value };
                           updateContentField('whyUs', 'features', updated);
                         }}
-                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold"
+                        className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                       />
                     </div>
                     <textarea
@@ -589,78 +763,107 @@ export function HomeContentManagement() {
                         updated[idx] = { ...updated[idx], description: e.target.value };
                         updateContentField('whyUs', 'features', updated);
                       }}
-                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-[11px] leading-relaxed"
+                      className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-[11px] leading-relaxed focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* 4 Thẻ thống kê màu đỏ */}
+            {/* 4 Stat Cards */}
             <div className="space-y-4">
-              <span className="block text-xs font-bold text-slate-800 uppercase">
-                4 Thẻ Thống Kê Số Liệu Nổi Bật (Card Đỏ):
+              {/* Quick Jump to Tab 7 for Login Stats */}
+              <div className="p-3.5 rounded-xl bg-gradient-to-r from-emerald-500/10 via-teal-500/10 to-blue-500/10 border border-emerald-500/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[22px] shrink-0">info</span>
+                  <div className="text-xs">
+                    <span className="font-bold text-slate-900 dark:text-white">
+                      {isEn ? 'Looking to change stats on Login / Register page?' : 'Bạn muốn đổi 3 số liệu hiển thị trên trang Đăng nhập & Đăng ký?'}
+                    </span>
+                    <p className="text-slate-600 dark:text-slate-400 text-[11px] mt-0.5">
+                      {isEn
+                        ? 'The 4 cards below appear on the Homepage "Why Choose SCMS". To edit the 3 stats on Login page (10 Sports, 10 Courts, 2.5K+ Members), jump to Tab 7.'
+                        : '4 thẻ dưới đây hiển thị ở mục "Tại sao chọn SCMS" trên Trang chủ. Để đổi 3 số liệu trên trang Đăng nhập (10 Bộ môn, 10 Khu tập luyện, 2.5K+ Hội viên), hãy chuyển sang Tab 7.'}
+                    </p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => handleTabChange('authShowcase')}
+                  className="px-3.5 py-1.5 rounded-lg bg-[#2D6A4F] hover:bg-[#1B4332] text-white text-xs font-bold shrink-0 flex items-center gap-1.5 cursor-pointer shadow-sm hover-lift"
+                >
+                  <span>{isEn ? 'Go to Tab 7' : 'Sang Tab 7: Banner Đăng Nhập'}</span>
+                  <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+                </button>
+              </div>
+
+              <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">
+                {isEn ? '4 Highlight Statistics Cards (Homepage "Why Choose SCMS"):' : '4 Thẻ Thống Kê Số Liệu Nổi Bật (Mục "Tại sao chọn SCMS" trên Trang chủ):'}
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 {content.whyUs.stats.map((st, idx) => (
-                  <div key={st.id || idx} className="p-4 rounded-xl bg-red-600 text-white space-y-2 shadow-md">
+                  <div key={st.id || idx} className="p-4 rounded-xl bg-gradient-to-br from-[#1E2235] to-[#242A42] text-white space-y-2 shadow-md hover-lift transition-all border border-white/10">
                     <div className="flex items-center justify-between">
-                      <span className="material-symbols-outlined text-[24px] text-white/80">{st.icon}</span>
-                      <span className="text-[10px] font-bold uppercase bg-white/20 px-2 py-0.5 rounded">
-                        Thẻ {idx + 1}
+                      <span className="material-symbols-outlined text-[24px] text-[#81B29A]">{st.icon}</span>
+                      <span className="text-[10px] font-bold uppercase bg-white/10 px-2 py-0.5 rounded text-slate-300">
+                        {isEn ? `Card ${idx + 1}` : `Thẻ ${idx + 1}`}
                       </span>
                     </div>
                     <div className="flex gap-2">
                       <input
                         type="number"
                         value={st.number}
+                        onBlur={() => { if (isDirty) handleSaveAll(true); }}
                         onChange={(e) => {
                           const updated = [...content.whyUs.stats];
                           updated[idx] = { ...updated[idx], number: Number(e.target.value) };
                           updateContentField('whyUs', 'stats', updated);
                         }}
-                        className="w-2/3 px-2 py-1 rounded bg-white text-slate-900 font-chivo font-black text-lg text-center"
+                        className="w-2/3 px-2 py-1 rounded-lg bg-white/15 text-white font-black text-lg text-center border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
                       />
                       <input
                         type="text"
                         value={st.suffix || ''}
-                        placeholder="Hậu tố"
+                        placeholder={isEn ? 'Suffix' : 'Hậu tố'}
+                        onBlur={() => { if (isDirty) handleSaveAll(true); }}
                         onChange={(e) => {
                           const updated = [...content.whyUs.stats];
                           updated[idx] = { ...updated[idx], suffix: e.target.value };
                           updateContentField('whyUs', 'stats', updated);
                         }}
-                        className="w-1/3 px-2 py-1 rounded bg-white text-slate-900 font-bold text-xs text-center"
+                        className="w-1/3 px-2 py-1 rounded-lg bg-white/15 text-white font-bold text-xs text-center border border-white/20 focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
                       />
                     </div>
                     <input
                       type="text"
                       value={st.title}
+                      onBlur={() => { if (isDirty) handleSaveAll(true); }}
                       onChange={(e) => {
                         const updated = [...content.whyUs.stats];
                         updated[idx] = { ...updated[idx], title: e.target.value };
                         updateContentField('whyUs', 'stats', updated);
                       }}
-                      className="w-full px-2 py-1 rounded bg-white/20 border border-white/30 text-white text-xs font-extrabold uppercase"
+                      className="w-full px-2 py-1 rounded-lg bg-white/10 border border-white/20 text-white text-xs font-extrabold uppercase focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
                     />
                     <input
                       type="text"
                       value={st.subtitle}
+                      onBlur={() => { if (isDirty) handleSaveAll(true); }}
                       onChange={(e) => {
                         const updated = [...content.whyUs.stats];
                         updated[idx] = { ...updated[idx], subtitle: e.target.value };
                         updateContentField('whyUs', 'stats', updated);
                       }}
-                      className="w-full px-2 py-1 rounded bg-white/10 border border-white/20 text-white/90 text-[11px]"
+                      className="w-full px-2 py-1 rounded-lg bg-white/5 border border-white/10 text-white/90 text-[11px] focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
                     />
                   </div>
                 ))}
               </div>
 
-              {/* Dải cam kết */}
-              <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 space-y-2 mt-4">
-                <span className="block text-[11px] font-bold text-slate-700 uppercase">
-                  Dải Cam Kết Chất Lượng (Trust Strip):
+              {/* Trust Strip */}
+              <div className="p-4 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 space-y-2 mt-4 hover-lift transition-all">
+                <span className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase">
+                  {isEn ? 'Quality Trust Strip:' : 'Dải Cam Kết Chất Lượng (Trust Strip):'}
                 </span>
                 <input
                   type="text"
@@ -669,7 +872,7 @@ export function HomeContentManagement() {
                     const updated = { ...content.whyUs.trustBanner, title: e.target.value };
                     updateContentField('whyUs', 'trustBanner', updated);
                   }}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs font-bold"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
                 <input
                   type="text"
@@ -678,440 +881,91 @@ export function HomeContentManagement() {
                     const updated = { ...content.whyUs.trustBanner, description: e.target.value };
                     updateContentField('whyUs', 'trustBanner', updated);
                   }}
-                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 text-xs"
+                  className="w-full px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
-      {/* TAB 3: QUẢN LÝ CÁC THẺ MÔN THỂ THAO */}
+      {/* TAB 3: SPORTS CATALOG */}
       {activeTab === 'sports' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="font-chivo text-lg font-black text-slate-900 uppercase">
-                Khu Vực 3: Các Thẻ Hiển Thị Môn Học (Ảnh 3 &amp; 4)
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Chủ động chỉnh sửa nội dung, thêm môn học, tải ảnh đám mây hoặc <strong>bật/tắt ẩn khỏi giao diện</strong>.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsNewSport(true);
-                setEditingSport({
-                  name: '',
-                  category: 'Bóng & Vợt',
-                  icon: 'sports_tennis',
-                  facilityId: 'room-01',
-                  venue: 'Khu thể thao SCMS',
-                  rating: '5.0',
-                  ratingCount: '100',
-                  level: 'Mọi trình độ',
-                  coach: 'HLV Chuyên Nghiệp',
-                  schedule: '06:00 - 21:00',
-                  highlight: 'Mô tả tóm tắt lớp học thể thao...',
-                  price: 'Từ 50.000đ/buổi',
-                  badges: ['ĐẠT CHUẨN', 'CHUYÊN NGHIỆP'],
-                  image: 'https://images.unsplash.com/photo-1519315901367-f34ff9154487?q=80&w=1200&auto=format&fit=crop',
-                  isVisible: true
-                });
-              }}
-              className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-bold uppercase flex items-center gap-1.5 shadow-md shadow-red-600/20 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">add</span>
-              <span>Thêm Môn Học Mới</span>
-            </button>
-          </div>
-
-          {/* Header section config */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200 grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Tiêu đề Section Môn Học:</label>
-              <input
-                type="text"
-                value={content.coursesSection.title}
-                onChange={(e) => updateContentField('coursesSection', 'title', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-extrabold uppercase"
-              />
-            </div>
-            <div>
-              <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Mô tả Section:</label>
-              <input
-                type="text"
-                value={content.coursesSection.description}
-                onChange={(e) => updateContentField('coursesSection', 'description', e.target.value)}
-                className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-              />
-            </div>
-          </div>
-
-          {/* Search bar */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
-              <input
-                type="text"
-                value={sportSearch}
-                onChange={(e) => setSportSearch(e.target.value)}
-                placeholder="Tìm kiếm theo tên môn học, danh mục, huấn luyện viên..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-red-500 focus:outline-none"
-              />
-            </div>
-            <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">
-              Hiển thị: <strong>{visibleSports}</strong> / {totalSports} môn
-            </span>
-          </div>
-
-          {/* Danh sách các thẻ môn học */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {content.coursesSection.sportsList
-              .filter(s => !sportSearch || s.name.toLowerCase().includes(sportSearch.toLowerCase()) || s.category?.toLowerCase().includes(sportSearch.toLowerCase()))
-              .map((sport) => {
-                const isVisible = sport.isVisible !== false;
-
-                return (
-                  <div
-                    key={sport.id}
-                    className={`rounded-2xl border p-4 flex flex-col justify-between transition-all ${
-                      isVisible
-                        ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
-                        : 'bg-slate-100/70 border-slate-300/80 opacity-75'
-                    }`}
-                  >
-                    <div>
-                      {/* Media Image */}
-                      <div className="h-36 rounded-xl overflow-hidden bg-slate-900 relative mb-3 border border-slate-200">
-                        <img
-                          src={sport.image}
-                          alt={sport.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-2 left-2 flex items-center gap-1">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/75 text-white uppercase backdrop-blur-sm">
-                            {sport.category}
-                          </span>
-                        </div>
-                        <div className="absolute top-2 right-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase shadow-md ${
-                            isVisible ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-200'
-                          }`}>
-                            {isVisible ? 'Đang Hiển Thị' : 'Tạm Ẩn'}
-                          </span>
-                        </div>
-                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-white text-[11px] font-bold drop-shadow">
-                          <span>{sport.price}</span>
-                          <span>⭐ {sport.rating}</span>
-                        </div>
-                      </div>
-
-                      {/* Info */}
-                      <div className="flex items-start justify-between gap-2">
-                        <h3 className="font-chivo text-base font-black text-slate-900 uppercase">
-                          {sport.name}
-                        </h3>
-                        <span className="text-xs text-rose-600 font-bold shrink-0">
-                          {sport.schedule}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-500 font-medium mt-1 truncate">
-                        {sport.venue}
-                      </p>
-                      <p className="text-xs text-slate-600 line-clamp-2 mt-2 leading-relaxed">
-                        {sport.highlight}
-                      </p>
-                    </div>
-
-                    {/* Actions bar */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                      {/* Nút bật tắt ẩn/hiện */}
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleSport(sport.id, e)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                          isVisible
-                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                        }`}
-                        title={isVisible ? 'Nhấp để ẩn thẻ này khỏi trang chủ' : 'Nhấp để hiển thị lại thẻ này trên trang chủ'}
-                      >
-                        <span className="material-symbols-outlined text-[16px]">
-                          {isVisible ? 'visibility' : 'visibility_off'}
-                        </span>
-                        <span>{isVisible ? 'Hiện' : 'Đang ẩn'}</span>
-                      </button>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsNewSport(false);
-                            setEditingSport({ ...sport });
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">edit</span>
-                          <span>Sửa</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteSport(sport.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Xóa môn học"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
+        <LandingCatalogEditor
+          key={`sports-${discardKey}`}
+          type="sports"
+          metadata={content.coursesSection.sportsList}
+          fallbackToCatalog={content.coursesSection.catalogSource !== 'custom'}
+          facilities={content.facilitiesSection.facilitiesList.length || content.facilitiesSection.catalogSource === 'custom' ? content.facilitiesSection.facilitiesList : undefined}
+          onChange={items => updateCatalogCards('coursesSection', 'sportsList', items)}
+          openMediaPicker={openMediaPicker}
+        />
       )}
 
-      {/* TAB 4: QUẢN LÝ CÁC THẺ CỤM SÂN */}
+      {/* TAB 4: COURT FACILITIES */}
       {activeTab === 'facilities' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-200 pb-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="font-chivo text-lg font-black text-slate-900 uppercase">
-                Khu Vực 4: Các Thẻ Cơ Sở Vật Chất &amp; Cụm Sân (Ảnh 5 &amp; 6)
-              </h2>
-              <p className="text-xs text-slate-500 mt-0.5">
-                Quản lý các cụm sân bãi: sửa đổi thông số, cập nhật ảnh chính &amp; phụ đám mây, <strong>bật/tắt ẩn khỏi giao diện</strong>.
-              </p>
-            </div>
-
-            <button
-              type="button"
-              onClick={() => {
-                setIsNewFacility(true);
-                setEditingFacility({
-                  name: '',
-                  category: 'team-sports',
-                  categoryName: 'Sân bóng & Vợt',
-                  location: 'Khu B • Tầng 1',
-                  zone: 'Khu B',
-                  capacity: '10 - 20 người',
-                  openHours: '06:00 - 22:00 hàng ngày',
-                  priceRate: 'Từ 80.000đ/giờ',
-                  badge: 'Đạt Chuẩn Thi Đấu',
-                  badgeColor: 'bg-red-600',
-                  image: 'https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop',
-                  highlights: 'Mặt sàn tiêu chuẩn • Chiếu sáng ban đêm • Tiện nghi',
-                  description: 'Không gian cụm sân đạt tiêu chuẩn phục vụ thi đấu và tập luyện phong trào.',
-                  specs: [
-                    { label: 'Quy cách', value: 'Tiêu chuẩn quốc tế' },
-                    { label: 'Mặt sàn', value: 'Sơn phủ thể thao chống trượt' }
-                  ],
-                  amenities: ['Phòng thay đồ', 'Tủ để đồ cá nhân', 'Nước uống miễn phí'],
-                  isVisible: true
-                });
-              }}
-              className="px-4 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-bold uppercase flex items-center gap-1.5 shadow-md shadow-red-600/20 cursor-pointer"
-            >
-              <span className="material-symbols-outlined text-[18px]">add_business</span>
-              <span>Thêm Cụm Sân Mới</span>
-            </button>
-          </div>
-
-          {/* 4 Chỉ số mặt sàn sân bãi */}
-          <div className="p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <span className="block text-xs font-bold text-slate-800 uppercase mb-3">
-              4 Chỉ Số Thống Kê Cơ Sở Vật Chất (Ảnh 5):
-            </span>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-              {content.facilitiesSection.metrics.map((fm, idx) => (
-                <div key={fm.id || idx} className="p-3 rounded-lg bg-white border border-slate-200 space-y-1">
-                  <input
-                    type="text"
-                    value={fm.value}
-                    onChange={(e) => {
-                      const updated = [...content.facilitiesSection.metrics];
-                      updated[idx] = { ...updated[idx], value: e.target.value };
-                      updateContentField('facilitiesSection', 'metrics', updated);
-                    }}
-                    className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 font-chivo text-sm font-black text-slate-900 text-center"
-                  />
-                  <input
-                    type="text"
-                    value={fm.label}
-                    onChange={(e) => {
-                      const updated = [...content.facilitiesSection.metrics];
-                      updated[idx] = { ...updated[idx], label: e.target.value };
-                      updateContentField('facilitiesSection', 'metrics', updated);
-                    }}
-                    className="w-full px-2 py-1 rounded bg-slate-50 border border-slate-200 text-[10px] font-bold text-slate-600 text-center uppercase"
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Search bar */}
-          <div className="flex items-center gap-3">
-            <div className="relative flex-1">
-              <span className="material-symbols-outlined absolute left-3 top-2.5 text-slate-400 text-[18px]">search</span>
-              <input
-                type="text"
-                value={facilitySearch}
-                onChange={(e) => setFacilitySearch(e.target.value)}
-                placeholder="Tìm kiếm cụm sân theo tên, khu vực A-B-C, tầng, vị trí..."
-                className="w-full pl-9 pr-4 py-2 rounded-xl border border-slate-300 text-xs focus:ring-2 focus:ring-red-500 focus:outline-none"
-              />
-            </div>
-            <span className="text-xs text-slate-500 font-semibold whitespace-nowrap">
-              Hiển thị: <strong>{visibleFacilities}</strong> / {totalFacilities} sân
-            </span>
-          </div>
-
-          {/* Danh sách các thẻ cụm sân */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {content.facilitiesSection.facilitiesList
-              .filter(f => !facilitySearch || f.name.toLowerCase().includes(facilitySearch.toLowerCase()) || f.location?.toLowerCase().includes(facilitySearch.toLowerCase()))
-              .map((fac) => {
-                const isVisible = fac.isVisible !== false;
-
-                return (
-                  <div
-                    key={fac.id}
-                    className={`rounded-2xl border p-4 flex flex-col justify-between transition-all ${
-                      isVisible
-                        ? 'bg-white border-slate-200 shadow-sm hover:shadow-md'
-                        : 'bg-slate-100/70 border-slate-300/80 opacity-75'
-                    }`}
-                  >
-                    <div>
-                      {/* Media Image */}
-                      <div className="h-40 rounded-xl overflow-hidden bg-slate-900 relative mb-3 border border-slate-200">
-                        <img
-                          src={fac.image}
-                          alt={fac.name}
-                          className="w-full h-full object-cover"
-                        />
-                        <div className="absolute top-2 left-2 flex items-center gap-1">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-black/75 text-white uppercase backdrop-blur-sm">
-                            {fac.location}
-                          </span>
-                        </div>
-                        <div className="absolute top-2 right-2">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase shadow-md ${
-                            isVisible ? 'bg-emerald-600 text-white' : 'bg-slate-700 text-slate-200'
-                          }`}>
-                            {isVisible ? 'Đang Hiển Thị' : 'Tạm Ẩn'}
-                          </span>
-                        </div>
-                        <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between text-white text-[11px] font-bold drop-shadow">
-                          <span>Sức chứa: {fac.capacity}</span>
-                          <span className="text-emerald-400">Mở cửa</span>
-                        </div>
-                      </div>
-
-                      {/* Info */}
-                      <h3 className="font-chivo text-base font-black text-slate-900 leading-snug">
-                        {fac.name}
-                      </h3>
-                      <div className="text-xs text-red-600 font-bold mt-1">
-                        {fac.priceRate}
-                      </div>
-                      <div className="text-[11px] font-medium text-slate-700 bg-slate-50 p-2 rounded-lg mt-2 border border-slate-200">
-                        <strong className="text-red-600 block mb-0.5">Đặc điểm:</strong>
-                        <span className="line-clamp-2">{fac.highlights}</span>
-                      </div>
-                    </div>
-
-                    {/* Actions */}
-                    <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between gap-2">
-                      <button
-                        type="button"
-                        onClick={(e) => handleToggleFacility(fac.id, e)}
-                        className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                          isVisible
-                            ? 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border border-emerald-200'
-                            : 'bg-amber-50 text-amber-700 hover:bg-amber-100 border border-amber-200'
-                        }`}
-                        title={isVisible ? 'Nhấp để ẩn cụm sân này khỏi trang chủ' : 'Nhấp để hiển thị lại'}
-                      >
-                        <span className="material-symbols-outlined text-[16px]">
-                          {isVisible ? 'visibility' : 'visibility_off'}
-                        </span>
-                        <span>{isVisible ? 'Hiện' : 'Đang ẩn'}</span>
-                      </button>
-
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setIsNewFacility(false);
-                            setEditingFacility({ ...fac });
-                          }}
-                          className="px-3 py-1.5 rounded-lg bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold flex items-center gap-1 cursor-pointer"
-                        >
-                          <span className="material-symbols-outlined text-[15px]">edit</span>
-                          <span>Sửa</span>
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleDeleteFacility(fac.id)}
-                          className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 transition-colors"
-                          title="Xóa cụm sân"
-                        >
-                          <span className="material-symbols-outlined text-[18px]">delete</span>
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                );
-              })}
-          </div>
-        </div>
+        <LandingCatalogEditor
+          key={`facilities-${discardKey}`}
+          type="facilities"
+          metadata={content.facilitiesSection.facilitiesList}
+          fallbackToCatalog={content.facilitiesSection.catalogSource !== 'custom'}
+          sports={content.coursesSection.sportsList.length || content.coursesSection.catalogSource === 'custom' ? content.coursesSection.sportsList : undefined}
+          onChange={items => updateCatalogCards('facilitiesSection', 'facilitiesList', items)}
+          onDelete={deleteFacilityCard}
+          openMediaPicker={openMediaPicker}
+        />
       )}
 
-      {/* TAB 5: SƠ ĐỒ PHÂN KHU & TIỆN ÍCH */}
+      {/* TAB 5: ZONES & AMENITIES */}
       {activeTab === 'zones' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <h2 className="font-chivo text-lg font-black text-slate-900 uppercase">
-              Khu Vực 5: Sơ Đồ Các Khu Vực Tập Luyện (Ảnh 7)
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wide">
+              {isEn ? 'Section 5: Training Zones & Service Amenities' : 'Khu Vực 5: Sơ Đồ Các Khu Vực Tập Luyện'}
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Cập nhật 4 tiện ích dịch vụ bên trái và bố trí các phân khu Khu A, B, C và Ngoài trời.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {isEn
+                ? 'Update 4 service amenities and layout of Zones A, B, C and Outdoor.'
+                : 'Cập nhật 4 tiện ích dịch vụ bên trái và bố trí các phân khu Khu A, B, C và Ngoài trời.'}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div className="space-y-4">
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tiêu đề Section Sơ Đồ:</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Layout Section Title:' : 'Tiêu đề Section Sơ Đồ:'}
+                </label>
                 <input
                   type="text"
                   value={content.zonesLayout.title}
                   onChange={(e) => updateContentField('zonesLayout', 'title', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-sm font-extrabold uppercase"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm font-extrabold uppercase focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mô tả tổng quát:</label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'General Description:' : 'Mô tả tổng quát:'}
+                </label>
                 <textarea
                   rows={3}
                   value={content.zonesLayout.description}
                   onChange={(e) => updateContentField('zonesLayout', 'description', e.target.value)}
-                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 text-xs leading-relaxed"
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs leading-relaxed focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
 
-              {/* 4 Tiện ích */}
+              {/* 4 Amenities */}
               <div className="space-y-2 pt-2">
-                <span className="block text-xs font-bold text-slate-800 uppercase">4 Tiện Ích Dịch Vụ Đi Kèm:</span>
+                <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">
+                  {isEn ? '4 Attached Service Amenities:' : '4 Tiện Ích Dịch Vụ Đi Kèm:'}
+                </span>
                 {content.zonesLayout.serviceAmenities.map((sa, idx) => (
-                  <div key={sa.id || idx} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 border border-slate-200">
-                    <span className="w-8 h-8 rounded-lg bg-red-100 text-red-600 flex items-center justify-center shrink-0">
+                  <div key={sa.id || idx} className="flex items-center gap-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-800 hover-lift transition-all">
+                    <span className="w-8 h-8 rounded-lg bg-[#2D6A4F]/15 text-[#2D6A4F] dark:text-[#81B29A] flex items-center justify-center shrink-0">
                       <span className="material-symbols-outlined text-[18px]">{sa.icon}</span>
                     </span>
                     <input
@@ -1122,20 +976,22 @@ export function HomeContentManagement() {
                         updated[idx] = { ...updated[idx], text: e.target.value };
                         updateContentField('zonesLayout', 'serviceAmenities', updated);
                       }}
-                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 text-xs"
+                      className="flex-1 px-3 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                     />
                   </div>
                 ))}
               </div>
             </div>
 
-            {/* 4 Phân khu */}
+            {/* 4 Zones */}
             <div className="space-y-3">
-              <span className="block text-xs font-bold text-slate-800 uppercase">4 Khối Phân Bố Khu Vực:</span>
+              <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">
+                {isEn ? '4 Facility Zone Blocks:' : '4 Khối Phân Bố Khu Vực:'}
+              </span>
               {content.zonesLayout.zones.map((zn, idx) => (
-                <div key={zn.id || idx} className="p-4 rounded-xl bg-slate-900 text-white space-y-2">
+                <div key={zn.id || idx} className="p-4 rounded-xl bg-[#1E2235] text-white space-y-2 border border-white/10 hover-lift transition-all">
                   <div className="flex items-center gap-2">
-                    <span className="material-symbols-outlined text-[20px] text-red-400">{zn.icon}</span>
+                    <span className="material-symbols-outlined text-[20px] text-[#81B29A]">{zn.icon}</span>
                     <input
                       type="text"
                       value={zn.name}
@@ -1144,7 +1000,7 @@ export function HomeContentManagement() {
                         updated[idx] = { ...updated[idx], name: e.target.value };
                         updateContentField('zonesLayout', 'zones', updated);
                       }}
-                      className="flex-1 px-3 py-1 bg-white/10 rounded border border-white/20 text-xs font-bold text-white uppercase"
+                      className="flex-1 px-3 py-1 bg-white/10 rounded-lg border border-white/20 text-xs font-bold text-white uppercase focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
                     />
                   </div>
                   <div className="space-y-1.5 pl-6">
@@ -1158,7 +1014,7 @@ export function HomeContentManagement() {
                           updated[idx] = { ...updated[idx], items: updated[idx].items.map((item, index) => index === itIdx ? e.target.value : item) };
                           updateContentField('zonesLayout', 'zones', updated);
                         }}
-                        className="w-full px-2.5 py-1 bg-white/5 rounded border border-white/10 text-[11px] text-slate-300"
+                        className="w-full px-2.5 py-1 bg-white/5 rounded-lg border border-white/10 text-[11px] text-slate-300 focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
                       />
                     ))}
                   </div>
@@ -1166,90 +1022,106 @@ export function HomeContentManagement() {
               ))}
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
-      {/* TAB 6: BANNER KÊU GỌI & FOOTER */}
+      {/* TAB 6: CTA & FOOTER */}
       {activeTab === 'footer' && (
-        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 sm:p-8 space-y-6">
-          <div className="border-b border-slate-200 pb-4">
-            <h2 className="font-chivo text-lg font-black text-slate-900 uppercase">
-              Khu Vực 6: Banner Kêu Gọi Sự Kiện &amp; Chân Trang Footer (Ảnh 8)
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wide">
+              {isEn ? 'Section 6: Event Call-To-Action & Footer Information' : 'Khu Vực 6: Banner Kêu Gọi Sự Kiện & Chân Trang Footer'}
             </h2>
-            <p className="text-xs text-slate-500 mt-0.5">
-              Cập nhật banner đỏ kêu gọi đặt sân giải đấu, số hotline liên hệ, email, Zalo, Facebook, địa chỉ và thời gian hoạt động.
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {isEn
+                ? 'Update tournament event banner, hotline, email, Zalo, Facebook, address and business hours.'
+                : 'Cập nhật banner kêu gọi đặt sân giải đấu, số hotline liên hệ, email, Zalo, Facebook, địa chỉ và thời gian hoạt động.'}
             </p>
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Banner kêu gọi */}
-            <div className="p-5 rounded-2xl bg-gradient-to-r from-red-600 to-red-700 text-white space-y-3 shadow-lg">
-              <span className="text-[10px] font-bold uppercase tracking-wider bg-black/20 px-2.5 py-1 rounded inline-block">
-                Banner Kêu Gọi Thuê Sân Sự Kiện (Card Đỏ)
+            {/* Banner CTA */}
+            <div className="p-5 rounded-2xl bg-gradient-to-br from-[#1E2235] via-[#242A42] to-[#2D6A4F] text-white space-y-3 shadow-lg border border-white/10 hover-lift transition-all">
+              <span className="text-[10px] font-bold uppercase tracking-wider bg-white/10 px-2.5 py-1 rounded-md inline-block text-slate-200">
+                {isEn ? 'Event Rental Call-to-Action' : 'Banner Kêu Gọi Thuê Sân Sự Kiện (Card Đỏ)'}
               </span>
               <div>
-                <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">Tiêu đề Banner:</label>
+                <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">
+                  {isEn ? 'Banner Title:' : 'Tiêu đề Banner:'}
+                </label>
                 <input
                   type="text"
                   value={content.ctaAndFooter.ctaTitle}
                   onChange={(e) => updateContentField('ctaAndFooter', 'ctaTitle', e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-white/20 border border-white/30 text-white font-chivo text-sm font-black uppercase"
+                  className="w-full px-3 py-1.5 rounded-lg bg-white/15 border border-white/30 text-white text-sm font-black uppercase focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
                 />
               </div>
               <div>
-                <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">Mô tả kêu gọi:</label>
+                <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">
+                  {isEn ? 'Banner Description:' : 'Mô tả kêu gọi:'}
+                </label>
                 <textarea
                   rows={3}
                   value={content.ctaAndFooter.ctaDescription}
                   onChange={(e) => updateContentField('ctaAndFooter', 'ctaDescription', e.target.value)}
-                  className="w-full px-3 py-1.5 rounded-lg bg-white/20 border border-white/30 text-white text-xs leading-relaxed"
+                  className="w-full px-3 py-1.5 rounded-lg bg-white/15 border border-white/30 text-white text-xs leading-relaxed focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
                 />
               </div>
               <div className="grid grid-cols-2 gap-2">
                 <div>
-                  <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">Nút hành động 1:</label>
+                  <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">
+                    {isEn ? 'Primary Button:' : 'Nút hành động 1:'}
+                  </label>
                   <input
                     type="text"
                     value={content.ctaAndFooter.ctaPrimaryText}
                     onChange={(e) => updateContentField('ctaAndFooter', 'ctaPrimaryText', e.target.value)}
-                    className="w-full px-2.5 py-1 rounded bg-white text-red-600 font-bold text-xs"
+                    className="w-full px-2.5 py-1 rounded-lg bg-white text-[#2D6A4F] font-bold text-xs focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">Nút hành động 2:</label>
+                  <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">
+                    {isEn ? 'Secondary Button:' : 'Nút hành động 2:'}
+                  </label>
                   <input
                     type="text"
                     value={content.ctaAndFooter.ctaSecondaryText}
                     onChange={(e) => updateContentField('ctaAndFooter', 'ctaSecondaryText', e.target.value)}
-                    className="w-full px-2.5 py-1 rounded bg-white/20 border border-white/40 text-white font-bold text-xs"
+                    className="w-full px-2.5 py-1 rounded-lg bg-white/20 border border-white/40 text-white font-bold text-xs focus:outline-none"
                   />
                 </div>
               </div>
             </div>
 
-            {/* Thông tin liên hệ & Giờ mở cửa */}
+            {/* Contacts & Hours */}
             <div className="space-y-4">
-              <span className="block text-xs font-bold text-slate-800 uppercase">
-                Thông Tin Liên Hệ &amp; Giờ Mở Cửa (Footer):
+              <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">
+                {isEn ? 'Contact Info & Business Hours (Footer):' : 'Thông Tin Liên Hệ & Giờ Mở Cửa (Footer):'}
               </span>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Hotline CSKH:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Support Hotline:' : 'Hotline CSKH:'}
+                  </label>
                   <input
                     type="text"
                     value={content.ctaAndFooter.contactPhone}
                     onChange={(e) => updateContentField('ctaAndFooter', 'contactPhone', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Email liên hệ:</label>
+                  <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Contact Email:' : 'Email liên hệ:'}
+                  </label>
                   <input
                     type="email"
                     value={content.ctaAndFooter.contactEmail}
                     onChange={(e) => updateContentField('ctaAndFooter', 'contactEmail', e.target.value)}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                    className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
               </div>
@@ -1257,7 +1129,9 @@ export function HomeContentManagement() {
               <div>
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
-                    <label htmlFor="footer-zalo-phone" className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Số điện thoại Zalo:</label>
+                    <label htmlFor="footer-zalo-phone" className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                      {isEn ? 'Zalo Phone Number:' : 'Số điện thoại Zalo:'}
+                    </label>
                     <input
                       id="footer-zalo-phone"
                       type="tel"
@@ -1266,11 +1140,13 @@ export function HomeContentManagement() {
                       onChange={(e) => updateContentField('ctaAndFooter', 'contactZaloPhone', e.target.value)}
                       placeholder="0901 234 567"
                       aria-describedby="footer-social-links-help"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                     />
                   </div>
                   <div>
-                    <label htmlFor="footer-facebook-url" className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Liên kết Facebook:</label>
+                    <label htmlFor="footer-facebook-url" className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                      {isEn ? 'Facebook Link:' : 'Liên kết Facebook:'}
+                    </label>
                     <input
                       id="footer-facebook-url"
                       type="url"
@@ -1278,451 +1154,586 @@ export function HomeContentManagement() {
                       onChange={(e) => updateContentField('ctaAndFooter', 'contactFacebookUrl', e.target.value)}
                       placeholder="https://www.facebook.com/..."
                       aria-describedby="footer-social-links-help"
-                      className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                      className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                     />
                   </div>
                 </div>
-                <p id="footer-social-links-help" className="mt-1.5 text-[11px] text-slate-500">
-                  Zalo: nhập số điện thoại 10 chữ số hoặc đầu số +84. Facebook: nhập đường dẫn HTTP/HTTPS. Để trống để ẩn liên hệ tương ứng trên trang chủ.
+                <p id="footer-social-links-help" className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400">
+                  {isEn
+                    ? 'Zalo: 10-digit number or +84 prefix. Facebook: valid HTTP/HTTPS URL. Leave blank to hide.'
+                    : 'Zalo: nhập số điện thoại 10 chữ số hoặc đầu số +84. Facebook: nhập đường dẫn HTTP/HTTPS. Để trống để ẩn liên hệ tương ứng trên trang chủ.'}
                 </p>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Địa chỉ trung tâm:</label>
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Center Address:' : 'Địa chỉ trung tâm:'}
+                </label>
                 <input
                   type="text"
                   value={content.ctaAndFooter.contactAddress}
                   onChange={(e) => updateContentField('ctaAndFooter', 'contactAddress', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
 
               <div className="grid grid-cols-3 gap-2">
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">Thứ 2 - Thứ 6:</label>
+                  <label className="block text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Mon - Fri:' : 'Thứ 2 - Thứ 6:'}
+                  </label>
                   <input
                     type="text"
                     value={content.ctaAndFooter.hoursWeekdays}
                     onChange={(e) => updateContentField('ctaAndFooter', 'hoursWeekdays', e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">Thứ 7 - CN:</label>
+                  <label className="block text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Sat - Sun:' : 'Thứ 7 - CN:'}
+                  </label>
                   <input
                     type="text"
                     value={content.ctaAndFooter.hoursWeekend}
                     onChange={(e) => updateContentField('ctaAndFooter', 'hoursWeekend', e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs font-bold"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] font-bold text-slate-700 uppercase mb-1">Ngày Lễ:</label>
+                  <label className="block text-[10px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Holidays:' : 'Ngày Lễ:'}
+                  </label>
                   <input
                     type="text"
                     value={content.ctaAndFooter.hoursHolidays}
                     onChange={(e) => updateContentField('ctaAndFooter', 'hoursHolidays', e.target.value)}
-                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 text-xs"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-[11px] font-bold text-slate-700 uppercase mb-1">Bản quyền (Copyright):</label>
+                <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Copyright Notice:' : 'Bản quyền (Copyright):'}
+                </label>
                 <input
                   type="text"
                   value={content.ctaAndFooter.copyright}
                   onChange={(e) => updateContentField('ctaAndFooter', 'copyright', e.target.value)}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs text-slate-600"
+                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-400 text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
                 />
               </div>
             </div>
           </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
-      {/* 4. MODAL CHỈNH SỬA / THÊM MỚI THẺ MÔN HỌC */}
-      {editingSport && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col font-inter">
-            <div className="p-5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">{editingSport.icon || 'sports'}</span>
-                </span>
-                <div>
-                  <span className="font-chivo text-[10px] font-black uppercase tracking-widest text-red-400 block">
-                    DYNAMIC SPORT CARD MANAGEMENT
-                  </span>
-                  <h3 className="font-chivo text-lg font-black uppercase text-white leading-tight">
-                    {isNewSport ? 'Thêm Thẻ Môn Học Mới' : `Chỉnh Sửa Thẻ: ${editingSport.name}`}
-                  </h3>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingSport(null)}
-                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
-              >
-                <span className="material-symbols-outlined text-[18px]">close</span>
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto flex-1 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tên môn học (*):</label>
-                  <input
-                    type="text"
-                    value={editingSport.name}
-                    onChange={(e) => setEditingSport(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Danh mục môn:</label>
-                  <select
-                    value={editingSport.category}
-                    onChange={(e) => setEditingSport(prev => ({ ...prev, category: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  >
-                    <option value="Sức bền & Tĩnh tâm">Sức bền & Tĩnh tâm</option>
-                    <option value="Thể thao đối kháng">Thể thao đối kháng</option>
-                    <option value="Bóng & Vợt">Bóng & Vợt</option>
-                  </select>
-                </div>
-              </div>
-
-              {/* Upload Ảnh đám mây */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Hình ảnh thẻ môn học (Cloud Media Storage):
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={editingSport.image}
-                    onChange={(e) => setEditingSport(prev => ({ ...prev, image: e.target.value }))}
-                    className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => openMediaPicker('Chọn Ảnh Đám Mây Cho Môn Học', editingSport.image, (url) => {
-                      setEditingSport(prev => ({ ...prev, image: url }));
-                    })}
-                    className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
-                    <span>Tải/Chọn Ảnh</span>
-                  </button>
-                </div>
-                <div className="h-32 rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
-                  <img src={editingSport.image} alt="Preview" className="w-full h-full object-cover" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Học phí / Vé:</label>
-                  <input
-                    type="text"
-                    value={editingSport.price}
-                    onChange={(e) => setEditingSport(prev => ({ ...prev, price: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold text-amber-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Khung giờ hoạt động:</label>
-                  <input
-                    type="text"
-                    value={editingSport.schedule}
-                    onChange={(e) => setEditingSport(prev => ({ ...prev, schedule: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Huấn luyện viên phụ trách:</label>
-                  <input
-                    type="text"
-                    value={editingSport.coach}
-                    onChange={(e) => setEditingSport(prev => ({ ...prev, coach: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Cơ sở / Sân tập liên kết:</label>
-                  <input
-                    type="text"
-                    value={editingSport.venue}
-                    onChange={(e) => setEditingSport(prev => ({ ...prev, venue: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mô tả đặc điểm nổi bật:</label>
-                <textarea
-                  rows={2}
-                  value={editingSport.highlight}
-                  onChange={(e) => setEditingSport(prev => ({ ...prev, highlight: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs leading-relaxed"
-                />
-              </div>
-
-              {/* Trạng thái hiển thị */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold text-slate-800 uppercase block">Trạng Thái Hiển Thị Trên Trang Chủ:</span>
-                  <span className="text-[11px] text-slate-500">Nếu tắt, thẻ môn học sẽ bị ẩn khỏi Landing Page của khách hàng</span>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editingSport.isVisible !== false}
-                    onChange={(e) => setEditingSport(prev => ({ ...prev, isVisible: e.target.checked }))}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                </label>
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-              <button
-                type="button"
-                onClick={() => setEditingSport(null)}
-                className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold uppercase"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveSportModal}
-                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-black uppercase rounded-xl shadow-md cursor-pointer"
-              >
-                Lưu Thẻ Môn Học
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 5. MODAL CHỈNH SỬA / THÊM MỚI THẺ CỤM SÂN */}
-      {editingFacility && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-2xl bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden max-h-[92vh] flex flex-col font-inter">
-            <div className="p-5 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800 shrink-0">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-red-600 flex items-center justify-center text-white shrink-0">
-                  <span className="material-symbols-outlined text-[20px]">stadium</span>
-                </span>
-                <div>
-                  <span className="font-chivo text-[10px] font-black uppercase tracking-widest text-red-400 block">
-                    DYNAMIC FACILITY CARD MANAGEMENT
-                  </span>
-                  <h3 className="font-chivo text-lg font-black uppercase text-white leading-tight">
-                    {isNewFacility ? 'Thêm Thẻ Cụm Sân Mới' : `Chỉnh Sửa Thẻ Cụm Sân: ${editingFacility.name}`}
-                  </h3>
-                </div>
-              </div>
-              <button
-                type="button"
-                onClick={() => setEditingFacility(null)}
-                className="w-8 h-8 rounded-lg bg-white/10 hover:bg-white/20 text-white flex items-center justify-center"
-              >
-                <span className="material-symbols-outlined text-[18px]">close</span>
-              </button>
-            </div>
-
-            <div className="p-6 overflow-y-auto flex-1 space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Tên cụm sân (*):</label>
-                  <input
-                    type="text"
-                    value={editingFacility.name}
-                    onChange={(e) => setEditingFacility(prev => ({ ...prev, name: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Vị trí phân khu:</label>
-                  <input
-                    type="text"
-                    value={editingFacility.location}
-                    onChange={(e) => setEditingFacility(prev => ({ ...prev, location: e.target.value }))}
-                    placeholder="VD: Khu A • Tầng 1"
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Upload Ảnh chính đám mây */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">
-                  Hình ảnh cụm sân chính (Cloud Media Storage):
-                </label>
-                <div className="flex gap-2 mb-2">
-                  <input
-                    type="text"
-                    value={editingFacility.image}
-                    onChange={(e) => setEditingFacility(prev => ({ ...prev, image: e.target.value }))}
-                    className="flex-1 px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => openMediaPicker('Chọn Ảnh Đám Mây Cho Cụm Sân', editingFacility.image, (url) => {
-                      setEditingFacility(prev => ({ ...prev, image: url }));
-                    })}
-                    className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-lg text-xs font-bold flex items-center gap-1 cursor-pointer shadow-sm"
-                  >
-                    <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
-                    <span>Tải/Chọn Ảnh</span>
-                  </button>
-                </div>
-                <div className="h-32 rounded-xl overflow-hidden bg-slate-900 border border-slate-200">
-                  <img src={editingFacility.image} alt="Preview" className="w-full h-full object-cover" />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mức giá thuê:</label>
-                  <input
-                    type="text"
-                    value={editingFacility.priceRate}
-                    onChange={(e) => setEditingFacility(prev => ({ ...prev, priceRate: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs font-bold text-red-600"
-                  />
-                </div>
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Sức chứa phục vụ:</label>
-                  <input
-                    type="text"
-                    value={editingFacility.capacity}
-                    onChange={(e) => setEditingFacility(prev => ({ ...prev, capacity: e.target.value }))}
-                    className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Huy hiệu thẻ (Badge):</label>
-                <input
-                  type="text"
-                  value={editingFacility.badge}
-                  onChange={(e) => setEditingFacility(prev => ({ ...prev, badge: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Đặc điểm nổi bật (Highlights):</label>
-                <input
-                  type="text"
-                  value={editingFacility.highlights}
-                  onChange={(e) => setEditingFacility(prev => ({ ...prev, highlights: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 uppercase mb-1">Mô tả chi tiết:</label>
-                <textarea
-                  rows={2}
-                  value={editingFacility.description}
-                  onChange={(e) => setEditingFacility(prev => ({ ...prev, description: e.target.value }))}
-                  className="w-full px-3 py-2 rounded-lg border border-slate-300 text-xs leading-relaxed"
-                />
-              </div>
-
-              {/* Trạng thái hiển thị */}
-              <div className="p-3 rounded-xl bg-slate-50 border border-slate-200 flex items-center justify-between">
-                <div>
-                  <span className="text-xs font-bold text-slate-800 uppercase block">Trạng Thái Hiển Thị Trên Trang Chủ:</span>
-                  <span className="text-[11px] text-slate-500">Nếu tắt, cụm sân này sẽ bị ẩn khỏi Landing Page của khách hàng</span>
-                </div>
-                <label className="relative inline-flex items-center cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={editingFacility.isVisible !== false}
-                    onChange={(e) => setEditingFacility(prev => ({ ...prev, isVisible: e.target.checked }))}
-                    className="sr-only peer"
-                  />
-                  <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-red-600"></div>
-                </label>
-              </div>
-            </div>
-
-            <div className="p-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between shrink-0">
-              <button
-                type="button"
-                onClick={() => setEditingFacility(null)}
-                className="px-4 py-2 rounded-xl border border-slate-300 text-xs font-bold uppercase"
-              >
-                Hủy bỏ
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveFacilityModal}
-                className="px-6 py-2 bg-red-600 hover:bg-red-700 text-white font-chivo text-xs font-black uppercase rounded-xl shadow-md cursor-pointer"
-              >
-                Lưu Thẻ Cụm Sân
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 6. MODAL XÁC NHẬN KHÔI PHỤC MẶC ĐỊNH */}
-      {isResetConfirmOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/80 backdrop-blur-sm animate-in fade-in">
-          <div className="relative w-full max-w-md bg-white rounded-2xl shadow-2xl border border-slate-200 p-6 text-center font-inter">
-            <div className="w-14 h-14 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
-              <span className="material-symbols-outlined text-[32px]">warning</span>
-            </div>
-            <h3 className="font-chivo text-lg font-black uppercase text-slate-900">
-              Xác Nhận Khôi Phục Mặc Định?
-            </h3>
-            <p className="text-xs text-slate-600 mt-2 leading-relaxed">
-              Toàn bộ các tùy biến về chữ, hình ảnh, trạng thái ẩn/hiện môn học và sân bãi sẽ được đặt lại theo đúng thiết kế ban đầu trong ảnh mẫu screenshot.
+      {/* TAB 7: AUTH SHOWCASE (Login & Register Column) */}
+      {activeTab === 'authShowcase' && (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-sm p-6 sm:p-8 space-y-6">
+          <div className="border-b border-slate-100 dark:border-slate-800 pb-4">
+            <h2 className="text-lg font-black text-slate-900 dark:text-white uppercase tracking-wide">
+              {isEn ? 'Section 7: Login & Register Showcase Banner' : 'Khu Vực 7: Banner Giới Thiệu Đăng Nhập & Đăng Ký'}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+              {isEn
+                ? 'Customize the athletic showcase banner, headline, frosted cards, and live metrics on Login and Register pages.'
+                : 'Chỉnh sửa cột giới thiệu thể thao Olympic, tiêu đề truyền cảm hứng, thẻ nổi và 3 chỉ số thống kê trên màn hình Đăng nhập và Đăng ký.'}
             </p>
-            <div className="mt-6 flex items-center justify-center gap-3">
-              <button
-                type="button"
-                onClick={() => setIsResetConfirmOpen(false)}
-                className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 text-xs font-bold uppercase hover:bg-slate-50"
-              >
-                Hủy Bỏ
-              </button>
-              <button
-                type="button"
-                onClick={handleResetDefault}
-                className="px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-xs font-black uppercase shadow-lg shadow-red-600/30 cursor-pointer"
-              >
-                Đồng Ý Khôi Phục
-              </button>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Badge Pill:' : 'Huy hiệu mở cửa (Badge):'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.badge || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'badge', e.target.value)}
+                    placeholder="Sân tập mở cửa 24/7"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                    {isEn ? 'Tagline / Category:' : 'Dòng phụ (Tagline):'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.tagline || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'tagline', e.target.value)}
+                    placeholder="Khởi đầu bứt phá"
+                    className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Login Page Headline:' : 'Tiêu đề trang Đăng nhập:'}
+                </label>
+                <textarea
+                  rows={2}
+                  value={content.authShowcase?.loginTitle || ''}
+                  onChange={(e) => updateContentField('authShowcase', 'loginTitle', e.target.value)}
+                  placeholder={"Tập luyện hôm nay, \nbứt phá mỗi ngày."}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                />
+                <span className="text-[11px] text-slate-400 dark:text-slate-500">
+                  {isEn ? 'Tip: Enter a new line to apply the multi-color highlight effect to the second line.' : 'Mẹo: Xuống dòng để áp dụng hiệu ứng chuyển màu rực rỡ cho dòng thứ hai.'}
+                </span>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Register Page Headline:' : 'Tiêu đề trang Đăng ký:'}
+                </label>
+                <textarea
+                  rows={2}
+                  value={content.authShowcase?.registerTitle || ''}
+                  onChange={(e) => updateContentField('authShowcase', 'registerTitle', e.target.value)}
+                  placeholder={"Hành trình mới, \nphiên bản khỏe hơn."}
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-900 dark:text-white focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Showcase Description:' : 'Đoạn văn mô tả giới thiệu:'}
+                </label>
+                <textarea
+                  rows={3}
+                  value={content.authShowcase?.description || ''}
+                  onChange={(e) => updateContentField('authShowcase', 'description', e.target.value)}
+                  placeholder="Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu..."
+                  className="w-full px-4 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs leading-relaxed focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                />
+              </div>
+            </div>
+
+            <div className="space-y-4">
+              {/* Media background preview */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
+                  {isEn ? 'Showcase Background Image / Poster (Cloud):' : 'Ảnh nền Cột Đăng nhập / Poster Đám mây:'}
+                </label>
+                <div className="flex gap-2 mb-2">
+                  <input
+                    type="text"
+                    value={content.authShowcase?.posterUrl || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'posterUrl', e.target.value)}
+                    className="flex-1 px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs truncate focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => openMediaPicker(
+                      isEn ? 'Select Showcase Background Image' : 'Chọn Ảnh Nền Cột Đăng Nhập',
+                      content.authShowcase?.posterUrl || '',
+                      (url) => updateContentField('authShowcase', 'posterUrl', url)
+                    )}
+                    className="px-3.5 py-2 bg-[#2D6A4F] hover:bg-[#1B4332] text-white rounded-xl text-xs font-bold flex items-center gap-1 cursor-pointer transition-all hover-lift shrink-0"
+                  >
+                    <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
+                    <span>{isEn ? 'Upload/Change' : 'Tải/Đổi Ảnh'}</span>
+                  </button>
+                </div>
+
+                {/* Live Preview Box like Login left column */}
+                <div className="h-64 rounded-2xl overflow-hidden bg-[#2D3047] relative border border-slate-700 p-5 flex flex-col justify-between text-white shadow-inner">
+                  {content.authShowcase?.posterUrl && (
+                    <img
+                      src={content.authShowcase.posterUrl}
+                      alt="Showcase preview"
+                      className="absolute inset-0 w-full h-full object-cover opacity-35"
+                    />
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-[#27293D] via-[#3D405B]/80 to-transparent pointer-events-none" />
+
+                  <div className="relative z-10 flex items-center justify-between">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-300 bg-white/10 px-2.5 py-1 rounded-full border border-white/10">
+                      {content.authShowcase?.badge || 'Sân tập mở cửa 24/7'}
+                    </span>
+                    <span className="text-[10px] bg-black/50 text-white/70 px-2 py-0.5 rounded font-mono">
+                      {isEn ? 'Preview' : 'Xem trước'}
+                    </span>
+                  </div>
+
+                  <div className="relative z-10 space-y-1">
+                    <div className="text-[10px] font-bold uppercase tracking-widest text-[#F2CC8F]">
+                      {content.authShowcase?.tagline || 'Khởi đầu bứt phá'}
+                    </div>
+                    <div className="text-sm font-black text-white leading-tight line-clamp-2">
+                      {content.authShowcase?.loginTitle || 'Tập luyện hôm nay, bứt phá mỗi ngày.'}
+                    </div>
+                  </div>
+
+                  <div className="relative z-10 flex gap-4 pt-2 border-t border-white/10 text-xs">
+                    <div>
+                      <span className="font-bold text-white">{content.authShowcase?.stat1Value || '09'}</span>
+                      <span className="text-[10px] text-slate-300 block">{content.authShowcase?.stat1Label || 'Bộ môn'}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-white">{content.authShowcase?.stat2Value || '09'}</span>
+                      <span className="text-[10px] text-slate-300 block">{content.authShowcase?.stat2Label || 'Khu tập'}</span>
+                    </div>
+                    <div>
+                      <span className="font-bold text-white">{content.authShowcase?.stat3Value || '2.5K+'}</span>
+                      <span className="text-[10px] text-slate-300 block">{content.authShowcase?.stat3Label || 'Hội viên'}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
+
+          {/* 2 Feature Cards */}
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+            <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider mb-4 flex items-center gap-1.5">
+              <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">featured_play_list</span>
+              <span>{isEn ? '2 Frosted Showcase Feature Cards' : '2 Thẻ Kính Nổi Bật (Feature Cards)'}</span>
+            </h3>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Card 1 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  {isEn ? 'Feature Card 1' : 'Thẻ tính năng 1'}
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                      {isEn ? 'Icon (Material):' : 'Biểu tượng:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={content.authShowcase?.feature1Icon || ''}
+                      onChange={(e) => updateContentField('authShowcase', 'feature1Icon', e.target.value)}
+                      placeholder="bolt"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                      {isEn ? 'Title:' : 'Tiêu đề:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={content.authShowcase?.feature1Title || ''}
+                      onChange={(e) => updateContentField('authShowcase', 'feature1Title', e.target.value)}
+                      placeholder="Đặt chỗ trong 30s"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Description:' : 'Mô tả ngắn:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.feature1Desc || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'feature1Desc', e.target.value)}
+                    placeholder="Giữ sân & lớp học 7 ngày"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Card 2 */}
+              <div className="p-4 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-3">
+                <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wide">
+                  {isEn ? 'Feature Card 2' : 'Thẻ tính năng 2'}
+                </span>
+                <div className="grid grid-cols-3 gap-2">
+                  <div>
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                      {isEn ? 'Icon (Material):' : 'Biểu tượng:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={content.authShowcase?.feature2Icon || ''}
+                      onChange={(e) => updateContentField('authShowcase', 'feature2Icon', e.target.value)}
+                      placeholder="verified"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-semibold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                      {isEn ? 'Title:' : 'Tiêu đề:'}
+                    </label>
+                    <input
+                      type="text"
+                      value={content.authShowcase?.feature2Title || ''}
+                      onChange={(e) => updateContentField('authShowcase', 'feature2Title', e.target.value)}
+                      placeholder="Chuẩn Olympic 5★"
+                      className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-bold focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Description:' : 'Mô tả ngắn:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.feature2Desc || ''}
+                    onChange={(e) => updateContentField('authShowcase', 'feature2Desc', e.target.value)}
+                    placeholder="Hệ thống sân bãi cao cấp"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* 3 Stats Metrics */}
+          <div className="border-t border-slate-100 dark:border-slate-800 pt-6">
+            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 mb-4">
+              <div>
+                <h3 className="text-xs font-black text-slate-900 dark:text-white uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[18px] text-[#2D6A4F]">analytics</span>
+                  <span>{isEn ? '3 Quick Stat Numbers on Login Page' : '3 Số Liệu Thống Kê Chân Trang Đăng Nhập & Đăng Ký'}</span>
+                </h3>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
+                  {isEn ? 'Directly controls the numbers displayed at the bottom of the Login & Register hero column.' : 'Chính là 3 số liệu hiển thị tại chân trang cột giới thiệu của màn hình Đăng nhập và Đăng ký.'}
+                </p>
+              </div>
+
+              <button
+                type="button"
+                onClick={() => {
+                  const s1 = content.whyUs?.stats?.[1]?.number || content.coursesSection?.sportsList?.length || 10;
+                  const s2 = content.whyUs?.stats?.[0]?.number || content.facilitiesSection?.facilitiesList?.length || 10;
+                  const s3 = content.whyUs?.stats?.[2] ? `${content.whyUs.stats[2].number}${content.whyUs.stats[2].suffix || ''}` : '2.5K+';
+                  setContent(prev => {
+                    const updated = {
+                      ...prev,
+                      authShowcase: {
+                        ...(prev.authShowcase || {}),
+                        stat1Value: String(s1),
+                        stat2Value: String(s2),
+                        stat3Value: String(s3)
+                      }
+                    };
+                    saveDraft(updated);
+                    return updated;
+                  });
+                  setIsDirty(true);
+                  setAutoSaveStatus('dirty');
+                  addToast(
+                    isEn
+                      ? 'Synchronized 3 stats from "Why Choose SCMS" (Tab 2)!'
+                      : 'Đã sao chép nhanh số liệu từ Tab 2 (Tại sao chọn SCMS) sang đây!',
+                    'success'
+                  );
+                }}
+                className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 transition-all shadow-xs cursor-pointer hover-lift shrink-0"
+              >
+                <span className="material-symbols-outlined text-[16px] text-emerald-600">sync_alt</span>
+                <span>{isEn ? 'Sync numbers from Tab 2' : 'Sao chép số liệu từ Tab 2 sang'}</span>
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {/* Stat 1 */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #1 (Sports)' : 'Chỉ số 1 (Bộ môn)'}</span>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Value:' : 'Con số:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat1Value || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
+                    onChange={(e) => updateContentField('authShowcase', 'stat1Value', e.target.value)}
+                    placeholder="10"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Label:' : 'Nhãn mô tả:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat1Label || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
+                    onChange={(e) => updateContentField('authShowcase', 'stat1Label', e.target.value)}
+                    placeholder="Bộ môn thi đấu"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Stat 2 */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #2 (Courts/Zones)' : 'Chỉ số 2 (Khu tập/Sân)'}</span>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Value:' : 'Con số:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat2Value || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
+                    onChange={(e) => updateContentField('authShowcase', 'stat2Value', e.target.value)}
+                    placeholder="10"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Label:' : 'Nhãn mô tả:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat2Label || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
+                    onChange={(e) => updateContentField('authShowcase', 'stat2Label', e.target.value)}
+                    placeholder="Khu tập luyện"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+
+              {/* Stat 3 */}
+              <div className="p-3.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 space-y-2">
+                <span className="text-[10px] font-bold text-slate-500 uppercase">{isEn ? 'Stat #3 (Members)' : 'Chỉ số 3 (Hội viên)'}</span>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Value:' : 'Con số:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat3Value || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
+                    onChange={(e) => updateContentField('authShowcase', 'stat3Value', e.target.value)}
+                    placeholder="2.5K+"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs font-black focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold text-slate-600 dark:text-slate-400 uppercase mb-1">
+                    {isEn ? 'Label:' : 'Nhãn mô tả:'}
+                  </label>
+                  <input
+                    type="text"
+                    value={content.authShowcase?.stat3Label || ''}
+                    onBlur={() => { if (isDirty) handleSaveAll(true); }}
+                    onChange={(e) => updateContentField('authShowcase', 'stat3Label', e.target.value)}
+                    placeholder="Hội viên active"
+                    className="w-full px-2.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Live Preview Box as seen on Login screen */}
+            <div className="mt-5 p-4 rounded-2xl bg-[#2D3047] text-white border border-white/10 shadow-inner flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+              <div>
+                <div className="text-[10px] uppercase font-bold text-slate-400 tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+                  <span>{isEn ? 'Live Preview as displayed on Login & Register screen' : 'Xem trước trực tiếp hiển thị tại chân trang Đăng Nhập / Đăng Ký'}</span>
+                </div>
+                <div className="flex items-center gap-8 sm:gap-12 mt-2.5">
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{content.authShowcase?.stat1Value || '09'}</div>
+                    <div className="text-[11px] text-slate-400 font-medium mt-0.5">{content.authShowcase?.stat1Label || 'Bộ môn thi đấu'}</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-bold text-white tracking-tight">{content.authShowcase?.stat2Value || '09'}</div>
+                    <div className="text-[11px] text-slate-400 font-medium mt-0.5">{content.authShowcase?.stat2Label || 'Khu tập luyện'}</div>
+                  </div>
+                  <div>
+                    <div className="text-2xl sm:text-3xl font-bold text-[#F2CC8F] tracking-tight">{content.authShowcase?.stat3Value || '2.5K+'}</div>
+                    <div className="text-[11px] text-slate-400 font-medium mt-0.5">{content.authShowcase?.stat3Label || 'Hội viên active'}</div>
+                  </div>
+                </div>
+              </div>
+              <a
+                href="#/login"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-white text-xs font-bold shrink-0 flex items-center gap-1.5 transition-all shadow-sm cursor-pointer hover-lift"
+              >
+                <span>{isEn ? 'Open Login Page in New Tab' : 'Mở xem Trang Đăng Nhập'}</span>
+                <span className="material-symbols-outlined text-[15px]">open_in_new</span>
+              </a>
+            </div>
+          </div>
+
+          {renderTabSaveFooter()}
         </div>
       )}
 
-      {/* 7. CLOUD MEDIA PICKER MODAL */}
+      {/* 4. CLOUD MEDIA PICKER MODAL */}
       <CloudMediaPickerModal
         isOpen={mediaPickerConfig.isOpen}
         title={mediaPickerConfig.title}
         currentImage={mediaPickerConfig.currentUrl}
-        onClose={() => setMediaPickerConfig(prev => ({ ...prev, isOpen: false }))}
+        onClose={() => {
+          setMediaPickerConfig(prev => ({ ...prev, isOpen: false }));
+          mediaPickerConfig.onClose?.();
+        }}
         onSelectImage={(url) => {
           if (mediaPickerConfig.callback) {
             mediaPickerConfig.callback(url);
           }
         }}
       />
+
+      {/* 5. STICKY FLOATING ACTION BAR FOR INSTANT SAVING */}
+      {isDirty && (
+        <aside
+          role="status"
+          aria-label={isEn ? 'Unsaved changes alert bar' : 'Thanh cảnh báo thay đổi số liệu chưa lưu'}
+          className="fixed bottom-6 left-1/2 -translate-x-1/2 z-50 w-[94%] max-w-2xl bg-[#1E2235]/95 text-white backdrop-blur-xl border-2 border-emerald-500/80 rounded-2xl px-5 py-3.5 shadow-[0_10px_35px_rgba(0,0,0,0.5)] flex flex-col sm:flex-row items-center justify-between gap-3 animate-fade-slide-up"
+        >
+          <div className="flex items-center gap-3 text-left">
+            <span className="w-3.5 h-3.5 rounded-full bg-emerald-400 animate-ping shrink-0" />
+            <div>
+              <div className="text-xs font-black uppercase tracking-wide text-emerald-300 flex items-center gap-1.5">
+                <span>{isEn ? 'Unsaved Changes Detected' : 'Phát hiện thay đổi số liệu mới'}</span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 px-1.5 py-0.5 rounded border border-emerald-500/30">
+                  {isEn ? 'Auto-draft active' : 'Đã giữ trong nháp F5'}
+                </span>
+              </div>
+              <div className="text-[11px] text-slate-300 mt-0.5">
+                {isEn
+                  ? 'Your edits survive F5 reload. Click Save to apply to server & live pages.'
+                  : 'Dữ liệu được tự động lưu tạm trên trình duyệt. Hãy bấm nút xanh để áp dụng chính thức lên hệ thống.'}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 shrink-0 w-full sm:w-auto justify-end">
+            <button
+              type="button"
+              onClick={handleDiscardChanges}
+              disabled={isSaving}
+              className="px-3.5 py-2 rounded-xl bg-white/10 hover:bg-white/20 text-slate-200 text-xs font-bold transition-all disabled:opacity-40 cursor-pointer"
+            >
+              {isEn ? 'Discard' : 'Hủy thay đổi'}
+            </button>
+            <button
+              type="button"
+              onClick={handleSaveAll}
+              disabled={isSaving}
+              className="px-6 py-2.5 rounded-xl bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-black uppercase tracking-wider shadow-lg shadow-emerald-600/40 transition-all flex items-center gap-2 cursor-pointer hover-lift"
+            >
+              <span className="material-symbols-outlined text-[17px]">save</span>
+              <span>{isSaving ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save All Changes' : 'Lưu Thay Đổi Ngay')}</span>
+            </button>
+          </div>
+        </aside>
+      )}
     </fieldset>
   );
 }

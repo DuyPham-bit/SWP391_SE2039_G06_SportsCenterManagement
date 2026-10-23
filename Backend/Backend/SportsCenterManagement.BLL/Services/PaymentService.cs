@@ -36,9 +36,34 @@ public sealed class PaymentService(
         string idempotencyKey,
         CancellationToken cancellationToken = default)
     {
+        return await CreateVnPayPaymentUrlCoreAsync(
+            memberId, memberId, null, request, ipAddress, idempotencyKey, cancellationToken);
+    }
+
+    public async Task<string> CreateCounterVnPayPaymentUrlAsync(
+        long staffUserId,
+        long? staffCenterId,
+        CounterOnlinePaymentRequest request,
+        string ipAddress,
+        string idempotencyKey,
+        CancellationToken cancellationToken = default)
+    {
+        return await CreateVnPayPaymentUrlCoreAsync(
+            request.MemberId, staffUserId, staffCenterId, request, ipAddress, idempotencyKey, cancellationToken);
+    }
+
+    private async Task<string> CreateVnPayPaymentUrlCoreAsync(
+        long memberId,
+        long actorUserId,
+        long? allowedCenterId,
+        CreatePaymentRequest request,
+        string ipAddress,
+        string idempotencyKey,
+        CancellationToken cancellationToken)
+    {
         EnsureGatewayConfiguration("VNPay", "VnPay:TmnCode", "VnPay:HashSecret", "VnPay:BaseUrl", "VnPay:ReturnUrl");
         var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, request, "VNPAY", idempotencyKey, cancellationToken);
+            memberId, actorUserId, allowedCenterId, request, "VNPAY", idempotencyKey, cancellationToken);
         if (!string.IsNullOrWhiteSpace(existingLink))
         {
             return existingLink;
@@ -75,7 +100,7 @@ public sealed class PaymentService(
     {
         EnsureGatewayConfiguration("MoMo", "Momo:PartnerCode", "Momo:AccessKey", "Momo:SecretKey", "Momo:PaymentUrl", "Momo:ReturnUrl", "Momo:NotifyUrl");
         var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, request, "MOMO", idempotencyKey, cancellationToken);
+            memberId, memberId, null, request, "MOMO", idempotencyKey, cancellationToken);
         if (!string.IsNullOrWhiteSpace(existingLink))
         {
             return existingLink;
@@ -130,7 +155,7 @@ public sealed class PaymentService(
         EnsureGatewayConfiguration("PayOS", "PayOS:ClientId", "PayOS:ApiKey", "PayOS:ChecksumKey", "PayOS:BaseUrl", "PayOS:ReturnUrl", "PayOS:CancelUrl");
         EnsurePayOsUrlConfiguration();
         var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, request, "PAYOS", idempotencyKey, cancellationToken);
+            memberId, memberId, null, request, "PAYOS", idempotencyKey, cancellationToken);
         if (!string.IsNullOrWhiteSpace(existingLink))
         {
             return existingLink;
@@ -339,8 +364,10 @@ public sealed class PaymentService(
 
         await using var transaction = await _unitOfWork.Context.Database
             .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var isNumericId = long.TryParse(gatewayReference, NumberStyles.None, CultureInfo.InvariantCulture, out var paymentId);
         var payment = await _unitOfWork.Context.Payments
-            .SingleOrDefaultAsync(candidate => candidate.GatewayReference == gatewayReference, cancellationToken)
+            .SingleOrDefaultAsync(candidate => candidate.GatewayReference == gatewayReference
+                || (isNumericId && candidate.Id == paymentId), cancellationToken)
             ?? throw BusinessException.NotFound("Không tìm thấy lần thử thanh toán.");
         var invoice = await _unitOfWork.Context.Invoices
             .SingleAsync(candidate => candidate.Id == payment.InvoiceId, cancellationToken);
@@ -1017,6 +1044,13 @@ public sealed class PaymentService(
             if (refund.Status == "Succeeded")
             {
                 payment.RefundApprovedBy = managerUserId;
+            }
+            // Persist the terminal refund state before recomputing the invoice aggregate.
+            // UpdateInvoiceRefundStatusAsync uses a database SUM, so an unsaved Succeeded
+            // refund would otherwise be omitted and leave the invoice/subscription active.
+            await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+            if (refund.Status == "Succeeded")
+            {
                 await UpdateInvoiceRefundStatusAsync(invoice, DateTime.UtcNow, cancellationToken);
             }
             _unitOfWork.Context.AuditLogs.Add(CreateAudit(managerUserId, "Payment.Refund" + refund.Status,
@@ -1185,6 +1219,8 @@ public sealed class PaymentService(
 
     private async Task<(Invoice Invoice, Payment Payment, string? ExistingLink)> PrepareOnlinePaymentAsync(
         long memberId,
+        long actorUserId,
+        long? allowedCenterId,
         CreatePaymentRequest request,
         string provider,
         string idempotencyKey,
@@ -1195,7 +1231,7 @@ public sealed class PaymentService(
             throw BusinessException.BadRequest("Cần PackageId để tạo hóa đơn mới.");
         }
 
-        var scopedKey = ScopeIdempotencyKey(memberId, idempotencyKey);
+        var scopedKey = ScopeIdempotencyKey(actorUserId, idempotencyKey);
         await using var transaction = await _unitOfWork.Context.Database
             .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
 
@@ -1259,6 +1295,7 @@ public sealed class PaymentService(
             package = await _unitOfWork.Context.MembershipPackages
                 .SingleOrDefaultAsync(candidate => candidate.Id == request.PackageId && candidate.Status == "Active", cancellationToken)
                 ?? throw BusinessException.NotFound("Gói tập không tồn tại hoặc đã ngừng hoạt động.");
+            EnsureCenterScope(allowedCenterId, package.CenterId);
             if (package.Price <= 0 || package.DurationDays <= 0)
             {
                 throw BusinessException.Conflict("Gói tập phải có giá và thời hạn lớn hơn 0.");
@@ -1283,7 +1320,7 @@ public sealed class PaymentService(
                         .SingleOrDefaultAsync(i => i.InvoiceNumber == pendingInvoiceNumber, cancellationToken);
                     if (existingPendingInv is not null)
                     {
-                        await CancelPendingInvoiceCoreAsync(member.UserId, existingPendingInv, now, cancellationToken);
+                        await CancelPendingInvoiceCoreAsync(actorUserId, existingPendingInv, now, cancellationToken);
                         await _unitOfWork.SaveChangesAsync(cancellationToken);
                     }
                 }
@@ -1318,7 +1355,7 @@ public sealed class PaymentService(
                 IdempotencyKey = scopedKey,
                 MemberId = memberId,
                 CenterId = package.CenterId,
-                CreatedBy = member.UserId,
+                CreatedBy = actorUserId,
                 Subtotal = package.Price,
                 Discount = 0,
                 Tax = 0,
@@ -1356,6 +1393,8 @@ public sealed class PaymentService(
             package = await _unitOfWork.Context.MembershipPackages
                 .SingleAsync(candidate => candidate.Id == item.PackageId, cancellationToken);
         }
+
+        EnsureCenterScope(allowedCenterId, invoice.CenterId);
 
         var memberProfile = await _unitOfWork.Context.MemberProfiles
             .SingleAsync(candidate => candidate.Id == memberId, cancellationToken);
@@ -1578,13 +1617,16 @@ public sealed class PaymentService(
             }
             return FailedCallback("Amount hoặc transaction id không khớp payment attempt.", invoice.InvoiceNumber);
         }
+
         var normalizedId = NormalizeProviderTransactionId(provider, providerTransactionId);
+        // Nếu Transaction ID này đã tồn tại ở một Payment khác...
         if (await _unitOfWork.Context.Payments.AnyAsync(
                 candidate => candidate.ProviderTransactionId == normalizedId && candidate.Id != payment.Id,
                 cancellationToken))
         {
             if (isSuccess && payment.PaymentStatus != "Succeeded")
             {
+                // thì hệ thống chuyển sang trạng thái chờ đối soát thay vì kích hoạt!
                 var review = await MarkPaymentReviewRequiredAsync(payment, provider,
                     "Provider transaction ID đã gắn với payment khác", amount, providerTransactionId, cancellationToken);
                 await transaction.CommitAsync(cancellationToken);
@@ -1717,7 +1759,8 @@ public sealed class PaymentService(
             refundRows.Where(refund => refund.PaymentId == payment.Id)
                 .Select(refund => new InvoiceRefundResponse(refund.Id, refund.Amount, refund.Status,
                     refund.Reason, refund.ProviderRefundId, refund.ExternalReference, refund.CreatedAt, refund.ProcessedAt))
-                .ToArray())).ToArray();
+                .ToArray(),
+            payment.GatewayReference)).ToArray();
         var member = await _unitOfWork.Context.MemberProfiles.SingleAsync(m => m.Id == invoice.MemberId, cancellationToken);
         var center = await _unitOfWork.Context.Centers.SingleAsync(c => c.Id == invoice.CenterId, cancellationToken);
         return new InvoiceDetailsResponse(
@@ -1859,12 +1902,12 @@ public sealed class PaymentService(
         string message,
         string? invoiceNumber = null,
         string providerAckCode = "99") => new()
-    {
-        Success = false,
-        Message = message,
-        InvoiceNumber = invoiceNumber,
-        ProviderAckCode = providerAckCode
-    };
+        {
+            Success = false,
+            Message = message,
+            InvoiceNumber = invoiceNumber,
+            ProviderAckCode = providerAckCode
+        };
 
     private static string CreateInvoiceNumber(DateTime now) =>
         $"SC-{now:yyyyMMddHHmmss}-{Guid.NewGuid():N}"[..30];
@@ -2120,17 +2163,17 @@ public sealed class PaymentService(
     private async Task EnsureCanCancelPendingAsync(long actorId, long memberId, long centerId, CancellationToken ct)
     {
         var actor = await (from user in _unitOfWork.Context.Users
-            join role in _unitOfWork.Context.Roles on user.RoleId equals role.Id
-            where user.Id == actorId && user.Status == "Active"
-                && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)
-            select new { user.RoleId, Role = role.Name }).SingleOrDefaultAsync(ct);
+                           join role in _unitOfWork.Context.Roles on user.RoleId equals role.Id
+                           where user.Id == actorId && user.Status == "Active"
+                               && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)
+                           select new { user.RoleId, Role = role.Name }).SingleOrDefaultAsync(ct);
         if (actor is null) throw BusinessException.Forbidden("Tài khoản không hoạt động.");
 
         var owner = actor.Role == RoleNames.Member && await _unitOfWork.Context.MemberProfiles
             .AnyAsync(m => m.Id == memberId && m.UserId == actorId, ct);
         if (!owner)
         {
-            if (actor.Role is not (RoleNames.Manager or RoleNames.Receptionist or RoleNames.SystemAdmin or "Admin"))
+            if (actor.Role is not (RoleNames.Manager or RoleNames.Receptionist or RoleNames.Admin))
                 throw BusinessException.Forbidden("Bạn không có quyền hủy hóa đơn này.");
             if (actor.Role is RoleNames.Manager or RoleNames.Receptionist &&
                 !await _unitOfWork.Context.StaffProfiles.AnyAsync(s => s.UserId == actorId
@@ -2141,7 +2184,8 @@ public sealed class PaymentService(
         var permission = owner ? PermissionCodes.PaymentSelfCreate : PermissionCodes.PaymentCenterCash;
         if (!await (from grant in _unitOfWork.Context.RolePermissions
                     join p in _unitOfWork.Context.Permissions on grant.PermissionId equals p.Id
-                    where grant.RoleId == actor.RoleId && p.Code == permission select p.Id).AnyAsync(ct))
+                    where grant.RoleId == actor.RoleId && p.Code == permission
+                    select p.Id).AnyAsync(ct))
             throw BusinessException.Forbidden("Bạn không có quyền xử lý hóa đơn chờ thanh toán.");
         if (actor.Role is RoleNames.Member or RoleNames.Receptionist)
         {

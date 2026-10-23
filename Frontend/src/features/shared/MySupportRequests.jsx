@@ -2,74 +2,83 @@ import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { supportApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
+import { useLanguage } from '../../context/LanguageContext.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { formatMemberDateTime } from '../member/memberOverview.js';
 
-const STATUS_CONFIG = {
+const getStatusConfig = (isEn) => ({
   Open: {
-    label: 'Mới gửi',
+    label: isEn ? 'Open' : 'Mới gửi',
     badgeClass: 'bg-sky-50 text-sky-700 border-sky-200',
     dotClass: 'bg-sky-500',
     icon: 'mail'
   },
   InProgress: {
-    label: 'Đang xử lý',
+    label: isEn ? 'In Progress' : 'Đang xử lý',
     badgeClass: 'bg-amber-50 text-amber-800 border-amber-200',
     dotClass: 'bg-amber-500',
     icon: 'autorenew'
   },
   Resolved: {
-    label: 'Đã giải quyết',
+    label: isEn ? 'Resolved' : 'Đã giải quyết',
     badgeClass: 'bg-emerald-50 text-emerald-800 border-emerald-200',
     dotClass: 'bg-emerald-500',
     icon: 'check_circle'
   }
-};
+});
 
-const PRIORITY_CONFIG = {
+const getPriorityConfig = (isEn) => ({
   Low: {
-    label: 'Thấp',
-    hint: 'Thắc mắc, góp ý thông thường',
+    label: isEn ? 'Low' : 'Thấp',
+    hint: isEn ? 'General feedback & inquiries' : 'Thắc mắc, góp ý thông thường',
     badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
     icon: 'info'
   },
   Normal: {
-    label: 'Bình thường',
-    hint: 'Cần giải quyết trong 24 giờ',
+    label: isEn ? 'Normal' : 'Bình thường',
+    hint: isEn ? 'Resolved within 24 hours' : 'Cần giải quyết trong 24 giờ',
     badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
     icon: 'schedule'
   },
   High: {
-    label: 'Ưu tiên Cao',
-    hint: 'Sự cố gấp / ảnh hưởng trực tiếp',
+    label: isEn ? 'High Priority' : 'Ưu tiên Cao',
+    hint: isEn ? 'Urgent / Direct impact' : 'Sự cố gấp / ảnh hưởng trực tiếp',
     badgeClass: 'bg-red-50 text-red-700 border-red-200 font-bold',
     icon: 'emergency'
   }
-};
+});
 
-const MEMBER_TOPIC_PRESETS = [
-  { prefix: '[Gói tập & Thẻ] ', label: '🎫 Gói tập & Gia hạn', example: 'Thắc mắc thời hạn hoặc quyền lợi thẻ' },
-  { prefix: '[Lịch học] ', label: '📅 Lịch học & Đặt chỗ', example: 'Yêu cầu đổi ca hoặc bảo lưu buổi tập' },
-  { prefix: '[Cơ sở vật chất] ', label: '🏟️ Thiết bị & Phòng tập', example: 'Báo sự cố thiết bị, phòng thay đồ, tủ khóa' },
-  { prefix: '[HLV & Chuyên môn] ', label: '🥊 Huấn luyện viên', example: 'Ý kiến về ca dạy hoặc giáo án tập luyện' },
-  { prefix: '[Dịch vụ tại quầy] ', label: '💬 Phản ánh dịch vụ', example: 'Góp ý thái độ phục vụ hoặc thủ tục' }
+const getMemberTopicPresets = (isEn) => [
+  { prefix: isEn ? '[Package & Pass] ' : '[Gói tập & Thẻ] ', label: isEn ? '🎫 Packages & Renewals' : '🎫 Gói tập & Gia hạn', example: isEn ? 'Validity or membership privilege questions' : 'Thắc mắc thời hạn hoặc quyền lợi thẻ' },
+  { prefix: isEn ? '[Class Schedule] ' : '[Lịch học] ', label: isEn ? '📅 Schedule & Bookings' : '📅 Lịch học & Đặt chỗ', example: isEn ? 'Reschedule request or session freeze' : 'Yêu cầu đổi ca hoặc bảo lưu buổi tập' },
+  { prefix: isEn ? '[Facilities] ' : '[Cơ sở vật chất] ', label: isEn ? '🏟️ Equipment & Studios' : '🏟️ Thiết bị & Phòng tập', example: isEn ? 'Report equipment, locker or shower issues' : 'Báo sự cố thiết bị, phòng thay đồ, tủ khóa' },
+  { prefix: isEn ? '[Coach & Training] ' : '[HLV & Chuyên môn] ', label: isEn ? '🥊 Coaches & Drills' : '🥊 Huấn luyện viên', example: isEn ? 'Feedback on coaching or training plans' : 'Ý kiến về ca dạy hoặc giáo án tập luyện' },
+  { prefix: isEn ? '[Front Desk Service] ' : '[Dịch vụ tại quầy] ', label: isEn ? '💬 Front Desk Service' : '💬 Phản ánh dịch vụ', example: isEn ? 'Staff attitude or procedure inquiries' : 'Góp ý thái độ phục vụ hoặc thủ tục' }
 ];
 
-const COACH_TOPIC_PRESETS = [
-  { prefix: '[Thiết bị] ', label: '🏋️ Dụng cụ & Thiết bị tập', example: 'Đề xuất bổ sung tạ, bóng, thảm hoặc máy tập' },
-  { prefix: '[Phòng & Sân bãi] ', label: '🏟️ Sự cố phòng tập/sân', example: 'Hỏng đèn, điều hòa, mặt sân tập' },
-  { prefix: '[Lịch dạy] ', label: '📋 Lịch giảng dạy & Ca trực', example: 'Báo bận, đề xuất đổi ca hoặc bù giờ dạy' },
-  { prefix: '[Học viên] ', label: '👥 Hỗ trợ học viên trong lớp', example: 'Trường hợp học viên chấn thương hoặc cần theo dõi riêng' },
-  { prefix: '[Chuyên môn & BQL] ', label: '💬 Đề xuất chuyên môn', example: 'Ý kiến nâng cao chất lượng khóa đào tạo' }
+const getCoachTopicPresets = (isEn) => [
+  { prefix: isEn ? '[Equipment] ' : '[Thiết bị] ', label: isEn ? '🏋️ Weights & Equipment' : '🏋️ Dụng cụ & Thiết bị tập', example: isEn ? 'Request extra weights, balls, mats or machines' : 'Đề xuất bổ sung tạ, bóng, thảm hoặc máy tập' },
+  { prefix: isEn ? '[Studio & Courts] ' : '[Phòng & Sân bãi] ', label: isEn ? '🏟️ Studio & Court Issues' : '🏟️ Sự cố phòng tập/sân', example: isEn ? 'Broken lighting, AC, floor surfaces' : 'Hỏng đèn, điều hòa, mặt sân tập' },
+  { prefix: isEn ? '[Teaching Schedule] ' : '[Lịch dạy] ', label: isEn ? '📋 Teaching & Shift Hours' : '📋 Lịch giảng dạy & Ca trực', example: isEn ? 'Leave request, shift swap or makeup classes' : 'Báo bận, đề xuất đổi ca hoặc bù giờ dạy' },
+  { prefix: isEn ? '[Student Support] ' : '[Học viên] ', label: isEn ? '👥 Class Member Support' : '👥 Hỗ trợ học viên trong lớp', example: isEn ? 'Injured student or special attention needed' : 'Trường hợp học viên chấn thương hoặc cần theo dõi riêng' },
+  { prefix: isEn ? '[Curriculum & Ops] ' : '[Chuyên môn & BQL] ', label: isEn ? '💬 Curriculum & Management' : '💬 Đề xuất chuyên môn', example: isEn ? 'Suggestions to improve coaching quality' : 'Ý kiến nâng cao chất lượng khóa đào tạo' }
 ];
 
 export function MySupportRequests() {
   const { currentUser, role } = useAuth();
   const { showSuccess, showError, showInfo } = useToast();
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+
+  const statusConfig = useMemo(() => getStatusConfig(isEn), [isEn]);
+  const priorityConfig = useMemo(() => getPriorityConfig(isEn), [isEn]);
 
   const isCoach = String(role || '').toUpperCase() === 'COACH';
-  const topicPresets = isCoach ? COACH_TOPIC_PRESETS : MEMBER_TOPIC_PRESETS;
+  const topicPresets = useMemo(
+    () => (isCoach ? getCoachTopicPresets(isEn) : getMemberTopicPresets(isEn)),
+    [isCoach, isEn]
+  );
 
   // Filter & Data States
   const [activeStatusTab, setActiveStatusTab] = useState(''); // '' | 'Open' | 'InProgress' | 'Resolved'
@@ -117,7 +126,7 @@ export function MySupportRequests() {
       })
       .catch(err => {
         if (active) {
-          setError(err.message || 'Không thể tải danh sách yêu cầu hỗ trợ.');
+          setError(err.message || (isEn ? 'Unable to load support requests.' : 'Không thể tải danh sách yêu cầu hỗ trợ.'));
         }
       })
       .finally(() => {
@@ -185,8 +194,8 @@ export function MySupportRequests() {
       }
     } catch (err) {
       if (activeUserIdRef.current === currentId) {
-        setDetailError(err.message || 'Không thể xem nội dung yêu cầu.');
-        showError(err.message || 'Lỗi khi tải chi tiết yêu cầu.');
+        setDetailError(err.message || (isEn ? 'Unable to view request details.' : 'Không thể xem nội dung yêu cầu.'));
+        showError(err.message || (isEn ? 'Error loading request details.' : 'Lỗi khi tải chi tiết yêu cầu.'));
       }
     } finally {
       if (activeUserIdRef.current === currentId) {
@@ -202,19 +211,19 @@ export function MySupportRequests() {
     const description = createDescription.trim();
 
     if (!subject) {
-      setCreateError('Vui lòng nhập tiêu đề yêu cầu hỗ trợ.');
+      setCreateError(isEn ? 'Please enter a request subject.' : 'Vui lòng nhập tiêu đề yêu cầu hỗ trợ.');
       return;
     }
     if (subject.length > 200) {
-      setCreateError('Tiêu đề không được vượt quá 200 ký tự.');
+      setCreateError(isEn ? 'Subject cannot exceed 200 characters.' : 'Tiêu đề không được vượt quá 200 ký tự.');
       return;
     }
     if (!description) {
-      setCreateError('Vui lòng mô tả chi tiết nội dung cần hỗ trợ.');
+      setCreateError(isEn ? 'Please describe your issue in detail.' : 'Vui lòng mô tả chi tiết nội dung cần hỗ trợ.');
       return;
     }
     if (description.length > 5000) {
-      setCreateError('Nội dung không được vượt quá 5000 ký tự.');
+      setCreateError(isEn ? 'Description cannot exceed 5000 characters.' : 'Nội dung không được vượt quá 5000 ký tự.');
       return;
     }
 
@@ -230,7 +239,7 @@ export function MySupportRequests() {
       });
 
       if (activeUserIdRef.current === currentId) {
-        showSuccess(`Đã gửi yêu cầu #${res.request.id} thành công!`);
+        showSuccess(isEn ? `Request #${res.request.id} submitted successfully!` : `Đã gửi yêu cầu #${res.request.id} thành công!`);
         setCreating(false);
         setCreateSubject('');
         setCreateDescription('');
@@ -242,7 +251,7 @@ export function MySupportRequests() {
       }
     } catch (err) {
       if (activeUserIdRef.current === currentId) {
-        setCreateError(err.message || 'Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại.');
+        setCreateError(err.message || (isEn ? 'Cannot submit support request. Please try again.' : 'Không thể gửi yêu cầu hỗ trợ. Vui lòng thử lại.'));
       }
     } finally {
       if (activeUserIdRef.current === currentId) {
@@ -257,11 +266,11 @@ export function MySupportRequests() {
     if (!detail) return;
     const msg = replyMessage.trim();
     if (!msg) {
-      showError('Vui lòng nhập nội dung phản hồi.');
+      showError(isEn ? 'Please enter a reply message.' : 'Vui lòng nhập nội dung phản hồi.');
       return;
     }
     if (msg.length > 5000) {
-      showError('Nội dung phản hồi không được quá 5000 ký tự.');
+      showError(isEn ? 'Reply message cannot exceed 5000 characters.' : 'Nội dung phản hồi không được quá 5000 ký tự.');
       return;
     }
 
@@ -272,12 +281,12 @@ export function MySupportRequests() {
       if (activeUserIdRef.current === currentId) {
         setDetail(updated);
         setReplyMessage('');
-        showSuccess('Đã gửi phản hồi bổ sung tới trung tâm.');
+        showSuccess(isEn ? 'Additional reply sent to the center.' : 'Đã gửi phản hồi bổ sung tới trung tâm.');
         reload();
       }
     } catch (err) {
       if (activeUserIdRef.current === currentId) {
-        showError(err.message || 'Không thể gửi phản hồi.');
+        showError(err.message || (isEn ? 'Unable to send reply.' : 'Không thể gửi phản hồi.'));
       }
     } finally {
       if (activeUserIdRef.current === currentId) {
@@ -303,24 +312,41 @@ export function MySupportRequests() {
   return (
     <div className="space-y-6 pb-12 font-lexend">
       {/* 1. Olympic Hero Masterpiece Banner */}
-      <div className="relative rounded-3xl bg-gradient-to-br from-[#32354D] via-[#2B2D42] to-[#1E2235] text-white p-6 sm:p-8 border border-white/10 shadow-xl overflow-hidden">
-        {/* Glow ambient background accents */}
-        <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 bg-[#81B29A]/15 rounded-full blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-[#F2CC8F]/15 rounded-full blur-3xl" />
+      <div className="relative rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-8 border border-white/30 dark:border-white/10 shadow-xl shadow-[#24828F]/20 overflow-hidden">
+        {/* Glow ambient background accents matching Olympic logo palette */}
+        <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent rounded-full blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[rgba(242,204,143,0.15)] border border-[rgba(242,204,143,0.3)] text-[#F2CC8F] text-xs font-bold uppercase tracking-wider">
-              <span className="w-2 h-2 rounded-full bg-[#81B29A] animate-pulse" />
-              <span>{isCoach ? 'KÊNH HỖ TRỢ HUẤN LUYỆN VIÊN SCMS' : 'TRUNG TÂM HỖ TRỢ HỘI VIÊN SCMS'}</span>
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 backdrop-blur-md text-[#1B4332] dark:text-emerald-300 border border-white/80 dark:border-white/20 text-xs font-black uppercase tracking-wider shadow-xs">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              <span>
+                {isCoach
+                  ? (isEn ? 'SCMS COACH SUPPORT CHANNEL' : 'KÊNH HỖ TRỢ HUẤN LUYỆN VIÊN SCMS')
+                  : (isEn ? 'SCMS MEMBER SUPPORT CENTER' : 'TRUNG TÂM HỖ TRỢ HỘI VIÊN SCMS')}
+              </span>
             </div>
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-white tracking-tight">
-              Yêu Cầu Hỗ Trợ &amp; Khiếu Nại
+            <h1 className="text-2xl sm:text-3xl font-chivo font-black text-white tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+              {isEn ? 'Support Requests & Inquiries' : 'Yêu Cầu Hỗ Trợ & Khiếu Nại'}
             </h1>
-            <p className="text-sm text-slate-300 max-w-2xl leading-relaxed">
+            <p className="text-sm text-white/95 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
               {isCoach
-                ? 'Gửi đề xuất thiết bị, báo hỏng phòng/sân tập, điều chỉnh ca dạy hoặc trao đổi chuyên môn trực tiếp với Ban Quản Lý.'
-                : 'Tiếp nhận mọi thắc mắc về thẻ tập, đặt lớp, hoàn hủy, phòng tập hoặc phản ánh chất lượng phục vụ. Đội ngũ Lễ tân & Quản lý sẽ giải quyết nhanh chóng.'}
+                ? (isEn
+                    ? 'Submit equipment proposals, report room/facility issues, adjust class schedules, or consult directly with Management.'
+                    : 'Gửi đề xuất thiết bị, báo hỏng phòng/sàn tập, điều chỉnh ca dạy hoặc trao đổi chuyên môn trực tiếp với Ban Quản Lý.')
+                : (isEn
+                    ? 'Inquiries regarding membership, bookings, cancellations, facilities, or service feedback. Front Desk & Management will resolve promptly.'
+                    : 'Tiếp nhận mọi thắc mắc về thẻ tập, đặt lớp, hoàn hủy, phòng tập hoặc phản ánh chất lượng phục vụ. Đội ngũ Lễ tân & Quản lý sẽ giải quyết nhanh chóng.')}
             </p>
           </div>
 
@@ -334,17 +360,17 @@ export function MySupportRequests() {
                 setCreatePriority('Normal');
                 setCreating(true);
               }}
-              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-950 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
             >
-              <span className="material-symbols-outlined text-[20px]">add_circle</span>
-              <span>Gửi Yêu Cầu Hỗ Trợ</span>
+              <span className="material-symbols-outlined text-[20px] text-amber-400">add_circle</span>
+              <span>{isEn ? 'Submit Support Request' : 'Gửi Yêu Cầu Hỗ Trợ'}</span>
             </button>
             <button
               type="button"
               disabled={loading}
               onClick={reload}
-              className="p-3 rounded-xl border border-slate-700 bg-slate-900/80 hover:bg-slate-800 text-slate-300 hover:text-white transition-colors"
-              title="Tải lại dữ liệu"
+              className="p-3 rounded-xl border border-white/20 bg-white/15 hover:bg-white/25 text-white backdrop-blur-md transition-colors"
+              title={isEn ? "Reload data" : "Tải lại dữ liệu"}
             >
               <span className={`material-symbols-outlined text-[20px] ${loading ? 'animate-spin' : ''}`}>
                 refresh
@@ -354,14 +380,14 @@ export function MySupportRequests() {
         </div>
 
         {/* Quick Hotline Bar */}
-        <div className="mt-6 pt-5 border-t border-slate-800/80 flex flex-wrap items-center justify-between gap-4 text-xs text-slate-400">
+        <div className="mt-6 pt-5 border-t border-white/20 flex flex-wrap items-center justify-between gap-4 text-xs text-white/90">
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-red-400 text-[18px]">verified</span>
-            <span>Cam kết tiếp nhận & xử lý phản hồi trong vòng 24 giờ làm việc.</span>
+            <span className="material-symbols-outlined text-amber-300 text-[18px]">verified</span>
+            <span className="font-medium drop-shadow-xs">{isEn ? 'Committed to response & resolution within 24 business hours.' : 'Cam kết tiếp nhận & xử lý phản hồi trong vòng 24 giờ làm việc.'}</span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="material-symbols-outlined text-amber-400 text-[18px]">call</span>
-            <span>Hotline khẩn cấp quầy Lễ tân: <strong className="text-white font-mono">0901 234 567</strong></span>
+            <span className="material-symbols-outlined text-amber-300 text-[18px]">call</span>
+            <span className="font-medium drop-shadow-xs">{isEn ? 'Front Desk Emergency Hotline: ' : 'Hotline khẩn cấp quầy Lễ tân: '}<strong className="text-white font-mono font-bold">0901 234 567</strong></span>
           </div>
         </div>
       </div>
@@ -370,7 +396,7 @@ export function MySupportRequests() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Tổng yêu cầu</p>
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider">{isEn ? 'Total Requests' : 'Tổng yêu cầu'}</p>
             <p className="text-2xl font-chivo font-black text-slate-900 mt-1">{stats.total}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-slate-100 text-slate-700 flex items-center justify-center">
@@ -380,7 +406,7 @@ export function MySupportRequests() {
 
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-sky-600 uppercase tracking-wider">Mới gửi</p>
+            <p className="text-xs font-semibold text-sky-600 uppercase tracking-wider">{isEn ? 'Open' : 'Mới gửi'}</p>
             <p className="text-2xl font-chivo font-black text-sky-700 mt-1">{stats.openCount}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-sky-50 text-sky-600 flex items-center justify-center">
@@ -390,7 +416,7 @@ export function MySupportRequests() {
 
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">Đang xử lý</p>
+            <p className="text-xs font-semibold text-amber-600 uppercase tracking-wider">{isEn ? 'In Progress' : 'Đang xử lý'}</p>
             <p className="text-2xl font-chivo font-black text-amber-700 mt-1">{stats.inProgressCount}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-amber-50 text-amber-600 flex items-center justify-center">
@@ -400,7 +426,7 @@ export function MySupportRequests() {
 
         <div className="bg-white rounded-2xl p-4 sm:p-5 border border-slate-200 shadow-sm flex items-center justify-between">
           <div>
-            <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">Đã giải quyết</p>
+            <p className="text-xs font-semibold text-emerald-600 uppercase tracking-wider">{isEn ? 'Resolved' : 'Đã giải quyết'}</p>
             <p className="text-2xl font-chivo font-black text-emerald-700 mt-1">{stats.resolvedCount}</p>
           </div>
           <div className="w-12 h-12 rounded-xl bg-emerald-50 text-emerald-600 flex items-center justify-center">
@@ -415,10 +441,10 @@ export function MySupportRequests() {
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-slate-100 pb-3">
           <div className="flex flex-wrap items-center gap-2">
             {[
-              { id: '', label: 'Tất cả trạng thái', icon: 'list' },
-              { id: 'Open', label: 'Mới gửi', icon: 'mail' },
-              { id: 'InProgress', label: 'Đang xử lý', icon: 'autorenew' },
-              { id: 'Resolved', label: 'Đã giải quyết', icon: 'check_circle' }
+              { id: '', label: isEn ? 'All Statuses' : 'Tất cả trạng thái', icon: 'list' },
+              { id: 'Open', label: isEn ? 'Open' : 'Mới gửi', icon: 'mail' },
+              { id: 'InProgress', label: isEn ? 'In Progress' : 'Đang xử lý', icon: 'autorenew' },
+              { id: 'Resolved', label: isEn ? 'Resolved' : 'Đã giải quyết', icon: 'check_circle' }
             ].map(tab => {
               const active = activeStatusTab === tab.id;
               return (
@@ -443,17 +469,17 @@ export function MySupportRequests() {
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
-            <label className="text-xs font-semibold text-slate-500 shrink-0">Mức ưu tiên:</label>
+            <label className="text-xs font-semibold text-slate-500 shrink-0">{isEn ? 'Priority:' : 'Mức ưu tiên:'}</label>
             <select
-              aria-label="Lọc mức ưu tiên"
+              aria-label={isEn ? "Filter by priority" : "Lọc mức ưu tiên"}
               value={priorityFilter}
               onChange={e => setPriorityFilter(e.target.value)}
               className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:bg-white"
             >
-              <option value="">Tất cả mức ưu tiên</option>
-              <option value="High">Ưu tiên Cao</option>
-              <option value="Normal">Bình thường</option>
-              <option value="Low">Thấp</option>
+              <option value="">{isEn ? 'All Priorities' : 'Tất cả mức ưu tiên'}</option>
+              <option value="High">{isEn ? 'High Priority' : 'Ưu tiên Cao'}</option>
+              <option value="Normal">{isEn ? 'Normal' : 'Bình thường'}</option>
+              <option value="Low">{isEn ? 'Low' : 'Thấp'}</option>
             </select>
           </div>
         </div>
@@ -465,7 +491,7 @@ export function MySupportRequests() {
           </span>
           <input
             type="text"
-            placeholder="Tìm nhanh theo tiêu đề hoặc mã yêu cầu (#1024)..."
+            placeholder={isEn ? "Quick search by subject or request code (#1024)..." : "Tìm nhanh theo tiêu đề hoặc mã yêu cầu (#1024)..."}
             value={searchKeyword}
             onChange={e => setSearchKeyword(e.target.value)}
             className="w-full pl-10 pr-10 py-2.5 text-sm rounded-xl border border-slate-200 focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 bg-slate-50/50 hover:bg-white"
@@ -475,7 +501,7 @@ export function MySupportRequests() {
               type="button"
               onClick={() => setSearchKeyword('')}
               className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600"
-              title="Xóa tìm kiếm"
+              title={isEn ? "Clear search" : "Xóa tìm kiếm"}
             >
               <span className="material-symbols-outlined text-[18px]">close</span>
             </button>
@@ -491,7 +517,7 @@ export function MySupportRequests() {
             <span>{error}</span>
           </div>
           <button onClick={reload} className="px-3 py-1 text-xs font-bold rounded-lg border border-red-300 hover:bg-red-100">
-            Thử lại
+            {isEn ? 'Retry' : 'Thử lại'}
           </button>
         </div>
       )}
@@ -499,7 +525,7 @@ export function MySupportRequests() {
       {/* 4. Ticket List View */}
       {loading ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12">
-          <LoadingSpinner text="Đang đồng bộ phiếu yêu cầu từ hệ thống..." />
+          <LoadingSpinner text={isEn ? "Syncing support requests from server..." : "Đang đồng bộ phiếu yêu cầu từ hệ thống..."} />
         </div>
       ) : !data || displayedItems.length === 0 ? (
         <div className="bg-white rounded-2xl border border-slate-200 p-12 text-center space-y-4">
@@ -509,13 +535,15 @@ export function MySupportRequests() {
           <div>
             <h3 className="font-chivo text-base font-bold text-slate-800">
               {searchKeyword || priorityFilter || activeStatusTab
-                ? 'Không tìm thấy yêu cầu phù hợp với bộ lọc'
-                : 'Bạn chưa có yêu cầu hỗ trợ nào'}
+                ? (isEn ? 'No requests match your filter' : 'Không tìm thấy yêu cầu phù hợp với bộ lọc')
+                : (isEn ? 'You have no support requests yet' : 'Bạn chưa có yêu cầu hỗ trợ nào')}
             </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
               {searchKeyword || priorityFilter || activeStatusTab
-                ? 'Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn lại trạng thái.'
-                : 'Bất kỳ thắc mắc hoặc khó khăn nào trong quá trình tập luyện và giảng dạy, hãy gửi yêu cầu để Ban Quản Lý hỗ trợ bạn.'}
+                ? (isEn ? 'Try changing your search keyword or selecting a different status.' : 'Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn lại trạng thái.')
+                : (isCoach
+                    ? (isEn ? 'For any questions or issues during coaching and teaching, submit a request for Management assistance.' : 'Bất kỳ thắc mắc hoặc khó khăn nào trong quá trình tập luyện và giảng dạy, hãy gửi yêu cầu để Ban Quản Lý hỗ trợ bạn.')
+                    : (isEn ? 'For any questions or difficulties during your training, submit a request for Front Desk & Management assistance.' : 'Bất kỳ thắc mắc hoặc khó khăn nào trong quá trình tập luyện và giảng dạy, hãy gửi yêu cầu để Ban Quản Lý hỗ trợ bạn.'))}
             </p>
           </div>
           <button
@@ -527,20 +555,20 @@ export function MySupportRequests() {
             className="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-[#F2CC8F] hover:bg-[#E07A5F] text-[#1E2235] hover:text-white font-bold text-xs uppercase tracking-wider transition-colors shadow-sm cursor-pointer"
           >
             <span className="material-symbols-outlined text-[18px]">add</span>
-            <span>Tạo yêu cầu đầu tiên</span>
+            <span>{isEn ? 'Create First Request' : 'Tạo yêu cầu đầu tiên'}</span>
           </button>
         </div>
       ) : (
         <div className="space-y-3">
           <div className="text-xs font-semibold text-slate-500 px-1 flex items-center justify-between">
-            <span>Hiển thị {displayedItems.length} yêu cầu</span>
-            <span>Trang {currentPage} / {Math.max(1, Math.ceil((data.totalCount || 1) / 20))}</span>
+            <span>{isEn ? `Showing ${displayedItems.length} requests` : `Hiển thị ${displayedItems.length} yêu cầu`}</span>
+            <span>{isEn ? `Page ${currentPage} / ${Math.max(1, Math.ceil((data.totalCount || 1) / 20))}` : `Trang ${currentPage} / ${Math.max(1, Math.ceil((data.totalCount || 1) / 20))}`}</span>
           </div>
 
           <div className="grid gap-3">
             {displayedItems.map(req => {
-              const statusCfg = STATUS_CONFIG[req.status] || STATUS_CONFIG.Open;
-              const priorityCfg = PRIORITY_CONFIG[req.priority] || PRIORITY_CONFIG.Normal;
+              const statusCfg = statusConfig[req.status] || statusConfig.Open;
+              const priorityCfg = priorityConfig[req.priority] || priorityConfig.Normal;
               const isSelected = detail?.request?.id === req.id;
 
               return (
@@ -567,12 +595,12 @@ export function MySupportRequests() {
                       <div className="flex flex-wrap items-center gap-3 text-xs text-slate-500">
                         <span className="inline-flex items-center gap-1">
                           <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                          <span>{formatMemberDateTime(req.createdAt)}</span>
+                          <span>{formatMemberDateTime(req.createdAt, isEn)}</span>
                         </span>
                         {req.resolvedAt && (
                           <span className="inline-flex items-center gap-1 text-emerald-700 font-medium">
                             <span className="material-symbols-outlined text-[14px]">check_circle</span>
-                            <span>Đã xử lý lúc {formatMemberDateTime(req.resolvedAt)}</span>
+                            <span>{isEn ? `Resolved at ${formatMemberDateTime(req.resolvedAt, isEn)}` : `Đã xử lý lúc ${formatMemberDateTime(req.resolvedAt)}`}</span>
                           </span>
                         )}
                       </div>
@@ -598,7 +626,7 @@ export function MySupportRequests() {
                           openDetail(req.id);
                         }}
                         className="w-8 h-8 rounded-lg border border-slate-200 flex items-center justify-center text-slate-500 group-hover:bg-red-50 group-hover:text-red-600 group-hover:border-red-200 transition-colors"
-                        title="Xem chi tiết"
+                        title={isEn ? "View details" : "Xem chi tiết"}
                       >
                         <span className="material-symbols-outlined text-[18px]">arrow_forward</span>
                       </button>
@@ -612,7 +640,7 @@ export function MySupportRequests() {
           {/* Pagination Controls */}
           {data.totalCount > 20 && (
             <div className="p-4 bg-white rounded-2xl border border-slate-200 flex items-center justify-between text-xs text-slate-600">
-              <span>Tổng số: {data.totalCount} yêu cầu</span>
+              <span>{isEn ? `Total: ${data.totalCount} requests` : `Tổng số: ${data.totalCount} yêu cầu`}</span>
               <div className="flex items-center gap-2">
                 <button
                   type="button"
@@ -620,7 +648,7 @@ export function MySupportRequests() {
                   onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
                   className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
                 >
-                  Trang trước
+                  {isEn ? 'Previous' : 'Trang trước'}
                 </button>
                 <span className="font-semibold text-slate-900">
                   {currentPage} / {Math.ceil(data.totalCount / 20)}
@@ -631,7 +659,7 @@ export function MySupportRequests() {
                   onClick={() => setCurrentPage(p => p + 1)}
                   className="px-3 py-1.5 rounded-lg border border-slate-200 bg-white hover:bg-slate-50 disabled:opacity-40"
                 >
-                  Trang sau
+                  {isEn ? 'Next' : 'Trang sau'}
                 </button>
               </div>
             </div>
@@ -642,7 +670,7 @@ export function MySupportRequests() {
       {/* 5. Ticket Detail & Thread Section */}
       {detailLoading && (
         <div id="support-detail-view" className="bg-white rounded-2xl border border-slate-200 p-8">
-          <LoadingSpinner text="Đang tải chi tiết trao đổi yêu cầu..." />
+          <LoadingSpinner text={isEn ? "Loading request discussion details..." : "Đang tải chi tiết trao đổi yêu cầu..."} />
         </div>
       )}
 
@@ -655,7 +683,7 @@ export function MySupportRequests() {
       {detail && !detailLoading && (
         <section
           id="support-detail-view"
-          aria-label="Chi tiết yêu cầu hỗ trợ"
+          aria-label={isEn ? "Support request details" : "Chi tiết yêu cầu hỗ trợ"}
           className="bg-white rounded-3xl border border-slate-200 shadow-lg overflow-hidden space-y-6"
         >
           {/* Detail Header */}
@@ -670,10 +698,10 @@ export function MySupportRequests() {
                 </h2>
               </div>
               <div className="flex flex-wrap items-center gap-3 text-xs text-slate-300">
-                <span>Tạo lúc: {formatMemberDateTime(detail.request.createdAt)}</span>
+                <span>{isEn ? 'Created at: ' : 'Tạo lúc: '}{formatMemberDateTime(detail.request.createdAt, isEn)}</span>
                 {detail.request.resolvedAt && (
                   <span className="text-emerald-400 font-semibold">
-                    · Giải quyết lúc: {formatMemberDateTime(detail.request.resolvedAt)}
+                    {isEn ? ' · Resolved at: ' : ' · Giải quyết lúc: '}{formatMemberDateTime(detail.request.resolvedAt, isEn)}
                   </span>
                 )}
               </div>
@@ -682,7 +710,7 @@ export function MySupportRequests() {
             <div className="flex items-center gap-2 shrink-0">
               {/* Status Badge */}
               {(() => {
-                const s = STATUS_CONFIG[detail.request.status] || STATUS_CONFIG.Open;
+                const s = statusConfig[detail.request.status] || statusConfig.Open;
                 return (
                   <span className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold border ${s.badgeClass}`}>
                     <span className={`w-2 h-2 rounded-full ${s.dotClass}`} />
@@ -695,9 +723,9 @@ export function MySupportRequests() {
               <button
                 type="button"
                 onClick={() => setDetail(null)}
-                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold"
+                className="px-3 py-1.5 rounded-lg border border-slate-700 bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-semibold cursor-pointer"
               >
-                Đóng chi tiết
+                {isEn ? 'Close details' : 'Đóng chi tiết'}
               </button>
             </div>
           </div>
@@ -712,11 +740,11 @@ export function MySupportRequests() {
                   </div>
                   <div>
                     <span className="text-xs font-bold text-slate-800">
-                      Nội dung ban đầu từ bạn ({currentUser?.fullName})
+                      {isEn ? `Original request from you (${currentUser?.fullName})` : `Nội dung ban đầu từ bạn (${currentUser?.fullName})`}
                     </span>
                   </div>
                 </div>
-                <span className="text-[11px] text-slate-500">{formatMemberDateTime(detail.request.createdAt)}</span>
+                <span className="text-[11px] text-slate-500">{formatMemberDateTime(detail.request.createdAt, isEn)}</span>
               </div>
               <p className="text-sm text-slate-800 whitespace-pre-wrap break-words leading-relaxed pt-1">
                 {detail.description}
@@ -727,17 +755,19 @@ export function MySupportRequests() {
             <div className="space-y-4">
               <h3 className="font-chivo font-black text-sm uppercase tracking-wider text-slate-800 flex items-center gap-2">
                 <span className="material-symbols-outlined text-red-600 text-[18px]">forum</span>
-                <span>Tiến trình xử lý & Trao đổi ({detail.messages?.length || 0})</span>
+                <span>{isEn ? 'Resolution Timeline & Discussion' : 'Tiến trình xử lý & Trao đổi'} ({detail.messages?.length || 0})</span>
               </h3>
 
               {(!detail.messages || detail.messages.length === 0) ? (
                 <div className="p-6 rounded-2xl bg-amber-50/60 border border-amber-200/60 text-center space-y-2">
                   <span className="material-symbols-outlined text-amber-600 text-[32px]">support_agent</span>
                   <p className="text-xs font-semibold text-amber-900">
-                    Yêu cầu đã được ghi nhận trên hệ thống.
+                    {isEn ? 'Request has been logged in the system.' : 'Yêu cầu đã được ghi nhận trên hệ thống.'}
                   </p>
                   <p className="text-xs text-amber-700 max-w-md mx-auto">
-                    Đội ngũ Lễ tân & Quản lý đang tiếp nhận xem xét và sẽ gửi tin nhắn phản hồi sớm nhất.
+                    {isEn
+                      ? 'Front Desk & Management are reviewing your request and will reply shortly.'
+                      : 'Đội ngũ Lễ tân & Quản lý đang tiếp nhận xem xét và sẽ gửi tin nhắn phản hồi sớm nhất.'}
                   </p>
                 </div>
               ) : (
@@ -765,12 +795,14 @@ export function MySupportRequests() {
                             </div>
                             <div>
                               <span className="text-xs font-bold text-slate-900">
-                                {isStaff ? `${m.senderName} (Đại diện Ban Quản Lý / Lễ tân)` : `${m.senderName} (Bạn)`}
+                                {isStaff
+                                  ? (isEn ? `${m.senderName} (Management / Front Desk Representative)` : `${m.senderName} (Đại diện Ban Quản Lý / Lễ tân)`)
+                                  : (isEn ? `${m.senderName} (You)` : `${m.senderName} (Bạn)`)}
                               </span>
                             </div>
                           </div>
                           <span className="text-[11px] text-slate-500">
-                            {formatMemberDateTime(m.createdAt)}
+                            {formatMemberDateTime(m.createdAt, isEn)}
                           </span>
                         </div>
                         <p className="text-sm text-slate-800 whitespace-pre-wrap break-words leading-relaxed">
@@ -788,10 +820,10 @@ export function MySupportRequests() {
               <form onSubmit={handleReplySubmit} className="space-y-3 border-t border-slate-200 pt-5">
                 <div className="flex items-center justify-between">
                   <label htmlFor="reply-textarea" className="text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Gửi phản hồi hoặc bổ sung thông tin
+                    {isEn ? 'Send response or provide additional details' : 'Gửi phản hồi hoặc bổ sung thông tin'}
                   </label>
                   <span className="text-[11px] text-slate-400">
-                    {replyMessage.length} / 5000 ký tự
+                    {replyMessage.length} / {isEn ? '5000 characters' : '5000 ký tự'}
                   </span>
                 </div>
                 <textarea
@@ -800,14 +832,14 @@ export function MySupportRequests() {
                   maxLength={5000}
                   required
                   disabled={submittingReply}
-                  placeholder="Nhập nội dung giải đáp câu hỏi của nhân viên hoặc cung cấp thêm thông tin..."
+                  placeholder={isEn ? "Enter response to staff questions or provide additional details..." : "Nhập nội dung giải đáp câu hỏi của nhân viên hoặc cung cấp thêm thông tin..."}
                   value={replyMessage}
                   onChange={e => setReplyMessage(e.target.value)}
                   className="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 disabled:opacity-50"
                 />
                 <div className="flex flex-wrap items-center justify-between gap-3">
                   <span className="text-xs text-slate-500">
-                    💡 Đội ngũ Lễ tân sẽ nhận được thông báo ngay khi bạn gửi tin.
+                    {isEn ? '💡 Front Desk will be notified immediately upon submission.' : '💡 Đội ngũ Lễ tân sẽ nhận được thông báo ngay khi bạn gửi tin.'}
                   </span>
                   <button
                     type="submit"
@@ -817,12 +849,12 @@ export function MySupportRequests() {
                     {submittingReply ? (
                       <>
                         <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                        <span>Đang gửi...</span>
+                        <span>{isEn ? 'Sending...' : 'Đang gửi...'}</span>
                       </>
                     ) : (
                       <>
                         <span className="material-symbols-outlined text-[18px]">send</span>
-                        <span>Gửi phản hồi</span>
+                        <span>{isEn ? 'Send response' : 'Gửi phản hồi'}</span>
                       </>
                     )}
                   </button>
@@ -835,9 +867,9 @@ export function MySupportRequests() {
                     <span className="material-symbols-outlined text-[24px]">verified</span>
                   </div>
                   <div>
-                    <h4 className="font-bold text-emerald-900 text-sm">Yêu cầu đã được giải quyết thành công</h4>
+                    <h4 className="font-bold text-emerald-900 text-sm">{isEn ? 'Request resolved successfully' : 'Yêu cầu đã được giải quyết thành công'}</h4>
                     <p className="text-xs text-emerald-700 mt-0.5">
-                      Nếu bạn cần trợ giúp vấn đề khác, vui lòng tạo phiếu hỗ trợ mới.
+                      {isEn ? 'If you need help with another issue, please create a new support ticket.' : 'Nếu bạn cần trợ giúp vấn đề khác, vui lòng tạo phiếu hỗ trợ mới.'}
                     </p>
                   </div>
                 </div>
@@ -847,9 +879,9 @@ export function MySupportRequests() {
                     setCreateError('');
                     setCreating(true);
                   }}
-                  className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider shrink-0 transition-colors"
+                  className="px-4 py-2 rounded-xl bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold uppercase tracking-wider shrink-0 transition-colors cursor-pointer"
                 >
-                  Tạo yêu cầu mới
+                  {isEn ? 'Create new request' : 'Tạo yêu cầu mới'}
                 </button>
               </div>
             )}
@@ -863,7 +895,7 @@ export function MySupportRequests() {
         onClose={() => {
           if (!submittingCreate) setCreating(false);
         }}
-        title="Gửi Yêu Cầu Hỗ Trợ Mới"
+        title={isEn ? "Submit New Support Request" : "Gửi Yêu Cầu Hỗ Trợ Mới"}
         maxWidth="max-w-2xl"
       >
         <form onSubmit={handleCreateSubmit} className="space-y-5">
@@ -877,7 +909,7 @@ export function MySupportRequests() {
           {/* Quick Category Chips */}
           <div className="space-y-2">
             <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Chủ đề gợi ý nhanh (bấm chọn):
+              {isEn ? 'Quick topic suggestions (click to select):' : 'Chủ đề gợi ý nhanh (bấm chọn):'}
             </label>
             <div className="flex flex-wrap gap-1.5">
               {topicPresets.map((preset, idx) => {
@@ -887,7 +919,7 @@ export function MySupportRequests() {
                     key={idx}
                     type="button"
                     onClick={() => handlePresetClick(preset)}
-                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all ${
+                    className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold border transition-all cursor-pointer ${
                       isSelected
                         ? 'bg-[#3D405B] text-[#F2CC8F] border-[#3D405B] shadow-sm'
                         : 'bg-slate-50 text-slate-700 border-slate-200 hover:bg-slate-100 hover:border-slate-300'
@@ -905,17 +937,17 @@ export function MySupportRequests() {
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Tiêu đề yêu cầu <span className="text-red-600">*</span>
+                  {isEn ? 'Request Subject' : 'Tiêu đề yêu cầu'} <span className="text-red-600">*</span>
                 </label>
                 <span className="text-[11px] text-slate-400">
-                  {createSubject.length} / 200 ký tự
+                  {createSubject.length} / {isEn ? '200 characters' : '200 ký tự'}
                 </span>
               </div>
               <input
                 name="subject"
                 required
                 maxLength={200}
-                placeholder="Ví dụ: Đổi lịch tập lớp Yoga ca tối thứ 4 hoặc Báo hỏng vòi sen"
+                placeholder={isEn ? "e.g. Reschedule Wednesday evening Yoga class or Report broken shower" : "Ví dụ: Đổi lịch tập lớp Yoga ca tối thứ 4 hoặc Báo hỏng vòi sen"}
                 value={createSubject}
                 onChange={e => setCreateSubject(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600"
@@ -925,13 +957,13 @@ export function MySupportRequests() {
             {/* Priority Selector Cards */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Mức độ ưu tiên
+                {isEn ? 'Priority Level' : 'Mức độ ưu tiên'}
               </label>
               <div className="grid grid-cols-3 gap-2">
                 {[
-                  { id: 'Low', label: 'Thấp', desc: 'Góp ý thông thường', icon: 'info' },
-                  { id: 'Normal', label: 'Bình thường', desc: 'Trong 24h làm việc', icon: 'schedule' },
-                  { id: 'High', label: 'Ưu tiên Cao', desc: 'Khẩn cấp / Tại chỗ', icon: 'emergency' }
+                  { id: 'Low', label: isEn ? 'Low' : 'Thấp', desc: isEn ? 'General feedback' : 'Góp ý thông thường', icon: 'info' },
+                  { id: 'Normal', label: isEn ? 'Normal' : 'Bình thường', desc: isEn ? 'Within 24 business hours' : 'Trong 24h làm việc', icon: 'schedule' },
+                  { id: 'High', label: isEn ? 'High Priority' : 'Ưu tiên Cao', desc: isEn ? 'Urgent / On-site issue' : 'Khẩn cấp / Tại chỗ', icon: 'emergency' }
                 ].map(p => {
                   const isChecked = createPriority === p.id;
                   return (
@@ -963,10 +995,10 @@ export function MySupportRequests() {
             <div className="space-y-1">
               <div className="flex items-center justify-between">
                 <label className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                  Nội dung chi tiết <span className="text-red-600">*</span>
+                  {isEn ? 'Detailed Description' : 'Nội dung chi tiết'} <span className="text-red-600">*</span>
                 </label>
                 <span className="text-[11px] text-slate-400">
-                  {createDescription.length} / 5000 ký tự
+                  {createDescription.length} / {isEn ? '5000 characters' : '5000 ký tự'}
                 </span>
               </div>
               <textarea
@@ -974,7 +1006,7 @@ export function MySupportRequests() {
                 required
                 maxLength={5000}
                 rows={5}
-                placeholder="Mô tả cụ thể vấn đề của bạn: thời gian xảy ra, vị trí phòng/sân tập, số điện thoại liên lạc nếu cần..."
+                placeholder={isEn ? "Describe your issue in detail: when it occurred, facility/room location, contact phone number if needed..." : "Mô tả cụ thể vấn đề của bạn: thời gian xảy ra, vị trí phòng/sân tập, số điện thoại liên lạc nếu cần..."}
                 value={createDescription}
                 onChange={e => setCreateDescription(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600 leading-relaxed"
@@ -987,7 +1019,10 @@ export function MySupportRequests() {
                 lightbulb
               </span>
               <span>
-                <strong>Mẹo:</strong> Cung cấp rõ mã hội viên, số phòng tập hoặc tên huấn luyện viên sẽ giúp Ban Quản Lý xử lý chính xác và nhanh chóng hơn.
+                <strong>{isEn ? 'Tip:' : 'Mẹo:'}</strong>{' '}
+                {isEn
+                  ? 'Providing your member/coach ID, room number, or coach name helps Management resolve your issue faster and more accurately.'
+                  : 'Cung cấp rõ mã hội viên, số phòng tập hoặc tên huấn luyện viên sẽ giúp Ban Quản Lý xử lý chính xác và nhanh chóng hơn.'}
               </span>
             </div>
           </fieldset>
@@ -998,9 +1033,9 @@ export function MySupportRequests() {
               type="button"
               disabled={submittingCreate}
               onClick={() => setCreating(false)}
-              className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-colors"
+              className="px-4 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-semibold text-xs hover:bg-slate-50 transition-colors cursor-pointer"
             >
-              Hủy
+              {isEn ? 'Cancel' : 'Hủy'}
             </button>
             <button
               type="submit"
@@ -1010,12 +1045,12 @@ export function MySupportRequests() {
               {submittingCreate ? (
                 <>
                   <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  <span>Đang gửi...</span>
+                  <span>{isEn ? 'Submitting...' : 'Đang gửi...'}</span>
                 </>
               ) : (
                 <>
                   <span className="material-symbols-outlined text-[18px]">send</span>
-                  <span>Gửi yêu cầu</span>
+                  <span>{isEn ? 'Submit request' : 'Gửi yêu cầu'}</span>
                 </>
               )}
             </button>

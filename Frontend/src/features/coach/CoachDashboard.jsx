@@ -199,27 +199,41 @@ export function CoachDashboard() {
     <div className="min-h-screen bg-[#f8fafc] text-[#0f172a] space-y-6 animate-fadeIn pb-10">
       
       {/* ─────────────────────────────────────────────────────────────
-          1. TOP BANNER GRADIENT (Xanh Navy Slate & 3 Chỉ số Trọng tâm)
+          1. TOP BANNER GRADIENT (Olympic Logo Gradient & 3 Chỉ số Trọng tâm)
       ───────────────────────────────────────────────────────────── */}
-      <section className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white p-6 sm:p-8 shadow-sm border border-slate-800/80">
-        {/* Glow ambient background trang trí */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-72 h-72 rounded-full bg-blue-500/15 blur-3xl" />
-        <div className="pointer-events-none absolute right-1/3 -bottom-16 w-60 h-60 rounded-full bg-indigo-500/15 blur-3xl" />
+      <section
+        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-[#24828F]/25 border border-white/30"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
+        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/35 rounded-full blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
 
         <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-blue-500/20 text-blue-300 text-xs font-semibold backdrop-blur-sm border border-blue-400/20 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
+            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
               <span>{isEn ? 'Olympic Certified Coach Portal' : 'Cổng Huấn Luyện Viên Chuyên Nghiệp'}</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight">
+            <h1 className="text-2xl sm:text-3xl font-chivo font-black tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
               {isEn
                 ? `Welcome back, Coach ${currentUser?.fullName || 'Trainer'}!`
-                : `Chào ngày mới, HLV ${currentUser?.fullName || 'Huấn Luyện Viên'}! 👋`}
+                : `Chào ngày mới, HLV ${currentUser?.fullName || 'Huấn Luyện Viên'}!`}
             </h1>
 
-            <p className="text-xs sm:text-sm text-slate-300 leading-relaxed font-normal">
+            <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-medium drop-shadow-xs">
               {isEn
                 ? `You have ${allSessions.length} sessions scheduled today. Track your student attendance and log training progress seamlessly.`
                 : `Hôm nay bạn có ${allSessions.length} ca dạy được phân công. Hãy kiểm tra danh sách lớp, thực hiện điểm danh và đánh giá kết quả rèn luyện của học viên.`}
@@ -230,44 +244,44 @@ export function CoachDashboard() {
           <div className="w-full lg:w-auto grid grid-cols-3 gap-3 sm:gap-4 shrink-0">
             
             {/* Thẻ 1: Số ca dạy hôm nay */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-sm hover:bg-white/[0.14] transition-all">
-              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-xs hover:bg-white/25 transition-all">
+              <span className="text-[11px] font-bold text-white/85 uppercase tracking-wider block">
                 {isEn ? 'Sessions Today' : 'Ca dạy hôm nay'}
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl sm:text-3xl font-black text-white">{allSessions.length}</span>
-                <span className="text-xs text-blue-300 font-semibold">{isEn ? 'slots' : 'ca'}</span>
+                <span className="text-2xl sm:text-3xl font-chivo font-black text-white">{allSessions.length}</span>
+                <span className="text-xs text-amber-200 font-bold">{isEn ? 'slots' : 'ca'}</span>
               </div>
-              <span className="mt-1 text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+              <span className="mt-1 text-[10px] text-white font-bold flex items-center gap-1">
                 ● 1 ca đã xong
               </span>
             </div>
 
             {/* Thẻ 2: Tổng học viên */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-sm hover:bg-white/[0.14] transition-all">
-              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-xs hover:bg-white/25 transition-all">
+              <span className="text-[11px] font-bold text-white/85 uppercase tracking-wider block">
                 {isEn ? 'Total Students' : 'Tổng học viên'}
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl sm:text-3xl font-black text-white">
+                <span className="text-2xl sm:text-3xl font-chivo font-black text-white">
                   {studentCount > 0 ? studentCount : 24}
                 </span>
-                <span className="text-xs text-slate-300 font-semibold">{isEn ? 'members' : 'người'}</span>
+                <span className="text-xs text-white/80 font-bold">{isEn ? 'members' : 'người'}</span>
               </div>
-              <span className="mt-1 text-[10px] text-blue-300 font-bold flex items-center gap-1">
+              <span className="mt-1 text-[10px] text-amber-200 font-bold flex items-center gap-1">
                 ↑ 3 học viên mới
               </span>
             </div>
 
             {/* Thẻ 3: Tỉ lệ chuyên cần */}
-            <div className="bg-white/10 backdrop-blur-md rounded-2xl p-4 border border-white/15 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-sm hover:bg-white/[0.14] transition-all">
-              <span className="text-[11px] font-bold text-slate-300 uppercase tracking-wider block">
+            <div className="bg-white/20 backdrop-blur-md rounded-2xl p-4 border border-white/30 min-w-[110px] sm:min-w-[135px] flex flex-col justify-between shadow-xs hover:bg-white/25 transition-all">
+              <span className="text-[11px] font-bold text-white/85 uppercase tracking-wider block">
                 {isEn ? 'Attendance Rate' : 'Tỉ lệ chuyên cần'}
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl sm:text-3xl font-black text-emerald-300">92%</span>
+                <span className="text-2xl sm:text-3xl font-chivo font-black text-white">92%</span>
               </div>
-              <span className="mt-1 text-[10px] text-emerald-400 font-bold flex items-center gap-1">
+              <span className="mt-1 text-[10px] text-white font-bold flex items-center gap-1">
                 ↑ +4.2% so tuần trước
               </span>
             </div>
@@ -319,7 +333,7 @@ export function CoachDashboard() {
                   onClick={() => setFilterPeriod(period.id)}
                   className={`px-3 py-1 text-xs font-bold rounded-lg transition-all duration-150 cursor-pointer ${
                     filterPeriod === period.id
-                      ? 'bg-slate-900 text-white shadow-2xs'
+                      ? 'bg-[#2D6A4F] text-white shadow-2xs'
                       : 'text-slate-600 hover:text-slate-900 hover:bg-slate-200/60'
                   }`}
                 >

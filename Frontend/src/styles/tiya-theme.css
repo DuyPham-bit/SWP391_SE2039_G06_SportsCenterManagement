@@ -207,6 +207,60 @@
   justify-content: space-between;
 }
 
+/* Minimalist Refined Language Toggle for Landing Navbar */
+.tiya-lang-toggle {
+  display: inline-flex;
+  align-items: center;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-radius: 9999px;
+  padding: 3px;
+  gap: 2px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  transition: all 0.25s ease;
+  user-select: none;
+}
+
+.tiya-lang-toggle:hover {
+  background: rgba(255, 255, 255, 0.14);
+  border-color: rgba(255, 255, 255, 0.28);
+}
+
+.tiya-lang-toggle__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  padding: 4px 10px;
+  border-radius: 9999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  color: rgba(255, 255, 255, 0.72);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  line-height: 1;
+}
+
+.tiya-lang-toggle__btn:hover {
+  color: #ffffff;
+}
+
+.tiya-lang-toggle__btn.active {
+  background: #2D6A4F;
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(45, 106, 79, 0.45);
+}
+
+.tiya-lang-toggle__btn .lang-code {
+  font-size: 11px;
+  font-weight: 800;
+}
+
 .tiya-brand {
   display: flex;
   align-items: center;
@@ -1305,12 +1359,14 @@
    FOOTER (Tiya .site-footer with Bottom SVG Wave)
 ───────────────────────────────────────────────────────────── */
 .site-footer {
-  background-color: var(--secondary-color);
+  background: #0B132B;
+  background: linear-gradient(180deg, #0F172A 0%, #090E1A 100%);
   position: relative;
-  padding-top: 24px;
-  padding-bottom: clamp(75px, 6.5vw, 110px);
-  color: rgba(255, 255, 255, 0.7);
+  padding-top: 36px;
+  padding-bottom: 36px;
+  color: #CBD5E1;
   overflow: hidden;
+  border-top: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .site-footer .footer-container {
@@ -1318,88 +1374,232 @@
   z-index: 5;
   max-width: 1360px;
   margin: 0 auto;
-  padding: 0 24px 20px;
+  padding: 0 24px;
 }
 
 .site-footer-wave {
-  position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  width: 100%;
-  height: clamp(60px, 5.5vw, 90px);
-  pointer-events: none;
-  z-index: 1;
+  display: none;
 }
 
+/* Headings: high specificity to override .tiya-page h4 color: #000000 */
+.site-footer h4.site-footer-title,
+.tiya-page .site-footer h4.site-footer-title,
+.tiya-page .site-footer h4,
 .site-footer-title {
-  color: var(--custom-btn-bg-color);
-  font-size: 14px;
-  font-weight: 700;
+  color: #FFFFFF !important;
+  font-family: var(--body-font-family);
+  font-size: 13px !important;
+  font-weight: 700 !important;
   text-transform: uppercase;
   letter-spacing: 0.12em;
   margin-bottom: 20px;
-}
-
-.footer-link {
-  color: rgba(255, 255, 255, 0.75);
-  text-decoration: none;
-  font-size: 14px;
-  transition: color 0.2s;
   display: flex;
   align-items: center;
   gap: 8px;
+}
+
+.site-footer h4.site-footer-title::before,
+.tiya-page .site-footer h4.site-footer-title::before,
+.tiya-page .site-footer h4::before {
+  content: '';
+  display: inline-block;
+  width: 3px;
+  height: 14px;
+  background: #81B29A;
+  border-radius: 2px;
+}
+
+/* Contact Links */
+.site-footer .footer-link {
+  color: #E2E8F0 !important;
+  text-decoration: none;
+  font-size: 13.5px;
+  line-height: 1.5;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
   margin-bottom: 12px;
 }
 
-.footer-link:hover {
-  color: var(--custom-btn-bg-color);
+.site-footer .footer-link:hover {
+  color: #F2CC8F !important;
+  transform: translateX(2px);
 }
 
-.footer-hours-row {
+.footer-icon-pill {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(129, 178, 154, 0.12);
+  border: 1px solid rgba(129, 178, 154, 0.25);
+  color: #81B29A !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px !important;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* Opening Hours Card */
+.footer-hours-card {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 12px;
+  padding: 14px 16px;
+}
+
+.site-footer .footer-hours-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding-bottom: 10px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  margin-bottom: 10px;
-  font-size: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  font-size: 13px;
 }
 
-.footer-hours-row:last-child {
+.site-footer .footer-hours-row:last-child {
   border-bottom: none;
+  padding-bottom: 2px;
 }
 
-.footer-hours-value {
+.site-footer .footer-hours-row:first-child {
+  padding-top: 2px;
+}
+
+.footer-hours-label {
+  color: #94A3B8 !important;
+  font-weight: 500;
+}
+
+.site-footer .footer-hours-value {
   font-weight: 700;
-  color: var(--white-color);
+  color: #FFFFFF !important;
+  letter-spacing: 0.02em;
+}
+
+.footer-hours-gold {
+  color: #F2CC8F !important;
+}
+
+/* Sports / Disciplines buttons */
+.footer-sport-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #CBD5E1 !important;
+  background: none;
+  border: none;
+  cursor: pointer;
+  text-align: left;
+  padding: 5px 0;
+  transition: all 0.2s ease;
+}
+
+.footer-sport-btn:hover {
+  color: #F2CC8F !important;
+  transform: translateX(3px);
+}
+
+.footer-sport-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #81B29A;
+  box-shadow: 0 0 6px rgba(129, 178, 154, 0.6);
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+
+.footer-sport-btn:hover .footer-sport-dot {
+  transform: scale(1.4);
+  background: #F2CC8F;
+  box-shadow: 0 0 8px rgba(242, 204, 143, 0.8);
 }
 
 /* Social icons */
-.social-icon {
+.site-footer .social-icon {
   margin: 0;
   padding: 0;
   list-style: none;
   display: flex;
-  gap: 8px;
+  gap: 10px;
 }
 
-.social-icon-link {
-  background: rgba(255, 255, 255, 0.12);
-  border-radius: var(--border-radius-large);
-  color: var(--white-color);
+.site-footer .social-icon-link {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  color: #E2E8F0;
   width: 36px;
   height: 36px;
   display: flex;
   align-items: center;
   justify-content: center;
   text-decoration: none;
-  transition: background 0.25s, color 0.25s;
+  transition: all 0.25s ease;
 }
 
-.social-icon-link:hover {
-  background: var(--primary-color);
-  color: var(--white-color);
+.site-footer .social-icon-link:hover {
+  background: #81B29A;
+  border-color: #81B29A;
+  color: #FFFFFF;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(129, 178, 154, 0.35);
+}
+
+/* Bottom Bar */
+.footer-bottom-bar {
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  padding-top: 26px;
+  margin-top: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.footer-copyright {
+  font-size: 12.5px;
+  color: #94A3B8 !important;
+  margin: 0;
+}
+
+.footer-bottom-nav {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 14px 24px;
+  justify-content: flex-end;
+}
+
+.footer-nav-link {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: #94A3B8 !important;
+  text-decoration: none;
+  transition: color 0.2s ease;
+  letter-spacing: 0.04em;
+}
+
+.footer-nav-link:hover {
+  color: #F2CC8F !important;
+}
+
+.footer-register-btn {
+  font-size: 12px !important;
+  padding: 7px 18px !important;
+  border-color: #F2CC8F !important;
+  color: #F2CC8F !important;
+}
+
+.footer-register-btn:hover {
+  background: #F2CC8F !important;
+  color: #0F172A !important;
 }
 
 /* ─────────────────────────────────────────────────────────────
@@ -1424,7 +1624,7 @@
 
 .tiya-modal-container {
   width: 100%;
-  max-width: 680px;
+  max-width: 780px;
   max-height: 90vh;
   overflow: hidden;
   border-radius: var(--border-radius-medium);
@@ -2203,13 +2403,33 @@
 .tiya-page [class*="bg-[#3D405B]"] p,
 .tiya-page [class*="bg-[#3D405B]"] span,
 .tiya-page [class*="bg-[#3D405B]"] li,
-.tiya-page [class*="bg-gradient-to"] h1,
-.tiya-page [class*="bg-gradient-to"] h2,
-.tiya-page [class*="bg-gradient-to"] h3,
-.tiya-page [class*="bg-gradient-to"] h4,
-.tiya-page [class*="bg-gradient-to"] p,
-.tiya-page [class*="bg-gradient-to"] span,
-.tiya-page [class*="bg-gradient-to"] li {
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) h1,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) h2,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) h3,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) h4,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) p,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) span,
+.tiya-page [class*="bg-gradient-to"]:not(.tiya-modal-container *) li {
   color: #ffffff;
+}
+
+.tiya-modal-container [class*="text-slate-900"] {
+  color: #0f172a !important;
+}
+
+.tiya-modal-container [class*="text-slate-800"] {
+  color: #1e293b !important;
+}
+
+.tiya-modal-container [class*="text-slate-700"] {
+  color: #334155 !important;
+}
+
+.tiya-modal-container [class*="text-slate-600"] {
+  color: #475569 !important;
+}
+
+.tiya-modal-container [class*="text-slate-500"] {
+  color: #64748b !important;
 }
 

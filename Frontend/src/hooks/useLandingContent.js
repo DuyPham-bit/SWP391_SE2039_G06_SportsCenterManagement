@@ -20,7 +20,9 @@ export function useLandingContent() {
       try {
         const result = await loadLandingContent({ signal: controller.signal });
         if (active) setContent(result.content);
-      } catch { /* Keep the last published content/defaults and retry on focus or polling. */ }
+      } catch (error) {
+        if (active && error.name !== 'AbortError') setContent(previous => ({ ...previous, _loadError: error.message }));
+      }
       finally { loading = false; }
     };
     const onChange = event => { if (event.detail) setContent(event.detail); };

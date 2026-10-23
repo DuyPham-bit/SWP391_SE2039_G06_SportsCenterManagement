@@ -147,36 +147,36 @@ public sealed class CoachProfessionalController(CoachProfessionalService service
         Ok(new { Id = await service.SendMessage(CurrentUserId, request, ct) });
 
     [HttpGet("manager/coach-operations")]
-    [Authorize(Roles = "MANAGER,ADMIN,SYSTEMADMIN")]
+    [Authorize(Roles = "MANAGER")]
     [CenterCapability("manage_coach_operations")]
     public async Task<IActionResult> ManagerWorkspace(CancellationToken ct) => Ok(await service.ManagerWorkspace(CurrentUserId, ct));
 
     [HttpPatch("manager/coach-operations/leaves/{id:long}")]
-    [Authorize(Roles = "MANAGER,ADMIN,SYSTEMADMIN")]
+    [Authorize(Roles = "MANAGER")]
     [CenterCapability("manage_coach_operations")]
     public async Task<IActionResult> ReviewLeave(long id, ReviewLeaveRequest request, CancellationToken ct)
     { await service.ReviewLeave(CurrentUserId, id, request, ct); return NoContent(); }
 
     [HttpPost("manager/coach-operations/compensation")]
-    [Authorize(Roles = "MANAGER,ADMIN,SYSTEMADMIN")]
+    [Authorize(Roles = "MANAGER")]
     [CenterCapability("manage_coach_operations")]
     public async Task<IActionResult> Compensation(SaveCompensationPolicyRequest request, CancellationToken ct) =>
         Ok(new { Id = await service.SaveCompensation(CurrentUserId, request, ct) });
 
     [HttpPost("manager/coach-operations/sales-credits")]
-    [Authorize(Roles = "MANAGER,ADMIN,SYSTEMADMIN")]
+    [Authorize(Roles = "MANAGER")]
     [CenterCapability("manage_coach_operations")]
     public async Task<IActionResult> SalesCredit(SaveSalesCreditRequest request, CancellationToken ct) =>
         Ok(new { Id = await service.SaveSalesCredit(CurrentUserId, request, ct) });
 
     [HttpPost("manager/coach-operations/resources")]
-    [Authorize(Roles = "MANAGER,ADMIN,SYSTEMADMIN")]
+    [Authorize(Roles = "MANAGER")]
     [CenterCapability("manage_coach_operations")]
     public async Task<IActionResult> Resource(CreateResourceRequest request, CancellationToken ct) =>
         Ok(new { Id = await service.CreateResource(CurrentUserId, request, ct) });
 
     [HttpPatch("manager/coach-operations/equipment-issues/{id:long}")]
-    [Authorize(Roles = "MANAGER,ADMIN,SYSTEMADMIN")]
+    [Authorize(Roles = "MANAGER")]
     [CenterCapability("manage_coach_operations")]
     public async Task<IActionResult> ResolveIssue(long id, ResolveEquipmentIssueRequest request, CancellationToken ct)
     { await service.ResolveIssue(CurrentUserId, id, request, ct); return NoContent(); }

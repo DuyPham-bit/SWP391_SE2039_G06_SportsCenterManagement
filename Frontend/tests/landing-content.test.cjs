@@ -62,7 +62,7 @@ test('publishing goes through the API and another browser reads the shared conte
   assert.equal(manager.events.length, 1);
 });
 
-test('failed publish/reset preserves the published cache and emits no success event', async () => {
+test('failed publish preserves the published cache and emits no success event', async () => {
   let fail = false;
   const fixture = loadService(async (_route, options = {}) => {
     if (fail) throw new Error('API save rejected');
@@ -72,21 +72,24 @@ test('failed publish/reset preserves the published cache and emits no success ev
   draft.heroBanner.title = 'Kept published title';
   await fixture.api.saveLandingContent(draft);
   fail = true;
-  await assert.rejects(fixture.api.resetLandingContentToDefault(), /API save rejected/);
+  draft.heroBanner.title = 'Rejected draft';
+  await assert.rejects(fixture.api.saveLandingContent(draft), /API save rejected/);
   assert.equal(fixture.api.getLandingContent().heroBanner.title, 'Kept published title');
   assert.equal(fixture.events.length, 1);
 });
 
-test('reset uses independent defaults even after editing nested metrics and zones', async () => {
+test('editor defaults stay independent after editing and publishing nested metrics and zones', async () => {
   const fixture = loadService(async (_route, options = {}) => ({ content: options.body?.content ?? null }));
   const initial = fixture.api.getDefaultLandingContent();
-  const edited = await fixture.api.resetLandingContentToDefault();
-  edited.heroBanner.metrics[0].value = 'Modified metric';
-  edited.zonesLayout.zones[0].items[0] = 'Modified zone';
+  const edited = fixture.api.getDefaultLandingContent();
+  edited.heroBanner.metrics.push({ id: 'test-metric', value: 'Modified metric', label: 'Test' });
+  edited.zonesLayout.zones.push({ id: 'test-zone', name: 'Test zone', items: ['Modified zone'] });
   await fixture.api.saveLandingContent(edited);
-  const restored = await fixture.api.resetLandingContentToDefault();
-  assert.equal(restored.heroBanner.metrics[0].value, initial.heroBanner.metrics[0].value);
-  assert.equal(restored.zonesLayout.zones[0].items[0], initial.zonesLayout.zones[0].items[0]);
+  const defaults = fixture.api.getDefaultLandingContent();
+  assert.deepEqual(defaults.heroBanner.metrics, initial.heroBanner.metrics);
+  assert.deepEqual(defaults.zonesLayout.zones, initial.zonesLayout.zones);
+  assert.equal(defaults.coursesSection.sportsList.length, 0);
+  assert.equal(defaults.facilitiesSection.facilitiesList.length, 0);
 });
 
 test('preview isolates a draft in the new tab without publishing or changing browser storage', () => {

@@ -76,6 +76,12 @@ test('SystemAdmin uses system audit without inventing a center', async () => {
 });
 
 function reportFixture(route) {
+  if (route.startsWith('reports/operations?')) return {
+    totalStaff: 3, activeStaff: 2, managerCount: 1, coachCount: 1, receptionistCount: 1,
+    totalRooms: 2, activeRooms: 1, sessionsCount: 1, occupancyRate: 20,
+    classes: [{ id: 1, name: 'Active', booked: 2, capacity: 10, occupancyRate: 20 }],
+    sports: [], rooms: [], coaches: []
+  };
   if (route.startsWith('class-sessions?')) return { items: [
     { sessionId: 1, classId: 1, className: 'Active', sessionStatus: 'Scheduled', capacity: 10, bookedCount: 2 },
     { sessionId: 2, classId: 1, className: 'Cancelled', sessionStatus: 'Cancelled', capacity: 10, bookedCount: 9 }
@@ -90,6 +96,8 @@ test('report utilization excludes cancelled sessions', async () => {
   const overview = await api.reportApi.getOverview('DAY');
   assert.equal(overview.totalClasses, 1);
   assert.equal(overview.occupancyRate, 20);
+  assert.equal(overview.activeStaff, 2);
+  assert.equal(overview.totalStaff, 3);
 });
 
 test('report API failure is not converted into an empty successful report', async () => {

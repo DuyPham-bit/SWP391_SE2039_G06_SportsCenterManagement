@@ -114,8 +114,8 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         var actor = await unitOfWork.Repository<User>().GetByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Không có quyền thao tác.");
         var actorRole = await unitOfWork.Repository<Role>().GetByIdAsync(actor.RoleId, cancellationToken);
-        if (request.RoleName == RoleNames.SystemAdmin ||
-            (request.RoleName == RoleNames.Manager && actorRole?.Name != RoleNames.SystemAdmin) ||
+        if (request.RoleName == RoleNames.Admin ||
+            (request.RoleName == RoleNames.Manager && actorRole?.Name != RoleNames.Admin) ||
             (actorRole?.Name == RoleNames.Manager && request.RoleName is not (RoleNames.Coach or RoleNames.Receptionist)))
         {
             throw new UnauthorizedAccessException("Manager chỉ được tạo Coach hoặc Receptionist tại trung tâm mình quản lý.");
@@ -462,10 +462,10 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         var actor = await unitOfWork.Repository<User>().GetByIdAsync(actorUserId, cancellationToken)
             ?? throw new UnauthorizedAccessException("Không có quyền thao tác.");
         var role = await unitOfWork.Repository<Role>().GetByIdAsync(actor.RoleId, cancellationToken);
-        var assignmentExists = role?.Name == RoleNames.SystemAdmin || await unitOfWork.Context.StaffProfiles.AnyAsync(
+        var assignmentExists = role?.Name == RoleNames.Admin || await unitOfWork.Context.StaffProfiles.AnyAsync(
             profile => profile.UserId == actorUserId && profile.CenterId == centerId && profile.Status == "Active",
             cancellationToken);
-        var roleAllowed = role?.Name == RoleNames.SystemAdmin
+        var roleAllowed = role?.Name == RoleNames.Admin
                           || role?.Name == RoleNames.Manager
                           || (allowReadOnlyManager && role?.Name == RoleNames.Receptionist);
         if (actor.Status != "Active" || !centerActive || !assignmentExists || !roleAllowed)

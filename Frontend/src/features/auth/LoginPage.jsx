@@ -1,17 +1,18 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.js';
-import { SUPPORTED_SPORTS } from '../../services/sportsCatalog.js';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 import { loadGoogleIdentity, googleClientId } from '../../services/googleIdentity.js';
 import { AuthField } from './AuthField.js';
 import { ForgotPasswordModal } from './ForgotPasswordModal.js';
 import { GoogleLoginModal } from './GoogleLoginModal.js';
 import { Logo } from '../../components/common/Logo.jsx';
+import { getMembershipIntent, getPostLoginRoute } from '../../services/membershipEntry.js';
+import { authApi } from '../../services/api.js';
+import { useLandingContent } from '../../hooks/useLandingContent.js';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-const FACILITY_COUNT = new Set(SUPPORTED_SPORTS.map(sport => sport.facilityId)).size;
 
 function readRememberedEmail() {
   try {
@@ -30,22 +31,40 @@ function saveRememberedEmail(email) {
   }
 }
 
-function redirectToRoleDashboard(role) {
-  const normalized = String(role || '').toUpperCase();
-  const routes = {
-    SYSTEMADMIN: '#/manager/dashboard',
-    ADMIN: '#/manager/dashboard',
-    MANAGER: '#/manager/dashboard',
-    RECEPTIONIST: '#/receptionist/dashboard',
-    COACH: '#/coach/dashboard',
-    MEMBER: '#/member/dashboard'
-  };
-  window.location.hash = routes[normalized] || '#/';
-}
-
 export function LoginPage() {
   const { login, register, logout, loginWithGoogle, isAuthenticated, role } = useAuth();
   const { showSuccess, showError } = useToast();
+  const landingContent = useLandingContent();
+  const authShowcase = landingContent?.authShowcase || {};
+
+  const showcaseBadge = authShowcase.badge || 'Sân tập mở cửa 24/7';
+  const showcaseTagline = authShowcase.tagline || 'Khởi đầu bứt phá';
+  const showcaseLoginTitle = authShowcase.loginTitle || 'Tập luyện hôm nay, \nbứt phá mỗi ngày.';
+  const showcaseRegisterTitle = authShowcase.registerTitle || 'Hành trình mới, \nphiên bản khỏe hơn.';
+  const showcaseDescription = authShowcase.description || 'Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.';
+  const showcasePosterUrl = authShowcase.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=800&auto=format&fit=crop';
+
+  const feature1Title = authShowcase.feature1Title || 'Đặt chỗ trong 30s';
+  const feature1Desc = authShowcase.feature1Desc || 'Giữ sân & lớp học 7 ngày';
+  const feature1Icon = authShowcase.feature1Icon || 'bolt';
+
+  const feature2Title = authShowcase.feature2Title || 'Chuẩn Olympic 5★';
+  const feature2Desc = authShowcase.feature2Desc || 'Hệ thống sân bãi cao cấp';
+  const feature2Icon = authShowcase.feature2Icon || 'verified';
+
+  const stat1Value = authShowcase.stat1Value || '09';
+  const stat1Label = authShowcase.stat1Label || 'Bộ môn thi đấu';
+
+  const stat2Value = authShowcase.stat2Value || '09';
+  const stat2Label = authShowcase.stat2Label || 'Khu tập luyện';
+
+  const stat3Value = authShowcase.stat3Value || '2.5K+';
+  const stat3Label = authShowcase.stat3Label || 'Hội viên active';
+
+  const membershipIntent = useRef(getMembershipIntent(window.location.hash));
+  const redirectToRoleDashboard = role => {
+    window.location.hash = getPostLoginRoute(role, membershipIntent.current);
+  };
   const [activeTab, setActiveTab] = useState(() => window.location.hash.split('?')[0] === '#/register' ? 'register' : 'login');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
   const [showGoogleModal, setShowGoogleModal] = useState(false);
@@ -59,9 +78,23 @@ export function LoginPage() {
   const [regPassword, setRegPassword] = useState('');
   const [regConfirmPassword, setRegConfirmPassword] = useState('');
   const [regAgree, setRegAgree] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState('');
+  const [regOtp, setRegOtp] = useState('');
+  const [resendSeconds, setResendSeconds] = useState(0);
+  const needsEmailCode = verificationEmail !== '' && verificationEmail === regEmail.trim().toLowerCase();
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const isRegister = activeTab === 'register';
+
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const timer = setTimeout(() => setResendSeconds(seconds => Math.max(0, seconds - 1)), 1000);
+    return () => clearTimeout(timer);
+  }, [resendSeconds]);
+
+  useEffect(() => {
+    if (needsEmailCode) document.getElementById('register-otp')?.focus();
+  }, [needsEmailCode]);
 
   // Tích hợp Google Identity trực tiếp trên trang
   const googleButtonRef = useRef(null);
@@ -146,12 +179,19 @@ export function LoginPage() {
     setRegPassword('');
     setRegConfirmPassword('');
     setRegAgree(false);
+    setVerificationEmail('');
+    setRegOtp('');
     setActiveTab(tab);
-    window.location.hash = tab === 'register' ? '#/register' : '#/login';
+    const authPath = tab === 'register' ? '#/register' : '#/login';
+    window.location.hash = authPath + (membershipIntent.current ? `?next=${membershipIntent.current}` : '');
   };
 
   const updateField = (id, value, setter) => {
     setter(value);
+    if (id === 'register-email') {
+      setVerificationEmail('');
+      setRegOtp('');
+    }
     setFieldErrors(previous => ({ ...previous, [id]: undefined }));
     setFormError('');
   };
@@ -207,19 +247,44 @@ export function LoginPage() {
     }
     if (!isAsciiPassword(regPassword)) errors['register-password'] = PASSWORD_CHARACTER_ERROR;
     else if (regPassword.length < 6) errors['register-password'] = 'Mật khẩu cần ít nhất 6 ký tự.';
+    else if (!/[A-Z]/.test(regPassword) || !/[a-z]/.test(regPassword) || !/[0-9]/.test(regPassword) || !/[^a-zA-Z0-9]/.test(regPassword)) errors['register-password'] = 'Mật khẩu cần có chữ hoa, chữ thường, số và ký tự đặc biệt.';
     if (!regConfirmPassword) errors['register-confirm'] = 'Vui lòng nhập lại mật khẩu.';
     else if (!isAsciiPassword(regConfirmPassword)) errors['register-confirm'] = PASSWORD_CHARACTER_ERROR;
     else if (regPassword !== regConfirmPassword) errors['register-confirm'] = 'Mật khẩu xác nhận chưa khớp.';
     if (!regAgree) errors['register-agree'] = 'Vui lòng xác nhận thông tin trước khi đăng ký.';
+    if (needsEmailCode && !/^[0-9]{6}$/.test(regOtp)) errors['register-otp'] = 'Vui lòng nhập mã gồm 6 chữ số trong email.';
     if (hasValidationErrors(errors)) return;
 
     setIsSubmitting(true);
     try {
-      const user = await register({ fullName: regFullName.trim(), email, phone, password: regPassword });
+      if (!needsEmailCode) {
+        await authApi.requestEmailVerification(email);
+        setVerificationEmail(email.toLowerCase());
+        setRegOtp('');
+        setResendSeconds(60);
+        return;
+      }
+      const user = await register({ fullName: regFullName.trim(), email, phone, password: regPassword, emailOtp: regOtp });
       showSuccess('Đăng ký thành công! Mã hội viên của bạn: ' + user.memberCode);
       redirectToRoleDashboard(user.role || 'MEMBER');
     } catch (error) {
       setFormError(error.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handleResendVerification = async () => {
+    if (isSubmitting || resendSeconds > 0) return;
+    setIsSubmitting(true);
+    setFormError('');
+    try {
+      await authApi.requestEmailVerification(verificationEmail);
+      setRegOtp('');
+      setResendSeconds(60);
+      showSuccess('Đã yêu cầu gửi lại mã xác thực. Vui lòng kiểm tra email và thư rác.');
+    } catch (error) {
+      setFormError(error.message || 'Không thể gửi lại mã. Vui lòng thử lại sau.');
     } finally {
       setIsSubmitting(false);
     }
@@ -232,7 +297,7 @@ export function LoginPage() {
       className="w-full min-h-11 sm:min-h-12 py-3 px-6 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--custom-btn-bg-color)] hover:bg-[var(--custom-btn-bg-hover-color)] text-[var(--secondary-color)] hover:text-white font-dm-sans text-sm font-bold shadow-md shadow-[#F2CC8F]/25 hover:shadow-lg hover:shadow-[#E07A5F]/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-wait transition-all duration-200 group"
     >
       {isSubmitting && <span className="w-4 h-4 border-2 border-[var(--secondary-color)]/40 border-t-[var(--secondary-color)] rounded-full animate-spin" aria-hidden="true" />}
-      <span>{isSubmitting ? (isRegister ? 'Đang kích hoạt tài khoản...' : 'Đang đăng nhập...') : (isRegister ? 'Tạo tài khoản hội viên' : 'Đăng nhập vào SCMS')}</span>
+      <span>{isSubmitting ? (isRegister ? 'Đang xử lý...' : 'Đang đăng nhập...') : (isRegister ? (needsEmailCode ? 'Xác thực và tạo tài khoản' : 'Tiếp tục xác thực email') : 'Đăng nhập vào SCMS')}</span>
       {!isSubmitting && (
         <span className="material-symbols-outlined text-[19px] group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">
           arrow_forward
@@ -252,7 +317,7 @@ export function LoginPage() {
           loading="lazy"
           decoding="async"
           className="absolute inset-0 object-cover w-full h-full opacity-35 scale-105 transition-transform duration-1000 ease-out hover:scale-100"
-          src="https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=800&auto=format&fit=crop"
+          src={showcasePosterUrl}
         />
         {/* Gradient mờ ảo Tiya Slate Navy & Sage */}
         <div className="absolute inset-0 bg-gradient-to-t from-[#27293D] via-[#3D405B]/85 to-[#3D405B]/50" />
@@ -265,7 +330,7 @@ export function LoginPage() {
 
           <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[11px] font-bold uppercase tracking-wider text-slate-200 shadow-sm">
             <span className="w-2 h-2 rounded-full bg-[var(--primary-color)] animate-pulse shadow-[0_0_8px_rgba(129,178,154,0.8)]" aria-hidden="true" />
-            <span>Sân tập mở cửa 24/7</span>
+            <span>{showcaseBadge}</span>
           </div>
         </div>
 
@@ -273,29 +338,29 @@ export function LoginPage() {
         <div className="relative z-10 py-4 max-w-xl">
           <div className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.2em] text-[var(--custom-btn-bg-color)] mb-2">
             <span className="w-4 h-0.5 bg-[var(--custom-btn-bg-color)] inline-block" />
-            <span>Khởi đầu bứt phá</span>
+            <span>{showcaseTagline}</span>
           </div>
 
-          <h2 className="font-dm-sans text-3xl sm:text-4xl xl:text-5xl font-bold leading-[1.15] tracking-tight text-white">
+          <h2 className="font-dm-sans text-3xl sm:text-4xl xl:text-5xl font-bold leading-[1.15] tracking-tight text-white whitespace-pre-line">
             {isRegister ? (
               <>
-                Hành trình mới, <br />
+                {showcaseRegisterTitle.split('\n')[0]} <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[var(--custom-btn-bg-color)] to-[var(--primary-color)]">
-                  phiên bản khỏe hơn.
+                  {showcaseRegisterTitle.split('\n').slice(1).join('\n') || ''}
                 </span>
               </>
             ) : (
               <>
-                Tập luyện hôm nay, <br />
+                {showcaseLoginTitle.split('\n')[0]} <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-[var(--custom-btn-bg-color)] to-[#F4A261]">
-                  bứt phá mỗi ngày.
+                  {showcaseLoginTitle.split('\n').slice(1).join('\n') || ''}
                 </span>
               </>
             )}
           </h2>
 
           <p className="text-xs sm:text-sm text-slate-300 mt-3.5 leading-relaxed max-w-lg font-normal">
-            Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.
+            {showcaseDescription}
           </p>
 
           {/* 2 Thẻ kính Frosted Glass Cards */}
@@ -303,11 +368,11 @@ export function LoginPage() {
             <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm hover:bg-white/15 transition-colors">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-[var(--custom-btn-bg-color)]/25 text-[var(--custom-btn-bg-color)] flex items-center justify-center shadow-sm shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">bolt</span>
+                  <span className="material-symbols-outlined text-[18px]">{feature1Icon}</span>
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-white tracking-wide">Đặt chỗ trong 30s</h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5">Giữ sân &amp; lớp học 7 ngày</p>
+                  <h4 className="text-xs font-bold text-white tracking-wide">{feature1Title}</h4>
+                  <p className="text-[11px] text-slate-300 mt-0.5">{feature1Desc}</p>
                 </div>
               </div>
             </div>
@@ -315,11 +380,11 @@ export function LoginPage() {
             <div className="p-3.5 rounded-2xl bg-white/10 backdrop-blur-md border border-white/15 shadow-sm hover:bg-white/15 transition-colors">
               <div className="flex items-center gap-2.5">
                 <span className="w-8 h-8 rounded-xl bg-[var(--primary-color)]/25 text-[var(--primary-color)] flex items-center justify-center shadow-sm shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">verified</span>
+                  <span className="material-symbols-outlined text-[18px]">{feature2Icon}</span>
                 </span>
                 <div>
-                  <h4 className="text-xs font-bold text-white tracking-wide">Chuẩn Olympic 5★</h4>
-                  <p className="text-[11px] text-slate-300 mt-0.5">Hệ thống sân bãi cao cấp</p>
+                  <h4 className="text-xs font-bold text-white tracking-wide">{feature2Title}</h4>
+                  <p className="text-[11px] text-slate-300 mt-0.5">{feature2Desc}</p>
                 </div>
               </div>
             </div>
@@ -330,16 +395,16 @@ export function LoginPage() {
         <div className="relative z-10 border-t border-white/10 pt-4 flex items-center justify-between gap-6">
           <div className="flex gap-8 sm:gap-10">
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">09</div>
-              <div className="text-[11px] text-slate-400 font-medium mt-0.5">Bộ môn thi đấu</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">{stat1Value}</div>
+              <div className="text-[11px] text-slate-400 font-medium mt-0.5">{stat1Label}</div>
             </div>
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">09</div>
-              <div className="text-[11px] text-slate-400 font-medium mt-0.5">Khu tập luyện</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">{stat2Value}</div>
+              <div className="text-[11px] text-slate-400 font-medium mt-0.5">{stat2Label}</div>
             </div>
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-[var(--custom-btn-bg-color)] tracking-tight">2.5K+</div>
-              <div className="text-[11px] text-slate-400 font-medium mt-0.5">Hội viên active</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-[var(--custom-btn-bg-color)] tracking-tight">{stat3Value}</div>
+              <div className="text-[11px] text-slate-400 font-medium mt-0.5">{stat3Label}</div>
             </div>
           </div>
 
@@ -408,9 +473,8 @@ export function LoginPage() {
 
             {/* Tiêu đề & Lời chào thân thiện */}
             <div className="mb-3.5 sm:mb-4">
-              <h1 id="auth-heading" className="font-dm-sans text-xl sm:text-2xl font-bold text-[var(--secondary-color)] tracking-tight leading-tight flex items-center gap-1.5">
+              <h1 id="auth-heading" className="font-dm-sans text-xl sm:text-2xl font-bold text-[var(--secondary-color)] tracking-tight leading-tight">
                 <span>{isRegister ? 'Gia nhập SCMS' : 'Chào mừng trở lại!'}</span>
-                <span className="text-lg sm:text-xl">{isRegister ? '⚡' : '👋'}</span>
               </h1>
               <p className="text-xs text-slate-500 mt-1 leading-snug line-clamp-2">
                 {isRegister
@@ -496,7 +560,7 @@ export function LoginPage() {
                   </div>
                   <AuthField key="register-email" id="register-email" label="Địa chỉ Email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={150} placeholder="ban@example.com" required value={regEmail} error={fieldErrors['register-email']} onChange={event => updateField('register-email', event.target.value, setRegEmail)} />
                   <div className="grid sm:grid-cols-2 gap-2.5">
-                    <AuthField key="register-password" id="register-password" label="Mật khẩu" type="password" autoComplete="new-password" minLength={6} maxLength={128} placeholder="Tạo mật khẩu" hint="Tối thiểu 6 ký tự." required value={regPassword} error={fieldErrors['register-password']} onChange={event => updateField('register-password', event.target.value, setRegPassword)} />
+                    <AuthField key="register-password" id="register-password" label="Mật khẩu" type="password" autoComplete="new-password" minLength={6} maxLength={128} placeholder="Tạo mật khẩu" hint="Từ 6 ký tự, có chữ hoa, thường, số và ký tự đặc biệt." required value={regPassword} error={fieldErrors['register-password']} onChange={event => updateField('register-password', event.target.value, setRegPassword)} />
                     <AuthField key="register-confirm" id="register-confirm" label="Nhập lại mật khẩu" type="password" autoComplete="new-password" maxLength={128} placeholder="Xác nhận mật khẩu" required value={regConfirmPassword} error={fieldErrors['register-confirm']} onChange={event => updateField('register-confirm', event.target.value, setRegConfirmPassword)} />
                   </div>
                   <div>
@@ -506,6 +570,13 @@ export function LoginPage() {
                     </label>
                     {fieldErrors['register-agree'] && <p id="register-agree-error" className="text-[11px] text-red-600 leading-4 mt-0.5">{fieldErrors['register-agree']}</p>}
                   </div>
+                  {needsEmailCode && (
+                    <div className="space-y-2 border-t border-slate-200 pt-3">
+                      <p role="status" className="text-xs text-slate-600 break-words">Kiểm tra mã gửi đến <strong>{verificationEmail}</strong>, kể cả thư rác. Mã có hạn 10 phút. Tài khoản sẽ được tạo sau khi xác thực thành công.</p>
+                      <AuthField id="register-otp" label="Mã xác thực email" inputMode="numeric" autoComplete="one-time-code" maxLength={6} pattern="[0-9]{6}" placeholder="Nhập 6 chữ số" required value={regOtp} error={fieldErrors['register-otp']} onChange={event => updateField('register-otp', event.target.value.replace(/[^0-9]/g, ''), setRegOtp)} />
+                      <button type="button" disabled={isSubmitting || resendSeconds > 0} onClick={handleResendVerification} className="min-h-11 text-xs font-semibold text-slate-700 underline disabled:opacity-60 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]">{resendSeconds > 0 ? `Gửi lại mã sau ${resendSeconds}s` : 'Gửi lại mã xác thực'}</button>
+                    </div>
+                  )}
                   <div className="pt-1">
                     {submitButton}
                   </div>

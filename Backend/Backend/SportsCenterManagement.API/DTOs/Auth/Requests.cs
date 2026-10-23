@@ -36,14 +36,14 @@ namespace SportsCenterManagement.API.DTOs.Auth
     /// <summary>Requests a one-time password reset code.</summary>
     public sealed record RequestPasswordResetRequest
     {
-        [Required, EmailAddress]
+        [Required, EmailAddress, StringLength(150)]
         public required string Email { get; init; }
     }
 
     /// <summary>Confirms a password reset code and sets a new password.</summary>
     public sealed record ResetPasswordRequest
     {
-        [Required, EmailAddress]
+        [Required, EmailAddress, StringLength(150)]
         public required string Email { get; init; }
 
         [Required, RegularExpression("^\\d{6}$")]

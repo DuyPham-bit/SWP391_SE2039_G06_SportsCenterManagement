@@ -15,6 +15,7 @@ const galleryFiles = Array.from({ length: 7 }, (_, index) => ({
   url: `https://gallery.example/photo-${index}.${index < 4 ? 'jpg' : 'avif'}`
 }));
 let published = null, saves = 0, failSave = false, browser, socket, cdp;
+let publicCatalog = { center: { id: 15, name: 'Test center' }, sports: [], rooms: [], classes: [] };
 
 function json(res, value, status = 200) {
   res.writeHead(status, { 'Content-Type': 'application/json; charset=utf-8' });
@@ -26,6 +27,7 @@ const server = http.createServer(async (req, res) => {
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = raw ? JSON.parse(raw) : null;
     if (route === '/api/landing-content' && req.method === 'GET') return json(res, { content: published });
+    if (/^\/api\/public\/centers\/\d+\/catalog$/.test(route)) return json(res, publicCatalog);
     if (route === '/api/auth/login') return json(res, { accessToken: 'manager-test-token' });
     if (req.headers.authorization !== 'Bearer manager-test-token') return json(res, { message: 'Unauthorized' }, 401);
     if (route === '/api/profile/me') return json(res, { userId: 99, role: 'Manager', status: 'Active', centerId: 1, fullName: 'Manager test', email: 'manager@example.test' });
@@ -94,12 +96,13 @@ async function attach(targetId) {
   return sessionId;
 }
 async function setInput(session, inputExpression, value) {
-  await evaluate(session, `(() => { const input = ${inputExpression}; if (!input) throw Error('Input missing'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
+  await evaluate(session, `(() => { const input = ${inputExpression}; if (!input) throw Error('Input missing'); Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value').set.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event(input.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true })); })()`);
 }
 async function click(session, label) {
   await evaluate(session, `(() => { const button = [...document.querySelectorAll('button')].find(b => !b.disabled && b.textContent.includes(${JSON.stringify(label)})); if (!button) throw Error('Missing button'); button.click(); })()`);
 }
 const titleInput = value => `[...document.querySelectorAll('main input')].find(input => input.value === ${JSON.stringify(value)})`;
+const discardButton = `[...document.querySelectorAll('main button')].find(button => button.textContent.includes('Hủy thay đổi'))`;
 
 (async () => {
   fs.mkdirSync(artifacts, { recursive: true });
@@ -134,7 +137,7 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   await evaluate(manager, `document.querySelector('button[type=submit]').click()`);
   await until('authenticated', () => evaluate(manager, `location.hash === '#/manager/dashboard'`));
   await evaluate(manager, `location.hash = '#/manager/home-content'`);
-  const originalTitle = 'SHAPING RESILIENCE THROUGH SPORTS';
+  const originalTitle = '';
   await until('editor loaded', () => evaluate(manager, `Boolean(${titleInput(originalTitle)})`));
   console.log('Manager editor loaded; checking preview and publishing.');
   await setInput(manager, titleInput(originalTitle), 'Isolated preview draft');
@@ -153,11 +156,12 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   const { targetId: visitorId } = await cdp.send('Target.createTarget', { url: 'about:blank', browserContextId });
   const visitor = await attach(visitorId);
   await cdp.send('Page.navigate', { url: `${origin}/#/` }, visitor);
-  await until('visitor sees defaults', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes(${JSON.stringify(originalTitle)})`));
+  await until('visitor sees the homepage without the draft', () => evaluate(visitor, `Boolean(document.querySelector('h1')) && !document.querySelector('h1').textContent.includes('Isolated preview draft')`));
   await cdp.send('Page.bringToFront', {}, manager);
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
   await until('save completed', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && !document.querySelector('main')?.textContent.includes('Có thay đổi chưa lưu')`));
   assert.equal(published.heroBanner.title, 'Isolated preview draft');
+  assert.equal(await evaluate(manager, `${discardButton}.disabled`), true);
   await cdp.send('Page.bringToFront', {}, visitor);
   await evaluate(visitor, `window.dispatchEvent(new Event('focus'))`);
   await until('independent visitor sees publication', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes('Isolated preview draft')`));
@@ -171,27 +175,210 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   assert.equal(published.heroBanner.title, 'Isolated preview draft');
   assert.equal(await evaluate(manager, `document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`), true);
   checks.push('Save failure keeps the draft dirty and leaves published content unchanged.');
-  await click(manager, 'Khôi Phục Gốc');
-  await click(manager, 'Đồng Ý Khôi Phục');
-  await until('reset failure completed', () => evaluate(manager, `!document.querySelector('main fieldset').disabled`));
+  assert.equal(await evaluate(manager, `[...document.querySelectorAll('main button')].some(button => /Khôi Phục Gốc|Reset to Default/.test(button.textContent))`), false);
   assert.equal(await evaluate(manager, `Boolean(${titleInput('Unsaved failure draft')})`), true);
+  checks.push('The editor has no reset action and preserves the unsaved draft after a save failure.');
+  const savesBeforeDiscard = saves;
+  await click(manager, 'Hủy thay đổi');
+  await until('failed draft discarded to the last saved title', () => evaluate(manager, `Boolean(${titleInput('Isolated preview draft')}) && !document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`));
+  assert.equal(saves, savesBeforeDiscard);
   assert.equal(published.heroBanner.title, 'Isolated preview draft');
-  checks.push('Failed reset preserves the unsaved draft.');
+  assert.equal(await evaluate(manager, `${discardButton}.disabled`), true);
+  checks.push('Discard after a failed save restores the last successful save without publishing or resetting defaults.');
+  await setInput(manager, titleInput('Isolated preview draft'), 'Unsaved failure draft');
   failSave = false;
-  await click(manager, 'Đồng Ý Khôi Phục');
-  await until('reset completed', () => evaluate(manager, `Boolean(${titleInput(originalTitle)})`));
-  const metric = published.heroBanner.metrics[0].value;
-  await setInput(manager, titleInput(metric), 'Modified metric');
-  await click(manager, 'Khôi Phục Gốc');
-  await click(manager, 'Đồng Ý Khôi Phục');
-  await until('nested defaults restored', () => evaluate(manager, `!document.querySelector('main fieldset').disabled && Boolean(${titleInput(metric)})`));
-  assert.equal(published.heroBanner.metrics[0].value, metric);
-  checks.push('Repeated reset restores nested metrics to the original defaults.');
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('retry save completed', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && !document.querySelector('main')?.textContent.includes('Có thay đổi chưa lưu')`));
+  assert.equal(published.heroBanner.title, 'Unsaved failure draft');
+  assert.deepEqual(published.heroBanner.metrics, []);
+  assert.deepEqual(published.coursesSection.sportsList, []);
+  assert.deepEqual(published.facilitiesSection.facilitiesList, []);
+  checks.push('Retrying a failed save publishes the draft and preserves empty business lists and metrics.');
 
   for (const label of ['2. Tại Sao Chọn SCMS', '3. Thẻ Môn Thể Thao', '4. Thẻ Cụm Sân', '5. Sơ Đồ Phân Khu', '6. Banner Kêu Gọi & Footer']) {
     await click(manager, label); await delay(100);
   }
   checks.push('All six editor tabs render without JavaScript errors.');
+
+  await click(manager, '4. Thẻ Cụm Sân');
+  await click(manager, 'Thêm thẻ cụm sân');
+  const cardField = name => `document.querySelector('[role="dialog"] [name="${name}"]')`;
+  const openCard = async () => {
+    await click(manager, 'Mở rộng nội dung');
+    await until('card dialog opens', () => evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`));
+    assert.equal(await evaluate(manager, `Boolean(document.querySelector('main article input, main article textarea, main article select'))`), false);
+  };
+  const closeCard = async () => {
+    await click(manager, 'Hoàn tất');
+    await until('card dialog closes', () => evaluate(manager, `!document.querySelector('[role="dialog"]')`));
+  };
+  assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
+  await openCard();
+  await setInput(manager, cardField('name'), 'Sân tập mới');
+  await setInput(manager, cardField('location'), 'Khu B');
+  await setInput(manager, cardField('highlights'), 'Không gian rộng');
+  await setInput(manager, cardField('description'), 'Nội dung chi tiết sân mới');
+  await setInput(manager, cardField('amenities'), 'Phòng thay đồ\nTủ đồ');
+  await click(manager, 'Thêm thông số');
+  await setInput(manager, cardField('spec-label'), 'Diện tích');
+  await setInput(manager, cardField('spec-value'), '300 m²');
+  await closeCard();
+  await openCard();
+  assert.equal(await evaluate(manager, `${cardField('description')}.value`), 'Nội dung chi tiết sân mới');
+  await click(manager, 'Tải/Đổi Ảnh');
+  await until('card media picker opens', () => evaluate(manager, `document.querySelectorAll('p[title^="photo-"]').length === 7`));
+  assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
+  await click(manager, 'Hủy bỏ');
+  await until('card dialog resumes after cancelling the picker', () => evaluate(manager, `Boolean(${cardField('description')})`));
+  assert.equal(await evaluate(manager, `${cardField('description')}.value`), 'Nội dung chi tiết sân mới');
+  await click(manager, 'Tải/Đổi Ảnh');
+  await until('card gallery loads', () => evaluate(manager, `Boolean(document.querySelector('p[title="photo-0.jpg"]'))`));
+  await evaluate(manager, `document.querySelector('p[title="photo-0.jpg"]').click()`);
+  await click(manager, 'Áp Dụng Hình Ảnh Này');
+  await until('card image updated and dialog resumes', () => evaluate(manager, `${cardField('image')}?.value === ${JSON.stringify(galleryFiles[0].url)}`));
+  await closeCard();
+  const facilityId = await evaluate(manager, `document.querySelector('main article').dataset.cardId`);
+
+  await click(manager, '3. Thẻ Môn Thể Thao');
+  await click(manager, 'Thêm thẻ bộ môn');
+  assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
+  await openCard();
+  await setInput(manager, cardField('name'), 'Bộ môn mới');
+  await setInput(manager, cardField('highlight'), 'Nội dung thẻ bộ môn mới');
+  await setInput(manager, cardField('coach'), 'HLV mới');
+  await setInput(manager, cardField('schedule'), '18:00 - 20:00');
+  await setInput(manager, cardField('facilityId'), facilityId);
+  await closeCard();
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('new cards saved', () => published.coursesSection.sportsList.length === 1 && published.facilitiesSection.facilitiesList.length === 1);
+  assert.equal(published.coursesSection.sportsList[0].facilityId, facilityId);
+  assert.equal(published.facilitiesSection.facilitiesList[0].description, 'Nội dung chi tiết sân mới');
+  assert.deepEqual(published.facilitiesSection.facilitiesList[0].amenities, ['Phòng thay đồ', 'Tủ đồ']);
+  assert.deepEqual(published.facilitiesSection.facilitiesList[0].specs, [{ label: 'Diện tích', value: '300 m²' }]);
+  const sportId = published.coursesSection.sportsList[0].id;
+  await cdp.send('Page.reload', {}, visitor);
+  await until('new cards visible to a visitor', () => evaluate(visitor, `document.body.textContent.includes('Bộ môn mới') && document.body.textContent.includes('Sân tập mới') && document.body.textContent.includes('Nội dung thẻ bộ môn mới')`));
+
+  await evaluate(manager, `location.hash = '#/manager/dashboard'`);
+  await until('card editor closed', () => evaluate(manager, `!document.querySelector('main fieldset')`));
+  await evaluate(manager, `location.hash = '#/manager/home-content'`);
+  await until('card editor reloaded', () => evaluate(manager, `Boolean(${titleInput('Unsaved failure draft')})`));
+  await click(manager, '3. Thẻ Môn Thể Thao');
+  assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
+  await openCard();
+  assert.equal(await evaluate(manager, `${cardField('facilityId')}.value`), facilityId);
+  await setInput(manager, cardField('name'), 'Bộ môn đã sửa');
+  await setInput(manager, cardField('highlight'), 'Nội dung đã sửa');
+  await closeCard();
+  await click(manager, '4. Thẻ Cụm Sân');
+  assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
+  await openCard();
+  await setInput(manager, cardField('name'), 'Sân tập đã sửa');
+  await setInput(manager, cardField('description'), 'Chi tiết đã sửa');
+  await closeCard();
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('card edits saved', () => published.coursesSection.sportsList[0].name === 'Bộ môn đã sửa' && published.facilitiesSection.facilitiesList[0].name === 'Sân tập đã sửa');
+  assert.equal(published.coursesSection.sportsList[0].id, sportId);
+  assert.equal(published.facilitiesSection.facilitiesList[0].id, facilityId);
+  assert.equal(published.coursesSection.sportsList[0].facilityId, facilityId);
+  await cdp.send('Page.reload', {}, visitor);
+  await until('card edits visible to a visitor', () => evaluate(visitor, `document.body.textContent.includes('Bộ môn đã sửa') && document.body.textContent.includes('Sân tập đã sửa') && document.body.textContent.includes('Nội dung đã sửa')`));
+  checks.push('Both card sections use a separate editing dialog, retain drafts after closing or choosing media, and preserve published IDs and links after reopening.');
+
+  publicCatalog = {
+    center: { id: 15, name: 'Test center' },
+    sports: [{ id: 81, name: 'Operational fallback sport' }],
+    rooms: [{ id: 77, name: 'Operational fallback room', capacity: 10 }],
+    classes: [{ sportId: 81, roomId: 77 }]
+  };
+  const savesBeforeDelete = saves;
+  await click(manager, 'Xóa thẻ');
+  await until('delete confirmation opens', () => evaluate(manager, `document.querySelector('[role="dialog"]')?.textContent.includes('Xóa thẻ?')`));
+  assert.equal(await evaluate(manager, `document.querySelector('[role="dialog"]').textContent.includes('1 thẻ bộ môn liên kết')`), true);
+  await click(manager, 'Hủy bỏ');
+  await until('delete cancelled', () => evaluate(manager, `!document.querySelector('[role="dialog"]')`));
+  assert.equal(await evaluate(manager, `document.querySelectorAll('main article').length`), 1);
+  assert.equal(saves, savesBeforeDelete);
+  await click(manager, 'Xóa thẻ');
+  await click(manager, 'Xác nhận xóa');
+  await until('facility removed from draft', () => evaluate(manager, `document.querySelectorAll('main article').length === 0`));
+  assert.equal(published.facilitiesSection.facilitiesList.length, 1);
+  const savesBeforeRestoringCards = saves;
+  await click(manager, '3. Thẻ Môn Thể Thao');
+  await openCard();
+  await setInput(manager, cardField('name'), 'Bộ môn nháp chưa lưu');
+  await setInput(manager, cardField('highlight'), 'Nội dung nháp chưa lưu');
+  await closeCard();
+  await click(manager, '4. Thẻ Cụm Sân');
+  await click(manager, 'Thêm thẻ cụm sân');
+  await openCard();
+  await setInput(manager, cardField('name'), 'Sân nháp chưa lưu');
+  await setInput(manager, cardField('description'), 'Chi tiết nháp chưa lưu');
+  await closeCard();
+  await click(manager, 'Hủy thay đổi');
+  await until('saved facility restored and draft addition discarded', () => evaluate(manager, `document.querySelectorAll('main article').length === 1 && document.querySelector('main article').dataset.cardId === ${JSON.stringify(facilityId)}`));
+  assert.equal(saves, savesBeforeRestoringCards);
+  assert.equal(await evaluate(manager, `${discardButton}.disabled`), true);
+  await openCard();
+  assert.equal(await evaluate(manager, `${cardField('name')}.value`), 'Sân tập đã sửa');
+  assert.equal(await evaluate(manager, `${cardField('description')}.value`), 'Chi tiết đã sửa');
+  assert.equal(await evaluate(manager, `${cardField('spec-value')}.value`), '300 m²');
+  await closeCard();
+  await click(manager, '3. Thẻ Môn Thể Thao');
+  await openCard();
+  assert.equal(await evaluate(manager, `${cardField('name')}.value`), 'Bộ môn đã sửa');
+  assert.equal(await evaluate(manager, `${cardField('highlight')}.value`), 'Nội dung đã sửa');
+  assert.equal(await evaluate(manager, `${cardField('facilityId')}.value`), facilityId);
+  await closeCard();
+  checks.push('Discard restores deleted cards, their nested details and links, and removes unsaved additions and edits.');
+  await click(manager, '4. Thẻ Cụm Sân');
+  await click(manager, 'Xóa thẻ');
+  await click(manager, 'Xác nhận xóa');
+  await until('facility deletion drafted again', () => evaluate(manager, `document.querySelectorAll('main article').length === 0`));
+  failSave = true;
+  const attemptsBeforeFailedDelete = saves;
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('failed deletion save reports error', async () => saves > attemptsBeforeFailedDelete && await evaluate(manager, `!document.querySelector('main fieldset').disabled && document.querySelector('[role=alert]')?.textContent.includes('Simulated save failure')`));
+  assert.equal(published.facilitiesSection.facilitiesList.length, 1);
+  assert.equal(await evaluate(manager, `document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`), true);
+  failSave = false;
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('facility deletion published', async () => published.facilitiesSection.facilitiesList.length === 0 && await evaluate(manager, `!document.querySelector('main fieldset').disabled && !document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`));
+  assert.equal(published.facilitiesSection.catalogSource, 'custom');
+  assert.equal(published.coursesSection.sportsList[0].id, sportId);
+  assert.equal(published.coursesSection.sportsList[0].facilityId, '');
+  assert.equal(published.coursesSection.sportsList[0].name, 'Bộ môn đã sửa');
+  await click(manager, '3. Thẻ Môn Thể Thao');
+  await click(manager, 'Xóa thẻ');
+  await click(manager, 'Xác nhận xóa');
+  await until('sport removed from draft', () => evaluate(manager, `document.querySelectorAll('main article').length === 0`));
+  await click(manager, 'Lưu Toàn Bộ Thay Đổi');
+  await until('sport deletion published', async () => published.coursesSection.sportsList.length === 0 && await evaluate(manager, `!document.querySelector('main fieldset').disabled && !document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`));
+  assert.equal(published.coursesSection.catalogSource, 'custom');
+  const savesAfterLatestSave = saves;
+  await click(manager, 'Thêm thẻ bộ môn');
+  await until('new unsaved card added after saving empty lists', () => evaluate(manager, `document.querySelectorAll('main article').length === 1`));
+  await click(manager, 'Hủy thay đổi');
+  await until('discard uses the latest successful empty save', () => evaluate(manager, `document.querySelectorAll('main article').length === 0 && document.querySelector('main').textContent.includes('Chưa có thẻ.')`));
+  assert.equal(saves, savesAfterLatestSave);
+  assert.equal(published.coursesSection.sportsList.length, 0);
+  assert.equal(await evaluate(manager, `${discardButton}.disabled`), true);
+  checks.push('Each successful save becomes the new discard baseline, including intentionally empty card lists.');
+  await cdp.send('Page.reload', {}, visitor);
+  await until('visitor loaded after deletion', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes('Unsaved failure draft')`));
+  await until('visitor sees empty custom lists', () => evaluate(visitor, `!['Bộ môn đã sửa', 'Sân tập đã sửa', 'Operational fallback sport', 'Operational fallback room'].some(name => document.body.textContent.includes(name))`));
+  await evaluate(manager, `location.hash = '#/manager/dashboard'`);
+  await until('leave deleted card lists', () => evaluate(manager, `!document.querySelector('main fieldset')`));
+  await evaluate(manager, `location.hash = '#/manager/home-content'`);
+  await until('deleted card lists reloaded', () => evaluate(manager, `Boolean(${titleInput('Unsaved failure draft')})`));
+  for (const label of ['3. Thẻ Môn Thể Thao', '4. Thẻ Cụm Sân']) {
+    await click(manager, label);
+    await until('empty custom list rendered', () => evaluate(manager, `document.querySelector('main').textContent.includes('Chưa có thẻ.')`));
+    assert.equal(await evaluate(manager, `document.querySelectorAll('main article').length`), 0);
+  }
+  checks.push('Card deletion requires confirmation, preserves linked sport cards, handles failed saves, and keeps the last card deleted after reload even with a populated catalog.');
+
+  await click(manager, '6. Banner Kêu Gọi & Footer');
 
   const zaloPhone = '0901234567';
   const zaloLabel = `Zalo: ${zaloPhone}`;
@@ -206,7 +393,7 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
     return Boolean(contactPreviewId);
   });
   const contactPreview = await attach(contactPreviewId);
-  const footerLink = label => `[...document.querySelectorAll('footer a')].find(link => link.textContent.trim() === ${JSON.stringify(label)})`;
+  const footerLink = label => `[...document.querySelectorAll('footer a')].find(link => link.title === ${JSON.stringify(label)} || link.textContent.trim() === ${JSON.stringify(label)})`;
   await until('contact preview rendered', () => evaluate(contactPreview, `Boolean(${footerLink(zaloLabel)}) && Boolean(${footerLink('Facebook')})`));
   assert.equal(published.ctaAndFooter.contactZaloPhone, '');
   checks.push('Contact links appear in the draft preview without publishing.');
@@ -221,7 +408,7 @@ const titleInput = value => `[...document.querySelectorAll('main input')].find(i
   await evaluate(manager, `location.hash = '#/manager/dashboard'`);
   await until('manager leaves editor', () => evaluate(manager, `!document.querySelector('main fieldset')`));
   await evaluate(manager, `location.hash = '#/manager/home-content'`);
-  await until('editor reloads', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && Boolean(${titleInput(originalTitle)})`));
+  await until('editor reloads', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && Boolean(${titleInput('Unsaved failure draft')})`));
   await click(manager, '6. Banner Kêu Gọi & Footer');
   assert.equal(await evaluate(manager, `document.querySelector('#footer-zalo-phone').value`), zaloPhone);
   assert.equal(await evaluate(manager, `document.querySelector('#footer-facebook-url').value`), facebookUrl);

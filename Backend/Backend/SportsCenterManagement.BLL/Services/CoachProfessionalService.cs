@@ -2,6 +2,7 @@ using System.Data;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.CoachProfessional;
+using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 
@@ -33,7 +34,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             .Select(x => new { x.CenterId, x.UserId }).SingleOrDefaultAsync(ct);
         if (row is not null) return (row.CenterId, row.UserId);
         var role = await (from user in db.Users join r in db.Roles on user.RoleId equals r.Id
-            where user.Id == userId && (r.Name == "Admin" || r.Name == "SystemAdmin")
+            where user.Id == userId && r.Name == RoleNames.Admin
             select r.Name).SingleOrDefaultAsync(ct);
         if (role is null) throw BusinessException.Forbidden("Chỉ quản lý trung tâm mới được thực hiện thao tác này.", "MANAGER-ONLY");
         var centerId = await db.Centers.OrderBy(x => x.Id).Select(x => x.Id).FirstOrDefaultAsync(ct);
@@ -116,11 +117,30 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         var peerCoaches = await db.CoachProfiles.AsNoTracking().Where(x => x.CenterId == coach.CenterId &&
                 x.Id != coach.Id && x.Status == "Active")
             .OrderBy(x => x.FullName).Select(x => new { x.Id, x.FullName, x.CoachCode, x.Specialization }).ToListAsync(ct);
-        var bookings = await (from booking in db.ResourceBookings.AsNoTracking()
+        var rawBookings = await (from booking in db.ResourceBookings.AsNoTracking()
             join resource in db.FacilityResources on booking.ResourceId equals resource.Id
             where booking.CoachId == coach.Id && booking.EndAt >= rangeStart
             orderby booking.StartAt select new { booking.Id, booking.ResourceId, ResourceName = resource.Name,
                 booking.WorkEventId, booking.StartAt, booking.EndAt, booking.Purpose, booking.Status }).ToListAsync(ct);
+        var bookings = rawBookings.Select(booking => new {
+            booking.Id, booking.ResourceId, booking.ResourceName, booking.WorkEventId,
+            StartAt = DateTime.SpecifyKind(booking.StartAt, DateTimeKind.Utc),
+            EndAt = DateTime.SpecifyKind(booking.EndAt, DateTimeKind.Utc),
+            booking.Purpose, booking.Status
+        }).ToList();
+
+        var rawCenterBookings = await (from booking in db.ResourceBookings.AsNoTracking()
+            join resource in db.FacilityResources on booking.ResourceId equals resource.Id
+            join c in db.CoachProfiles on booking.CoachId equals c.Id
+            where resource.CenterId == coach.CenterId && booking.Status == "Confirmed" && booking.EndAt >= rangeStart
+            orderby booking.StartAt select new { booking.Id, booking.ResourceId, ResourceName = resource.Name,
+                booking.CoachId, CoachName = c.FullName, booking.StartAt, booking.EndAt, booking.Purpose, booking.Status }).ToListAsync(ct);
+        var centerBookings = rawCenterBookings.Select(booking => new {
+            booking.Id, booking.ResourceId, booking.ResourceName, booking.CoachId, booking.CoachName,
+            StartAt = DateTime.SpecifyKind(booking.StartAt, DateTimeKind.Utc),
+            EndAt = DateTime.SpecifyKind(booking.EndAt, DateTimeKind.Utc),
+            booking.Purpose, booking.Status
+        }).ToList();
         var issues = await (from issue in db.EquipmentIssues.AsNoTracking()
             join resource in db.FacilityResources on issue.ResourceId equals resource.Id into resourceJoin
             from resource in resourceJoin.DefaultIfEmpty()
@@ -140,7 +160,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             Range = new { From = rangeStart, To = rangeEnd }, Events = events, ClassSessions = classSessions,
             Leaves = leaves, Clients = clients, Exercises = exercises, Homework = homework,
             NutritionPlans = nutrition, Threads = threadList, Kpi = kpi, Resources = resources, Rooms = rooms,
-            PeerCoaches = peerCoaches, ResourceBookings = bookings, EquipmentIssues = issues, Reviews = reviews
+            PeerCoaches = peerCoaches, ResourceBookings = bookings, CenterResourceBookings = centerBookings, EquipmentIssues = issues, Reviews = reviews
         };
     }
 
@@ -564,7 +584,12 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
     public async Task<long> BookResource(long userId, BookResourceRequest request, CancellationToken ct)
     {
         var coach = await Coach(userId, ct); var start = ToUtc(request.StartAt); var end = ToUtc(request.EndAt);
-        if (start < UtcNow.AddMinutes(-5) || end <= start || end - start > TimeSpan.FromHours(12)) throw Invalid("Thời gian đặt tài nguyên không hợp lệ.");
+        if (start < UtcNow.AddMinutes(-5))
+            throw Invalid("Thời gian bắt đầu không được ở trong quá khứ.");
+        if (end <= start)
+            throw Invalid("Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.");
+        if (end - start > TimeSpan.FromHours(12))
+            throw Invalid("Thời gian mượn/đặt tài nguyên tối đa là 12 tiếng cho mỗi lượt (vui lòng đặt theo từng ca/buổi tập).");
         if (!await db.FacilityResources.AnyAsync(x => x.Id == request.ResourceId && x.CenterId == coach.CenterId && x.Status == "Available", ct))
             throw BusinessException.Conflict("Khu vực hoặc thiết bị không sẵn sàng.", "RESOURCE-NOT-AVAILABLE");
         if (request.WorkEventId.HasValue && !await db.CoachWorkEvents.AnyAsync(x => x.Id == request.WorkEventId && x.CoachId == coach.Id, ct))
@@ -592,6 +617,12 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         if (request.Severity is not ("Low" or "Medium" or "High" or "Critical")) throw Invalid("Mức độ sự cố không hợp lệ.");
         if (request.ResourceId.HasValue && !await db.FacilityResources.AnyAsync(x => x.Id == request.ResourceId && x.CenterId == coach.CenterId, ct))
             throw Invalid("Thiết bị không thuộc trung tâm.");
+        if (!string.IsNullOrWhiteSpace(request.PhotoUrl))
+        {
+            var url = request.PhotoUrl.Trim();
+            if (!url.StartsWith("/") && !url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                throw Invalid("Đường dẫn ảnh hiện trường không hợp lệ.");
+        }
         var row = new EquipmentIssue { CenterId = coach.CenterId, ResourceId = request.ResourceId, ReportedByUserId = userId,
             Title = request.Title.Trim(), Description = request.Description.Trim(), Severity = request.Severity,
             PhotoUrl = request.PhotoUrl?.Trim(), Status = "Open", ReportedAt = UtcNow };
@@ -835,11 +866,11 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
     public async Task ResolveIssue(long userId, long issueId, ResolveEquipmentIssueRequest request, CancellationToken ct)
     {
         var manager = await Manager(userId, ct);
-        if (request.Status is not ("InProgress" or "Resolved" or "Closed")) throw Invalid("Trạng thái xử lý sự cố không hợp lệ.");
+        if (request.Status is not ("InProgress" or "OnHold" or "Resolved" or "Closed" or "Rejected" or "Cancelled")) throw Invalid("Trạng thái xử lý sự cố không hợp lệ.");
         var row = await db.EquipmentIssues.SingleOrDefaultAsync(x => x.Id == issueId && x.CenterId == manager.CenterId, ct)
             ?? throw BusinessException.NotFound("Không tìm thấy sự cố.");
         row.Status = request.Status; row.ResolutionNote = request.ResolutionNote?.Trim(); row.ResolvedBy = userId;
-        row.ResolvedAt = request.Status is "Resolved" or "Closed" ? UtcNow : null;
+        row.ResolvedAt = request.Status is "Resolved" or "Closed" or "Rejected" or "Cancelled" ? UtcNow : null;
         await db.SaveChangesAsync(ct);
         await NotifyUsers(userId, [row.ReportedByUserId], "Cập nhật sự cố thiết bị", $"{row.Title}: {request.Status}. {request.ResolutionNote}",
             "EquipmentIssueUpdated", ["InApp", "Push"], ct);
