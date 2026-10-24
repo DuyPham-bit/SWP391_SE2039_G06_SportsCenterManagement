@@ -456,7 +456,7 @@ public sealed class CoreFlowService(IUnitOfWork unitOfWork, IConfiguration confi
                 }
                 var today = ToBusinessDate(now);
                 var currentEnd = await _unitOfWork.Repository<MemberSubscription>()
-                    .Find(item => item.MemberId == subscription.MemberId && item.Status == "Active" && item.EndDate >= today)
+                    .Find(item => item.MemberId == subscription.MemberId && item.PackageId == subscription.PackageId && item.Status == "Active" && item.EndDate >= today)
                     .MaxAsync(item => (DateOnly?)item.EndDate, cancellationToken);
                 subscription.StartDate = currentEnd.HasValue ? currentEnd.Value.AddDays(1) : today;
                 subscription.EndDate = subscription.StartDate.Value.AddDays(durationDays - 1);

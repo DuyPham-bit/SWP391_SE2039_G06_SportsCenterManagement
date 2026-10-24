@@ -220,7 +220,7 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
             where subscription.MemberId == member.Id && subscription.Status == "Active"
                 && subscription.StartDate <= session.SessionDate && subscription.EndDate >= session.SessionDate
                 && package.CenterId == cls.CenterId
-            orderby subscription.EndDate descending
+            orderby package.AllowedSports descending, subscription.EndDate descending
             select new { Subscription = subscription, package.MaxClasses, package.AllowedSports }).ToListAsync(ct);
         if (eligibleSubscriptions.Count == 0)
             throw new InvalidOperationException("Bạn cần có gói tập còn hiệu lực tại trung tâm để đặt lịch buổi học này.")

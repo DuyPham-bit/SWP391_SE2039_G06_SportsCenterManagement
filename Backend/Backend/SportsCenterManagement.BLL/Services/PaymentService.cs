@@ -1888,6 +1888,7 @@ public sealed class PaymentService(
             var today = ToBusinessDate(now);
             var currentEnd = await _unitOfWork.Context.MemberSubscriptions
                 .Where(candidate => candidate.MemberId == subscription.MemberId &&
+                                    candidate.PackageId == subscription.PackageId &&
                                     candidate.Status == "Active" && candidate.EndDate >= today)
                 .MaxAsync(candidate => (DateOnly?)candidate.EndDate, cancellationToken);
             subscription.StartDate = currentEnd.HasValue ? currentEnd.Value.AddDays(1) : today;
