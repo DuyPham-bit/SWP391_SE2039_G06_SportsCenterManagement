@@ -54,6 +54,7 @@ services:
       - MailSettings__Password=${EMAIL_SMTP_PASSWORD:-}
       - MailSettings__Host=${EMAIL_SMTP_HOST:-}
       - MailSettings__Port=${EMAIL_SMTP_PORT:-587}
+      - AI__ApiKey=${AI_API_KEY:-}
     volumes:
       - backend_media:/app/App_Data/media
 
