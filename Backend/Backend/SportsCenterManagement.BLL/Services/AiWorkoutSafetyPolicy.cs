@@ -242,29 +242,28 @@ public static class AiWorkoutSafetyPolicy
             adjustments.Add("Ưu tiên máy tập, dây cáp và trọng lượng cơ thể để xây dựng kiểm soát thần kinh-cơ trước khi tăng tải.");
 
         var extractedTagsList = new List<string>();
-        if (hasSevereLegInjury) extractedTagsList.Add("⚠️ Chấn thương: Gãy chân / Chi dưới");
-        if (hasBackIssue) extractedTagsList.Add("⚠️ Chấn thương: Cột sống / Thoát vị");
-        if (hasKneeIssue) extractedTagsList.Add("⚠️ Khớp gối yếu");
-        if (hasWristOrShoulderIssue) extractedTagsList.Add("⚠️ Vai / Cổ tay");
-        if (hasHypertension) extractedTagsList.Add("❤️ Bệnh lý: Huyết áp cao");
-        if (isSeverelyUnderweight) extractedTagsList.Add("⚡ Thể trạng: Suy nhược (<16 BMI)");
-        else if (isUnderweight) extractedTagsList.Add("⚡ Thể trạng: Thiếu cân (BMI < 18.5)");
-        else if (isOverweight) extractedTagsList.Add("⚡ Thể trạng: Thừa cân (BMI > 25)");
-        else extractedTagsList.Add("✨ Thể trạng: Cân đối chuẩn");
+        if (hasSevereLegInjury) extractedTagsList.Add("Gãy chân / chi dưới");
+        else if (hasBackIssue) extractedTagsList.Add("Cột sống / thoát vị");
+        else if (hasKneeIssue) extractedTagsList.Add("Khớp gối yếu");
+        else if (hasWristOrShoulderIssue) extractedTagsList.Add("Vai / cổ tay");
+        else if (hasHypertension) extractedTagsList.Add("Huyết áp cao");
 
         if (subjectiveHealthText.Contains("thể lực yếu", StringComparison.OrdinalIgnoreCase) ||
             subjectiveHealthText.Contains("hụt hơi", StringComparison.OrdinalIgnoreCase))
-            extractedTagsList.Add("⚡ Thể trạng: Thể lực yếu / Dễ hụt hơi");
+            extractedTagsList.Add("thể lực yếu");
+        else if (isSeverelyUnderweight) extractedTagsList.Add("suy nhược (<16 BMI)");
+        else if (isUnderweight) extractedTagsList.Add("thiếu cân (BMI < 18.5)");
+        else if (isOverweight) extractedTagsList.Add("thừa cân (BMI > 25)");
 
-        if (hasSevereLegInjury) extractedTagsList.Add("🪑 Chế độ: Tập tĩnh tại chỗ (Seated)");
-        else if (wantsMuscleGain && wantsFatLoss) extractedTagsList.Add("🎯 Chế độ: Tái cấu trúc cơ thể");
-        else extractedTagsList.Add("🎯 Mục tiêu: " + effectiveGoal);
+        if (hasSevereLegInjury) extractedTagsList.Add("tập ngồi tĩnh (Seated)");
+        else if (wantsMuscleGain && wantsFatLoss) extractedTagsList.Add("tái cấu trúc cơ thể");
+        else if (!string.IsNullOrWhiteSpace(effectiveGoal)) extractedTagsList.Add(effectiveGoal.ToLowerInvariant());
 
         var aiReasoning = hasSevereLegInjury
-            ? $"Phát hiện từ khóa chấn thương chi dưới trong ghi chú của HLV. Hệ thống tự động loại bỏ các bài di chuyển/chịu tải chân của môn {context.SportName}, chuyển sang các bài tập sức mạnh thân trên và linh hoạt cổ tay ở tư thế ngồi hoàn toàn."
+            ? "Phát hiện chấn thương gãy chân, hệ thống đã chuyển sang chế độ tập ngồi có tựa lưng (cấm 100% bài đứng/chịu lực chân) và hạ nhịp tim về Zone 1–2."
             : warnings.Count > 0
-                ? string.Join(" ", warnings)
-                : $"Hệ thống AI đã phân tích hồ sơ sinh trắc học (BMI {bmi:0.0}), thể trạng và mô tả của HLV để thiết kế giáo án phù hợp an toàn y học thể thao.";
+                ? warnings[0]
+                : (adjustments.Count > 0 ? adjustments[0] : $"Thiết kế phác đồ an toàn theo BMI {bmi:0.0} và thể trạng học viên.");
 
         return new AiWorkoutSafetyProfile(bmi, effectiveGoal, effectiveLevel, tags.ToArray(), discarded.ToArray(),
             conditions.ToArray(), warnings.Distinct().ToArray(), adjustments.Distinct().ToArray(), isUnderweight,

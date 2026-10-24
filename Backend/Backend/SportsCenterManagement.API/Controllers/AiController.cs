@@ -149,6 +149,15 @@ public sealed class AiController(SportsCenterDbContext db, GeminiService ai, Tra
             "Nếu đau cổ tay/vai: cấm Straight Barbell Press; ưu tiên Neutral-grip Dumbbell, Cable, Floor Press. " +
             "Nếu đau gối: cấm squat quá sâu và plyometrics; ưu tiên Seated Leg Curl, Hip Thrust, Glute Bridge không đau. " +
             "Nếu tăng huyết áp/tim mạch: cấm Valsalva nín thở; nhịp tim dưới 75% HRmax. " +
+            "QUY TẮC ĐỘ DÀI & ĐỊNH DẠNG (BẮT BUỘC): " +
+            "1. CỰC KỲ NGẮN GỌN, SÚC TÍCH: Đi thẳng vào từ khóa, viết dạng cụm từ ngắn, KHÔNG viết thành đoạn văn dài, KHÔNG lặp lại cùng một ý ở nhiều trường khác nhau. " +
+            "2. GIỚI HẠN SỐ TỪ CHO TỪNG TRƯỜNG: " +
+            "- Tên phác đồ (title): Tối đa 8 từ (VD: 'Tập cô lập thân trên (Chế độ chấn thương chân)'). " +
+            "- Lý do điều chỉnh (aiReasoning): Gộp chung thành 1 câu duy nhất tối đa 25 từ. Nêu rõ: [Chấn thương gì] -> [Đổi sang tập tư thế nào] -> [Cấm làm gì]. " +
+            "- Khối lượng & Nhịp tim: Chỉ ghi thông số (VD: '2-3 buổi/tuần (30-45p)' và 'Zone 1-2 (50-65% HRmax)'), bỏ các câu giải thích rườm rà phía sau. " +
+            "- Hướng dẫn mỗi bài tập (note): Tối đa 12 từ/bài, chỉ nhắc kỹ thuật an toàn quan trọng nhất. " +
+            "- Dinh dưỡng (nutritionGuidance): Tối đa 20 từ, liệt kê dạng gạch đầu dòng ngắn gọn đúng trọng tâm bệnh lý. " +
+            "- Ghi chú HLV (coachReviewNote): Tối đa 15 từ, ngắn gọn. " +
             "Trả duy nhất một JSON object gồm: " +
             "title, targetAudience, clinicalAssessment, weeklyVolume, heartRateZone, nutritionGuidance, coachReviewNote, aiReasoning đều là chuỗi; " +
             "extractedTags, conflictWarnings, mandatoryAdjustments, coachNotes là mảng chuỗi; " +

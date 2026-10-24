@@ -161,14 +161,15 @@ public static class AiWorkoutRecommendationProcessor
             : safety.IsOverweight ? "thừa cân"
             : "bình thường";
         var hasMedicalRestriction = safety.HasBackIssue || safety.HasWristOrShoulderIssue ||
-            safety.HasKneeIssue || safety.HasHypertension;
+            safety.HasKneeIssue || safety.HasHypertension || safety.HasSevereLegInjury ||
+            (safety.MedicalConditions != null && safety.MedicalConditions.Length > 0);
         result["targetAudience"] =
             $"Học viên BMI {safety.Bmi:0.0} ({bmiStatus}), trình độ {safety.EffectiveLevel}; " +
             $"mục tiêu hiệu lực: {safety.EffectiveGoal}.";
         result["clinicalAssessment"] =
             $"BMI {safety.Bmi:0.0} được dùng làm dữ liệu thể trạng ưu tiên. " +
             (hasMedicalRestriction
-                ? "Có lưu ý sức khỏe cần áp dụng các điều chỉnh bắt buộc bên dưới."
+                ? "Có lưu ý sức khỏe/chấn thương cần áp dụng các điều chỉnh an toàn bắt buộc."
                 : "Chưa phát hiện hạn chế y khoa trong dữ liệu được cung cấp; tiếp tục theo dõi phản ứng khi tập.");
 
         if (safety.WantsMuscleGain && safety.WantsFatLoss)
