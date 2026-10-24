@@ -9,7 +9,13 @@ param(
 )
 
 $ErrorActionPreference = 'Stop'
-$apiProject = Join-Path $PSScriptRoot 'Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj'
+$candidates = @(
+    (Join-Path $PSScriptRoot 'Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj'),
+    (Join-Path $PSScriptRoot 'Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj'),
+    (Join-Path (Split-Path $PSScriptRoot -Parent) 'Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj')
+)
+$apiProject = ($candidates | Where-Object { Test-Path $_ } | Select-Object -First 1)
+if (-not $apiProject) { throw 'Khong tim thay tap tin project SportsCenterManagement.API.csproj.' }
 $dotnetPath = (Get-Command dotnet -ErrorAction Stop).Source
 
 function Invoke-SecretManager {

@@ -37,7 +37,7 @@ Chạy một backend trên máy giữ kết nối SQL, rồi mọi máy mở cù
 Từ workspace, dừng bản backend đang giữ cổng 54162 rồi chạy:
 
 ```powershell
-.\start-shared.ps1
+.\Backend\start-shared.ps1
 ```
 
 Script build frontend với `/api`, giữ cấu hình SQL/JWT hiện có và lắng nghe ở cổng 54162 trên các giao diện mạng. Dữ liệu demo được tắt. Script không thay file cấu hình, không tự mở firewall và không xóa/reset database. Các máy trong LAN mở `http://DESKTOP-M1NP3N6:54162` hoặc `http://<IP-máy-chạy-backend>:54162`; nếu không truy cập được, kiểm tra kết nối LAN và inbound rule của cổng này trên máy backend. Đây là cách chạy trong mạng nội bộ; triển khai Internet dùng HTTPS theo phần trên.
@@ -45,7 +45,7 @@ Script build frontend với `/api`, giữ cấu hình SQL/JWT hiện có và l�
 Nếu cần trỏ backend tới SQL Server khác bằng Windows Authentication:
 
 ```powershell
-.\start-shared.ps1 -SqlServer 'TEN-SQL-SERVER' -Database 'SportsCenterManagement'
+.\Backend\start-shared.ps1 -SqlServer 'TEN-SQL-SERVER' -Database 'SportsCenterManagement'
 ```
 
 SQL Authentication được cung cấp bằng `ConnectionStrings__SportsCenter` hoặc User Secrets, không đưa mật khẩu vào source. Tài khoản chạy backend phải có quyền truy cập SQL đã chọn. Frontend đăng ký cần `VITE_SPORTS_CENTER_ID` trùng một center đang hoạt động trong database đó; database hiện tại có center 15. Build lại frontend nếu đổi center.

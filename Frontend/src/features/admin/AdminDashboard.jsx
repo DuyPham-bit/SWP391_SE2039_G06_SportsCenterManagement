@@ -2,6 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { createPortal } from 'react-dom';
 import { apiRequest } from '../../services/http.js';
 import { useToast } from '../../context/ToastContext.jsx';
+import { MotionButton } from '../../components/common/MotionButton.jsx';
 
 const OG = 'linear-gradient(108deg,#2F7B5D 0%,#24828F 25%,#3FAEB8 48%,#76B386 70%,#DEAC46 88%,#E5A33C 100%)';
 const fmtDate = v => { try { return v ? new Date(v).toLocaleString('vi-VN') : '—'; } catch { return '—'; } };
@@ -51,8 +52,8 @@ function CenterModal({ onClose, onSaved }) {
         </div>
         {err&&<div style={{marginTop:10,color:'#DC2626',fontSize:12}}>{err}</div>}
         <div style={{marginTop:20,display:'flex',gap:8,justifyContent:'flex-end'}}>
-          <button onClick={onClose} style={{padding:'8px 20px',borderRadius:8,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:13,fontWeight:600,cursor:'pointer'}}>Hủy</button>
-          <button onClick={save} disabled={saving} style={{padding:'8px 20px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',opacity:saving?.6:1}}>{saving?'Đang lưu...':'Tạo cơ sở'}</button>
+          <MotionButton onClick={onClose} style={{padding:'8px 20px',borderRadius:8,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:13,fontWeight:600}}>Hủy</MotionButton>
+          <MotionButton onClick={save} disabled={saving} style={{padding:'8px 20px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:13,fontWeight:700,opacity:saving?.6:1}}>{saving?'Đang lưu...':'Tạo cơ sở'}</MotionButton>
         </div>
       </div>
     </div>
@@ -90,8 +91,8 @@ function ManagerModal({ centers, onClose, onSaved }) {
         </div>
         {err&&<div style={{marginTop:10,color:'#DC2626',fontSize:12}}>{err}</div>}
         <div style={{marginTop:20,display:'flex',gap:8,justifyContent:'flex-end'}}>
-          <button onClick={onClose} style={{padding:'8px 20px',borderRadius:8,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:13,fontWeight:600,cursor:'pointer'}}>Hủy</button>
-          <button onClick={save} disabled={saving} style={{padding:'8px 20px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',opacity:saving?.6:1}}>{saving?'Đang lưu...':'Tạo Manager'}</button>
+          <MotionButton onClick={onClose} style={{padding:'8px 20px',borderRadius:8,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:13,fontWeight:600}}>Hủy</MotionButton>
+          <MotionButton onClick={save} disabled={saving} style={{padding:'8px 20px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:13,fontWeight:700,opacity:saving?.6:1}}>{saving?'Đang lưu...':'Tạo Manager'}</MotionButton>
         </div>
       </div>
     </div>
@@ -162,17 +163,17 @@ function AccountActionModal({ actionData, onClose, onConfirm, isSaving }) {
         />
 
         {/* Close button */}
-        <button
+        <MotionButton
           type="button"
           disabled={isSaving}
           onClick={onClose}
           aria-label="Đóng"
-          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center border border-slate-200/80 shadow-xs transition-all hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 z-10 cursor-pointer disabled:opacity-50"
+          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center border border-slate-200/80 shadow-xs focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-400 z-10 disabled:opacity-50"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
-        </button>
+        </MotionButton>
 
         {/* Top Icon Badge & Header */}
         <div className="relative z-10 flex items-center gap-3.5 mb-4">
@@ -313,18 +314,18 @@ function AccountActionModal({ actionData, onClose, onConfirm, isSaving }) {
 
           {/* Action Buttons */}
           <div className="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-100">
-            <button
+            <MotionButton
               type="button"
               disabled={isSaving}
               onClick={onClose}
-              className="min-h-10 px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors disabled:opacity-50 cursor-pointer"
+              className="min-h-10 px-4 py-2 rounded-xl border border-slate-200 hover:bg-slate-100 text-slate-700 text-xs font-bold transition-colors disabled:opacity-50"
             >
               Hủy bỏ
-            </button>
-            <button
+            </MotionButton>
+            <MotionButton
               type="submit"
               disabled={isSaving}
-              className={`min-h-10 px-5 py-2 rounded-xl text-white text-xs font-bold shadow-md transition-all flex items-center justify-center gap-1.5 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed hover:-translate-y-0.5 active:translate-y-0 ${
+              className={`min-h-10 px-5 py-2 rounded-xl text-white text-xs font-bold shadow-md flex items-center justify-center gap-1.5 disabled:opacity-60 disabled:cursor-not-allowed ${
                 isDelete
                   ? 'bg-gradient-to-r from-red-600 to-rose-700 hover:from-red-700 hover:to-rose-800 shadow-red-600/25'
                   : isLock
@@ -346,7 +347,7 @@ function AccountActionModal({ actionData, onClose, onConfirm, isSaving }) {
                   ? 'Xác nhận mở khóa'
                   : 'Xác nhận thu hồi'}
               </span>
-            </button>
+            </MotionButton>
           </div>
         </form>
       </div>
@@ -487,74 +488,235 @@ export function AdminDashboard({ initialSection }) {
         />
       )}
 
-      <div style={{position:'relative',overflow:'hidden',background:OG,padding:'40px 32px 48px'}}>
-        <div style={{position:'absolute',top:-60,right:-60,width:280,height:280,borderRadius:'50%',background:'radial-gradient(circle,#F2CC8F55 0%,transparent 70%)',pointerEvents:'none'}} />
-        <svg style={{position:'absolute',right:24,top:16,opacity:.12}} width='220' height='90' viewBox='0 0 220 90' fill='none'>
-          <circle cx='30' cy='45' r='28' stroke='white' strokeWidth='5' fill='none'/>
-          <circle cx='80' cy='25' r='28' stroke='white' strokeWidth='5' fill='none'/>
-          <circle cx='130' cy='45' r='28' stroke='white' strokeWidth='5' fill='none'/>
-          <circle cx='180' cy='25' r='28' stroke='white' strokeWidth='5' fill='none'/>
-          <circle cx='105' cy='65' r='28' stroke='white' strokeWidth='5' fill='none'/>
-        </svg>
-        <div style={{position:'relative',zIndex:1}}>
-          <div style={{display:'inline-flex',alignItems:'center',gap:8,background:'rgba(255,255,255,0.18)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.35)',borderRadius:999,padding:'6px 16px',marginBottom:16}}>
-            <span style={{width:8,height:8,borderRadius:'50%',background:'#fff',display:'inline-block'}} />
-            <span style={{fontSize:12,fontWeight:700,color:'#fff',letterSpacing:'.08em'}}>ADMIN - HỆ THỐNG</span>
+      {/* Top Banner / Header - Olympic Multi-stop Gradient with Embedded Tabs (Image 2 style) */}
+      <div className="p-6 lg:p-8 max-w-[1400px] mx-auto">
+        <section
+          className="relative overflow-hidden rounded-3xl text-white p-6 lg:p-8 shadow-xl shadow-[#24828F]/20 border border-white/30"
+          style={{ background: OG }}
+        >
+          <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+
+          {/* Olympic curved motion lines */}
+          <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+            <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+            <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+            <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+            <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+          </svg>
+
+          <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-3">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-white/20 text-white uppercase backdrop-blur-md border border-white/30 shadow-xs">
+                  <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+                  HỆ THỐNG QUẢN TRỊ TRUNG TÂM
+                </span>
+                <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/30">
+                  Toàn Hệ Thống SCMS
+                </span>
+              </div>
+              <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+                Bảng Quản Trị Hệ Thống
+              </h1>
+              <p className="text-sm text-white/95 mt-1 max-w-3xl leading-relaxed drop-shadow-xs">
+                Quản lý các cơ sở thể thao, phân quyền Manager và giám sát tài khoản toàn hệ thống SCMS an toàn, minh bạch.
+              </p>
+            </div>
+
+            {/* Quick Metrics & Refresh */}
+            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+              <div className="grid grid-cols-4 gap-3 bg-white/20 p-3 rounded-2xl border border-white/30 backdrop-blur-md shadow-xs">
+                <div className="text-center px-3">
+                  <div className="text-xl font-black text-white">{ov?.activeCenterCount ?? '—'}</div>
+                  <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">Cơ Sở</div>
+                </div>
+                <div className="text-center px-3 border-l border-white/20">
+                  <div className="text-xl font-black text-white">{ov?.activeManagerCount ?? '—'}</div>
+                  <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">Managers</div>
+                </div>
+                <div className="text-center px-3 border-l border-white/20">
+                  <div className="text-xl font-black text-white">{ov?.lockedAccountCount ?? '—'}</div>
+                  <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">Bị Khóa</div>
+                </div>
+                <div className="text-center px-3 border-l border-white/20">
+                  <div className="text-xl font-black text-white">{ov?.totalAccountCount ?? '—'}</div>
+                  <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">Tài Khoản</div>
+                </div>
+              </div>
+
+              <MotionButton
+                onClick={() => { loadOvFn(); loadCFn(); loadMFn(); if (tab === 'accounts') loadAFn(); }}
+                whileHover={{ y: -1, scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-2xl text-xs font-bold font-chivo uppercase tracking-wider transition-all border border-white/30 backdrop-blur-md shadow-xs cursor-pointer"
+                title="Làm mới dữ liệu"
+              >
+                <span className="material-symbols-outlined text-[18px]">refresh</span>
+                <span className="hidden sm:inline">Làm Mới</span>
+              </MotionButton>
+            </div>
           </div>
-          <h1 style={{margin:0,fontSize:28,fontWeight:900,color:'#fff'}}>Bảng Quản Trị Hệ Thống</h1>
-          <p style={{margin:'8px 0 0',fontSize:14,color:'rgba(255,255,255,0.85)'}}>Quản lý cơ sở, Manager và phân quyền hệ thống SCMS</p>
-          {!loadOv&&ov&&(
-            <div style={{display:'flex',gap:12,marginTop:24,flexWrap:'wrap'}}>
-              {[['account_tree',ov.activeCenterCount,'Cơ Sở'],['manage_accounts',ov.activeManagerCount,'Managers'],['lock',ov.lockedAccountCount,'Bị Khóa'],['group',ov.totalAccountCount,'Tổng Tài Khoản']].map(([ic,val,lbl])=>(
-                <div key={lbl} style={{background:'rgba(255,255,255,0.18)',backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.3)',borderRadius:12,padding:'12px 20px',display:'flex',alignItems:'center',gap:10,minWidth:130}}>
-                  <span className='material-symbols-outlined' style={{color:'#fff',fontSize:22}}>{ic}</span>
-                  <div>
-                    <div style={{fontSize:22,fontWeight:900,color:'#fff',lineHeight:1}}>{val??'—'}</div>
-                    <div style={{fontSize:10,color:'rgba(255,255,255,0.85)',fontWeight:600}}>{lbl}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
+
+          {/* Master Tabs Embedded Inside Banner (Image 2 Style) */}
+          <div className="relative z-10 flex flex-wrap items-center gap-2 mt-6 pt-4 border-t border-white/20">
+            {TABS.map(t => {
+              const isActive = tab === t.id;
+              return (
+                <MotionButton
+                  key={t.id}
+                  onClick={() => setTab(t.id)}
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
+                    isActive
+                      ? 'bg-white text-[#1B4332] shadow-lg shadow-black/15 font-black scale-102'
+                      : 'bg-white/20 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[18px]">{t.i}</span>
+                  <span>{t.l}</span>
+                </MotionButton>
+              );
+            })}
+          </div>
+        </section>
       </div>
 
-      <div style={{background:'#fff',borderBottom:'1.5px solid #E2E8F0',padding:'0 32px',display:'flex',gap:4,overflowX:'auto'}}>
-        {TABS.map(t=>(
-          <button key={t.id} onClick={()=>setTab(t.id)} style={{padding:'14px 20px',border:'none',background:'none',cursor:'pointer',fontSize:13,fontWeight:tab===t.id?800:600,color:tab===t.id?'#2F7B5D':'#64748B',borderBottom:tab===t.id?'3px solid #2F7B5D':'3px solid transparent',display:'flex',alignItems:'center',gap:6,whiteSpace:'nowrap'}}>
-            <span className='material-symbols-outlined' style={{fontSize:18}}>{t.i}</span>{t.l}
-          </button>
-        ))}
-        <div style={{marginLeft:'auto',display:'flex',alignItems:'center'}}>
-          <button onClick={()=>{loadOvFn();loadCFn();loadMFn();if(tab==='accounts')loadAFn();}} style={{padding:'6px 14px',borderRadius:8,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:12,fontWeight:600,cursor:'pointer',color:'#475569',display:'flex',alignItems:'center',gap:4,margin:'8px 0'}}>
-            <span className='material-symbols-outlined' style={{fontSize:15}}>refresh</span>Làm Mới
-          </button>
-        </div>
-      </div>
-
-      <div style={{padding:'28px 32px',maxWidth:1400,margin:'0 auto'}}>
-        {err&&<div style={{marginBottom:12,color:'#DC2626',fontSize:12,background:'#FEF2F2',borderRadius:8,padding:'8px 12px'}}>{err}</div>}
+      <div style={{padding:'0 32px 32px',maxWidth:1400,margin:'0 auto'}}>
+        {err&&<div style={{marginBottom:16,color:'#DC2626',fontSize:12,background:'#FEF2F2',borderRadius:12,padding:'12px 16px',border:'1px solid #FECACA'}}>{err}</div>}
         {tab==='overview'&&(
-          <div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit,minmax(200px,1fr))',gap:16,marginBottom:24}}>
-              {[{i:'account_tree',l:'Cơ Sở Hoạt Động',v:ov?.activeCenterCount,a:'#10B981'},{i:'manage_accounts',l:'Manager Đang Quản Lý',v:ov?.activeManagerCount,a:'#3B82F6'},{i:'lock',l:'Tài Khoản Bị Khóa',v:ov?.lockedAccountCount,a:'#EF4444'},{i:'group',l:'Tổng Tài Khoản Hệ Thống',v:ov?.totalAccountCount,a:'#F59E0B'}].map(x=>(
-                <div key={x.l} style={{background:'#fff',borderRadius:16,padding:'20px 24px',boxShadow:'0 1px 6px #0001',border:'1.5px solid '+x.a+'22',display:'flex',alignItems:'center',gap:16}}>
-                  <div style={{width:48,height:48,borderRadius:14,background:x.a+'18',display:'flex',alignItems:'center',justifyContent:'center'}}>
-                    <span className='material-symbols-outlined' style={{color:x.a,fontSize:26}}>{x.i}</span>
+          <div className="space-y-6">
+            {/* Quick Action Bar */}
+            <div className="flex flex-wrap items-center justify-between gap-3 p-4 bg-white rounded-2xl border border-slate-200 shadow-xs">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-emerald-600">bolt</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-700">Thao tác nhanh quản trị</span>
+              </div>
+              <div className="flex flex-wrap items-center gap-2">
+                <MotionButton
+                  onClick={() => setShowCC(true)}
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-3.5 py-1.5 rounded-xl bg-emerald-50 text-emerald-700 hover:bg-emerald-100 font-bold text-xs flex items-center gap-1.5 border border-emerald-200"
+                >
+                  <span className="material-symbols-outlined text-[16px]">add</span>+ Cơ Sở Mới
+                </MotionButton>
+                <MotionButton
+                  onClick={() => setShowCM(true)}
+                  disabled={ac.length === 0}
+                  whileHover={{ y: -1 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs flex items-center gap-1.5 border border-blue-200 disabled:opacity-40"
+                >
+                  <span className="material-symbols-outlined text-[16px]">person_add</span>+ Tạo Manager
+                </MotionButton>
+                <a
+                  href="#/admin/roles-permissions"
+                  className="px-3.5 py-1.5 rounded-xl bg-indigo-50 text-indigo-700 hover:bg-indigo-100 font-bold text-xs flex items-center gap-1.5 border border-indigo-200"
+                >
+                  <span className="material-symbols-outlined text-[16px]">security</span>Phân Quyền RBAC
+                </a>
+                <a
+                  href="#/admin/audit-logs"
+                  className="px-3.5 py-1.5 rounded-xl bg-amber-50 text-amber-700 hover:bg-amber-100 font-bold text-xs flex items-center gap-1.5 border border-amber-200"
+                >
+                  <span className="material-symbols-outlined text-[16px]">history</span>Nhật Ký Kiểm Toán
+                </a>
+              </div>
+            </div>
+
+            {/* Visual KPI Cards with Progress Ratios */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              {[
+                {
+                  i: 'account_tree',
+                  l: 'Cơ Sở Thể Thao',
+                  v: ov?.activeCenterCount ?? 0,
+                  sub: `${centers.length} tổng cơ sở`,
+                  pct: centers.length ? Math.round(((ov?.activeCenterCount || 0) / centers.length) * 100) : 100,
+                  a: '#10B981',
+                  tabId: 'centers'
+                },
+                {
+                  i: 'manage_accounts',
+                  l: 'Managers Đang Trực',
+                  v: ov?.activeManagerCount ?? 0,
+                  sub: `${managers.length} quản lý bổ nhiệm`,
+                  pct: managers.length ? Math.round(((ov?.activeManagerCount || 0) / managers.length) * 100) : 100,
+                  a: '#3B82F6',
+                  tabId: 'managers'
+                },
+                {
+                  i: 'lock',
+                  l: 'Tài Khoản Bị Khóa',
+                  v: ov?.lockedAccountCount ?? 0,
+                  sub: 'Cần kiểm tra an ninh',
+                  pct: ov?.totalAccountCount ? Math.round(((ov?.lockedAccountCount || 0) / ov?.totalAccountCount) * 100) : 0,
+                  a: '#EF4444',
+                  tabId: 'accounts'
+                },
+                {
+                  i: 'group',
+                  l: 'Tài Khoản Toàn Hệ Thống',
+                  v: ov?.totalAccountCount ?? 0,
+                  sub: 'Hội viên, nhân sự, admin',
+                  pct: 100,
+                  a: '#F59E0B',
+                  tabId: 'accounts'
+                }
+              ].map(x => (
+                <div
+                  key={x.l}
+                  onClick={() => setTab(x.tabId)}
+                  className="bg-white rounded-2xl p-5 shadow-xs border border-slate-200 hover:border-slate-300 hover:shadow-md transition-all cursor-pointer space-y-3 group"
+                >
+                  <div className="flex items-center justify-between">
+                    <div
+                      className="w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105"
+                      style={{ background: x.a + '18' }}
+                    >
+                      <span className="material-symbols-outlined text-[26px]" style={{ color: x.a }}>
+                        {x.i}
+                      </span>
+                    </div>
+                    <span className="material-symbols-outlined text-slate-300 group-hover:text-slate-600 transition-colors text-[20px]">
+                      arrow_forward
+                    </span>
                   </div>
+
                   <div>
-                    <div style={{fontSize:26,fontWeight:800,color:'#0F172A',lineHeight:1}}>{x.v??'—'}</div>
-                    <div style={{fontSize:12,color:'#64748B',fontWeight:600,marginTop:2}}>{x.l}</div>
+                    <div className="text-3xl font-black text-slate-900 font-chivo leading-none">
+                      {x.v}
+                    </div>
+                    <div className="text-xs font-bold text-slate-600 mt-1">{x.l}</div>
+                    <div className="text-[11px] text-slate-400 mt-0.5">{x.sub}</div>
+                  </div>
+
+                  {/* Visual Progress Bar */}
+                  <div className="space-y-1 pt-1 border-t border-slate-100">
+                    <div className="flex justify-between text-[10px] font-bold text-slate-400">
+                      <span>Tỉ lệ hoạt động</span>
+                      <span>{x.pct}%</span>
+                    </div>
+                    <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
+                      <div
+                        className="h-full rounded-full transition-all"
+                        style={{ width: `${Math.min(100, x.pct)}%`, backgroundColor: x.a }}
+                      />
+                    </div>
                   </div>
                 </div>
               ))}
             </div>
-            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+
+            {/* Side-by-side lists */}
+            <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))',gap:20}}>
               {[['Cơ Sở Thể Thao',centers,'centers'],['Đội Ngũ Manager',managers,'managers']].map(([ttl,list,sid])=>(
                 <div key={ttl} style={{background:'#fff',borderRadius:16,padding:24,boxShadow:'0 1px 6px #0001',border:'1.5px solid #E2E8F0'}}>
                   <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:16}}>
                     <div style={{fontWeight:800,fontSize:14,color:'#0F172A'}}>{ttl}</div>
-                    <button onClick={()=>setTab(sid)} style={{fontSize:12,color:'#2F7B5D',fontWeight:600,background:'none',border:'none',cursor:'pointer'}}>Xem tất cả →</button>
+                    <MotionButton onClick={()=>setTab(sid)} whileHover={{ x: 2 }} whileTap={{ scale: 0.97 }} style={{fontSize:12,color:'#2F7B5D',fontWeight:600,background:'none',border:'none'}}>Xem tất cả →</MotionButton>
                   </div>
                   {list.slice(0,5).map(item=>(
                     <div key={item.id} style={{display:'flex',justifyContent:'space-between',alignItems:'center',padding:'8px 0',borderBottom:'1px solid #F1F5F9'}}>
@@ -575,9 +737,9 @@ export function AdminDashboard({ initialSection }) {
           <div style={{background:'#fff',borderRadius:16,padding:24,boxShadow:'0 1px 6px #0001',border:'1.5px solid #E2E8F0'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
               <div style={{fontSize:15,fontWeight:800,color:'#0F172A'}}>Danh Sách Cơ Sở ({centers.length})</div>
-              <button onClick={()=>setShowCC(true)} style={{padding:'8px 18px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:6}}>
+              <MotionButton onClick={()=>setShowCC(true)} style={{padding:'8px 18px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',gap:6}}>
                 <span className='material-symbols-outlined' style={{fontSize:16}}>add</span>+ Tạo Cơ Sở
-              </button>
+              </MotionButton>
             </div>
             {loadC?<div style={{textAlign:'center',padding:32,color:'#94A3B8'}}>Đang tải dữ liệu...</div>:(
               <div style={{overflowX:'auto'}}>
@@ -594,9 +756,9 @@ export function AdminDashboard({ initialSection }) {
                         <td style={TDS}><Badge status={c.status} /></td>
                         <td style={{...TDS,color:'#94A3B8'}}>{fmtDO(c.createdAt)}</td>
                         <td style={TDS}>
-                          <button onClick={()=>patchC(c.id,c.status)} disabled={saving==='c'+c.id} style={{padding:'4px 12px',borderRadius:6,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:11,fontWeight:600,cursor:'pointer',color:'#475569'}}>
+                          <MotionButton onClick={()=>patchC(c.id,c.status)} disabled={saving==='c'+c.id} style={{padding:'4px 12px',borderRadius:6,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:11,fontWeight:600,color:'#475569'}}>
                             {saving==='c'+c.id?'...':c.status==='Active'?'Vô Hiệu Hóa':'Kích Hoạt'}
-                          </button>
+                          </MotionButton>
                         </td>
                       </tr>
                     ))}
@@ -612,9 +774,9 @@ export function AdminDashboard({ initialSection }) {
           <div style={{background:'#fff',borderRadius:16,padding:24,boxShadow:'0 1px 6px #0001',border:'1.5px solid #E2E8F0'}}>
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
               <div style={{fontSize:15,fontWeight:800,color:'#0F172A'}}>Tài Khoản Manager ({managers.length})</div>
-              <button onClick={()=>setShowCM(true)} disabled={ac.length===0} style={{padding:'8px 18px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',display:'flex',alignItems:'center',gap:6,opacity:ac.length===0?.4:1}}>
+              <MotionButton onClick={()=>setShowCM(true)} disabled={ac.length===0} style={{padding:'8px 18px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',gap:6,opacity:ac.length===0?.4:1}}>
                 <span className='material-symbols-outlined' style={{fontSize:16}}>person_add</span>+ Tạo Manager
-              </button>
+              </MotionButton>
             </div>
             {loadM?<div style={{textAlign:'center',padding:32,color:'#94A3B8'}}>Đang tải dữ liệu...</div>:(
               <div style={{overflowX:'auto'}}>
@@ -631,9 +793,9 @@ export function AdminDashboard({ initialSection }) {
                         <td style={TDS}><Badge status={m.status} /></td>
                         <td style={{...TDS,color:'#94A3B8',fontSize:11}}>{fmtDate(m.lastLoginAt)}</td>
                         <td style={TDS}>
-                          <button onClick={()=>patchM(m)} disabled={saving==='m'+m.id} style={{padding:'4px 12px',borderRadius:6,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:11,fontWeight:600,cursor:'pointer',color:'#475569'}}>
+                          <MotionButton onClick={()=>patchM(m)} disabled={saving==='m'+m.id} style={{padding:'4px 12px',borderRadius:6,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:11,fontWeight:600,color:'#475569'}}>
                             {saving==='m'+m.id?'...':m.status==='Active'?'Vô Hiệu Hóa':'Kích Hoạt'}
-                          </button>
+                          </MotionButton>
                         </td>
                       </tr>
                     ))}
@@ -658,7 +820,7 @@ export function AdminDashboard({ initialSection }) {
                 <option value='Active'>Hoạt động (Active)</option>
                 <option value='Disabled'>Bị khóa (Disabled)</option>
               </select>
-              <button onClick={loadAFn} style={{padding:'7px 16px',borderRadius:8,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:12,fontWeight:600,cursor:'pointer',color:'#475569'}}>Tìm kiếm</button>
+              <MotionButton onClick={loadAFn} style={{padding:'7px 16px',borderRadius:8,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:12,fontWeight:600,color:'#475569'}}>Tìm kiếm</MotionButton>
               <div style={{marginLeft:'auto',color:'#94A3B8',fontSize:12}}>Tổng: {aTotal} tài khoản</div>
             </div>
             {loadA?<div style={{textAlign:'center',padding:32,color:'#94A3B8'}}>Đang tải dữ liệu...</div>:(
@@ -681,10 +843,10 @@ export function AdminDashboard({ initialSection }) {
                             <td style={{...TDS,color:'#94A3B8',fontSize:11}}>{fmtDate(a.lastLoginAt)}</td>
                             <td style={TDS}>
                               <div style={{display:'flex',gap:4}}>
-                                {!lk&&a.role!=='Admin'&&<button onClick={()=>actA(a.id,'lock')} disabled={!!saving} title='Khóa tài khoản' style={{padding:'4px 8px',borderRadius:6,border:'1.5px solid #FECACA',background:'#FEF2F2',fontSize:11,cursor:'pointer',color:'#DC2626'}}><span className='material-symbols-outlined' style={{fontSize:14,verticalAlign:'middle'}}>lock</span></button>}
-                                {lk&&<button onClick={()=>actA(a.id,'unlock')} disabled={!!saving} title='Mở khóa tài khoản' style={{padding:'4px 8px',borderRadius:6,border:'1.5px solid #BBF7D0',background:'#F0FDF4',fontSize:11,cursor:'pointer',color:'#16A34A'}}><span className='material-symbols-outlined' style={{fontSize:14,verticalAlign:'middle'}}>lock_open</span></button>}
-                                {a.role!=='Admin'&&<button onClick={()=>actA(a.id,'revoke-sessions')} disabled={!!saving} title='Thu hồi phiên đăng nhập' style={{padding:'4px 8px',borderRadius:6,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:11,cursor:'pointer',color:'#64748B'}}><span className='material-symbols-outlined' style={{fontSize:14,verticalAlign:'middle'}}>logout</span></button>}
-                                {a.role==='Member'&&<button onClick={()=>deleteMember(a)} disabled={!!saving} title='Xóa tài khoản Member' style={{padding:'4px 8px',borderRadius:6,border:'1.5px solid #FCA5A5',background:'#DC2626',fontSize:11,cursor:'pointer',color:'#fff'}}><span className='material-symbols-outlined' style={{fontSize:14,verticalAlign:'middle'}}>delete_forever</span></button>}
+                                {!lk&&a.role!=='Admin'&&<MotionButton onClick={()=>actA(a.id,'lock')} disabled={!!saving} title='Khóa tài khoản' whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }} style={{padding:'4px 8px',borderRadius:6,border:'1.5px solid #FECACA',background:'#FEF2F2',fontSize:11,color:'#DC2626'}}><span className='material-symbols-outlined' style={{fontSize:14,verticalAlign:'middle'}}>lock</span></MotionButton>}
+                                {lk&&<MotionButton onClick={()=>actA(a.id,'unlock')} disabled={!!saving} title='Mở khóa tài khoản' whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }} style={{padding:'4px 8px',borderRadius:6,border:'1.5px solid #BBF7D0',background:'#F0FDF4',fontSize:11,color:'#16A34A'}}><span className='material-symbols-outlined' style={{fontSize:14,verticalAlign:'middle'}}>lock_open</span></MotionButton>}
+                                {a.role!=='Admin'&&<MotionButton onClick={()=>actA(a.id,'revoke-sessions')} disabled={!!saving} title='Thu hồi phiên đăng nhập' whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }} style={{padding:'4px 8px',borderRadius:6,border:'1.5px solid #E2E8F0',background:'#F8FAFC',fontSize:11,color:'#64748B'}}><span className='material-symbols-outlined' style={{fontSize:14,verticalAlign:'middle'}}>logout</span></MotionButton>}
+                                {a.role==='Member'&&<MotionButton onClick={()=>deleteMember(a)} disabled={!!saving} title='Xóa tài khoản Member' whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }} style={{padding:'4px 8px',borderRadius:6,border:'1.5px solid #FCA5A5',background:'#DC2626',fontSize:11,color:'#fff'}}><span className='material-symbols-outlined' style={{fontSize:14,verticalAlign:'middle'}}>delete_forever</span></MotionButton>}
                               </div>
                             </td>
                           </tr>
@@ -697,7 +859,7 @@ export function AdminDashboard({ initialSection }) {
                 {aPgs>1&&(
                   <div style={{display:'flex',gap:6,justifyContent:'center',marginTop:16}}>
                     {Array.from({length:aPgs},(_,i)=>i+1).map(p=>(
-                      <button key={p} onClick={()=>setAPage(p)} style={{padding:'4px 12px',borderRadius:6,border:'1.5px solid #E2E8F0',background:p===aPage?'#2F7B5D':'#F8FAFC',color:p===aPage?'#fff':'#475569',fontSize:12,fontWeight:600,cursor:'pointer'}}>{p}</button>
+                      <MotionButton key={p} onClick={()=>setAPage(p)} whileHover={{ scale: 1.08 }} whileTap={{ scale: 0.94 }} style={{padding:'4px 12px',borderRadius:6,border:'1.5px solid #E2E8F0',background:p===aPage?'#2F7B5D':'#F8FAFC',color:p===aPage?'#fff':'#475569',fontSize:12,fontWeight:600}}>{p}</MotionButton>
                     ))}
                   </div>
                 )}

@@ -8,6 +8,7 @@ import { AppLayout } from './components/layout/AppLayout.js';
 // Public & Auth Pages (Lazy Loaded)
 const LandingPage = lazy(() => import('./features/landing/LandingPage.js').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage.js').then(m => ({ default: m.LoginPage })));
+const OtpVerification = lazy(() => import('./components/common/OtpVerification.jsx'));
 
 // Manager Pages (Lazy Loaded)
 const ManagerDashboard = lazy(() => import('./features/manager/ManagerDashboard.js').then(m => ({ default: m.ManagerDashboard })));
@@ -174,7 +175,9 @@ function AppRouter() {
     path.startsWith('#/member') ||
     path === '#/login' ||
     path === '#/register' ||
-    path === '#/payment-result';
+    path === '#/payment-result' ||
+    path === '#/otp-demo' ||
+    path === '#/otp';
 
   const renderRouteContent = () => {
     if (!isDashboardOrAuth) {
@@ -187,6 +190,9 @@ function AppRouter() {
       case '#/login':
       case '#/register':
         return <LoginPage />;
+      case '#/otp-demo':
+      case '#/otp':
+        return <OtpVerification />;
       case '#/payment-result':
         return <PaymentResult />;
 

@@ -47,6 +47,13 @@ temp/
 SWP391_SE2039_G06_SportsCenterManagement_BE-feature-payment-fix/
 register-task.ps1
 update-skills.ps1
+Backend/register-task.ps1
+Backend/update-skills.ps1
+**/register-task.ps1
+**/update-skills.ps1
+docker/migration-backups/
+migration-backups/
+*.bak
 
 # Submodule git backups
 .git_backup/

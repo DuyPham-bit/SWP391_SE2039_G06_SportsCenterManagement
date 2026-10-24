@@ -18,7 +18,7 @@ Người dùng yêu cầu tài khoản mới và dữ liệu nghiệp vụ đã 
 - Khởi tạo catalog vai trò/quyền tách khỏi seed nghiệp vụ, giữ các quyền và kiểm soát truy cập cần thiết. Không thay schema, migration hoặc connection string.
 - Không còn flag tạo dữ liệu demo; các bản ghi đã có trong SQL Server được giữ nguyên.
 - Ngoại lệ check-in tạo yêu cầu hỗ trợ thật qua API, lưu lý do/người được đề nghị xử lý vào `support_requests`, có audit và thông báo theo service hiện có. Không tạo check-in giả, không coi tên approver nhập tay là phê duyệt và không bỏ qua kiểm tra gói/tài khoản/lượt vào. Lỗi tải nhật ký được hiển thị thay vì âm thầm coi như danh sách trống.
-- `start-shared.ps1` build giao diện nhúng dùng `/api`, giữ SQL/JWT hiện có, tắt demo và chạy backend cho LAN. Không tự mở firewall, triển khai Internet, reset SQL, commit hoặc push.
+- `Backend/start-shared.ps1` build giao diện nhúng dùng `/api`, giữ SQL/JWT hiện có, tắt demo và chạy backend cho LAN. Không tự mở firewall, triển khai Internet, reset SQL, commit hoặc push.
 
 ## Rà luồng lưu
 

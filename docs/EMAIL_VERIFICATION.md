@@ -23,7 +23,7 @@ Nếu giao diện báo **“Hiện chưa thể gửi email xác thực”**, API
 Thiết lập nhanh trên Windows: mở PowerShell ở thư mục gốc dự án và chạy:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\configure-email.ps1
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Backend\configure-email.ps1
 ```
 
 Script hỏi SMTP host, email **gửi**, SMTP login và mật khẩu/app-password ở ô nhập ẩn. Không cần sửa source hoặc gửi bí mật qua chat. Script lưu SMTP vào .NET User Secrets qua stdin, giữ các secret khác và để trống email webhook để chọn SMTP. Script không gửi email và không khởi động lại backend. `ExecutionPolicy Bypass` chỉ áp dụng cho tiến trình chạy lệnh, không đổi chính sách PowerShell của máy.
@@ -33,7 +33,7 @@ Dùng Gmail: bật Xác minh 2 bước rồi [tạo mật khẩu ứng dụng](h
 Kiểm tra đã lưu đủ giá trị, chỉ in trạng thái và không hiện mật khẩu:
 
 ```powershell
-powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\configure-email.ps1 -CheckOnly
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File .\Backend\configure-email.ps1 -CheckOnly
 ```
 
 Sau đó khởi động lại backend ở môi trường **Development** và thử lại form. User Secrets chỉ được nạp ở môi trường này theo cấu hình mặc định. Nếu chạy Production, dùng các biến môi trường bên dưới. File `.env.example` chỉ là mẫu, ASP.NET Core của dự án không tự nạp file `.env`.

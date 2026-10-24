@@ -2,6 +2,7 @@ using System.Net;
 using System.Net.Sockets;
 using System.Text;
 using System.Text.RegularExpressions;
+using MimeKit;
 
 // An isolated SMTP receiver: no DNS, credentials, TLS bypass outside loopback, or outgoing email.
 sealed class FakeSmtpServer : IAsyncDisposable
@@ -17,9 +18,9 @@ sealed class FakeSmtpServer : IAsyncDisposable
     {
         get
         {
-            var body = Message[(Message.IndexOf("\r\n\r\n", StringComparison.Ordinal) + 4)..];
-            if (Message.Contains("Content-Transfer-Encoding: base64", StringComparison.OrdinalIgnoreCase))
-                body = Encoding.UTF8.GetString(Convert.FromBase64String(body));
+            using var stream = new MemoryStream(Encoding.UTF8.GetBytes(Message));
+            var mime = MimeMessage.Load(stream);
+            var body = mime.TextBody ?? mime.HtmlBody ?? "";
             return Regex.Match(body, @"\b[0-9]{6}\b").Value;
         }
     }

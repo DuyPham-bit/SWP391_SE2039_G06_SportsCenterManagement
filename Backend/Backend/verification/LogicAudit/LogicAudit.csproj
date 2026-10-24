@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../SportsCenterManagement.API/SportsCenterManagement.API.csproj" />
+    <PackageReference Include="MimeKit" Version="4.18.1" />
   </ItemGroup>
 </Project>

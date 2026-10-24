@@ -29,6 +29,7 @@
   "license": "MIT",
   "dependencies": {
     "exceljs": "4.4.0",
+    "motion": "^14.6.0",
     "pdfmake": "0.2.20",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",

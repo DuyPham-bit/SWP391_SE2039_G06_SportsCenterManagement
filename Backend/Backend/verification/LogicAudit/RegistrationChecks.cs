@@ -16,6 +16,7 @@ static class RegistrationChecks
         const string password = "Register_Audit42!";
         http.DefaultRequestHeaders.Authorization = null;
         Task<HttpResponseMessage> Issue(string address = email) => http.PostAsJsonAsync("api/auth/request-email-verification", new { email = address });
+        Task<HttpResponseMessage> RequestReset() => http.PostAsJsonAsync("api/auth/request-password-reset", new { email = "owner@example.test" });
         Task<HttpResponseMessage> Register(string? otp, string address = email, string username = "registration") =>
             http.PostAsJsonAsync("api/auth/register", new { username, email = address, password, fullName = "Email audit member", centerId, emailOtp = otp });
         Task<EmailVerificationToken> Latest() => db.EmailVerificationTokens.AsNoTracking().Where(t => t.Email == email).OrderByDescending(t => t.Id).FirstAsync();
@@ -136,7 +137,7 @@ static class RegistrationChecks
         }
         await check("registration and reset share an IP limit without disclosing OTPs", async () => {
             for (var i = 0; i < 10; i++)
-                if ((await Issue("owner@example.test")).StatusCode != HttpStatusCode.OK) return false;
+                if ((await RequestReset()).StatusCode != HttpStatusCode.OK) return false;
             return (await Register("000000")).StatusCode == HttpStatusCode.TooManyRequests;
         });
     }

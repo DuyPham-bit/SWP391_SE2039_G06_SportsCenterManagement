@@ -5,6 +5,7 @@ import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { SYSTEM_CAPABILITIES } from '../../services/permissions.js';
 import { Badge } from '../../components/common/StatCard.js';
+import { MotionButton } from '../../components/common/MotionButton.jsx';
 
 // Predefined module categories for organization
 const CAPABILITY_CATEGORIES = [
@@ -347,8 +348,10 @@ export function RolesPermissions() {
 
         {/* Master Navigation Tabs */}
         <div className="relative z-10 flex flex-wrap gap-2 mt-6 pt-4 border-t border-white/20">
-          <button
+          <MotionButton
             onClick={() => setActiveTab('USERS')}
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.98 }}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'USERS'
                 ? 'bg-white text-[#1B4332] shadow-lg shadow-black/15 font-black scale-102'
@@ -357,9 +360,11 @@ export function RolesPermissions() {
           >
             <span className="material-symbols-outlined text-[18px]">person_check</span>
             {isEn ? `1. Individual Users (${userRows.length})` : `1. Theo Từng Người (${userRows.length})`}
-          </button>
-          <button
+          </MotionButton>
+          <MotionButton
             onClick={() => setActiveTab('ROLES')}
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.98 }}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'ROLES'
                 ? 'bg-white text-[#1B4332] shadow-lg shadow-black/15 font-black scale-102'
@@ -368,10 +373,12 @@ export function RolesPermissions() {
           >
             <span className="material-symbols-outlined text-[18px]">verified_user</span>
             {isEn ? `2. Role Defaults (${matrix.length})` : `2. Quyền Nền Theo Vai Trò (${matrix.length})`}
-          </button>
+          </MotionButton>
 
-          <button
+          <MotionButton
             onClick={() => setActiveTab('MATRIX')}
+            whileHover={{ y: -1 }}
+            whileTap={{ scale: 0.98 }}
             className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
               activeTab === 'MATRIX'
                 ? 'bg-white text-[#1B4332] shadow-lg shadow-black/15 font-black scale-102'
@@ -380,7 +387,7 @@ export function RolesPermissions() {
           >
             <span className="material-symbols-outlined text-[18px]">grid_view</span>
             {isEn ? '3. Delegation Matrix' : '3. Ma Trận Phân Quyền'}
-          </button>
+          </MotionButton>
         </div>
       </section>
 
@@ -396,7 +403,9 @@ export function RolesPermissions() {
               className="w-full px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-xs mb-3" />
             <div className="space-y-2 max-h-[600px] overflow-y-auto pr-1">
               {filteredUsers.map(row => (
-                <button key={row.userId} onClick={() => selectUser(row)}
+                <MotionButton key={row.userId} onClick={() => selectUser(row)}
+                  whileHover={{ x: 2 }}
+                  whileTap={{ scale: 0.99 }}
                   className={`w-full text-left p-3 rounded-xl border transition ${String(row.userId) === String(selectedUserId)
                     ? 'border-[#2F7B5D] bg-emerald-50/80 dark:bg-emerald-950/40 ring-2 ring-[#2F7B5D]/30 shadow-xs'
                     : 'border-slate-200 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800'}`}>
@@ -405,7 +414,7 @@ export function RolesPermissions() {
                     {row.hasCustomOverride && <span className="text-[9px] font-bold px-1.5 py-0.5 rounded bg-amber-100 text-amber-800">{isEn ? 'CUSTOM' : 'RIÊNG'}</span>}
                   </div>
                   <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">{row.roleName} · {row.status}</div>
-                </button>
+                </MotionButton>
               ))}
               {!filteredUsers.length && <div className="p-6 text-center text-xs text-slate-400">{isEn ? 'No account found.' : 'Không tìm thấy tài khoản.'}</div>}
             </div>
@@ -418,10 +427,10 @@ export function RolesPermissions() {
                   <h2 className="text-lg font-black text-slate-900 dark:text-white">{selectedUser.fullName}</h2>
                   <p className="text-xs text-slate-500 dark:text-slate-400">{selectedUser.roleName} · {isEn ? 'individual access configuration' : 'cấu hình quyền riêng theo tài khoản'}</p>
                 </div>
-                <button disabled={busy || !selectedUser.hasCustomOverride} onClick={resetUserPermissions}
+                <MotionButton disabled={busy || !selectedUser.hasCustomOverride} onClick={resetUserPermissions}
                   className="px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-xs font-bold disabled:opacity-40">
                   {isEn ? 'Use role defaults' : 'Dùng quyền mặc định vai trò'}
-                </button>
+                </MotionButton>
               </div>
 
               <div className="mt-5">
@@ -453,9 +462,9 @@ export function RolesPermissions() {
               </div>
 
               <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex justify-end">
-                <button disabled={busy} onClick={saveUserPermissions} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#2F7B5D] to-[#24828F] hover:from-[#246A4F] hover:to-[#1B6F7A] text-white text-xs font-bold shadow-md shadow-[#2F7B5D]/20 disabled:opacity-50 transition-all">
+                <MotionButton disabled={busy} onClick={saveUserPermissions} className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-[#2F7B5D] to-[#24828F] hover:from-[#246A4F] hover:to-[#1B6F7A] text-white text-xs font-bold shadow-md shadow-[#2F7B5D]/20 disabled:opacity-50 transition-all">
                   {busy ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save individual permissions' : 'Lưu quyền cho tài khoản này')}
-                </button>
+                </MotionButton>
               </div>
             </>}
           </section>
@@ -598,27 +607,27 @@ export function RolesPermissions() {
 
                 {/* Bulk Actions */}
                 <div className="flex flex-wrap items-center gap-2">
-                  <button
+                  <MotionButton
                     onClick={handleSelectAllRoleCaps}
                     className="px-3 py-1.5 text-xs font-semibold bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-400 hover:bg-emerald-100 dark:hover:bg-emerald-950/50 border border-emerald-200 dark:border-emerald-800 rounded-lg transition-colors flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[16px]">select_all</span>
                     {isEn ? 'Select All' : 'Chọn tất cả'}
-                  </button>
-                  <button
+                  </MotionButton>
+                  <MotionButton
                     onClick={handleDeselectAllRoleCaps}
                     className="px-3 py-1.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700 rounded-lg transition-colors flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[16px]">deselect</span>
                     {isEn ? 'Deselect All' : 'Bỏ chọn tất cả'}
-                  </button>
-                  <button
+                  </MotionButton>
+                  <MotionButton
                     onClick={handleResetRoleDefaults}
                     className="px-3 py-1.5 text-xs font-semibold bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-400 hover:bg-amber-100 dark:hover:bg-amber-950/50 border border-amber-200 dark:border-amber-800 rounded-lg transition-colors flex items-center gap-1"
                   >
                     <span className="material-symbols-outlined text-[16px]">restore</span>
                     {isEn ? 'Reset Default' : 'Chuẩn mặc định'}
-                  </button>
+                  </MotionButton>
                 </div>
               </div>
 
@@ -636,12 +645,14 @@ export function RolesPermissions() {
                     className="w-full pl-9 pr-4 py-2 border border-slate-200 dark:border-slate-700 rounded-xl text-xs bg-white dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#2D6A4F]"
                   />
                   {roleSearchQuery && (
-                    <button
+                    <MotionButton
                       onClick={() => setRoleSearchQuery('')}
+                      whileHover={{ scale: 1.2 }}
+                      whileTap={{ scale: 0.9 }}
                       className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 text-xs"
                     >
                       ✕
-                    </button>
+                    </MotionButton>
                   )}
                 </div>
 
@@ -808,14 +819,14 @@ export function RolesPermissions() {
                 </div>
 
                 <div className="w-full sm:w-auto flex flex-wrap gap-2">
-                  <button disabled={busy} onClick={syncAllUsersToRole}
+                  <MotionButton disabled={busy} onClick={syncAllUsersToRole}
                     className="flex-1 sm:flex-none px-4 py-2.5 border border-amber-300 dark:border-amber-800 text-amber-800 dark:text-amber-300 font-bold rounded-xl text-xs disabled:opacity-50">
                     {isEn ? 'Sync all users to role' : 'Đồng bộ tất cả theo vai trò'}
-                  </button>
-                <button
+                  </MotionButton>
+                <MotionButton
                   disabled={busy}
                   onClick={handleSaveRole}
-                  className="flex-1 sm:flex-none px-6 py-2.5 bg-gradient-to-r from-[#2F7B5D] to-[#24828F] hover:from-[#246A4F] hover:to-[#1B6F7A] text-white font-bold rounded-xl shadow-md shadow-[#2F7B5D]/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50 hover-lift"
+                  className="flex-1 sm:flex-none px-6 py-2.5 bg-gradient-to-r from-[#2F7B5D] to-[#24828F] hover:from-[#246A4F] hover:to-[#1B6F7A] text-white font-bold rounded-xl shadow-md shadow-[#2F7B5D]/20 transition-all flex items-center justify-center gap-2 text-xs uppercase tracking-wider disabled:opacity-50"
                 >
                   {busy ? (
                     <>
@@ -832,7 +843,7 @@ export function RolesPermissions() {
                       </span>
                     </>
                   )}
-                </button>
+                </MotionButton>
                 </div>
               </div>
             </div>

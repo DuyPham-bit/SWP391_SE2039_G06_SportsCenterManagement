@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Types of Web Page Layouts</title>
+  <!-- Import Google Fonts: DM Sans & Bebas Neue (Tiya Theme) -->
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Bebas+Neue&family=Plus+Jakarta+Sans:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-poster: #f4f1de; /* Tiya Warm Cream */
+      --bg-card: #ffffff;
+      --bg-wireframe: #faf9f5;
+      --border-card: rgba(61, 64, 91, 0.12);
+      --text-dark: #3d405b; /* Tiya Slate Navy */
+      --text-muted: #717275; /* Tiya Muted Text */
+      --accent-red: #e07a5f; /* Tiya Terracotta Coral */
+      --wf-gray-light: #e2e8f0;
+      --wf-gray-mid: #cbd5e1;
+      --wf-gray-dark: #94a3b8;
+      --wf-orange-bg: rgba(129, 178, 154, 0.22); /* Tiya Sage Tint */
+      --wf-orange-border: #81b29a; /* Tiya Sage Green */
+      --primary-sage: #81b29a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      background-color: #e8e6dc;
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      display: flex;
+      justify-content: center;
+      padding: 40px 16px;
+      color: var(--text-dark);
+    }
+
+    /* Khung Poster chính */
+    .poster {
+      background-color: var(--bg-poster);
+      width: 100%;
+      max-width: 820px;
+      border-radius: 28px;
+      padding: 36px 36px 28px;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.08);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* Top Bar */
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 16px;
+    }
+
+    .author {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+
+    .avatar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #3d405b, #81b29a);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      font-weight: 800;
+    }
+
+    .badge {
+      background: #ffffff;
+      border: 1px solid var(--border-card);
+      padding: 6px 14px;
+      border-radius: 100px;
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--primary-sage);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
+
+    /* Tiêu đề chính */
+    .header {
+      text-align: center;
+      margin-bottom: 28px;
+    }
+
+    .header h1 {
+      font-family: 'Bebas Neue', 'DM Sans', sans-serif;
+      font-size: 42px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      color: var(--text-dark);
+      margin-bottom: 6px;
+    }
+
+    .header h1 span {
+      color: var(--accent-red);
+    }
+
+    .header p {
+      font-size: 11.5px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      color: var(--primary-sage);
+      text-transform: uppercase;
+      color: var(--accent-red);
+      text-transform: uppercase;
+    }
+
+    /* Grid 12 thẻ */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 18px;
+    }
+
+    /* Thẻ Layout */
+    .card {
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 14px 12px 12px;
+      text-align: center;
+      border: 1px solid var(--border-card);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.02);
+      display: flex;
+      flex-direction: column;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 8px 20px rgba(0, 0, 0, 0.06);
+    }
+
+    .card h3 {
+      font-size: 14px;
+      font-weight: 800;
+      margin-bottom: 3px;
+      color: var(--text-dark);
+    }
+
+    .card p {
+      font-size: 10.5px;
+      color: var(--text-muted);
+      margin-bottom: 12px;
+      font-weight: 500;
+    }
+
+    /* Khung trình duyệt giả lập (Browser Mockup) */
+    .browser {
+      background: var(--bg-wireframe);
+      border: 1px solid #e4e4e7;
+      border-radius: 9px;
+      height: 125px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .browser-top {
+      background: #ededf0;
+      height: 14px;
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      gap: 3px;
+      border-bottom: 1px solid #e4e4e7;
+      flex-shrink: 0;
+    }
+
+    .dot {
+      width: 4px;
+      height: 4px;
+      border-radius: 50%;
+      background: #c4c4cc;
+    }
+
+    .wf-canvas {
+      padding: 7px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+      overflow: hidden;
+    }
+
+    /* Các thành phần Wireframe dùng chung */
+    .nav {
+      height: 6px;
+      background: var(--wf-gray-light);
+      border-radius: 3px;
+      flex-shrink: 0;
+    }
+
+    .box-gray {
+      background: var(--wf-gray-mid);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .box-orange {
+      background: var(--wf-orange-bg);
+      border: 1.5px solid var(--wf-orange-border);
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    /* Icon hình ảnh nhỏ bên trong wireframe */
+    .icon-img {
+      width: 10px;
+      height: 8px;
+      border: 1px solid rgba(0, 0, 0, 0.25);
+      border-radius: 1.5px;
+      position: relative;
+    }
+    .icon-img::after {
+      content: '';
+      position: absolute;
+      bottom: 1px;
+      left: 1.5px;
+      width: 5px;
+      height: 3px;
+      background: rgba(0, 0, 0, 0.25);
+      clip-path: polygon(0 100%, 50% 0, 100% 100%);
+    }
+
+    .line {
+      height: 4px;
+      background: var(--wf-gray-mid);
+      border-radius: 2px;
+    }
+    .line.short { width: 60%; }
+    .line.mid { width: 80%; }
+    .line.orange {
+      background: var(--wf-orange-border);
+      height: 5px;
+    }
+
+    .pill-orange {
+      background: var(--wf-orange-border);
+      height: 8px;
+      width: 28px;
+      border-radius: 4px;
+    }
+
+    /* Footer */
+    .footer {
+      margin-top: 24px;
+      padding-top: 14px;
+      border-top: 1px solid var(--border-card);
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    .footer span.highlight {
+      color: var(--accent-red);
+    }
+
+    /* Responsive */
+    @media (max-width: 680px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+      .header h1 { font-size: 28px; }
+    }
+    @media (max-width: 440px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="poster">
+    <!-- Top Bar -->
+    <div class="top-bar">
+      <div class="author">
+        <div class="avatar">DM</div>
+        <span>@davidm_ai</span>
+      </div>
+      <div class="badge">
+        <span>💻</span> Web Dev
+      </div>
+    </div>
+
+    <!-- Header -->
+    <div class="header">
+      <h1>Types of <span>Web Page</span> Layouts</h1>
+      <p>Vocabulary for Agentic Coding</p>
+    </div>
+
+    <!-- 12 Layout Cards Grid -->
+    <div class="grid">
+
+      <!-- 1. Single Column -->
+      <div class="card">
+        <h3>Single Column</h3>
+        <p>Long reads, blogs, mobile</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas" style="align-items: center;">
+            <div class="nav" style="width: 100%;"></div>
+            <div class="box-orange" style="width: 68%; flex: 1; flex-direction: column; gap: 4px; padding: 6px;">
+              <div class="box-gray" style="width: 100%; height: 34px;"><div class="icon-img"></div></div>
+              <div class="line" style="width: 100%;"></div>
+              <div class="line mid" style="align-self: flex-start;"></div>
+              <div class="line" style="width: 100%;"></div>
+              <div class="line short" style="align-self: flex-start;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 2. Two Column -->
+      <div class="card">
+        <h3>Two Column</h3>
+        <p>Docs, dashboards, admin</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas">
+            <div class="nav"></div>
+            <div style="display: flex; gap: 5px; flex: 1;">
+              <div class="box-orange" style="width: 28%; flex-direction: column; gap: 4px; padding: 5px; justify-content: flex-start;">
+                <div class="line" style="width: 100%;"></div>
+                <div class="line short" style="align-self: flex-start;"></div>
+                <div class="line" style="width: 100%;"></div>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                <div class="box-gray" style="height: 36px;"><div class="icon-img"></div></div>
+                <div class="line"></div>
+                <div class="line mid"></div>
+                <div class="line"></div>
+                <div class="line short"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Grid Layout -->
+      <div class="card">
+        <h3>Grid Layout</h3>
+        <p>Product lists & galleries</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas">
+            <div class="nav"></div>
+            <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; flex: 1;">
+              <div class="box-gray"><div class="icon-img"></div></div>
+              <div class="box-gray"><div class="icon-img"></div></div>
+              <div class="box-gray"><div class="icon-img"></div></div>
+              <div class="box-gray"><div class="icon-img"></div></div>
+              <div class="box-gray"><div class="icon-img"></div></div>
+              <div class="box-gray"><div class="icon-img"></div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. F-Pattern -->
+      <div class="card">
+        <h3>F-Pattern</h3>
+        <p>Text pages people scan</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas" style="justify-content: space-between;">
+            <div class="nav"></div>
+            <div class="line orange" style="width: 92%;"></div>
+            <div class="line mid"></div>
+            <div class="line orange" style="width: 68%;"></div>
+            <div class="line short"></div>
+            <div style="display: flex; align-items: center; gap: 4px;">
+              <div class="dot" style="background: var(--wf-orange-border); width: 6px; height: 6px;"></div>
+              <div class="line short"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 5. Z-Pattern -->
+      <div class="card">
+        <h3>Z-Pattern</h3>
+        <p>Landing pages with one CTA</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas" style="justify-content: space-between;">
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="dot" style="background: var(--wf-orange-border); width: 7px; height: 7px;"></div>
+              <div style="display: flex; gap: 3px;">
+                <div class="line" style="width: 12px;"></div>
+                <div class="line" style="width: 12px;"></div>
+                <div class="line orange" style="width: 14px; height: 4px;"></div>
+              </div>
+            </div>
+            <div class="box-gray" style="height: 40px;"><div class="icon-img"></div></div>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+              <div class="line short"></div>
+              <div class="pill-orange"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 6. Split Screen -->
+      <div class="card">
+        <h3>Split Screen</h3>
+        <p>Image + pitch, or A vs B</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas" style="flex-direction: row; padding: 0; gap: 0;">
+            <div class="box-orange" style="flex: 1; border: none; border-right: 1.5px solid var(--wf-orange-border); border-radius: 0;">
+              <div class="icon-img"></div>
+            </div>
+            <div style="flex: 1; padding: 10px; display: flex; flex-direction: column; justify-content: center; gap: 5px;">
+              <div class="line" style="height: 6px; width: 75%; background: var(--wf-gray-dark);"></div>
+              <div class="line"></div>
+              <div class="line mid"></div>
+              <div class="pill-orange" style="margin-top: 3px;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 7. Magazine -->
+      <div class="card">
+        <h3>Magazine</h3>
+        <p>News sites ranking stories</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas">
+            <div class="nav"></div>
+            <div style="display: flex; gap: 5px; flex: 1;">
+              <div style="flex: 1.3; display: flex; flex-direction: column; gap: 4px;">
+                <div class="box-orange" style="flex: 1;"><div class="icon-img"></div></div>
+                <div class="line"></div>
+                <div class="line short"></div>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                <div class="box-gray" style="flex: 1;"></div>
+                <div class="box-gray" style="flex: 1;"></div>
+                <div class="box-gray" style="flex: 1;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 8. Asymmetrical -->
+      <div class="card">
+        <h3>Asymmetrical</h3>
+        <p>Portfolios & bold campaigns</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas">
+            <div class="nav"></div>
+            <div style="display: flex; gap: 5px; flex: 1;">
+              <div class="box-gray" style="flex: 1.5;"><div class="icon-img"></div></div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 5px;">
+                <div class="box-gray" style="flex: 1.3;"><div class="icon-img"></div></div>
+                <div style="flex: 1; display: flex; gap: 4px;">
+                  <div class="box-gray" style="flex: 1;"></div>
+                  <div class="box-gray" style="flex: 1;"></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 9. Holy Grail -->
+      <div class="card">
+        <h3>Holy Grail</h3>
+        <p>Apps: nav, content, extras</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas">
+            <div class="nav"></div>
+            <div style="display: flex; gap: 4px; flex: 1;">
+              <div class="box-orange" style="width: 20%; flex-direction: column; gap: 3px; padding: 3px;">
+                <div class="line" style="width: 100%;"></div>
+                <div class="line" style="width: 100%;"></div>
+              </div>
+              <div class="box-gray" style="flex: 1; flex-direction: column; gap: 4px; padding: 5px; background: #ededf0;">
+                <div class="box-gray" style="width: 100%; height: 24px; background: var(--wf-gray-mid);"></div>
+                <div class="line" style="width: 100%;"></div>
+                <div class="line short" style="align-self: flex-start;"></div>
+              </div>
+              <div class="box-orange" style="width: 20%; flex-direction: column; gap: 3px; padding: 3px;">
+                <div class="line" style="width: 100%;"></div>
+                <div class="line" style="width: 100%;"></div>
+              </div>
+            </div>
+            <div class="nav" style="height: 4px;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 10. Masonry -->
+      <div class="card">
+        <h3>Masonry</h3>
+        <p>Mixed-height media feeds</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas">
+            <div class="nav"></div>
+            <div style="display: flex; gap: 4px; flex: 1;">
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                <div class="box-gray" style="flex: 1.5;"><div class="icon-img"></div></div>
+                <div class="box-gray" style="flex: 1;"></div>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                <div class="box-gray" style="flex: 1;"></div>
+                <div class="box-gray" style="flex: 1.6;"><div class="icon-img"></div></div>
+              </div>
+              <div style="flex: 1; display: flex; flex-direction: column; gap: 4px;">
+                <div class="box-gray" style="flex: 1.3;"><div class="icon-img"></div></div>
+                <div class="box-gray" style="flex: 1.2;"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 11. Hero Landing -->
+      <div class="card">
+        <h3>Hero Landing</h3>
+        <p>Product launches & signups</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas">
+            <div class="nav"></div>
+            <div class="box-gray" style="flex: 1.6; flex-direction: column; gap: 4px;">
+              <div class="line" style="width: 55%; height: 6px; background: var(--wf-gray-dark);"></div>
+              <div class="line" style="width: 35%;"></div>
+              <div class="pill-orange" style="margin-top: 2px;"></div>
+            </div>
+            <div style="display: flex; gap: 4px; flex: 1;">
+              <div class="box-gray" style="flex: 1;"></div>
+              <div class="box-gray" style="flex: 1;"></div>
+              <div class="box-gray" style="flex: 1;"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 12. Full-Screen -->
+      <div class="card">
+        <h3>Full-Screen</h3>
+        <p>Stories, one idea per screen</p>
+        <div class="browser">
+          <div class="browser-top"><span class="dot"></span><span class="dot"></span><span class="dot"></span></div>
+          <div class="wf-canvas" style="padding: 0;">
+            <div class="box-orange" style="flex: 1; border: none; border-radius: 0; position: relative; flex-direction: column; gap: 5px;">
+              <div class="line" style="width: 45%; height: 6px; background: var(--wf-orange-border);"></div>
+              <div class="line" style="width: 30%; background: var(--wf-orange-border); opacity: 0.6;"></div>
+              <div class="pill-orange" style="margin-top: 2px;"></div>
+              <!-- Chấm điều hướng cuộn trang bên phải -->
+              <div style="position: absolute; right: 6px; display: flex; flex-direction: column; gap: 3px;">
+                <div class="dot" style="background: var(--wf-orange-border);"></div>
+                <div class="dot"></div>
+                <div class="dot"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <span>Learn & think in the AI age</span>
+      <span>🎓 <span class="highlight">learning.atheros.ai v2</span> is coming</span>
+    </div>
+  </div>
+
+</body>
+</html>

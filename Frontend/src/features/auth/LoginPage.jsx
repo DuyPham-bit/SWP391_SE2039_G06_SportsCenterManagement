@@ -611,15 +611,12 @@ export function LoginPage() {
                         }
                       }}
                     >
-                      {/* Modal Card */}
+                      {/* Modal Card - Thiết kế chuẩn ảnh 2, 3, 4 */}
                       <div
-                        className="relative w-full max-w-[440px] bg-white rounded-3xl shadow-[0_25px_60px_-15px_rgba(26,59,139,0.3),0_0_0_1px_rgba(26,59,139,0.06)] border border-slate-100 p-6 sm:p-8 text-center transition-all duration-300 overflow-hidden animate-scaleUp"
+                        className="relative w-full max-w-[420px] bg-white rounded-[36px] shadow-[0_25px_70px_-15px_rgba(99,102,241,0.2),0_0_0_1px_rgba(238,242,255,0.8)] border border-slate-100/90 p-7 sm:p-9 text-center transition-all duration-300 overflow-hidden animate-scaleUp"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {/* Top ambient lighting */}
-                        <div className="absolute top-0 inset-x-0 h-32 bg-gradient-to-b from-[#EBF2FC] via-[#F4F8FD]/60 to-transparent pointer-events-none" />
-
-                        {/* Close button at top-right */}
+                        {/* Nút đóng góc phải */}
                         <button
                           type="button"
                           onClick={() => {
@@ -627,139 +624,162 @@ export function LoginPage() {
                             setRegOtp('');
                           }}
                           aria-label="Đóng bảng xác thực"
-                          className="absolute top-4 right-4 w-9 h-9 rounded-full bg-white/90 hover:bg-slate-100 text-slate-400 hover:text-slate-700 flex items-center justify-center border border-slate-200/80 shadow-xs transition-all hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A3B8B] z-10 cursor-pointer"
+                          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-all hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] z-10 cursor-pointer"
                         >
-                          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
-                          </svg>
+                          <span className="text-sm font-bold">✕</span>
                         </button>
 
-                        {/* Top Email Icon Badge (fixed size w-14 h-14) */}
-                        <div className="relative z-10 w-14 h-14 mx-auto rounded-2xl bg-gradient-to-br from-[#EBF2FC] to-[#DBEAFE] text-[#1A3B8B] flex items-center justify-center mb-3.5 shadow-sm border border-blue-100 ring-4 ring-blue-50/80">
-                          <svg className="w-7 h-7 text-[#1A3B8B]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.9} aria-hidden="true">
-                            <path strokeLinecap="round" strokeLinejoin="round" d="M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75" />
-                          </svg>
+                        {/* Top Lock Badge với vòng cung viền xoay (Ảnh 2 & 4) */}
+                        <div className="relative mx-auto mb-4 w-20 h-20 flex items-center justify-center">
+                          <div className="relative w-18 h-18 rounded-full bg-[#f4f3ff] flex items-center justify-center shadow-inner">
+                            {/* Vòng cung viền tiến trình phía trên */}
+                            <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 72 72">
+                              <circle
+                                cx="36"
+                                cy="36"
+                                r="34"
+                                fill="none"
+                                stroke="#4f46e5"
+                                strokeWidth="2.2"
+                                strokeDasharray="213"
+                                strokeDashoffset="145"
+                                strokeLinecap="round"
+                              />
+                            </svg>
+                            <svg className="w-7 h-7 text-[#4f46e5]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                              <rect x="3" y="11" width="18" height="11" rx="3" ry="3" />
+                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                              <circle cx="12" cy="16" r="1.2" fill="currentColor" />
+                            </svg>
+                          </div>
                         </div>
 
-                        {/* Heading & Subtitle */}
-                        <h3 id="otp-dialog-title" className="relative z-10 text-2xl font-black text-slate-900 tracking-tight font-chivo">
-                          Nhập mã xác thực email
+                        {/* Tiêu đề & Email gửi tới */}
+                        <h3 id="otp-dialog-title" className="text-2xl sm:text-[26px] font-black text-gray-900 tracking-tight">
+                          Verify it's you
                         </h3>
-                        <p role="status" className="relative z-10 text-xs sm:text-[13px] text-slate-500 mt-2 leading-relaxed px-1">
-                          Kiểm tra mã gửi đến <strong className="font-bold text-[#1A3B8B] bg-[#EBF2FC] px-2 py-0.5 rounded-md border border-[#1A3B8B]/15 inline-block mx-0.5">{verificationEmail}</strong>, kể cả thư rác. Mã có hạn 10 phút. Tài khoản sẽ được tạo sau khi xác thực thành công.
+                        <p role="status" className="text-xs sm:text-sm text-gray-500 mt-2 mb-6 leading-relaxed font-normal">
+                          Enter the 6-digit code we just sent to <br />
+                          <strong className="font-bold text-gray-900">{verificationEmail}</strong>
                         </p>
 
-                        {/* Error Alert inside modal if any */}
-                        {formError && (
-                          <div role="alert" className="relative z-10 mt-3 p-3 rounded-xl border border-red-200 bg-red-50 text-xs text-red-700 leading-snug font-medium flex items-center gap-2 text-left shadow-xs">
-                            <svg className="w-4 h-4 text-red-500 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v3.75m9-.75a9 9 0 11-18 0 9 9 0 0118 0zm-9 3.75h.008v.008H12v-.008z" />
-                            </svg>
-                            <span>{formError}</span>
-                          </div>
-                        )}
+                        {/* Khối 6 Ô nhập OTP (Ảnh 2 & 4) */}
+                        <div className="relative my-4">
+                          {/* Input ẩn nhận focus, bàn phím và Paste từ clipboard */}
+                          <input
+                            id="register-otp"
+                            name="register-otp"
+                            type="text"
+                            inputMode="numeric"
+                            autoComplete="one-time-code"
+                            maxLength={6}
+                            pattern="[0-9]{6}"
+                            placeholder="Nhập 6 chữ số"
+                            required
+                            autoFocus
+                            value={regOtp}
+                            aria-invalid={Boolean(fieldErrors['register-otp'])}
+                            aria-describedby={fieldErrors['register-otp'] ? 'register-otp-error' : undefined}
+                            onChange={event => updateField('register-otp', event.target.value.replace(/[^0-9]/g, '').slice(0, 6), setRegOtp)}
+                            className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer text-center"
+                          />
 
-                        {/* 6 Digit Input Slots */}
-                        <div className="relative z-10 my-5 sm:my-6">
-                          <div className="flex items-center justify-between mb-2.5 px-1">
-                            <label htmlFor="register-otp" className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                              Mã OTP (6 chữ số) <span className="text-[#E07A5F]">*</span>
-                            </label>
-                            <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-amber-800 bg-amber-50 border border-amber-200/80 px-2.5 py-0.5 rounded-full shadow-2xs">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                              Hạn 10 phút
-                            </span>
-                          </div>
+                          {/* 6 Ô hiển thị bo góc và thanh gạch chân */}
+                          <div className="flex items-center justify-between gap-2 sm:gap-2.5 w-full">
+                            {[0, 1, 2, 3, 4, 5].map((index) => {
+                              const digit = regOtp[index] || '';
+                              const isCurrent = regOtp.length === index;
+                              const isFilled = Boolean(digit);
+                              const isError = Boolean(formError || fieldErrors['register-otp']);
 
-                          <div className="relative flex justify-center items-center">
-                            {/* Real hidden/overlaid input that takes focus & typing */}
-                            <input
-                              id="register-otp"
-                              name="register-otp"
-                              type="text"
-                              inputMode="numeric"
-                              autoComplete="one-time-code"
-                              maxLength={6}
-                              pattern="[0-9]{6}"
-                              placeholder="Nhập 6 chữ số"
-                              required
-                              value={regOtp}
-                              aria-invalid={Boolean(fieldErrors['register-otp'])}
-                              aria-describedby={fieldErrors['register-otp'] ? 'register-otp-error' : undefined}
-                              onChange={event => updateField('register-otp', event.target.value.replace(/[^0-9]/g, '').slice(0, 6), setRegOtp)}
-                              className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer text-center"
-                            />
+                              let boxClass = 'bg-white border-2 border-[#3730a3] text-gray-900';
+                              let underlineClass = 'bg-[#3730a3]';
 
-                            {/* 6 Visual Segmented Boxes */}
-                            <div className="flex items-center justify-between gap-2 sm:gap-2.5 w-full">
-                              {[0, 1, 2, 3, 4, 5].map((index) => {
-                                const digit = regOtp[index] || '';
-                                const isCurrent = regOtp.length === index;
-                                const isFilled = Boolean(digit);
-                                return (
+                              if (isError) {
+                                boxClass = 'bg-white border-2 border-[#f87171] text-[#dc2626] shadow-xs';
+                                underlineClass = 'bg-[#dc2626]';
+                              } else if (isCurrent) {
+                                boxClass = 'bg-white border-2 border-[#4f46e5] text-gray-900 ring-4 ring-indigo-500/20 shadow-sm scale-[1.04]';
+                                underlineClass = 'bg-[#4f46e5]';
+                              } else if (isFilled) {
+                                boxClass = 'bg-white border-2 border-[#3730a3] text-gray-900 shadow-xs';
+                                underlineClass = 'bg-[#3730a3]';
+                              }
+
+                              return (
+                                <div key={index} className="flex flex-col items-center flex-1">
                                   <div
-                                    key={index}
-                                    className={`flex-1 h-13 sm:h-15 rounded-2xl flex items-center justify-center text-xl sm:text-2xl font-black font-mono transition-all duration-150 border-2 select-none ${
-                                      fieldErrors['register-otp']
-                                        ? 'border-red-400 bg-red-50/50 text-red-700 ring-2 ring-red-400/20'
-                                        : isCurrent
-                                        ? 'border-[#1A3B8B] bg-white text-[#1A3B8B] ring-4 ring-[#1A3B8B]/15 shadow-md shadow-[#1A3B8B]/10 scale-[1.04]'
-                                        : isFilled
-                                        ? 'border-slate-300 bg-slate-50/80 text-slate-900 shadow-2xs'
-                                        : 'border-slate-200 bg-white text-slate-300'
-                                    }`}
+                                    className={`w-full h-[64px] sm:h-[70px] rounded-[20px] flex items-center justify-center text-2xl sm:text-3xl font-extrabold transition-all duration-150 select-none ${boxClass}`}
                                   >
                                     {digit ? (
                                       digit
                                     ) : isCurrent ? (
-                                      <span className="w-0.5 h-6 bg-[#1A3B8B] animate-pulse rounded-full" />
-                                    ) : (
-                                      <span className="w-1.5 h-1.5 rounded-full bg-slate-200" />
-                                    )}
+                                      <span className="w-0.5 h-6 bg-[#4f46e5] animate-pulse rounded-full" />
+                                    ) : null}
                                   </div>
-                                );
-                              })}
-                            </div>
+
+                                  {/* Thanh gạch chân (Underline Bar) */}
+                                  <div className={`w-5 h-[2.5px] rounded-full mt-2 transition-all duration-200 ${underlineClass}`} />
+                                </div>
+                              );
+                            })}
                           </div>
+                        </div>
 
-                          {fieldErrors['register-otp'] && (
-                            <p id="register-otp-error" role="alert" className="text-[11px] font-semibold text-red-600 mt-2 text-left">
-                              {fieldErrors['register-otp']}
-                            </p>
+                        {/* Thông báo lỗi dạng pill đỏ (Ảnh 4: "! That code didn't match. Try again.") */}
+                        {(formError || fieldErrors['register-otp']) && (
+                          <div role="alert" className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-semibold text-rose-600 mt-2 mb-3">
+                            <svg className="w-4 h-4 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                              <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z" clipRule="evenodd" />
+                            </svg>
+                            <span>{formError || fieldErrors['register-otp'] || "That code didn't match. Try again."}</span>
+                          </div>
+                        )}
+
+                        {/* Nút xác thực chính (Ảnh 2: "Verifying" xoay tròn / Ảnh 4: "Verify code") */}
+                        <div className="mt-4 mb-2">
+                          {isSubmitting ? (
+                            <button
+                              type="button"
+                              disabled
+                              className="w-full h-12 sm:h-13 rounded-2xl font-bold text-white bg-[#4f46e5] opacity-95 shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-wait"
+                            >
+                              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                              <span className="tracking-wide">Verifying</span>
+                            </button>
+                          ) : (
+                            <button
+                              type="submit"
+                              form="register-form"
+                              disabled={isSubmitting}
+                              className="w-full h-12 sm:h-13 rounded-2xl font-bold text-white bg-[#4f46e5] hover:bg-[#4338ca] shadow-lg shadow-indigo-500/25 flex items-center justify-center transition-all active:scale-[0.98] cursor-pointer"
+                            >
+                              <span>Verify code</span>
+                            </button>
                           )}
                         </div>
 
-                        {/* Resend Action */}
-                        <div className="relative z-10 flex items-center justify-between text-xs py-2 px-1 border-t border-slate-100 mb-4">
-                          <span className="text-slate-500 text-[11px] sm:text-xs">Chưa nhận được mã?</span>
-                          <button
-                            type="button"
-                            disabled={isSubmitting || resendSeconds > 0}
-                            onClick={handleResendVerification}
-                            className="min-h-11 inline-flex items-center gap-1.5 text-xs font-semibold text-[#1A3B8B] hover:text-[#142F70] disabled:text-slate-400 disabled:no-underline rounded-lg px-2.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A3B8B] cursor-pointer disabled:cursor-not-allowed"
-                          >
-                            <svg className={`w-3.5 h-3.5 shrink-0 ${resendSeconds > 0 ? '' : 'text-[#1A3B8B]'}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2} aria-hidden="true">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-                            </svg>
-                            <span>{resendSeconds > 0 ? `Gửi lại mã sau ${resendSeconds}s` : 'Gửi lại mã xác thực'}</span>
-                          </button>
-                        </div>
-
-                        {/* Modal Submit Button */}
-                        <button
-                          type="submit"
-                          form="register-form"
-                          disabled={isSubmitting}
-                          className="relative z-10 w-full py-3.5 px-6 rounded-2xl bg-gradient-to-r from-[#1A3B8B] via-[#1E44A3] to-[#142F70] hover:from-[#142F70] hover:to-[#0F204B] text-white text-sm font-bold shadow-lg shadow-[#1A3B8B]/25 hover:shadow-xl hover:shadow-[#1A3B8B]/35 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1A3B8B] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-not-allowed transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer"
-                        >
-                          {isSubmitting && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
-                          <span>{isSubmitting ? 'Đang xác thực...' : 'Xác thực & Tạo tài khoản'}</span>
-                          {!isSubmitting && (
-                            <svg className="w-4 h-4 text-white group-hover:translate-x-0.5 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
-                            </svg>
+                        {/* Dòng gửi lại mã ở chân modal (Ảnh 2 & 4: "Didn't get a code? ⭮ Resend in 0:xx") */}
+                        <div className="mt-3 text-xs sm:text-[13px] text-gray-500 flex items-center justify-center gap-1.5">
+                          <span>Didn't get a code?</span>
+                          {resendSeconds > 0 ? (
+                            <span className="inline-flex items-center gap-1 font-medium text-gray-700">
+                              <svg className="w-3.5 h-3.5 text-indigo-600 animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                              </svg>
+                              <span>Resend in 0:{resendSeconds < 10 ? `0${resendSeconds}` : resendSeconds}</span>
+                            </span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={isSubmitting}
+                              onClick={handleResendVerification}
+                              className="font-bold text-[#4f46e5] hover:underline cursor-pointer focus:outline-none"
+                            >
+                              Resend now
+                            </button>
                           )}
-                        </button>
+                        </div>
                       </div>
                     </div>,
                     document.body

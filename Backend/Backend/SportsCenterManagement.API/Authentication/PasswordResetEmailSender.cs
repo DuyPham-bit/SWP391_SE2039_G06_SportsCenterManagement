@@ -91,12 +91,15 @@ public sealed class PasswordResetEmailSender(
             timeout.CancelAfter(TimeSpan.FromSeconds(15));
             if (Endpoint is not { } endpoint)
             {
-                if (!SmtpConfigured) return (false, "Email sender unavailable.");
+                var smtpHost = SmtpHost;
+                var smtpFrom = SmtpFrom;
+                if (string.IsNullOrWhiteSpace(smtpHost) || !MailAddress.TryCreate(smtpFrom, out _))
+                    return (false, "Email sender unavailable.");
                 var port = configuration.GetValue("ExternalCommunications:Email:Smtp:Port", 0);
                 if (port <= 0) port = configuration.GetValue("MailSettings:Port", 587);
                 var enableSsl = configuration.GetValue("ExternalCommunications:Email:Smtp:EnableSsl", true);
-                if (!enableSsl && !string.Equals(SmtpHost, "localhost", StringComparison.OrdinalIgnoreCase)
-                    && !(IPAddress.TryParse(SmtpHost, out var address) && IPAddress.IsLoopback(address)))
+                if (!enableSsl && !string.Equals(smtpHost, "localhost", StringComparison.OrdinalIgnoreCase)
+                    && !(IPAddress.TryParse(smtpHost, out var address) && IPAddress.IsLoopback(address)))
                     return (false, "SMTP requires TLS.");
                 var username = configuration["ExternalCommunications:Email:Smtp:Username"];
                 if (string.IsNullOrWhiteSpace(username)) username = configuration["MailSettings:Mail"];
@@ -107,7 +110,7 @@ public sealed class PasswordResetEmailSender(
                 var secureOption = enableSsl
                     ? MailKit.Security.SecureSocketOptions.StartTls
                     : MailKit.Security.SecureSocketOptions.Auto;
-                await client.ConnectAsync(SmtpHost, port, secureOption, timeout.Token);
+                await client.ConnectAsync(smtpHost, port, secureOption, timeout.Token);
                 if (!string.IsNullOrWhiteSpace(username) && !string.IsNullOrWhiteSpace(password))
                 {
                     await client.AuthenticateAsync(username, password, timeout.Token);
@@ -116,7 +119,7 @@ public sealed class PasswordResetEmailSender(
                 var displayName = configuration["MailSettings:DisplayName"];
                 if (string.IsNullOrWhiteSpace(displayName)) displayName = configuration["ExternalCommunications:Email:Smtp:DisplayName"];
                 if (string.IsNullOrWhiteSpace(displayName)) displayName = "SCMS - Trung Tâm Thể Thao";
-                mime.From.Add(new MimeKit.MailboxAddress(displayName, SmtpFrom!));
+                mime.From.Add(new MimeKit.MailboxAddress(displayName, smtpFrom));
                 mime.To.Add(MimeKit.MailboxAddress.Parse(email));
                 mime.Subject = title;
                 var builder = new MimeKit.BodyBuilder
