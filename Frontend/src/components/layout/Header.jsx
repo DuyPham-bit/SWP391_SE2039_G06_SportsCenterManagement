@@ -272,8 +272,12 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
           <Logo variant="auto" size="md" compact={false} />
         </div>
 
-        {/* Sidebar Toggle Button (Hamburger) placed right next to the border */}
-        <div className="px-2.5 sm:px-3.5">
+        {/* Sidebar Toggle Button (Hamburger):
+            When collapsed: centered in a w-16 lg:w-20 zone to align with the mini-sidebar below it!
+            When expanded: px-2.5 sm:px-3.5 next to the brand logo divider */}
+        <div className={`h-full flex items-center justify-center transition-all duration-300 ${
+          isSidebarCollapsed ? 'w-16 lg:w-20 border-r border-slate-200 dark:border-slate-800' : 'px-2.5 sm:px-3.5'
+        }`}>
           <button
             onClick={onToggleSidebar}
             type="button"
