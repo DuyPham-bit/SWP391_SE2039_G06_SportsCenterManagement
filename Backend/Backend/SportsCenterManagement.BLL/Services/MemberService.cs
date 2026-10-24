@@ -213,7 +213,7 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         var matches =
             from profile in unitOfWork.Context.MemberProfiles.AsNoTracking()
             join user in unitOfWork.Context.Users.AsNoTracking() on profile.UserId equals user.Id
-            where profile.CenterId == centerId
+            where (profile.CenterId == centerId || (term != "" && profile.CenterId == null))
                   && user.Status != "Deleted"
                   && (term == "" || profile.MemberCode.Contains(term)
                       || profile.FullName.Contains(term)
@@ -300,7 +300,13 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         var package = await unitOfWork.Repository<MembershipPackage>().GetByIdAsync(packageId, cancellationToken)
             ?? throw new KeyNotFoundException("Không tìm thấy gói tập.");
 
-        if (!target.CenterId.HasValue || target.CenterId.Value != package.CenterId)
+        if (!target.CenterId.HasValue)
+        {
+            target.CenterId = package.CenterId;
+            target.UpdatedAt = DateTime.UtcNow;
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        else if (target.CenterId.Value != package.CenterId)
         {
             throw new UnauthorizedAccessException("Thành viên và gói tập không thuộc cùng trung tâm.");
         }
@@ -328,7 +334,13 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
             throw new KeyNotFoundException("Không tìm thấy trung tâm đang hoạt động.");
         }
 
-        if (member.CenterId.HasValue && member.CenterId.Value != package.CenterId)
+        if (!member.CenterId.HasValue)
+        {
+            member.CenterId = package.CenterId;
+            member.UpdatedAt = DateTime.UtcNow;
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        else if (member.CenterId.Value != package.CenterId)
         {
             throw new UnauthorizedAccessException("Gói tập không thuộc trung tâm của thành viên.");
         }

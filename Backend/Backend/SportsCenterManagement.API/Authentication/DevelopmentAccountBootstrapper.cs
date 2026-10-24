@@ -32,9 +32,9 @@ public static class DevelopmentAccountBootstrapper
 
         await db.SaveChangesAsync();
 
-        await AddStaffProfileIfMissingAsync(db, manager, center.Id, "DEV-MANAGER", "Quản lý phát triển", "Manager", now);
-        await AddStaffProfileIfMissingAsync(db, receptionist, center.Id, "DEV-RECEPTION", "Lễ tân phát triển", "Receptionist", now);
-        await AddCoachProfileIfMissingAsync(db, coach, center.Id, now);
+        await AddStaffProfileIfMissingAsync(db, manager, center.Id, "DEV-MANAGER", "Quản lý phát triển", "Manager", now, resetExistingAccounts);
+        await AddStaffProfileIfMissingAsync(db, receptionist, center.Id, "DEV-RECEPTION", "Lễ tân phát triển", "Receptionist", now, resetExistingAccounts);
+        await AddCoachProfileIfMissingAsync(db, coach, center.Id, now, resetExistingAccounts);
         await AddMemberProfileIfMissingAsync(db, member, center.Id, now);
         await db.SaveChangesAsync();
     }
@@ -109,9 +109,20 @@ public static class DevelopmentAccountBootstrapper
     }
 
     private static async Task AddStaffProfileIfMissingAsync(SportsCenterDbContext db, User? user, long centerId,
-        string code, string fullName, string position, DateTime now)
+        string code, string fullName, string position, DateTime now, bool resetExisting = false)
     {
-        if (user is null || await db.StaffProfiles.AnyAsync(profile => profile.UserId == user.Id)) return;
+        if (user is null) return;
+        var existing = await db.StaffProfiles.FirstOrDefaultAsync(profile => profile.UserId == user.Id);
+        if (existing is not null)
+        {
+            if (resetExisting && (existing.Status != "Active" || existing.CenterId != centerId))
+            {
+                existing.Status = "Active";
+                existing.CenterId = centerId;
+                existing.UpdatedAt = now;
+            }
+            return;
+        }
         db.StaffProfiles.Add(new StaffProfile
         {
             UserId = user.Id, CenterId = centerId, StaffCode = code, FullName = fullName,
@@ -119,9 +130,20 @@ public static class DevelopmentAccountBootstrapper
         });
     }
 
-    private static async Task AddCoachProfileIfMissingAsync(SportsCenterDbContext db, User? user, long centerId, DateTime now)
+    private static async Task AddCoachProfileIfMissingAsync(SportsCenterDbContext db, User? user, long centerId, DateTime now, bool resetExisting = false)
     {
-        if (user is null || await db.CoachProfiles.AnyAsync(profile => profile.UserId == user.Id)) return;
+        if (user is null) return;
+        var existing = await db.CoachProfiles.FirstOrDefaultAsync(profile => profile.UserId == user.Id);
+        if (existing is not null)
+        {
+            if (resetExisting && (existing.Status != "Active" || existing.CenterId != centerId))
+            {
+                existing.Status = "Active";
+                existing.CenterId = centerId;
+                existing.UpdatedAt = now;
+            }
+            return;
+        }
         db.CoachProfiles.Add(new CoachProfile
         {
             UserId = user.Id, CenterId = centerId, CoachCode = "DEV-COACH", FullName = "Huấn luyện viên phát triển",

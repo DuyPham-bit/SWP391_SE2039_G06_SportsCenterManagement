@@ -132,13 +132,13 @@ public sealed class MembersController(IMemberService memberService, ICoreFlowSer
         {
             return await action();
         }
-        catch (UnauthorizedAccessException)
+        catch (UnauthorizedAccessException exception)
         {
-            return Forbid();
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message });
         }
-        catch (KeyNotFoundException)
+        catch (KeyNotFoundException exception)
         {
-            return NotFound();
+            return NotFound(new { message = exception.Message });
         }
         catch (ValidationException exception)
         {
