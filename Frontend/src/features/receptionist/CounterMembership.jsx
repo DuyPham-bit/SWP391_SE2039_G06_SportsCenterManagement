@@ -376,7 +376,7 @@ export function CounterMembership() {
                 <div className="mt-4 pt-3 border-t border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs font-bold">
                   <span className="text-slate-500 dark:text-slate-400">{isEn ? 'Sports included:' : 'Môn rèn luyện:'}</span>
                   <span className="text-slate-900 dark:text-white">
-                    {pkg.allowedSports === 15 ? (isEn ? 'All 15 disciplines' : 'Toàn bộ 15 môn') : `${pkg.allowedSports} ${isEn ? 'disciplines' : 'môn'}`}
+                    {pkg.allowedSports >= 6 ? (isEn ? 'All disciplines (All-Access)' : 'Toàn bộ môn (All-Access)') : `${pkg.allowedSports} ${isEn ? 'disciplines' : 'môn'}`}
                   </span>
                 </div>
               </div>

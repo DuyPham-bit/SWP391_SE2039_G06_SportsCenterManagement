@@ -572,7 +572,7 @@ export function MemberPackages() {
                     <span>
                       {isEn ? 'Applicable sports: ' : 'Môn áp dụng: '}
                       <strong className="text-slate-900 dark:text-white">
-                        {resolveAllowedSports(pkg) >= 15 ? (isEn ? 'Full 15 Olympic Sports' : 'Toàn quyền 15 môn Olympic') : (isEn ? `${resolveAllowedSports(pkg)} elective sports` : `${resolveAllowedSports(pkg)} môn tự chọn`)}
+                        {resolveAllowedSports(pkg) >= 6 ? (isEn ? 'All Sports (All-Access)' : 'Toàn quyền các môn (All-Access)') : (isEn ? `${resolveAllowedSports(pkg)} elective sports` : `${resolveAllowedSports(pkg)} môn tự chọn`)}
                       </strong>
                     </span>
                   </div>

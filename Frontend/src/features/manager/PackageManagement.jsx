@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { packageApi } from '../../services/api.js';
+import { packageApi, classApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { Badge } from '../../components/common/StatCard.js';
@@ -13,6 +13,7 @@ export function PackageManagement() {
 
   const { showSuccess, showError } = useToast();
   const [packages, setPackages] = useState([]);
+  const [centerSports, setCenterSports] = useState([]);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -28,10 +29,16 @@ export function PackageManagement() {
   const [badge, setBadge] = useState('TIẾT KIỆM');
   const [saving, setSaving] = useState(false);
 
+  const totalSports = centerSports.length > 0 ? centerSports.length : 6;
+
   const loadPackages = async () => {
     try {
-      const data = await packageApi.getAll();
+      const [data, sportsData] = await Promise.all([
+        packageApi.getAll(),
+        classApi.getSports().catch(() => [])
+      ]);
       setPackages(sortMembershipPackages(data));
+      setCenterSports(Array.isArray(sportsData) ? sportsData : []);
     } catch (e) {
       showError(isEn ? 'Failed to load membership packages' : 'Không thể tải danh sách gói tập');
     } finally {
@@ -59,7 +66,8 @@ export function PackageManagement() {
     setName(pkg.name);
     setDurationDays(pkg.durationDays);
     setPrice(pkg.price);
-    setAllowedSports(pkg.allowedSports || 1);
+    const sportsCount = centerSports.length > 0 ? centerSports.length : 6;
+    setAllowedSports(pkg.allowedSports >= sportsCount ? sportsCount : (pkg.allowedSports || 1));
     setDescription(pkg.description || '');
     setBadge(pkg.badge || '');
     setModalOpen(true);
@@ -101,7 +109,7 @@ export function PackageManagement() {
       showError({
         message: isEn ? 'Allowed disciplines must be at least 1 sport.' : 'Số bộ môn thể thao được phép tập phải từ 1 môn trở lên.',
         code: 'VAL-PKG-SPORTS',
-        proposedHandling: isEn ? 'Choose at least 1 discipline (or 15 for All-Access pass).' : 'Chọn số môn tối thiểu là 1 môn (hoặc 15 môn cho gói All-Access).'
+        proposedHandling: isEn ? `Choose between 1 and ${totalSports} disciplines.` : `Chọn số môn từ 1 đến ${totalSports} môn.`
       });
       return;
     }
@@ -251,7 +259,9 @@ export function PackageManagement() {
                 <div className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
                   {isEn ? 'Sport Disciplines' : 'Môn được tập'}:{' '}
                   <strong className="text-slate-900 dark:text-white">
-                    {pkg.allowedSports === 15 ? (isEn ? 'All 15 disciplines' : 'Toàn bộ 15 môn') : `${pkg.allowedSports} ${isEn ? 'sports' : 'môn'}`}
+                    {pkg.allowedSports >= totalSports
+                      ? (isEn ? `All ${totalSports} disciplines (All-Access)` : `Toàn bộ ${totalSports} môn (All-Access)`)
+                      : (isEn ? `${pkg.allowedSports} sports` : `${pkg.allowedSports} môn tự chọn`)}
                   </strong>
                 </div>
 
@@ -350,11 +360,33 @@ export function PackageManagement() {
                 onChange={e => setAllowedSports(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
               >
-                <option value={1}>{isEn ? '1 Sport (Single Discipline)' : '1 môn tự chọn'}</option>
-                <option value={2}>{isEn ? '2 Sports' : '2 môn'}</option>
-                <option value={3}>{isEn ? '3 Sports' : '3 môn'}</option>
-                <option value={15}>{isEn ? 'All 15 Disciplines (All-Access)' : 'Toàn bộ 15 môn (All-Access)'}</option>
+                {Array.from({ length: totalSports }, (_, i) => {
+                  const val = i + 1;
+                  const isAll = val === totalSports;
+                  return (
+                    <option key={val} value={val}>
+                      {isAll
+                        ? (isEn ? `All ${totalSports} Disciplines (All-Access)` : `Toàn bộ ${totalSports} môn (All-Access)`)
+                        : val === 1
+                          ? (isEn ? '1 Sport (Single Discipline)' : '1 môn tự chọn')
+                          : (isEn ? `${val} Sports` : `${val} môn`)}
+                    </option>
+                  );
+                })}
+                {allowedSports > totalSports && (
+                  <option value={allowedSports}>
+                    {isEn ? `All ${totalSports} Disciplines (All-Access)` : `Toàn bộ ${totalSports} môn (All-Access)`}
+                  </option>
+                )}
               </select>
+              {centerSports.length > 0 && (
+                <p className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400 leading-tight">
+                  {isEn ? 'Active center sports: ' : 'Môn hiện có tại trung tâm: '}
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    {centerSports.map(s => s.name).join(', ')}
+                  </span>
+                </p>
+              )}
             </div>
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
