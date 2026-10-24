@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { coachApi, coachProfessionalApi } from '../../services/api.js';
 import { uploadMediaFileToCloud } from '../../services/cloudMediaStorage.js';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -65,6 +65,38 @@ function formatDate(value, isEn = false) {
   return value ? new Date(value).toLocaleString(isEn ? 'en-US' : 'vi-VN') : '—';
 }
 
+function issueStatusMeta(st, isEn = false) {
+  switch (st) {
+    case 'Resolved':
+    case 'Closed':
+      return {
+        label: isEn ? 'Resolved' : 'Đã giải quyết',
+        cls: 'bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+      };
+    case 'OnHold':
+      return {
+        label: isEn ? 'On Hold (Waiting Parts)' : 'Chờ linh kiện / Tạm hoãn',
+        cls: 'bg-amber-100 text-amber-800 border-amber-300 dark:bg-amber-950/40 dark:text-amber-300 dark:border-amber-800'
+      };
+    case 'InProgress':
+      return {
+        label: isEn ? 'In Progress' : 'Đang xử lý',
+        cls: 'bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950/40 dark:text-blue-300 dark:border-blue-800'
+      };
+    case 'Rejected':
+    case 'Cancelled':
+      return {
+        label: isEn ? 'Rejected / Void' : 'Đã từ chối / Báo sai',
+        cls: 'bg-slate-100 text-slate-600 border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+      };
+    default:
+      return {
+        label: isEn ? 'Pending Review' : 'Chờ tiếp nhận',
+        cls: 'bg-rose-50 text-rose-700 border-rose-200 dark:bg-rose-950/40 dark:text-rose-300 dark:border-rose-800'
+      };
+  }
+}
+
 function dateInput(offset = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
@@ -78,7 +110,6 @@ export function CoachProfessionalHub() {
 
   const getInitialTab = () => {
     const hash = window.location.hash || '';
-    if (hash.startsWith('#/coach/messages') || hash.includes('tab=communication')) return 'communication';
     if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) return 'facilities';
     return 'performance';
   };
@@ -90,7 +121,6 @@ export function CoachProfessionalHub() {
   const [error, setError] = useState('');
 
   const tabsConfig = [
-    { id: 'communication', icon: 'chat', label: isEn ? 'Student Messages' : 'Tin nhắn học viên' },
     { id: 'performance', icon: 'monitoring', label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất' },
     { id: 'facilities', icon: 'inventory_2', label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị' }
   ];
@@ -112,9 +142,7 @@ export function CoachProfessionalHub() {
     load();
     const handleHash = () => {
       const hash = window.location.hash || '';
-      if (hash.startsWith('#/coach/messages') || hash.includes('tab=communication')) {
-        setTab('communication');
-      } else if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) {
+      if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) {
         setTab('facilities');
       } else if (hash.includes('tab=performance') || hash.includes('tab=kpi')) {
         setTab('performance');
@@ -124,7 +152,7 @@ export function CoachProfessionalHub() {
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  const act = async (fn, successMsg, onError) => {
+  const act = async (fn, successMsg) => {
     setWorking(true);
     try {
       await fn();
@@ -132,7 +160,6 @@ export function CoachProfessionalHub() {
       await load();
       return true;
     } catch (e) {
-      onError?.(e);
       showError(e);
       return false;
     } finally {
@@ -1233,67 +1260,29 @@ function ProgramsTab({ data, act, working, isEn }) {
 // TAB 4: COMMUNICATION (TƯƠNG TÁC & CHAT)
 // ─────────────────────────────────────────────────────────────
 function CommunicationTab({ data, act, working, isEn }) {
-  const requestedMember = () => {
-    const sender = new URLSearchParams(window.location.hash.split('?')[1] || '').get('senderUserId');
-    return sender ? (data.clients.find(x => String(x.userId) === sender)?.id || '')
-      : (data.threads?.find(x => x.unread > 0)?.memberId || data.clients[0]?.id || '');
-  };
-  const [memberId, setMemberId] = useState(requestedMember);
+  const [memberId, setMemberId] = useState(data.clients[0]?.id || '');
   const [messages, setMessages] = useState([]);
   const [loadingMessages, setLoadingMessages] = useState(false);
   const [inputMessage, setInputMessage] = useState('');
-  const [messageError, setMessageError] = useState('');
-  const [sendError, setSendError] = useState('');
-  const messageRequest = useRef(0);
-
-  useEffect(() => {
-    const handleHash = () => {
-      if (new URLSearchParams(window.location.hash.split('?')[1] || '').has('senderUserId')) {
-        setMemberId(requestedMember());
-      }
-    };
-    window.addEventListener('hashchange', handleHash);
-    return () => window.removeEventListener('hashchange', handleHash);
-  }, [data.clients]);
 
   const loadMessages = async (id) => {
     if (!id) return;
-    const request = ++messageRequest.current;
     setLoadingMessages(true);
     try {
       const res = await coachProfessionalApi.getMessages(data.profile.id, id);
-      if (request === messageRequest.current) {
-        setMessages(res);
-        setMessageError('');
-      }
-    } catch (e) {
-      if (request === messageRequest.current) setMessageError(e);
+      setMessages(res);
     } finally {
-      if (request === messageRequest.current) setLoadingMessages(false);
+      setLoadingMessages(false);
     }
   };
 
   useEffect(() => {
-    setMessages([]);
-    setInputMessage('');
-    setMessageError('');
-    setSendError('');
-    setLoadingMessages(false);
     loadMessages(memberId);
-    const refresh = () => { if (!document.hidden) loadMessages(memberId); };
-    const timer = window.setInterval(refresh, 15000);
-    window.addEventListener('focus', refresh);
-    return () => {
-      ++messageRequest.current;
-      window.clearInterval(timer);
-      window.removeEventListener('focus', refresh);
-    };
-  }, [memberId, data.profile.id]);
+  }, [memberId]);
 
   const send = (e) => {
     e.preventDefault();
-    if (working || !memberId || !inputMessage.trim()) return;
-    setSendError('');
+    if (!inputMessage.trim()) return;
     return act(
       () =>
         coachProfessionalApi.sendMessage({
@@ -1301,8 +1290,7 @@ function CommunicationTab({ data, act, working, isEn }) {
           memberId: Number(memberId),
           content: inputMessage.trim()
         }),
-      isEn ? 'Message sent.' : 'Đã gửi tin nhắn.',
-      setSendError
+      isEn ? 'Message sent.' : 'Đã gửi tin nhắn.'
     ).then((ok) => {
       if (ok) {
         setInputMessage('');
@@ -1350,33 +1338,22 @@ function CommunicationTab({ data, act, working, isEn }) {
         icon="chat"
         action={
           <select
-            aria-label={isEn ? 'Student conversation' : 'Cuộc trò chuyện với học viên'}
             value={memberId}
-            onChange={e => {
-              setMemberId(e.target.value);
-              const client = data.clients.find(x => String(x.id) === e.target.value);
-              if (client) window.location.hash = `#/coach/messages?tab=communication&senderUserId=${encodeURIComponent(client.userId)}`;
-            }}
-            disabled={working}
+            onChange={e => setMemberId(e.target.value)}
             className={`${selectClass} max-w-56`}
           >
-            {!memberId && <option value="">{isEn ? 'Select an assigned student' : 'Chọn học viên đang phụ trách'}</option>}
             {data.clients.map(x => (
               <option key={x.id} value={x.id}>{x.fullName}</option>
             ))}
           </select>
         }
       >
-        <CoachError message={messageError} retry={() => loadMessages(memberId)} />
-        <CoachError message={sendError} />
         <div className="h-[400px] space-y-2.5 overflow-y-auto rounded-2xl bg-slate-50 dark:bg-slate-750/50 p-4 border border-slate-100 dark:border-slate-700">
           {loadingMessages ? (
             <p className="text-xs text-slate-400 text-center py-8">{isEn ? 'Loading conversation...' : 'Đang tải đoạn hội thoại...'}</p>
           ) : !messages.length ? (
             <EmptyState icon="forum" isEn={isEn}>
-              {!memberId
-                ? (isEn ? 'Select an assigned student to view and reply to messages.' : 'Chọn học viên đang phụ trách để xem và trả lời tin nhắn.')
-                : (isEn ? `Start conversation with student ${selectedClient?.fullName || ''}.` : `Bắt đầu cuộc trò chuyện với học viên ${selectedClient?.fullName || ''}.`)}
+              {isEn ? `Start conversation with student ${selectedClient?.fullName || ''}.` : `Bắt đầu cuộc trò chuyện với học viên ${selectedClient?.fullName || ''}.`}
             </EmptyState>
           ) : (
             messages.map(x => {
@@ -1390,7 +1367,7 @@ function CommunicationTab({ data, act, working, isEn }) {
                       : 'bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-700 rounded-bl-xs shadow-2xs'
                   }`}
                 >
-                  <p className="whitespace-pre-wrap break-words">{x.content}</p>
+                  <p>{x.content}</p>
                   <span className={`text-[10px] block mt-1 ${isCoach ? 'text-[#F2CC8F]' : 'text-slate-400'}`}>
                     {formatDate(x.createdAt, isEn)}
                   </span>
@@ -1418,8 +1395,6 @@ function CommunicationTab({ data, act, working, isEn }) {
           <input
             value={inputMessage}
             onChange={e => setInputMessage(e.target.value)}
-            aria-label={isEn ? 'Reply to student' : 'Trả lời học viên'}
-            disabled={!memberId || working}
             required
             maxLength="4000"
             placeholder={isEn ? 'Type a supportive message to student...' : 'Nhập tin nhắn hướng dẫn, nhắc nhở học viên...'}
@@ -1475,19 +1450,44 @@ function PerformanceTab() {
 // TAB 6: FACILITIES & ASSETS (TÀI NGUYÊN & THIẾT BỊ)
 // ─────────────────────────────────────────────────────────────
 function FacilitiesTab({ data, act, working, isEn }) {
+  const { showError } = useToast();
   const [photoUrl, setPhotoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
   const booking = (e) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    const startStr = f.get('startAt');
+    const endStr = f.get('endAt');
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    const now = new Date();
+
+    if (start < new Date(now.getTime() - 5 * 60 * 1000)) {
+      showError(isEn ? 'Start time cannot be in the past.' : 'Thời gian bắt đầu không được ở trong quá khứ.');
+      return;
+    }
+    if (end <= start) {
+      showError(isEn ? 'End time must be after start time.' : 'Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.');
+      return;
+    }
+    const diffHours = (end - start) / (1000 * 60 * 60);
+    if (diffHours > 12) {
+      showError(
+        isEn
+          ? `Resource booking duration cannot exceed 12 hours per session (currently ${Math.round(diffHours)}h).`
+          : `Thời gian đặt/mượn tài nguyên tối đa là 12 tiếng mỗi lượt (hiện chọn ${Math.round(diffHours)} tiếng). Vui lòng đặt theo từng ca/buổi tập.`
+      );
+      return;
+    }
+
     return act(
       () =>
         coachProfessionalApi.bookResource({
           resourceId: Number(f.get('resourceId')),
           workEventId: null,
-          startAt: f.get('startAt'),
-          endAt: f.get('endAt'),
+          startAt: startStr,
+          endAt: endStr,
           purpose: f.get('purpose')
         }),
       isEn ? 'Resource booked; schedule conflict checks passed.' : 'Đã đặt tài nguyên; hệ thống đã kiểm tra xung đột lịch.'
@@ -1545,7 +1545,7 @@ function FacilitiesTab({ data, act, working, isEn }) {
               <FormField title={isEn ? 'Start' : 'Bắt đầu'} required>
                 <input name="startAt" type="datetime-local" required className={inputClass} />
               </FormField>
-              <FormField title={isEn ? 'End' : 'Kết thúc'} required>
+              <FormField title={isEn ? 'End' : 'Kết thúc'} hint={isEn ? 'Max 12h/session' : 'Tối đa 12h/lượt'} required>
                 <input name="endAt" type="datetime-local" required className={inputClass} />
               </FormField>
             </div>
@@ -1638,15 +1638,31 @@ function FacilitiesTab({ data, act, working, isEn }) {
             <div className="space-y-2">
               {data.equipmentIssues.map(x => (
                 <div key={x.id} className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-750 text-xs space-y-1">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <strong className="text-slate-900 dark:text-white">{x.title}</strong>
-                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-amber-50 text-amber-700 border border-amber-200">
-                      {x.severity} · {x.status}
-                    </span>
+                    <div className="flex items-center gap-1.5 shrink-0 flex-wrap justify-end">
+                      <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-red-50 text-red-600 border border-red-200">
+                        {x.severity}
+                      </span>
+                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold border ${issueStatusMeta(x.status, isEn).cls}`}>
+                        {issueStatusMeta(x.status, isEn).label}
+                      </span>
+                    </div>
                   </div>
                   <span className="text-[11px] text-slate-400 block">
                     {x.resourceName || (isEn ? 'Other Equipment' : 'Thiết bị khác')} · {formatDate(x.reportedAt, isEn)}
                   </span>
+                  {x.photoUrl && (
+                    <a
+                      href={x.photoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1 pt-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">image</span>
+                      <span>{isEn ? 'View attached photo' : 'Xem ảnh hiện trường'}</span>
+                    </a>
+                  )}
                   {x.resolutionNote && (
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium pt-1">
                       {isEn ? 'Technician Response: ' : 'Kỹ thuật phản hồi: '}{x.resolutionNote}

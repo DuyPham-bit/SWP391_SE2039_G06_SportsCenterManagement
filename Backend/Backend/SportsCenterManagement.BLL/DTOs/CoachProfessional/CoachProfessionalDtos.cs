@@ -40,8 +40,8 @@ public sealed record SaveExerciseRequest(
     [StringLength(100)] string? MuscleGroup,
     [StringLength(50)] string? DifficultyLevel,
     string? Instructions,
-    [Url, StringLength(500)] string? VideoUrl,
-    [Url, StringLength(500)] string? ImageUrl);
+    [StringLength(500)] string? VideoUrl,
+    [StringLength(500)] string? ImageUrl);
 
 public sealed record SaveHomeworkRequest(
     long? ClassId,
@@ -108,7 +108,7 @@ public sealed record ReportEquipmentIssueRequest(
     [Required, StringLength(200)] string Title,
     [Required] string Description,
     [Required, StringLength(20)] string Severity,
-    [Url, StringLength(1000)] string? PhotoUrl);
+    [StringLength(1000)] string? PhotoUrl);
 
 public sealed record ResolveEquipmentIssueRequest(
     [Required, StringLength(30)] string Status,

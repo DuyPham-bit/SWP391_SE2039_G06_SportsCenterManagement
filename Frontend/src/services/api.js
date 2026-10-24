@@ -54,7 +54,8 @@ export const coachApi = {
   getAIRecommendation: data => apiRequest('ai/recommendations', {
     method: 'POST', body: {
       classId: Number(data.classId), memberId: Number(data.memberId),
-      fitnessGoal: data.fitnessGoal, currentLevel: data.currentLevel, notes: data.notes || null
+      fitnessGoal: data.fitnessGoal, currentLevel: data.currentLevel, notes: data.notes || null,
+      subjectiveTags: Array.isArray(data.subjectiveTags) ? data.subjectiveTags : []
     }
   })
 };
