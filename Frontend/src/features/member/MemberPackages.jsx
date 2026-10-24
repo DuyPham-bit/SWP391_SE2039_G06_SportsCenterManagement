@@ -98,6 +98,16 @@ function getMonthlyEquivalent(price, durationDays, isEn = false) {
   return isEn ? `~${perMonth.toLocaleString()}đ / month` : `~${perMonth.toLocaleString()}đ / tháng`;
 }
 
+function resolveAllowedSports(pkg) {
+  if (pkg?.allowedSports && pkg.allowedSports > 1) return pkg.allowedSports;
+  const name = (pkg?.name || '').toLowerCase();
+  const access = (pkg?.accessType || '').toLowerCase();
+  if (access.includes('15') || access.includes('toàn quyền') || name.includes('all-access') || name.includes('olympic') || pkg?.durationDays >= 365) return 15;
+  if (access.includes('6') || name.includes('elite') || pkg?.durationDays >= 180) return 6;
+  if (access.includes('3') || name.includes('pro') || pkg?.durationDays >= 90) return 3;
+  return pkg?.allowedSports || 1;
+}
+
 export function MemberPackages() {
   const { currentUser, refreshUser } = useAuth();
   const { language } = useLanguage();
@@ -562,7 +572,7 @@ export function MemberPackages() {
                     <span>
                       {isEn ? 'Applicable sports: ' : 'Môn áp dụng: '}
                       <strong className="text-slate-900 dark:text-white">
-                        {pkg.allowedSports === 15 ? (isEn ? 'Full 15 Olympic Sports' : 'Toàn quyền 15 môn Olympic') : (isEn ? `${pkg.allowedSports} elective sports` : `${pkg.allowedSports} môn tự chọn`)}
+                        {resolveAllowedSports(pkg) >= 15 ? (isEn ? 'Full 15 Olympic Sports' : 'Toàn quyền 15 môn Olympic') : (isEn ? `${resolveAllowedSports(pkg)} elective sports` : `${resolveAllowedSports(pkg)} môn tự chọn`)}
                       </strong>
                     </span>
                   </div>

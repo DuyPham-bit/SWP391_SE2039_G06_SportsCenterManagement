@@ -40,6 +40,16 @@ namespace SportsCenterManagement.API.DTOs.Auth
         public required string Email { get; init; }
     }
 
+    /// <summary>Requests a registration email verification code after validating the contact details are available.</summary>
+    public sealed record RequestRegistrationEmailVerificationRequest
+    {
+        [Required, EmailAddress, StringLength(150)]
+        public required string Email { get; init; }
+
+        [StringLength(20)]
+        public string? Phone { get; init; }
+    }
+
     /// <summary>Confirms a password reset code and sets a new password.</summary>
     public sealed record ResetPasswordRequest
     {

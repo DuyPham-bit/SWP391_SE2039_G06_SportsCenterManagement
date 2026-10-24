@@ -214,6 +214,7 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
             from profile in unitOfWork.Context.MemberProfiles.AsNoTracking()
             join user in unitOfWork.Context.Users.AsNoTracking() on profile.UserId equals user.Id
             where profile.CenterId == centerId
+                  && user.Status != "Deleted"
                   && (term == "" || profile.MemberCode.Contains(term)
                       || profile.FullName.Contains(term)
                       || user.Email.Contains(term)

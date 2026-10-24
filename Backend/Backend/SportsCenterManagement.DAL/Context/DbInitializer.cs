@@ -15,6 +15,7 @@ public static class DbInitializer
         await EnsureRolesAndPermissionsAsync(context);
         await EnsureAuthAndReceptionPermissionsAsync(context);
         await EnsureGolfCatalogAsync(context);
+        await EnsureMembershipPackageSportsAsync(context);
     }
 
     private static async Task EnsureRolesAndPermissionsAsync(SportsCenterDbContext context)
@@ -550,6 +551,37 @@ public static class DbInitializer
                 }
                 catch { /* ignore json parse failure */ }
             }
+        }
+    }
+
+    private static async Task EnsureMembershipPackageSportsAsync(SportsCenterDbContext context)
+    {
+        var packages = await context.MembershipPackages.ToListAsync();
+        bool changed = false;
+        foreach (var pkg in packages)
+        {
+            var name = (pkg.Name ?? string.Empty).ToLowerInvariant();
+            var access = (pkg.AccessType ?? string.Empty).ToLowerInvariant();
+            int targetSports = pkg.AllowedSports;
+
+            if (access.Contains("15") || access.Contains("toàn quyền") || name.Contains("all-access") || name.Contains("olympic") || pkg.DurationDays >= 365)
+                targetSports = 15;
+            else if (access.Contains("6") || name.Contains("elite") || pkg.DurationDays >= 180)
+                targetSports = 6;
+            else if (access.Contains("3") || name.Contains("pro") || pkg.DurationDays >= 90)
+                targetSports = 3;
+            else if (pkg.AllowedSports < 1)
+                targetSports = 1;
+
+            if (targetSports != pkg.AllowedSports)
+            {
+                pkg.AllowedSports = targetSports;
+                changed = true;
+            }
+        }
+        if (changed)
+        {
+            await context.SaveChangesAsync();
         }
     }
 }

@@ -95,7 +95,18 @@ System Admin là role duy nhất được sửa ma trận quyền và xem audit 
 
 Yêu cầu tiền mặt gửi `IdempotencyKey` từ 16 đến 100 ký tự cùng số tiền. Retry phải dùng cùng key cho cùng invoice/amount; tái sử dụng key cho yêu cầu khác sẽ trả conflict. Callback VNPay đã ký được lưu cả khi thất bại; callback báo thành công nhưng không khớp trạng thái/số dư được ghi `ReviewRequired`, không tự cộng doanh thu hoặc kích hoạt subscription.
 
-Khi chạy với environment `Development`, backend tạo center/gói mẫu và các tài khoản demo `admin`, `manager01`, `reception01`, `member01` để phát triển local. Những dữ liệu mẫu này không được tự tạo ở môi trường khác; môi trường triển khai cần được cấp dữ liệu trung tâm, gói tập và tài khoản qua quy trình quản trị riêng. Không dùng mật khẩu demo cho môi trường triển khai. Nếu database đã từng được khởi tạo ở `Development`, hãy xóa hoặc đổi mật khẩu tài khoản demo và rà lại center/gói mẫu trước khi tái sử dụng ở môi trường khác.
+Backend không tự tạo tài khoản demo. Để có tài khoản local mà không sửa dữ liệu đang có, chỉ trong `Development` hãy bật rõ cấu hình sau rồi khởi động lại API:
+
+```powershell
+$env:DevelopmentBootstrap__SeedDemoAccounts = 'true'
+# Chỉ dùng khi cần đặt lại mật khẩu/khóa của chính các tài khoản demo đã tồn tại.
+$env:DevelopmentBootstrap__ResetExistingDemoAccounts = 'true'
+# Tùy chọn: gán các tài khoản vào một center Active đã có.
+$env:DevelopmentBootstrap__CenterId = '15'
+dotnet run --project .\SportsCenterManagement.API\SportsCenterManagement.API.csproj
+```
+
+Nếu không khai báo `CenterId`, API chỉ tạo một center tên `SCMS Local Development Center`. Mặc định bootstrap chỉ thêm bản ghi còn thiếu; không đổi mật khẩu, role hoặc profile của tài khoản đã tồn tại. `ResetExistingDemoAccounts` chỉ đặt lại mật khẩu, trạng thái Active và lockout của tài khoản có cả username/email đúng mẫu; không đổi role hoặc profile. Tài khoản local: `manager01@sportscenter.vn` / `Manager@123456`, `reception01@sportscenter.vn` / `Reception@123456`, `coach01@sportscenter.vn` / `Coach@123456`, `member01@sportscenter.vn` / `Member@123456`. Không bật cấu hình này trong môi trường thật.
 
 ### Flow 3 — thanh toán và báo cáo
 
