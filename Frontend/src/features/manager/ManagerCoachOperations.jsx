@@ -3,11 +3,15 @@ import { managerCoachApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
-import { currency } from '../coach/coachProfessionalView.js';
+import { currency, formatVietnamDateTime } from '../coach/coachProfessionalView.js';
 
 const inputStyle = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A] transition-all';
 const primaryBtnStyle = 'rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] px-4 py-2 text-sm font-bold text-white transition-all shadow-sm hover-lift disabled:opacity-50';
 const secondaryBtnStyle = 'rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all disabled:opacity-50';
+const currentMonthStart = () => {
+  const now = new Date();
+  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+};
 
 function Card({ title, badge, children }) {
   return (
@@ -39,6 +43,8 @@ export function ManagerCoachOperations() {
   const [loading, setLoading] = useState(true);
   const [working, setWorking] = useState(false);
   const [tab, setTab] = useState('leaves');
+  const [leaveStatusFilter, setLeaveStatusFilter] = useState('Pending');
+  const [replacementByLeave, setReplacementByLeave] = useState({});
 
   const dt = (x) => {
     if (!x) return '—';
@@ -54,7 +60,15 @@ export function ManagerCoachOperations() {
   const load = async () => {
     setLoading(true);
     try {
-      setData(await managerCoachApi.getWorkspace());
+      const result = await managerCoachApi.getWorkspace();
+      setData(result);
+      setReplacementByLeave(Object.fromEntries(
+        (result?.leaves || []).filter(x => x.status === 'Pending').map(x => {
+          const proposedId = x.swapCoachId ? String(x.swapCoachId) : '';
+          const proposedIsAvailable = (x.replacementCandidates || []).some(coach => String(coach.id) === proposedId);
+          return [x.id, proposedIsAvailable ? proposedId : ''];
+        })
+      ));
     } catch (e) {
       showError(e);
     } finally {
@@ -90,41 +104,25 @@ export function ManagerCoachOperations() {
   }
 
   const coachOptions = data?.coaches || [];
+  const pendingLeaveCount = (data?.leaves || []).filter(x => x.status === 'Pending').length;
+  const visibleLeaves = (data?.leaves || []).filter(x => leaveStatusFilter === 'All' || x.status === leaveStatusFilter);
 
   const compensation = (e) => {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
+    const formElement = e.currentTarget;
+    const f = new FormData(formElement);
     return act(
       () =>
         managerCoachApi.saveCompensation({
           coachId: Number(f.get('coachId')),
           monthlyBaseSalary: Number(f.get('monthlyBaseSalary')),
           commissionPerSession: Number(f.get('commissionPerSession')),
-          salesCommissionPercent: Number(f.get('salesCommissionPercent')),
           targetSessions: Number(f.get('targetSessions')),
-          targetSales: Number(f.get('targetSales')),
           effectiveFrom: f.get('effectiveFrom'),
           effectiveTo: f.get('effectiveTo') || null
         }),
-      isEn ? 'KPI and compensation policy updated successfully.' : 'Đã cập nhật chính sách KPI và thu nhập.'
-    ).then((ok) => ok && e.target.reset());
-  };
-
-  const sales = (e) => {
-    e.preventDefault();
-    const f = new FormData(e.currentTarget);
-    return act(
-      () =>
-        managerCoachApi.saveSalesCredit({
-          coachId: Number(f.get('coachId')),
-          memberId: null,
-          subscriptionId: null,
-          amount: Number(f.get('amount')),
-          creditedAt: null,
-          note: f.get('note') || null
-        }),
-      isEn ? 'Sales credit recorded for coach.' : 'Đã ghi nhận doanh số cho HLV.'
-    ).then((ok) => ok && e.target.reset());
+      isEn ? 'Compensation policy updated successfully.' : 'Đã cập nhật chính sách thù lao và ca dạy.'
+    ).then((ok) => ok && formElement.reset());
   };
 
   const resource = (e) => {
@@ -143,11 +141,8 @@ export function ManagerCoachOperations() {
   };
 
   const tabs = [
-    { id: 'leaves', label: isEn ? 'Leave Requests' : 'Đơn nghỉ phép', icon: 'event_busy' },
-    { id: 'compensation', label: isEn ? 'KPI & Compensation' : 'KPI & Lương thưởng', icon: 'payments' },
-    { id: 'resources', label: isEn ? 'Equipment & Zones' : 'Tài nguyên & Thiết bị', icon: 'inventory_2' },
-    { id: 'issues', label: isEn ? 'Maintenance Issues' : 'Sự cố bảo trì', icon: 'build' },
-    { id: 'delivery', label: isEn ? 'Message Delivery' : 'Giám sát tin nhắn', icon: 'mark_email_read' }
+    { id: 'leaves', label: isEn ? `Leave Approvals (${pendingLeaveCount})` : `Duyệt đơn nghỉ (${pendingLeaveCount})`, icon: 'event_busy' },
+    { id: 'compensation', label: isEn ? 'Salary & KPI Report' : 'Lương & Báo cáo KPI', icon: 'payments' }
   ];
 
   return (
@@ -184,12 +179,12 @@ export function ManagerCoachOperations() {
               </span>
             </div>
             <h1 className="font-chivo text-2xl font-black tracking-tight text-white sm:text-3xl leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-              {isEn ? 'Coach Team Operations' : 'Vận hành đội ngũ Huấn luyện viên'}
+              {isEn ? 'Coach Leave Approvals & Operations' : 'Duyệt đơn nghỉ & vận hành HLV'}
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-white/95 max-w-2xl leading-relaxed font-medium drop-shadow-xs">
               {isEn
-                ? 'Approve leave requests, manage commission policies, track facilities & equipment, and monitor notification deliveries.'
-                : 'Duyệt nghỉ phép, chính sách hoa hồng, tài nguyên phòng tập, bảo trì thiết bị và kiểm tra giao thông báo.'}
+                ? 'Approve coach leave requests and manage transparent salary and KPI policies.'
+                : 'Duyệt đơn nghỉ của HLV và quản lý chính sách lương, KPI minh bạch.'}
             </p>
           </div>
 
@@ -231,16 +226,40 @@ export function ManagerCoachOperations() {
       {tab === 'leaves' && (
         <Card
           title={isEn ? 'Leave, Sick & Shift Swap Requests' : 'Đơn nghỉ phép / Nghỉ ốm / Đổi ca'}
-          badge={`${data?.leaves?.length || 0} ${isEn ? 'requests' : 'đơn'}`}
+          badge={`${pendingLeaveCount} ${isEn ? 'pending' : 'chờ duyệt'}`}
         >
-          {!data?.leaves?.length ? (
+          <div className="mb-4 rounded-xl border border-amber-200 bg-amber-50 p-3 dark:border-amber-900 dark:bg-amber-950/30">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="flex items-center gap-2 text-sm font-bold text-amber-900 dark:text-amber-200">
+                <span className="material-symbols-outlined text-[20px]">pending_actions</span>
+                {pendingLeaveCount
+                  ? (isEn ? `${pendingLeaveCount} requests require your decision.` : `${pendingLeaveCount} đơn đang chờ manager duyệt.`)
+                  : (isEn ? 'There are no requests awaiting approval.' : 'Hiện không có đơn nào đang chờ duyệt.')}
+              </p>
+              <div className="flex flex-wrap gap-1 rounded-lg bg-white/80 p-1 dark:bg-slate-900/70">
+                {[
+                  ['Pending', isEn ? 'Pending' : 'Chờ duyệt'],
+                  ['Approved', isEn ? 'Approved' : 'Đã duyệt'],
+                  ['Rejected', isEn ? 'Rejected' : 'Từ chối'],
+                  ['All', isEn ? 'All' : 'Tất cả']
+                ].map(([value, label]) => (
+                  <button key={value} type="button" onClick={() => setLeaveStatusFilter(value)}
+                    className={`rounded-md px-2.5 py-1.5 text-[11px] font-bold transition-colors ${leaveStatusFilter === value ? 'bg-[#1E2235] text-white' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'}`}>
+                    {label}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+
+          {!visibleLeaves.length ? (
             <div className="rounded-xl border border-dashed border-slate-200 dark:border-slate-800 p-8 text-center text-sm text-slate-500 dark:text-slate-400">
               <span className="material-symbols-outlined mx-auto mb-2 text-3xl text-slate-400">task_alt</span>
-              <p>{isEn ? 'No leave or shift swap requests pending.' : 'Chưa có đơn xin nghỉ hoặc đổi ca nào.'}</p>
+              <p>{isEn ? 'No requests match this status.' : 'Không có đơn nào ở trạng thái này.'}</p>
             </div>
           ) : (
             <div className="space-y-3">
-              {data.leaves.map((x) => {
+              {visibleLeaves.map((x) => {
                 const isPending = x.status === 'Pending';
                 const statusColor =
                   x.status === 'Approved'
@@ -264,12 +283,14 @@ export function ManagerCoachOperations() {
                         </div>
                         <p className="mt-1 text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
                           <span className="material-symbols-outlined text-[14px]">calendar_today</span>
-                          {dt(x.startAt)} → {dt(x.endAt)}
+                          {formatVietnamDateTime(x.startAt, isEn)} → {formatVietnamDateTime(x.endAt, isEn)}
                         </p>
                         {x.swapCoachName && (
                           <p className="mt-1 text-xs font-semibold text-[#2D6A4F] dark:text-[#81B29A] flex items-center gap-1">
                             <span className="material-symbols-outlined text-[14px]">swap_horiz</span>
-                            {isEn ? 'Proposed shift swap with:' : 'Đề xuất đổi ca với:'} {x.swapCoachName}
+                            {x.status === 'Approved'
+                              ? (isEn ? 'Replacement coach:' : 'HLV dạy bù:')
+                              : (isEn ? 'Proposed replacement:' : 'HLV thay thế đề xuất:')} {x.swapCoachName}
                           </p>
                         )}
                         <p className="mt-2 text-sm text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-900 p-2.5 rounded-lg border border-slate-200/60 dark:border-slate-800">
@@ -282,45 +303,96 @@ export function ManagerCoachOperations() {
                     </div>
 
                     {isPending && (
-                      <div className="mt-3 flex gap-2 border-t border-slate-200/60 dark:border-slate-700/60 pt-3">
-                        <button
-                          disabled={working}
-                          className={primaryBtnStyle}
-                          onClick={() =>
-                            act(
-                              () =>
-                                managerCoachApi.reviewLeave(x.id, {
-                                  status: 'Approved',
-                                  managerNote: isEn ? 'Schedule checked and approved.' : 'Đã kiểm tra lịch và phê duyệt.'
-                                }),
-                              isEn ? 'Leave request approved.' : 'Đã duyệt đơn nghỉ.'
-                            )
-                          }
-                        >
-                          <span className="inline-flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[16px]">check</span>
-                            {isEn ? 'Approve' : 'Duyệt'}
-                          </span>
-                        </button>
-                        <button
-                          disabled={working}
-                          className="rounded-xl border border-rose-300 dark:border-rose-800 px-4 py-2 text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all disabled:opacity-50"
-                          onClick={() =>
-                            act(
-                              () =>
-                                managerCoachApi.reviewLeave(x.id, {
-                                  status: 'Rejected',
-                                  managerNote: isEn ? 'Cannot arrange substitute coach at this time.' : 'Chưa thể bố trí nhân sự thay thế.'
-                                }),
-                              isEn ? 'Leave request rejected.' : 'Đã từ chối đơn nghỉ.'
-                            )
-                          }
-                        >
-                          <span className="inline-flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[16px]">close</span>
-                            {isEn ? 'Reject' : 'Từ chối'}
-                          </span>
-                        </button>
+                      <div className="mt-3 space-y-3 border-t border-slate-200/60 dark:border-slate-700/60 pt-3">
+                        <div className="rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900">
+                          <div className="flex flex-wrap items-center justify-between gap-2">
+                            <strong className="text-xs text-slate-800 dark:text-slate-100">
+                              {x.affectedSessions?.length || 0} {isEn ? 'sessions need coverage' : 'ca dạy cần bố trí người thay'}
+                            </strong>
+                            {!!x.requiredSports?.length && <span className="rounded-full bg-[#81B29A]/15 px-2 py-1 text-[11px] font-bold text-[#2D6A4F] dark:text-[#81B29A]">{x.requiredSports.join(', ')}</span>}
+                          </div>
+                          {!!x.affectedSessions?.length && (
+                            <div className="mt-2 grid gap-1 sm:grid-cols-2">
+                              {x.affectedSessions.map(session => (
+                                <p key={session.id} className="rounded-lg bg-slate-50 px-2 py-1.5 text-[11px] text-slate-600 dark:bg-slate-800 dark:text-slate-300">
+                                  <strong>{session.className}</strong><br />
+                                  {session.sessionDate} · {String(session.startTime).slice(0, 5)}–{String(session.endTime).slice(0, 5)}
+                                </p>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+
+                        {!x.affectedSessions?.length ? (
+                          <p className="rounded-xl bg-emerald-50 p-3 text-xs font-semibold text-emerald-700 dark:bg-emerald-950/30 dark:text-emerald-300">
+                            {isEn ? 'No teaching session is affected. This request can be approved without assigning a replacement.' : 'Không có ca dạy bị ảnh hưởng. Có thể duyệt đơn mà không cần phân công HLV thay thế.'}
+                          </p>
+                        ) : !x.replacementCandidates?.length ? (
+                          <p className="rounded-xl bg-amber-50 p-3 text-xs font-semibold text-amber-800 dark:bg-amber-950/30 dark:text-amber-300">
+                            {isEn ? 'No coach currently has every required specialization and a free schedule.' : 'Hiện chưa có HLV nào vừa đủ toàn bộ chuyên môn vừa trống các ca này. Chưa thể duyệt đơn.'}
+                          </p>
+                        ) : (
+                          <fieldset>
+                            <legend className="mb-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
+                              {isEn ? 'Qualified and available replacements' : 'HLV đủ chuyên môn và đang trống lịch'}
+                            </legend>
+                            <div className="grid gap-2 sm:grid-cols-2">
+                              {x.replacementCandidates.map(coach => (
+                                <label key={coach.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all ${replacementByLeave[x.id] === String(coach.id) ? 'border-[#2D6A4F] bg-emerald-50 ring-2 ring-[#81B29A]/30 dark:bg-emerald-950/30' : 'border-slate-200 bg-white hover:border-[#81B29A] dark:border-slate-700 dark:bg-slate-900'}`}>
+                                  <input type="radio" name={`replacement-${x.id}`} value={coach.id}
+                                    checked={replacementByLeave[x.id] === String(coach.id)}
+                                    onChange={e => setReplacementByLeave(current => ({ ...current, [x.id]: e.target.value }))} />
+                                  <span className="min-w-0">
+                                    <strong className="block truncate text-xs text-slate-900 dark:text-white">{coach.fullName}</strong>
+                                    <span className="text-[11px] text-slate-500">{coach.specializations?.join(', ') || coach.specialization}</span>
+                                  </span>
+                                  <span className="material-symbols-outlined ml-auto text-[18px] text-emerald-600">verified</span>
+                                </label>
+                              ))}
+                            </div>
+                          </fieldset>
+                        )}
+                        <div className="flex gap-2">
+                          <button
+                            disabled={working || (x.affectedSessions?.length > 0 && !replacementByLeave[x.id])}
+                            className={primaryBtnStyle}
+                            onClick={() =>
+                              act(
+                                () =>
+                                  managerCoachApi.reviewLeave(x.id, {
+                                    status: 'Approved',
+                                    managerNote: isEn ? 'Schedule checked and replacement assigned.' : 'Đã kiểm tra lịch và phân công HLV dạy bù.',
+                                    replacementCoachId: replacementByLeave[x.id] ? Number(replacementByLeave[x.id]) : null
+                                  }),
+                                isEn ? 'Leave request approved.' : 'Đã duyệt đơn nghỉ và phân công HLV dạy bù.'
+                              )
+                            }
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[16px]">check</span>
+                              {isEn ? 'Approve' : 'Duyệt'}
+                            </span>
+                          </button>
+                          <button
+                            disabled={working}
+                            className="rounded-xl border border-rose-300 dark:border-rose-800 px-4 py-2 text-sm font-bold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-all disabled:opacity-50"
+                            onClick={() =>
+                              act(
+                                () =>
+                                  managerCoachApi.reviewLeave(x.id, {
+                                    status: 'Rejected',
+                                    managerNote: isEn ? 'Cannot arrange substitute coach at this time.' : 'Chưa thể bố trí nhân sự thay thế.'
+                                  }),
+                                isEn ? 'Leave request rejected.' : 'Đã từ chối đơn nghỉ.'
+                              )
+                            }
+                          >
+                            <span className="inline-flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[16px]">close</span>
+                              {isEn ? 'Reject' : 'Từ chối'}
+                            </span>
+                          </button>
+                        </div>
                       </div>
                     )}
                   </article>
@@ -334,12 +406,12 @@ export function ManagerCoachOperations() {
       {/* Tab: COMPENSATION */}
       {tab === 'compensation' && (
         <div className="grid gap-6 xl:grid-cols-2">
-          <Card title={isEn ? 'Configure KPI & Commission Policy' : 'Thiết lập KPI & Hoa hồng'}>
+          <Card title={isEn ? 'Configure Compensation & Target Sessions' : 'Thiết lập Thù lao & Chỉ tiêu ca dạy'}>
             <form onSubmit={compensation} className="grid gap-4 sm:grid-cols-2">
               <div className="sm:col-span-2">
                 <Label title={isEn ? 'Coach' : 'Huấn luyện viên'}>
                   <select name="coachId" required className={inputStyle}>
-                    {coachOptions.map((x) => (
+                    {coachOptions.filter(x => x.isPayrollActive).map((x) => (
                       <option key={x.id} value={x.id}>
                         {x.fullName} ({x.email || `#${x.id}`})
                       </option>
@@ -349,7 +421,7 @@ export function ManagerCoachOperations() {
               </div>
 
               <Label title={isEn ? 'Effective From' : 'Hiệu lực từ'}>
-                <input name="effectiveFrom" type="date" required className={inputStyle} />
+                <input name="effectiveFrom" type="date" required defaultValue={currentMonthStart()} className={inputStyle} />
               </Label>
 
               <Label title={isEn ? 'Effective To (Optional)' : 'Hiệu lực đến (Tùy chọn)'}>
@@ -360,21 +432,13 @@ export function ManagerCoachOperations() {
                 <input name="monthlyBaseSalary" type="number" min="0" defaultValue="8000000" required className={inputStyle} />
               </Label>
 
-              <Label title={isEn ? 'Session Bonus (VND)' : 'Hoa hồng / buổi (VND)'}>
+              <Label title={isEn ? 'Session Pay (VND)' : 'Thù lao mỗi ca dạy (VND)'}>
                 <input name="commissionPerSession" type="number" min="0" defaultValue="100000" required className={inputStyle} />
               </Label>
 
-              <Label title={isEn ? 'Sales Commission %' : 'Hoa hồng doanh số %'}>
-                <input name="salesCommissionPercent" type="number" min="0" max="100" defaultValue="5" required className={inputStyle} />
-              </Label>
-
-              <Label title={isEn ? 'Target Sessions' : 'Mục tiêu buổi'}>
-                <input name="targetSessions" type="number" min="0" defaultValue="60" required className={inputStyle} />
-              </Label>
-
               <div className="sm:col-span-2">
-                <Label title={isEn ? 'Target Sales (VND)' : 'Mục tiêu doanh số (VND)'}>
-                  <input name="targetSales" type="number" min="0" defaultValue="30000000" required className={inputStyle} />
+                <Label title={isEn ? 'Target Sessions / Month' : 'Chỉ tiêu ca dạy / tháng (KPI)'}>
+                  <input name="targetSessions" type="number" min="0" defaultValue="60" required className={inputStyle} />
                 </Label>
               </div>
 
@@ -382,65 +446,49 @@ export function ManagerCoachOperations() {
                 <button disabled={working} className={`${primaryBtnStyle} w-full`}>
                   <span className="inline-flex items-center justify-center gap-1.5">
                     <span className="material-symbols-outlined text-[16px]">save</span>
-                    {isEn ? 'Save Compensation Policy' : 'Lưu chính sách thu nhập'}
+                    {isEn ? 'Save Compensation Policy' : 'Lưu chính sách thù lao'}
                   </span>
                 </button>
               </div>
             </form>
           </Card>
 
-          <Card title={isEn ? 'Record Package Sales Credit' : 'Ghi nhận doanh số gói tập'}>
-            <form onSubmit={sales} className="space-y-4">
-              <Label title={isEn ? 'Coach' : 'Huấn luyện viên'}>
-                <select name="coachId" className={inputStyle}>
-                  {coachOptions.map((x) => (
-                    <option key={x.id} value={x.id}>
-                      {x.fullName}
-                    </option>
-                  ))}
-                </select>
-              </Label>
-
-              <Label title={isEn ? 'Revenue Amount (VND)' : 'Số tiền doanh số (VND)'}>
-                <input name="amount" type="number" min="1" placeholder="e.g. 5000000" required className={inputStyle} />
-              </Label>
-
-              <Label title={isEn ? 'Notes' : 'Ghi chú'}>
-                <textarea name="note" rows="2" placeholder={isEn ? 'Package sale notes...' : 'Ghi chú gói tập...'} className={inputStyle} />
-              </Label>
-
-              <button disabled={working} className={`${primaryBtnStyle} w-full`}>
-                <span className="inline-flex items-center justify-center gap-1.5">
-                  <span className="material-symbols-outlined text-[16px]">add_circle</span>
-                  {isEn ? 'Record Sales Credit' : 'Ghi nhận doanh số'}
-                </span>
-              </button>
-            </form>
-
-            <div className="mt-6 border-t border-slate-200 dark:border-slate-800 pt-4">
-              <h3 className="mb-3 font-chivo text-xs font-black uppercase tracking-wider text-slate-500 dark:text-slate-400">
-                {isEn ? 'Recent Sales Credits' : 'Ghi nhận gần đây'}
-              </h3>
-              {!data?.salesCredits?.length ? (
-                <p className="text-xs text-slate-500 dark:text-slate-400">{isEn ? 'No sales credited yet.' : 'Chưa có ghi nhận doanh số.'}</p>
+          <Card title={isEn ? 'Active Policies Overview' : 'Danh sách chính sách đang áp dụng'}>
+            <a href="#/manager/payroll" className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-[#2D6A4F]/30 bg-emerald-50 px-4 py-2.5 text-xs font-bold text-[#2D6A4F] hover:bg-emerald-100 dark:bg-emerald-950/30 dark:text-[#81B29A]">
+              <span className="material-symbols-outlined text-[17px]">summarize</span>
+              {isEn ? 'Open salary & payroll report' : 'Mở Lương & Báo cáo tiền lương'}
+            </a>
+            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
+              {!data?.policies?.length ? (
+                <p className="text-xs text-slate-500 dark:text-slate-400 py-6 text-center">
+                  {isEn ? 'No compensation policies configured yet.' : 'Chưa có chính sách nào được cấu hình.'}
+                </p>
               ) : (
-                <div className="space-y-2">
-                  {data.salesCredits.slice(0, 6).map((x) => (
+                data.policies.map((p) => {
+                  const coach = coachOptions.find((c) => c.id === p.coachId);
+                  return (
                     <div
-                      key={x.id}
-                      className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-slate-800/60 p-3 text-xs border border-slate-100 dark:border-slate-800"
+                      key={p.id}
+                      className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 text-xs"
                     >
                       <div>
-                        <span className="font-bold text-slate-800 dark:text-slate-200">
-                          {isEn ? 'Coach' : 'HLV'} #{x.coachId}
-                        </span>
-                        <span className="ml-2 text-slate-400 dark:text-slate-500">{dt(x.creditedAt)}</span>
-                        {x.note && <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">{x.note}</p>}
+                        <div className="font-bold text-slate-800 dark:text-slate-200">
+                          {coach?.fullName || `HLV #${p.coachId}`}
+                        </div>
+                        <div className="text-[11px] text-slate-400 mt-0.5">
+                          {isEn ? 'Base' : 'Lương cứng'}: <strong>{currency(p.monthlyBaseSalary)}</strong> • {isEn ? 'Per Session' : 'Ca dạy'}:{' '}
+                          <strong className="text-teal-600">{currency(p.commissionPerSession)}</strong>
+                        </div>
+                        <div className="text-[10px] text-slate-400 mt-0.5">
+                          {isEn ? 'Target' : 'Chỉ tiêu'}: {p.targetSessions} ca/tháng • Từ: {dt(p.effectiveFrom)}
+                        </div>
                       </div>
-                      <strong className="text-sm font-black text-[#2D6A4F] dark:text-[#81B29A]">{currency(x.amount)}</strong>
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 shrink-0">
+                        {p.status}
+                      </span>
                     </div>
-                  ))}
-                </div>
+                  );
+                })
               )}
             </div>
           </Card>

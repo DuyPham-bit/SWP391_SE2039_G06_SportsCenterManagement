@@ -2450,6 +2450,21 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("decimal(12,2)")
                         .HasColumnName("amount");
 
+                    b.Property<string>("BankAccountName")
+                        .HasMaxLength(150)
+                        .HasColumnType("nvarchar(150)")
+                        .HasColumnName("bank_account_name");
+
+                    b.Property<string>("BankAccountNumber")
+                        .HasMaxLength(50)
+                        .HasColumnType("nvarchar(50)")
+                        .HasColumnName("bank_account_number");
+
+                    b.Property<string>("BankName")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("bank_name");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
@@ -2488,11 +2503,25 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("requested_by");
 
+                    b.Property<string>("ReviewNote")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("review_note");
+
+                    b.Property<long?>("ReviewedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("reviewed_by");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
                         .HasColumnType("nvarchar(30)")
                         .HasColumnName("status");
+
+                    b.Property<string>("TransferProofUrl")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("transfer_proof_url");
 
                     b.HasKey("Id");
 
@@ -2506,6 +2535,8 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasFilter("[provider_refund_id] IS NOT NULL");
 
                     b.HasIndex("RequestedBy");
+
+                    b.HasIndex("ReviewedBy");
 
                     b.ToTable("payment_refunds", "dbo");
                 });
@@ -2790,6 +2821,65 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.ToTable("sports", "dbo");
                 });
 
+            modelBuilder.Entity("SportsCenterManagement.DAL.Entities.StaffCompensationPolicy", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<long?>("CenterId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("center_id");
+
+                    b.Property<DateOnly>("EffectiveFrom")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_from");
+
+                    b.Property<DateOnly?>("EffectiveTo")
+                        .HasColumnType("date")
+                        .HasColumnName("effective_to");
+
+                    b.Property<decimal>("MonthlyAllowance")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("decimal(14,2)")
+                        .HasColumnName("monthly_allowance");
+
+                    b.Property<decimal>("MonthlyBaseSalary")
+                        .HasPrecision(14, 2)
+                        .HasColumnType("decimal(14,2)")
+                        .HasColumnName("monthly_base_salary");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(30)
+                        .HasColumnType("nvarchar(30)")
+                        .HasColumnName("status");
+
+                    b.Property<DateTime>("UpdatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("updated_at");
+
+                    b.Property<long>("UpdatedBy")
+                        .HasColumnType("bigint")
+                        .HasColumnName("updated_by");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CenterId");
+
+                    b.HasIndex("UpdatedBy");
+
+                    b.HasIndex("UserId", "Status");
+
+                    b.ToTable("staff_compensation_policies", "dbo");
+                });
+
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.StaffProfile", b =>
                 {
                     b.Property<long>("Id")
@@ -2883,12 +2973,6 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<long?>("MemberId")
                         .HasColumnType("bigint")
                         .HasColumnName("member_id");
-
-                    b.Property<string>("Priority")
-                        .IsRequired()
-                        .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
-                        .HasColumnName("priority");
 
                     b.Property<long>("RequesterId")
                         .HasColumnType("bigint")
@@ -4128,6 +4212,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasForeignKey("RequestedBy")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.HasOne("SportsCenterManagement.DAL.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("ReviewedBy")
+                        .OnDelete(DeleteBehavior.Restrict);
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ResourceBooking", b =>
@@ -4210,6 +4299,26 @@ namespace SportsCenterManagement.DAL.Migrations
                         .WithMany()
                         .HasForeignKey("CenterId")
                         .OnDelete(DeleteBehavior.Restrict);
+                });
+
+            modelBuilder.Entity("SportsCenterManagement.DAL.Entities.StaffCompensationPolicy", b =>
+                {
+                    b.HasOne("SportsCenterManagement.DAL.Entities.Center", null)
+                        .WithMany()
+                        .HasForeignKey("CenterId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("SportsCenterManagement.DAL.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UpdatedBy")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("SportsCenterManagement.DAL.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.StaffProfile", b =>

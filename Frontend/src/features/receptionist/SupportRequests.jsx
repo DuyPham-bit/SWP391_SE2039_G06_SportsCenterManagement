@@ -30,27 +30,6 @@ const getStatusConfig = isEn => ({
   }
 });
 
-const getPriorityConfig = isEn => ({
-  Low: {
-    label: isEn ? 'Low' : 'Thấp',
-    badgeClass: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700',
-    icon: 'low_priority',
-    stripeClass: 'border-l-slate-300'
-  },
-  Normal: {
-    label: isEn ? 'Normal' : 'Bình thường',
-    badgeClass: 'bg-blue-50 dark:bg-blue-950/40 text-blue-700 dark:text-blue-300 border-blue-200 dark:border-blue-800',
-    icon: 'schedule',
-    stripeClass: 'border-l-blue-400'
-  },
-  High: {
-    label: isEn ? 'High' : 'Cao',
-    badgeClass: 'bg-[#E07A5F]/15 text-[#E07A5F] border-[#E07A5F]/30 font-bold',
-    icon: 'emergency',
-    stripeClass: 'border-l-[#E07A5F]'
-  }
-});
-
 const getTopicPresets = isEn => [
   { prefix: isEn ? '[Package & Pass] ' : '[Gói tập & Thẻ] ', label: isEn ? '🎫 Package & Pass' : '🎫 Gói tập & Thẻ', hint: isEn ? 'Renewal, package change, pass benefits' : 'Gia hạn, đổi gói, thắc mắc quyền lợi thẻ' },
   { prefix: isEn ? '[Schedule & Booking] ' : '[Lịch học & Đặt chỗ] ', label: isEn ? '📅 Schedule & Booking' : '📅 Lịch học & Đặt chỗ', hint: isEn ? 'Rescheduling, class transfer, session reserve' : 'Đổi ca, chuyển lớp, bảo lưu buổi tập' },
@@ -91,13 +70,11 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
   const canCreate = allowCreate && String(currentUser?.role || '').toUpperCase() === 'RECEPTIONIST';
 
   const statusConfig = useMemo(() => getStatusConfig(isEn), [isEn]);
-  const priorityConfig = useMemo(() => getPriorityConfig(isEn), [isEn]);
   const topicPresets = useMemo(() => getTopicPresets(isEn), [isEn]);
   const quickNotes = useMemo(() => getQuickNotes(isEn), [isEn]);
 
   const [query, setQuery] = useState('');
   const [status, setStatus] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
   const [filter, setFilter] = useState({ query: '', status: '', page: 1, version: 0 });
 
   const [data, setData] = useState(null);
@@ -115,7 +92,6 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
   const [member, setMember] = useState(null);
   const [createSubject, setCreateSubject] = useState('');
   const [createDescription, setCreateDescription] = useState('');
-  const [createPriority, setCreatePriority] = useState('Normal');
   const [createError, setCreateError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -180,7 +156,6 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
   const handleClearFilters = () => {
     setQuery('');
     setStatus('');
-    setPriorityFilter('');
     setFilter({ query: '', status: '', page: 1, version: filter.version + 1 });
   };
 
@@ -205,8 +180,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
       const result = await receptionApi.createSupportRequest({
         memberId: member.id,
         subject: createSubject.trim(),
-        description: createDescription.trim(),
-        priority: createPriority
+        description: createDescription.trim()
       });
       selectDetail(result);
       setCreating(false);
@@ -245,11 +219,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
     }
   };
 
-  const filteredItems = useMemo(() => {
-    if (!data?.items) return [];
-    if (!priorityFilter) return data.items;
-    return data.items.filter(item => item.priority === priorityFilter);
-  }, [data, priorityFilter]);
+  const filteredItems = data?.items || [];
 
   const stats = useMemo(() => {
     const items = data?.items || [];
@@ -257,8 +227,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
       total: data?.totalCount || 0,
       open: items.filter(i => i.status === 'Open').length,
       inProgress: items.filter(i => i.status === 'InProgress').length,
-      resolved: items.filter(i => i.status === 'Resolved').length,
-      highPriority: items.filter(i => i.priority === 'High').length
+      resolved: items.filter(i => i.status === 'Resolved').length
     };
   }, [data]);
 
@@ -304,7 +273,6 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                 setMember(null);
                 setCreateSubject('');
                 setCreateDescription('');
-                setCreatePriority('Normal');
                 setCreating(true);
               }}
             >
@@ -473,24 +441,8 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                 ))}
               </div>
 
-              {/* Priority Dropdown & Action Row */}
+              {/* Filter actions */}
               <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                <div className="relative flex-1">
-                  <select
-                    className="w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-800/80 px-3 py-1.5 text-xs font-semibold text-slate-700 dark:text-slate-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
-                    aria-label={isEn ? 'Filter priority' : 'Lọc mức ưu tiên'}
-                    value={priorityFilter}
-                    onChange={e => setPriorityFilter(e.target.value)}
-                  >
-                    <option value="">{isEn ? 'All Priority' : 'Tất cả ưu tiên'}</option>
-                    {Object.entries(priorityConfig).map(([v, cfg]) => (
-                      <option key={v} value={v}>
-                        {isEn ? `${cfg.label} Priority` : `Ưu tiên ${cfg.label}`}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
                 <button
                   type="submit"
                   className="rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] active:scale-[0.98] text-white px-4 py-1.5 text-xs font-bold transition-all shadow-xs flex items-center gap-1 cursor-pointer shrink-0 disabled:opacity-50"
@@ -500,7 +452,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                   <span>{isEn ? 'Filter' : 'Lọc'}</span>
                 </button>
 
-                {(query || status || priorityFilter) && (
+                {(query || status) && (
                   <button
                     type="button"
                     onClick={handleClearFilters}
@@ -533,7 +485,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                 <span className="font-semibold">
                   {isEn ? `Requests List (${filteredItems.length}/${data.totalCount})` : `Danh sách yêu cầu (${filteredItems.length}/${data.totalCount})`}
                 </span>
-                {(query || status || priorityFilter) && (
+                {(query || status) && (
                   <button
                     type="button"
                     onClick={handleClearFilters}
@@ -549,14 +501,13 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                 {filteredItems.map(r => {
                   const isSelected = detail?.request?.id === r.id;
                   const statusInfo = statusConfig[r.status] || statusConfig.Open;
-                  const priorityInfo = priorityConfig[r.priority] || priorityConfig.Normal;
                   const { topic, cleanSubject } = extractTopic(r.subject);
 
                   return (
                     <article
                       key={r.id}
                       onClick={() => open(r.id)}
-                      className={`p-4 transition-all cursor-pointer relative border-l-4 ${priorityInfo.stripeClass} ${
+                      className={`p-4 transition-all cursor-pointer relative border-l-4 ${statusInfo.borderClass} ${
                         isSelected
                           ? 'bg-[#81B29A]/10 ring-1 ring-inset ring-[#81B29A]/30 shadow-xs'
                           : 'bg-white dark:bg-slate-900 hover:bg-slate-50/80 dark:hover:bg-slate-800/40'
@@ -600,13 +551,8 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                         </span>
                       </div>
 
-                      {/* Footer Row: Priority & Timestamp */}
-                      <div className="flex items-center justify-between gap-2 mt-2 pt-2 border-t border-slate-100/80 dark:border-slate-800/80 text-[11px]">
-                        <span className={`inline-flex items-center gap-1 px-1.5 py-0.2 rounded text-[10px] border ${priorityInfo.badgeClass}`}>
-                          <span className="material-symbols-outlined text-[12px]">{priorityInfo.icon}</span>
-                          {isEn ? `${priorityInfo.label} Priority` : `Ưu tiên ${priorityInfo.label}`}
-                        </span>
-
+                      {/* Timestamp */}
+                      <div className="flex items-center justify-end gap-2 mt-2 pt-2 border-t border-slate-100/80 dark:border-slate-800/80 text-[11px]">
                         <span className="text-slate-400 flex items-center gap-1 shrink-0">
                           <span className="material-symbols-outlined text-[13px]">schedule</span>
                           {formatMemberDateTime(r.createdAt)}
@@ -683,10 +629,6 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusConfig[detail.request.status]?.badgeClass}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[detail.request.status]?.dotClass}`} />
                       {statusConfig[detail.request.status]?.label}
-                    </span>
-                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-xs border ${priorityConfig[detail.request.priority]?.badgeClass}`}>
-                      <span className="material-symbols-outlined text-[13px]">{priorityConfig[detail.request.priority]?.icon}</span>
-                      {isEn ? `${priorityConfig[detail.request.priority]?.label} Priority` : `Ưu tiên ${priorityConfig[detail.request.priority]?.label}`}
                     </span>
                   </div>
 
@@ -965,7 +907,6 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                   setMember(null);
                   setCreateSubject('');
                   setCreateDescription('');
-                  setCreatePriority('Normal');
                   setCreating(true);
                 }}
                 className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-800 dark:text-slate-200 text-xs font-bold transition-colors cursor-pointer hover-lift"
@@ -1062,34 +1003,6 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
               />
             </div>
 
-            {/* Step 5: Mức ưu tiên */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
-                <span className="material-symbols-outlined text-[16px] text-[#2D6A4F] dark:text-[#81B29A]">flag</span>
-                <span>{isEn ? 'Priority Level' : 'Mức độ ưu tiên'}</span>
-              </label>
-              <div className="grid grid-cols-3 gap-2.5">
-                {Object.entries(priorityConfig).map(([v, cfg]) => {
-                  const isActive = createPriority === v;
-                  return (
-                    <button
-                      type="button"
-                      key={v}
-                      onClick={() => setCreatePriority(v)}
-                      className={`p-3 rounded-xl border text-center transition-all cursor-pointer flex flex-col items-center gap-1 hover-lift ${
-                        isActive
-                          ? `${cfg.badgeClass} ring-2 ring-[#81B29A]/40 shadow-xs font-black`
-                          : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-400 hover:bg-slate-50'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[20px]">{cfg.icon}</span>
-                      <span className="text-xs font-bold">{cfg.label}</span>
-                    </button>
-                  );
-                })}
-              </div>
-              <input type="hidden" name="priority" value={createPriority} />
-            </div>
           </fieldset>
 
           {/* Footer Actions */}

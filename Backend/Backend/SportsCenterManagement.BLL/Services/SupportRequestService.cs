@@ -61,17 +61,17 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
         from member in unitOfWork.Context.MemberProfiles.AsNoTracking().Where(item => item.Id == request.MemberId).DefaultIfEmpty()
         orderby request.CreatedAt descending, request.Id descending
         select new SupportSummary(request.Id, request.MemberId, member == null ? null : member.FullName,
-            member == null ? null : member.MemberCode, request.Subject, request.Priority, request.Status,
+            member == null ? null : member.MemberCode, request.Subject, request.Status,
             request.CreatedAt, request.ResolvedAt, request.RequesterId,
             member != null ? member.FullName : unitOfWork.Context.CoachProfiles.Where(item => item.UserId == request.RequesterId)
                 .Select(item => item.FullName).FirstOrDefault() ?? user.Username,
             request.MemberId.HasValue ? "MEMBER" : "COACH", request.CenterId);
 
-    private static void Validate(string subject, string description, string priority)
+    private static void Validate(string subject, string description)
     {
         if (string.IsNullOrWhiteSpace(subject) || string.IsNullOrWhiteSpace(description)
-            || subject.Length > 200 || description.Length > 5000 || priority is not ("Low" or "Normal" or "High"))
-            throw new FlowException(400, "Nhập tiêu đề, nội dung và mức ưu tiên hợp lệ.");
+            || subject.Length > 200 || description.Length > 5000)
+            throw new FlowException(400, "Nhập tiêu đề và nội dung yêu cầu hợp lệ.");
     }
 
     private async Task<SupportPage> Page(IQueryable<SupportRequest> rows, string? query, string? status,
@@ -133,9 +133,9 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
     public async Task<SupportDetails> CreateMine(long actorId, SubmitSupportRequest body, CancellationToken ct)
     {
         var requester = await Requester(actorId, ct);
-        Validate(body.Subject, body.Description, body.Priority);
+        Validate(body.Subject, body.Description);
         await using var tx = await unitOfWork.Context.Database.BeginTransactionAsync(ct);
-        var request = NewRequest(actorId, requester.CenterId, requester.MemberId, body.Subject, body.Description, body.Priority);
+        var request = NewRequest(actorId, requester.CenterId, requester.MemberId, body.Subject, body.Description);
         unitOfWork.Context.SupportRequests.Add(request);
         await unitOfWork.SaveChangesAsync(ct);
         Audit(actorId, request, "Support.Submitted");
@@ -148,12 +148,12 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
     public async Task<SupportDetails> Create(long actorId, long centerId, CreateSupportRequest body, CancellationToken ct)
     {
         await EnsureStaff(actorId, centerId, ct);
-        Validate(body.Subject, body.Description, body.Priority);
+        Validate(body.Subject, body.Description);
         var requesterId = await unitOfWork.Context.MemberProfiles.Where(member => member.Id == body.MemberId && member.CenterId == centerId)
             .Select(member => (long?)member.UserId).SingleOrDefaultAsync(ct)
             ?? throw new FlowException(404, "Không tìm thấy thành viên tại trung tâm này.");
         await using var tx = await unitOfWork.Context.Database.BeginTransactionAsync(ct);
-        var request = NewRequest(requesterId, centerId, body.MemberId, body.Subject, body.Description, body.Priority);
+        var request = NewRequest(requesterId, centerId, body.MemberId, body.Subject, body.Description);
         request.HandledBy = actorId;
         unitOfWork.Context.SupportRequests.Add(request);
         await unitOfWork.SaveChangesAsync(ct);
@@ -209,9 +209,9 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
         return await GetMine(actorId, id, ct);
     }
 
-    private static SupportRequest NewRequest(long requesterId, long centerId, long? memberId, string subject, string description, string priority) =>
+    private static SupportRequest NewRequest(long requesterId, long centerId, long? memberId, string subject, string description) =>
         new() { RequesterId = requesterId, CenterId = centerId, MemberId = memberId, Subject = subject.Trim(),
-            Description = description.Trim(), Priority = priority, Status = "Open", CreatedAt = DateTime.UtcNow };
+            Description = description.Trim(), Status = "Open", CreatedAt = DateTime.UtcNow };
 
     private void AddMessage(long actorId, long requestId, string message) =>
         unitOfWork.Context.SupportRequestMessages.Add(new SupportRequestMessage {
@@ -223,5 +223,5 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
 
     private void Audit(long actorId, SupportRequest request, string action) => unitOfWork.Context.AuditLogs.Add(new AuditLog {
         UserId = actorId, CenterId = request.CenterId, EntityId = request.Id, EntityType = "SupportRequest", Action = action,
-        NewValues = JsonSerializer.Serialize(new { request.RequesterId, request.MemberId, request.Status, request.Priority }), CreatedAt = DateTime.UtcNow });
+        NewValues = JsonSerializer.Serialize(new { request.RequesterId, request.MemberId, request.Status }), CreatedAt = DateTime.UtcNow });
 }

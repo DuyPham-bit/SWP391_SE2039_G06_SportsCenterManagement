@@ -24,7 +24,8 @@ public sealed record SaveLeaveRequest(
 
 public sealed record ReviewLeaveRequest(
     [Required, StringLength(30)] string Status,
-    [StringLength(1000)] string? ManagerNote);
+    [StringLength(1000)] string? ManagerNote,
+    long? ReplacementCoachId);
 
 public sealed record SaveHealthRecordRequest(
     long MemberId,
@@ -118,19 +119,9 @@ public sealed record SaveCompensationPolicyRequest(
     long CoachId,
     [Range(0, 1000000000)] decimal MonthlyBaseSalary,
     [Range(0, 100000000)] decimal CommissionPerSession,
-    [Range(0, 100)] decimal SalesCommissionPercent,
     [Range(0, 10000)] int TargetSessions,
-    [Range(0, 100000000000)] decimal TargetSales,
     DateOnly EffectiveFrom,
     DateOnly? EffectiveTo);
-
-public sealed record SaveSalesCreditRequest(
-    long CoachId,
-    long? MemberId,
-    long? SubscriptionId,
-    [Range(0.01, 100000000000)] decimal Amount,
-    DateTime? CreditedAt,
-    [StringLength(500)] string? Note);
 
 public sealed record SaveCoachReviewRequest(
     long CoachId,

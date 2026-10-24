@@ -51,7 +51,7 @@ public sealed class ReportService(
             from refund in _unitOfWork.Context.PaymentRefunds.AsNoTracking()
             join payment in _unitOfWork.Context.Payments.AsNoTracking() on refund.PaymentId equals payment.Id
             join invoice in _unitOfWork.Context.Invoices.AsNoTracking() on payment.InvoiceId equals invoice.Id
-            where invoice.CenterId == centerId && refund.Status == "Succeeded"
+            where invoice.CenterId == centerId && (refund.Status == "Succeeded" || refund.Status == "Approved")
                 && refund.ProcessedAt != null && refund.ProcessedAt >= startUtc && refund.ProcessedAt < endUtc
             select new { payment.InvoiceId, refund.Amount }).ToListAsync(cancellationToken);
         var invoiceIds = payments.Select(item => item.InvoiceId)
@@ -196,7 +196,7 @@ public sealed class ReportService(
             join invoice in db.Invoices on payment.InvoiceId equals invoice.Id
             join item in db.InvoiceItems on invoice.Id equals item.InvoiceId
             where invoice.CenterId == centerId && item.PackageId.HasValue && invoice.Subtotal > 0
-                && refund.Status == "Succeeded" && refund.ProcessedAt >= startUtc && refund.ProcessedAt < endUtc
+                && (refund.Status == "Succeeded" || refund.Status == "Approved") && refund.ProcessedAt >= startUtc && refund.ProcessedAt < endUtc
             select new { PackageId = item.PackageId!.Value, Amount = refund.Amount * item.Amount / invoice.Subtotal })
             .ToListAsync(cancellationToken);
         var packageStats = packages.Select(pkg =>

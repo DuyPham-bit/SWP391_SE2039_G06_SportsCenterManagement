@@ -356,8 +356,18 @@ export const staffApi = {
     return items.map(mapStaff);
   },
 
+  async searchMembers(query = '') {
+    const q = (query || '').trim();
+    if (q && q.length < 2) return [];
+    const params = new URLSearchParams({ page: '1', pageSize: '50' });
+    if (q) params.set('query', q);
+    const result = await apiRequest(`centers/${centerId()}/members?${params}`);
+    const items = [...asArray(result)];
+    return items.map(mapMember);
+  },
+
   async getAvailableMembers(query = '') {
-    return receptionApi.lookupMember(query);
+    return this.searchMembers(query);
   },
 
   previewRoleId() {
@@ -373,8 +383,9 @@ export const staffApi = {
           hireDate: staffData.hireDate || new Date().toISOString().slice(0, 10),
           specialization: staffData.specialty?.trim() || null,
           certification: staffData.certification?.trim() || null,
-          experienceYears: staffData.experienceYears ?? null, bio: staffData.bio?.trim() || null
-          , sportIds: staffData.sportIds || []
+          experienceYears: staffData.experienceYears != null && staffData.experienceYears !== '' ? Number(staffData.experienceYears) : null,
+          bio: staffData.bio?.trim() || null,
+          sportIds: staffData.sportIds || []
         }
       }));
     }
@@ -656,8 +667,7 @@ export const receptionApi = {
     return this.createSupportRequest({
       memberId: candidates[0].id,
       subject: `Yêu cầu xử lý ngoại lệ check-in · ${candidates[0].memberCode}`,
-      description: `Lý do: ${reason.trim()}\nNgười được đề nghị xử lý: ${requestedApprover?.trim() || 'Quản lý trung tâm'}\nĐây là yêu cầu chờ xử lý; chưa phê duyệt check-in hoặc mở cổng.`,
-      priority: 'High'
+      description: `Lý do: ${reason.trim()}\nNgười được đề nghị xử lý: ${requestedApprover?.trim() || 'Quản lý trung tâm'}\nĐây là yêu cầu chờ xử lý; chưa phê duyệt check-in hoặc mở cổng.`
     });
   },
 
@@ -693,30 +703,6 @@ export const receptionApi = {
     });
   },
 
-  async refundPayment(paymentId, { amount, reason, externalRefundReference, idempotencyKey }) {
-    if (!idempotencyKey) throw new Error('Thiếu mã chống tạo lệnh hoàn tiền trùng.');
-    return apiRequest(`payments/${paymentId}/refunds`, {
-      method: 'POST',
-      headers: { 'Idempotency-Key': idempotencyKey },
-      body: {
-        amount: Number(amount),
-        reason: reason?.trim() || '',
-        externalRefundReference: externalRefundReference?.trim() || null
-      }
-    });
-  },
-
-  async reconcileRefund(refundId, { status, providerRefundId, evidenceNote }) {
-    return apiRequest(`payments/refunds/${Number(refundId)}/reconcile`, {
-      method: 'POST',
-      body: {
-        status,
-        providerRefundId: providerRefundId?.trim() || null,
-        evidenceNote: evidenceNote?.trim() || ''
-      }
-    });
-  },
-
   async voidCounterInvoice(invoiceNumber, reason) {
     return apiRequest(`payments/counter-void/${encodeURIComponent(invoiceNumber)}`, {
       method: 'POST',
@@ -732,9 +718,9 @@ export const receptionApi = {
     return apiRequest(`centers/${centerId()}/support-requests/${Number(id)}`);
   },
 
-  async createSupportRequest({ memberId, subject, description, priority }) {
+  async createSupportRequest({ memberId, subject, description }) {
     return apiRequest(`centers/${centerId()}/support-requests`, {
-      method: 'POST', body: { memberId: Number(memberId), subject: subject.trim(), description: description.trim(), priority }
+      method: 'POST', body: { memberId: Number(memberId), subject: subject.trim(), description: description.trim() }
     });
   },
 

@@ -239,6 +239,38 @@ public sealed record PaymentRefundResponse(
     string Message,
     DateTime CreatedAtUtc,
     DateTime? ProcessedAtUtc);
+
+public sealed record ManualRefundRequestResponse(
+    long Id,
+    long PaymentId,
+    string InvoiceNumber,
+    long MemberId,
+    string MemberName,
+    string? MemberCode,
+    decimal PaymentAmount,
+    decimal Amount,
+    string PaymentMethod,
+    string Status,
+    string Reason,
+    string BankName,
+    string BankAccountNumber,
+    string BankAccountName,
+    long RequestedBy,
+    DateTime RequestedAtUtc,
+    long? ReviewedBy,
+    string? ReviewerName,
+    DateTime? ReviewedAtUtc,
+    string? ReviewNote,
+    string? TransferProofUrl,
+    string? TransferReference);
+
+public sealed record RefundEligiblePaymentResponse(
+    long PaymentId,
+    string InvoiceNumber,
+    decimal PaidAmount,
+    decimal RefundableAmount,
+    string PaymentMethod,
+    DateTime? PaidAtUtc);
 }
 
 namespace SportsCenterManagement.BLL.DTOs.Payments

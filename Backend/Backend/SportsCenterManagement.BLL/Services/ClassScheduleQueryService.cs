@@ -47,7 +47,8 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
         if (query.CenterId is { } centerId) sessions = sessions.Where(x => x.cls.CenterId == centerId);
         if (query.SportId is { } sportId) sessions = sessions.Where(x => x.cls.SportId == sportId);
         if (query.CoachId is { } coachId)
-            sessions = sessions.Where(x => Db.ClassCoaches.Any(cc => cc.ClassId == x.cls.Id && cc.CoachId == coachId));
+            sessions = sessions.Where(x => x.session.CoachId == coachId ||
+                (x.session.CoachId == null && Db.ClassCoaches.Any(cc => cc.ClassId == x.cls.Id && cc.CoachId == coachId)));
 
         var total = await sessions.CountAsync(cancellationToken);
         var page = await sessions
@@ -56,6 +57,7 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
             .Select(x => new
             {
                 x.session.Id,
+                x.session.CoachId,
                 ClassId = x.cls.Id,
                 ClassName = x.cls.Name,
                 x.cls.SportId,
@@ -77,12 +79,17 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
                 RoomActive = (x.session.RoomId ?? x.cls.RoomId) == null
                     || Db.Rooms.Any(r => r.Id == (x.session.RoomId ?? x.cls.RoomId)
                         && r.CenterId == x.cls.CenterId && r.Status == "Active"),
-                ActivePrimaryCoach = Db.ClassCoaches.Any(assignment => assignment.ClassId == x.cls.Id
-                    && assignment.IsPrimary
-                    && Db.CoachProfiles.Any(coach => coach.Id == assignment.CoachId
+                ActivePrimaryCoach = x.session.CoachId.HasValue
+                    ? Db.CoachProfiles.Any(coach => coach.Id == x.session.CoachId
                         && coach.CenterId == x.cls.CenterId && coach.Status == "Active"
                         && Db.Users.Any(user => user.Id == coach.UserId && user.Status == "Active"
-                            && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)))),
+                            && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)))
+                    : Db.ClassCoaches.Any(assignment => assignment.ClassId == x.cls.Id
+                        && assignment.IsPrimary
+                        && Db.CoachProfiles.Any(coach => coach.Id == assignment.CoachId
+                            && coach.CenterId == x.cls.CenterId && coach.Status == "Active"
+                            && Db.Users.Any(user => user.Id == coach.UserId && user.Status == "Active"
+                                && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)))),
                 Booked = Db.SessionBookings.Count(b => b.SessionId == x.session.Id && b.Status == FlowStatuses.BookingBooked)
             })
             .ToListAsync(cancellationToken);
@@ -98,17 +105,24 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
             orderby cc.IsPrimary descending
             select new { cc.ClassId, coach.Id, coach.FullName }).ToListAsync(cancellationToken);
         var coachByClass = coaches.GroupBy(c => c.ClassId).ToDictionary(g => g.Key, g => g.First());
+        var overrideCoachIds = page.Where(x => x.CoachId.HasValue).Select(x => x.CoachId!.Value).Distinct().ToArray();
+        var overrideCoaches = await Db.CoachProfiles.AsNoTracking().Where(x => overrideCoachIds.Contains(x.Id))
+            .Select(x => new { x.Id, x.FullName }).ToDictionaryAsync(x => x.Id, cancellationToken);
 
         var now = ScheduleTime.VietnamNow;
         var items = page.Select(p =>
         {
             var capacity = p.RoomCapacity is { } rc ? Math.Min(p.Capacity, rc) : p.Capacity;
-            coachByClass.TryGetValue(p.ClassId, out var coach);
+            coachByClass.TryGetValue(p.ClassId, out var primaryCoach);
+            overrideCoaches.TryGetValue(p.CoachId ?? 0, out var overrideCoach);
+            var hasOverride = p.CoachId.HasValue && overrideCoach is not null;
+            var effectiveCoachId = hasOverride ? overrideCoach!.Id : primaryCoach?.Id;
+            var effectiveCoachName = hasOverride ? overrideCoach!.FullName : primaryCoach?.FullName;
             var open = p.SessionStatus == FlowStatuses.SessionScheduled && p.ClassStatus == FlowStatuses.ClassPublished;
             var available = Math.Max(0, capacity - p.Booked);
             return new SessionScheduleItemResponse(
                 p.Id, p.ClassId, p.ClassName, p.SportId, p.SportName, p.RoomId,
-                coach?.Id, coach?.FullName, p.SessionDate, p.StartTime, p.EndTime,
+                effectiveCoachId, effectiveCoachName, p.SessionDate, p.StartTime, p.EndTime,
                 p.SessionStatus, p.ClassStatus, capacity, p.Booked, available,
                 IsBookable: open && p.RoomActive && p.ActivePrimaryCoach
                     && p.SessionDate.ToDateTime(p.StartTime) - now >= TimeSpan.FromMinutes(30)
@@ -153,7 +167,8 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
                 && (includeHistory || (cls.Status != FlowStatuses.ClassCancelled && cls.Status != FlowStatuses.ClassCompleted))
                 && cls.CenterId == coach.CenterId && sport.Status == "Active"
                 && Db.Centers.Any(center => center.Id == cls.CenterId && center.Status == "Active")
-                && Db.ClassCoaches.Any(cc => cc.ClassId == cls.Id && cc.CoachId == coach.Id)
+                && (session.CoachId == coach.Id || (session.CoachId == null &&
+                    Db.ClassCoaches.Any(cc => cc.ClassId == cls.Id && cc.CoachId == coach.Id)))
             orderby session.SessionDate, session.StartTime
             select new
             {

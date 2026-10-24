@@ -121,7 +121,10 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
               id: 'member_packages',
               label: isEn ? 'Packages & Billing' : 'Gói tập & Thanh toán',
               icon: 'credit_card',
-              path: '#/member/packages'
+              subItems: [
+                { label: isEn ? 'Packages & Billing' : 'Gói tập & Thanh toán', path: '#/member/packages' },
+                { label: isEn ? 'Refund Requests' : 'Yêu cầu hoàn tiền', path: '#/member/refunds' }
+              ]
             }
           ]
         }
@@ -146,7 +149,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
               subItems: [
                 { label: isEn ? 'Teaching Schedule' : 'Lịch giảng dạy', path: '#/coach/schedule' },
                 { label: isEn ? 'Attendance Check-in' : 'Điểm danh học viên', path: '#/coach/attendance' },
-                { label: isEn ? 'Leave Requests' : 'Xin nghỉ phép', path: '#/coach/support' }
+                { label: isEn ? 'Leave Requests' : 'Xin nghỉ phép', path: '#/coach/professional?tab=schedule' }
               ]
             },
             {
@@ -199,15 +202,12 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
             },
             {
               id: 'coach_performance',
-              label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất',
+              label: isEn ? 'Performance & Salary' : 'Hiệu suất & Lương',
               icon: 'monitoring',
-              path: '#/coach/performance'
-            },
-            {
-              id: 'coach_resources',
-              label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị',
-              icon: 'inventory_2',
-              path: '#/coach/resources'
+              subItems: [
+                { label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất', path: '#/coach/performance' },
+                { label: isEn ? 'My Salary' : 'Bảng lương của tôi', path: '#/coach/salary' }
+              ]
             }
           ]
         }
@@ -259,6 +259,12 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
               label: isEn ? 'Receive Support Requests' : 'Tiếp nhận hỗ trợ',
               icon: 'support_agent',
               path: '#/receptionist/support'
+            },
+            {
+              id: 'rec_payroll',
+              label: isEn ? 'My Salary' : 'Bảng lương của tôi',
+              icon: 'payments',
+              path: '#/receptionist/payroll'
             }
           ]
         }
@@ -291,7 +297,8 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
           items: [
             { id: 'admin_roles', label: isEn ? 'Roles & Permissions' : 'Vai trò & phân quyền', icon: 'policy', path: '#/admin/roles-permissions' },
             { id: 'admin_audit', label: isEn ? 'System Audit Log' : 'Nhật ký audit hệ thống', icon: 'history', path: '#/admin/audit-logs' },
-            { id: 'admin_content', label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', icon: 'dashboard_customize', path: '#/admin/home-content' }
+            { id: 'admin_content', label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', icon: 'dashboard_customize', path: '#/admin/home-content' },
+            { id: 'admin_payroll', label: isEn ? 'System Payroll' : 'Lương toàn hệ thống', icon: 'payments', path: '#/admin/payroll' }
           ]
         }
       ];
@@ -321,7 +328,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
               { label: isEn ? 'Classes, Sports & Courts' : 'Lớp, bộ môn & phòng', path: '#/manager/classes-rooms' },
               { label: isEn ? 'Membership Packages' : 'Gói tập hội viên', path: '#/manager/packages' },
               { label: isEn ? 'Coach Assignment' : 'Phân công HLV', path: '#/manager/coach-assignment' },
-              { label: isEn ? 'Coach Operations' : 'Vận hành đội ngũ HLV', path: '#/manager/coach-operations' },
+              { label: isEn ? 'Coach Leave Approvals' : 'Duyệt đơn nghỉ HLV', path: '#/manager/coach-operations' },
               ...(normalizedRole === 'MANAGER' ? [{ label: isEn ? 'Support & Announcements' : 'Hỗ trợ & Thông báo', path: '#/manager/support-communications' }] : []),
               { label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', path: '#/manager/home-content' }
             ]
@@ -333,12 +340,20 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
         items: [
           {
             id: 'mgr_invoices',
-            label: isEn ? 'Invoices & Payments' : 'Quản lý Hóa đơn & Thu tiền',
+            label: isEn ? 'Invoices & Payments' : 'Hóa đơn & Tài chính',
             icon: 'receipt_long',
-            path: '#/manager/invoices'
+            subItems: [
+              { label: isEn ? 'Invoices & Refunds' : 'Hóa đơn & Hoàn tiền', path: '#/manager/invoices' }
+            ]
           }
         ]
       }]),
+      {
+        category: isEn ? 'SALARY' : 'TIỀN LƯƠNG',
+        items: [
+          { id: 'mgr_payroll', label: isEn ? 'Salary & Payroll Report' : 'Lương & Báo cáo tiền lương', icon: 'payments', path: '#/manager/payroll' }
+        ]
+      },
       {
         category: isEn ? 'CENTER STAFF' : 'NHÂN SỰ CƠ SỞ',
         items: [

@@ -23,6 +23,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<CoachSport> CoachSports => Set<CoachSport>();
     public DbSet<CoachLeave> CoachLeaves => Set<CoachLeave>();
     public DbSet<StaffProfile> StaffProfiles => Set<StaffProfile>();
+    public DbSet<StaffCompensationPolicy> StaffCompensationPolicies => Set<StaffCompensationPolicy>();
     public DbSet<ClassEntity> Classes => Set<ClassEntity>();
     public DbSet<Notification> Notifications => Set<Notification>();
     public DbSet<AuditLog> AuditLogs => Set<AuditLog>();
@@ -62,11 +63,16 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<CoachMessage> CoachMessages => Set<CoachMessage>();
     public DbSet<CommunicationDelivery> CommunicationDeliveries => Set<CommunicationDelivery>();
     public DbSet<CoachCompensationPolicy> CoachCompensationPolicies => Set<CoachCompensationPolicy>();
-    public DbSet<CoachSalesCredit> CoachSalesCredits => Set<CoachSalesCredit>();
     public DbSet<CoachReview> CoachReviews => Set<CoachReview>();
     public DbSet<FacilityResource> FacilityResources => Set<FacilityResource>();
     public DbSet<ResourceBooking> ResourceBookings => Set<ResourceBooking>();
     public DbSet<EquipmentIssue> EquipmentIssues => Set<EquipmentIssue>();
+
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -84,6 +90,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
         modelBuilder.Entity<RolePermission>().HasKey(entity => new { entity.RoleId, entity.PermissionId });
         modelBuilder.Entity<ClassCoach>().HasKey(entity => new { entity.ClassId, entity.CoachId });
         modelBuilder.Entity<CoachSport>().HasKey(entity => new { entity.CoachId, entity.SportId });
+        modelBuilder.Entity<StaffCompensationPolicy>().HasIndex(entity => new { entity.UserId, entity.Status });
 
         modelBuilder.Entity<RolePermission>()
             .HasOne<Role>()
@@ -115,6 +122,21 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .WithMany()
             .HasForeignKey(entity => entity.CoachId)
             .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<StaffCompensationPolicy>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(entity => entity.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<StaffCompensationPolicy>()
+            .HasOne<Center>()
+            .WithMany()
+            .HasForeignKey(entity => entity.CenterId)
+            .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<StaffCompensationPolicy>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(entity => entity.UpdatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CoachSport>()
             .HasOne<Sport>()
             .WithMany()
@@ -711,6 +733,11 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .WithMany()
             .HasForeignKey(entity => entity.RequestedBy)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<PaymentRefund>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(entity => entity.ReviewedBy)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<SupportRequestMessage>()
             .HasOne<SupportRequest>()
@@ -794,14 +821,6 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .HasForeignKey(entity => entity.CoachId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CoachCompensationPolicy>().HasOne<User>().WithMany()
             .HasForeignKey(entity => entity.UpdatedBy).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CoachSalesCredit>().HasOne<CoachProfile>().WithMany()
-            .HasForeignKey(entity => entity.CoachId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CoachSalesCredit>().HasOne<MemberProfile>().WithMany()
-            .HasForeignKey(entity => entity.MemberId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CoachSalesCredit>().HasOne<MemberSubscription>().WithMany()
-            .HasForeignKey(entity => entity.SubscriptionId).OnDelete(DeleteBehavior.Restrict);
-        modelBuilder.Entity<CoachSalesCredit>().HasOne<User>().WithMany()
-            .HasForeignKey(entity => entity.CreatedBy).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CoachReview>().HasOne<CoachProfile>().WithMany()
             .HasForeignKey(entity => entity.CoachId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CoachReview>().HasOne<MemberProfile>().WithMany()

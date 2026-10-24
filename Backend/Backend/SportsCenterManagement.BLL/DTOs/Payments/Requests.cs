@@ -71,6 +71,39 @@ namespace SportsCenterManagement.BLL.DTOs.Payments
         public string? ExternalRefundReference { get; set; }
     }
 
+    public sealed class SubmitManualRefundRequest
+    {
+        [Range(typeof(decimal), "0.01", "1000000000")]
+        public decimal Amount { get; set; }
+
+        [Required, MinLength(5), MaxLength(500)]
+        public string Reason { get; set; } = string.Empty;
+
+        [Required, MinLength(2), MaxLength(100)]
+        public string BankName { get; set; } = string.Empty;
+
+        [Required, RegularExpression("^[0-9]{6,30}$")]
+        public string BankAccountNumber { get; set; } = string.Empty;
+
+        [Required, MinLength(2), MaxLength(150)]
+        public string BankAccountName { get; set; } = string.Empty;
+    }
+
+    public sealed class ReviewManualRefundRequest
+    {
+        [Required, RegularExpression("^(Approved|Rejected)$")]
+        public string Status { get; set; } = string.Empty;
+
+        [MaxLength(1000)]
+        public string? TransferProofUrl { get; set; }
+
+        [MaxLength(150)]
+        public string? TransferReference { get; set; }
+
+        [MaxLength(1000)]
+        public string? ReviewNote { get; set; }
+    }
+
     /// <summary>DTO tiếp nhận dữ liệu Webhook từ PayOS khi có giao dịch chuyển khoản thành công.</summary>
     public class PayOsWebhookRequest
     {

@@ -42,7 +42,6 @@ const CoachNotifications = lazy(() => import('./features/coach/CoachNotification
 const AIRecommendation = lazy(() => import('./features/coach/AIRecommendation.js').then(m => ({ default: m.AIRecommendation })));
 const PerformanceDashboard = lazy(() => import('./features/coach/PerformanceDashboard.jsx').then(m => ({ default: m.PerformanceDashboard })));
 const CoachSalaryKPI = PerformanceDashboard;
-const CoachResources = lazy(() => import('./features/coach/CoachResources.jsx').then(m => ({ default: m.CoachResources })));
 const CoachProfessionalHub = lazy(() => import('./features/coach/CoachProfessionalHub.jsx').then(m => ({ default: m.CoachProfessionalHub })));
 const ManagerCoachOperations = lazy(() => import('./features/manager/ManagerCoachOperations.jsx').then(m => ({ default: m.ManagerCoachOperations })));
 const ManagerSupportCommunications = lazy(() => import('./features/manager/ManagerSupportCommunications.jsx').then(m => ({ default: m.ManagerSupportCommunications })));
@@ -59,6 +58,8 @@ const MemberAIAssistant = lazy(() => import('./features/member/MemberAIAssistant
 const PaymentResult = lazy(() => import('./features/member/PaymentResult.js').then(m => ({ default: m.PaymentResult })));
 const MemberCoachPortal = lazy(() => import('./features/member/MemberCoachPortal.jsx').then(m => ({ default: m.MemberCoachPortal })));
 const MySupportRequests = lazy(() => import('./features/shared/MySupportRequests.jsx').then(m => ({ default: m.MySupportRequests })));
+const MemberRefundRequests = lazy(() => import('./features/member/MemberRefundRequests.jsx').then(m => ({ default: m.MemberRefundRequests })));
+const PayrollPage = lazy(() => import('./features/shared/PayrollPage.jsx').then(m => ({ default: m.PayrollPage })));
 
 function RouteFallback() {
   return (
@@ -205,6 +206,8 @@ function AppRouter() {
         return renderAdminRoute(AuditLogs);
       case '#/admin/home-content':
         return renderAdminRoute(HomeContentManagement);
+      case '#/admin/payroll':
+        return renderAdminRoute(PayrollPage);
 
       // MANAGER ROUTES: operations of the assigned center only.
       case '#/manager':
@@ -212,6 +215,8 @@ function AppRouter() {
         return renderManagerRoute(ManagerDashboard);
       case '#/manager/invoices':
         return renderManagerRoute(CounterInvoices, undefined, ['MANAGER', 'ADMIN']);
+      case '#/manager/payroll':
+        return renderManagerRoute(PayrollPage, undefined, ['MANAGER', 'ADMIN']);
       case '#/manager/members':
         return renderManagerRoute(MemberManagement);
       case '#/manager/staff':
@@ -249,6 +254,8 @@ function AppRouter() {
         return renderReceptionistRoute(CounterInvoices, 'register_counter_package');
       case '#/receptionist/support':
         return renderReceptionistRoute(SupportRequests, 'lookup_member');
+      case '#/receptionist/payroll':
+        return renderReceptionistRoute(PayrollPage);
       case '#/member/support':
       case '#/coach/support':
         return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MEMBER', 'COACH']}><MySupportRequests /></RoleGuard></ProtectedRoute></AppLayout>;
@@ -279,9 +286,8 @@ function AppRouter() {
       case '#/coach/salary-kpi':
       case '#/coach/kpi':
         return renderCoachRoute(PerformanceDashboard, 'manage_coach_workspace');
-      case '#/coach/resources':
-      case '#/coach/equipment':
-        return renderCoachRoute(CoachResources, 'manage_coach_workspace');
+      case '#/coach/salary':
+        return renderCoachRoute(PayrollPage, 'manage_coach_workspace');
       case '#/coach/professional':
       case '#/coach/messages':
         return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');
@@ -296,6 +302,8 @@ function AppRouter() {
         return renderMemberRoute(MemberDashboard);
       case '#/member/packages':
         return renderMemberRoute(MemberPackages);
+      case '#/member/refunds':
+        return renderMemberRoute(MemberRefundRequests);
       case '#/member/schedule':
         return renderMemberRoute(ClassScheduleView, 'book_class');
       case '#/member/bookings':

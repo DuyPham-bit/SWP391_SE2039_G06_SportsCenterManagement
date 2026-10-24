@@ -28,27 +28,6 @@ const getStatusConfig = (isEn) => ({
   }
 });
 
-const getPriorityConfig = (isEn) => ({
-  Low: {
-    label: isEn ? 'Low' : 'Thấp',
-    hint: isEn ? 'General feedback & inquiries' : 'Thắc mắc, góp ý thông thường',
-    badgeClass: 'bg-slate-100 text-slate-700 border-slate-200',
-    icon: 'info'
-  },
-  Normal: {
-    label: isEn ? 'Normal' : 'Bình thường',
-    hint: isEn ? 'Resolved within 24 hours' : 'Cần giải quyết trong 24 giờ',
-    badgeClass: 'bg-blue-50 text-blue-700 border-blue-200',
-    icon: 'schedule'
-  },
-  High: {
-    label: isEn ? 'High Priority' : 'Ưu tiên Cao',
-    hint: isEn ? 'Urgent / Direct impact' : 'Sự cố gấp / ảnh hưởng trực tiếp',
-    badgeClass: 'bg-red-50 text-red-700 border-red-200 font-bold',
-    icon: 'emergency'
-  }
-});
-
 const getMemberTopicPresets = (isEn) => [
   { prefix: isEn ? '[Package & Pass] ' : '[Gói tập & Thẻ] ', label: isEn ? '🎫 Packages & Renewals' : '🎫 Gói tập & Gia hạn', example: isEn ? 'Validity or membership privilege questions' : 'Thắc mắc thời hạn hoặc quyền lợi thẻ' },
   { prefix: isEn ? '[Class Schedule] ' : '[Lịch học] ', label: isEn ? '📅 Schedule & Bookings' : '📅 Lịch học & Đặt chỗ', example: isEn ? 'Reschedule request or session freeze' : 'Yêu cầu đổi ca hoặc bảo lưu buổi tập' },
@@ -72,7 +51,6 @@ export function MySupportRequests() {
   const isEn = language === 'en';
 
   const statusConfig = useMemo(() => getStatusConfig(isEn), [isEn]);
-  const priorityConfig = useMemo(() => getPriorityConfig(isEn), [isEn]);
 
   const isCoach = String(role || '').toUpperCase() === 'COACH';
   const topicPresets = useMemo(
@@ -83,7 +61,6 @@ export function MySupportRequests() {
   // Filter & Data States
   const [activeStatusTab, setActiveStatusTab] = useState(''); // '' | 'Open' | 'InProgress' | 'Resolved'
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [priorityFilter, setPriorityFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [revision, setRevision] = useState(0);
 
@@ -96,7 +73,6 @@ export function MySupportRequests() {
   const [creating, setCreating] = useState(false);
   const [createSubject, setCreateSubject] = useState('');
   const [createDescription, setCreateDescription] = useState('');
-  const [createPriority, setCreatePriority] = useState('Normal');
   const [createError, setCreateError] = useState('');
   const [submittingCreate, setSubmittingCreate] = useState(false);
 
@@ -145,7 +121,7 @@ export function MySupportRequests() {
     setDetailError('');
   }, [currentUser?.id]);
 
-  // Filter items in the loaded page by search term and priority
+  // Filter items in the loaded page by search term.
   const displayedItems = useMemo(() => {
     if (!data?.items) return [];
     let list = data.items;
@@ -159,12 +135,8 @@ export function MySupportRequests() {
       );
     }
 
-    if (priorityFilter) {
-      list = list.filter(item => item.priority === priorityFilter);
-    }
-
     return list;
-  }, [data?.items, searchKeyword, priorityFilter]);
+  }, [data?.items, searchKeyword]);
 
   // Stats calculation
   const stats = useMemo(() => {
@@ -232,18 +204,13 @@ export function MySupportRequests() {
     setCreateError('');
 
     try {
-      const res = await supportApi.submit({
-        subject,
-        description,
-        priority: createPriority
-      });
+      const res = await supportApi.submit({ subject, description });
 
       if (activeUserIdRef.current === currentId) {
         showSuccess(isEn ? `Request #${res.request.id} submitted successfully!` : `Đã gửi yêu cầu #${res.request.id} thành công!`);
         setCreating(false);
         setCreateSubject('');
         setCreateDescription('');
-        setCreatePriority('Normal');
         setDetail(res);
         setActiveStatusTab('');
         setCurrentPage(1);
@@ -357,7 +324,6 @@ export function MySupportRequests() {
                 setCreateError('');
                 setCreateSubject('');
                 setCreateDescription('');
-                setCreatePriority('Normal');
                 setCreating(true);
               }}
               className="inline-flex items-center gap-2 px-5 py-3 rounded-xl bg-slate-950 hover:bg-slate-900 text-white font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer"
@@ -468,20 +434,6 @@ export function MySupportRequests() {
             })}
           </div>
 
-          <div className="flex items-center gap-2 w-full sm:w-auto">
-            <label className="text-xs font-semibold text-slate-500 shrink-0">{isEn ? 'Priority:' : 'Mức ưu tiên:'}</label>
-            <select
-              aria-label={isEn ? "Filter by priority" : "Lọc mức ưu tiên"}
-              value={priorityFilter}
-              onChange={e => setPriorityFilter(e.target.value)}
-              className="rounded-xl border border-slate-200 bg-slate-50 px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none focus:ring-2 focus:ring-red-600 focus:bg-white"
-            >
-              <option value="">{isEn ? 'All Priorities' : 'Tất cả mức ưu tiên'}</option>
-              <option value="High">{isEn ? 'High Priority' : 'Ưu tiên Cao'}</option>
-              <option value="Normal">{isEn ? 'Normal' : 'Bình thường'}</option>
-              <option value="Low">{isEn ? 'Low' : 'Thấp'}</option>
-            </select>
-          </div>
         </div>
 
         {/* Search input */}
@@ -534,12 +486,12 @@ export function MySupportRequests() {
           </div>
           <div>
             <h3 className="font-chivo text-base font-bold text-slate-800">
-              {searchKeyword || priorityFilter || activeStatusTab
+              {searchKeyword || activeStatusTab
                 ? (isEn ? 'No requests match your filter' : 'Không tìm thấy yêu cầu phù hợp với bộ lọc')
                 : (isEn ? 'You have no support requests yet' : 'Bạn chưa có yêu cầu hỗ trợ nào')}
             </h3>
             <p className="text-xs text-slate-500 mt-1 max-w-md mx-auto">
-              {searchKeyword || priorityFilter || activeStatusTab
+              {searchKeyword || activeStatusTab
                 ? (isEn ? 'Try changing your search keyword or selecting a different status.' : 'Hãy thử thay đổi từ khóa tìm kiếm hoặc chọn lại trạng thái.')
                 : (isCoach
                     ? (isEn ? 'For any questions or issues during coaching and teaching, submit a request for Management assistance.' : 'Bất kỳ thắc mắc hoặc khó khăn nào trong quá trình tập luyện và giảng dạy, hãy gửi yêu cầu để Ban Quản Lý hỗ trợ bạn.')
@@ -568,7 +520,6 @@ export function MySupportRequests() {
           <div className="grid gap-3">
             {displayedItems.map(req => {
               const statusCfg = statusConfig[req.status] || statusConfig.Open;
-              const priorityCfg = priorityConfig[req.priority] || priorityConfig.Normal;
               const isSelected = detail?.request?.id === req.id;
 
               return (
@@ -607,12 +558,6 @@ export function MySupportRequests() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
-                      {/* Priority Badge */}
-                      <span className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs border ${priorityCfg.badgeClass}`}>
-                        <span className="material-symbols-outlined text-[14px]">{priorityCfg.icon}</span>
-                        <span>{priorityCfg.label}</span>
-                      </span>
-
                       {/* Status Badge */}
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${statusCfg.badgeClass}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dotClass} ${req.status === 'Open' ? 'animate-pulse' : ''}`} />
@@ -952,43 +897,6 @@ export function MySupportRequests() {
                 onChange={e => setCreateSubject(e.target.value)}
                 className="w-full rounded-xl border border-slate-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-red-600 focus:border-red-600"
               />
-            </div>
-
-            {/* Priority Selector Cards */}
-            <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-                {isEn ? 'Priority Level' : 'Mức độ ưu tiên'}
-              </label>
-              <div className="grid grid-cols-3 gap-2">
-                {[
-                  { id: 'Low', label: isEn ? 'Low' : 'Thấp', desc: isEn ? 'General feedback' : 'Góp ý thông thường', icon: 'info' },
-                  { id: 'Normal', label: isEn ? 'Normal' : 'Bình thường', desc: isEn ? 'Within 24 business hours' : 'Trong 24h làm việc', icon: 'schedule' },
-                  { id: 'High', label: isEn ? 'High Priority' : 'Ưu tiên Cao', desc: isEn ? 'Urgent / On-site issue' : 'Khẩn cấp / Tại chỗ', icon: 'emergency' }
-                ].map(p => {
-                  const isChecked = createPriority === p.id;
-                  return (
-                    <div
-                      key={p.id}
-                      onClick={() => setCreatePriority(p.id)}
-                      className={`cursor-pointer rounded-xl p-3 border text-center transition-all ${
-                        isChecked
-                          ? 'border-red-600 bg-red-50/60 ring-2 ring-red-600/20'
-                          : 'border-slate-200 bg-white hover:bg-slate-50'
-                      }`}
-                    >
-                      <div className="flex items-center justify-center gap-1">
-                        <span className={`material-symbols-outlined text-[16px] ${isChecked ? 'text-red-600' : 'text-slate-400'}`}>
-                          {p.icon}
-                        </span>
-                        <span className={`text-xs font-bold ${isChecked ? 'text-red-700' : 'text-slate-700'}`}>
-                          {p.label}
-                        </span>
-                      </div>
-                      <p className="text-[10px] text-slate-500 mt-0.5">{p.desc}</p>
-                    </div>
-                  );
-                })}
-              </div>
             </div>
 
             {/* Description Textarea */}

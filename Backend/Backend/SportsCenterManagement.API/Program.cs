@@ -29,7 +29,8 @@ builder.Services.AddHttpClient();
 
 // Layer 3: DAL (DbContext & Repository / Unit of Work Pattern)
 builder.Services.AddDbContext<SportsCenterDbContext>(options =>
-    options.UseSqlServer(connectionString));
+    options.UseSqlServer(connectionString)
+           .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddSingleton(jwtIssuer);
 builder.Services.AddScoped<JwtAccountValidator>();
@@ -89,6 +90,7 @@ builder.Services.AddScoped<ICheckinService, CheckinService>();
 builder.Services.AddScoped<SupportRequestService>();
 builder.Services.AddScoped<TrainingService>();
 builder.Services.AddScoped<CoachProfessionalService>();
+builder.Services.AddScoped<PayrollService>();
 builder.Services.AddScoped<MemberAiContextService>();
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddScoped<ClassReminderService>();

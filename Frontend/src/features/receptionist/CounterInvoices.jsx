@@ -6,6 +6,7 @@ import { formatMemberDateTime } from '../member/memberOverview.js';
 import { counterButton, counterInput, counterQuery, CounterError } from './ReceptionistShared.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useAuth } from '../../context/AuthContext.js';
+import { RefundManagement } from '../manager/RefundManagement.jsx';
 
 const money = value => `${Number(value || 0).toLocaleString('vi-VN')} VNĐ`;
 
@@ -29,12 +30,27 @@ export function CounterInvoices() {
   const [success, setSuccess] = useState('');
   const [warning, setWarning] = useState('');
   const attempt = useRef({});
-  const refundAttempt = useRef({});
   const sequence = useRef(0);
 
   const { currentUser, role: authRole } = useAuth();
   const currentRole = String(authRole || currentUser?.role || localStorage.getItem('role') || '').toUpperCase();
   const isManagerOrAdmin = currentRole === 'MANAGER' || currentRole === 'ADMIN';
+  const [workspaceTab, setWorkspaceTab] = useState(() =>
+    window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');
+
+  const changeWorkspaceTab = tab => {
+    setWorkspaceTab(tab);
+    if (isManagerOrAdmin) window.location.hash = `#/manager/invoices?tab=${tab}`;
+  };
+
+  useEffect(() => {
+    if (!isManagerOrAdmin) return undefined;
+    const syncTabFromHash = () => setWorkspaceTab(
+      window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');
+    window.addEventListener('hashchange', syncTabFromHash);
+    syncTabFromHash();
+    return () => window.removeEventListener('hashchange', syncTabFromHash);
+  }, [isManagerOrAdmin]);
 
   // Reconcile Modal State
   const [reconcileTarget, setReconcileTarget] = useState(null);
@@ -46,25 +62,6 @@ export function CounterInvoices() {
   });
   const [reconcileBusy, setReconcileBusy] = useState(false);
   const [reconcileError, setReconcileError] = useState('');
-
-  // Refund Modal State
-  const [refundTarget, setRefundTarget] = useState(null);
-  const [refundForm, setRefundForm] = useState({
-    amount: '',
-    reason: '',
-    externalRefundReference: ''
-  });
-  const [refundBusy, setRefundBusy] = useState(false);
-  const [refundError, setRefundError] = useState('');
-
-  const [refundReconcileTarget, setRefundReconcileTarget] = useState(null);
-  const [refundReconcileForm, setRefundReconcileForm] = useState({
-    status: 'Succeeded',
-    providerRefundId: '',
-    evidenceNote: ''
-  });
-  const [refundReconcileBusy, setRefundReconcileBusy] = useState(false);
-  const [refundReconcileError, setRefundReconcileError] = useState('');
 
   // Void Modal State
   const [voidTarget, setVoidTarget] = useState(null);
@@ -239,119 +236,6 @@ export function CounterInvoices() {
     }
   };
 
-  const openRefundModal = (payment, refundable) => {
-    setRefundTarget({ ...payment, refundable });
-    setRefundForm({
-      amount: String(refundable),
-      reason: '',
-      externalRefundReference: ''
-    });
-    refundAttempt.current = {};
-    setRefundError('');
-  };
-
-  const handleRefundSubmit = async e => {
-    e.preventDefault();
-    if (!refundTarget) return;
-    setRefundError('');
-    setSuccess('');
-    setWarning('');
-    const val = Number(refundForm.amount);
-    if (!Number.isFinite(val) || val <= 0 || val > refundTarget.refundable) {
-      setRefundError(isEn ? `Refund amount must be between 1 and ${money(refundTarget.refundable)}.` : `Số tiền hoàn phải lớn hơn 0 và tối đa ${money(refundTarget.refundable)}.`);
-      return;
-    }
-    if (refundForm.reason.trim().length < 5) {
-      setRefundError(isEn ? 'Refund reason must be at least 5 characters.' : 'Lý do hoàn tiền phải từ 5 ký tự trở lên.');
-      return;
-    }
-    const requiresExternalReference = String(refundTarget.paymentMethod || '').toUpperCase() === 'POS';
-    if (requiresExternalReference && !refundForm.externalRefundReference.trim()) {
-      setRefundError(isEn ? 'POS refunds require the bank or terminal refund reference.' : 'Hoàn tiền POS cần mã hoàn tiền từ ngân hàng hoặc máy POS.');
-      return;
-    }
-    const fingerprint = JSON.stringify([
-      refundTarget.id,
-      val,
-      refundForm.reason.trim(),
-      refundForm.externalRefundReference.trim()
-    ]);
-    if (refundAttempt.current.fingerprint !== fingerprint) {
-      refundAttempt.current = { fingerprint, key: createIdempotencyKey() };
-    }
-    setRefundBusy(true);
-    try {
-      const result = await receptionApi.refundPayment(refundTarget.id, {
-        amount: val,
-        reason: refundForm.reason.trim(),
-        externalRefundReference: refundForm.externalRefundReference.trim() || null,
-        idempotencyKey: refundAttempt.current.key
-      });
-      refundAttempt.current = {};
-      if (result.status === 'Succeeded') {
-        setSuccess(result.message || (isEn ? 'Payment refunded successfully.' : 'Đã hoàn tiền thành công.'));
-      } else if (result.status === 'Pending') {
-        setWarning(result.message || (isEn
-          ? 'The refund is pending verification. Use refund reconciliation after checking the provider evidence.'
-          : 'Lệnh hoàn tiền đang chờ xác minh. Hãy dùng đối soát hoàn tiền sau khi kiểm tra chứng từ từ nhà cung cấp.'));
-      } else {
-        setDetailError(result.message || (isEn
-          ? 'The provider rejected the refund. Review the transaction before trying again.'
-          : 'Nhà cung cấp đã từ chối hoàn tiền. Hãy kiểm tra giao dịch trước khi thử lại.'));
-      }
-      setRefundTarget(null);
-      const updated = await receptionApi.getInvoice(detail.invoiceNumber);
-      setDetail(updated);
-      reload();
-    } catch (err) {
-      setRefundError(err.message || (isEn ? 'Failed to refund payment.' : 'Lỗi khi hoàn tiền.'));
-    } finally {
-      setRefundBusy(false);
-    }
-  };
-
-  const openRefundReconcileModal = (payment, refund) => {
-    setRefundReconcileTarget({ ...refund, paymentMethod: payment.paymentMethod });
-    setRefundReconcileForm({ status: 'Succeeded', providerRefundId: refund.providerRefundId || '', evidenceNote: '' });
-    setRefundReconcileError('');
-  };
-
-  const handleRefundReconcileSubmit = async event => {
-    event.preventDefault();
-    if (!refundReconcileTarget) return;
-    setRefundReconcileError('');
-    setSuccess('');
-    setWarning('');
-    const provider = String(refundReconcileTarget.paymentMethod || '').toUpperCase();
-    const isGatewayRefund = provider.startsWith('VNPAY') || provider.startsWith('MOMO');
-    if (refundReconcileForm.status === 'Succeeded' && isGatewayRefund && !refundReconcileForm.providerRefundId.trim()) {
-      setRefundReconcileError(isEn ? 'Provider refund ID is required to confirm a gateway refund.' : 'Cần mã hoàn tiền của cổng để xác nhận refund thành công.');
-      return;
-    }
-    if (refundReconcileForm.evidenceNote.trim().length < 10) {
-      setRefundReconcileError(isEn ? 'Evidence note must be at least 10 characters.' : 'Ghi chú bằng chứng đối soát phải có ít nhất 10 ký tự.');
-      return;
-    }
-    setRefundReconcileBusy(true);
-    try {
-      const result = await receptionApi.reconcileRefund(refundReconcileTarget.id, {
-        status: refundReconcileForm.status,
-        providerRefundId: refundReconcileForm.providerRefundId,
-        evidenceNote: refundReconcileForm.evidenceNote
-      });
-      setWarning('');
-      setSuccess(result.message || (isEn ? 'Refund reconciliation completed.' : 'Đã hoàn tất đối soát hoàn tiền.'));
-      setRefundReconcileTarget(null);
-      const updated = await receptionApi.getInvoice(detail.invoiceNumber);
-      setDetail(updated);
-      reload();
-    } catch (err) {
-      setRefundReconcileError(err.message || (isEn ? 'Failed to reconcile refund.' : 'Không thể đối soát hoàn tiền.'));
-    } finally {
-      setRefundReconcileBusy(false);
-    }
-  };
-
   const openVoidModal = invoiceNumber => {
     setVoidTarget(invoiceNumber);
     setVoidReason('');
@@ -381,9 +265,6 @@ export function CounterInvoices() {
     }
   };
 
-  const refundRequiresExternalReference =
-    String(refundTarget?.paymentMethod || '').toUpperCase() === 'POS';
-
   return (
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner */}
@@ -400,14 +281,14 @@ export function CounterInvoices() {
           </span>
           <h1 className="font-chivo text-2xl md:text-3xl font-black mt-1 text-white tracking-tight">
             {isManagerOrAdmin
-              ? (isEn ? 'Invoices, Reconciliation & Refunds' : 'Quản Lý Hóa Đơn, Đối Soát & Hoàn Tiền')
+              ? (isEn ? 'Invoices & Refund Requests' : 'Quản lý hóa đơn & Yêu cầu hoàn tiền')
               : (isEn ? 'Invoices & Counter Cashiering' : 'Hóa Đơn & Thu Tiền Tại Quầy')}
           </h1>
           <p className="text-xs text-slate-300 mt-1 max-w-xl leading-relaxed">
             {isManagerOrAdmin
               ? (isEn
-                  ? 'Audit transactions, manually reconcile pending/failed bank gateways (Mechanism 1), process customer refunds (Mechanism 2), and void unpaid orders (Mechanism 3).'
-                  : 'Kiểm tra chứng từ, đối soát thủ công ngân hàng/VietQR (Cơ chế 1), thực hiện hoàn tiền (Cơ chế 2) và hủy hóa đơn chưa thanh toán (Cơ chế 3).')
+                  ? 'Review invoice details and process member refund requests in one financial workspace.'
+                  : 'Xem chi tiết hóa đơn và xử lý yêu cầu hoàn tiền của hội viên trong cùng một màn hình.')
               : (isEn
                   ? 'Look up receipts, collect outstanding balance, and print or export customer invoices.'
                   : 'Tra cứu chứng từ, thu số dư và in hoặc xuất hóa đơn đã lưu.')}
@@ -453,48 +334,28 @@ export function CounterInvoices() {
         </div>
       </div>
 
-      {/* Guide Banner for Manager */}
       {isManagerOrAdmin && (
-        <div className="p-4 rounded-2xl border border-emerald-500/20 bg-emerald-50/50 dark:bg-emerald-950/20 text-xs text-slate-700 dark:text-slate-300 space-y-2 shadow-2xs">
-          <div className="flex items-center gap-2 font-bold text-emerald-800 dark:text-emerald-300">
-            <span className="material-symbols-outlined text-[18px]">verified_user</span>
-            <span>{isEn ? 'Manager Payment Resolution Workflow' : 'Quy Trình Xử Lý Giao Dịch (Dành cho Quản Lý / Admin)'}</span>
-          </div>
-          <div className="grid md:grid-cols-3 gap-3 text-[11px] pt-1">
-            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <span className="font-bold text-emerald-700 dark:text-emerald-400 block mb-0.5">
-                {isEn ? '1. Reconcile (Cơ chế 1)' : '1. Đối Soát Thủ Công (Cơ chế 1)'}
-              </span>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                {isEn
-                  ? 'Click "View & Action" on invoice. In Payment History, click [Reconcile] on Pending/Failed payments to confirm.'
-                  : 'Bấm [Xem & Xử lý] trên hóa đơn. Tại "Lịch Sử Thanh Toán", bấm nút [Đối soát] trên dòng giao dịch Pending/Failed để chốt thành công.'}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <span className="font-bold text-amber-600 dark:text-amber-400 block mb-0.5">
-                {isEn ? '2. Refund (Cơ chế 2)' : '2. Hoàn Tiền (Cơ chế 2)'}
-              </span>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                {isEn
-                  ? 'Click "View & Action" on invoice. In Payment History, click [Refund] on Succeeded payments to refund full or partial amount.'
-                  : 'Bấm [Xem & Xử lý] trên hóa đơn. Tại "Lịch Sử Thanh Toán", bấm nút [Hoàn tiền] trên giao dịch Succeeded để hoàn lại.'}
-              </p>
-            </div>
-            <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800">
-              <span className="font-bold text-rose-600 dark:text-rose-400 block mb-0.5">
-                {isEn ? '3. Void Unpaid (Cơ chế 3)' : '3. Hủy Hóa Đơn Chưa Thanh Toán (Cơ chế 3)'}
-              </span>
-              <p className="text-slate-600 dark:text-slate-400 leading-relaxed">
-                {isEn
-                  ? 'Click "View & Action" on invoice. Click [Void Unpaid] at top-right of invoice detail to cancel unpaid Issued invoices.'
-                  : 'Bấm [Xem & Xử lý] trên hóa đơn. Bấm nút [Hủy hóa đơn] màu đỏ ở góc trên chi tiết hóa đơn (chỉ áp dụng cho hóa đơn chưa có thanh toán thành công).'}
-              </p>
-            </div>
-          </div>
-        </div>
+        <nav className="flex gap-2 rounded-2xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-800 dark:bg-slate-900">
+          {[
+            ['invoices', 'receipt_long', isEn ? 'Invoices' : 'Hóa đơn'],
+            ['refunds', 'currency_exchange', isEn ? 'Refund requests' : 'Yêu cầu hoàn tiền']
+          ].map(([id, icon, label]) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => changeWorkspaceTab(id)}
+              className={`inline-flex items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold transition-all ${
+                workspaceTab === id ? 'bg-[#1E2235] text-white shadow-sm' : 'text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800'
+              }`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{icon}</span>
+              {label}
+            </button>
+          ))}
+        </nav>
       )}
 
+      {isManagerOrAdmin && workspaceTab === 'refunds' ? <RefundManagement embedded /> : <>
       {/* Search Input Bar */}
       <form
         className="max-w-2xl bg-white dark:bg-slate-900 p-2.5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-800 flex items-center gap-2 hover-lift transition-all"
@@ -572,7 +433,7 @@ export function CounterInvoices() {
                         onClick={() => open(row.invoiceNumber)}
                       >
                         <span className="material-symbols-outlined text-[15px]">manage_search</span>
-                        <span>{isEn ? 'View & Action' : 'Xem & Xử lý'}</span>
+                <span>{isEn ? 'View details' : 'Xem chi tiết'}</span>
                       </button>
                     </td>
                   </tr>
@@ -658,7 +519,7 @@ export function CounterInvoices() {
                 <span className="material-symbols-outlined text-[16px]">download</span>
                 <span>{isEn ? 'Export CSV' : 'Xuất CSV'}</span>
               </button>
-              {isManagerOrAdmin && ['Issued', 'PartiallyPaid'].includes(detail.status) && !(detail.payments || []).some(p => p.status === 'Succeeded') && (
+              {!isManagerOrAdmin && ['Issued', 'PartiallyPaid'].includes(detail.status) && !(detail.payments || []).some(p => p.status === 'Succeeded') && (
                 <button
                   className="px-4 py-2 border border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer flex items-center gap-1.5 shadow-2xs"
                   disabled={busy}
@@ -735,12 +596,11 @@ export function CounterInvoices() {
               <p className="text-xs text-slate-400 dark:text-slate-500">{isEn ? 'No payment transactions recorded yet.' : 'Chưa ghi nhận thanh toán.'}</p>
             ) : (
               detail.payments.map(p => {
-                const canReconcile = isManagerOrAdmin && ['Pending', 'ReviewRequired', 'Failed'].includes(p.status);
+                const canReconcile = !isManagerOrAdmin && ['Pending', 'ReviewRequired', 'Failed'].includes(p.status);
                 const reservedRefundAmount = (p.refunds || [])
-                  .filter(r => ['Pending', 'Succeeded'].includes(r.status))
+                  .filter(r => ['Pending', 'Approved', 'Succeeded'].includes(r.status))
                   .reduce((acc, cur) => acc + cur.amount, 0);
                 const refundable = Math.max(0, p.amount - reservedRefundAmount);
-                const canRefund = isManagerOrAdmin && p.status === 'Succeeded' && refundable > 0;
 
                 return (
                   <div key={p.id} className="text-xs rounded-xl border border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/40 p-3.5 space-y-2">
@@ -768,17 +628,6 @@ export function CounterInvoices() {
                             {isEn ? 'Reconcile (Cơ chế 1)' : 'Đối soát (Cơ chế 1)'}
                           </button>
                         )}
-                        {canRefund && (
-                          <button
-                            type="button"
-                            onClick={() => openRefundModal(p, refundable)}
-                            className="px-3 py-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg text-[11px] font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-xs hover-lift"
-                            title={isEn ? 'Refund this payment' : 'Hoàn tiền cho giao dịch này (Cơ chế 2)'}
-                          >
-                            <span className="material-symbols-outlined text-[15px]">assignment_return</span>
-                            {isEn ? 'Refund (Cơ chế 2)' : 'Hoàn tiền (Cơ chế 2)'}
-                          </button>
-                        )}
                       </div>
                     </div>
                     <div className="text-[11px] text-slate-500 dark:text-slate-400 font-mono flex flex-wrap gap-x-3">
@@ -804,16 +653,6 @@ export function CounterInvoices() {
                             </p>
                           )}
                         </div>
-                        {isManagerOrAdmin && r.status === 'Pending' && (
-                          <button
-                            type="button"
-                            onClick={() => openRefundReconcileModal(p, r)}
-                            className="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold uppercase tracking-wider transition-all flex items-center gap-1.5 cursor-pointer shadow-xs hover-lift"
-                          >
-                            <span className="material-symbols-outlined text-[15px]">fact_check</span>
-                            {isEn ? 'Reconcile refund' : 'Đối soát hoàn tiền'}
-                          </button>
-                        )}
                       </div>
                     ))}
                   </div>
@@ -823,7 +662,7 @@ export function CounterInvoices() {
           </div>
 
           {/* Collect Subsequent Payment Form */}
-          {['Issued', 'PartiallyPaid'].includes(detail.status) && detail.outstandingBalance > 0 && (
+          {!isManagerOrAdmin && ['Issued', 'PartiallyPaid'].includes(detail.status) && detail.outstandingBalance > 0 && (
             <form onSubmit={record} className="space-y-4 border-t border-slate-100 dark:border-slate-800 pt-5">
               <h3 className="font-chivo text-xs font-black uppercase tracking-wider text-slate-900 dark:text-white">
                 {isEn ? 'Record Subsequent Balance Collection' : 'Ghi Nhận Khoản Thu Tiếp'}
@@ -1019,221 +858,6 @@ export function CounterInvoices() {
         </div>
       )}
 
-      {/* REFUND MODAL */}
-      {refundTarget && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] uppercase font-bold text-amber-600 dark:text-amber-400 tracking-wider">
-                  {isEn ? 'PAYMENT REFUND' : 'HOÀN TIỀN GIAO DỊCH'}
-                </span>
-                <h3 className="text-lg font-black font-chivo text-slate-900 dark:text-white mt-0.5">
-                  {isEn ? 'Create Payment Refund' : 'Tạo Lệnh Hoàn Tiền'}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={() => setRefundTarget(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-
-            <div className="p-3 bg-amber-50/50 dark:bg-amber-950/20 rounded-xl border border-amber-200 dark:border-amber-900/50 text-xs space-y-1">
-              <div className="flex justify-between">
-                <span className="text-slate-600 dark:text-slate-400">{isEn ? 'Original Payment:' : 'Khoản thu gốc:'}</span>
-                <strong className="text-slate-900 dark:text-white font-mono">{money(refundTarget.amount)} ({refundTarget.paymentMethod})</strong>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-slate-600 dark:text-slate-400">{isEn ? 'Max Refundable Balance:' : 'Số dư tối đa có thể hoàn:'}</span>
-                <strong className="text-emerald-700 dark:text-emerald-400 font-mono font-black">{money(refundTarget.refundable)}</strong>
-              </div>
-            </div>
-
-            {refundError && (
-              <div role="alert" className="p-3 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs rounded-xl border border-rose-200 dark:border-rose-900">
-                {refundError}
-              </div>
-            )}
-
-            <form onSubmit={handleRefundSubmit} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'Refund Amount (VNĐ) *' : 'Số tiền hoàn (VNĐ) *'}
-                </label>
-                <input
-                  type="number"
-                  step="1"
-                  min="1"
-                  max={refundTarget.refundable}
-                  required
-                  value={refundForm.amount}
-                  onChange={e => setRefundForm(f => ({ ...f, amount: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 text-xs font-mono font-bold focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'Refund Reason (min 5 chars) *' : 'Lý do hoàn tiền (tối thiểu 5 ký tự) *'}
-                </label>
-                <input
-                  type="text"
-                  required
-                  minLength={5}
-                  placeholder={isEn ? 'e.g. Duplicate payment refund' : 'VD: Khách trả thừa hoặc hủy gói theo yêu cầu'}
-                  value={refundForm.reason}
-                  onChange={e => setRefundForm(f => ({ ...f, reason: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 text-xs focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {refundRequiresExternalReference
-                    ? (isEn ? 'Bank / POS Refund Reference *' : 'Mã hoàn tiền ngân hàng / máy POS *')
-                    : (isEn ? 'External Reference / Bank Slip (Optional)' : 'Mã tham chiếu ngân hàng / Phiếu chi quầy (Tùy chọn)')}
-                </label>
-                <input
-                  type="text"
-                  required={refundRequiresExternalReference}
-                  placeholder={isEn ? 'e.g. REF-20261021-001' : 'VD: PC-20261021-001'}
-                  value={refundForm.externalRefundReference}
-                  onChange={e => setRefundForm(f => ({ ...f, externalRefundReference: e.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 text-xs focus:ring-2 focus:ring-amber-500"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  disabled={refundBusy}
-                  onClick={() => setRefundTarget(null)}
-                  className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 font-bold"
-                >
-                  {isEn ? 'Cancel' : 'Hủy bỏ'}
-                </button>
-                <button
-                  type="submit"
-                  disabled={refundBusy}
-                  className="px-5 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl font-bold uppercase tracking-wider shadow-md hover-lift flex items-center gap-1.5"
-                >
-                  {refundBusy && <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>}
-                  <span>{refundBusy ? (isEn ? 'Processing...' : 'Đang xử lý...') : (isEn ? 'Execute Refund' : 'Xác Nhận Hoàn Tiền')}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* REFUND RECONCILIATION MODAL */}
-      {refundReconcileTarget && (
-        <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-slate-900 rounded-2xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-slate-800 space-y-4 animate-scale-up">
-            <div className="flex justify-between items-start">
-              <div>
-                <span className="text-[11px] uppercase font-bold text-indigo-600 dark:text-indigo-400 tracking-wider">
-                  {isEn ? 'REFUND RECONCILIATION' : 'ĐỐI SOÁT HOÀN TIỀN'}
-                </span>
-                <h3 className="text-lg font-black font-chivo text-slate-900 dark:text-white mt-0.5">
-                  {isEn ? 'Confirm Provider Result' : 'Xác Nhận Kết Quả Nhà Cung Cấp'}
-                </h3>
-              </div>
-              <button
-                type="button"
-                disabled={refundReconcileBusy}
-                onClick={() => setRefundReconcileTarget(null)}
-                className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 p-1 rounded-lg"
-              >
-                <span className="material-symbols-outlined text-[20px]">close</span>
-              </button>
-            </div>
-
-            <div className="p-3 bg-indigo-50/60 dark:bg-indigo-950/20 rounded-xl border border-indigo-200 dark:border-indigo-900/50 text-xs flex justify-between gap-3">
-              <span className="text-slate-600 dark:text-slate-400">{isEn ? 'Pending amount' : 'Số tiền đang chờ'}</span>
-              <strong className="font-mono text-slate-900 dark:text-white">{money(refundReconcileTarget.amount)}</strong>
-            </div>
-
-            {refundReconcileError && (
-              <div role="alert" className="p-3 bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 text-xs rounded-xl border border-rose-200 dark:border-rose-900">
-                {refundReconcileError}
-              </div>
-            )}
-
-            <form onSubmit={handleRefundReconcileSubmit} className="space-y-3.5 text-xs">
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'Verified Result *' : 'Kết quả đã xác minh *'}
-                </label>
-                <select
-                  required
-                  value={refundReconcileForm.status}
-                  onChange={event => setRefundReconcileForm(form => ({ ...form, status: event.target.value }))}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 text-xs focus:ring-2 focus:ring-indigo-500"
-                >
-                  <option value="Succeeded">{isEn ? 'Succeeded — money returned' : 'Thành công — tiền đã hoàn'}</option>
-                  <option value="Failed">{isEn ? 'Failed — money not returned' : 'Thất bại — tiền chưa hoàn'}</option>
-                </select>
-              </div>
-
-              {refundReconcileForm.status === 'Succeeded' &&
-                ['VNPAY', 'MOMO'].some(provider => String(refundReconcileTarget.paymentMethod || '').toUpperCase().startsWith(provider)) && (
-                  <div>
-                    <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                      {isEn ? 'Provider Refund ID *' : 'Mã hoàn tiền của cổng *'}
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={refundReconcileForm.providerRefundId}
-                      onChange={event => setRefundReconcileForm(form => ({ ...form, providerRefundId: event.target.value }))}
-                      className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 text-xs font-mono focus:ring-2 focus:ring-indigo-500"
-                    />
-                  </div>
-                )}
-
-              <div>
-                <label className="block font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'Evidence Note (min 10 chars) *' : 'Ghi chú bằng chứng (tối thiểu 10 ký tự) *'}
-                </label>
-                <textarea
-                  required
-                  minLength={10}
-                  maxLength={500}
-                  rows={3}
-                  value={refundReconcileForm.evidenceNote}
-                  onChange={event => setRefundReconcileForm(form => ({ ...form, evidenceNote: event.target.value }))}
-                  placeholder={isEn ? 'Describe the bank/provider evidence checked...' : 'Mô tả chứng từ ngân hàng/nhà cung cấp đã kiểm tra...'}
-                  className="w-full rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white p-2.5 text-xs focus:ring-2 focus:ring-indigo-500 resize-none"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2.5 pt-2">
-                <button
-                  type="button"
-                  disabled={refundReconcileBusy}
-                  onClick={() => setRefundReconcileTarget(null)}
-                  className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800 font-bold"
-                >
-                  {isEn ? 'Cancel' : 'Hủy bỏ'}
-                </button>
-                <button
-                  type="submit"
-                  disabled={refundReconcileBusy}
-                  className="px-5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold uppercase tracking-wider shadow-md hover-lift flex items-center gap-1.5"
-                >
-                  {refundReconcileBusy && <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>}
-                  <span>{refundReconcileBusy ? (isEn ? 'Processing...' : 'Đang xử lý...') : (isEn ? 'Confirm Result' : 'Xác Nhận Kết Quả')}</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
       {/* VOID MODAL */}
       {voidTarget && (
         <div className="fixed inset-0 z-50 bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -1306,6 +930,7 @@ export function CounterInvoices() {
           </div>
         </div>
       )}
+      </>}
     </div>
   );
 }

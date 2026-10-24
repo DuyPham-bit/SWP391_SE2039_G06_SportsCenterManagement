@@ -33,47 +33,31 @@ function loadReceptionApi() {
   return { api: context.receptionApiForTest, calls };
 }
 
-test('refund API preserves the stable idempotency key and exposes refund reconciliation', async () => {
-  const { api, calls } = loadReceptionApi();
-  await api.refundPayment(41, {
-    amount: 125000,
-    reason: 'Duplicate collection',
-    externalRefundReference: 'POS-REF-1',
-    idempotencyKey: 'refund-attempt-41'
-  });
-  await api.reconcileRefund(9, {
-    status: 'Succeeded',
-    providerRefundId: 'GATEWAY-9',
-    evidenceNote: 'Verified against provider statement'
-  });
-
-  assert.equal(calls[0].route, 'payments/41/refunds');
-  assert.equal(calls[0].options.headers['Idempotency-Key'], 'refund-attempt-41');
-  assert.equal(calls[1].route, 'payments/refunds/9/reconcile');
-  assert.deepEqual(JSON.parse(JSON.stringify(calls[1].options.body)), {
-    status: 'Succeeded',
-    providerRefundId: 'GATEWAY-9',
-    evidenceNote: 'Verified against provider statement'
-  });
-});
-
-test('refund API rejects calls without an idempotency key before writing', async () => {
-  const { api, calls } = loadReceptionApi();
-  await assert.rejects(
-    api.refundPayment(41, { amount: 1000, reason: 'Correction' }),
-    /chống tạo lệnh hoàn tiền trùng/
-  );
-  assert.equal(calls.length, 0);
-});
-
-test('payment resolution UI reserves pending refunds and supports unhappy cases', () => {
+test('invoice UI uses reviewed manual requests and exposes no direct gateway refund action', () => {
   const ui = read('src/features/receptionist/CounterInvoices.jsx');
-  assert.match(ui, /\['Pending', 'Succeeded'\]\.includes\(r\.status\)/);
-  assert.match(ui, /result\.status === 'Succeeded'/);
-  assert.match(ui, /receptionApi\.reconcileRefund/);
-  assert.match(ui, /refundRequiresExternalReference/);
-  assert.match(ui, /required=\{refundRequiresExternalReference\}/);
+  assert.match(ui, /\['Pending', 'Approved', 'Succeeded'\]\.includes\(r\.status\)/);
+  assert.match(ui, /<RefundManagement embedded/);
+  assert.doesNotMatch(ui, /receptionApi\.refundPayment|receptionApi\.reconcileRefund/);
+  assert.doesNotMatch(read('src/services/backendApi.js'), /async refundPayment|async reconcileRefund/);
   assert.doesNotMatch(ui, /Cơ chế 4|Mechanism 4|Cơ Chế Cứu Cánh|Hóa Đơn Rác/i);
+});
+
+test('manager refund navigation is integrated into invoice management', () => {
+  const app = read('src/App.jsx');
+  const sidebar = read('src/components/layout/Sidebar.jsx');
+  const notifications = read('src/components/common/notificationNavigation.js');
+  assert.doesNotMatch(app, /#\/manager\/refunds|const RefundManagement = lazy/);
+  assert.doesNotMatch(sidebar, /#\/manager\/refunds/);
+  assert.match(notifications, /#\/manager\/invoices\?tab=refunds/);
+});
+
+test('member refund submission keeps a stable form reference and refreshes payment selection', () => {
+  const ui = read('src/features/member/MemberRefundRequests.jsx');
+  assert.match(ui, /const formElement = event\.currentTarget;/);
+  assert.match(ui, /new FormData\(formElement\)/);
+  assert.match(ui, /formElement\.reset\(\)/);
+  assert.doesNotMatch(ui, /event\.currentTarget\.reset\(\)/);
+  assert.match(ui, /eligiblePayments\.some\(item => String\(item\.paymentId\) === current\)/);
 });
 
 test('center-scoped invoice management excludes SystemAdmin navigation and route access', () => {

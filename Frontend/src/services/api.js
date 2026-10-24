@@ -67,6 +67,10 @@ export const coachProfessionalApi = {
     return apiRequest(`coaches/me/professional${query.size ? `?${query}` : ''}`);
   },
   getKpi: (year, month) => apiRequest(`coaches/me/kpi?year=${year}&month=${month}`),
+  getLeaveReplacementOptions: (startAt, endAt, { signal } = {}) => {
+    const query = new URLSearchParams({ startAt, endAt });
+    return apiRequest(`coaches/me/leave-replacement-options?${query}`, { signal });
+  },
   createEvent: body => apiRequest('coaches/me/work-events', { method: 'POST', body }),
   changeEvent: (id, status, reason = null) => apiRequest(`coaches/me/work-events/${id}/status`, { method: 'PATCH', body: { status, reason } }),
   requestLeave: body => apiRequest('coaches/me/leave-requests', { method: 'POST', body }),
@@ -97,7 +101,6 @@ export const managerCoachApi = {
   getWorkspace: () => apiRequest('manager/coach-operations'),
   reviewLeave: (id, body) => apiRequest(`manager/coach-operations/leaves/${id}`, { method: 'PATCH', body }),
   saveCompensation: body => apiRequest('manager/coach-operations/compensation', { method: 'POST', body }),
-  saveSalesCredit: body => apiRequest('manager/coach-operations/sales-credits', { method: 'POST', body }),
   createResource: body => apiRequest('manager/coach-operations/resources', { method: 'POST', body }),
   resolveIssue: (id, body) => apiRequest(`manager/coach-operations/equipment-issues/${id}`, { method: 'PATCH', body })
 };
@@ -115,12 +118,36 @@ export const supportApi = {
     return apiRequest(`support-requests/me?${params.toString()}`);
   },
   get: id => apiRequest(`support-requests/me/${Number(id)}`),
-  submit: ({ subject, description, priority }) => apiRequest('support-requests/me', {
-    method: 'POST', body: { subject: subject.trim(), description: description.trim(), priority }
+  submit: ({ subject, description }) => apiRequest('support-requests/me', {
+    method: 'POST', body: { subject: subject.trim(), description: description.trim() }
   }),
   reply: (id, message) => apiRequest(`support-requests/me/${Number(id)}/messages`, {
     method: 'POST', body: { message: message.trim() }
   })
+};
+
+export const refundApi = {
+  getEligiblePayments: () => apiRequest('payments/refund-requests/me/eligible-payments'),
+  getMine: () => apiRequest('payments/refund-requests/me'),
+  submit: (paymentId, body, idempotencyKey) => apiRequest(`payments/${Number(paymentId)}/refund-requests`, {
+    method: 'POST',
+    headers: { 'Idempotency-Key': idempotencyKey },
+    body: {
+      amount: Number(body.amount),
+      reason: body.reason.trim(),
+      bankName: body.bankName.trim(),
+      bankAccountNumber: body.bankAccountNumber.trim(),
+      bankAccountName: body.bankAccountName.trim()
+    }
+  }),
+  getForManager: (status = '') => apiRequest(`refund-requests${status ? `?status=${encodeURIComponent(status)}` : ''}`),
+  review: (id, body) => apiRequest(`refund-requests/${Number(id)}`, { method: 'PATCH', body })
+};
+
+export const payrollApi = {
+  getMine: (year, month) => apiRequest(`payroll/me?year=${year}&month=${month}`),
+  getReport: (year, month) => apiRequest(`payroll/report?year=${year}&month=${month}`),
+  saveStaffPolicy: body => apiRequest('payroll/staff-policy', { method: 'POST', body })
 };
 
 export const aiApi = {

@@ -28,6 +28,33 @@ export function mergeCoachCalendar(events = [], classSessions = []) {
   return [...personal, ...classes].sort((a, b) => `${a.date}${a.startLabel}`.localeCompare(`${b.date}${b.startLabel}`));
 }
 
+export function classSessionWindow(item) {
+  const startAt = `${item.sessionDate}T${String(item.startTime).slice(0, 5)}`;
+  let endDate = item.sessionDate;
+  if (String(item.endTime).slice(0, 5) <= String(item.startTime).slice(0, 5)) {
+    const nextDay = new Date(`${item.sessionDate}T00:00:00`);
+    nextDay.setDate(nextDay.getDate() + 1);
+    endDate = localDateKey(nextDay);
+  }
+  return { startAt, endAt: `${endDate}T${String(item.endTime).slice(0, 5)}` };
+}
+
+export function formatVietnamDateTime(value, isEn = false) {
+  if (!value) return '—';
+  const text = String(value);
+  const utcValue = /(?:Z|[+-]\d{2}:\d{2})$/i.test(text) ? text : `${text}Z`;
+  const date = new Date(utcValue);
+  if (Number.isNaN(date.getTime())) return '—';
+  return date.toLocaleString(isEn ? 'en-US' : 'vi-VN', {
+    timeZone: 'Asia/Ho_Chi_Minh',
+    hour: '2-digit',
+    minute: '2-digit',
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+}
+
 export function tdeeEstimate({ gender, weightKg, heightCm, age, activity = 1.55 }) {
   const weight = Number(weightKg); const height = Number(heightCm); const years = Number(age);
   if (![weight, height, years, activity].every(Number.isFinite) || weight <= 0 || height <= 0 || years <= 0) return null;

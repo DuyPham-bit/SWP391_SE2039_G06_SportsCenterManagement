@@ -1,12 +1,11 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { coachApi, coachProfessionalApi } from '../../services/api.js';
-import { uploadMediaFileToCloud } from '../../services/cloudMediaStorage.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { CoachError } from './CoachShared.jsx';
 import { PerformanceDashboard } from './PerformanceDashboard.jsx';
-import { calendarWindow, currency, localDateKey, mergeCoachCalendar, tdeeEstimate } from './coachProfessionalView.js';
+import { calendarWindow, classSessionWindow, currency, formatVietnamDateTime, localDateKey, mergeCoachCalendar, tdeeEstimate } from './coachProfessionalView.js';
 
 // Unified input and button styles in SCMS Olympic Arena design system
 const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#81B29A] dark:focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 dark:focus:ring-[#81B29A]/30 outline-none transition-all shadow-2xs';
@@ -62,13 +61,18 @@ function FormField({ title, required = false, hint, children }) {
 }
 
 function formatDate(value, isEn = false) {
-  return value ? new Date(value).toLocaleString(isEn ? 'en-US' : 'vi-VN') : '—';
+  return formatVietnamDateTime(value, isEn);
 }
 
 function dateInput(offset = 0) {
   const d = new Date();
   d.setDate(d.getDate() + offset);
   return localDateKey(d);
+}
+
+function dateTimeInput(value = new Date()) {
+  const local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
+  return local.toISOString().slice(0, 16);
 }
 
 export function CoachProfessionalHub() {
@@ -78,8 +82,8 @@ export function CoachProfessionalHub() {
 
   const getInitialTab = () => {
     const hash = window.location.hash || '';
+    if (hash.includes('tab=schedule') || hash.includes('tab=leave')) return 'schedule';
     if (hash.startsWith('#/coach/messages') || hash.includes('tab=communication')) return 'communication';
-    if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) return 'facilities';
     return 'performance';
   };
 
@@ -90,9 +94,9 @@ export function CoachProfessionalHub() {
   const [error, setError] = useState('');
 
   const tabsConfig = [
+    { id: 'schedule', icon: 'edit_calendar', label: isEn ? 'Schedule & Leave' : 'Lịch & Xin nghỉ' },
     { id: 'communication', icon: 'chat', label: isEn ? 'Student Messages' : 'Tin nhắn học viên' },
-    { id: 'performance', icon: 'monitoring', label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất' },
-    { id: 'facilities', icon: 'inventory_2', label: isEn ? 'Resources & Facilities' : 'Tài nguyên & Thiết bị' }
+    { id: 'performance', icon: 'monitoring', label: isEn ? 'Performance & Salary' : 'Hiệu suất & Lương' }
   ];
 
   const load = async () => {
@@ -114,8 +118,8 @@ export function CoachProfessionalHub() {
       const hash = window.location.hash || '';
       if (hash.startsWith('#/coach/messages') || hash.includes('tab=communication')) {
         setTab('communication');
-      } else if (hash.includes('tab=facilities') || hash.includes('tab=equipment') || hash.includes('tab=resources')) {
-        setTab('facilities');
+      } else if (hash.includes('tab=schedule') || hash.includes('tab=leave')) {
+        setTab('schedule');
       } else if (hash.includes('tab=performance') || hash.includes('tab=kpi')) {
         setTab('performance');
       }
@@ -187,8 +191,8 @@ export function CoachProfessionalHub() {
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-white/95 max-w-3xl font-medium leading-relaxed drop-shadow-xs">
             {isEn
-              ? 'Consolidated operational workspace: schedule management, student profiles, workout syllabus, nutrition plans, secure messaging, transparent KPI income, and facility assets.'
-              : 'Quản lý toàn diện trên một luồng dữ liệu chuẩn hóa: Lịch dạy, hồ sơ học viên, giáo án & dinh dưỡng, tương tác bảo mật, thu nhập KPI minh bạch và tài nguyên sân bãi.'}
+              ? 'Consolidated workspace for schedules, leave requests, student communication, teaching performance and transparent income.'
+              : 'Không gian thống nhất cho lịch dạy, đơn xin nghỉ, tương tác học viên, hiệu suất giảng dạy và thu nhập minh bạch.'}
           </p>
 
           {/* Quick Stats Grid inside Hero Header */}
@@ -261,7 +265,6 @@ export function CoachProfessionalHub() {
       {data && tab === 'programs' && <ProgramsTab data={data} act={act} working={working} isEn={isEn} />}
       {data && tab === 'communication' && <CommunicationTab data={data} act={act} working={working} isEn={isEn} />}
       {data && tab === 'performance' && <PerformanceTab data={data} isEn={isEn} />}
-      {data && tab === 'facilities' && <FacilitiesTab data={data} act={act} working={working} isEn={isEn} />}
     </div>
   );
 }
@@ -273,11 +276,48 @@ function ScheduleTab({ data, act, working, isEn }) {
   const [mode, setMode] = useState('week');
   const [anchor, setAnchor] = useState(dateInput());
   const [leaveType, setLeaveType] = useState('AnnualLeave');
+  const [leaveWindow, setLeaveWindow] = useState({ startAt: '', endAt: '' });
+  const [coverage, setCoverage] = useState(null);
+  const [coverageLoading, setCoverageLoading] = useState(false);
+  const [coverageError, setCoverageError] = useState('');
+  const [swapCoachId, setSwapCoachId] = useState('');
+  const leaveFormRef = useRef(null);
+  const minimumLeaveStart = useMemo(() => dateTimeInput(), []);
 
   const all = useMemo(() => mergeCoachCalendar(data.events, data.classSessions), [data]);
   const range = calendarWindow(anchor, mode);
   const visible = all.filter(x => x.date >= range.from && x.date <= range.to);
   const grouped = Object.groupBy ? Object.groupBy(visible, x => x.date) : visible.reduce((a, x) => ((a[x.date] ||= []).push(x), a), {});
+
+  useEffect(() => {
+    setSwapCoachId('');
+    setCoverage(null);
+    setCoverageError('');
+    setCoverageLoading(false);
+    if (leaveType !== 'ShiftSwap' || !leaveWindow.startAt || !leaveWindow.endAt) return undefined;
+    if (new Date(leaveWindow.endAt) <= new Date(leaveWindow.startAt)) {
+      setCoverageError(isEn ? 'End time must be after start time.' : 'Thời gian kết thúc phải sau thời gian bắt đầu.');
+      return undefined;
+    }
+
+    const controller = new AbortController();
+    const timer = setTimeout(async () => {
+      setCoverageLoading(true);
+      try {
+        const result = await coachProfessionalApi.getLeaveReplacementOptions(
+          leaveWindow.startAt, leaveWindow.endAt, { signal: controller.signal });
+        setCoverage(result);
+      } catch (error) {
+        if (error?.name !== 'AbortError') setCoverageError(error?.message || (isEn ? 'Unable to check replacement coaches.' : 'Không thể kiểm tra HLV thay thế.'));
+      } finally {
+        if (!controller.signal.aborted) setCoverageLoading(false);
+      }
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      controller.abort();
+    };
+  }, [isEn, leaveType, leaveWindow.endAt, leaveWindow.startAt]);
 
   const submitEvent = (e) => {
     e.preventDefault();
@@ -299,7 +339,8 @@ function ScheduleTab({ data, act, working, isEn }) {
 
   const submitLeave = (e) => {
     e.preventDefault();
-    const f = new FormData(e.currentTarget);
+    const formElement = e.currentTarget;
+    const f = new FormData(formElement);
     return act(
       () =>
         coachProfessionalApi.requestLeave({
@@ -307,10 +348,23 @@ function ScheduleTab({ data, act, working, isEn }) {
           endAt: f.get('endAt'),
           leaveType: f.get('leaveType'),
           reason: f.get('reason'),
-          swapCoachId: f.get('swapCoachId') ? Number(f.get('swapCoachId')) : null
+          swapCoachId: leaveType === 'ShiftSwap' && swapCoachId ? Number(swapCoachId) : null
         }),
       isEn ? 'Leave request submitted to management.' : 'Đã gửi đơn nghỉ đến bộ phận quản lý.'
-    ).then((ok) => ok && e.target.reset());
+    ).then((ok) => {
+      if (!ok) return;
+      formElement.reset();
+      setLeaveType('AnnualLeave');
+      setLeaveWindow({ startAt: '', endAt: '' });
+      setCoverage(null);
+      setSwapCoachId('');
+    });
+  };
+
+  const startShiftSwap = (session) => {
+    setLeaveType('ShiftSwap');
+    setLeaveWindow(classSessionWindow(session));
+    requestAnimationFrame(() => leaveFormRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
   };
 
   return (
@@ -371,7 +425,11 @@ function ScheduleTab({ data, act, working, isEn }) {
                     {items.map((item, i) => (
                       <div
                         key={`${item.eventType}-${item.id}-${i}`}
-                        className="rounded-xl bg-white dark:bg-slate-800 p-3 text-xs border border-slate-200 dark:border-slate-700 shadow-2xs"
+                        className={`rounded-xl p-3 text-xs border shadow-2xs transition-opacity ${
+                          item.isOnLeave
+                            ? 'bg-slate-100/80 dark:bg-slate-900/60 border-dashed border-slate-300 dark:border-slate-700 opacity-55 grayscale'
+                            : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700'
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <span className="font-bold text-slate-900 dark:text-white">
@@ -380,8 +438,10 @@ function ScheduleTab({ data, act, working, isEn }) {
                             </span>
                             {item.title}
                           </span>
-                          <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300">
-                            {item.status}
+                          <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold ${item.isOnLeave
+                            ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+                            : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300'}`}>
+                            {item.isOnLeave ? (isEn ? 'On leave' : 'Xin nghỉ') : item.status}
                           </span>
                         </div>
 
@@ -399,7 +459,24 @@ function ScheduleTab({ data, act, working, isEn }) {
                           )}
                         </p>
 
-                        {item.eventType !== 'ClassSession' && item.status === 'Confirmed' && (
+                        {item.isOnLeave && (
+                          <p className="mt-2 text-[11px] font-semibold text-amber-700 dark:text-amber-300 flex items-center gap-1">
+                            <span className="material-symbols-outlined text-[14px]">person_off</span>
+                            {item.replacementCoachName
+                              ? (isEn ? `Covered by ${item.replacementCoachName}` : `HLV dạy bù: ${item.replacementCoachName}`)
+                              : (isEn ? 'Approved leave' : 'Đơn nghỉ đã được duyệt')}
+                          </p>
+                        )}
+
+                        {!item.isOnLeave && item.eventType === 'ClassSession' && item.status !== 'Cancelled' && item.status !== 'Completed' && (
+                          <button type="button" onClick={() => startShiftSwap(item)}
+                            className="mt-2.5 inline-flex items-center gap-1 rounded-lg border border-[#81B29A]/50 bg-[#81B29A]/10 px-2.5 py-1.5 text-[11px] font-bold text-[#2D6A4F] hover:bg-[#81B29A]/20 dark:text-[#81B29A]">
+                            <span className="material-symbols-outlined text-[15px]">swap_horiz</span>
+                            {isEn ? 'Request cover for this shift' : 'Xin đổi đúng ca này'}
+                          </button>
+                        )}
+
+                        {!item.isOnLeave && item.eventType !== 'ClassSession' && item.status === 'Confirmed' && (
                           <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700 flex gap-2">
                             <button
                               disabled={working}
@@ -523,7 +600,7 @@ function ScheduleTab({ data, act, working, isEn }) {
         </SectionCard>
 
         <SectionCard title={isEn ? 'Submit Leave / Shift Swap' : 'Nộp đơn xin nghỉ / Đổi ca trực'} icon="edit_calendar">
-          <form onSubmit={submitLeave} className="space-y-3">
+          <form ref={leaveFormRef} onSubmit={submitLeave} className="space-y-3">
             <FormField title={isEn ? 'Application Type' : 'Loại đơn'} required>
               <select name="leaveType" value={leaveType} onChange={e => setLeaveType(e.target.value)} className={selectClass}>
                 <option value="AnnualLeave">{isEn ? 'Annual Leave' : 'Nghỉ phép thường (Annual Leave)'}</option>
@@ -532,32 +609,84 @@ function ScheduleTab({ data, act, working, isEn }) {
               </select>
             </FormField>
 
-            <FormField
-              title={leaveType === 'ShiftSwap' ? (isEn ? 'Replacement Coach' : 'HLV nhận đổi ca') : (isEn ? 'Replacement Coach (N/A)' : 'HLV nhận đổi ca (Không áp dụng)')}
-              required={leaveType === 'ShiftSwap'}
-            >
-              <select name="swapCoachId" required={leaveType === 'ShiftSwap'} disabled={leaveType !== 'ShiftSwap'} className={selectClass}>
-                <option value="">{isEn ? '-- Select Peer Coach --' : '-- Chọn HLV tiếp nhận --'}</option>
-                {data.peerCoaches?.map(x => (
-                  <option key={x.id} value={x.id}>{x.fullName} · {x.specialization || (isEn ? 'Coach' : 'HLV')}</option>
-                ))}
-              </select>
-            </FormField>
-
             <div className="grid grid-cols-2 gap-2">
-              <FormField title={isEn ? 'From' : 'Từ thời điểm'} required>
-                <input name="startAt" type="datetime-local" required className={inputClass} />
+              <FormField title={isEn ? '1. From' : '1. Bắt đầu nghỉ'} required>
+                <input name="startAt" type="datetime-local" required min={minimumLeaveStart} value={leaveWindow.startAt}
+                  onChange={e => setLeaveWindow(current => ({ ...current, startAt: e.target.value }))} className={inputClass} />
               </FormField>
-              <FormField title={isEn ? 'To' : 'Đến thời điểm'} required>
-                <input name="endAt" type="datetime-local" required className={inputClass} />
+              <FormField title={isEn ? '2. To' : '2. Kết thúc nghỉ'} required>
+                <input name="endAt" type="datetime-local" required min={leaveWindow.startAt || minimumLeaveStart} value={leaveWindow.endAt}
+                  onChange={e => setLeaveWindow(current => ({ ...current, endAt: e.target.value }))} className={inputClass} />
               </FormField>
             </div>
+
+            {leaveType === 'ShiftSwap' && (
+              <div className="space-y-3 rounded-xl border border-[#81B29A]/40 bg-[#81B29A]/5 p-3">
+                <div className="flex items-start gap-2">
+                  <span className="material-symbols-outlined text-[20px] text-[#2D6A4F]">manage_search</span>
+                  <div>
+                    <p className="text-xs font-black text-slate-800 dark:text-slate-100">
+                      {isEn ? '3. Automatic shift coverage' : '3. Tự động tìm người nhận ca'}
+                    </p>
+                    <p className="mt-0.5 text-[11px] text-slate-500 dark:text-slate-400">
+                      {isEn ? 'Only qualified, available coaches are shown.' : 'Chỉ hiển thị HLV đủ chuyên môn và không trùng lịch.'}
+                    </p>
+                  </div>
+                </div>
+
+                {coverageLoading && <p className="text-xs font-semibold text-[#2D6A4F]">{isEn ? 'Checking schedule and specializations…' : 'Đang đối chiếu lịch và chuyên môn…'}</p>}
+                {coverageError && <p className="rounded-lg bg-rose-50 p-2 text-xs font-semibold text-rose-700">{coverageError}</p>}
+                {!coverageLoading && coverage && (
+                  <>
+                    <div className="rounded-lg bg-white/80 p-2 text-xs dark:bg-slate-800">
+                      <strong>{coverage.affectedSessions?.length || 0} {isEn ? 'affected sessions' : 'ca dạy bị ảnh hưởng'}</strong>
+                      {!!coverage.requiredSports?.length && (
+                        <p className="mt-1 text-slate-500">{isEn ? 'Required:' : 'Chuyên môn cần:'} {coverage.requiredSports.map(x => x.name).join(', ')}</p>
+                      )}
+                      <div className="mt-2 space-y-1">
+                        {coverage.affectedSessions?.map(session => (
+                          <p key={session.id} className="flex justify-between gap-2 text-[11px] text-slate-600 dark:text-slate-300">
+                            <span className="truncate">{session.className} · {session.sportName}</span>
+                            <span className="shrink-0 font-semibold">{session.sessionDate} {String(session.startTime).slice(0, 5)}–{String(session.endTime).slice(0, 5)}</span>
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+
+                    {!coverage.affectedSessions?.length ? (
+                      <p className="rounded-lg bg-amber-50 p-2 text-xs font-semibold text-amber-800">
+                        {isEn ? 'No teaching session falls in this period. Select the shift directly from your schedule.' : 'Khoảng này không có ca dạy. Hãy chọn lại đúng thời gian của ca trên lịch.'}
+                      </p>
+                    ) : !coverage.candidates?.length ? (
+                      <p className="rounded-lg bg-amber-50 p-2 text-xs font-semibold text-amber-800">
+                        {isEn ? 'No qualified coach is available for all affected sessions.' : 'Chưa có HLV vừa đủ chuyên môn vừa trống toàn bộ các ca này.'}
+                      </p>
+                    ) : (
+                      <div className="grid gap-2">
+                        {coverage.candidates.map(coach => (
+                          <label key={coach.id} className={`flex cursor-pointer items-center gap-3 rounded-xl border p-3 transition-all ${swapCoachId === String(coach.id) ? 'border-[#2D6A4F] bg-emerald-50 ring-2 ring-[#81B29A]/30 dark:bg-emerald-950/30' : 'border-slate-200 bg-white hover:border-[#81B29A] dark:border-slate-700 dark:bg-slate-800'}`}>
+                            <input type="radio" name="swapCoachId" value={coach.id} checked={swapCoachId === String(coach.id)}
+                              onChange={e => setSwapCoachId(e.target.value)} required />
+                            <span className="min-w-0">
+                              <strong className="block truncate text-xs text-slate-900 dark:text-white">{coach.fullName}</strong>
+                              <span className="text-[11px] text-slate-500">{coach.specializations?.join(', ') || coach.specialization}</span>
+                            </span>
+                            <span className="material-symbols-outlined ml-auto text-[18px] text-emerald-600">verified</span>
+                          </label>
+                        ))}
+                      </div>
+                    )}
+                  </>
+                )}
+              </div>
+            )}
 
             <FormField title={isEn ? 'Reason' : 'Lý do chi tiết'} required>
               <textarea name="reason" required rows="2" placeholder={isEn ? 'Specify reason for leave or shift swap...' : 'Ghi rõ lý do xin nghỉ hoặc đổi ca...'} className={inputClass} />
             </FormField>
 
-            <button disabled={working} className={`${buttonPrimary} w-full`}>
+            <button disabled={working || coverageLoading || Boolean(coverageError) ||
+              (leaveType === 'ShiftSwap' && (!coverage?.affectedSessions?.length || !swapCoachId))} className={`${buttonPrimary} w-full`}>
               <span className="material-symbols-outlined text-[18px]">rule</span>
               <span>{isEn ? 'Submit to Manager' : 'Gửi quản lý duyệt đơn'}</span>
             </button>

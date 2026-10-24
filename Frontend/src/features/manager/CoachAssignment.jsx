@@ -107,6 +107,7 @@ export function CoachAssignment() {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSportFilter, setSelectedSportFilter] = useState('');
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL'); // 'ALL' | 'ASSIGNED' | 'UNASSIGNED' | 'MISMATCH'
+  const [publicationTab, setPublicationTab] = useState('PUBLISHED'); // 'PUBLISHED' | 'PENDING'
   const [viewMode, setViewMode] = useState('cards'); // 'cards' | 'table'
 
   // Assignment Modal
@@ -230,6 +231,8 @@ export function CoachAssignment() {
     const query = searchQuery.trim().toLowerCase();
 
     return classes.filter((cls) => {
+      const isPublished = String(cls.status || '').toUpperCase() === 'PUBLISHED';
+      const matchesPublication = publicationTab === 'PUBLISHED' ? isPublished : !isPublished;
       const matchesQuery =
         !query ||
         (cls.name && cls.name.toLowerCase().includes(query)) ||
@@ -252,9 +255,9 @@ export function CoachAssignment() {
         matchesStatus = isMatch === false;
       }
 
-      return matchesQuery && matchesSport && matchesStatus;
+      return matchesPublication && matchesQuery && matchesSport && matchesStatus;
     });
-  }, [classes, coaches, searchQuery, selectedSportFilter, selectedStatusFilter]);
+  }, [classes, coaches, searchQuery, selectedSportFilter, selectedStatusFilter, publicationTab]);
 
   if (loading) {
     return (
@@ -470,6 +473,27 @@ export function CoachAssignment() {
 
       {/* 3. Search & Filter Bar */}
       <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200/80 dark:border-slate-800 p-4 shadow-sm space-y-4">
+        <div className="grid grid-cols-2 gap-2 rounded-xl bg-slate-100 dark:bg-slate-800 p-1.5" role="tablist" aria-label={isEn ? 'Class publication status' : 'Trạng thái công bố lớp'}>
+          {[
+            { id: 'PUBLISHED', label: isEn ? 'Published classes' : 'Lớp đã công bố', icon: 'public', count: classes.filter(c => String(c.status).toUpperCase() === 'PUBLISHED').length },
+            { id: 'PENDING', label: isEn ? 'Pending publication' : 'Lớp chờ công bố', icon: 'pending_actions', count: classes.filter(c => String(c.status).toUpperCase() !== 'PUBLISHED').length }
+          ].map(item => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={publicationTab === item.id}
+              onClick={() => setPublicationTab(item.id)}
+              className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2.5 text-xs sm:text-sm font-bold transition-all ${publicationTab === item.id
+                ? 'bg-white dark:bg-slate-900 text-[#2D6A4F] dark:text-[#81B29A] shadow-sm ring-1 ring-slate-200 dark:ring-slate-700'
+                : 'text-slate-500 dark:text-slate-400 hover:text-slate-800 dark:hover:text-slate-200'}`}
+            >
+              <span className="material-symbols-outlined text-[18px]">{item.icon}</span>
+              <span>{item.label}</span>
+              <span className="rounded-full bg-slate-200 dark:bg-slate-700 px-2 py-0.5 text-[11px]">{item.count}</span>
+            </button>
+          ))}
+        </div>
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 dark:border-slate-800 pb-4">
           {/* Status Filter Buttons */}
           <div className="flex items-center p-1 bg-slate-100 dark:bg-slate-800 rounded-xl max-w-full overflow-x-auto">

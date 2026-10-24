@@ -216,7 +216,7 @@ export function PackageManagement() {
             <div
               key={pkg.id}
               className={`bg-white dark:bg-slate-900 rounded-2xl border p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative hover-lift ${
-                isActive ? 'border-slate-200 dark:border-slate-800' : 'border-slate-200 dark:border-slate-800 opacity-60 bg-slate-50 dark:bg-slate-800/40'
+                isActive ? 'border-emerald-200 dark:border-emerald-900/70' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40'
               }`}
             >
               {pkg.badge && (
@@ -226,6 +226,14 @@ export function PackageManagement() {
               )}
 
               <div>
+                <div className="mb-2 flex items-center gap-2">
+                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${isActive
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
+                    : 'border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
+                    <span className="material-symbols-outlined text-[13px]">{isActive ? 'storefront' : 'lock'}</span>
+                    {isActive ? (isEn ? 'On sale' : 'Đang mở bán') : (isEn ? 'Sales locked' : 'Đã khóa bán')}
+                  </span>
+                </div>
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
                   {isEn ? 'Term' : 'Thời hạn'}: {pkg.durationDays} {isEn ? 'days' : 'ngày'}
                 </div>
@@ -256,13 +264,15 @@ export function PackageManagement() {
                 <button
                   type="button"
                   onClick={() => handleToggleStatus(pkg)}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
+                  title={isActive ? (isEn ? 'Stop new members from buying this package' : 'Ngăn hội viên mới mua gói này') : (isEn ? 'Allow members to buy this package' : 'Cho phép hội viên mua gói này')}
+                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
                     isActive
-                      ? 'bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800 hover:bg-emerald-100'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 border border-slate-200 dark:border-slate-700 hover:bg-slate-200'
+                      ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100'
+                      : 'bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700 shadow-sm'
                   }`}
                 >
-                  {isActive ? (isEn ? 'Active' : 'Mở bán') : (isEn ? 'Paused' : 'Tạm ngưng')}
+                  <span className="material-symbols-outlined text-[15px]">{isActive ? 'lock' : 'lock_open'}</span>
+                  {isActive ? (isEn ? 'Lock sales' : 'Khóa bán') : (isEn ? 'Open sales' : 'Mở bán')}
                 </button>
 
                 <button

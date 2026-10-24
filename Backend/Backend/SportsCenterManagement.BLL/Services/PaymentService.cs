@@ -1147,6 +1147,199 @@ public sealed class PaymentService(
             desiredStatus == "Succeeded" ? "Đã đối soát refund thành công." : "Đã xác nhận refund thất bại; số tiền được mở lại để xử lý.");
     }
 
+    public async Task<IReadOnlyList<RefundEligiblePaymentResponse>> GetMyRefundEligiblePaymentsAsync(
+        long memberUserId,
+        CancellationToken cancellationToken = default)
+    {
+        var memberId = await _unitOfWork.Context.MemberProfiles
+            .Where(profile => profile.UserId == memberUserId)
+            .Select(profile => (long?)profile.Id)
+            .SingleOrDefaultAsync(cancellationToken)
+            ?? throw BusinessException.NotFound("Không tìm thấy hồ sơ hội viên.");
+
+        var rows = await (from payment in _unitOfWork.Context.Payments.AsNoTracking()
+                          join invoice in _unitOfWork.Context.Invoices.AsNoTracking() on payment.InvoiceId equals invoice.Id
+                          where payment.MemberId == memberId && payment.PaymentStatus == "Succeeded"
+                          orderby payment.PaidAt descending, payment.Id descending
+                          select new
+                          {
+                              payment.Id,
+                              invoice.InvoiceNumber,
+                              payment.Amount,
+                              payment.PaymentMethod,
+                              payment.PaidAt,
+                              Reserved = _unitOfWork.Context.PaymentRefunds
+                                  .Where(refund => refund.PaymentId == payment.Id &&
+                                      (refund.Status == "Pending" || refund.Status == "Approved" || refund.Status == "Succeeded"))
+                                  .Sum(refund => (decimal?)refund.Amount) ?? 0m
+                          }).ToListAsync(cancellationToken);
+
+        return rows.Where(row => row.Amount > row.Reserved)
+            .Select(row => new RefundEligiblePaymentResponse(row.Id, row.InvoiceNumber, row.Amount,
+                row.Amount - row.Reserved, row.PaymentMethod, row.PaidAt))
+            .ToArray();
+    }
+
+    public async Task<IReadOnlyList<ManualRefundRequestResponse>> GetMyManualRefundRequestsAsync(
+        long memberUserId,
+        CancellationToken cancellationToken = default) =>
+        await ManualRefundQuery(requestedBy: memberUserId)
+            .ToListAsync(cancellationToken);
+
+    public async Task<IReadOnlyList<ManualRefundRequestResponse>> GetManualRefundRequestsAsync(
+        long? managerCenterId,
+        string? status,
+        CancellationToken cancellationToken = default)
+    {
+        var normalizedStatus = status?.Trim();
+        if (!string.IsNullOrEmpty(normalizedStatus) && normalizedStatus is not ("Pending" or "Approved" or "Rejected"))
+            throw BusinessException.BadRequest("Trạng thái yêu cầu hoàn tiền không hợp lệ.");
+
+        var query = ManualRefundQuery(centerId: managerCenterId, status: normalizedStatus);
+        return await query.ToListAsync(cancellationToken);
+    }
+
+    public async Task<ManualRefundRequestResponse> SubmitManualRefundRequestAsync(
+        long memberUserId,
+        long paymentId,
+        string idempotencyKey,
+        SubmitManualRefundRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        EnsurePaymentAmount(request.Amount, "Số tiền hoàn");
+        var reason = request.Reason.Trim();
+        var bankName = request.BankName.Trim();
+        var accountNumber = request.BankAccountNumber.Trim();
+        var accountName = request.BankAccountName.Trim().ToUpperInvariant();
+        if (reason.Length < 5 || bankName.Length < 2 || accountName.Length < 2)
+            throw BusinessException.BadRequest("Thông tin nhận hoàn tiền chưa đầy đủ.");
+
+        var scopedKey = ScopeIdempotencyKey(memberUserId, idempotencyKey);
+        await using var transaction = await _unitOfWork.Context.Database
+            .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var existing = await _unitOfWork.Context.PaymentRefunds
+            .SingleOrDefaultAsync(refund => refund.IdempotencyKey == scopedKey, cancellationToken);
+        if (existing is not null)
+        {
+            if (existing.PaymentId != paymentId || existing.Amount != request.Amount ||
+                !string.Equals(existing.Reason, reason, StringComparison.Ordinal) ||
+                !string.Equals(existing.BankName, bankName, StringComparison.Ordinal) ||
+                !string.Equals(existing.BankAccountNumber, accountNumber, StringComparison.Ordinal) ||
+                !string.Equals(existing.BankAccountName, accountName, StringComparison.Ordinal))
+                throw BusinessException.Conflict("Idempotency-Key đã được dùng cho yêu cầu hoàn tiền khác.");
+            await transaction.CommitAsync(cancellationToken);
+            return await ManualRefundQuery(refundId: existing.Id).SingleAsync(cancellationToken);
+        }
+
+        var member = await _unitOfWork.Context.MemberProfiles
+            .SingleOrDefaultAsync(profile => profile.UserId == memberUserId, cancellationToken)
+            ?? throw BusinessException.NotFound("Không tìm thấy hồ sơ hội viên.");
+        var payment = await _unitOfWork.Context.Payments
+            .SingleOrDefaultAsync(item => item.Id == paymentId && item.MemberId == member.Id, cancellationToken)
+            ?? throw BusinessException.NotFound("Không tìm thấy giao dịch thuộc hội viên hiện tại.");
+        if (payment.PaymentStatus != "Succeeded")
+            throw BusinessException.Conflict("Chỉ giao dịch đã thanh toán thành công mới có thể yêu cầu hoàn tiền.");
+
+        var reserved = await _unitOfWork.Context.PaymentRefunds
+            .Where(refund => refund.PaymentId == payment.Id &&
+                (refund.Status == "Pending" || refund.Status == "Approved" || refund.Status == "Succeeded"))
+            .SumAsync(refund => (decimal?)refund.Amount, cancellationToken) ?? 0m;
+        if (request.Amount > payment.Amount - reserved)
+            throw BusinessException.Conflict($"Số tiền tối đa có thể yêu cầu hoàn là {Math.Max(0, payment.Amount - reserved):N0} VND.");
+
+        var now = DateTime.UtcNow;
+        var refund = new PaymentRefund
+        {
+            PaymentId = payment.Id,
+            Amount = request.Amount,
+            Status = "Pending",
+            IdempotencyKey = scopedKey,
+            Reason = reason,
+            BankName = bankName,
+            BankAccountNumber = accountNumber,
+            BankAccountName = accountName,
+            RequestedBy = memberUserId,
+            CreatedAt = now
+        };
+        _unitOfWork.Context.PaymentRefunds.Add(refund);
+        await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+        var invoice = await _unitOfWork.Context.Invoices.SingleAsync(item => item.Id == payment.InvoiceId, cancellationToken);
+        var managerIds = await (from staff in _unitOfWork.Context.StaffProfiles
+                                join user in _unitOfWork.Context.Users on staff.UserId equals user.Id
+                                join role in _unitOfWork.Context.Roles on user.RoleId equals role.Id
+                                where staff.CenterId == invoice.CenterId && staff.Status == "Active" &&
+                                      user.Status == "Active" && role.Name == "Manager"
+                                select user.Id).Distinct().ToListAsync(cancellationToken);
+        await FlowNotificationWriter.CreateAsync(_unitOfWork.Context, memberUserId, managerIds,
+            "Có yêu cầu hoàn tiền mới", $"{member.FullName} yêu cầu hoàn {request.Amount:N0} VND cho hóa đơn {invoice.InvoiceNumber}.",
+            "RefundRequested", cancellationToken);
+        _unitOfWork.Context.AuditLogs.Add(CreateAudit(memberUserId, "Payment.RefundRequested", "PaymentRefund", refund.Id,
+            new { payment.Id, invoice.InvoiceNumber, refund.Amount, refund.Status }, now));
+        await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return await ManualRefundQuery(refundId: refund.Id).SingleAsync(cancellationToken);
+    }
+
+    public async Task<ManualRefundRequestResponse> ReviewManualRefundRequestAsync(
+        long managerUserId,
+        long? managerCenterId,
+        long refundId,
+        ReviewManualRefundRequest request,
+        CancellationToken cancellationToken = default)
+    {
+        var status = request.Status.Trim();
+        if (status == "Approved" && string.IsNullOrWhiteSpace(request.TransferProofUrl))
+            throw BusinessException.BadRequest("Ảnh xác nhận chuyển khoản là bắt buộc khi duyệt hoàn tiền.");
+        var transferProofUrl = request.TransferProofUrl?.Trim();
+        if (status == "Approved" && transferProofUrl is not null &&
+            !(transferProofUrl.StartsWith("/uploads/", StringComparison.Ordinal) ||
+              (Uri.TryCreate(transferProofUrl, UriKind.Absolute, out var proofUri) &&
+               proofUri.Scheme is "http" or "https")))
+            throw BusinessException.BadRequest("Đường dẫn ảnh xác nhận chuyển khoản không hợp lệ.");
+        if (status == "Rejected" && string.IsNullOrWhiteSpace(request.ReviewNote))
+            throw BusinessException.BadRequest("Vui lòng nhập lý do từ chối hoàn tiền.");
+
+        await using var transaction = await _unitOfWork.Context.Database
+            .BeginTransactionAsync(IsolationLevel.Serializable, cancellationToken);
+        var refund = await _unitOfWork.Context.PaymentRefunds
+            .SingleOrDefaultAsync(item => item.Id == refundId, cancellationToken)
+            ?? throw BusinessException.NotFound("Không tìm thấy yêu cầu hoàn tiền.");
+        if (string.IsNullOrWhiteSpace(refund.BankName) ||
+            string.IsNullOrWhiteSpace(refund.BankAccountNumber) ||
+            string.IsNullOrWhiteSpace(refund.BankAccountName))
+            throw BusinessException.NotFound("Không tìm thấy yêu cầu hoàn tiền thủ công.");
+        var payment = await _unitOfWork.Context.Payments.SingleAsync(item => item.Id == refund.PaymentId, cancellationToken);
+        var invoice = await _unitOfWork.Context.Invoices.SingleAsync(item => item.Id == payment.InvoiceId, cancellationToken);
+        EnsureCenterScope(managerCenterId, invoice.CenterId);
+        if (refund.Status != "Pending")
+            throw BusinessException.Conflict("Yêu cầu hoàn tiền này đã được xử lý.");
+
+        var now = DateTime.UtcNow;
+        refund.Status = status;
+        refund.ReviewedBy = managerUserId;
+        refund.ProcessedAt = now;
+        refund.ReviewNote = request.ReviewNote?.Trim();
+        refund.TransferProofUrl = status == "Approved" ? transferProofUrl : null;
+        refund.ExternalReference = status == "Approved" ? request.TransferReference?.Trim() : null;
+        if (status == "Approved")
+        {
+            payment.RefundApprovedBy = managerUserId;
+            await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+            await UpdateInvoiceRefundStatusAsync(invoice, now, cancellationToken);
+        }
+        await FlowNotificationWriter.CreateAsync(_unitOfWork.Context, managerUserId, [refund.RequestedBy],
+            status == "Approved" ? "Yêu cầu hoàn tiền đã được duyệt" : "Yêu cầu hoàn tiền bị từ chối",
+            status == "Approved"
+                ? $"Đã hoàn {refund.Amount:N0} VND cho hóa đơn {invoice.InvoiceNumber}."
+                : $"Yêu cầu hoàn tiền hóa đơn {invoice.InvoiceNumber} bị từ chối. {refund.ReviewNote}",
+            "RefundReviewed", cancellationToken);
+        _unitOfWork.Context.AuditLogs.Add(CreateAudit(managerUserId, $"Payment.Refund{status}", "PaymentRefund", refund.Id,
+            new { payment.Id, invoice.InvoiceNumber, refund.Amount, refund.Status, refund.TransferProofUrl, refund.ExternalReference }, now));
+        await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
+        return await ManualRefundQuery(refundId: refund.Id).SingleAsync(cancellationToken);
+    }
+
     public async Task<RevenueReportResponse> GetRevenueReportAsync(
         long centerId,
         DateOnly from,
@@ -1182,7 +1375,7 @@ public sealed class PaymentService(
             from refund in _unitOfWork.Context.PaymentRefunds
             join payment in _unitOfWork.Context.Payments on refund.PaymentId equals payment.Id
             join invoice in _unitOfWork.Context.Invoices on payment.InvoiceId equals invoice.Id
-            where invoice.CenterId == centerId && refund.Status == "Succeeded" &&
+            where invoice.CenterId == centerId && (refund.Status == "Succeeded" || refund.Status == "Approved") &&
                   refund.ProcessedAt != null && refund.ProcessedAt >= startUtc && refund.ProcessedAt < endUtc
             select new { refund.Amount, ProcessedAt = refund.ProcessedAt!.Value })
             .ToListAsync(cancellationToken);
@@ -1714,7 +1907,7 @@ public sealed class PaymentService(
         var refunded = await (
             from refund in _unitOfWork.Context.PaymentRefunds
             join payment in _unitOfWork.Context.Payments on refund.PaymentId equals payment.Id
-            where payment.InvoiceId == invoice.Id && refund.Status == "Succeeded"
+            where payment.InvoiceId == invoice.Id && (refund.Status == "Succeeded" || refund.Status == "Approved")
             select (decimal?)refund.Amount).SumAsync(cancellationToken) ?? 0m;
         if (refunded <= 0)
         {
@@ -1854,7 +2047,7 @@ public sealed class PaymentService(
 
     private async Task<decimal> GetSuccessfulRefundAmountAsync(long paymentId, CancellationToken cancellationToken) =>
         await _unitOfWork.Context.PaymentRefunds
-            .Where(refund => refund.PaymentId == paymentId && refund.Status == "Succeeded")
+            .Where(refund => refund.PaymentId == paymentId && (refund.Status == "Succeeded" || refund.Status == "Approved"))
             .SumAsync(refund => (decimal?)refund.Amount, cancellationToken) ?? 0m;
 
     private Task<bool> InvoiceHasPackageAsync(long invoiceId, long packageId, CancellationToken cancellationToken) =>
@@ -1882,6 +2075,54 @@ public sealed class PaymentService(
             NewValues = JsonSerializer.Serialize(newValues),
             CreatedAt = createdAt
         };
+
+    private IQueryable<ManualRefundRequestResponse> ManualRefundQuery(
+        long? refundId = null,
+        long? requestedBy = null,
+        long? centerId = null,
+        string? status = null)
+    {
+        var rows = from refund in _unitOfWork.Context.PaymentRefunds.AsNoTracking()
+                   join payment in _unitOfWork.Context.Payments.AsNoTracking() on refund.PaymentId equals payment.Id
+                   join invoice in _unitOfWork.Context.Invoices.AsNoTracking() on payment.InvoiceId equals invoice.Id
+                   join member in _unitOfWork.Context.MemberProfiles.AsNoTracking() on payment.MemberId equals member.Id
+                   where refund.BankName != null && refund.BankAccountNumber != null && refund.BankAccountName != null
+                   select new { Refund = refund, Payment = payment, Invoice = invoice, Member = member };
+
+        if (refundId.HasValue) rows = rows.Where(row => row.Refund.Id == refundId.Value);
+        if (requestedBy.HasValue) rows = rows.Where(row => row.Refund.RequestedBy == requestedBy.Value);
+        if (centerId.HasValue) rows = rows.Where(row => row.Invoice.CenterId == centerId.Value);
+        if (!string.IsNullOrEmpty(status)) rows = rows.Where(row => row.Refund.Status == status);
+        rows = rows.OrderByDescending(row => row.Refund.CreatedAt);
+
+        return from row in rows
+               join reviewerUser in _unitOfWork.Context.Users.AsNoTracking()
+                   on row.Refund.ReviewedBy equals reviewerUser.Id into reviewerUsers
+               from reviewerUser in reviewerUsers.DefaultIfEmpty()
+               select new ManualRefundRequestResponse(
+                   row.Refund.Id,
+                   row.Payment.Id,
+                   row.Invoice.InvoiceNumber,
+                   row.Member.Id,
+                   row.Member.FullName,
+                   row.Member.MemberCode,
+                   row.Payment.Amount,
+                   row.Refund.Amount,
+                   row.Payment.PaymentMethod,
+                   row.Refund.Status,
+                   row.Refund.Reason,
+                   row.Refund.BankName ?? string.Empty,
+                   row.Refund.BankAccountNumber ?? string.Empty,
+                   row.Refund.BankAccountName ?? string.Empty,
+                   row.Refund.RequestedBy,
+                   row.Refund.CreatedAt,
+                   row.Refund.ReviewedBy,
+                   reviewerUser == null ? null : reviewerUser.Username,
+                   row.Refund.ProcessedAt,
+                   row.Refund.ReviewNote,
+                   row.Refund.TransferProofUrl,
+                   row.Refund.ExternalReference);
+    }
 
     private static PaymentRefundResponse BuildRefundResponse(
         PaymentRefund refund, Payment payment, Invoice invoice, string message) =>

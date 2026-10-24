@@ -41,6 +41,50 @@ test('calendar merges PT and class sessions in chronological order', async () =>
   assert.equal(result[1].id, 2);
 });
 
+test('selecting a class session fills the exact leave window, including overnight sessions', async () => {
+  const { classSessionWindow } = await view;
+  assert.deepEqual(classSessionWindow({ sessionDate: '2026-10-25', startTime: '08:00:00', endTime: '10:30:00' }), {
+    startAt: '2026-10-25T08:00', endAt: '2026-10-25T10:30'
+  });
+  assert.deepEqual(classSessionWindow({ sessionDate: '2026-10-25', startTime: '23:00:00', endTime: '01:00:00' }), {
+    startAt: '2026-10-25T23:00', endAt: '2026-10-26T01:00'
+  });
+  const source = fs.readFileSync(path.join(__dirname, '../src/features/coach/CoachProfessionalHub.jsx'), 'utf8');
+  assert.match(source, /Xin đổi đúng ca này/);
+  assert.match(source, /coverage\.candidates\.map/);
+  assert.doesNotMatch(source, /data\.peerCoaches\?\.map/);
+});
+
+test('leave timestamps stored as UTC are displayed in Vietnam time', async () => {
+  const { formatVietnamDateTime } = await view;
+  const explicitUtc = formatVietnamDateTime('2026-10-25T01:30:00Z', true);
+  const sqlUnspecifiedUtc = formatVietnamDateTime('2026-10-25T01:30:00', true);
+  assert.match(explicitUtc, /08:30/);
+  assert.equal(sqlUnspecifiedUtc, explicitUtc);
+
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.BLL/Services/CoachProfessionalService.cs'), 'utf8');
+  assert.match(service, /StartAt = AsUtc\(x\.StartAt\)/);
+  assert.match(service, /StartAt = AsUtc\(leave\.StartAt\)/);
+});
+
+test('replacement option API sends the selected leave window', async () => {
+  const api = loadProfessionalApis();
+  await api.coachProfessionalApi.getLeaveReplacementOptions('2026-10-25T08:00', '2026-10-25T10:00');
+  assert.equal(api.calls[0].route, 'coaches/me/leave-replacement-options?startAt=2026-10-25T08%3A00&endAt=2026-10-25T10%3A00');
+  assert.equal(api.calls[0].options.method, undefined);
+});
+
+test('manager has a dedicated pending leave approval entry and status filters', () => {
+  const sidebar = fs.readFileSync(path.join(__dirname, '../src/components/layout/Sidebar.jsx'), 'utf8');
+  const manager = fs.readFileSync(path.join(__dirname, '../src/features/manager/ManagerCoachOperations.jsx'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.BLL/Services/CoachProfessionalService.cs'), 'utf8');
+  assert.match(sidebar, /Duyệt đơn nghỉ HLV/);
+  assert.match(manager, /leaveStatusFilter.*Pending/);
+  assert.match(manager, /pendingLeaveCount/);
+  assert.match(service, /Status = "Pending"/);
+  assert.match(service, /request\.Status is not \("Approved" or "Rejected"\)/);
+});
+
 test('TDEE uses Mifflin-St Jeor inputs and rejects incomplete metrics', async () => {
   const { tdeeEstimate } = await view;
   assert.equal(tdeeEstimate({ gender: 'male', weightKg: 80, heightCm: 180, age: 30, activity: 1.55 }), 2759);

@@ -280,6 +280,7 @@ public sealed class PaymentsController : ControllerBase
     }
 
     [Authorize(Roles = "MANAGER,ADMIN")]
+    [NonAction]
     [HttpPost("{paymentId:long}/refunds")]
     public async Task<ActionResult<PaymentRefundResponse>> Refund(
         [FromRoute] long paymentId,
@@ -294,6 +295,7 @@ public sealed class PaymentsController : ControllerBase
     }
 
     [Authorize(Roles = "MANAGER,ADMIN")]
+    [NonAction]
     [HttpPost("refunds/{refundId:long}/reconcile")]
     public async Task<ActionResult<PaymentRefundResponse>> ReconcileRefund(
         [FromRoute] long refundId,
@@ -304,6 +306,49 @@ public sealed class PaymentsController : ControllerBase
             GetRequiredUserId(), GetCenterScope(), refundId, request, cancellationToken);
         return Ok(result);
     }
+
+    [Authorize(Roles = "MEMBER")]
+    [HttpGet("refund-requests/me/eligible-payments")]
+    public async Task<ActionResult<IReadOnlyList<RefundEligiblePaymentResponse>>> RefundEligiblePayments(
+        CancellationToken cancellationToken) =>
+        Ok(await _paymentService.GetMyRefundEligiblePaymentsAsync(GetRequiredUserId(), cancellationToken));
+
+    [Authorize(Roles = "MEMBER")]
+    [HttpGet("refund-requests/me")]
+    public async Task<ActionResult<IReadOnlyList<ManualRefundRequestResponse>>> MyRefundRequests(
+        CancellationToken cancellationToken) =>
+        Ok(await _paymentService.GetMyManualRefundRequestsAsync(GetRequiredUserId(), cancellationToken));
+
+    [Authorize(Roles = "MEMBER")]
+    [HttpPost("{paymentId:long}/refund-requests")]
+    public async Task<ActionResult<ManualRefundRequestResponse>> SubmitRefundRequest(
+        [FromRoute] long paymentId,
+        [FromBody] SubmitManualRefundRequest request,
+        [FromHeader(Name = "Idempotency-Key")] string? idempotencyKey,
+        CancellationToken cancellationToken)
+    {
+        if (string.IsNullOrWhiteSpace(idempotencyKey))
+            throw BusinessException.BadRequest("Header Idempotency-Key là bắt buộc.");
+        var result = await _paymentService.SubmitManualRefundRequestAsync(
+            GetRequiredUserId(), paymentId, idempotencyKey.Trim(), request, cancellationToken);
+        return StatusCode(StatusCodes.Status201Created, result);
+    }
+
+    [Authorize(Roles = "MANAGER,ADMIN")]
+    [HttpGet("/api/refund-requests")]
+    public async Task<ActionResult<IReadOnlyList<ManualRefundRequestResponse>>> RefundRequests(
+        [FromQuery] string? status,
+        CancellationToken cancellationToken) =>
+        Ok(await _paymentService.GetManualRefundRequestsAsync(GetCenterScope(), status, cancellationToken));
+
+    [Authorize(Roles = "MANAGER,ADMIN")]
+    [HttpPatch("/api/refund-requests/{refundId:long}")]
+    public async Task<ActionResult<ManualRefundRequestResponse>> ReviewRefundRequest(
+        [FromRoute] long refundId,
+        [FromBody] ReviewManualRefundRequest request,
+        CancellationToken cancellationToken) =>
+        Ok(await _paymentService.ReviewManualRefundRequestAsync(
+            GetRequiredUserId(), GetCenterScope(), refundId, request, cancellationToken));
 
     [HttpPost("/api/invoices/{invoiceId:long}/payments")]
     [RequirePermission(PermissionCodes.PaymentCenterCash)]
@@ -361,7 +406,7 @@ public sealed class PaymentsController : ControllerBase
 
     private long? GetCenterScope()
     {
-        if (User.IsInRole("Admin"))
+        if (User.IsInRole("ADMIN") || User.IsInRole("Admin"))
         {
             return null;
         }

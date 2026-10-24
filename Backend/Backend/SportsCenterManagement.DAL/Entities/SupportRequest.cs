@@ -28,10 +28,6 @@ public class SupportRequest : Common.BaseEntity
     public string Description { get; set; } = null!;
 
     [MaxLength(30)]
-    [Column("priority")]
-    public string Priority { get; set; } = null!;
-
-    [MaxLength(30)]
     [Column("status")]
     public string Status { get; set; } = null!;
 

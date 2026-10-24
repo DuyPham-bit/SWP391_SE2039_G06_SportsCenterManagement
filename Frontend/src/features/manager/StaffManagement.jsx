@@ -108,6 +108,7 @@ export function StaffManagement() {
   // Appointment from existing member state
   const [memberSearchQuery, setMemberSearchQuery] = useState('');
   const [filteredMembers, setFilteredMembers] = useState([]);
+  const [searchingMembers, setSearchingMembers] = useState(false);
   const [selectedMember, setSelectedMember] = useState(null);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
@@ -163,21 +164,37 @@ export function StaffManagement() {
 
   // Filter members for Appointment dropdown
   useEffect(() => {
-    const q = memberSearchQuery.trim().toLowerCase();
-    if (q.length < 2) {
+    if (selectedMember) return;
+    const q = memberSearchQuery.trim();
+    if (q.length === 1) {
       setFilteredMembers([]);
+      setSearchingMembers(false);
       return;
     }
+    let active = true;
+    setSearchingMembers(true);
     const timer = setTimeout(async () => {
       try {
         const res = await staffApi.searchMembers(q);
-        setFilteredMembers(Array.isArray(res) ? res : res?.items || []);
-      } catch {
-        setFilteredMembers([]);
+        if (active) {
+          setFilteredMembers(Array.isArray(res) ? res : res?.items || []);
+        }
+      } catch (err) {
+        if (active) {
+          console.error('Failed to search members for appointment:', err);
+          setFilteredMembers([]);
+        }
+      } finally {
+        if (active) {
+          setSearchingMembers(false);
+        }
       }
     }, 300);
-    return () => clearTimeout(timer);
-  }, [memberSearchQuery]);
+    return () => {
+      active = false;
+      clearTimeout(timer);
+    };
+  }, [memberSearchQuery, selectedMember]);
 
   // Click outside to close appointment dropdown
   useEffect(() => {
@@ -199,6 +216,11 @@ export function StaffManagement() {
     const activeCount = staffList.filter((s) => s.status === 'ACTIVE').length;
     const disabledCount = total - activeCount;
     return { total, coaches, receptionists, managers, activeCount, disabledCount };
+  }, [staffList]);
+
+  // Set of userIds who already have a staff or coach profile at this center
+  const existingStaffUserIds = useMemo(() => {
+    return new Set(staffList.map((s) => Number(s.userId || s.id)).filter(Boolean));
   }, [staffList]);
 
   // Filtered & Sorted Staff
@@ -262,7 +284,9 @@ export function StaffManagement() {
     });
     setMemberSearchQuery('');
     setFilteredMembers([]);
+    setSearchingMembers(false);
     setSelectedMember(null);
+    setIsDropdownOpen(false);
     setNewSpecialtyName('');
     setCreateMode('DIRECT');
     setCreateModalOpen(true);
@@ -1285,10 +1309,10 @@ export function StaffManagement() {
                           type="button"
                           onClick={() => {
                             setMemberSearchQuery('');
-                            setFilteredMembers([]);
+                            setSelectedMember(null);
                             setIsDropdownOpen(true);
                           }}
-                          className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
+                          className="absolute right-3 top-2.5 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
                         >
                           <span className="material-symbols-outlined text-[16px]">close</span>
                         </button>
@@ -1297,11 +1321,16 @@ export function StaffManagement() {
 
                     {isDropdownOpen && (
                       <div className="absolute left-0 right-0 top-full mt-1 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-2xl max-h-56 overflow-y-auto z-50 divide-y divide-slate-100 dark:divide-slate-700">
-                        {filteredMembers.length === 0 ? (
+                        {searchingMembers ? (
+                          <div className="p-4 text-xs text-slate-500 dark:text-slate-400 text-center flex items-center justify-center gap-2">
+                            <span className="w-4 h-4 border-2 border-emerald-600 border-t-transparent rounded-full animate-spin" />
+                            <span>{isEn ? 'Searching accounts...' : 'Đang tìm kiếm tài khoản...'}</span>
+                          </div>
+                        ) : filteredMembers.length === 0 ? (
                           <div className="p-3 text-xs text-slate-500 dark:text-slate-400 text-center flex flex-col items-center gap-1">
                             <span className="material-symbols-outlined text-slate-400 text-[20px]">search_off</span>
                             <span>
-                              {memberSearchQuery.trim().length < 2
+                              {memberSearchQuery.trim().length === 1
                                 ? isEn
                                   ? 'Enter at least 2 characters to search accounts.'
                                   : 'Nhập ít nhất 2 ký tự để tìm tài khoản.'
@@ -1311,43 +1340,70 @@ export function StaffManagement() {
                             </span>
                           </div>
                         ) : (
-                          filteredMembers.map((m) => (
-                            <div
-                              key={m.id}
-                              onClick={() => {
-                                setSelectedMember(m);
-                                setMemberSearchQuery(`${m.fullName} (${m.email})`);
-                                setIsDropdownOpen(false);
-                              }}
-                              className="p-2.5 hover:bg-emerald-50/80 dark:hover:bg-slate-700 cursor-pointer flex items-center justify-between gap-3 transition-colors"
-                            >
-                              <div className="flex items-center gap-2.5 min-w-0">
-                                <div
-                                  className={`w-8 h-8 rounded-full bg-gradient-to-tr ${getAvatarGradient(
-                                    m.fullName
-                                  )} flex items-center justify-center text-white font-bold text-xs flex-shrink-0`}
-                                >
-                                  {getInitials(m.fullName)}
-                                </div>
-                                <div className="min-w-0">
-                                  <div className="flex items-center gap-1.5 flex-wrap">
-                                    <span className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{m.fullName}</span>
-                                    {m.memberCode && (
-                                      <span className="font-mono text-[10px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded">
-                                        {m.memberCode}
-                                      </span>
-                                    )}
+                          filteredMembers.map((m) => {
+                            const isAlreadyStaff = existingStaffUserIds.has(Number(m.userId)) || (m.role && m.role !== 'MEMBER');
+                            const isInactive = m.status && m.status !== 'ACTIVE';
+                            const isSelectable = !isAlreadyStaff && !isInactive;
+
+                            return (
+                              <div
+                                key={m.id}
+                                onClick={() => {
+                                  if (!isSelectable) return;
+                                  setSelectedMember(m);
+                                  setMemberSearchQuery(`${m.fullName} (${m.email})`);
+                                  setIsDropdownOpen(false);
+                                }}
+                                className={`p-2.5 flex items-center justify-between gap-3 transition-colors ${
+                                  !isSelectable
+                                    ? 'opacity-60 bg-slate-50 dark:bg-slate-800/60 cursor-not-allowed'
+                                    : 'hover:bg-emerald-50/80 dark:hover:bg-slate-700 cursor-pointer'
+                                }`}
+                              >
+                                <div className="flex items-center gap-2.5 min-w-0">
+                                  <div
+                                    className={`w-8 h-8 rounded-full bg-gradient-to-tr ${getAvatarGradient(
+                                      m.fullName
+                                    )} flex items-center justify-center text-white font-bold text-xs flex-shrink-0`}
+                                  >
+                                    {getInitials(m.fullName)}
                                   </div>
-                                  <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                                    {m.email} {m.phone ? `• ${m.phone}` : ''}
+                                  <div className="min-w-0">
+                                    <div className="flex items-center gap-1.5 flex-wrap">
+                                      <span className="font-bold text-slate-900 dark:text-slate-100 text-xs truncate">{m.fullName}</span>
+                                      {m.memberCode && (
+                                        <span className="font-mono text-[10px] font-semibold bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 px-1.5 py-0.5 rounded">
+                                          {m.memberCode}
+                                        </span>
+                                      )}
+                                      {isAlreadyStaff && (
+                                        <span className="text-[10px] font-semibold bg-amber-100 dark:bg-amber-900/60 text-amber-800 dark:text-amber-300 px-1.5 py-0.5 rounded">
+                                          {isEn ? 'Already Staff' : 'Đã là nhân sự'}
+                                        </span>
+                                      )}
+                                      {isInactive && (
+                                        <span className="text-[10px] font-semibold bg-rose-100 dark:bg-rose-900/60 text-rose-800 dark:text-rose-300 px-1.5 py-0.5 rounded">
+                                          {isEn ? 'Inactive' : 'Tài khoản khóa'}
+                                        </span>
+                                      )}
+                                    </div>
+                                    <div className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
+                                      {m.email} {m.phone ? `• ${m.phone}` : ''}
+                                    </div>
                                   </div>
                                 </div>
+                                {isSelectable ? (
+                                  <span className="text-[11px] font-bold text-[#2D6A4F] dark:text-[#81B29A] flex-shrink-0 bg-[#2D6A4F]/10 px-2 py-1 rounded">
+                                    {isEn ? 'Select' : 'Chọn'}
+                                  </span>
+                                ) : (
+                                  <span className="text-[10px] font-medium text-slate-400 flex-shrink-0">
+                                    {isAlreadyStaff ? (isEn ? 'Ineligible' : 'Không khả dụng') : (isEn ? 'Locked' : 'Đã khóa')}
+                                  </span>
+                                )}
                               </div>
-                              <span className="text-[11px] font-bold text-[#2D6A4F] dark:text-[#81B29A] flex-shrink-0 bg-[#2D6A4F]/10 px-2 py-1 rounded">
-                                {isEn ? 'Select' : 'Chọn'}
-                              </span>
-                            </div>
-                          ))
+                            );
+                          })
                         )}
                       </div>
                     )}
@@ -1380,8 +1436,9 @@ export function StaffManagement() {
                         onClick={() => {
                           setSelectedMember(null);
                           setMemberSearchQuery('');
+                          setIsDropdownOpen(true);
                         }}
-                        className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold hover:underline flex-shrink-0"
+                        className="text-xs text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold hover:underline flex-shrink-0 cursor-pointer"
                       >
                         {isEn ? 'Change' : 'Đổi tài khoản'}
                       </button>
