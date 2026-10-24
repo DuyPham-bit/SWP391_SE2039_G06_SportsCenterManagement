@@ -261,15 +261,15 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
     <header className="h-16 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 pr-3 sm:pr-6 flex items-center justify-between shadow-xs transition-colors">
       {/* Left: Brand Logo SCMS & Hamburger Toggle matching FPT Portal */}
       <div className="flex items-center h-full">
-        {/* Brand Logo Column: switches width between w-20 and w-64 */}
+        {/* Brand Logo Column: collapses to 0 width when sidebar is collapsed */}
         <div
-          className={`h-full flex items-center border-r border-slate-200 dark:border-slate-800 transition-all duration-300 ease-in-out ${
+          className={`h-full flex items-center transition-all duration-300 ease-in-out overflow-hidden ${
             isSidebarCollapsed
-              ? 'w-16 lg:w-20 justify-center px-1'
-              : 'w-56 lg:w-64 justify-start px-3 sm:px-4'
+              ? 'w-0 opacity-0 px-0 border-r-0 pointer-events-none'
+              : 'w-56 lg:w-64 justify-start px-3 sm:px-4 border-r border-slate-200 dark:border-slate-800 opacity-100'
           }`}
         >
-          <Logo variant="auto" size="md" compact={isSidebarCollapsed} />
+          <Logo variant="auto" size="md" compact={false} />
         </div>
 
         {/* Sidebar Toggle Button (Hamburger) placed right next to the border */}

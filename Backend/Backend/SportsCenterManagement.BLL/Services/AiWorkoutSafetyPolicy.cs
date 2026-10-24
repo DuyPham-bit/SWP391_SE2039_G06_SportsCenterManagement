@@ -20,7 +20,10 @@ public sealed record AiWorkoutSafetyProfile(
     bool HasHypertension,
     bool WantsMuscleGain,
     bool WantsFatLoss,
-    bool WantsEndurance);
+    bool WantsEndurance,
+    bool HasSevereLegInjury = false,
+    string[]? ExtractedTags = null,
+    string? AiReasoning = null);
 
 public static class AiWorkoutSafetyPolicy
 {
@@ -89,6 +92,20 @@ public static class AiWorkoutSafetyPolicy
         "deep squat", "atg squat", "ass-to-grass squat", "sissy squat"
     ];
 
+    private static readonly string[] LowerLimbImmobilizationTerms =
+    [
+        "gãy chân", "bó bột", "trật chân", "trật cổ chân", "đứt dây chằng", "mới mổ", "phẫu thuật chân",
+        "chấn thương chân", "gãy xương", "nạng", "ngồi hoàn toàn", "bất động chân", "đau cổ chân",
+        "bong gân cổ chân", "leg cast", "broken leg", "ankle sprain", "ankle fracture", "acl tear",
+        "meniscus tear", "immobiliz"
+    ];
+
+    private static readonly string[] LowerLimbBannedExercises =
+    [
+        "squat", "deadlift", "lunge", "jump", "burpee", "run", "sprint", "step-up",
+        "box jump", "calf raise", "leg press"
+    ];
+
     public static AiWorkoutSafetyProfile Resolve(
         RecommendationContext context,
         string requestedGoal,
@@ -132,12 +149,23 @@ public static class AiWorkoutSafetyPolicy
             tags.Contains("knee_pain", StringComparer.OrdinalIgnoreCase);
         var hasHypertension = ContainsAny(medicalText, HypertensionTerms) || ContainsAny(subjectiveHealthText, HypertensionTerms) ||
             tags.Contains("hypertension", StringComparer.OrdinalIgnoreCase);
+        var hasSevereLegInjury = ContainsAny(medicalText, LowerLimbImmobilizationTerms) ||
+            ContainsAny(subjectiveHealthText, LowerLimbImmobilizationTerms);
 
         if (!string.IsNullOrWhiteSpace(context.MedicalNote)) conditions.Add(context.MedicalNote.Trim());
         conditions.AddRange((context.HealthRecords ?? []).Select(record => $"{record.Title}: {record.Details}"));
 
         var effectiveGoal = requestedGoal.Trim();
         var effectiveLevel = currentLevel.Trim();
+
+        if (hasSevereLegInjury)
+        {
+            warnings.Add($"Phát hiện chấn thương chi dưới/bó bột trong mô tả của HLV; hệ thống đã ghi đè mục tiêu sang phục hồi chức năng và tập cô lập vùng lành lặn ở tư thế ngồi.");
+            effectiveGoal = "Phục hồi chức năng và tập cô lập thân trên tại chỗ (Tư thế ngồi có tựa / Không chịu tải chi dưới)";
+            effectiveLevel = "Rehabilitation - Seated Isolation";
+            adjustments.Add("CẤM 100% các bài tập đứng chịu tải chân, chạy nhảy hoặc di chuyển; toàn bộ bài tập bắt buộc thực hiện ở tư thế ngồi có tựa hoặc nằm (Seated / Floor / Chest-supported).");
+        }
+
         if (isUnderweight)
         {
             var discardedBeforeBmiOverride = discarded.Count;
@@ -172,7 +200,7 @@ public static class AiWorkoutSafetyPolicy
         var wantsMuscleGain = ContainsAny(effectiveGoal, MuscleGainTerms);
         var wantsFatLoss = ContainsAny(effectiveGoal, FatLossTerms);
         var wantsEndurance = ContainsAny(effectiveGoal, EnduranceTerms);
-        if (wantsMuscleGain && wantsFatLoss)
+        if (wantsMuscleGain && wantsFatLoss && !hasSevereLegInjury)
         {
             effectiveGoal = wantsEndurance
                 ? "Tái cấu trúc cơ thể (tăng cơ, giảm mỡ) và cải thiện sức bền"
@@ -181,7 +209,7 @@ public static class AiWorkoutSafetyPolicy
             adjustments.Add("Ưu tiên protein cao, tăng tải có kiểm soát và theo dõi thành phần cơ thể; không áp dụng bulking thặng dư 400-500 kcal/ngày.");
         }
 
-        if (isSeverelyUnderweight)
+        if (isSeverelyUnderweight && !hasSevereLegInjury)
         {
             effectiveLevel = "Beginner - Medical Safety Foundation";
             adjustments.Add("Ưu tiên máy tập, dây cáp và trọng lượng cơ thể; không dùng tạ tự do nặng hoặc HIIT.");
@@ -213,10 +241,35 @@ public static class AiWorkoutSafetyPolicy
         if (effectiveLevel.Equals("Beginner", StringComparison.OrdinalIgnoreCase))
             adjustments.Add("Ưu tiên máy tập, dây cáp và trọng lượng cơ thể để xây dựng kiểm soát thần kinh-cơ trước khi tăng tải.");
 
+        var extractedTagsList = new List<string>();
+        if (hasSevereLegInjury) extractedTagsList.Add("⚠️ Chấn thương: Gãy chân / Chi dưới");
+        if (hasBackIssue) extractedTagsList.Add("⚠️ Chấn thương: Cột sống / Thoát vị");
+        if (hasKneeIssue) extractedTagsList.Add("⚠️ Khớp gối yếu");
+        if (hasWristOrShoulderIssue) extractedTagsList.Add("⚠️ Vai / Cổ tay");
+        if (hasHypertension) extractedTagsList.Add("❤️ Bệnh lý: Huyết áp cao");
+        if (isSeverelyUnderweight) extractedTagsList.Add("⚡ Thể trạng: Suy nhược (<16 BMI)");
+        else if (isUnderweight) extractedTagsList.Add("⚡ Thể trạng: Thiếu cân (BMI < 18.5)");
+        else if (isOverweight) extractedTagsList.Add("⚡ Thể trạng: Thừa cân (BMI > 25)");
+        else extractedTagsList.Add("✨ Thể trạng: Cân đối chuẩn");
+
+        if (subjectiveHealthText.Contains("thể lực yếu", StringComparison.OrdinalIgnoreCase) ||
+            subjectiveHealthText.Contains("hụt hơi", StringComparison.OrdinalIgnoreCase))
+            extractedTagsList.Add("⚡ Thể trạng: Thể lực yếu / Dễ hụt hơi");
+
+        if (hasSevereLegInjury) extractedTagsList.Add("🪑 Chế độ: Tập tĩnh tại chỗ (Seated)");
+        else if (wantsMuscleGain && wantsFatLoss) extractedTagsList.Add("🎯 Chế độ: Tái cấu trúc cơ thể");
+        else extractedTagsList.Add("🎯 Mục tiêu: " + effectiveGoal);
+
+        var aiReasoning = hasSevereLegInjury
+            ? $"Phát hiện từ khóa chấn thương chi dưới trong ghi chú của HLV. Hệ thống tự động loại bỏ các bài di chuyển/chịu tải chân của môn {context.SportName}, chuyển sang các bài tập sức mạnh thân trên và linh hoạt cổ tay ở tư thế ngồi hoàn toàn."
+            : warnings.Count > 0
+                ? string.Join(" ", warnings)
+                : $"Hệ thống AI đã phân tích hồ sơ sinh trắc học (BMI {bmi:0.0}), thể trạng và mô tả của HLV để thiết kế giáo án phù hợp an toàn y học thể thao.";
+
         return new AiWorkoutSafetyProfile(bmi, effectiveGoal, effectiveLevel, tags.ToArray(), discarded.ToArray(),
             conditions.ToArray(), warnings.Distinct().ToArray(), adjustments.Distinct().ToArray(), isUnderweight,
             isSeverelyUnderweight, isOverweight, hasBackIssue, hasWristOrShoulderIssue, hasKneeIssue, hasHypertension,
-            wantsMuscleGain, wantsFatLoss, wantsEndurance);
+            wantsMuscleGain, wantsFatLoss, wantsEndurance, hasSevereLegInjury, extractedTagsList.ToArray(), aiReasoning);
     }
 
     public static string[] FindExerciseViolations(AiWorkoutSafetyProfile profile, IEnumerable<string> exerciseNames)
@@ -234,6 +287,14 @@ public static class AiWorkoutSafetyPolicy
                 violations.Add($"'{name}' là bài bật nhảy/va đập cao không phù hợp với BMI hiện tại.");
             if (profile.HasKneeIssue && (ContainsAny(normalized, HighImpactExercises) || ContainsAny(normalized, KneeBannedExercises)))
                 violations.Add($"'{name}' tạo va đập hoặc biên độ gối không phù hợp với tình trạng khớp gối.");
+            if (profile.HasSevereLegInjury && ContainsAny(normalized, LowerLimbBannedExercises) && !normalized.Contains("seated") && !normalized.Contains("lying") && !normalized.Contains("floor"))
+                violations.Add($"'{name}' tạo áp lực lên chi dưới đang bị tổn thương/chấn thương.");
+        }
+
+        if (profile.HasSevereLegInjury)
+        {
+            RequireOne(names, violations, ["seated", "chest-supported", "lying", "floor", "tựa"],
+                "Bắt buộc các bài tập phải thực hiện ở tư thế ngồi có tựa lưng (Seated) hoặc nằm để bảo vệ chân tổn thương.");
         }
 
         if (profile.HasBackIssue)

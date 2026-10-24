@@ -461,30 +461,22 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col transition-all duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full'
+        className={`fixed top-16 left-0 bottom-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col transition-all duration-300 ease-in-out w-64 ${
+          isOpen ? 'translate-x-0 shadow-2xl' : '-translate-x-full'
         } ${
           isDesktopCollapsed
-            ? 'lg:translate-x-0 lg:w-20'
-            : 'lg:translate-x-0 lg:w-64'
+            ? 'lg:-translate-x-full lg:pointer-events-none'
+            : 'lg:translate-x-0'
         }`}
-        style={isDesktopCollapsed ? { overflow: 'visible' } : undefined}
       >
-        {/* Navigation Menu Body: overflow-visible guaranteed in collapsed mode so popovers are never clipped */}
-        <div
-          className={`flex-1 ${isDesktopCollapsed ? 'px-2 py-4 space-y-3' : 'overflow-y-auto px-3 py-4 space-y-5'}`}
-          style={isDesktopCollapsed ? { overflow: 'visible' } : undefined}
-        >
+        {/* Navigation Menu Body */}
+        <div className="flex-1 overflow-y-auto px-3 py-4 space-y-5">
           {sections.map((section, idx) => (
-            <div key={idx} className={isDesktopCollapsed ? 'space-y-2' : 'space-y-1'}>
+            <div key={idx} className="space-y-1">
               {/* Category Divider / Header */}
-              {isDesktopCollapsed ? (
-                idx > 0 && <div className="w-8 h-[1px] bg-slate-200 dark:bg-slate-800 my-2 mx-auto" />
-              ) : (
-                <div className="px-2.5 py-1.5 text-[11px] font-bold text-[#2D6A4F] dark:text-emerald-400 uppercase tracking-wider">
-                  {section.category}
-                </div>
-              )}
+              <div className="px-2.5 py-1.5 text-[11px] font-bold text-[#2D6A4F] dark:text-emerald-400 uppercase tracking-wider">
+                {section.category}
+              </div>
 
               {/* Menu Items */}
               {section.items.map((item) => {
@@ -517,129 +509,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
                     item.path !== '#/coach' &&
                     item.path !== '#/coach/dashboard');
 
-                /* ─────────────────────────────────────────────────────────────
-                   MODE 1: COLLAPSED MINI-SIDEBAR (MATCHING USER REFERENCE)
-                ───────────────────────────────────────────────────────────── */
-                if (isDesktopCollapsed) {
-                  const isFlyoutOpen = activeFlyoutId === item.id;
-
-                  if (hasSubItems) {
-                    return (
-                      <div key={item.id} className="relative group mini-flyout-container flex justify-center w-full">
-                        <button
-                          type="button"
-                          onClick={(e) => {
-                            e.preventDefault();
-                            e.stopPropagation();
-                            setActiveFlyoutId(prev => prev === item.id ? null : item.id);
-                          }}
-                          className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                            isAnyChildActive || isFlyoutOpen
-                              ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/40 font-bold shadow-2xs scale-105'
-                              : 'bg-[#F0F4F8] dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-[#81B29A]/15 hover:text-[#2D6A4F] dark:hover:text-emerald-400'
-                          }`}
-                          title={item.label}
-                          aria-expanded={isFlyoutOpen}
-                        >
-                          <span className={`material-symbols-outlined text-[20px] ${isAnyChildActive || isFlyoutOpen ? 'text-[#81B29A] dark:text-emerald-400' : ''}`}>
-                            {item.icon}
-                          </span>
-                        </button>
-
-                        {/* Floating Flyout Menu: unclipped, locked on click, opens on hover */}
-                        <div
-                          className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 w-64 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl shadow-2xl shadow-slate-400/30 dark:shadow-black/60 p-2.5 z-50 pointer-events-auto transition-all ${
-                            isFlyoutOpen ? 'block' : 'hidden group-hover:block'
-                          }`}
-                          style={{ zIndex: 100 }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Anchor Notch pointing to button */}
-                          <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-slate-200/90 dark:border-slate-700/80 -rotate-45 z-10" />
-
-                          {/* Hover bridge covering the entire gap */}
-                          <div className="absolute -left-6 top-0 bottom-0 w-6 pointer-events-auto" />
-
-                          {/* Header with Group Title */}
-                          <div className="px-3 py-2 text-xs font-bold text-[#1E2235] dark:text-white border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 mb-1.5">
-                            <div className="w-6 h-6 rounded-lg bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-400 flex items-center justify-center shrink-0">
-                              <span className="material-symbols-outlined text-[15px]">{item.icon}</span>
-                            </div>
-                            <span className="truncate">{item.label}</span>
-                          </div>
-
-                          {/* Submenu Links matching user photo with mini hamburger icon boxes */}
-                          <div className="space-y-1">
-                            {item.subItems.map((sub, sIdx) => {
-                              const isChildActive = currentPath === sub.path || (currentPath?.startsWith(sub.path) && sub.path !== '#/manager/dashboard');
-                              return (
-                                <a
-                                  key={sIdx}
-                                  href={sub.path}
-                                  onClick={() => {
-                                    setActiveFlyoutId(null);
-                                    onClose?.();
-                                  }}
-                                  className={`flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                                    isChildActive
-                                      ? 'bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/30 shadow-2xs'
-                                      : 'text-slate-700 dark:text-slate-300 hover:bg-[#81B29A]/10 hover:text-[#2D6A4F] dark:hover:text-emerald-300'
-                                  }`}
-                                >
-                                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                                    isChildActive
-                                      ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-400'
-                                      : 'bg-[#F0F4F8] dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-                                  }`}>
-                                    <span className="material-symbols-outlined text-[16px]">menu</span>
-                                  </div>
-                                  <span className="truncate">{sub.label}</span>
-                                </a>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div key={item.id} className="relative group flex justify-center w-full">
-                      <a
-                        href={item.path}
-                        onClick={(e) => {
-                          if (item.isPopup) {
-                            e.preventDefault();
-                            window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
-                          }
-                        }}
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
-                          isActive
-                            ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/40 font-bold shadow-2xs scale-105'
-                            : 'bg-[#F0F4F8] dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-[#81B29A]/15 hover:text-[#2D6A4F] dark:hover:text-emerald-400'
-                        }`}
-                        title={item.label}
-                      >
-                        <span className={`material-symbols-outlined text-[20px] ${isActive ? 'text-[#81B29A] dark:text-emerald-400' : ''}`}>
-                          {item.icon}
-                        </span>
-                      </a>
-
-                      {/* Tooltip on Hover (Synchronized light card, NO black) */}
-                      <div
-                        className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-1.5 bg-white dark:bg-slate-800 text-[#1E2235] dark:text-white text-xs font-semibold rounded-xl shadow-lg border border-slate-200/90 dark:border-slate-700 whitespace-nowrap hidden group-hover:block z-50 pointer-events-none"
-                        style={{ zIndex: 100 }}
-                      >
-                        <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-white dark:bg-slate-800 border-l border-t border-slate-200/90 dark:border-slate-700 -rotate-45" />
-                        {item.label}
-                      </div>
-                    </div>
-                  );
-                }
-
-                /* ─────────────────────────────────────────────────────────────
-                   MODE 2: EXPANDED FULL-SIDEBAR (MATCHING IMAGE 2)
-                ───────────────────────────────────────────────────────────── */
+                /* Full Sidebar Menu Item Rendering */
                 if (hasSubItems) {
                   return (
                     <div key={item.id} className="space-y-1">
@@ -745,58 +615,37 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
 
         {/* Sidebar Footer: SCMS Status & Logout */}
         <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
-          {isDesktopCollapsed ? (
-            <div className="flex justify-center">
-              <button
-                type="button"
-                onClick={() => { logout(); window.location.hash = '#/login'; }}
-                className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer shadow-2xs"
-                title={`${displayName} (${roleLabel}) - ${isEn ? 'Sign Out' : 'Đăng xuất'}`}
-              >
-                {currentUser?.avatar ? (
-                  <img
-                    src={currentUser.avatar}
-                    alt={displayName}
-                    className="w-7 h-7 rounded-lg object-cover"
-                  />
-                ) : (
-                  <span className="text-xs font-black text-[#2D6A4F] dark:text-[#81B29A]">{userInitials}</span>
-                )}
-              </button>
-            </div>
-          ) : (
-            <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-2xs gap-2 min-w-0">
-              <div className="flex items-center gap-2.5 min-w-0">
-                {currentUser?.avatar ? (
-                  <img
-                    src={currentUser.avatar}
-                    alt={displayName}
-                    className="w-8 h-8 rounded-[10px] object-cover border border-[#81B29A]/40 shrink-0"
-                  />
-                ) : (
-                  <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#81B29A] via-[#A8DADC] to-[#F2CC8F] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs ring-1 ring-white/60 dark:ring-slate-700">
-                    <span>{userInitials}</span>
-                  </div>
-                )}
-                <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight truncate max-w-[130px]" title={displayName}>
-                    {displayName}
-                  </span>
-                  <span className="text-[10px] text-[#2D6A4F] dark:text-[#81B29A] font-semibold truncate leading-tight">
-                    {roleLabel}
-                  </span>
+          <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-2xs gap-2 min-w-0">
+            <div className="flex items-center gap-2.5 min-w-0">
+              {currentUser?.avatar ? (
+                <img
+                  src={currentUser.avatar}
+                  alt={displayName}
+                  className="w-8 h-8 rounded-[10px] object-cover border border-[#81B29A]/40 shrink-0"
+                />
+              ) : (
+                <div className="w-8 h-8 rounded-[10px] bg-gradient-to-br from-[#81B29A] via-[#A8DADC] to-[#F2CC8F] text-white font-black text-xs flex items-center justify-center shrink-0 shadow-xs ring-1 ring-white/60 dark:ring-slate-700">
+                  <span>{userInitials}</span>
                 </div>
+              )}
+              <div className="flex flex-col min-w-0">
+                <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight truncate max-w-[130px]" title={displayName}>
+                  {displayName}
+                </span>
+                <span className="text-[10px] text-[#2D6A4F] dark:text-[#81B29A] font-semibold truncate leading-tight">
+                  {roleLabel}
+                </span>
               </div>
-              <button
-                type="button"
-                onClick={() => { logout(); window.location.hash = '#/login'; }}
-                className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shrink-0"
-                title={isEn ? 'Sign Out' : 'Đăng xuất'}
-              >
-                <span className="material-symbols-outlined text-[18px]">logout</span>
-              </button>
             </div>
-          )}
+            <button
+              type="button"
+              onClick={() => { logout(); window.location.hash = '#/login'; }}
+              className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shrink-0"
+              title={isEn ? 'Sign Out' : 'Đăng xuất'}
+            >
+              <span className="material-symbols-outlined text-[18px]">logout</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>

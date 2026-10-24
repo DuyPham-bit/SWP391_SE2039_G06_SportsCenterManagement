@@ -177,6 +177,21 @@ Check("recommendation processor caps hypertension guidance below 75 percent HRma
         result["heartRateZone"]?.GetValue<string>().Contains("75% HRmax", StringComparison.Ordinal) == true;
 });
 
+Check("free-text leg injury overrides heavy sports goal to seated rehab isolation with NLP tags and reasoning", () =>
+{
+    var safety = AiWorkoutSafetyPolicy.Resolve(Context(22m), "Cầu lông nâng cao và tăng tốc độ di chuyển", "Advanced", [],
+        "Đang gãy chân bó bột, thể lực yếu, cần tập ngồi hoàn toàn");
+    var result = AiWorkoutRecommendationProcessor.Process(RecommendationJson(
+        "Seated Dumbbell Shoulder Press", "Chest-Supported Machine Row", "Cable Face Pull", "Deadbug"), safety, 64m);
+    return safety.HasSevereLegInjury &&
+        safety.EffectiveGoal.Contains("Phục hồi", StringComparison.OrdinalIgnoreCase) &&
+        safety.ConflictWarnings.Any(w => w.Contains("chấn thương", StringComparison.OrdinalIgnoreCase)) &&
+        AiWorkoutSafetyPolicy.FindExerciseViolations(safety, ["Jump Squat"]).Length > 0 &&
+        AiWorkoutSafetyPolicy.FindExerciseViolations(safety, ["Seated Dumbbell Shoulder Press"]).Length == 0 &&
+        result["extractedTags"]?.AsArray().Any(tag => tag?.GetValue<string>().Contains("Gãy chân", StringComparison.OrdinalIgnoreCase) == true) == true &&
+        !string.IsNullOrWhiteSpace(result["aiReasoning"]?.GetValue<string>());
+});
+
 Console.WriteLine($"RESULT {checks - failures.Count}/{checks} checks passed");
 if (failures.Count > 0)
 {

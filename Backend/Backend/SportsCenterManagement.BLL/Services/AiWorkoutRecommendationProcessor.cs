@@ -147,6 +147,33 @@ public static class AiWorkoutRecommendationProcessor
         if (safety.HasHypertension)
             result["heartRateZone"] =
                 "Zone 1-2 • không vượt 75% HRmax • dừng tập khi chóng mặt, đau ngực hoặc khó thở bất thường";
+
+        if (safety.HasSevereLegInjury)
+        {
+            result["title"] = "Phác đồ Phục hồi Chức năng & Tập Cô lập Thân trên Tại chỗ";
+            result["weeklyVolume"] = "2-3 buổi/tuần • 30-45 phút/buổi • hoàn toàn ở tư thế ngồi có tựa";
+            result["heartRateZone"] = "Zone 1-2 (50-65% HRmax) • giữ nhịp tim ổn định và thúc đẩy tuần hoàn";
+        }
+
+        if (result["extractedTags"] is not JsonArray extractedArr || extractedArr.Count == 0)
+        {
+            var arr = new JsonArray();
+            if (safety.ExtractedTags != null && safety.ExtractedTags.Length > 0)
+            {
+                foreach (var t in safety.ExtractedTags) arr.Add(t);
+            }
+            result["extractedTags"] = arr;
+        }
+
+        if (result["aiReasoning"] is not JsonValue || string.IsNullOrWhiteSpace(result["aiReasoning"]?.GetValue<string>()))
+        {
+            result["aiReasoning"] = safety.AiReasoning ?? result["clinicalAssessment"]?.GetValue<string>() ?? "";
+        }
+
+        if (result["recommendedVolume"] is null)
+        {
+            result["recommendedVolume"] = $"{result["weeklyVolume"]} | Nhịp tim: {result["heartRateZone"]}";
+        }
     }
 
     private static void RequireString(JsonObject value, string key)
