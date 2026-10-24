@@ -177,6 +177,99 @@ Check("recommendation processor caps hypertension guidance below 75 percent HRma
         result["heartRateZone"]?.GetValue<string>().Contains("75% HRmax", StringComparison.Ordinal) == true;
 });
 
+string NlpJson(params string[] exerciseNames) => JsonSerializer.Serialize(new
+{
+    extractedTags = new[] { "⚠️ Gãy chân trái", "🪑 Chế độ tĩnh tại chỗ" },
+    aiReasoning = "Ghi đè mục tiêu để bảo vệ học viên.",
+    recommendedVolume = "2-3 buổi/tuần • Zone 1-2",
+    exercises = exerciseNames.Select(name => new { name, volume = "3 x 12", medical_focus = "Tư thế ngồi có tựa, không tải lên chân." })
+});
+
+Check("severe injury plus heavy goal is overridden to rehab and bans leg loading", () =>
+{
+    var safety = AiWorkoutSafetyPolicy.Resolve(
+        Context(22m, "Gãy chân trái"), "Nâng cao sức mạnh, tăng tốc, nhảy", "Intermediate", [], "Tim đập nhanh, thể lực yếu");
+    var banned = AiWorkoutSafetyPolicy.FindExerciseViolations(safety, ["Barbell Back Squat", "Walking Lunge"]);
+    return safety.HasSevereInjury &&
+        safety.EffectiveGoal.Contains("Phục hồi", StringComparison.OrdinalIgnoreCase) &&
+        safety.ConflictWarnings.Length > 0 && banned.Length > 0;
+});
+
+Check("NLP schema is parsed: tags keep emoji, volume splits into sets/reps, severe injury forces Zone 1-2", () =>
+{
+    var safety = AiWorkoutSafetyPolicy.Resolve(
+        Context(22m, "Gãy chân trái"), "Nâng cao sức mạnh", "Intermediate", [], "Gãy chân trái");
+    var result = AiWorkoutRecommendationProcessor.Process(NlpJson(
+        "Seated Dumbbell Shoulder Press - Đẩy vai ngồi", "Chest-Supported Row - Kéo có tựa ngực",
+        "Seated Cable Biceps Curl - Cuốn tay trước cáp", "Dead Bug - Core nằm"), safety, 64m);
+    var first = result["exercises"]![0]!;
+    var tags = result["extractedTags"]!.AsArray().Select(tag => tag!.GetValue<string>()).ToArray();
+    return tags.Contains("⚠️ Gãy chân trái") && tags.Contains("🪑 Chế độ tĩnh tại chỗ") &&
+        first["volume"]?.GetValue<string>() == "3 x 12" &&
+        first["sets"]?.GetValue<string>() == "3" && first["reps"]?.GetValue<string>() == "12" &&
+        first["medical_focus"]?.GetValue<string>().Length > 0 &&
+        result["recommendedVolume"]?.GetValue<string>().Contains("Zone 1-2", StringComparison.Ordinal) == true &&
+        result["aiReasoning"]?.GetValue<string>().Contains("Hệ thống bảo vệ", StringComparison.Ordinal) == true;
+});
+
+Check("NLP schema still rejects a leg-loading exercise for a severe injury", () =>
+{
+    var safety = AiWorkoutSafetyPolicy.Resolve(
+        Context(22m, "Gãy chân trái"), "Nâng cao sức mạnh", "Intermediate", [], "Gãy chân trái");
+    try
+    {
+        AiWorkoutRecommendationProcessor.Process(NlpJson(
+            "Barbell Back Squat", "Chest-Supported Row", "Seated Cable Curl", "Dead Bug"), safety, 64m);
+        return false;
+    }
+    catch (InvalidOperationException exception)
+    {
+        return exception.Data["StatusCode"] is 422 && exception.Data["Code"] as string == "AI_SAFETY_CHECK_FAILED";
+    }
+});
+
+string UserExactJson(params string[] exerciseNames) => JsonSerializer.Serialize(new
+{
+    extracted_keywords = new[] { "⚠️ Đau lưng dưới", "🎯 Tăng cơ nạc", "🪑 Ưu tiên máy khối" },
+    ai_reasoning = "Học viên bị đau lưng dưới; cấm tải ép dọc trục cột sống, chuyển sang bài tập có điểm tựa.",
+    protocol = new
+    {
+        frequency = "3 buổi/tuần • Zone 1-2",
+        nutrition = "Duy trì protein cao 1.6-2.0g/kg và thâm hụt nhẹ"
+    },
+    exercises = exerciseNames.Select(name => new
+    {
+        name,
+        sets_reps = "3 x 12",
+        medical_focus = "Có điểm tựa ngực, loại bỏ hoàn toàn tải nén ép lên cột sống."
+    })
+});
+
+Check("User exact schema (extracted_keywords, ai_reasoning, protocol, sets_reps) is fully processed", () =>
+{
+    var safety = AiWorkoutSafetyPolicy.Resolve(
+        Context(23m, "Thoát vị đĩa đệm L4-L5"), "Tăng cơ", "Intermediate", [], "Đau thắt lưng khi cúi");
+    var result = AiWorkoutRecommendationProcessor.Process(UserExactJson(
+        "Chest-Supported Machine Row - Kéo xô có tựa ngực",
+        "Seated Neutral-Grip Dumbbell Press - Đẩy ngực tạ đơn ngồi",
+        "Cable Face Pull - Kéo cáp mặt",
+        "Dead Bug - Ổn định cơ lõi"), safety, 68m);
+
+    var keywords = result["extracted_keywords"]!.AsArray().Select(n => n!.GetValue<string>()).ToArray();
+    var firstEx = result["exercises"]![0]!;
+    var protocol = result["protocol"]!.AsObject();
+
+    return keywords.Contains("⚠️ Đau lưng dưới") &&
+        result["ai_reasoning"]?.GetValue<string>().Contains("đau lưng dưới", StringComparison.OrdinalIgnoreCase) == true &&
+        protocol["frequency"]?.GetValue<string>().Contains("Zone 1-2", StringComparison.Ordinal) == true &&
+        protocol["nutrition"]?.GetValue<string>().Contains("protein", StringComparison.OrdinalIgnoreCase) == true &&
+        firstEx["sets_reps"]?.GetValue<string>() == "3 x 12" &&
+        firstEx["sets"]?.GetValue<string>() == "3" &&
+        firstEx["reps"]?.GetValue<string>() == "12" &&
+        firstEx["medical_focus"]?.GetValue<string>().Contains("điểm tựa", StringComparison.OrdinalIgnoreCase) == true;
+});
+
+
 Console.WriteLine($"RESULT {checks - failures.Count}/{checks} checks passed");
 if (failures.Count > 0)
 {

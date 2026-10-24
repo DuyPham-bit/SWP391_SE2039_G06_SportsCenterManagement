@@ -39,3 +39,10 @@ test('clinical assessment, conflicts, mandatory adjustments and coach notes are 
     assert.match(component, new RegExp(`result\\.${field}`));
   }
 });
+
+test('Medical NLP engine fields (extractedTags, aiReasoning, recommendedVolume) are rendered', () => {
+  for (const field of ['extractedTags', 'aiReasoning', 'recommendedVolume']) {
+    assert.match(component, new RegExp(`result\\.${field}`));
+  }
+});
+

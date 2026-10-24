@@ -42,6 +42,19 @@ export function AIRecommendation() {
   const [level, setLevel] = useState('');
   const [notes, setNotes] = useState('');
   const [selectedTagIds, setSelectedTagIds] = useState([]);
+  const [templateCategory, setTemplateCategory] = useState('all');
+  const [showAllTemplates, setShowAllTemplates] = useState(false);
+
+  const handleAppendSnippet = (snippetText) => {
+    setNotes(prev => {
+      const trimmed = (prev || '').trim();
+      if (!trimmed) return snippetText;
+      if (trimmed.endsWith('.') || trimmed.endsWith(';') || trimmed.endsWith('!')) {
+        return `${trimmed} ${snippetText}`;
+      }
+      return `${trimmed}. ${snippetText}`;
+    });
+  };
 
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
@@ -65,6 +78,7 @@ export function AIRecommendation() {
       groupTitle: isEn ? 'Joint & Injury Cautions' : 'Chấn thương & Lưu ý cơ xương khớp',
       icon: 'medical_services',
       items: [
+        { id: 'severe_injury', label: isEn ? 'Severe injury / Fracture / Post-op' : '⚠️ Chấn thương nặng / Gãy xương / Sau mổ', text: isEn ? 'Severe injury / post-surgery (AVOID axial loading, jumping, or loaded movement on injured limb; isolate uninjured regions only, HR Zone 1-2)' : 'Chấn thương nặng / gãy xương / đứt dây chằng / sau mổ (CẤM tải lên chi chấn thương, cấm bật nhảy, chỉ tập cô lập vùng an toàn ở tư thế có tựa, nhịp tim Zone 1-2)' },
         { id: 'back_pain', label: isEn ? 'Lower back pain / Herniated disc' : 'Đau lưng dưới / Thoát vị đĩa đệm', text: isEn ? 'Lower back pain/herniated disc caution (AVOID spinal axial loading: No heavy back squat, no heavy deadlift; use chest-supported rows & box goblet squats)' : 'Đau thắt lưng/thoát vị (CẤM nén ép cột sống: Tránh Heavy Back Squat, Deadlift; ưu tiên bài tập có đệm nâng đỡ)' },
         { id: 'knee_pain', label: isEn ? 'Weak knees / Joint pain' : 'Khớp gối yếu / Đau sụn gối', text: isEn ? 'Weak knee joints (AVOID deep squats and high-impact plyometrics; prioritize hip thrusts & seated leg curls)' : 'Khớp gối yếu (Tránh Squat quá sâu, tránh bật nhảy va đập cao; ưu tiên Hip Thrust, RDL nhẹ)' },
         { id: 'shoulder_pain', label: isEn ? 'Shoulder impingement / Rotator cuff' : 'Khớp vai yếu / Đau chóp xoay', text: isEn ? 'Shoulder impingement (AVOID heavy overhead presses and extreme flaring; prioritize neutral-grip and incline dumbell press)' : 'Khớp vai yếu (Tránh đẩy tạ qua đầu Heavy Overhead Press, tránh dang tay quá rộng)' },
@@ -101,6 +115,174 @@ export function AIRecommendation() {
     { id: 'Advanced', label: isEn ? 'Advanced (2+ years)' : 'Advanced (Nâng cao · Trên 2 năm)', value: 'Advanced' },
     { id: 'Athlete', label: isEn ? 'Athlete (Specialized)' : 'Athlete (Vận động viên chuyên sâu)', value: 'Athlete' },
   ], [isEn]);
+
+  // Danh mục phân loại các mẫu prompt
+  const PROMPT_CATEGORIES = useMemo(() => [
+    { id: 'all', label: isEn ? 'All (15)' : 'Tất cả (15)' },
+    { id: 'injury', label: isEn ? '🦴 Injury & Rehab (6)' : '🦴 Chấn thương & Khớp (6)' },
+    { id: 'health', label: isEn ? '❤️ Health & BMI (5)' : '❤️ Bệnh lý & Thể trạng (5)' },
+    { id: 'goals', label: isEn ? '🎯 Goals & Gear (4)' : '🎯 Mục tiêu & Thiết bị (4)' },
+  ], [isEn]);
+
+  // Cụm từ nhanh để HLV bấm ghép trực tiếp vào ô prompt mà không cần gõ bàn phím
+  const QUICK_SNIPPETS = useMemo(() => [
+    { label: '+ Thoát vị L4-L5', text: 'Học viên bị thoát vị đĩa đệm L4-L5 thắt lưng' },
+    { label: '+ Đau thắt lưng', text: 'Đau thắt lưng khi cúi, cấm gánh tạ đòn Squat và Deadlift' },
+    { label: '+ Khớp gối yếu', text: 'Khớp gối yếu, thoái hóa sụn chêm, cấm nhảy và squat sâu' },
+    { label: '+ Cổ tay yếu', text: 'Cổ tay yếu, ưu tiên tạ đơn cầm trung tính Neutral Grip' },
+    { label: '+ Viêm chóp xoay vai', text: 'Viêm gân chóp xoay vai, cấm đẩy tạ đòn thẳng qua đầu' },
+    { label: '+ Cao huyết áp', text: 'Tiền sử cao huyết áp, nhịp tim kiểm soát Zone 1-2, cấm nín thở Valsalva' },
+    { label: '+ Thể lực yếu', text: 'Thể lực nền tảng yếu, nhanh hụt hơi, cần thời gian nghỉ dài' },
+    { label: '+ Thể trạng gầy (BMI<18.5)', text: 'Thể trạng gầy thiếu cân, chuyển hóa nhanh, thặng dư 400-500 kcal, hạn chế cardio' },
+    { label: '+ Thừa cân béo phì', text: 'Thừa cân tạng Endomorph, khớp chịu tải lớn, cấm bật nhảy, ưu tiên Low-impact' },
+    { label: '+ Ưu tiên máy khối & Cáp', text: 'Thích tập bằng máy khối có đệm tựa và dây cáp kháng lực' },
+    { label: '+ Tập tại nhà', text: 'Tập luyện tại nhà với thảm, dây kháng lực và bodyweight' },
+    { label: '+ Ghi đè phục hồi', text: 'Yêu cầu ghi đè sang chế độ phục hồi chức năng và tập cô lập vùng an toàn' },
+  ], []);
+
+  // 15 mẫu prompt NLP lâm sàng và huấn luyện thực tế
+  const PROMPT_TEMPLATES = useMemo(() => [
+    // 1. Chấn thương & Xương khớp
+    {
+      id: 'hernia_machine',
+      category: 'injury',
+      label: '🦴 Thoát vị L4-L5 + Máy khối',
+      shortDesc: 'Cấm nén ép dọc trục, ưu tiên máy khối tựa ngực',
+      prompt: 'Học viên bị thoát vị đĩa đệm L4-L5 và đau thắt lưng khi cúi, cổ tay yếu. Mục tiêu tăng cơ nạc, thích tập bằng máy khối có đệm tựa ngực và dây kháng lực, cấm hoàn toàn gánh tạ đòn Back Squat và Deadlift.',
+      goal: 'Tăng trưởng cơ bắp & Sức mạnh tịnh tiến',
+      level: 'Intermediate'
+    },
+    {
+      id: 'knee_low_impact',
+      category: 'injury',
+      label: '🦵 Thoái hóa gối / Dây chằng + Low-impact',
+      shortDesc: 'Cấm squat sâu & bật nhảy, tập êm ái',
+      prompt: 'Học viên bị đau khớp gối do thoái hóa sụn chêm và từng chấn thương dây chằng, không thể squat sâu hay bật nhảy va đập cao. Mục tiêu giảm mỡ săn chắc, ưu tiên Seated Leg Curl, Hip Thrust và bài tập êm ái.',
+      goal: 'Giảm mỡ & Săn chắc cơ thể',
+      level: 'Beginner'
+    },
+    {
+      id: 'shoulder_wrist',
+      category: 'injury',
+      label: '💪 Khớp vai & Cổ tay yếu',
+      shortDesc: 'Cấm đẩy đòn thẳng, dùng tạ đơn Neutral Grip',
+      prompt: 'Học viên bị đau khớp vai (viêm gân chóp xoay) và cổ tay yếu. Mục tiêu phát triển cơ thân trên, cấm đẩy tạ đòn thẳng qua đầu, ưu tiên tạ đơn cầm trung tính Neutral Grip, bài kéo xô máy cáp và Face Pull.',
+      goal: 'Tăng trưởng cơ bắp & Sức mạnh tịnh tiến',
+      level: 'Intermediate'
+    },
+    {
+      id: 'fracture_post_op',
+      category: 'injury',
+      label: '⚠️ Gãy chân / Sau mổ + Phục hồi',
+      shortDesc: 'Ghi đè mục tiêu, cô lập thân trên có tựa',
+      prompt: 'Học viên nam vừa phẫu thuật kết hợp xương cẳng chân trái sau gãy, chân đang hồi phục, tim đập nhanh. Yêu cầu ghi đè sang chế độ phục hồi chức năng, chỉ tập cô lập vùng thân trên ở tư thế ngồi tựa lưng chắc chắn, tuyệt đối không tải lực lên chân.',
+      goal: 'Phục hồi chức năng & Vận động khớp',
+      level: 'Beginner'
+    },
+    {
+      id: 'kyphosis_posture',
+      category: 'injury',
+      label: '🧘 Gù lưng (Kyphosis) & Sai tư thế',
+      shortDesc: 'Nắn chỉnh tư thế, mở ngực, tăng cơ lưng trên',
+      prompt: 'Học viên văn phòng bị gù lưng trên (Kyphosis), vai đổ về trước và đau mỏi cổ vai gáy. Mục tiêu nắn chỉnh tư thế và cải thiện độ linh hoạt, tăng cường các bài kéo lưng trên (Face Pull, Y-T-W, Row ngực tựa) và giãn mở cơ ngực.',
+      goal: 'Phục hồi chức năng & Vận động khớp',
+      level: 'Beginner'
+    },
+    {
+      id: 'office_hip_tightness',
+      category: 'injury',
+      label: '🪑 Dân văn phòng ngồi nhiều & Cứng hông',
+      shortDesc: 'Giảm đau thắt lưng, kích hoạt Glutes và Core',
+      prompt: 'Học viên văn phòng ngồi máy tính 8-10 tiếng/ngày, thắt lưng dưới ê ẩm và khớp hông bị cứng. Mục tiêu tăng cường thể lực, kích hoạt cơ mông Glutes, tăng độ vững cơ lõi Core (Dead Bug, Bird Dog, Plank) và giải phóng cơ gập hông.',
+      goal: 'Tăng trưởng cơ bắp & Sức mạnh tịnh tiến',
+      level: 'Intermediate'
+    },
+
+    // 2. Bệnh lý & Thể trạng
+    {
+      id: 'hypertension_safe',
+      category: 'health',
+      label: '❤️ Cao huyết áp / Tim mạch (Zone 1-2)',
+      shortDesc: 'Kiểm soát nhịp tim < 75% HRmax, cấm nín thở',
+      prompt: 'Học viên có tiền sử cao huyết áp và nhịp tim nhanh khi vận động, thể lực nền tảng yếu. Cần kiểm soát nhịp tim an toàn ở Zone 1-2 (dưới 75% HRmax), nhịp thở điều hòa liên tục, tuyệt đối cấm nín thở gồng bụng Valsalva.',
+      goal: 'Sức bền tim mạch & Thể lực tổng quát',
+      level: 'Beginner'
+    },
+    {
+      id: 'underweight_gain',
+      category: 'health',
+      label: '📉 Thể trạng gầy / Khó tăng cân (BMI < 18.5)',
+      shortDesc: 'Thặng dư 400-500 kcal, hạn chế cardio',
+      prompt: 'Học viên thể trạng gầy gò thiếu cân (BMI 17.2, tạng Ectomorph), chuyển hóa nhanh và khó hấp thu. Mục tiêu phục hồi thể trạng, tăng cân và xây dựng khối lượng cơ bắp nạc, thặng dư 400-500 kcal/ngày, hạn chế các bài cardio đốt calo nặng.',
+      goal: 'Tăng cân & Xây dựng khối lượng cơ bắp',
+      level: 'Beginner'
+    },
+    {
+      id: 'severe_underweight',
+      category: 'health',
+      label: '🪫 Suy nhược nghiêm trọng (BMI < 16)',
+      shortDesc: 'Cảnh báo y tế teo cơ, bài tập tĩnh nhẹ có tựa',
+      prompt: 'Học viên thể trạng đặc biệt suy nhược với chỉ số BMI dưới 16, teo cơ nhẹ và thể lực rất yếu. Cần phác đồ bảo tồn thể lực an toàn tuyệt đối, bài tập nhẹ nhàng có đệm nâng đỡ cơ thể, nhịp tim duy trì Zone 1 và tập trung phục hồi dinh dưỡng.',
+      goal: 'Tăng cân & Xây dựng khối lượng cơ bắp',
+      level: 'Beginner'
+    },
+    {
+      id: 'overweight_joint_safe',
+      category: 'health',
+      label: '📈 Thừa cân (BMI > 28) + Bảo vệ khớp',
+      shortDesc: 'Giảm mỡ thâm hụt calo, cấm bật nhảy',
+      prompt: 'Học viên thừa cân nhiều (BMI 28.5, tạng Endomorph), khớp cổ chân và đầu gối chịu áp lực lớn. Mục tiêu đốt mỡ và tối ưu tiêu hao năng lượng, thâm hụt calo 400 kcal, cấm các bài bật nhảy Plyometrics chấn động khớp, ưu tiên bài tập máy cáp và chuyển động Low-impact.',
+      goal: 'Giảm mỡ & Săn chắc cơ thể',
+      level: 'Beginner'
+    },
+    {
+      id: 'beginner_low_stamina',
+      category: 'health',
+      label: '⚡ Thể lực yếu / Người mới (Beginner)',
+      shortDesc: 'Nền tảng thần kinh - cơ, nghỉ 90-120s',
+      prompt: 'Học viên mới tinh chưa từng tập thể thao, thể lực yếu, nhanh hụt hơi và sợ chấn thương. Cần giáo án xây dựng nền tảng thần kinh - cơ (Mind-muscle connection), ưu tiên máy tập cố định quỹ đạo, nhịp độ vừa phải và nghỉ đủ 90-120 giây giữa các hiệp.',
+      goal: 'Tăng trưởng cơ bắp & Sức mạnh tịnh tiến',
+      level: 'Beginner'
+    },
+
+    // 3. Mục tiêu chuyên sâu & Môi trường
+    {
+      id: 'hypertrophy_machine',
+      category: 'goals',
+      label: '🎯 Tăng cơ nạc (Hypertrophy) + Máy & Cáp',
+      shortDesc: 'Lực căng cơ liên tục, an toàn khớp lâu dài',
+      prompt: 'Học viên nam sức khỏe tốt, muốn tối ưu hóa phát triển phì đại cơ bắp nạc (Hypertrophy) nhưng muốn bảo vệ khớp lâu dài. Ưu tiên tập trung vào máy khối có tựa và hệ thống dây cáp để duy trì lực căng cơ bắp liên tục, hạn chế tạ tự do quá nặng.',
+      goal: 'Tăng trưởng cơ bắp & Sức mạnh tịnh tiến',
+      level: 'Intermediate'
+    },
+    {
+      id: 'body_recomp',
+      category: 'goals',
+      label: '🔥 Tái cấu trúc cơ thể (Body Recomp)',
+      shortDesc: 'Tăng cơ giảm mỡ đồng thời (Skinny-Fat)',
+      prompt: 'Học viên tạng người Skinny-Fat (mỡ bụng nhiều nhưng cơ bắp ít). Mục tiêu tái cấu trúc cơ thể: vừa tăng cơ vừa giảm mỡ đồng thời, duy trì calo cân bằng hoặc thâm hụt nhẹ, tăng lượng protein 2g/kg thể trọng, kết hợp bài tập kháng lực đa khớp và cardio Zone 2.',
+      goal: 'Tăng trưởng cơ bắp & Sức mạnh tịnh tiến',
+      level: 'Intermediate'
+    },
+    {
+      id: 'home_workout',
+      category: 'goals',
+      label: '🏠 Tập luyện tại nhà (Home Workout)',
+      shortDesc: 'Không máy phòng gym, dùng dây kháng lực',
+      prompt: 'Học viên không có điều kiện đến phòng gym, tập luyện tại nhà chỉ có thảm tập và bộ dây kháng lực (Resistance Bands). Mục tiêu săn chắc toàn thân và tăng cường sức bền cơ bắp, giáo án thiết kế phù hợp không gian tại nhà.',
+      goal: 'Giảm mỡ & Săn chắc cơ thể',
+      level: 'Intermediate'
+    },
+    {
+      id: 'endurance_cardio',
+      category: 'goals',
+      label: '🏃 Sức bền tim mạch & Thể lực dẻo dai',
+      shortDesc: 'Tăng dung tích phổi, nhịp tim Zone 2 chủ đạo',
+      prompt: 'Học viên muốn tập trung phát triển sức bền tim mạch, cải thiện dung tích phổi và sức chịu đựng cơ thể cho các môn thể thao đối kháng. Thiết kế giáo án tập trung vào vùng nhịp tim Zone 2 chủ đạo kết hợp rèn luyện sức bền tốc độ và độ dẻo dai.',
+      goal: 'Sức bền tim mạch & Thể lực tổng quát',
+      level: 'Advanced'
+    }
+  ], []);
 
   const load = async () => {
     setLoading(true); setLoadError('');
@@ -183,6 +365,9 @@ export function AIRecommendation() {
 
     // Phân tích bệnh lý y tế nếu có
     const medNote = (context.medicalNote || '').toLowerCase();
+    if (medNote.includes('gãy') || medNote.includes('mổ') || medNote.includes('phẫu thuật') || medNote.includes('đứt dây chằng') || medNote.includes('dây chằng') || medNote.includes('bó bột') || medNote.includes('trật khớp')) {
+      tagsToSelect.push('severe_injury');
+    }
     if (medNote.includes('lưng') || medNote.includes('cột sống') || medNote.includes('thoát vị')) {
       tagsToSelect.push('back_pain');
     }
@@ -503,152 +688,245 @@ export function AIRecommendation() {
                 </div>
               )}
 
-              {/* BỘ CONTEXT CHỌN THỂ TRẠNG VÀ TÌNH TRẠNG SỨC KHỎE */}
-              <div className="space-y-3 pt-1">
+              {/* 1. Ô PROMPT TỰ DO CHO HLV (HERO NLP INPUT) */}
+              <div className="space-y-2 pt-1">
                 <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px] text-amber-500">category</span>
-                    {isEn ? 'Select Physical Conditions & Health Constraints:' : 'Chọn Thể Trạng & Lưu Ý Sức Khỏe (Contexts):'}
-                  </span>
-                  <span className="text-[11px] text-slate-400 font-normal">
-                    {selectedTagIds.length} {isEn ? 'selected' : 'đã chọn'}
-                  </span>
-                </div>
-
-                {CONDITION_GROUPS.map((grp, gIdx) => (
-                  <div key={gIdx} className="space-y-1.5 bg-slate-50/80 dark:bg-slate-750/50 p-2.5 rounded-xl border border-slate-200/80 dark:border-slate-700">
-                    <div className="flex items-center gap-1 text-[11px] font-bold text-slate-600 dark:text-slate-300">
-                      <span className="material-symbols-outlined text-[14px] text-slate-500">{grp.icon}</span>
-                      <span>{grp.groupTitle}</span>
-                    </div>
-                    <div className="flex flex-wrap gap-1.5">
-                      {grp.items.map(item => {
-                        const active = selectedTagIds.includes(item.id);
-                        const incompatibleWithBmi = !isBodyTagCompatible(item.id, Number(context?.bmi));
-                        return (
-                          <button
-                            key={item.id}
-                            type="button"
-                            disabled={incompatibleWithBmi}
-                            title={incompatibleWithBmi
-                              ? (isEn ? 'This tag conflicts with the calculated BMI.' : 'Thẻ này mâu thuẫn với chỉ số BMI đã tính.')
-                              : undefined}
-                            onClick={() => handleToggleTag(item)}
-                            className={`px-2.5 py-1 rounded-lg text-xs font-medium transition-all cursor-pointer border text-left flex items-center gap-1 ${
-                              incompatibleWithBmi
-                                ? 'bg-slate-100 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700'
-                                : active
-                                ? 'bg-[#1E2235] text-[#F2CC8F] border-[#1E2235] dark:bg-[#F2CC8F] dark:text-[#1E2235] shadow-xs'
-                                : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700'
-                            }`}
-                          >
-                            <span className="material-symbols-outlined text-[13px]">
-                              {incompatibleWithBmi ? 'block' : active ? 'check_circle' : 'add'}
-                            </span>
-                            <span>{item.label}</span>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-
-              {/* CHỌN MỤC TIÊU TẬP LUYỆN */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {isEn ? 'Fitness Goal *' : 'Mục tiêu tập luyện *'}
-                </label>
-                <div className="flex flex-wrap gap-1.5 mb-1.5">
-                  {GOAL_PRESETS.map(gp => (
-                    <button
-                      key={gp.id}
-                      type="button"
-                      onClick={() => setGoal(gp.value)}
-                      className={`px-2 py-0.5 rounded-md text-[11px] font-medium border transition-colors cursor-pointer ${
-                        goal === gp.value
-                          ? 'bg-blue-600 text-white border-blue-600 font-bold'
-                          : 'bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:bg-slate-200'
-                      }`}
-                    >
-                      {gp.label}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  aria-label={isEn ? 'Fitness Goal' : 'Mục tiêu AI'}
-                  required
-                  maxLength={500}
-                  className={coachInput}
-                  value={goal}
-                  onChange={e => setGoal(e.target.value)}
-                  placeholder={isEn ? 'E.g., Weight Gain & Lean Mass' : 'VD: Tăng cân & Xây dựng khối lượng cơ bắp'}
-                />
-              </div>
-
-              {/* CHỌN TRÌNH ĐỘ TẬP LUYỆN */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                  {isEn ? 'Current Fitness Level *' : 'Trình độ hiện tại *'}
-                </label>
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5 mb-1.5">
-                  {LEVEL_PRESETS.map(lp => (
-                    <button
-                      key={lp.id}
-                      type="button"
-                      onClick={() => setLevel(lp.value)}
-                      className={`px-2 py-1 rounded-lg text-xs font-bold border transition-colors cursor-pointer text-center ${
-                        level === lp.value
-                          ? 'bg-[#1E2235] text-[#F2CC8F] border-[#1E2235] dark:bg-white dark:text-slate-900'
-                          : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
-                      }`}
-                    >
-                      {lp.id}
-                    </button>
-                  ))}
-                </div>
-                <input
-                  aria-label={isEn ? 'Fitness Level' : 'Trình độ AI'}
-                  required
-                  maxLength={50}
-                  className={coachInput}
-                  placeholder={isEn ? 'Enter evaluated fitness level' : 'Nhập trình độ đã đánh giá'}
-                  value={level}
-                  onChange={e => setLevel(e.target.value)}
-                />
-              </div>
-
-              {/* Ô LƯU Ý THỂ TRẠNG / ĐIỀU CHỈNH (TỰ ĐỘNG CẬP NHẬT TỪ TAGS) */}
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                <div className="flex items-center justify-between mb-1">
-                  <span>{isEn ? 'Physical Condition & Adjustments (Auto-compiled)' : 'Lưu ý thể trạng & Điều chỉnh (Tự động tổng hợp)'}</span>
-                  {selectedTagIds.length > 0 && (
+                  <label className="text-xs font-bold text-slate-800 dark:text-white flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[18px] text-indigo-600 dark:text-indigo-400">psychology</span>
+                    <span>{isEn ? 'Coach Free-Text Prompt (AI Medical NLP Engine):' : 'Nhập yêu cầu huấn luyện & Tình trạng học viên (Prompt tự do):'}</span>
+                  </label>
+                  {notes && (
                     <button
                       type="button"
-                      onClick={() => { setSelectedTagIds([]); setNotes(''); }}
+                      onClick={() => setNotes('')}
                       className="text-[10px] text-rose-500 hover:underline cursor-pointer"
                     >
-                      {isEn ? 'Clear tags' : 'Xóa tất cả tags'}
+                      {isEn ? 'Clear prompt' : 'Xóa nội dung'}
                     </button>
                   )}
                 </div>
+
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed">
+                  {isEn
+                    ? 'Freely describe injuries (back/knee/shoulder/fracture), goals, stamina, equipment preferences. The Medical NLP Engine automatically extracts keywords & applies safety overrides.'
+                    : 'HLV gõ trực tiếp tình trạng học viên: chấn thương (đau lưng, thoát vị, gối, vai, mổ, gãy), bệnh lý (tim mạch, huyết áp), thể trạng (yếu, gầy, mập) và sở thích thiết bị. AI tự bóc tách và tạo giáo án.'}
+                </p>
+
+                {/* Khu vực Gợi ý Prompt & Ghép từ khóa chuyên sâu */}
+                <div className="space-y-2 rounded-xl bg-slate-50/80 dark:bg-slate-750/50 p-2.5 border border-slate-200/80 dark:border-slate-700">
+                  {/* Category Filter Tabs */}
+                  <div className="flex items-center justify-between gap-1 flex-wrap pb-1 border-b border-slate-200/60 dark:border-slate-700/60">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[13px] text-amber-500">lightbulb</span>
+                      <span>{isEn ? '15 Clinical & Training Scenarios:' : '15 Tình huống lâm sàng & Huấn luyện mẫu:'}</span>
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {PROMPT_CATEGORIES.map(cat => (
+                        <button
+                          key={cat.id}
+                          type="button"
+                          onClick={() => setTemplateCategory(cat.id)}
+                          className={`px-2 py-0.5 rounded-md text-[10px] font-bold cursor-pointer transition-all ${
+                            templateCategory === cat.id
+                              ? 'bg-indigo-600 text-white shadow-2xs'
+                              : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-100 border border-slate-200 dark:border-slate-700'
+                          }`}
+                        >
+                          {cat.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Template Chips List */}
+                  {(() => {
+                    const filtered = PROMPT_TEMPLATES.filter(t => templateCategory === 'all' || t.category === templateCategory);
+                    const displayed = (showAllTemplates || templateCategory !== 'all') ? filtered : filtered.slice(0, 6);
+                    return (
+                      <div className="space-y-1.5">
+                        <div className="flex flex-wrap gap-1">
+                          {displayed.map((tmpl, idx) => (
+                            <button
+                              key={tmpl.id || idx}
+                              type="button"
+                              title={tmpl.shortDesc}
+                              onClick={() => {
+                                setNotes(tmpl.prompt);
+                                if (tmpl.goal) setGoal(tmpl.goal);
+                                if (tmpl.level) setLevel(tmpl.level);
+                              }}
+                              className="px-2 py-1 rounded-lg text-[10.5px] font-medium bg-white hover:bg-indigo-50 dark:bg-slate-800 dark:hover:bg-indigo-950/40 text-slate-700 dark:text-slate-200 border border-slate-200/90 dark:border-slate-700 hover:border-indigo-300 cursor-pointer transition-all shadow-2xs text-left"
+                            >
+                              <span>{tmpl.label}</span>
+                            </button>
+                          ))}
+                        </div>
+
+                        {templateCategory === 'all' && filtered.length > 6 && (
+                          <div className="text-right">
+                            <button
+                              type="button"
+                              onClick={() => setShowAllTemplates(!showAllTemplates)}
+                              className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 hover:underline cursor-pointer inline-flex items-center gap-0.5"
+                            >
+                              <span>{showAllTemplates ? (isEn ? 'Collapse templates ▴' : 'Thu gọn ▴') : (isEn ? `View all ${filtered.length} templates (${filtered.length - 6} more) ▾` : `Xem tất cả ${filtered.length} mẫu (${filtered.length - 6} mẫu khác) ▾`)}</span>
+                            </button>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+
+                  {/* Thanh Ghép Nhanh Cụm Từ Vào Prompt */}
+                  <div className="pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60 space-y-1">
+                    <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 block flex items-center gap-1">
+                      <span className="material-symbols-outlined text-[12px] text-indigo-500">add_circle</span>
+                      <span>{isEn ? 'Quick Phrase Appender (Click to append into prompt):' : '🧩 Ghép nhanh cụm từ (Bấm để chèn tiếp vào prompt):'}</span>
+                    </span>
+                    <div className="flex flex-wrap gap-1">
+                      {QUICK_SNIPPETS.map((snip, sIdx) => (
+                        <button
+                          key={sIdx}
+                          type="button"
+                          onClick={() => handleAppendSnippet(snip.text)}
+                          className="px-1.5 py-0.5 rounded text-[10px] font-medium bg-slate-200/70 hover:bg-emerald-100 dark:bg-slate-700 dark:hover:bg-emerald-950/60 text-slate-700 hover:text-emerald-900 dark:text-slate-300 dark:hover:text-emerald-200 border border-slate-300/60 dark:border-slate-600 cursor-pointer transition-colors"
+                        >
+                          {snip.label}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
                 <textarea
                   aria-label={isEn ? 'Health notes' : 'Lưu ý AI'}
+                  required
                   maxLength={1000}
-                  rows={4}
-                  className={coachInput}
-                  placeholder={isEn ? 'Select tags above or enter custom health notes...' : 'Chọn các thẻ thể trạng ở trên hoặc tự gõ điều chỉnh riêng...'}
+                  rows={5}
+                  className={`${coachInput} leading-relaxed`}
+                  placeholder={isEn
+                    ? 'E.g., Male student 31yo, herniated disc L4-L5 with lower back pain, weak wrists. Goal is lean mass, prefers chest-supported machines and bands, strictly no heavy barbell squats or deadlifts...'
+                    : 'VD: Học viên nam 31 tuổi, bị thoát vị đĩa đệm L4-L5 và đau lưng dưới, cổ tay yếu, tim đập nhanh. Mục tiêu là tăng cơ giảm mỡ, thích tập bằng máy khối có tựa lưng và dây kháng lực, không muốn tập tạ đòn squat nặng...'}
                   value={notes}
                   onChange={e => setNotes(e.target.value)}
                 />
-              </label>
+              </div>
+
+              {/* 2. MỤC TIÊU & TRÌNH ĐỘ (GỌN GÀNG, ĐỒNG BỘ VỚI PROMPT) */}
+              <div className="grid sm:grid-cols-2 gap-3 pt-1">
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {isEn ? 'Fitness Goal' : 'Mục tiêu tập luyện'}
+                  </label>
+                  <input
+                    aria-label={isEn ? 'Fitness Goal' : 'Mục tiêu AI'}
+                    required
+                    maxLength={500}
+                    className={coachInput}
+                    value={goal}
+                    onChange={e => setGoal(e.target.value)}
+                    placeholder={isEn ? 'E.g., Lean Muscle Hypertrophy' : 'VD: Tăng cơ & Sức mạnh tịnh tiến'}
+                  />
+                  <div className="flex flex-wrap gap-1 pt-0.5">
+                    {GOAL_PRESETS.slice(0, 3).map(gp => (
+                      <button
+                        key={gp.id}
+                        type="button"
+                        onClick={() => setGoal(gp.value)}
+                        className={`px-1.5 py-0.2 rounded text-[10px] font-medium border cursor-pointer ${
+                          goal === gp.value ? 'bg-blue-600 text-white border-blue-600' : 'bg-slate-100 text-slate-600 border-slate-200'
+                        }`}
+                      >
+                        {gp.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="space-y-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {isEn ? 'Current Fitness Level' : 'Trình độ hiện tại'}
+                  </label>
+                  <div className="grid grid-cols-4 gap-1">
+                    {LEVEL_PRESETS.map(lp => (
+                      <button
+                        key={lp.id}
+                        type="button"
+                        onClick={() => setLevel(lp.value)}
+                        className={`px-1 py-1 rounded text-[11px] font-bold border cursor-pointer text-center ${
+                          level === lp.value
+                            ? 'bg-[#1E2235] text-[#F2CC8F] border-[#1E2235] dark:bg-white dark:text-slate-900'
+                            : 'bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        {lp.id}
+                      </button>
+                    ))}
+                  </div>
+                  <input
+                    aria-label={isEn ? 'Fitness Level' : 'Trình độ AI'}
+                    required
+                    maxLength={50}
+                    className={coachInput}
+                    value={level}
+                    onChange={e => setLevel(e.target.value)}
+                  />
+                </div>
+              </div>
+
+              {/* 3. TÙY CHỌN PHỤ: THẺ THỂ TRẠNG BỔ SUNG (THU GỌN - KHÔNG LÀM RỐI MẮT) */}
+              <details className="rounded-xl border border-dashed border-slate-200 dark:border-slate-700 p-2.5 text-xs">
+                <summary className="font-bold text-slate-500 hover:text-slate-700 dark:text-slate-400 dark:hover:text-slate-200 cursor-pointer flex items-center justify-between">
+                  <span className="flex items-center gap-1.5">
+                    <span className="material-symbols-outlined text-[15px]">tune</span>
+                    <span>{isEn ? 'Optional: Manual health tag filters (AI extracts from prompt by default)' : 'Tùy chọn phụ: Bổ sung thẻ thủ công (Không bắt buộc · AI đã tự bóc tách từ prompt)'}</span>
+                  </span>
+                  <span className="text-[11px] text-slate-400 font-normal">{selectedTagIds.length} {isEn ? 'selected' : 'đã chọn'}</span>
+                </summary>
+                <div className="mt-2.5 pt-2 border-t border-slate-100 dark:border-slate-700 space-y-2">
+                  {CONDITION_GROUPS.map((grp, gIdx) => (
+                    <div key={gIdx} className="space-y-1">
+                      <span className="text-[10px] font-bold text-slate-500 block">{grp.groupTitle}</span>
+                      <div className="flex flex-wrap gap-1">
+                        {grp.items.map(item => {
+                          const active = selectedTagIds.includes(item.id);
+                          const incompatibleWithBmi = !isBodyTagCompatible(item.id, Number(context?.bmi));
+                          return (
+                            <button
+                              key={item.id}
+                              type="button"
+                              disabled={incompatibleWithBmi}
+                              title={incompatibleWithBmi
+                                ? (isEn ? 'This tag conflicts with the calculated BMI.' : 'Thẻ này mâu thuẫn với chỉ số BMI đã tính.')
+                                : undefined}
+                              onClick={() => handleToggleTag(item)}
+                              className={`px-2 py-0.5 rounded text-[11px] font-medium transition-all cursor-pointer border text-left flex items-center gap-1 ${
+                                incompatibleWithBmi
+                                  ? 'bg-slate-100 text-slate-400 border-slate-200 opacity-60 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700'
+                                  : active
+                                  ? 'bg-[#1E2235] text-[#F2CC8F] border-[#1E2235] dark:bg-[#F2CC8F] dark:text-[#1E2235]'
+                                  : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:bg-slate-100'
+                              }`}
+                            >
+                              <span className="material-symbols-outlined text-[12px]">
+                                {incompatibleWithBmi ? 'block' : active ? 'check_circle' : 'add'}
+                              </span>
+                              <span>{item.label}</span>
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </details>
 
               <button
                 disabled={!member || !context || contextLoading || busy}
                 className="w-full px-5 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider shadow-sm hover:shadow-md transition-all disabled:opacity-50 cursor-pointer flex items-center justify-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px] text-amber-300">auto_awesome</span>
-                <span>{busy ? (isEn ? 'Processing with AI...' : 'Đang phân tích thể trạng...') : (isEn ? 'Generate AI Fitness Plan' : 'Tạo Gợi Ý Giáo Án Thể Lực')}</span>
+                <span>{busy ? (isEn ? 'Processing with Medical NLP Engine...' : 'Đang bóc tách thực thể & phân tích phác đồ...') : (isEn ? 'Generate AI Fitness Plan from Prompt' : 'Tạo Giáo Án An Toàn Từ Prompt')}</span>
               </button>
             </fieldset>
           </form>
@@ -714,6 +992,23 @@ export function AIRecommendation() {
 
             {result && (
               <div className="space-y-4 animate-fadeIn">
+                {/* Thực thể y tế do AI bóc tách từ ghi chú HLV (kèm emoji). */}
+                {Array.isArray(result.extracted_keywords || result.extractedTags) && (result.extracted_keywords || result.extractedTags).length > 0 && (
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-750 border border-slate-200/90 dark:border-slate-700 space-y-1.5">
+                    <span className="text-[11px] font-extrabold uppercase text-slate-600 dark:text-slate-300 flex items-center gap-1.5">
+                      <span className="material-symbols-outlined text-[15px] text-indigo-500">sell</span>
+                      {isEn ? 'Medical entities extracted by AI:' : 'Thực thể y tế AI bóc tách (Medical NLP):'}
+                    </span>
+                    <div className="flex flex-wrap gap-1.5 pt-0.5">
+                      {(result.extracted_keywords || result.extractedTags).map((tag, index) => (
+                        <span key={`${tag}-${index}`} className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-slate-800 text-indigo-900 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800 shadow-2xs">
+                          {tag}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
                 <div className="border-b border-slate-100 dark:border-slate-700 pb-3">
                   <input
                     aria-label={isEn ? 'Editable AI plan title' : 'Tiêu đề giáo án AI có thể chỉnh sửa'}
@@ -724,6 +1019,23 @@ export function AIRecommendation() {
                   />
                   <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-300 mt-1">{result.targetAudience}</p>
                 </div>
+
+                {(result.ai_reasoning || result.aiReasoning) && (
+                  <div className="p-3.5 rounded-xl bg-violet-50/80 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-800 text-xs space-y-1.5">
+                    <div className="flex items-center justify-between">
+                      <strong className="text-violet-900 dark:text-violet-200 font-bold flex items-center gap-1.5">
+                        <span className="material-symbols-outlined text-violet-600 dark:text-violet-400 text-[16px]">psychology</span>
+                        {isEn ? 'AI medical reasoning & goal override' : 'Lý do AI & Biện luận y học (Goal Override)'}
+                      </strong>
+                      {((result.ai_reasoning || result.aiReasoning).includes('GHI ĐÈ') || (result.ai_reasoning || result.aiReasoning).includes('ghi đè') || (result.ai_reasoning || result.aiReasoning).includes('bảo vệ')) && (
+                        <span className="px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-300">
+                          {isEn ? 'Safety Override' : 'Đã ghi đè bảo vệ'}
+                        </span>
+                      )}
+                    </div>
+                    <p className="text-violet-800 dark:text-violet-300 leading-relaxed font-medium">{result.ai_reasoning || result.aiReasoning}</p>
+                  </div>
+                )}
 
                 <div className="p-3.5 rounded-xl bg-sky-50/80 dark:bg-sky-950/30 border border-sky-200 dark:border-sky-800 text-xs space-y-1.5">
                   <strong className="text-sky-900 dark:text-sky-200 font-bold block">
@@ -740,6 +1052,13 @@ export function AIRecommendation() {
                     <ul className="list-disc list-inside text-rose-800 dark:text-rose-300 space-y-1">
                       {result.conflictWarnings.map((warning, index) => <li key={index}>{warning}</li>)}
                     </ul>
+                  </div>
+                )}
+
+                {(result.protocol?.frequency || result.recommendedVolume) && (
+                  <div className="p-3 rounded-xl bg-slate-50 dark:bg-slate-750 border border-slate-100 dark:border-slate-700 text-xs sm:text-sm">
+                    <span className="text-slate-500 text-[11px] font-bold uppercase block">{isEn ? 'Recommended volume & safe HR zone' : 'Tần suất & vùng nhịp tim an toàn'}</span>
+                    <span className="font-bold text-slate-900 dark:text-white mt-1 block">{result.protocol?.frequency || result.recommendedVolume}</span>
                   </div>
                 )}
 
@@ -761,7 +1080,7 @@ export function AIRecommendation() {
                     {isEn ? 'Nutrition Protocol for Condition:' : 'Dinh dưỡng hỗ trợ theo Thể trạng:'}
                   </strong>
                   <p className="text-emerald-800 dark:text-emerald-300 leading-relaxed">
-                    {result.nutritionGuidance}
+                    {result.protocol?.nutrition || result.nutritionGuidance}
                   </p>
                 </div>
 
@@ -820,14 +1139,27 @@ export function AIRecommendation() {
                             />
                           </label>
                         </div>
-                        <textarea
-                          aria-label={`${isEn ? 'Safety note' : 'Ghi chú an toàn'} ${i + 1}`}
-                          maxLength={500}
-                          rows={2}
-                          className={`${coachInput} mt-2`}
-                          value={ex?.note || ''}
-                          onChange={event => updateExercise(i, 'note', event.target.value)}
-                        />
+                        <div className="mt-2 space-y-1">
+                          <div className="flex items-center justify-between text-[11px]">
+                            <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1">
+                              <span className="material-symbols-outlined text-[14px] text-emerald-600 dark:text-emerald-400">verified_user</span>
+                              {isEn ? 'Medical Focus & Safety Mechanism' : 'Trọng tâm y khoa & Cơ chế an toàn'}
+                            </span>
+                            {ex?.volume && (
+                              <span className="px-2 py-0.5 rounded-md font-extrabold text-[10px] bg-slate-200/80 dark:bg-slate-700 text-slate-800 dark:text-slate-200">
+                                {ex.volume}
+                              </span>
+                            )}
+                          </div>
+                          <textarea
+                            aria-label={`${isEn ? 'Medical focus' : 'Trọng tâm y khoa / ghi chú an toàn'} ${i + 1}`}
+                            maxLength={500}
+                            rows={2}
+                            className={coachInput}
+                            value={ex?.note || ''}
+                            onChange={event => updateExercise(i, 'note', event.target.value)}
+                          />
+                        </div>
                       </article>
                     ))
                   ) : (
