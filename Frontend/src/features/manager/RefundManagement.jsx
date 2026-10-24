@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { refundApi } from '../../services/api.js';
-import { uploadMediaFileToCloud } from '../../services/cloudMediaStorage.js';
+import { deleteRefundBill, uploadRefundBill } from '../../services/refundBillStorage.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
@@ -29,12 +29,13 @@ export function RefundManagement({ embedded = false }) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setBusy(true);
+    let transferProofUrl = null;
+    let reviewCompleted = false;
     try {
-      let transferProofUrl = null;
       if (decision === 'Approved') {
         const file = form.get('proof');
         if (!(file instanceof File) || !file.size) throw new Error(isEn ? 'Transfer proof image is required.' : 'Bắt buộc chọn ảnh xác nhận chuyển khoản.');
-        transferProofUrl = (await uploadMediaFileToCloud(file)).url;
+        transferProofUrl = await uploadRefundBill(file);
       }
       await refundApi.review(selected.id, {
         status: decision,
@@ -42,10 +43,16 @@ export function RefundManagement({ embedded = false }) {
         transferReference: form.get('transferReference')?.trim() || null,
         reviewNote: form.get('reviewNote')?.trim() || null
       });
+      reviewCompleted = true;
       showSuccess(decision === 'Approved' ? (isEn ? 'Refund approved and recorded.' : 'Đã duyệt và ghi nhận hoàn tiền.') : (isEn ? 'Refund request rejected.' : 'Đã từ chối yêu cầu hoàn tiền.'));
       setSelected(null);
       await load();
-    } catch (error) { showError(error); } finally { setBusy(false); }
+    } catch (error) {
+      if (transferProofUrl && !reviewCompleted) {
+        try { await deleteRefundBill(transferProofUrl); } catch { /* Best-effort cleanup; keep the original review error. */ }
+      }
+      showError(error);
+    } finally { setBusy(false); }
   };
 
   return <div className="space-y-6 animate-fade-slide-up">
@@ -56,7 +63,7 @@ export function RefundManagement({ embedded = false }) {
       {items.map(item => <article key={item.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-slate-800 dark:bg-slate-900"><div className="flex items-start justify-between gap-3"><div><h2 className="font-chivo font-black">{item.memberName} <span className="text-xs text-slate-400">{item.memberCode}</span></h2><p className="text-xs text-slate-500">{item.invoiceNumber} · {item.paymentMethod}</p></div><strong className="text-lg text-[#2D6A4F]">{money(item.amount)}</strong></div><div className="mt-4 rounded-xl bg-slate-50 p-3 text-sm"><p><strong>{isEn ? 'Receive at:' : 'Nhận tại:'}</strong> {item.bankName} · {item.bankAccountNumber}</p><p className="mt-1 font-bold uppercase">{item.bankAccountName}</p></div><p className="mt-3 text-sm text-slate-700"><strong>{isEn ? 'Reason:' : 'Lý do:'}</strong> {item.reason}</p>{item.status === 'Pending' && <button onClick={() => { setSelected(item); setDecision('Approved'); }} className="mt-4 w-full rounded-xl bg-[#1E2235] px-4 py-2.5 text-sm font-bold text-[#F2CC8F]">{isEn ? 'Review request' : 'Xử lý yêu cầu'}</button>}{item.transferProofUrl && <a className="mt-3 inline-block text-xs font-bold text-emerald-700 underline" href={item.transferProofUrl} target="_blank" rel="noreferrer">{isEn ? 'Transfer proof' : 'Ảnh chuyển khoản'}</a>}</article>)}
     </div>}
     <Modal isOpen={Boolean(selected)} onClose={() => !busy && setSelected(null)} title={isEn ? 'Review refund request' : 'Xử lý yêu cầu hoàn tiền'}>
-      {selected && <form onSubmit={review} className="space-y-4"><div className="rounded-xl bg-slate-50 p-3 text-sm"><strong>{selected.memberName}</strong><p>{money(selected.amount)} → {selected.bankName} · {selected.bankAccountNumber} · {selected.bankAccountName}</p></div><div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => setDecision('Approved')} className={`rounded-xl border p-3 text-sm font-bold ${decision === 'Approved' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200'}`}>{isEn ? 'Approve' : 'Chấp nhận'}</button><button type="button" onClick={() => setDecision('Rejected')} className={`rounded-xl border p-3 text-sm font-bold ${decision === 'Rejected' ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-slate-200'}`}>{isEn ? 'Reject' : 'Từ chối'}</button></div>{decision === 'Approved' && <><label className="block text-xs font-bold">{isEn ? 'Transfer proof image *' : 'Ảnh xác nhận chuyển khoản *'}<input name="proof" type="file" accept="image/png,image/jpeg,image/webp,image/gif,image/avif" required className="mt-1 block w-full rounded-xl border border-slate-300 p-2 text-sm" /></label><label className="block text-xs font-bold">{isEn ? 'Bank transfer reference' : 'Mã giao dịch ngân hàng'}<input name="transferReference" maxLength="150" className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm" /></label></>}<label className="block text-xs font-bold">{decision === 'Rejected' ? (isEn ? 'Rejection reason *' : 'Lý do từ chối *') : (isEn ? 'Manager note' : 'Ghi chú quản lý')}<textarea name="reviewNote" required={decision === 'Rejected'} maxLength="1000" rows="3" className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm" /></label><button disabled={busy} className={`w-full rounded-xl px-4 py-3 text-sm font-black text-white disabled:opacity-50 ${decision === 'Approved' ? 'bg-emerald-600' : 'bg-rose-600'}`}>{busy ? (isEn ? 'Processing...' : 'Đang xử lý...') : (decision === 'Approved' ? (isEn ? 'Confirm transferred & approve' : 'Xác nhận đã chuyển và duyệt') : (isEn ? 'Confirm rejection' : 'Xác nhận từ chối'))}</button></form>}
+      {selected && <form onSubmit={review} className="space-y-4"><div className="rounded-xl bg-slate-50 p-3 text-sm"><strong>{selected.memberName}</strong><p>{money(selected.amount)} → {selected.bankName} · {selected.bankAccountNumber} · {selected.bankAccountName}</p></div><div className="grid grid-cols-2 gap-2"><button type="button" onClick={() => setDecision('Approved')} className={`rounded-xl border p-3 text-sm font-bold ${decision === 'Approved' ? 'border-emerald-500 bg-emerald-50 text-emerald-700' : 'border-slate-200'}`}>{isEn ? 'Approve' : 'Chấp nhận'}</button><button type="button" onClick={() => setDecision('Rejected')} className={`rounded-xl border p-3 text-sm font-bold ${decision === 'Rejected' ? 'border-rose-500 bg-rose-50 text-rose-700' : 'border-slate-200'}`}>{isEn ? 'Reject' : 'Từ chối'}</button></div>{decision === 'Approved' && <><label className="block text-xs font-bold">{isEn ? 'Transfer proof image *' : 'Ảnh xác nhận chuyển khoản *'}<input name="proof" type="file" accept="image/png,image/jpeg,image/webp" required className="mt-1 block w-full rounded-xl border border-slate-300 p-2 text-sm" /></label><label className="block text-xs font-bold">{isEn ? 'Bank transfer reference' : 'Mã giao dịch ngân hàng'}<input name="transferReference" maxLength="150" className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm" /></label></>}<label className="block text-xs font-bold">{decision === 'Rejected' ? (isEn ? 'Rejection reason *' : 'Lý do từ chối *') : (isEn ? 'Manager note' : 'Ghi chú quản lý')}<textarea name="reviewNote" required={decision === 'Rejected'} maxLength="1000" rows="3" className="mt-1 w-full rounded-xl border border-slate-300 p-3 text-sm" /></label><button disabled={busy} className={`w-full rounded-xl px-4 py-3 text-sm font-black text-white disabled:opacity-50 ${decision === 'Approved' ? 'bg-emerald-600' : 'bg-rose-600'}`}>{busy ? (isEn ? 'Processing...' : 'Đang xử lý...') : (decision === 'Approved' ? (isEn ? 'Confirm transferred & approve' : 'Xác nhận đã chuyển và duyệt') : (isEn ? 'Confirm rejection' : 'Xác nhận từ chối'))}</button></form>}
     </Modal>
   </div>;
 }

@@ -110,7 +110,8 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
     packageStartDate: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStartDate || null) : null,
     packageStatus: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStatus || 'INACTIVE') : null,
     scheduledSubscriptions,
-    avatar: null
+    avatar: profile.avatar || null,
+    avatarKey: profile.avatarKey || null
   };
   setAuthUser(user);
   return user;
@@ -261,7 +262,11 @@ export const authApi = {
     const token = getApiToken();
     await apiRequest('profile/me', {
       method: 'PATCH', token,
-      body: { fullName: profileData.fullName, phone: profileData.phone || null }
+      body: {
+        fullName: profileData.fullName,
+        phone: profileData.phone || null,
+        avatarKey: profileData.avatarKey ?? null
+      }
     });
     assertAuthVersion(version);
     return loadCurrentUser(token, version);

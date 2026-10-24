@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
@@ -8,6 +8,7 @@ import { GoogleLoginModal } from './GoogleLoginModal.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { translatePackageName } from '../../services/i18nHelper.js';
+import { deleteUploadedAvatar, uploadAvatar } from '../../services/r2ImageStorage.js';
 
 export function ProfileModal({ isOpen, onClose }) {
   const { currentUser, updateProfile, changePassword } = useAuth();
@@ -22,6 +23,23 @@ export function ProfileModal({ isOpen, onClose }) {
   const [fullName, setFullName] = useState(currentUser?.fullName || '');
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [savingProfile, setSavingProfile] = useState(false);
+  const [avatarFile, setAvatarFile] = useState(null);
+  const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar || '');
+
+  useEffect(() => {
+    if (!isOpen) return;
+    setFullName(currentUser?.fullName || '');
+    setPhone(currentUser?.phone || '');
+    setAvatarFile(null);
+    setAvatarPreview(currentUser?.avatar || '');
+  }, [isOpen, currentUser?.fullName, currentUser?.phone, currentUser?.avatar]);
+
+  useEffect(() => {
+    if (!avatarFile) return undefined;
+    const objectUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreview(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [avatarFile]);
 
   // Password Form State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -36,10 +54,20 @@ export function ProfileModal({ isOpen, onClose }) {
       return;
     }
     setSavingProfile(true);
+    let uploadedAvatar = null;
     try {
-      await updateProfile({ fullName: fullName.trim(), phone: phone.trim() });
+      if (avatarFile) uploadedAvatar = await uploadAvatar(avatarFile);
+      await updateProfile({
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        avatarKey: uploadedAvatar?.key || currentUser?.avatarKey || null
+      });
+      setAvatarFile(null);
       showSuccess(isEn ? 'Profile updated successfully!' : 'Cập nhật hồ sơ cá nhân thành công!');
     } catch (err) {
+      if (uploadedAvatar?.key) {
+        try { await deleteUploadedAvatar(uploadedAvatar.key); } catch { /* Keep the original profile error. */ }
+      }
       showError(err.message || (isEn ? 'Profile update failed!' : 'Cập nhật thất bại!'));
     } finally {
       setSavingProfile(false);
@@ -123,7 +151,7 @@ export function ProfileModal({ isOpen, onClose }) {
         <form onSubmit={handleUpdateProfile} className="space-y-4">
           <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
             <img
-              src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}
+              src={avatarPreview || currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}
               alt="Avatar"
               className="w-16 h-16 rounded-full object-cover border-2 border-[#81B29A] shadow-xs"
             />
@@ -138,6 +166,19 @@ export function ProfileModal({ isOpen, onClose }) {
                   {isEn ? `Member Code: ${currentUser.memberCode}` : `Mã thẻ: ${currentUser.memberCode}`}
                 </p>
               )}
+              <label className="mt-2 inline-flex cursor-pointer items-center gap-1 rounded-lg border border-[#81B29A] px-2.5 py-1 text-[11px] font-bold text-[#2D6A4F] hover:bg-emerald-50">
+                <span className="material-symbols-outlined text-[15px]">photo_camera</span>
+                <span>{isEn ? 'Change avatar' : 'Đổi ảnh đại diện'}</span>
+                <input
+                  type="file"
+                  accept="image/png,image/jpeg,image/webp"
+                  className="hidden"
+                  onChange={event => {
+                    const file = event.target.files?.[0] || null;
+                    setAvatarFile(file);
+                  }}
+                />
+              </label>
             </div>
           </div>
 

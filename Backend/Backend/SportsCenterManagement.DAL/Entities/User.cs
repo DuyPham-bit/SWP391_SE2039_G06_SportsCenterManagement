@@ -31,6 +31,10 @@ public class User : Common.BaseEntity
     [Column("phone")]
     public string? Phone { get; set; }
 
+    [MaxLength(500)]
+    [Column("avatar_key")]
+    public string? AvatarKey { get; set; }
+
     [Column("role_id")]
     public long RoleId { get; set; }
 
