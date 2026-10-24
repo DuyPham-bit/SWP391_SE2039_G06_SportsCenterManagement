@@ -63,6 +63,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<CoachMessage> CoachMessages => Set<CoachMessage>();
     public DbSet<CommunicationDelivery> CommunicationDeliveries => Set<CommunicationDelivery>();
     public DbSet<CoachCompensationPolicy> CoachCompensationPolicies => Set<CoachCompensationPolicy>();
+    public DbSet<CoachSalesCredit> CoachSalesCredits => Set<CoachSalesCredit>();
     public DbSet<CoachReview> CoachReviews => Set<CoachReview>();
     public DbSet<FacilityResource> FacilityResources => Set<FacilityResource>();
     public DbSet<ResourceBooking> ResourceBookings => Set<ResourceBooking>();
@@ -821,6 +822,14 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .HasForeignKey(entity => entity.CoachId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CoachCompensationPolicy>().HasOne<User>().WithMany()
             .HasForeignKey(entity => entity.UpdatedBy).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CoachSalesCredit>().HasOne<CoachProfile>().WithMany()
+            .HasForeignKey(entity => entity.CoachId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CoachSalesCredit>().HasOne<MemberProfile>().WithMany()
+            .HasForeignKey(entity => entity.MemberId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CoachSalesCredit>().HasOne<MemberSubscription>().WithMany()
+            .HasForeignKey(entity => entity.SubscriptionId).OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<CoachSalesCredit>().HasOne<User>().WithMany()
+            .HasForeignKey(entity => entity.CreatedBy).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CoachReview>().HasOne<CoachProfile>().WithMany()
             .HasForeignKey(entity => entity.CoachId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<CoachReview>().HasOne<MemberProfile>().WithMany()

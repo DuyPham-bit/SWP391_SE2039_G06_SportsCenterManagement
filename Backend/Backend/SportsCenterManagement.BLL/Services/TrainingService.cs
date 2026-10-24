@@ -274,7 +274,52 @@ public sealed class TrainingService(SportsCenterDbContext db)
             .OrderByDescending(r => r.ResultDate).ThenByDescending(r => r.CreatedAt).ThenByDescending(r => r.Id).Take(10)
             .Select(r => new RecommendationHistory(r.ResultDate, r.Weight, r.BodyFatPercentage, r.MuscleMass,
                 r.WorkoutResult ?? r.Notes, r.CoachFeedback)).ToArrayAsync(ct);
-        return new RecommendationContext(sport, profile.FitnessGoal, profile.FitnessLevel, profile.MedicalNote, history);
+
+        int? age = null;
+        if (profile.DateOfBirth.HasValue)
+        {
+            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            age = today.Year - profile.DateOfBirth.Value.Year;
+            if (profile.DateOfBirth.Value > today.AddYears(-age.Value)) age--;
+        }
+
+        var latestWeight = history.FirstOrDefault()?.Weight ?? profile.WeightKg;
+        decimal? bmi = null;
+        string? bmiCategory = null;
+        if (profile.HeightCm.HasValue && profile.HeightCm.Value > 0 && latestWeight.HasValue && latestWeight.Value > 0)
+        {
+            var hM = profile.HeightCm.Value / 100m;
+            bmi = Math.Round(latestWeight.Value / (hM * hM), 1);
+            bmiCategory = bmi switch
+            {
+                < 18.5m => "Underweight (Gầy / Thiếu cân)",
+                < 25.0m => "Normal (Cân đối / Thể hình chuẩn)",
+                < 30.0m => "Overweight (Thừa cân / Cần kiểm soát mỡ)",
+                _ => "Obese (Béo phì / Cần giảm cân an toàn)"
+            };
+        }
+
+        var healthRecords = await db.MemberHealthRecords.AsNoTracking()
+            .Where(x => x.MemberId == memberId && x.Status == "Active")
+            .OrderByDescending(x => x.OccurredOn)
+            .Select(x => new HealthRecordSummary(x.RecordType, x.Title, x.Details, x.OccurredOn))
+            .ToArrayAsync(ct);
+
+        return new RecommendationContext(
+            sport,
+            profile.FitnessGoal,
+            profile.FitnessLevel,
+            profile.MedicalNote,
+            history,
+            profile.HeightCm,
+            latestWeight,
+            profile.Gender,
+            profile.DateOfBirth,
+            age,
+            bmi,
+            bmiCategory,
+            healthRecords
+        );
     }
 
     public async Task SendNotificationAsync(long userId, SendNotificationRequest request, CancellationToken ct)

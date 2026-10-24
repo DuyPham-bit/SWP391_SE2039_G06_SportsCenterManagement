@@ -1604,19 +1604,44 @@ function PerformanceTab() {
 // TAB 6: FACILITIES & ASSETS (TÀI NGUYÊN & THIẾT BỊ)
 // ─────────────────────────────────────────────────────────────
 function FacilitiesTab({ data, act, working, isEn }) {
+  const { showError } = useToast();
   const [photoUrl, setPhotoUrl] = useState('');
   const [uploading, setUploading] = useState(false);
 
   const booking = (e) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
+    const startStr = f.get('startAt');
+    const endStr = f.get('endAt');
+    const start = new Date(startStr);
+    const end = new Date(endStr);
+    const now = new Date();
+
+    if (start < new Date(now.getTime() - 5 * 60 * 1000)) {
+      showError(isEn ? 'Start time cannot be in the past.' : 'Thời gian bắt đầu không được ở trong quá khứ.');
+      return;
+    }
+    if (end <= start) {
+      showError(isEn ? 'End time must be after start time.' : 'Thời gian kết thúc phải diễn ra sau thời gian bắt đầu.');
+      return;
+    }
+    const diffHours = (end - start) / (1000 * 60 * 60);
+    if (diffHours > 12) {
+      showError(
+        isEn
+          ? `Resource booking duration cannot exceed 12 hours per session (currently ${Math.round(diffHours)}h).`
+          : `Thời gian đặt/mượn tài nguyên tối đa là 12 tiếng mỗi lượt (hiện chọn ${Math.round(diffHours)} tiếng). Vui lòng đặt theo từng ca/buổi tập.`
+      );
+      return;
+    }
+
     return act(
       () =>
         coachProfessionalApi.bookResource({
           resourceId: Number(f.get('resourceId')),
           workEventId: null,
-          startAt: f.get('startAt'),
-          endAt: f.get('endAt'),
+          startAt: startStr,
+          endAt: endStr,
           purpose: f.get('purpose')
         }),
       isEn ? 'Resource booked; schedule conflict checks passed.' : 'Đã đặt tài nguyên; hệ thống đã kiểm tra xung đột lịch.'
@@ -1674,7 +1699,7 @@ function FacilitiesTab({ data, act, working, isEn }) {
               <FormField title={isEn ? 'Start' : 'Bắt đầu'} required>
                 <input name="startAt" type="datetime-local" required className={inputClass} />
               </FormField>
-              <FormField title={isEn ? 'End' : 'Kết thúc'} required>
+              <FormField title={isEn ? 'End' : 'Kết thúc'} hint={isEn ? 'Max 12h/session' : 'Tối đa 12h/lượt'} required>
                 <input name="endAt" type="datetime-local" required className={inputClass} />
               </FormField>
             </div>
@@ -1776,6 +1801,17 @@ function FacilitiesTab({ data, act, working, isEn }) {
                   <span className="text-[11px] text-slate-400 block">
                     {x.resourceName || (isEn ? 'Other Equipment' : 'Thiết bị khác')} · {formatDate(x.reportedAt, isEn)}
                   </span>
+                  {x.photoUrl && (
+                    <a
+                      href={x.photoUrl}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="text-[11px] font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1 pt-0.5"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">image</span>
+                      <span>{isEn ? 'View attached photo' : 'Xem ảnh hiện trường'}</span>
+                    </a>
+                  )}
                   {x.resolutionNote && (
                     <p className="text-[11px] text-emerald-700 dark:text-emerald-400 font-medium pt-1">
                       {isEn ? 'Technician Response: ' : 'Kỹ thuật phản hồi: '}{x.resolutionNote}

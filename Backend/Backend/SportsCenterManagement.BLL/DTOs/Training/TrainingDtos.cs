@@ -50,5 +50,20 @@ public sealed record ProgressResponse(long Id, long? ClassId, string? ClassName,
 public sealed record RecommendationHistory(DateOnly Date, decimal? Weight, decimal? BodyFat,
     decimal? MuscleMass, string? WorkoutResult, string? CoachFeedback);
 
-public sealed record RecommendationContext(string SportName, string? FitnessGoal, string? FitnessLevel,
-    string? MedicalNote, RecommendationHistory[] RecentHistory);
+public sealed record HealthRecordSummary(string RecordType, string Title, string Details, DateOnly OccurredOn);
+
+public sealed record RecommendationContext(
+    string SportName,
+    string? FitnessGoal,
+    string? FitnessLevel,
+    string? MedicalNote,
+    RecommendationHistory[] RecentHistory,
+    decimal? HeightCm = null,
+    decimal? WeightKg = null,
+    string? Gender = null,
+    DateOnly? DateOfBirth = null,
+    int? Age = null,
+    decimal? Bmi = null,
+    string? BmiCategory = null,
+    HealthRecordSummary[]? HealthRecords = null
+);

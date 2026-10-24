@@ -1086,9 +1086,37 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         foreach (var item in previous) item.Status = "Archived";
         var row = new CoachCompensationPolicy { CoachId = request.CoachId, MonthlyBaseSalary = request.MonthlyBaseSalary,
             CommissionPerSession = request.CommissionPerSession,
-            TargetSessions = request.TargetSessions, EffectiveFrom = request.EffectiveFrom,
+            SalesCommissionPercent = request.SalesCommissionPercent,
+            TargetSessions = request.TargetSessions,
+            TargetSales = request.TargetSales,
+            EffectiveFrom = request.EffectiveFrom,
             EffectiveTo = request.EffectiveTo, UpdatedBy = userId, UpdatedAt = UtcNow };
         db.CoachCompensationPolicies.Add(row); await db.SaveChangesAsync(ct); return row.Id;
+    }
+
+    public async Task<long> SaveSalesCredit(long userId, SaveSalesCreditRequest request, CancellationToken ct)
+    {
+        var manager = await Manager(userId, ct);
+        if (!await db.CoachProfiles.AnyAsync(x => x.Id == request.CoachId && x.CenterId == manager.CenterId, ct))
+            throw BusinessException.NotFound("HLV không thuộc trung tâm.");
+        if (request.MemberId.HasValue && !await db.MemberProfiles.AnyAsync(x => x.Id == request.MemberId && x.CenterId == manager.CenterId, ct))
+            throw Invalid("Hội viên không thuộc trung tâm.");
+        var memberId = request.MemberId;
+        if (request.SubscriptionId.HasValue)
+        {
+            var subscription = await (from sub in db.MemberSubscriptions
+                join member in db.MemberProfiles on sub.MemberId equals member.Id
+                join package in db.MembershipPackages on sub.PackageId equals package.Id
+                where sub.Id == request.SubscriptionId && member.CenterId == manager.CenterId
+                    && package.CenterId == manager.CenterId && (!memberId.HasValue || sub.MemberId == memberId)
+                select new { sub.MemberId }).SingleOrDefaultAsync(ct)
+                ?? throw Invalid("Gói hội viên không thuộc hội viên hoặc trung tâm đang quản lý.");
+            memberId = subscription.MemberId;
+        }
+        var row = new CoachSalesCredit { CoachId = request.CoachId, MemberId = memberId,
+            SubscriptionId = request.SubscriptionId, Amount = request.Amount, CreditedAt = request.CreditedAt.HasValue ? ToUtc(request.CreditedAt.Value) : UtcNow,
+            Note = request.Note?.Trim(), CreatedBy = userId };
+        db.CoachSalesCredits.Add(row); await db.SaveChangesAsync(ct); return row.Id;
     }
 
     public async Task<long> CreateResource(long userId, CreateResourceRequest request, CancellationToken ct)
@@ -1103,11 +1131,11 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
     public async Task ResolveIssue(long userId, long issueId, ResolveEquipmentIssueRequest request, CancellationToken ct)
     {
         var manager = await Manager(userId, ct);
-        if (request.Status is not ("InProgress" or "Resolved" or "Closed")) throw Invalid("Trạng thái xử lý sự cố không hợp lệ.");
+        if (request.Status is not ("InProgress" or "OnHold" or "Resolved" or "Closed" or "Rejected" or "Cancelled")) throw Invalid("Trạng thái xử lý sự cố không hợp lệ.");
         var row = await db.EquipmentIssues.SingleOrDefaultAsync(x => x.Id == issueId && x.CenterId == manager.CenterId, ct)
             ?? throw BusinessException.NotFound("Không tìm thấy sự cố.");
         row.Status = request.Status; row.ResolutionNote = request.ResolutionNote?.Trim(); row.ResolvedBy = userId;
-        row.ResolvedAt = request.Status is "Resolved" or "Closed" ? UtcNow : null;
+        row.ResolvedAt = request.Status is "Resolved" or "Closed" or "Rejected" or "Cancelled" ? UtcNow : null;
         await db.SaveChangesAsync(ct);
         await NotifyUsers(userId, [row.ReportedByUserId], "Cập nhật sự cố thiết bị", $"{row.Title}: {request.Status}. {request.ResolutionNote}",
             "EquipmentIssueUpdated", ["InApp", "Push"], ct);

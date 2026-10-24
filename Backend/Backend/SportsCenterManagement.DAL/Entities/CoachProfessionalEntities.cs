@@ -99,12 +99,26 @@ public sealed class CoachCompensationPolicy : BaseEntity
     [Column("coach_id")] public long CoachId { get; set; }
     [Precision(14, 2), Column("monthly_base_salary")] public decimal MonthlyBaseSalary { get; set; }
     [Precision(14, 2), Column("commission_per_session")] public decimal CommissionPerSession { get; set; }
+    [Precision(5, 2), Column("sales_commission_percent")] public decimal SalesCommissionPercent { get; set; }
     [Column("target_sessions")] public int TargetSessions { get; set; }
+    [Precision(14, 2), Column("target_sales")] public decimal TargetSales { get; set; }
     [Column("effective_from")] public DateOnly EffectiveFrom { get; set; }
     [Column("effective_to")] public DateOnly? EffectiveTo { get; set; }
     [MaxLength(30), Column("status")] public string Status { get; set; } = "Active";
     [Column("updated_by")] public long UpdatedBy { get; set; }
     [Column("updated_at")] public DateTime UpdatedAt { get; set; }
+}
+
+[Table("coach_sales_credits")]
+public sealed class CoachSalesCredit : BaseEntity
+{
+    [Column("coach_id")] public long CoachId { get; set; }
+    [Column("member_id")] public long? MemberId { get; set; }
+    [Column("subscription_id")] public long? SubscriptionId { get; set; }
+    [Precision(14, 2), Column("amount")] public decimal Amount { get; set; }
+    [Column("credited_at")] public DateTime CreditedAt { get; set; }
+    [MaxLength(500), Column("note")] public string? Note { get; set; }
+    [Column("created_by")] public long CreatedBy { get; set; }
 }
 
 [Table("coach_reviews")]

@@ -54,7 +54,8 @@ export const coachApi = {
   getAIRecommendation: data => apiRequest('ai/recommendations', {
     method: 'POST', body: {
       classId: Number(data.classId), memberId: Number(data.memberId),
-      fitnessGoal: data.fitnessGoal, currentLevel: data.currentLevel, notes: data.notes || null
+      fitnessGoal: data.fitnessGoal, currentLevel: data.currentLevel, notes: data.notes || null,
+      subjectiveTags: Array.isArray(data.subjectiveTags) ? data.subjectiveTags : []
     }
   })
 };
@@ -101,6 +102,7 @@ export const managerCoachApi = {
   getWorkspace: () => apiRequest('manager/coach-operations'),
   reviewLeave: (id, body) => apiRequest(`manager/coach-operations/leaves/${id}`, { method: 'PATCH', body }),
   saveCompensation: body => apiRequest('manager/coach-operations/compensation', { method: 'POST', body }),
+  saveSalesCredit: body => apiRequest('manager/coach-operations/sales-credits', { method: 'POST', body }),
   createResource: body => apiRequest('manager/coach-operations/resources', { method: 'POST', body }),
   resolveIssue: (id, body) => apiRequest(`manager/coach-operations/equipment-issues/${id}`, { method: 'PATCH', body })
 };
@@ -118,8 +120,8 @@ export const supportApi = {
     return apiRequest(`support-requests/me?${params.toString()}`);
   },
   get: id => apiRequest(`support-requests/me/${Number(id)}`),
-  submit: ({ subject, description }) => apiRequest('support-requests/me', {
-    method: 'POST', body: { subject: subject.trim(), description: description.trim() }
+  submit: ({ subject, description, priority }) => apiRequest('support-requests/me', {
+    method: 'POST', body: { subject: subject.trim(), description: description.trim(), priority }
   }),
   reply: (id, message) => apiRequest(`support-requests/me/${Number(id)}/messages`, {
     method: 'POST', body: { message: message.trim() }

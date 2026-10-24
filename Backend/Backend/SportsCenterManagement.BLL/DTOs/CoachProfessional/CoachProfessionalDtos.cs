@@ -25,7 +25,7 @@ public sealed record SaveLeaveRequest(
 public sealed record ReviewLeaveRequest(
     [Required, StringLength(30)] string Status,
     [StringLength(1000)] string? ManagerNote,
-    long? ReplacementCoachId);
+    long? ReplacementCoachId = null);
 
 public sealed record SaveHealthRecordRequest(
     long MemberId,
@@ -41,8 +41,8 @@ public sealed record SaveExerciseRequest(
     [StringLength(100)] string? MuscleGroup,
     [StringLength(50)] string? DifficultyLevel,
     string? Instructions,
-    [Url, StringLength(500)] string? VideoUrl,
-    [Url, StringLength(500)] string? ImageUrl);
+    [StringLength(500)] string? VideoUrl,
+    [StringLength(500)] string? ImageUrl);
 
 public sealed record SaveHomeworkRequest(
     long? ClassId,
@@ -109,7 +109,7 @@ public sealed record ReportEquipmentIssueRequest(
     [Required, StringLength(200)] string Title,
     [Required] string Description,
     [Required, StringLength(20)] string Severity,
-    [Url, StringLength(1000)] string? PhotoUrl);
+    [StringLength(1000)] string? PhotoUrl);
 
 public sealed record ResolveEquipmentIssueRequest(
     [Required, StringLength(30)] string Status,
@@ -119,9 +119,19 @@ public sealed record SaveCompensationPolicyRequest(
     long CoachId,
     [Range(0, 1000000000)] decimal MonthlyBaseSalary,
     [Range(0, 100000000)] decimal CommissionPerSession,
+    [Range(0, 100)] decimal SalesCommissionPercent,
     [Range(0, 10000)] int TargetSessions,
+    [Range(0, 100000000000)] decimal TargetSales,
     DateOnly EffectiveFrom,
     DateOnly? EffectiveTo);
+
+public sealed record SaveSalesCreditRequest(
+    long CoachId,
+    long? MemberId,
+    long? SubscriptionId,
+    [Range(0.01, 100000000000)] decimal Amount,
+    DateTime? CreditedAt,
+    [StringLength(500)] string? Note);
 
 public sealed record SaveCoachReviewRequest(
     long CoachId,
