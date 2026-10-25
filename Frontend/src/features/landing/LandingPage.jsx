@@ -228,7 +228,7 @@ export function LandingPage() {
     elements.forEach(el => observer.observe(el));
 
     return () => observer.disconnect();
-  }, [catalog, editorialContent]);
+  }, [catalog, editorialContent, selectedCategory]);
 
   // Danh sách các môn học (Chủ động ẩn/hiện bởi manager qua isVisible)
   const sportsList = catalogSportList;
@@ -516,7 +516,7 @@ export function LandingPage() {
 
   useEffect(() => {
     if (sportsCarouselRef.current) {
-      sportsCarouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
+      sportsCarouselRef.current.scrollLeft = 0;
       setSportCarouselIndex(0);
     }
   }, [selectedCategory, filteredSports.length]);
@@ -1157,8 +1157,14 @@ export function LandingPage() {
               onScroll={handleSportsScroll}
               style={{display:'flex',gap:'24px',overflowX:'auto',scrollBehavior:'smooth',scrollSnapType:'x mandatory',paddingBottom:'20px',paddingTop:'4px',msOverflowStyle:'none',scrollbarWidth:'none'}}
             >
-              {filteredSports.map(sport => {
-                const facility = facilitiesList.find(f => f.id === (sport.facilityId || sport.facilityId)) || {};
+              {filteredSports.length === 0 ? (
+                <div style={{width:'100%',textAlign:'center',padding:'48px 20px',color:'var(--p-color)'}}>
+                  <span className="material-symbols-outlined" style={{fontSize:'36px',color:'var(--primary-color)',marginBottom:'8px'}}>sports</span>
+                  <p style={{fontSize:'14px',fontWeight:500,margin:0}}>{isEn ? 'No sports found in this category.' : 'Chưa có bộ môn nào trong danh mục này.'}</p>
+                </div>
+              ) : (
+                filteredSports.map(sport => {
+                  const facility = facilitiesList.find(f => f.id === (sport.facilityId || sport.facilityId)) || {};
                 const details = {
                   level: sport.level || (isEn ? 'All levels' : 'Chưa cập nhật'),
                   coach: sport.coach || (isEn ? 'Class Schedule' : 'Xem lịch lớp'),
@@ -1185,7 +1191,7 @@ export function LandingPage() {
                     <div
                       id={`sport-card-${sport.id}`}
                       onClick={() => handleSportClick(sport)}
-                      className={`tiya-course-card tiya-reveal ${isHighlighted ? 'highlighted' : ''}`}
+                      className={`tiya-course-card ${isHighlighted ? 'highlighted' : ''}`}
                     >
                       <div className="tiya-course-card__image-wrap">
                         {sport.image || facility.image || facility.secondaryImage ? <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" /> : <div className="h-full grid place-items-center bg-slate-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
@@ -1246,22 +1252,24 @@ export function LandingPage() {
                     </div>
                   </div>
                 );
-              })}
+              }))}
             </div>
 
             {/* Carousel Dots */}
-            <div className="tiya-carousel-dots">
-              {filteredSports.map((sport, idx) => (
-                <button
-                  key={sport.id}
-                  type="button"
-                  onClick={() => handleScrollSportsToIndex(idx)}
-                  aria-label={isEn ? `Go to ${sport.name}` : `Chuyển đến môn ${sport.name}`}
-                  className={`tiya-carousel-dot ${sportCarouselIndex === idx ? 'active' : ''}`}
-                  style={{width: sportCarouselIndex === idx ? '36px' : '8px', background: sportCarouselIndex === idx ? 'var(--primary-color)' : 'rgba(0,0,0,0.15)'}}
-                />
-              ))}
-            </div>
+            {filteredSports.length > 1 && (
+              <div className="tiya-carousel-dots">
+                {filteredSports.map((sport, idx) => (
+                  <button
+                    key={sport.id}
+                    type="button"
+                    onClick={() => handleScrollSportsToIndex(idx)}
+                    aria-label={isEn ? `Go to ${sport.name}` : `Chuyển đến môn ${sport.name}`}
+                    className={`tiya-carousel-dot ${sportCarouselIndex === idx ? 'active' : ''}`}
+                    style={{width: sportCarouselIndex === idx ? '36px' : '8px', background: sportCarouselIndex === idx ? 'var(--primary-color)' : 'rgba(0,0,0,0.15)'}}
+                  />
+                ))}
+              </div>
+            )}
           </div>
         </div>
 
