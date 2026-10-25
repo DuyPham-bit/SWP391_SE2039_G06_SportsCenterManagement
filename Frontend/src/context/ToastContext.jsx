@@ -98,8 +98,8 @@ export function ToastProvider({ children }) {
           label: 'Thành công',
           icon: 'check',
           titleColor: 'text-emerald-700 dark:text-emerald-400',
-          orbBg: 'bg-[radial-gradient(circle_at_32%_28%,#6ee7b7_0%,#10b981_40%,#047857_80%,#022c22_100%)]',
-          orbShadow: 'shadow-[0_2px_8px_rgba(16,185,129,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-1.5px_2px_rgba(0,0,0,0.35)]',
+          orbBg: 'bg-[radial-gradient(circle_at_30%_25%,#ffffff_0%,#a7f3d0_25%,#10b981_60%,#047857_90%,#022c22_100%)]',
+          orbShadow: 'shadow-[0_2px_10px_rgba(16,185,129,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-2px_3px_rgba(0,0,0,0.35)]',
           cardBorder: 'border-emerald-300 dark:border-emerald-500/30',
           cardShadow: 'shadow-[0_12px_32px_-6px_rgba(16,185,129,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_36px_-6px_rgba(16,185,129,0.25),0_8px_20px_-4px_rgba(0,0,0,0.6)]'
         };
@@ -108,8 +108,8 @@ export function ToastProvider({ children }) {
           label: 'Lỗi xử lý',
           icon: 'priority_high',
           titleColor: 'text-rose-700 dark:text-rose-400',
-          orbBg: 'bg-[radial-gradient(circle_at_32%_28%,#fda4af_0%,#f43f5e_40%,#be123c_80%,#4c0519_100%)]',
-          orbShadow: 'shadow-[0_2px_8px_rgba(244,63,94,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-1.5px_2px_rgba(0,0,0,0.35)]',
+          orbBg: 'bg-[radial-gradient(circle_at_30%_25%,#ffffff_0%,#fecdd3_25%,#f43f5e_60%,#be123c_90%,#4c0519_100%)]',
+          orbShadow: 'shadow-[0_2px_10px_rgba(244,63,94,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-2px_3px_rgba(0,0,0,0.35)]',
           cardBorder: 'border-rose-300 dark:border-rose-500/30',
           cardShadow: 'shadow-[0_12px_32px_-6px_rgba(244,63,94,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_36px_-6px_rgba(244,63,94,0.25),0_8px_20px_-4px_rgba(0,0,0,0.6)]'
         };
@@ -118,8 +118,8 @@ export function ToastProvider({ children }) {
           label: 'Cảnh báo',
           icon: 'warning',
           titleColor: 'text-amber-700 dark:text-amber-400',
-          orbBg: 'bg-[radial-gradient(circle_at_32%_28%,#fde68a_0%,#f59e0b_40%,#d97706_80%,#451a03_100%)]',
-          orbShadow: 'shadow-[0_2px_8px_rgba(245,158,11,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-1.5px_2px_rgba(0,0,0,0.35)]',
+          orbBg: 'bg-[radial-gradient(circle_at_30%_25%,#ffffff_0%,#fef3c7_25%,#f59e0b_60%,#d97706_90%,#451a03_100%)]',
+          orbShadow: 'shadow-[0_2px_10px_rgba(245,158,11,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-2px_3px_rgba(0,0,0,0.35)]',
           cardBorder: 'border-amber-300 dark:border-amber-500/30',
           cardShadow: 'shadow-[0_12px_32px_-6px_rgba(245,158,11,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_36px_-6px_rgba(245,158,11,0.25),0_8px_20px_-4px_rgba(0,0,0,0.6)]'
         };
@@ -128,8 +128,8 @@ export function ToastProvider({ children }) {
           label: 'Thông báo',
           icon: 'info',
           titleColor: 'text-blue-700 dark:text-blue-400',
-          orbBg: 'bg-[radial-gradient(circle_at_32%_28%,#93c5fd_0%,#3b82f6_40%,#1d4ed8_80%,#172554_100%)]',
-          orbShadow: 'shadow-[0_2px_8px_rgba(59,130,246,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-1.5px_2px_rgba(0,0,0,0.35)]',
+          orbBg: 'bg-[radial-gradient(circle_at_30%_25%,#ffffff_0%,#dbeafe_25%,#3b82f6_60%,#1d4ed8_90%,#172554_100%)]',
+          orbShadow: 'shadow-[0_2px_10px_rgba(59,130,246,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-2px_3px_rgba(0,0,0,0.35)]',
           cardBorder: 'border-blue-300 dark:border-blue-500/30',
           cardShadow: 'shadow-[0_12px_32px_-6px_rgba(59,130,246,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_36px_-6px_rgba(59,130,246,0.25),0_8px_20px_-4px_rgba(0,0,0,0.6)]'
         };
@@ -201,10 +201,8 @@ export function ToastProvider({ children }) {
               {/* 3D Top Specular Light Beam (Refraction Line) */}
               <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
 
-              {/* 3D Gemstone Orb Sphere (Perfect centering & breathing room) */}
+              {/* 3D Gemstone Orb Sphere (Perfect centering & spherical specular lighting) */}
               <div className={`relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
-                {/* Specular Highlight Glint */}
-                <div className="absolute top-1 left-2 w-3 h-1.5 rounded-full bg-white/80 blur-[0.2px] -rotate-35 pointer-events-none" />
                 <span className="material-symbols-outlined text-[20px] text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] select-none">
                   {cfg.icon}
                 </span>
@@ -303,8 +301,6 @@ export function ToastProvider({ children }) {
                 <div className="flex items-start justify-between gap-3">
                   <div className="flex items-center gap-3.5">
                     <div className={`relative w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
-                      {/* Specular Highlight Glint */}
-                      <div className="absolute top-1.5 left-3 w-4 h-2 rounded-full bg-white/80 blur-[0.4px] -rotate-35 pointer-events-none" />
                       <span className="material-symbols-outlined text-[24px] text-white font-bold drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)] select-none">
                         {cfg.icon}
                       </span>

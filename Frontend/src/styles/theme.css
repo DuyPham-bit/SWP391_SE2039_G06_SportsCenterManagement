@@ -669,15 +669,6 @@ body.scms-simulated-fullscreen #root {
   will-change: transform, opacity;
 }
 
-@keyframes toast-progress-beam {
-  from {
-    transform: scaleX(1);
-  }
-  to {
-    transform: scaleX(0);
-  }
-}
-
 .toast-capsule-bg {
   background-color: #ffffff !important;
 }
