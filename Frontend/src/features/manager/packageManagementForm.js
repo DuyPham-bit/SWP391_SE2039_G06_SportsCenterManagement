@@ -36,3 +36,10 @@ export function validatePackagePrice(value) {
 
   return { valid: true, value: parsed };
 }
+
+export function canEditPackage(pkg) {
+  if (!pkg) return false;
+  if (pkg.isEditable === false) return false;
+  if (pkg.hasOrders || Number(pkg.subscriberCount || 0) > 0 || Number(pkg.activeSubscribers || 0) > 0) return false;
+  return true;
+}

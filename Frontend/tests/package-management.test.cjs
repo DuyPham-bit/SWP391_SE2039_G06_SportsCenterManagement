@@ -9,7 +9,7 @@ function loadHelpers() {
     .replaceAll('export const ', 'const ')
     .replaceAll('export function ', 'function ');
   const context = vm.createContext({ Intl });
-  vm.runInContext(`${source}\nglobalThis.helpers = { MAX_PACKAGE_PRICE, validatePackagePrice, sortMembershipPackages };`, context);
+  vm.runInContext(`${source}\nglobalThis.helpers = { MAX_PACKAGE_PRICE, validatePackagePrice, sortMembershipPackages, canEditPackage };`, context);
   return context.helpers;
 }
 
@@ -47,3 +47,17 @@ test('package price rejects empty, non-numeric, non-positive, and excessive valu
     { valid: true, value: MAX_PACKAGE_PRICE }
   );
 });
+
+test('canEditPackage returns false if package has subscribers or orders, true otherwise', () => {
+  const { canEditPackage } = loadHelpers();
+
+  assert.equal(canEditPackage(null), false);
+  assert.equal(canEditPackage({}), true);
+  assert.equal(canEditPackage({ isEditable: true, subscriberCount: 0, hasOrders: false }), true);
+  assert.equal(canEditPackage({ isEditable: false }), false);
+  assert.equal(canEditPackage({ subscriberCount: 1 }), false);
+  assert.equal(canEditPackage({ hasOrders: true }), false);
+  assert.equal(canEditPackage({ status: 'ACTIVE', activeSubscribers: 3 }), false);
+  assert.equal(canEditPackage({ status: 'ACTIVE', subscriberCount: 0, hasOrders: false }), true);
+});
+

@@ -4,7 +4,8 @@ import { useToast } from '../../context/ToastContext.js';
 import { Modal } from '../../components/common/Modal.js';
 import { Badge } from '../../components/common/StatCard.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
-import { MAX_PACKAGE_PRICE, sortMembershipPackages, validatePackagePrice } from './packageManagementForm.js';
+import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
+import { MAX_PACKAGE_PRICE, sortMembershipPackages, validatePackagePrice, canEditPackage } from './packageManagementForm.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 export function PackageManagement() {
@@ -62,6 +63,18 @@ export function PackageManagement() {
   };
 
   const openEditModal = pkg => {
+    if (!canEditPackage(pkg)) {
+      showError({
+        message: isEn
+          ? 'Cannot edit package: This package is active and has existing member subscriptions or orders.'
+          : 'Không thể chỉnh sửa: Gói tập này đã kích hoạt và có người đặt/đăng ký.',
+        code: 'PKG-HAS-ORDERS',
+        proposedHandling: isEn
+          ? 'To change pricing or terms, discontinue this package (Lock sales) and create a new package.'
+          : 'Để thay đổi chính sách hoặc biểu phí, vui lòng Khóa bán gói hiện tại và tạo một gói mới.'
+      });
+      return;
+    }
     setEditingPkg(pkg);
     setName(pkg.name);
     setDurationDays(pkg.durationDays);
@@ -75,6 +88,18 @@ export function PackageManagement() {
 
   const handleSavePackage = async e => {
     e.preventDefault();
+    if (editingPkg && !canEditPackage(editingPkg)) {
+      showError({
+        message: isEn
+          ? 'Cannot edit package: This package is active and has existing member subscriptions or orders.'
+          : 'Không thể chỉnh sửa: Gói tập này đã kích hoạt và có người đặt/đăng ký.',
+        code: 'PKG-HAS-ORDERS',
+        proposedHandling: isEn
+          ? 'To change pricing or terms, discontinue this package (Lock sales) and create a new package.'
+          : 'Để thay đổi chính sách hoặc biểu phí, vui lòng Khóa bán gói hiện tại và tạo một gói mới.'
+      });
+      return;
+    }
     if (!name.trim()) {
       showError({
         message: isEn ? 'Please enter package name!' : 'Vui lòng nhập tên gói tập!',
@@ -234,13 +259,27 @@ export function PackageManagement() {
               )}
 
               <div>
-                <div className="mb-2 flex items-center gap-2">
+                <div className="mb-2 flex items-center gap-2 flex-wrap">
                   <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${isActive
                     ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
                     : 'border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
                     <span className="material-symbols-outlined text-[13px]">{isActive ? 'storefront' : 'lock'}</span>
                     {isActive ? (isEn ? 'On sale' : 'Đang mở bán') : (isEn ? 'Sales locked' : 'Đã khóa bán')}
                   </span>
+
+                  {(pkg.hasOrders || !canEditPackage(pkg)) && (
+                    <span
+                      title={isEn ? 'Package has active member registrations or orders' : 'Gói đã có hội viên đăng ký hoặc đặt mua'}
+                      className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300 shadow-2xs"
+                    >
+                      <span className="material-symbols-outlined text-[13px] text-amber-600 dark:text-amber-400">how_to_reg</span>
+                      <span>
+                        {pkg.subscriberCount > 0
+                          ? (isEn ? `${pkg.subscriberCount} booked` : `${pkg.subscriberCount} người đặt`)
+                          : (isEn ? 'Has orders' : 'Đã có người đặt')}
+                      </span>
+                    </span>
+                  )}
                 </div>
                 <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
                   {isEn ? 'Term' : 'Thời hạn'}: {pkg.durationDays} {isEn ? 'days' : 'ngày'}
@@ -285,14 +324,26 @@ export function PackageManagement() {
                   {isActive ? (isEn ? 'Lock sales' : 'Khóa bán') : (isEn ? 'Open sales' : 'Mở bán')}
                 </button>
 
-                <button
-                  type="button"
-                  onClick={() => openEditModal(pkg)}
-                  className="px-3.5 py-1.5 rounded-lg bg-[#1E2235] hover:bg-[#2B2D42] text-white text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer flex items-center gap-1"
-                >
-                  <span className="material-symbols-outlined text-[15px]">edit</span>
-                  <span>{isEn ? 'Edit' : 'Sửa'}</span>
-                </button>
+                {canEditPackage(pkg) ? (
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(pkg)}
+                    className="px-3.5 py-1.5 rounded-lg bg-[#1E2235] hover:bg-[#2B2D42] text-white text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer flex items-center gap-1"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">edit</span>
+                    <span>{isEn ? 'Edit' : 'Sửa'}</span>
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled
+                    title={isEn ? 'Cannot edit: This package has existing members or orders.' : 'Gói đã kích hoạt và có người đặt, không thể chỉnh sửa.'}
+                    className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 text-xs font-bold font-chivo uppercase tracking-wider cursor-not-allowed flex items-center gap-1 opacity-70"
+                  >
+                    <span className="material-symbols-outlined text-[15px]">lock</span>
+                    <span>{isEn ? 'Locked' : 'Khóa sửa'}</span>
+                  </button>
+                )}
               </div>
             </div>
           );
@@ -305,6 +356,19 @@ export function PackageManagement() {
         onClose={() => setModalOpen(false)}
         title={editingPkg ? (isEn ? `Edit Package: ${editingPkg.name}` : `Chỉnh sửa gói tập: ${editingPkg.name}`) : (isEn ? 'Create New Membership Package' : 'Tạo gói tập hội viên mới')}
       >
+        {editingPkg && !canEditPackage(editingPkg) && (
+          <div className="mb-4">
+            <BusinessAlert
+              type="warning"
+              title={isEn ? 'Package is locked from modification' : 'Gói tập đã bị khóa chỉnh sửa'}
+              message={
+                isEn
+                  ? 'This package has already been activated and has existing member subscriptions or orders. To protect data integrity, pricing and details cannot be changed. You can toggle "Lock sales" to discontinue this package.'
+                  : 'Gói tập này đã được kích hoạt và có hội viên đăng ký hoặc đặt mua. Để bảo đảm tính nhất quán của dữ liệu hợp đồng và hóa đơn, không thể sửa thông tin gói. Bạn có thể chọn "Khóa bán" nếu muốn dừng phát hành gói mới.'
+              }
+            />
+          </div>
+        )}
         <form onSubmit={handleSavePackage} className="space-y-4">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
@@ -313,10 +377,11 @@ export function PackageManagement() {
             <input
               type="text"
               required
+              disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
               value={name}
               onChange={e => setName(e.target.value)}
               placeholder={isEn ? 'e.g. Olympic Annual Pass, 3-Month Swim...' : 'Ví dụ: Gói Bơi 3 Tháng, Gói Hội Viên Năm...'}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -328,11 +393,12 @@ export function PackageManagement() {
               <input
                 type="number"
                 required
+                disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
                 min={1}
                 max={MAX_PACKAGE_PRICE}
                 value={price}
                 onChange={e => setPrice(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
               />
             </div>
             <div>
@@ -342,10 +408,11 @@ export function PackageManagement() {
               <input
                 type="number"
                 required
+                disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
                 min={1}
                 value={durationDays}
                 onChange={e => setDurationDays(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -356,9 +423,10 @@ export function PackageManagement() {
                 {isEn ? 'Disciplines Included *' : 'Số môn được tập *'}
               </label>
               <select
+                disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
                 value={allowedSports}
                 onChange={e => setAllowedSports(Number(e.target.value))}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
               >
                 {Array.from({ length: totalSports }, (_, i) => {
                   const val = i + 1;
@@ -394,10 +462,11 @@ export function PackageManagement() {
               </label>
               <input
                 type="text"
+                disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
                 value={badge}
                 onChange={e => setBadge(e.target.value)}
                 placeholder={isEn ? 'e.g. POPULAR, BEST VALUE' : 'Ví dụ: PHỔ BIẾN, TIẾT KIỆM'}
-                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
               />
             </div>
           </div>
@@ -408,10 +477,11 @@ export function PackageManagement() {
             </label>
             <textarea
               rows={3}
+              disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
               value={description}
               onChange={e => setDescription(e.target.value)}
               placeholder={isEn ? 'Describe included facilities, equipment, or pass privileges...' : 'Chi tiết quyền lợi, thời gian sử dụng cụm sân bãi...'}
-              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
             />
           </div>
 
@@ -425,8 +495,8 @@ export function PackageManagement() {
             </button>
             <button
               type="submit"
-              disabled={saving}
-              className="px-5 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all hover-lift cursor-pointer disabled:opacity-50"
+              disabled={saving || Boolean(editingPkg && !canEditPackage(editingPkg))}
+              className="px-5 py-2.5 bg-[#2D6A4F] hover:bg-[#1B4332] text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all hover-lift cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {saving ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save Package' : 'Lưu Gói Tập')}
             </button>

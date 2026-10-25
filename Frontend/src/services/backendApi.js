@@ -131,7 +131,19 @@ async function loginAndLoad(path, body) {
 }
 
 function mapPackage(item) {
-  return { ...item, status: String(item.status || '').toUpperCase(), allowedSports: item.allowedSports ?? 1, features: item.features || [] };
+  const subscriberCount = Number(item.subscriberCount || 0);
+  const hasOrders = Boolean(item.hasOrders || subscriberCount > 0);
+  const isEditable = item.isEditable !== undefined ? Boolean(item.isEditable) : !hasOrders;
+
+  return {
+    ...item,
+    status: String(item.status || '').toUpperCase(),
+    allowedSports: item.allowedSports ?? 1,
+    features: item.features || [],
+    subscriberCount,
+    hasOrders,
+    isEditable
+  };
 }
 
 function mapSession(item) {
