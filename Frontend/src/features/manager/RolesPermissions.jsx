@@ -41,7 +41,7 @@ export function RolesPermissions() {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { currentUser } = useAuth();
-  const { showError, showSuccess } = useToast();
+  const { showError, showSuccess, confirm } = useToast();
 
   // Navigation tab
   const [activeTab, setActiveTab] = useState('USERS'); // 'USERS' | 'ROLES'
@@ -217,9 +217,15 @@ export function RolesPermissions() {
 
   const syncAllUsersToRole = async () => {
     if (!selectedRole) return;
-    const confirmed = window.confirm(isEn
-      ? `Remove every individual exception for ${selectedRole.roleName} and apply the role defaults to all users?`
-      : `Xóa toàn bộ quyền riêng của người dùng thuộc vai trò ${selectedRole.roleName} và đồng bộ tất cả theo quyền chung?`);
+    const confirmed = await confirm({
+      title: isEn ? 'Reset User Overrides' : 'Khôi phục quyền mặc định',
+      message: isEn
+        ? `Remove every individual exception for ${selectedRole.roleName} and apply the role defaults to all users?`
+        : `Xóa toàn bộ quyền riêng của người dùng thuộc vai trò ${selectedRole.roleName} và đồng bộ tất cả theo quyền chung?`,
+      confirmText: isEn ? 'Sync to Default' : 'Đồng bộ mặc định',
+      cancelText: isEn ? 'Cancel' : 'Hủy bỏ',
+      type: 'warning'
+    });
     if (!confirmed) return;
     setBusy(true);
     try {

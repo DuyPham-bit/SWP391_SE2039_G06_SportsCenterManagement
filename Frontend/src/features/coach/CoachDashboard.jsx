@@ -11,10 +11,12 @@ import {
   mapDashboardSessions
 } from './coachOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { useToast } from '../../context/ToastContext.jsx';
 
 export function CoachDashboard() {
   const { currentUser } = useAuth();
   const { language } = useLanguage();
+  const { showWarning, showSuccess, showError } = useToast();
   const isEn = language === 'en';
 
   const [classes, setClasses] = useState([]);
@@ -126,15 +128,15 @@ export function CoachDashboard() {
     const w = parseFloat(progressForm.weight);
     const hl = parseFloat(progressForm.heavyLift);
     if (isNaN(w) || w < 25 || w > 300) {
-      alert(isEn ? 'Please enter a valid weight (25 - 300 kg).' : 'Vui lòng nhập cân nặng hợp lệ (từ 25 đến 300 kg).');
+      showWarning(isEn ? 'Please enter a valid weight (25 - 300 kg).' : 'Vui lòng nhập cân nặng hợp lệ (từ 25 đến 300 kg).');
       return;
     }
     if (isNaN(hl) || hl < 0 || hl > 500) {
-      alert(isEn ? 'Please enter a valid max lift (0 - 500 kg).' : 'Vui lòng nhập mức tạ hợp lệ (từ 0 đến 500 kg).');
+      showWarning(isEn ? 'Please enter a valid max lift (0 - 500 kg).' : 'Vui lòng nhập mức tạ hợp lệ (từ 0 đến 500 kg).');
       return;
     }
     if (progressForm.feedbackNote && progressForm.feedbackNote.length > 1000) {
-      alert(isEn ? 'Feedback note cannot exceed 1000 characters.' : 'Nhận xét không được vượt quá 1000 ký tự.');
+      showWarning(isEn ? 'Feedback note cannot exceed 1000 characters.' : 'Nhận xét không được vượt quá 1000 ký tự.');
       return;
     }
     const selectedMember = memberList.find(member => member.id === Number(progressForm.studentId));
@@ -159,7 +161,7 @@ export function CoachDashboard() {
     try {
       const records = dashboardAttendanceRecords(activeSession.members);
       await coachApi.takeAttendance(activeSession.id, null, null, null, records);
-      alert(isEn ? 'Attendance recorded successfully!' : 'Đã lưu kết quả điểm danh thành công!');
+      showSuccess(isEn ? 'Attendance recorded successfully!' : 'Đã lưu kết quả điểm danh thành công!');
       setIsAttendanceModalOpen(false);
       schedule.reload();
     } catch (e) {

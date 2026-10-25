@@ -144,7 +144,7 @@ export function getResolvedExercises(plan) {
 
 export function TrainingPlan() {
   const { currentUser } = useAuth();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, confirm } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
 
@@ -334,9 +334,15 @@ export function TrainingPlan() {
   };
 
   const handleDeletePlan = async (planId, planTitle) => {
-    if (!window.confirm(isEn ? `Are you sure you want to delete "${planTitle}"?` : `Bạn có chắc muốn xóa giáo án "${planTitle}"?`)) {
-      return;
-    }
+    const ok = await confirm({
+      title: isEn ? 'Delete Training Plan' : 'Xác nhận xóa giáo án',
+      message: isEn ? `Are you sure you want to delete "${planTitle}"?` : `Bạn có chắc chắn muốn xóa giáo án "${planTitle}"?`,
+      detail: isEn ? 'This lesson plan and all associated exercises will be permanently removed.' : 'Giáo án này và toàn bộ danh sách bài tập kèm theo sẽ bị xóa khỏi hệ thống.',
+      confirmText: isEn ? 'Delete Plan' : 'Xóa giáo án',
+      cancelText: isEn ? 'Cancel' : 'Hủy bỏ',
+      type: 'danger'
+    });
+    if (!ok) return;
 
     try {
       await coachApi.deleteTrainingPlan(planId);

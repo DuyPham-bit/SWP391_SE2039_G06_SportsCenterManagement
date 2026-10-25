@@ -358,7 +358,13 @@ export default function OtpVerification({
             /* Ảnh 3: Nút "Continue →" màu xanh lá đặc */
             <button
               type="button"
-              onClick={() => alert("Tiếp tục thành công!")}
+              onClick={() => {
+                if (typeof onVerifySuccess === 'function') {
+                  onVerifySuccess(otp.join(''));
+                } else if (typeof onClose === 'function') {
+                  onClose();
+                }
+              }}
               className="w-full h-[52px] rounded-[18px] font-bold text-white bg-[#10b981] hover:bg-[#059669] shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition-all active:scale-[0.98] cursor-pointer text-base"
             >
               <span>Continue</span>

@@ -686,3 +686,41 @@ body.scms-simulated-fullscreen #root {
   background-color: #0c1322 !important;
 }
 
+/* 3D Spatial Confirmation Modal Animation (VisionOS / 3D Spring Physics) */
+@keyframes modal-crystal-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.92) translateY(18px) perspective(1000px) rotateX(8deg);
+    filter: blur(4px);
+  }
+  65% {
+    opacity: 1;
+    transform: scale(1.01) translateY(-2px) perspective(1000px) rotateX(-1deg);
+    filter: blur(0px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0) perspective(1000px) rotateX(0deg);
+    filter: blur(0px);
+  }
+}
+
+.animate-modal-3d {
+  animation: modal-crystal-pop 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: center center;
+  will-change: transform, opacity;
+}
+
+@keyframes backdrop-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-backdrop-fade {
+  animation: backdrop-fade-in 0.25s ease-out forwards;
+}
+

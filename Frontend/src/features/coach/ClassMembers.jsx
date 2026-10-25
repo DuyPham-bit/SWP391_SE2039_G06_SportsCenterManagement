@@ -11,7 +11,7 @@ import { translateClassName, translateSportName } from '../../services/i18nHelpe
 
 export function ClassMembers() {
   const { currentUser } = useAuth();
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, confirm } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
 
@@ -191,10 +191,19 @@ export function ClassMembers() {
 
   // Delete / Remove personal plan -> Star becomes hollow
   const handleDeletePersonalPlan = async () => {
-    const confirmMsg = isEn
-      ? `Are you sure you want to remove the custom plan for ${activeMember?.memberName}? The student will revert to the standard class syllabus.`
-      : `Bạn có chắc muốn huỷ giáo án riêng của ${activeMember?.memberName}? Học viên sẽ quay về áp dụng giáo án chung của lớp.`;
-    if (!window.confirm(confirmMsg)) {
+    const ok = await confirm({
+      title: isEn ? 'Remove Custom Syllabus' : 'Xác nhận hủy giáo án riêng',
+      message: isEn
+        ? `Are you sure you want to remove the custom plan for ${activeMember?.memberName}?`
+        : `Bạn có chắc muốn hủy giáo án riêng của ${activeMember?.memberName}?`,
+      detail: isEn
+        ? 'The student will revert to the standard class syllabus.'
+        : 'Học viên sẽ quay về áp dụng giáo án chung của lớp.',
+      confirmText: isEn ? 'Remove Plan' : 'Hủy giáo án',
+      cancelText: isEn ? 'Keep Plan' : 'Giữ lại',
+      type: 'danger'
+    });
+    if (!ok) {
       return;
     }
 

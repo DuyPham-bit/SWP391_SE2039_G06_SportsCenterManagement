@@ -12,7 +12,7 @@ export function PackageManagement() {
   const { language } = useLanguage();
   const isEn = language === 'en';
 
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, confirm } = useToast();
   const [packages, setPackages] = useState([]);
   const [centerSports, setCenterSports] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -176,11 +176,18 @@ export function PackageManagement() {
 
   const handleToggleStatus = async pkg => {
     if (pkg.status === 'ACTIVE' || pkg.status === 'Active') {
-      const confirmed = window.confirm(
-        isEn
-          ? `Warning: Are you sure you want to discontinue "${pkg.name}"?\nExisting active members will keep their current validity until expiry.`
-          : `Cảnh báo: Bạn có chắc chắn muốn ngưng phát hành gói "${pkg.name}"?\nCác hội viên đã mua gói này trước đó vẫn được bảo lưu thời hạn đến ngày kết thúc.`
-      );
+      const confirmed = await confirm({
+        title: isEn ? 'Discontinue Package' : 'Ngưng phát hành gói tập',
+        message: isEn
+          ? `Are you sure you want to stop offering "${pkg.name}"?`
+          : `Bạn có chắc chắn muốn ngưng phát hành gói "${pkg.name}"?`,
+        detail: isEn
+          ? 'Existing active members will retain access until their pass expires.'
+          : 'Các hội viên đã mua gói này trước đó vẫn được bảo lưu quyền lợi và thời hạn đến ngày kết thúc.',
+        confirmText: isEn ? 'Discontinue' : 'Ngưng phát hành',
+        cancelText: isEn ? 'Keep Offering' : 'Giữ lại gói',
+        type: 'warning'
+      });
       if (!confirmed) return;
     }
 

@@ -955,6 +955,7 @@ function ClientsTab({ data, act, working, isEn }) {
 // TAB 3: PROGRAMS & NUTRITION (GIÁO ÁN & DINH DƯỠNG)
 // ─────────────────────────────────────────────────────────────
 function ProgramsTab({ data, act, working, isEn }) {
+  const { showError } = useToast();
   const [media, setMedia] = useState({ imageUrl: '', videoUrl: '' });
   const [uploading, setUploading] = useState(false);
   const [nutritionMember, setNutritionMember] = useState(data.clients[0]?.id || '');
@@ -1004,7 +1005,7 @@ function ProgramsTab({ data, act, working, isEn }) {
       const result = await uploadMediaFileToCloud(file);
       setMedia(x => ({ ...x, [field]: result.url }));
     } catch (e) {
-      alert(e.message);
+      showError(e.message || (isEn ? 'Upload failed' : 'Tải tệp thất bại'));
     } finally {
       setUploading(false);
     }
@@ -1708,7 +1709,7 @@ function FacilitiesTab({ data, act, working, isEn }) {
       const res = await uploadMediaFileToCloud(file);
       setPhotoUrl(res.url);
     } catch (e) {
-      alert(e.message);
+      showError(e.message || (isEn ? 'Upload failed' : 'Tải ảnh sự cố thất bại'));
     } finally {
       setUploading(false);
     }

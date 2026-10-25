@@ -106,7 +106,7 @@ function issueStatusMeta(st, isEn = false) {
 }
 
 export function CoachResources() {
-  const { showSuccess, showError } = useToast();
+  const { showSuccess, showError, confirm } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
 
@@ -678,8 +678,15 @@ export function CoachResources() {
                     {x.status === 'Confirmed' && end && end >= now && (
                       <button
                         disabled={working}
-                        onClick={() => {
-                          if (window.confirm(isEn ? 'Are you sure you want to cancel this booking?' : 'Bạn có chắc chắn muốn hủy lượt đặt này?')) {
+                        onClick={async () => {
+                          const ok = await confirm({
+                            title: isEn ? 'Cancel Booking' : 'Xác nhận hủy đặt sân/thiết bị',
+                            message: isEn ? 'Are you sure you want to cancel this booking?' : 'Bạn có chắc chắn muốn hủy lượt đặt này?',
+                            confirmText: isEn ? 'Cancel Booking' : 'Hủy lượt đặt',
+                            cancelText: isEn ? 'Keep' : 'Không hủy',
+                            type: 'warning'
+                          });
+                          if (ok) {
                             act(() => coachProfessionalApi.cancelResource(x.id), isEn ? 'Booking cancelled.' : 'Đã hủy lượt đặt.');
                           }
                         }}
