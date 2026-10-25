@@ -644,32 +644,37 @@ body.scms-simulated-fullscreen #root {
   }
 }
 
-/* 3D Floating Toast Animation (Tactile Drop & Bounce) */
-@keyframes toast-3d-drop {
+/* 3D Spatial Crystal Toast Animation (VisionOS / 3D Spring Physics) */
+@keyframes toast-crystal-drop {
   0% {
     opacity: 0;
-    transform: translateY(-32px) scale(0.9) perspective(800px) rotateX(18deg);
+    transform: translateY(-28px) scale(0.92) perspective(1000px) rotateX(14deg);
+    filter: blur(4px);
   }
-  60% {
+  65% {
     opacity: 1;
-    transform: translateY(6px) scale(1.02) perspective(800px) rotateX(-3deg);
+    transform: translateY(4px) scale(1.01) perspective(1000px) rotateX(-2deg);
+    filter: blur(0px);
   }
   100% {
     opacity: 1;
-    transform: translateY(0) scale(1) perspective(800px) rotateX(0deg);
+    transform: translateY(0) scale(1) perspective(1000px) rotateX(0deg);
+    filter: blur(0px);
   }
 }
 
 .animate-toast-3d {
-  animation: toast-3d-drop 0.42s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  animation: toast-crystal-drop 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transform-origin: top center;
+  will-change: transform, opacity;
 }
 
-@keyframes toast-progress {
+@keyframes toast-progress-beam {
   from {
-    width: 100%;
+    transform: scaleX(1);
   }
   to {
-    width: 0%;
+    transform: scaleX(0);
   }
 }
 
