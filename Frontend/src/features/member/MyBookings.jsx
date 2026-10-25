@@ -15,13 +15,7 @@ import {
   formatMemberDateTime,
   isUpcomingBooking,
   bookingStart,
-  getSportTheme,
-  DAY_LABELS,
-  DAY_LABELS_EN,
-  parseIsoDate,
-  formatIsoDate,
-  getMonday,
-  getWeekDays
+  getSportTheme
 } from './memberOverview.js';
 import {
   translateClassName,
@@ -35,20 +29,15 @@ export function MyBookings() {
   const { showSuccess, showError } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
-  const DAY_LABELS_ACTIVE = isEn ? DAY_LABELS_EN : DAY_LABELS;
 
   const [bookings, setBookings] = useState([]);
   const [waitlist, setWaitlist] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
-  // Bộ lọc & Chế độ xem
+  // Bộ lọc danh sách vé đặt
   // activeTab: 'ALL' | 'UPCOMING' | 'WAITLIST' | 'COMPLETED' | 'CANCELLED'
   const [activeTab, setActiveTab] = useState('ALL');
-  // viewMode: 'week' (Lịch Tuần) | 'table' (Dạng bảng)
-  const [viewMode, setViewMode] = useState('week');
-  const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSport, setSelectedSport] = useState('ALL');
   const [selectedDate, setSelectedDate] = useState('');
@@ -194,55 +183,10 @@ export function MyBookings() {
     });
   }, [bookings, activeTab, searchQuery, selectedSport, selectedDate, isEn]);
 
-  // Tiện ích lịch tuần chuẩn Olympic
-  const todayStr = useMemo(() => formatIsoDate(new Date()), []);
-  const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
-
-  const periodTitle = useMemo(() => {
-    const start = weekDays[0];
-    const end = weekDays[6];
-    return isEn
-      ? `Week: ${start.getDate()} M${start.getMonth() + 1} - ${end.getDate()} M${end.getMonth() + 1}, ${end.getFullYear()}`
-      : `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
-  }, [weekDays, isEn]);
-
-  const handlePrevWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() - 7);
-    setCurrentDate(d);
-  };
-
-  const handleNextWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + 7);
-    setCurrentDate(d);
-  };
-
-  const handleToday = () => {
-    const now = new Date();
-    setCurrentDate(now);
-    setSelectedCalendarDate(formatIsoDate(now));
-  };
-
   const handleOpenBookingDetail = (booking) => {
     setSelectedBookingDetail(booking);
     setDetailModalOpen(true);
   };
-
-  // Gom nhóm danh sách đặt chỗ theo ngày YYYY-MM-DD
-  const bookingsByDate = useMemo(() => {
-    const map = new Map();
-    filteredBookings.forEach(b => {
-      const d = String(b.bookingDate || b.sessionDate || '').slice(0, 10);
-      if (!d) return;
-      if (!map.has(d)) map.set(d, []);
-      map.get(d).push(b);
-    });
-    map.forEach(list => {
-      list.sort((a, b) => (bookingStart(a) || 0) - (bookingStart(b) || 0));
-    });
-    return map;
-  }, [filteredBookings]);
 
   if (loading) {
     return <LoadingSpinner text={isEn ? "Syncing Olympic bookings & waitlist..." : "Đang đồng bộ vé đặt & danh sách chờ Olympic..."} />;
@@ -413,77 +357,9 @@ export function MyBookings() {
               </button>
             ))}
           </div>
-
-          {/* Segmented Control View Mode: Lịch Tuần | Dạng Bảng */}
-          {activeTab !== 'WAITLIST' && (
-            <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0 self-start md:self-auto">
-              <button
-                type="button"
-                onClick={() => setViewMode('week')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo flex items-center gap-1.5 transition-all ${
-                  viewMode === 'week' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">calendar_view_week</span>
-                <span>{isEn ? 'Week Timetable' : 'Lịch Tuần'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('table')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo flex items-center gap-1.5 transition-all ${
-                  viewMode === 'table' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">table_rows</span>
-                <span>{isEn ? 'Table' : 'Dạng Bảng'}</span>
-              </button>
-            </div>
-          )}
         </div>
 
-        {/* Row 2: Thanh điều hướng tuần khi ở chế độ Lịch Tuần */}
-        {activeTab !== 'WAITLIST' && viewMode === 'week' && (
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 pb-1 border-t border-slate-100">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleToday}
-                className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs"
-              >
-                {isEn ? 'Today' : 'Hôm Nay'}
-              </button>
-              <div className="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">
-                <button
-                  type="button"
-                  onClick={handlePrevWeek}
-                  title={isEn ? "Previous week" : "Lùi tuần trước"}
-                  className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors border-r border-slate-200"
-                >
-                  <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextWeek}
-                  title={isEn ? "Next week" : "Tiến tuần sau"}
-                  className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                </button>
-              </div>
-              <span className="font-chivo text-sm md:text-base font-black text-slate-900 pl-1 tracking-tight">
-                {periodTitle}
-              </span>
-            </div>
-
-            <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">
-              {isEn
-                ? 'Click any session on the timetable to view details or manage cancellation'
-                : 'Nhấp vào ca học bất kỳ trên lịch tuần để xem thông tin hoặc quản lý hủy vé'}
-            </span>
-          </div>
-        )}
-
-        {/* Row 3: Bộ lọc nâng cao (Tìm kiếm, Môn thể thao, Chọn ngày) */}
+        {/* Row 2: Bộ lọc nâng cao (Tìm kiếm, Môn thể thao, Chọn ngày) */}
         {activeTab !== 'WAITLIST' && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5 pt-2 border-t border-slate-100 text-xs">
             {/* Search Input */}
@@ -529,13 +405,7 @@ export function MyBookings() {
               <input
                 type="date"
                 value={selectedDate}
-                onChange={e => {
-                  setSelectedDate(e.target.value);
-                  if (e.target.value) {
-                    setCurrentDate(parseIsoDate(e.target.value));
-                    setSelectedCalendarDate(e.target.value);
-                  }
-                }}
+                onChange={e => setSelectedDate(e.target.value)}
                 className="w-full px-3 py-2 rounded-lg border border-slate-300 focus:outline-none focus:ring-2 focus:ring-red-600 bg-white font-medium"
               />
               {selectedDate && (
@@ -663,150 +533,7 @@ export function MyBookings() {
             </h2>
           </div>
 
-          {viewMode === 'week' ? (
-            /* DẠNG LỊCH TUẦN (WEEK TIMETABLE VIEW - Chuẩn Olympic theo ảnh mẫu) */
-            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-              {/* Cột tiêu đề các ngày trong tuần */}
-              <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80 divide-x divide-slate-200 text-center">
-                {weekDays.map(day => {
-                  const dayStr = formatIsoDate(day);
-                  const isToday = dayStr === todayStr;
-                  const isSelected = dayStr === selectedCalendarDate;
-                  const dayBookings = bookingsByDate.get(dayStr) || [];
-
-                  return (
-                    <div
-                      key={dayStr}
-                      onClick={() => setSelectedCalendarDate(dayStr)}
-                      className={`py-3 px-1 transition-colors cursor-pointer ${
-                        isSelected ? 'bg-red-50/60' : 'hover:bg-slate-100/60'
-                      }`}
-                    >
-                      <span className="text-[11px] font-bold uppercase text-slate-500 block">
-                        {DAY_LABELS_ACTIVE[day.getDay()]}
-                      </span>
-                      <div className="mt-1 flex items-center justify-center gap-1">
-                        <span
-                          className={`w-7 h-7 rounded-full flex items-center justify-center font-chivo text-sm font-black transition-all ${
-                            isToday
-                              ? 'bg-red-600 text-white shadow-xs'
-                              : 'text-slate-900'
-                          }`}
-                        >
-                          {day.getDate()}
-                        </span>
-                      </div>
-                      {dayBookings.length > 0 ? (
-                        <span className="inline-block mt-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-200/80 text-slate-700">
-                          {dayBookings.length} {isEn ? 'sess' : 'ca'}
-                        </span>
-                      ) : (
-                        <span className="text-[10px] text-slate-400 block mt-1">{isEn ? 'Empty' : 'Trống'}</span>
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* 7 Cột Lịch Ca Học Trong Tuần */}
-              <div className="grid grid-cols-1 md:grid-cols-7 divide-y md:divide-y-0 md:divide-x divide-slate-200 min-h-[480px] bg-slate-50/30">
-                {weekDays.map(day => {
-                  const dayStr = formatIsoDate(day);
-                  const dayBookings = bookingsByDate.get(dayStr) || [];
-                  const isToday = dayStr === todayStr;
-
-                  return (
-                    <div
-                      key={dayStr}
-                      className={`p-2.5 space-y-2.5 transition-colors ${
-                        isToday ? 'bg-red-50/20' : ''
-                      }`}
-                    >
-                      {/* Tiêu đề ngày trên màn hình mobile nhỏ */}
-                      <div className="md:hidden pb-1 border-b border-slate-200 flex justify-between items-center text-xs font-bold">
-                        <span>{DAY_LABELS_ACTIVE[day.getDay()]} ({dayStr})</span>
-                        <span className="text-slate-500">{dayBookings.length} {isEn ? 'sess' : 'ca'}</span>
-                      </div>
-
-                      {dayBookings.length === 0 ? (
-                        <div className="py-8 text-center text-slate-400 text-xs">
-                          <span className="material-symbols-outlined text-2xl text-slate-300 block mb-1">
-                            event_busy
-                          </span>
-                          <span>{isEn ? 'No sessions' : 'Không có ca'}</span>
-                        </div>
-                      ) : (
-                        dayBookings.map(b => {
-                          const theme = getSportTheme(b.sportName, b.className, isEn);
-                          const isUpcoming = isUpcomingBooking(b);
-                          const isCancelled = b.status === 'CANCELLED' || b.status === 'CANCELLEDLATE' || b.sessionStatus === 'CANCELLED';
-                          const isCompleted = b.status === 'COMPLETED' || (!isUpcoming && !isCancelled);
-
-                          return (
-                            <div
-                              key={b.id}
-                              onClick={() => handleOpenBookingDetail(b)}
-                              className={`p-3 rounded-xl border text-xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 space-y-2 ${
-                                !isCancelled && isUpcoming
-                                  ? 'bg-emerald-50/90 border-emerald-400 ring-2 ring-emerald-500/20 shadow-xs'
-                                  : `${theme.bg} ${theme.border} shadow-xs`
-                              }`}
-                            >
-                              {/* Time & Sport Tag */}
-                              <div className="flex items-center justify-between gap-1">
-                                <span className="font-bold text-[11px] text-slate-900 flex items-center gap-1">
-                                  <span className="material-symbols-outlined text-[14px] text-red-600">schedule</span>
-                                  <span>{b.timeSlot}</span>
-                                </span>
-                                <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${theme.badge}`}>
-                                  {theme.tag || translateSportName(b.sportName, isEn)}
-                                </span>
-                              </div>
-
-                              {/* Class Name */}
-                              <h4 className="font-chivo font-black text-slate-900 leading-snug line-clamp-2">
-                                {translateClassName(b.className, isEn)}
-                              </h4>
-
-                              {/* Coach & Room Info */}
-                              <div className="text-[11px] text-slate-600 space-y-0.5">
-                                <div className="truncate">{isEn ? 'Coach' : 'HLV'}: <strong>{translateCoachName(b.coachName, isEn)}</strong></div>
-                                <div className="truncate text-slate-500">{translateRoomName(b.roomName, isEn)}</div>
-                              </div>
-
-                              {/* Capacity / Booking ID & Action Status Footer */}
-                              <div className="pt-1.5 border-t border-black/5 flex items-center justify-between">
-                                <div className="text-[10px] font-mono font-bold text-slate-500">
-                                  #{b.id}
-                                </div>
-
-                                {isCancelled ? (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-rose-800 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-200">
-                                    <span className="material-symbols-outlined text-[12px]">cancel</span>
-                                    <span>{isEn ? 'CANCELLED' : 'ĐÃ HỦY'}</span>
-                                  </span>
-                                ) : isCompleted ? (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded border border-blue-200">
-                                    <span className="material-symbols-outlined text-[12px]">task_alt</span>
-                                    <span>{isEn ? 'ATTENDED' : 'ĐÃ TẬP'}</span>
-                                  </span>
-                                ) : (
-                                  <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
-                                    <span className="material-symbols-outlined text-[12px]">verified</span>
-                                    <span>{isEn ? 'BOOKED' : 'ĐÃ ĐẶT'}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          );
-                        })
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          ) : filteredBookings.length === 0 ? (
+          {filteredBookings.length === 0 ? (
             <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 max-w-xl mx-auto space-y-3">
               <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
                 <span className="material-symbols-outlined text-3xl">event_busy</span>
@@ -872,7 +599,13 @@ export function MyBookings() {
                             #{b.id}
                           </td>
                           <td className="py-3.5 px-4">
-                            <div className="font-bold text-slate-900 font-chivo">{translateClassName(b.className, isEn)}</div>
+                            <button
+                              type="button"
+                              onClick={() => handleOpenBookingDetail(b)}
+                              className="text-left font-bold text-slate-900 font-chivo hover:text-red-600 transition-colors block"
+                            >
+                              {translateClassName(b.className, isEn)}
+                            </button>
                             <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wide border mt-0.5 ${sportTheme.badge}`}>
                               {sportTheme.tag}
                             </span>
@@ -897,16 +630,26 @@ export function MyBookings() {
                             </Badge>
                           </td>
                           <td className="py-3.5 px-4 text-right">
-                            {currentUser?.capabilities?.includes('cancel_booking') && isUpcoming && (
+                            <div className="inline-flex items-center gap-1.5 justify-end">
                               <button
                                 type="button"
-                                onClick={() => openCancelModal(b)}
-                                className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-bold uppercase transition-colors inline-flex items-center gap-1"
+                                onClick={() => handleOpenBookingDetail(b)}
+                                title={isEn ? "View ticket details" : "Xem chi tiết vé"}
+                                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
                               >
-                                <span className="material-symbols-outlined text-[14px]">cancel</span>
-                                <span>{isEn ? 'Cancel' : 'Hủy'}</span>
+                                <span className="material-symbols-outlined text-[16px]">visibility</span>
                               </button>
-                            )}
+                              {currentUser?.capabilities?.includes('cancel_booking') && isUpcoming && (
+                                <button
+                                  type="button"
+                                  onClick={() => openCancelModal(b)}
+                                  className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-bold uppercase transition-colors inline-flex items-center gap-1"
+                                >
+                                  <span className="material-symbols-outlined text-[14px]">cancel</span>
+                                  <span>{isEn ? 'Cancel' : 'Hủy'}</span>
+                                </button>
+                              )}
+                            </div>
                           </td>
                         </tr>
                       );

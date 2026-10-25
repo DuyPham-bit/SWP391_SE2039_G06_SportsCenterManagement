@@ -10,13 +10,7 @@ import {
   bookingStart,
   formatMemberDate,
   formatMemberDateTime,
-  getSportTheme,
-  DAY_LABELS,
-  DAY_LABELS_EN,
-  parseIsoDate,
-  formatIsoDate,
-  getMonday,
-  getWeekDays
+  getSportTheme
 } from './memberOverview.js';
 import {
   translateClassName,
@@ -30,20 +24,15 @@ export function MyAttendance() {
   const { showError } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
-  const DAY_LABELS_ACTIVE = isEn ? DAY_LABELS_EN : DAY_LABELS;
 
   const [bookings, setBookings] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [reload, setReload] = useState(0);
 
-  // Bộ lọc & Chế độ xem
+  // Bộ lọc nhật ký chuyên cần
   // statusFilter: 'ALL' | 'PRESENT' | 'LATE' | 'ABSENT' | 'EXCUSED' | 'PENDING'
   const [statusFilter, setStatusFilter] = useState('ALL');
-  // viewMode: 'week' (Lịch Tuần) | 'table' (Dạng bảng)
-  const [viewMode, setViewMode] = useState('week');
-  const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedSport, setSelectedSport] = useState('ALL');
   const [fromDate, setFromDate] = useState('');
@@ -158,51 +147,6 @@ export function MyAttendance() {
       return true;
     });
   }, [history, statusFilter, fromDate, toDate, selectedSport, searchQuery, invalidRange, isEn]);
-
-  // Tiện ích lịch tuần chuẩn Olympic
-  const todayStr = useMemo(() => formatIsoDate(new Date()), []);
-  const weekDays = useMemo(() => getWeekDays(currentDate), [currentDate]);
-
-  const periodTitle = useMemo(() => {
-    const start = weekDays[0];
-    const end = weekDays[6];
-    return isEn
-      ? `Week: ${start.getDate()} M${start.getMonth() + 1} - ${end.getDate()} M${end.getMonth() + 1}, ${end.getFullYear()}`
-      : `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
-  }, [weekDays, isEn]);
-
-  const handlePrevWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() - 7);
-    setCurrentDate(d);
-  };
-
-  const handleNextWeek = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + 7);
-    setCurrentDate(d);
-  };
-
-  const handleToday = () => {
-    const now = new Date();
-    setCurrentDate(now);
-    setSelectedCalendarDate(formatIsoDate(now));
-  };
-
-  // Gom nhóm nhật ký điểm danh theo ngày YYYY-MM-DD
-  const recordsByDate = useMemo(() => {
-    const map = new Map();
-    filteredRecords.forEach(b => {
-      const d = String(b.bookingDate || b.sessionDate || '').slice(0, 10);
-      if (!d) return;
-      if (!map.has(d)) map.set(d, []);
-      map.get(d).push(b);
-    });
-    map.forEach(list => {
-      list.sort((a, b) => (bookingStart(a) || 0) - (bookingStart(b) || 0));
-    });
-    return map;
-  }, [filteredRecords]);
 
   // Render Badge trạng thái chuyên cần với màu sắc nhận diện cao
   const renderAttendanceBadge = (status) => {
@@ -442,79 +386,9 @@ export function MyAttendance() {
               </button>
             ))}
           </div>
-
-          {/* Segmented Control View Mode: Lịch Tuần | Dạng Bảng */}
-          <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0 self-start md:self-auto">
-            <button
-              type="button"
-              onClick={() => setViewMode('week')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo flex items-center gap-1.5 transition-all ${
-                viewMode === 'week'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">calendar_view_week</span>
-              <span>{isEn ? 'Week Timetable' : 'Lịch Tuần'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('table')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo flex items-center gap-1.5 transition-all ${
-                viewMode === 'table'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">table_rows</span>
-              <span>{isEn ? 'Table' : 'Dạng Bảng'}</span>
-            </button>
-          </div>
         </div>
 
-        {/* Row 2: Thanh điều hướng tuần khi ở chế độ Lịch Tuần */}
-        {viewMode === 'week' && (
-          <div className="flex flex-wrap items-center justify-between gap-3 pt-2 pb-1 border-t border-slate-100">
-            <div className="flex items-center gap-2">
-              <button
-                type="button"
-                onClick={handleToday}
-                className="px-3 py-1.5 rounded-lg border border-slate-300 hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs"
-              >
-                {isEn ? 'Today' : 'Hôm Nay'}
-              </button>
-              <div className="flex items-center border border-slate-300 rounded-lg overflow-hidden bg-white shadow-2xs">
-                <button
-                  type="button"
-                  onClick={handlePrevWeek}
-                  title={isEn ? "Previous week" : "Lùi tuần trước"}
-                  className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors border-r border-slate-200"
-                >
-                  <span className="material-symbols-outlined text-[20px]">chevron_left</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={handleNextWeek}
-                  title={isEn ? "Next week" : "Tiến tuần sau"}
-                  className="p-1.5 hover:bg-slate-100 text-slate-700 transition-colors"
-                >
-                  <span className="material-symbols-outlined text-[20px]">chevron_right</span>
-                </button>
-              </div>
-              <span className="font-chivo text-sm md:text-base font-black text-slate-900 pl-1 tracking-tight">
-                {periodTitle}
-              </span>
-            </div>
-
-            <span className="text-[11px] text-slate-500 font-medium hidden sm:inline">
-              {isEn
-                ? 'Click on any class session to view coach feedback and check-in details'
-                : 'Nhấp vào từng ca học trên lịch để xem nhận xét HLV và chi tiết quét thẻ'}
-            </span>
-          </div>
-        )}
-
-        {/* Row 3: Bộ lọc nâng cao (Tìm kiếm, Môn thể thao, Từ ngày - Đến ngày) */}
+        {/* Row 2: Bộ lọc nâng cao (Tìm kiếm, Môn thể thao, Từ ngày - Đến ngày) */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2.5 pt-2 border-t border-slate-100 text-xs">
           {/* Search Input */}
           <div className="relative">
@@ -633,157 +507,7 @@ export function MyAttendance() {
           </h2>
         </div>
 
-        {viewMode === 'week' ? (
-          /* DẠNG LỊCH TUẦN (WEEK TIMETABLE VIEW - Chuẩn Olympic theo ảnh mẫu) */
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {/* Cột tiêu đề các ngày trong tuần */}
-            <div className="grid grid-cols-7 border-b border-slate-200 bg-slate-50/80 divide-x divide-slate-200 text-center">
-              {weekDays.map(day => {
-                const dayStr = formatIsoDate(day);
-                const isToday = dayStr === todayStr;
-                const isSelected = dayStr === selectedCalendarDate;
-                const dayRecords = recordsByDate.get(dayStr) || [];
-
-                return (
-                  <div
-                    key={dayStr}
-                    onClick={() => setSelectedCalendarDate(dayStr)}
-                    className={`py-3 px-1 transition-colors cursor-pointer ${
-                      isSelected ? 'bg-red-50/60' : 'hover:bg-slate-100/60'
-                    }`}
-                  >
-                    <span className="text-[11px] font-bold uppercase text-slate-500 block">
-                      {DAY_LABELS_ACTIVE[day.getDay()]}
-                    </span>
-                    <div className="mt-1 flex items-center justify-center gap-1">
-                      <span
-                        className={`w-7 h-7 rounded-full flex items-center justify-center font-chivo text-sm font-black transition-all ${
-                          isToday
-                            ? 'bg-red-600 text-white shadow-xs'
-                            : 'text-slate-900'
-                        }`}
-                      >
-                        {day.getDate()}
-                      </span>
-                    </div>
-                    {dayRecords.length > 0 ? (
-                      <span className="inline-block mt-1 px-1.5 py-0.2 rounded-full text-[10px] font-bold bg-slate-200/80 text-slate-700">
-                        {dayRecords.length} {isEn ? 'sess' : 'ca'}
-                      </span>
-                    ) : (
-                      <span className="text-[10px] text-slate-400 block mt-1">{isEn ? 'Empty' : 'Trống'}</span>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-
-            {/* 7 Cột Lịch Ca Học Trong Tuần */}
-            <div className="grid grid-cols-1 md:grid-cols-7 divide-y md:divide-y-0 md:divide-x divide-slate-200 min-h-[480px] bg-slate-50/30">
-              {weekDays.map(day => {
-                const dayStr = formatIsoDate(day);
-                const dayRecords = recordsByDate.get(dayStr) || [];
-                const isToday = dayStr === todayStr;
-
-                return (
-                  <div
-                    key={dayStr}
-                    className={`p-2.5 space-y-2.5 transition-colors ${
-                      isToday ? 'bg-red-50/20' : ''
-                    }`}
-                  >
-                    {/* Tiêu đề ngày trên màn hình mobile nhỏ */}
-                    <div className="md:hidden pb-1 border-b border-slate-200 flex justify-between items-center text-xs font-bold">
-                      <span>{DAY_LABELS_ACTIVE[day.getDay()]} ({dayStr})</span>
-                      <span className="text-slate-500">{dayRecords.length} {isEn ? 'sess' : 'ca'}</span>
-                    </div>
-
-                    {dayRecords.length === 0 ? (
-                      <div className="py-8 text-center text-slate-400 text-xs">
-                        <span className="material-symbols-outlined text-2xl text-slate-300 block mb-1">
-                          event_busy
-                        </span>
-                        <span>{isEn ? 'No sessions' : 'Không có ca'}</span>
-                      </div>
-                    ) : (
-                      dayRecords.map(b => {
-                        const theme = getSportTheme(b.sportName, b.className, isEn);
-                        const attendanceStatus = b.attendanceStatus || 'PENDING';
-
-                        return (
-                          <div
-                            key={b.id}
-                            onClick={() => {
-                              setSelectedRecord(b);
-                              setDetailModalOpen(true);
-                            }}
-                            className={`p-3 rounded-xl border text-xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 space-y-2 ${theme.bg} ${theme.border} shadow-xs`}
-                          >
-                            {/* Time & Sport Tag */}
-                            <div className="flex items-center justify-between gap-1">
-                              <span className="font-bold text-[11px] text-slate-900 flex items-center gap-1">
-                                <span className="material-symbols-outlined text-[14px] text-red-600">schedule</span>
-                                <span>{b.timeSlot}</span>
-                              </span>
-                              <span className={`px-1.5 py-0.5 rounded text-[9px] font-extrabold uppercase border ${theme.badge}`}>
-                                {theme.tag || translateSportName(b.sportName, isEn)}
-                              </span>
-                            </div>
-
-                            {/* Class Name */}
-                            <h4 className="font-chivo font-black text-slate-900 leading-snug line-clamp-2">
-                              {translateClassName(b.className, isEn)}
-                            </h4>
-
-                            {/* Coach & Room Info */}
-                            <div className="text-[11px] text-slate-600 space-y-0.5">
-                              <div className="truncate">{isEn ? 'Coach' : 'HLV'}: <strong>{translateCoachName(b.coachName, isEn)}</strong></div>
-                              <div className="truncate text-slate-500">{translateRoomName(b.roomName, isEn)}</div>
-                            </div>
-
-                            {/* Footer: Mã vé & Attendance Status Badge */}
-                            <div className="pt-1.5 border-t border-black/5 flex items-center justify-between">
-                              <div className="text-[10px] font-mono font-bold text-slate-500">
-                                #{b.id}
-                              </div>
-
-                              {attendanceStatus === 'PRESENT' ? (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-emerald-800 bg-emerald-100 px-1.5 py-0.5 rounded border border-emerald-300">
-                                  <span className="material-symbols-outlined text-[12px]">check_circle</span>
-                                  <span>{isEn ? 'PRESENT' : 'CÓ MẶT'}</span>
-                                </span>
-                              ) : attendanceStatus === 'LATE' ? (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-amber-800 bg-amber-100 px-1.5 py-0.5 rounded border border-amber-300">
-                                  <span className="material-symbols-outlined text-[12px]">schedule</span>
-                                  <span>{isEn ? 'LATE' : 'ĐI MUỘN'}</span>
-                                </span>
-                              ) : attendanceStatus === 'ABSENT' ? (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-rose-800 bg-rose-100 px-1.5 py-0.5 rounded border border-rose-300">
-                                  <span className="material-symbols-outlined text-[12px]">cancel</span>
-                                  <span>{isEn ? 'ABSENT' : 'VẮNG MẶT'}</span>
-                                </span>
-                              ) : attendanceStatus === 'EXCUSED' ? (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-blue-800 bg-blue-100 px-1.5 py-0.5 rounded border border-blue-300">
-                                  <span className="material-symbols-outlined text-[12px]">event_available</span>
-                                  <span>{isEn ? 'EXCUSED' : 'CÓ PHÉP'}</span>
-                                </span>
-                              ) : (
-                                <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-slate-600 bg-slate-200 px-1.5 py-0.5 rounded border border-slate-300">
-                                  <span className="material-symbols-outlined text-[12px]">pending</span>
-                                  <span>{isEn ? 'PENDING' : 'CHỜ ĐIỂM DANH'}</span>
-                                </span>
-                              )}
-                            </div>
-                          </div>
-                        );
-                      })
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        ) : filteredRecords.length === 0 ? (
+        {filteredRecords.length === 0 ? (
           <div className="p-12 text-center bg-white rounded-2xl border border-slate-200 max-w-xl mx-auto space-y-3">
             <div className="w-16 h-16 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
               <span className="material-symbols-outlined text-3xl">fact_check</span>
@@ -823,6 +547,7 @@ export function MyAttendance() {
               )}
             </div>
           </div>
+
         ) : (
           /* DẠNG BẢNG (TABLE VIEW) - Tối ưu cho hội viên tra cứu và đối soát */
           <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
