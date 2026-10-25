@@ -678,3 +678,11 @@ body.scms-simulated-fullscreen #root {
   }
 }
 
+.toast-capsule-bg {
+  background-color: #ffffff !important;
+}
+
+:is(.dark .toast-capsule-bg) {
+  background-color: #0c1322 !important;
+}
+
