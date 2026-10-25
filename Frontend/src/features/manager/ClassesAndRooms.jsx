@@ -2098,10 +2098,10 @@ function ScheduleManager({
 
   // Duration presets for validity date range
   const DATE_PRESETS = [
-    { label: isEn ? '1 Month (30d)' : '1 Tháng (30 ngày)', days: 30 },
-    { label: isEn ? '3 Months (90d) - Default' : '3 Tháng (90 ngày) - Phổ biến', days: 90 },
-    { label: isEn ? '6 Months (180d)' : '6 Tháng (180 ngày)', days: 180 },
-    { label: isEn ? '1 Year (365d)' : '1 Năm (365 ngày)', days: 365 }
+    { label: isEn ? '1 Month (30d)' : '1 Tháng (30d)', days: 30 },
+    { label: isEn ? '3 Months (90d)' : '3 Tháng (90d)', days: 90 },
+    { label: isEn ? '6 Months (180d)' : '6 Tháng (180d)', days: 180 },
+    { label: isEn ? '1 Year (365d)' : '1 Năm (365d)', days: 365 }
   ];
 
   const toggleDay = (dayIndex) => {
@@ -2175,116 +2175,128 @@ function ScheduleManager({
   };
 
   return (
-    <div className="space-y-5">
-      {/* 1. Class Header Summary Banner */}
-      <div className="relative overflow-hidden rounded-2xl bg-gradient-to-r from-slate-900 via-[#1A2238] to-slate-900 p-5 text-white shadow-xl border border-slate-700/60">
-        <div className="absolute right-0 top-0 -mt-4 -mr-4 w-40 h-40 rounded-full bg-emerald-500/10 blur-3xl pointer-events-none" />
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 relative z-10">
+    <div className="space-y-4">
+      {/* 1. Class Header Summary Banner - Matched exactly to Image 2 (MemberManagement banner) */}
+      <div
+        className="relative overflow-hidden rounded-2xl text-white p-5 sm:p-6 shadow-xl shadow-[#24828F]/20 border border-white/20"
+        style={{
+          background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 25%, #3FAEB8 48%, #76B386 70%, #DEAC46 88%, #E5A33C 100%)'
+        }}
+      >
+        {/* Dynamic ambient glow & sports wave overlays matching Image 2 */}
+        <div className="pointer-events-none absolute -right-12 -top-12 w-64 h-64 rounded-full bg-gradient-to-br from-[#F2CC8F]/50 via-[#E5A33C]/35 to-transparent blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-gradient-to-tr from-[#81B29A]/45 via-[#2F7B5D]/30 to-transparent blur-3xl" />
+
+        {/* Subtle decorative Olympic curved motion lines from Image 2 */}
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+        </svg>
+
+        <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="flex items-center gap-2.5 flex-wrap">
-              <h2 className="text-lg font-black tracking-tight text-white">{row.name}</h2>
-              <StatusBadge value={row.status} isEn={isEn} />
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
+              <span>{isEn ? 'Class Schedule Operations' : 'Quản trị lịch học SCMS'}</span>
             </div>
-            <div className="flex items-center gap-3 text-xs text-slate-300 flex-wrap">
-              <span className="flex items-center gap-1 font-semibold text-emerald-400">
-                <Icon className="text-[16px]">sports</Icon>
+
+            <div className="flex items-center gap-3 flex-wrap">
+              <h2 className="text-xl sm:text-2xl font-black font-chivo tracking-tight text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+                {row.name}
+              </h2>
+              <span className="px-2.5 py-0.5 rounded-full text-xs font-black bg-white/20 text-white backdrop-blur-md border border-white/30 drop-shadow-xs">
+                {row.status === 'Active' ? (isEn ? 'Open' : 'Đang mở') : row.status}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2.5 text-xs text-white/95 mt-1 font-medium flex-wrap drop-shadow-xs">
+              <span className="inline-flex items-center gap-1 font-bold">
+                <Icon className="text-[15px]">sports</Icon>
                 {row.sportName}
               </span>
-              <span className="text-slate-500">·</span>
-              <span className="flex items-center gap-1 text-slate-300">
-                <Icon className="text-[16px]">meeting_room</Icon>
+              <span className="opacity-60">·</span>
+              <span className="inline-flex items-center gap-1">
+                <Icon className="text-[15px]">meeting_room</Icon>
                 {row.roomName || (isEn ? 'No court assigned' : 'Chưa phân phòng')}
               </span>
-              <span className="text-slate-500">·</span>
-              <span className="flex items-center gap-1 text-amber-300 font-semibold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20">
+              <span className="opacity-60">·</span>
+              <span className="inline-flex items-center gap-1 bg-white/20 backdrop-blur-md px-2.5 py-0.5 rounded-full border border-white/30 font-bold">
                 <Icon className="text-[14px]">timer</Icon>
                 {durationMinutes} {isEn ? 'mins/session' : 'phút/buổi'}
               </span>
             </div>
           </div>
 
-          {/* Quick Metrics */}
-          <div className="flex items-center gap-3 shrink-0">
-            <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-center">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
+          {/* Quick Metrics in frosted glass */}
+          <div className="flex items-center gap-2.5 shrink-0">
+            <div className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white text-center shadow-xs transition">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-white/85">
                 {isEn ? 'Sessions / Week' : 'Ca / tuần'}
               </p>
-              <p className="text-base font-black text-emerald-400">{activeSchedules.length} {isEn ? 'sessions' : 'ca'}</p>
-            </div>
-            <div className="px-3.5 py-2 rounded-xl bg-white/5 border border-white/10 text-center">
-              <p className="text-[10px] uppercase font-bold tracking-wider text-slate-400">
-                {isEn ? 'Total Volume' : 'Khối lượng'}
+              <p className="text-base font-black text-white drop-shadow-xs">
+                {activeSchedules.length} <span className="text-xs font-semibold">{isEn ? 'sessions' : 'ca'}</span>
               </p>
-              <p className="text-base font-black text-sky-400">{totalWeeklyHours} {isEn ? 'hrs/wk' : 'giờ/tuần'}</p>
+            </div>
+            <div className="px-4 py-2.5 rounded-2xl bg-white/15 hover:bg-white/25 backdrop-blur-md border border-white/30 text-white text-center shadow-xs transition">
+              <p className="text-[10px] uppercase font-bold tracking-wider text-white/85">
+                {isEn ? 'Weekly Volume' : 'Khối lượng'}
+              </p>
+              <p className="text-base font-black text-white drop-shadow-xs">
+                {totalWeeklyHours} <span className="text-xs font-semibold">{isEn ? 'hrs/wk' : 'giờ/tuần'}</span>
+              </p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* 2. Interactive Weekly Visual Grid / Matrix */}
-      <section aria-label={isEn ? 'Weekly timetable' : 'Lịch học theo tuần'} className="space-y-3">
+      {/* 2. Compact Weekly Timetable Overview (7 Days) */}
+      <section aria-label={isEn ? 'Weekly timetable' : 'Thời khóa biểu hàng tuần'} className="space-y-2.5">
         <div className="flex items-center justify-between gap-2 flex-wrap">
-          <div>
-            <h3 className="text-base font-black text-slate-900 dark:text-slate-100 flex items-center gap-2">
-              <span className="material-symbols-outlined text-emerald-600 dark:text-emerald-400 text-[22px]">calendar_view_week</span>
-              {isEn ? 'Weekly Timetable Overview' : 'Thời khóa biểu hàng tuần'}
+          <div className="flex items-center gap-2">
+            <span className="material-symbols-outlined text-[#24828F] text-[20px]">calendar_view_week</span>
+            <h3 className="text-sm font-black text-slate-900 dark:text-slate-100 uppercase tracking-wide">
+              {isEn ? 'Weekly Timetable Overview' : 'Thời khóa biểu tuần (7 ngày)'}
             </h3>
-            <p className="text-xs text-slate-500 dark:text-slate-400">
-              {isEn
-                ? 'Visual schedule across 7 days. Click "+ Add" on any day to quickly target it.'
-                : 'Bảng trực quan 7 ngày. Bấm nút “+ Thêm” tại cột bất kỳ để gán ca vào ngày đó.'}
-            </p>
           </div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
+          <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800">
             <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-            <span>{activeSchedules.length} {isEn ? 'active sessions scheduled' : 'ca đang kích hoạt'}</span>
+            <span>{activeSchedules.length} {isEn ? 'active session(s)' : 'ca đang kích hoạt'}</span>
           </div>
         </div>
 
         {/* 7 Columns Day Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-7 gap-2">
           {groups.map((group) => {
             const hasItems = group.items.length > 0;
             return (
               <div
                 key={group.dayOfWeek}
-                className={`flex flex-col rounded-2xl border transition-all duration-200 p-2.5 ${
+                className={`flex flex-col rounded-xl border transition-all p-2 ${
                   hasItems
-                    ? 'border-emerald-500/30 dark:border-emerald-800/60 bg-emerald-50/20 dark:bg-emerald-950/10 shadow-sm'
-                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-850'
+                    ? 'border-emerald-500/30 dark:border-emerald-800/50 bg-emerald-50/20 dark:bg-emerald-950/10 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-850/60'
                 }`}
               >
                 {/* Day Column Header */}
-                <div className="flex items-center justify-between pb-2 mb-2 border-b border-slate-200/60 dark:border-slate-750">
-                  <div className="flex items-center gap-1.5">
-                    <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                      {group.label}
-                    </span>
-                    <span
-                      className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
-                        hasItems
-                          ? 'bg-emerald-500 text-white shadow-xs'
-                          : 'bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      {group.items.length}
-                    </span>
-                  </div>
-
-                  {!readOnly && (
-                    <button
-                      type="button"
-                      onClick={() => quickTargetDay(group.dayOfWeek)}
-                      title={isEn ? `Add session on ${group.label}` : `Thêm ca vào ${group.label}`}
-                      className="p-1 rounded-lg text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 dark:hover:bg-slate-800 transition"
-                    >
-                      <span className="material-symbols-outlined text-[16px]">add</span>
-                    </button>
-                  )}
+                <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-200/60 dark:border-slate-750">
+                  <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                    {group.label}
+                  </span>
+                  <span
+                    className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
+                      hasItems
+                        ? 'bg-[#24828F] text-white shadow-xs'
+                        : 'bg-slate-200 dark:bg-slate-700 text-slate-500 dark:text-slate-400'
+                    }`}
+                  >
+                    {group.items.length}
+                  </span>
                 </div>
 
                 {/* Day Session Cards */}
-                <div className="space-y-2 flex-1">
+                <div className="space-y-1.5 flex-1">
                   {group.items.map((schedule) => {
                     const period = getTimePeriodInfo(schedule.startTime);
                     const isActive = schedule.status === 'Active';
@@ -2293,53 +2305,40 @@ function ScheduleManager({
                     return (
                       <div
                         key={schedule.id}
-                        className={`rounded-xl border p-2.5 text-xs transition-all duration-200 ${
+                        className={`rounded-lg border p-2 text-xs transition-all ${
                           isEditing
-                            ? 'ring-2 ring-emerald-500 border-emerald-500 bg-emerald-50 dark:bg-emerald-950/40 shadow-md'
+                            ? 'ring-2 ring-[#24828F] border-[#24828F] bg-emerald-50 dark:bg-emerald-950/40 shadow-sm'
                             : isActive
-                            ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xs hover:shadow-md'
+                            ? 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-xs'
                             : 'border-slate-200 dark:border-slate-800 bg-slate-100 dark:bg-slate-800/60 opacity-60'
                         }`}
                       >
-                        {/* Time & Period Badge */}
-                        <div className="flex items-center justify-between gap-1 mb-1.5">
-                          <span className={`inline-flex items-center gap-1 px-1.5 py-0.5 rounded-md text-[10px] font-bold border ${period.badge}`}>
-                            <span className="material-symbols-outlined text-[12px]">{period.icon}</span>
+                        <div className="flex items-center justify-between gap-1 mb-1">
+                          <span className={`inline-flex items-center gap-0.5 px-1.5 py-0.2 rounded text-[10px] font-bold border ${period.badge}`}>
+                            <span className="material-symbols-outlined text-[11px]">{period.icon}</span>
                             <span>{period.label}</span>
                           </span>
-                          <div className="flex items-center gap-1">
-                            <span
-                              className={`h-2 w-2 rounded-full ${isActive ? 'bg-emerald-500 shadow-[0_0_6px_#10b981]' : 'bg-slate-400'}`}
-                              title={isActive ? (isEn ? 'Active' : 'Đang hoạt động') : isEn ? 'Cancelled' : 'Đã hủy'}
-                            />
-                          </div>
+                          <span
+                            className={`h-2 w-2 rounded-full ${isActive ? 'bg-emerald-500 shadow-[0_0_5px_#10b981]' : 'bg-slate-400'}`}
+                            title={isActive ? (isEn ? 'Active' : 'Đang hoạt động') : isEn ? 'Cancelled' : 'Đã hủy'}
+                          />
                         </div>
 
-                        <strong className="text-sm font-black text-slate-900 dark:text-slate-100 block tracking-tight">
+                        <strong className="text-xs font-black text-slate-900 dark:text-slate-100 block tracking-tight">
                           {timeValue(schedule.startTime)} – {timeValue(schedule.endTime)}
                         </strong>
 
-                        {/* Room Location */}
-                        <p className="mt-1 flex items-start gap-1 text-[11px] text-slate-600 dark:text-slate-300 font-medium">
-                          <Icon className="text-[13px] text-slate-400 shrink-0 mt-0.5">meeting_room</Icon>
+                        <p className="mt-0.5 flex items-center gap-1 text-[10px] text-slate-600 dark:text-slate-300 truncate font-medium">
+                          <Icon className="text-[12px] text-slate-400 shrink-0">meeting_room</Icon>
                           <span className="truncate">{effectiveScheduleRoom(schedule, row, rooms)}</span>
                         </p>
 
-                        {/* Date Range formatted */}
-                        <p className="mt-1 flex items-center gap-1 text-[10px] text-slate-400">
-                          <Icon className="text-[12px] shrink-0">calendar_month</Icon>
-                          <span className="truncate">
-                            {formatDisplayDate(schedule.startDate) || (isEn ? 'Indefinite' : 'Vô thời hạn')} → {formatDisplayDate(schedule.endDate) || (isEn ? 'Indefinite' : 'Vô thời hạn')}
-                          </span>
-                        </p>
-
-                        {/* Action buttons */}
                         {!readOnly && isActive && (
-                          <div className="mt-2.5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-2">
+                          <div className="mt-1.5 flex items-center justify-between border-t border-slate-100 dark:border-slate-800 pt-1">
                             <button
                               type="button"
                               aria-label={`Sửa lịch ${group.label} ${timeValue(schedule.startTime)}`}
-                              className="text-emerald-600 dark:text-emerald-400 hover:text-emerald-700 font-bold flex items-center gap-0.5 text-[11px] hover:underline"
+                              className="text-[#24828F] dark:text-teal-400 hover:text-teal-700 font-bold flex items-center gap-0.5 text-[10px] hover:underline"
                               disabled={busy}
                               onClick={() => {
                                 setEditingScheduleId(schedule.id);
@@ -2356,17 +2355,17 @@ function ScheduleManager({
                                 }
                               }}
                             >
-                              <span className="material-symbols-outlined text-[13px]">edit</span>
+                              <span className="material-symbols-outlined text-[11px]">edit</span>
                               <span>{isEn ? 'Edit' : 'Sửa'}</span>
                             </button>
 
                             <button
                               type="button"
-                              className="text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold flex items-center gap-0.5 text-[11px] hover:underline"
+                              className="text-rose-600 dark:text-rose-400 hover:text-rose-700 font-bold flex items-center gap-0.5 text-[10px] hover:underline"
                               disabled={busy}
                               onClick={() => onCancelSchedule(schedule.id)}
                             >
-                              <span className="material-symbols-outlined text-[13px]">delete</span>
+                              <span className="material-symbols-outlined text-[11px]">delete</span>
                               <span>{isEn ? 'Cancel' : 'Hủy'}</span>
                             </button>
                           </div>
@@ -2375,24 +2374,21 @@ function ScheduleManager({
                     );
                   })}
 
+                  {/* Clean compact + Add button: replaces the old 96px empty box */}
                   {!hasItems && !readOnly && (
                     <button
                       type="button"
                       onClick={() => quickTargetDay(group.dayOfWeek)}
-                      className="w-full h-24 rounded-xl border-2 border-dashed border-slate-200 dark:border-slate-800 hover:border-emerald-400 dark:hover:border-emerald-600 hover:bg-emerald-50/50 dark:hover:bg-slate-800/50 flex flex-col items-center justify-center gap-1 text-slate-400 hover:text-emerald-600 transition-all cursor-pointer group"
+                      className="w-full py-2 px-1 rounded-lg border border-dashed border-slate-200 dark:border-slate-700 hover:border-[#24828F] dark:hover:border-teal-500 hover:bg-emerald-50/50 dark:hover:bg-slate-800/60 flex items-center justify-center gap-1 text-slate-400 hover:text-[#24828F] transition-all cursor-pointer group text-[11px] font-bold"
                     >
-                      <span className="material-symbols-outlined text-[20px] text-slate-300 group-hover:text-emerald-500 transition">
-                        add_circle
-                      </span>
-                      <span className="text-[11px] font-bold group-hover:text-emerald-600 transition">
-                        {isEn ? '+ Add slot' : '+ Thêm ca'}
-                      </span>
+                      <span className="material-symbols-outlined text-[14px] group-hover:scale-110 transition">add</span>
+                      <span>{isEn ? 'Add' : '+ Thêm'}</span>
                     </button>
                   )}
 
                   {!hasItems && readOnly && (
-                    <p className="py-6 text-center text-[11px] text-slate-400 italic">
-                      {isEn ? 'No sessions' : 'Trống'}
+                    <p className="py-2 text-center text-[10px] text-slate-400 italic">
+                      {isEn ? 'Empty' : 'Trống'}
                     </p>
                   )}
                 </div>
@@ -2402,32 +2398,32 @@ function ScheduleManager({
         </div>
       </section>
 
-      {/* 3. Smart Automation Studio (Automated Batch Scheduling) */}
+      {/* 3. Streamlined Smart Automation Studio (Compact 3-Row Layout) */}
       {!readOnly && (
         <section
           id="schedule-automation-studio"
-          className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-lg space-y-5"
+          className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm space-y-4"
         >
-          {/* Automation Studio Header */}
+          {/* Header Bar */}
           <div className="flex items-center justify-between gap-3 pb-3 border-b border-slate-100 dark:border-slate-800 flex-wrap">
             <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-emerald-600 to-teal-400 text-white flex items-center justify-center shadow-md shadow-emerald-500/20 shrink-0">
-                <span className="material-symbols-outlined text-[20px]">
+              <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-[#207279] to-[#2D9B8E] text-white flex items-center justify-center shadow-xs shrink-0">
+                <span className="material-symbols-outlined text-[18px]">
                   {editingScheduleId ? 'edit_calendar' : 'auto_fix_high'}
                 </span>
               </div>
               <div>
-                <h3 className="font-black text-slate-900 dark:text-slate-100 text-base">
+                <h3 className="font-black text-slate-900 dark:text-slate-100 text-sm">
                   {editingScheduleId
                     ? (isEn ? `Edit Session: ${WEEK_DAYS[form.dayOfWeek]}` : `Chỉnh sửa ca học: ${WEEK_DAYS[form.dayOfWeek]}`)
-                    : (isEn ? 'Smart Automated Scheduling' : '⚡ Tự động hóa xếp lịch & Tạo hàng loạt')}
+                    : (isEn ? 'Smart Automated Scheduling' : '⚡ Thiết lập xếp lịch tự động')}
                 </h3>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
                   {editingScheduleId
                     ? (isEn ? 'Update session time and room details.' : 'Cập nhật lại giờ học hoặc phòng cho ca đã chọn.')
                     : (isEn
-                        ? 'Select multiple days at once. End time and session dates are calculated automatically.'
-                        : 'Chọn nhiều thứ cùng lúc để hệ thống tự động tạo ca học, tự tính giờ kết thúc theo thời lượng lớp.')}
+                        ? `Class duration: ${durationMinutes} mins. End time calculated automatically.`
+                        : `Thời lượng lớp: ${durationMinutes} phút/buổi · Giờ kết thúc tự động tính theo thời lượng.`)}
                 </p>
               </div>
             </div>
@@ -2436,38 +2432,36 @@ function ScheduleManager({
               <button
                 type="button"
                 onClick={onReset}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
+                className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 hover:bg-slate-100 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
               >
-                <span className="material-symbols-outlined text-[14px]">arrow_back</span>
-                <span>{isEn ? 'Discard Edit (Back to New)' : 'Bỏ chỉnh sửa (Quay lại thêm mới)'}</span>
+                <span className="material-symbols-outlined text-[13px]">arrow_back</span>
+                <span>{isEn ? 'Discard Edit (Back)' : 'Bỏ sửa (Quay lại tạo mới)'}</span>
               </button>
             )}
           </div>
 
-          {/* STEP 1: Automated Day Selection */}
-          <div className="space-y-2.5">
+          {/* ROW 1: Day selection with inline presets */}
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-[11px]">
-                  1
-                </span>
-                {editingScheduleId
-                  ? (isEn ? 'Select Day of Week' : 'Ngày trong tuần')
-                  : (isEn ? 'Select Days (Multi-Select Batch)' : 'Chọn các ngày trong tuần (Tự động tạo nhiều ca)')}
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                <span>{editingScheduleId ? (isEn ? 'Day of Week *' : 'Ngày trong tuần *') : (isEn ? 'Select Days (Batch) *' : '1. Chọn thứ học trong tuần *')}</span>
+                {!editingScheduleId && (
+                  <span className="text-[11px] font-normal text-emerald-600 dark:text-emerald-400">
+                    (Đã chọn: <strong>{selectedDays.map((d) => WEEK_DAYS[d]).join(', ')}</strong> — {selectedDays.length} ca)
+                  </span>
+                )}
               </label>
 
-              {/* Quick Preset Buttons (Add mode only) */}
+              {/* Quick Presets Inline */}
               {!editingScheduleId && (
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  <span className="text-[11px] font-semibold text-slate-400">
-                    {isEn ? 'Quick presets:' : 'Mẫu có sẵn:'}
-                  </span>
+                <div className="flex items-center gap-1 flex-wrap">
+                  <span className="text-[10px] font-semibold text-slate-400">{isEn ? 'Presets:' : 'Mẫu nhanh:'}</span>
                   {DAY_PRESETS.map((preset) => (
                     <button
                       key={preset.label}
                       type="button"
                       onClick={() => applyDayPreset(preset.days)}
-                      className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 dark:hover:bg-emerald-950/40 text-slate-700 dark:text-slate-300 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 transition cursor-pointer"
+                      className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 text-slate-600 dark:text-slate-300 hover:text-[#24828F] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
                     >
                       {preset.label}
                     </button>
@@ -2476,8 +2470,8 @@ function ScheduleManager({
               )}
             </div>
 
-            {/* Day Chips Selector */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-7 gap-2">
+            {/* 7 Days Toggle Pills */}
+            <div className="grid grid-cols-7 gap-1.5">
               {WEEK_DAYS.map((dayName, idx) => {
                 const isSelected = selectedDays.includes(idx);
                 return (
@@ -2485,97 +2479,67 @@ function ScheduleManager({
                     key={dayName}
                     type="button"
                     onClick={() => toggleDay(idx)}
-                    className={`py-2 px-3 rounded-xl border text-xs font-black transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-1.5 px-2 rounded-xl text-xs font-black transition-all flex items-center justify-center gap-1 cursor-pointer border ${
                       isSelected
-                        ? 'bg-[#2D6A4F] text-white border-[#2D6A4F] shadow-sm shadow-[#2D6A4F]/30 scale-[1.02]'
-                        : 'bg-slate-50 dark:bg-slate-800/80 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400 hover:bg-white'
+                        ? 'bg-[#24828F] text-white border-[#24828F] shadow-xs scale-[1.02]'
+                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-[#24828F] hover:bg-white'
                     }`}
                   >
-                    {isSelected && <span className="material-symbols-outlined text-[14px]">check</span>}
+                    {isSelected && <span className="material-symbols-outlined text-[13px]">check</span>}
                     <span>{dayName}</span>
                   </button>
                 );
               })}
             </div>
-            {!editingScheduleId && (
-              <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                {isEn ? 'Selected: ' : 'Đã chọn: '}
-                <strong className="text-emerald-600 dark:text-emerald-400">
-                  {selectedDays.map((d) => WEEK_DAYS[d]).join(', ')}
-                </strong>{' '}
-                ({selectedDays.length} {isEn ? 'session(s) will be created automatically' : 'ca học sẽ được tạo cùng lúc'})
-              </p>
-            )}
           </div>
 
-          {/* STEP 2: Smart Time Slot & Duration Calculation */}
-          <div className="space-y-2.5">
+          {/* ROW 2: Time Slots + Start Time + End Time + Room (3 Columns) */}
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between gap-2 flex-wrap">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-[11px]">
-                  2
-                </span>
-                {isEn ? 'Session Time & Auto-Duration' : 'Khung giờ học & Tự động tính thời lượng'}
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {isEn ? '2. Session Time & Facility *' : '2. Khung giờ & Phòng học *'}
               </label>
-
-              <div className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/20">
-                <span className="material-symbols-outlined text-[13px]">info</span>
-                <span>
-                  {isEn
-                    ? `Class duration: ${durationMinutes} mins. End time updates automatically!`
-                    : `Thời lượng lớp: ${durationMinutes} phút/buổi · Giờ kết thúc tự động tính toán!`}
-                </span>
+              {/* Quick popular slot pills */}
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] font-semibold text-slate-400">{isEn ? 'Quick slots:' : 'Gợi ý giờ:'}</span>
+                {POPULAR_SLOTS.map((slot) => {
+                  const isCurrent = form.startTime === slot;
+                  return (
+                    <button
+                      key={slot}
+                      type="button"
+                      onClick={() => applyTimeSlot(slot)}
+                      className={`px-2 py-0.5 rounded text-[10px] font-bold border transition-all cursor-pointer ${
+                        isCurrent
+                          ? 'bg-[#24828F] text-white border-[#24828F]'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-[#24828F]'
+                      }`}
+                    >
+                      {slot}
+                    </button>
+                  );
+                })}
               </div>
             </div>
 
-            {/* Popular Time Slot Chips */}
-            <div className="flex items-center gap-2 flex-wrap">
-              <span className="text-[11px] font-semibold text-slate-400">
-                {isEn ? 'Popular slots:' : 'Khung giờ gợi ý:'}
-              </span>
-              {POPULAR_SLOTS.map((slot) => {
-                const slotEnd = addMinutesToTime(slot, durationMinutes);
-                const isCurrent = form.startTime === slot;
-                return (
-                  <button
-                    key={slot}
-                    type="button"
-                    onClick={() => applyTimeSlot(slot)}
-                    className={`px-3 py-1.5 rounded-xl text-xs font-bold border transition-all cursor-pointer flex items-center gap-1 ${
-                      isCurrent
-                        ? 'bg-emerald-600 text-white border-emerald-600 shadow-sm'
-                        : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700 hover:border-emerald-400 hover:bg-white'
-                    }`}
-                  >
-                    <span>{slot}</span>
-                    <span className="text-slate-400 text-[10px]">→</span>
-                    <span>{slotEnd}</span>
-                  </button>
-                );
-              })}
-            </div>
-
-            {/* Manual Time Inputs */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'Start Time * (Changing this auto-calculates End Time)' : 'Giờ bắt đầu * (Chọn giờ sẽ tự động tính Giờ kết thúc)'}
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  {isEn ? 'Start Time *' : 'Giờ bắt đầu *'}
                 </label>
-                <div className="relative">
-                  <input
-                    required
-                    type="time"
-                    name="startTime"
-                    value={form.startTime || '08:00'}
-                    onChange={handleStartTimeChange}
-                    className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                  />
-                </div>
+                <input
+                  required
+                  type="time"
+                  name="startTime"
+                  value={form.startTime || '08:00'}
+                  onChange={handleStartTimeChange}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#24828F]"
+                />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'End Time *' : 'Giờ kết thúc *'}
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  {isEn ? 'End Time (Auto)' : `Giờ kết thúc * (Tự +${durationMinutes}p)`}
                 </label>
                 <input
                   required
@@ -2583,81 +2547,21 @@ function ScheduleManager({
                   name="endTime"
                   value={form.endTime || '09:30'}
                   onChange={change}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                />
-              </div>
-            </div>
-          </div>
-
-          {/* STEP 3: Date Validity & Court Selection */}
-          <div className="space-y-2.5">
-            <div className="flex items-center justify-between gap-2 flex-wrap">
-              <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
-                <span className="w-5 h-5 rounded-full bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 font-bold flex items-center justify-center text-[11px]">
-                  3
-                </span>
-                {isEn ? 'Validity Range & Court Assignment' : 'Thời gian hiệu lực & Phòng tập'}
-              </label>
-
-              {/* Date Presets */}
-              <div className="flex items-center gap-1.5 flex-wrap">
-                <span className="text-[11px] font-semibold text-slate-400">
-                  {isEn ? 'Course duration:' : 'Thời hạn khóa:'}
-                </span>
-                {DATE_PRESETS.map((dp) => (
-                  <button
-                    key={dp.days}
-                    type="button"
-                    onClick={() => applyDatePreset(dp.days)}
-                    className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-emerald-50 text-slate-700 dark:text-slate-300 hover:text-emerald-600 border border-slate-200 dark:border-slate-700 hover:border-emerald-300 transition cursor-pointer"
-                  >
-                    {dp.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'Start Date *' : 'Từ ngày *'}
-                </label>
-                <input
-                  required
-                  type="date"
-                  name="startDate"
-                  value={form.startDate || ''}
-                  onChange={change}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#24828F]"
                 />
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'End Date *' : 'Đến ngày *'}
-                </label>
-                <input
-                  required
-                  type="date"
-                  name="endDate"
-                  min={form.startDate || undefined}
-                  value={form.endDate || ''}
-                  onChange={change}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                  {isEn ? 'Court / Facility' : 'Sân / Phòng học'}
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  {isEn ? 'Court / Facility' : 'Sân / Phòng tập'}
                 </label>
                 <select
                   name="roomId"
                   value={form.roomId || ''}
                   onChange={change}
-                  className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm font-semibold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#24828F]"
                 >
-                  <option value="">{isEn ? 'Use class default court' : 'Dùng phòng mặc định của lớp'}</option>
+                  <option value="">{isEn ? 'Class default court' : 'Phòng mặc định của lớp'}</option>
                   {rooms
                     .filter((room) => room.status === 'Active')
                     .map((room) => (
@@ -2670,46 +2574,80 @@ function ScheduleManager({
             </div>
           </div>
 
-          {/* STEP 4: Integrated Action Toolbar */}
-          <div className="pt-3 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-3 flex-wrap">
-            <div className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-emerald-600">verified_user</span>
-              <span>
-                {isEn
-                  ? 'System automatically validates court availability and coach schedule conflicts.'
-                  : 'Hệ thống tự động kiểm tra trùng lịch sân và lịch huấn luyện viên.'}
-              </span>
+          {/* ROW 3: Date Range & Unified Action Button */}
+          <div className="space-y-1.5 pt-1 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                {isEn ? '3. Validity Period & Actions *' : '3. Thời hạn áp dụng *'}
+              </label>
+              <div className="flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] font-semibold text-slate-400">{isEn ? 'Duration:' : 'Thời hạn:'}</span>
+                {DATE_PRESETS.map((dp) => (
+                  <button
+                    key={dp.days}
+                    type="button"
+                    onClick={() => applyDatePreset(dp.days)}
+                    className="px-2 py-0.5 rounded text-[10px] font-bold bg-slate-100 dark:bg-slate-800 hover:bg-teal-50 text-slate-600 dark:text-slate-300 hover:text-[#24828F] border border-slate-200 dark:border-slate-700 transition cursor-pointer"
+                  >
+                    {dp.label.split(' - ')[0]}
+                  </button>
+                ))}
+              </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              {editingScheduleId && (
-                <button
-                  type="button"
-                  onClick={onReset}
-                  className="px-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 text-slate-700 dark:text-slate-200 text-xs font-bold transition cursor-pointer"
-                >
-                  {isEn ? 'Cancel Edit' : 'Bỏ chỉnh sửa'}
-                </button>
-              )}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 items-end">
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  {isEn ? 'Start Date *' : 'Từ ngày *'}
+                </label>
+                <input
+                  required
+                  type="date"
+                  name="startDate"
+                  value={form.startDate || ''}
+                  onChange={change}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#24828F]"
+                />
+              </div>
 
-              <button
-                type="submit"
-                disabled={busy}
-                className="inline-flex items-center justify-center gap-2 px-6 py-2.5 bg-gradient-to-r from-[#2D6A4F] to-[#1B4332] hover:from-[#1B4332] hover:to-[#0D2818] text-white text-sm font-black rounded-xl shadow-md shadow-[#2D6A4F]/20 transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  {editingScheduleId ? 'save' : 'bolt'}
-                </span>
-                <span>
-                  {busy
-                    ? (isEn ? 'Saving...' : 'Đang xử lý...')
-                    : editingScheduleId
-                    ? (isEn ? `Save Schedule (${WEEK_DAYS[form.dayOfWeek]})` : `Lưu thay đổi ca (${WEEK_DAYS[form.dayOfWeek]})`)
-                    : (isEn
-                        ? `Auto-Create ${selectedDays.length} Session(s) (${selectedDays.map((d) => WEEK_DAYS[d]).join(', ')})`
-                        : `⚡ Tự động tạo ${selectedDays.length} ca học (${selectedDays.map((d) => WEEK_DAYS[d]).join(', ')})`)}
-                </span>
-              </button>
+              <div>
+                <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                  {isEn ? 'End Date *' : 'Đến ngày *'}
+                </label>
+                <input
+                  required
+                  type="date"
+                  name="endDate"
+                  min={form.startDate || undefined}
+                  value={form.endDate || ''}
+                  onChange={change}
+                  className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#24828F]"
+                />
+              </div>
+
+              <div>
+                <button
+                  type="submit"
+                  disabled={busy}
+                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-4 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
+                  style={{
+                    background: 'linear-gradient(108deg, #2F7B5D 0%, #24828F 35%, #3FAEB8 65%, #E5A33C 100%)'
+                  }}
+                >
+                  <span className="material-symbols-outlined text-[16px]">
+                    {editingScheduleId ? 'save' : 'bolt'}
+                  </span>
+                  <span>
+                    {busy
+                      ? (isEn ? 'Saving...' : 'Đang xử lý...')
+                      : editingScheduleId
+                      ? (isEn ? `Save Schedule (${WEEK_DAYS[form.dayOfWeek]})` : `Lưu ca (${WEEK_DAYS[form.dayOfWeek]})`)
+                      : (isEn
+                          ? `Auto-Create ${selectedDays.length} Session(s)`
+                          : `⚡ Tự động tạo ${selectedDays.length} ca học`)}
+                  </span>
+                </button>
+              </div>
             </div>
           </div>
         </section>
