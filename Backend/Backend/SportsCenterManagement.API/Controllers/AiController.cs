@@ -1,5 +1,6 @@
 using System.ComponentModel.DataAnnotations;
 using System.Text.Json;
+using System.Text.Json.Nodes;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
@@ -163,8 +164,38 @@ public sealed class AiController(SportsCenterDbContext db, GeminiService ai, Tra
             "extractedTags, conflictWarnings, mandatoryAdjustments, coachNotes là mảng chuỗi; " +
             "exercises là mảng 4-6 đối tượng có name, sets, reps, note đều là chuỗi. " +
             "Không nêu tên hoặc thông tin định danh học viên. HLV phải xem xét và có thể chỉnh sửa trước khi áp dụng.";
-        var reply = await ai.GenerateAsync(Guidance + workoutGuidance, [new AiTurn("user", prompt)], true, ct);
-        var result = AiWorkoutRecommendationProcessor.Process(reply, safety, context.WeightKg!.Value);
+        const int maxSafetyAttempts = 3;
+        JsonObject? result = null;
+        string? validationFeedback = null;
+        for (var attempt = 1; attempt <= maxSafetyAttempts; attempt++)
+        {
+            var attemptPrompt = validationFeedback is null
+                ? prompt
+                : prompt + "\nSAFETY_VALIDATION_FEEDBACK: Kết quả trước bị từ chối. Hãy tạo lại toàn bộ JSON và sửa tất cả lỗi sau: " + validationFeedback;
+            var reply = await ai.GenerateAsync(Guidance + workoutGuidance, [new AiTurn("user", attemptPrompt)], true, ct);
+            try
+            {
+                result = SportsCenterManagement.API.Services.MedicalNlpRecommendationProcessor.Process(
+                    reply, safety, context.WeightKg!.Value, request.Notes, request.FitnessGoal);
+                break;
+            }
+            catch (InvalidOperationException exception) when (
+                string.Equals(exception.Data["Code"] as string, "AI_SAFETY_CHECK_FAILED", StringComparison.Ordinal))
+            {
+                validationFeedback = exception.Message;
+            }
+        }
+
+        if (result is null)
+        {
+            result = SportsCenterManagement.API.Services.MedicalNlpRecommendationProcessor.Process(
+                "{}", safety, context.WeightKg!.Value, request.Notes, request.FitnessGoal);
+            result["generationMode"] = "deterministic_safe_fallback";
+            result["ai_reasoning"] =
+                "Các kết quả từ nhà cung cấp AI không vượt qua kiểm tra an toàn. Hệ thống đã thay bằng phác đồ dự phòng xác định và kiểm tra lại toàn bộ ràng buộc y tế.";
+            result["clinicalAssessment"] = result["ai_reasoning"]?.DeepClone();
+            result["coachReviewNote"] = result["ai_reasoning"]?.DeepClone();
+        }
         db.AiExerciseRecommendations.Add(new AiExerciseRecommendation { MemberId = request.MemberId,
             RequestedBy = CurrentUserId, TargetGoal = safety.EffectiveGoal, DifficultyLevel = safety.EffectiveLevel,
             AiModel = ai.Model, RecommendationReason = result.ToJsonString(), Accepted = false, CreatedAt = DateTime.UtcNow });

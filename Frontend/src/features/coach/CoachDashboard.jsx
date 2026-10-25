@@ -2,7 +2,14 @@ import React, { useState, useEffect } from 'react';
 import { coachApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { CoachError, useTeachingSessions } from './CoachShared.jsx';
-import { sessionTime } from './coachOverview.js';
+import {
+  coachMemberOptions,
+  dashboardAttendanceRecords,
+  dashboardProgressRequest,
+  filterDashboardSessions,
+  mapDashboardRoster,
+  mapDashboardSessions
+} from './coachOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 export function CoachDashboard() {
@@ -21,21 +28,23 @@ export function CoachDashboard() {
   // State Form "Đánh giá & Ghi nhận tiến độ" (Cột phải 35%)
   const [progressForm, setProgressForm] = useState({
     studentId: '',
-    studentName: 'Trần Văn Mạnh',
-    target: 'Tăng 3kg cơ bắp, Squat 100kg',
-    weight: '68.5',
-    heavyLift: '95',
-    repsSets: '4 sets x 8 reps',
-    feedbackNote: 'Học viên giữ form Squat rất chuẩn, hoàn thành đủ sets không bị hụt hơi.',
+    studentName: '',
+    target: '',
+    weight: '',
+    heavyLift: '',
+    repsSets: '',
+    feedbackNote: '',
     sendToMember: true,
   });
 
   const [progressSaved, setProgressSaved] = useState(false);
+  const [savingProgress, setSavingProgress] = useState(false);
 
   // State Modals
   const [isAiModalOpen, setIsAiModalOpen] = useState(false);
   const [isAttendanceModalOpen, setIsAttendanceModalOpen] = useState(false);
   const [savingAttendance, setSavingAttendance] = useState(false);
+  const [loadingRoster, setLoadingRoster] = useState(false);
   const [isClassListModalOpen, setIsClassListModalOpen] = useState(false);
   const [activeSession, setActiveSession] = useState(null);
 
@@ -44,7 +53,17 @@ export function CoachDashboard() {
     setError('');
     try {
       const data = await coachApi.getCoachClassesAndMembers();
-      setClasses(data || []);
+      const nextClasses = data || [];
+      setClasses(nextClasses);
+      const firstMember = coachMemberOptions(nextClasses)[0];
+      if (firstMember) {
+        setProgressForm(previous => previous.studentId ? previous : {
+          ...previous,
+          studentId: String(firstMember.id),
+          studentName: firstMember.name,
+          target: firstMember.target
+        });
+      }
     } catch (e) {
       setError(e.message);
     } finally {
@@ -59,124 +78,51 @@ export function CoachDashboard() {
   const studentCount = new Set(classes.flatMap((c) => (c.members || []).map((m) => m.id))).size;
 
   // Lấy danh sách học viên từ các lớp đang phụ trách
-  const memberList = Array.from(
-    new Map(
-      classes
-        .flatMap((c) => c.members || [])
-        .filter(Boolean)
-        .map((m) => [m.id, m])
-    ).values()
-  );
+  const memberList = coachMemberOptions(classes);
+  const periodSessions = filterDashboardSessions(schedule.sessions, filterPeriod);
+  const allSessions = mapDashboardSessions(periodSessions, classes).slice(0, 4);
+  const completedSessionCount = allSessions.filter(session => session.status === 'COMPLETED').length;
 
-  // Danh sách học viên mẫu đầy đủ mục tiêu
-  const defaultStudents = [
-    { id: 'st-1', name: 'Trần Văn Mạnh', target: isEn ? 'Gain 3kg muscle, Squat 100kg' : 'Tăng 3kg cơ bắp, Squat 100kg' },
-    { id: 'st-2', name: 'Lê Thuỳ Dung', target: isEn ? 'Lose 4kg fat, firm thighs' : 'Giảm 4kg mỡ, săn chắc đùi' },
-    { id: 'st-3', name: 'Nguyễn Tiến Đạt', target: isEn ? 'Cardio endurance & posture' : 'Cải thiện thể lực tim mạch & Cột sống' },
-    { id: 'st-4', name: 'Phạm Quỳnh Nga', target: isEn ? 'Core conditioning & Pilates' : 'Săn chắc cơ bụng & Pilates phục hồi' },
-  ];
-
-  // Danh sách các ca dạy trong ngày
-  const defaultSessions = [
-    {
-      id: 'demo-1',
-      timeSlot: '07:30 - 08:30',
-      type: 'PT 1:1',
-      title: isEn ? '1:1 Private PT • Upper Body Hypertrophy' : 'PT Cá nhân • Tăng cơ Thân trên',
-      room: isEn ? 'Weight Room #1' : 'Phòng Tạ #1 · Tầng 2',
-      studentOrClass: 'Trần Văn Mạnh',
-      members: [
-        { id: 'm1', name: 'Trần Văn Mạnh', status: 'Present', phone: '0912 345 678', note: 'Đúng giờ' }
-      ],
-      attendanceDone: 1,
-      attendanceTotal: 1,
-      status: 'COMPLETED',
-    },
-    {
-      id: 'demo-2',
-      timeSlot: '09:00 - 10:30',
-      type: 'Lớp nhóm',
-      title: isEn ? 'CrossFit & Functional Conditioning' : 'CrossFit & Rèn luyện Thể lực Đa năng',
-      room: isEn ? 'Studio A • Court 2' : 'Studio A · Sân số 2',
-      studentOrClass: isEn ? 'Morning CrossFit Batch (CF-02)' : 'Lớp CrossFit Sáng (CF-02)',
-      members: [
-        { id: 'm2', name: 'Lê Hoàng Nam', status: 'Present', phone: '0988 111 222', note: '' },
-        { id: 'm3', name: 'Nguyễn Thị Hoa', status: 'Present', phone: '0977 222 333', note: '' },
-        { id: 'm4', name: 'Trần Đình Trọng', status: 'Present', phone: '0966 333 444', note: 'Đến muộn 10p' },
-        { id: 'm5', name: 'Vũ Minh Tuấn', status: 'Absent', phone: '0944 555 666', note: 'Có phép' },
-      ],
-      attendanceDone: 8,
-      attendanceTotal: 10,
-      status: 'IN_PROGRESS',
-    },
-    {
-      id: 'demo-3',
-      timeSlot: '14:00 - 15:00',
-      type: 'PT 1:1',
-      title: isEn ? 'InBody Assessment & Mobility Rehab' : 'Kiểm tra InBody & Phục hồi vận động',
-      room: isEn ? 'InBody Testing Lab' : 'Phòng Đo InBody · Tầng 1',
-      studentOrClass: 'Lê Thuỳ Dung',
-      members: [
-        { id: 'm6', name: 'Lê Thuỳ Dung', status: 'Pending', phone: '0933 777 888', note: '' }
-      ],
-      attendanceDone: 0,
-      attendanceTotal: 1,
-      status: 'UPCOMING',
-    },
-    {
-      id: 'demo-4',
-      timeSlot: '17:30 - 18:30',
-      type: 'Lớp nhóm',
-      title: isEn ? 'Cardio HIIT Fat Burn Blast' : 'Cardio HIIT Đốt mỡ chuyên sâu',
-      room: isEn ? 'Studio B • Main Court' : 'Studio B · Sân chính',
-      studentOrClass: isEn ? 'Afternoon HIIT Batch (HT-05)' : 'Lớp HIIT Buổi chiều (HT-05)',
-      members: [
-        { id: 'm7', name: 'Đỗ Hữu Thắng', status: 'Pending', phone: '0909 123 456', note: '' },
-        { id: 'm8', name: 'Bùi Lan Anh', status: 'Pending', phone: '0918 654 321', note: '' },
-      ],
-      attendanceDone: 0,
-      attendanceTotal: 12,
-      status: 'UPCOMING',
-    },
-  ];
-
-  // Kết hợp ca thực tế từ backend schedule nếu có
-  const backendSessions = (schedule.sessions || []).slice(0, 4).map((s, idx) => ({
-    id: `be-${s.id}`,
-    timeSlot: s.timeSlot || '08:00 - 09:30',
-    type: s.type || 'Lớp học phần',
-    title: s.name || (isEn ? 'Olympic Class Training' : 'Giáo án huấn luyện thể thao'),
-    room: s.roomName || (isEn ? 'Olympic Main Arena' : 'Cụm sân Olympic'),
-    studentOrClass: s.name || `Lớp học #${idx + 1}`,
-    members: (classes[idx]?.members || []).map((m) => ({
-      id: m.id,
-      name: m.fullName || m.name,
-      status: 'Present',
-      phone: m.phone || '09xx xxx xxx',
-    })),
-    attendanceDone: s.status === 'COMPLETED' ? 12 : 0,
-    attendanceTotal: 12,
-    status: s.status === 'COMPLETED' ? 'COMPLETED' : 'UPCOMING',
-    isBackend: true,
-  }));
-
-  const allSessions = backendSessions.length > 0 ? backendSessions : defaultSessions;
+  const loadRoster = async (session) => {
+    setLoadingRoster(true);
+    setError('');
+    try {
+      const rows = await coachApi.getClassMembers(session.id);
+      const members = mapDashboardRoster(rows);
+      return {
+        ...session,
+        members,
+        attendanceDone: members.filter(member => member.status === 'PRESENT' || member.status === 'LATE').length,
+        attendanceTotal: members.length
+      };
+    } catch (e) {
+      setError(e);
+      return null;
+    } finally {
+      setLoadingRoster(false);
+    }
+  };
 
   // Xử lý mở Modal Danh Sách Lớp
-  const handleOpenClassList = (session) => {
-    setActiveSession(session);
+  const handleOpenClassList = async (session) => {
+    const withRoster = await loadRoster(session);
+    if (!withRoster) return;
+    setActiveSession(withRoster);
     setIsClassListModalOpen(true);
   };
 
   // Xử lý mở Modal Điểm Danh Nhanh
-  const handleOpenAttendance = (session) => {
-    setActiveSession(session);
+  const handleOpenAttendance = async (session) => {
+    const withRoster = await loadRoster(session);
+    if (!withRoster) return;
+    setActiveSession(withRoster);
     setIsAttendanceModalOpen(true);
   };
 
   // Xử lý lưu Form Tiến Độ
-  const handleSaveProgress = (e) => {
+  const handleSaveProgress = async (e) => {
     e.preventDefault();
+    if (savingProgress) return;
     const w = parseFloat(progressForm.weight);
     const hl = parseFloat(progressForm.heavyLift);
     if (isNaN(w) || w <= 0 || w > 500) {
@@ -191,8 +137,36 @@ export function CoachDashboard() {
       alert(isEn ? 'Feedback note cannot exceed 1000 characters.' : 'Nhận xét không được vượt quá 1000 ký tự.');
       return;
     }
-    setProgressSaved(true);
-    setTimeout(() => setProgressSaved(false), 3500);
+    const selectedMember = memberList.find(member => member.id === Number(progressForm.studentId));
+    setSavingProgress(true);
+    setError('');
+    try {
+      await coachApi.recordWorkoutProgress(dashboardProgressRequest(progressForm, selectedMember));
+      setProgressSaved(true);
+      setTimeout(() => setProgressSaved(false), 3500);
+    } catch (e) {
+      setProgressSaved(false);
+      setError(e);
+    } finally {
+      setSavingProgress(false);
+    }
+  };
+
+  const handleSaveAttendance = async () => {
+    if (!activeSession || !activeSession.canTakeAttendance || savingAttendance) return;
+    setSavingAttendance(true);
+    setError('');
+    try {
+      const records = dashboardAttendanceRecords(activeSession.members);
+      await coachApi.takeAttendance(activeSession.id, null, null, null, records);
+      alert(isEn ? 'Attendance recorded successfully!' : 'Đã lưu kết quả điểm danh thành công!');
+      setIsAttendanceModalOpen(false);
+      schedule.reload();
+    } catch (e) {
+      setError(e);
+    } finally {
+      setSavingAttendance(false);
+    }
   };
 
   return (
@@ -253,7 +227,7 @@ export function CoachDashboard() {
                 <span className="text-xs text-amber-200 font-bold">{isEn ? 'slots' : 'ca'}</span>
               </div>
               <span className="mt-1 text-[10px] text-white font-bold flex items-center gap-1">
-                ● 1 ca đã xong
+                ● {completedSessionCount} {isEn ? 'completed' : 'ca đã xong'}
               </span>
             </div>
 
@@ -264,12 +238,12 @@ export function CoachDashboard() {
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
                 <span className="text-2xl sm:text-3xl font-chivo font-black text-white">
-                  {studentCount > 0 ? studentCount : 24}
+                  {studentCount}
                 </span>
                 <span className="text-xs text-white/80 font-bold">{isEn ? 'members' : 'người'}</span>
               </div>
               <span className="mt-1 text-[10px] text-amber-200 font-bold flex items-center gap-1">
-                ↑ 3 học viên mới
+                {classes.length} {isEn ? 'assigned classes' : 'lớp đang phụ trách'}
               </span>
             </div>
 
@@ -279,10 +253,10 @@ export function CoachDashboard() {
                 {isEn ? 'Attendance Rate' : 'Tỉ lệ chuyên cần'}
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-2xl sm:text-3xl font-chivo font-black text-white">92%</span>
+                <span className="text-2xl sm:text-3xl font-chivo font-black text-white">—</span>
               </div>
               <span className="mt-1 text-[10px] text-white font-bold flex items-center gap-1">
-                ↑ +4.2% so tuần trước
+                {isEn ? 'Open a session to view attendance' : 'Mở ca dạy để xem điểm danh'}
               </span>
             </div>
 
@@ -431,7 +405,7 @@ export function CoachDashboard() {
                       <div className="text-right">
                         <span className="text-[11px] text-slate-500 font-medium">{isEn ? 'Attendance: ' : 'Điểm danh: '}</span>
                         <span className="text-xs font-black text-slate-900">
-                          {session.attendanceDone}/{session.attendanceTotal}
+                          {session.attendanceDone ?? '—'}/{session.attendanceTotal}
                         </span>
                       </div>
 
@@ -440,7 +414,8 @@ export function CoachDashboard() {
                         <button
                           type="button"
                           onClick={() => handleOpenClassList(session)}
-                          className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1"
+                          disabled={loadingRoster}
+                          className="px-3 py-1.5 rounded-xl border border-slate-200 bg-white hover:bg-slate-50 text-xs font-bold text-slate-700 transition-colors shadow-2xs cursor-pointer inline-flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                           <span className="material-symbols-outlined text-[15px] text-slate-500">list_alt</span>
                           <span>{isEn ? 'Class List' : 'Mở danh sách lớp'}</span>
@@ -450,11 +425,12 @@ export function CoachDashboard() {
                         <button
                           type="button"
                           onClick={() => handleOpenAttendance(session)}
+                          disabled={loadingRoster}
                           className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm flex items-center gap-1 cursor-pointer ${
                             isFinished
                               ? 'bg-slate-100 hover:bg-slate-200 text-slate-700'
                               : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-600/20'
-                          }`}
+                          } disabled:opacity-50 disabled:cursor-not-allowed`}
                         >
                           <span className="material-symbols-outlined text-[15px]">how_to_reg</span>
                           <span>{isFinished ? (isEn ? 'View Check-in' : 'Xem điểm danh') : (isEn ? 'Attendance' : 'Điểm danh')}</span>
@@ -518,36 +494,33 @@ export function CoachDashboard() {
                   {isEn ? 'Select Student' : 'Chọn học viên theo dõi'}
                 </label>
                 <select
-                  value={progressForm.studentName}
+                  value={progressForm.studentId}
                   onChange={(e) => {
-                    const found = defaultStudents.find((s) => s.name === e.target.value);
+                    const found = memberList.find((member) => member.id === Number(e.target.value));
                     setProgressForm({
                       ...progressForm,
-                      studentName: e.target.value,
-                      target: found ? found.target : 'Rèn luyện thể lực tiêu chuẩn',
+                      studentId: e.target.value,
+                      studentName: found?.name || '',
+                      target: found?.target || '',
                     });
                   }}
+                  disabled={memberList.length === 0 || savingProgress}
                   className="w-full h-10 px-3 rounded-xl border border-slate-200 bg-slate-50/70 text-slate-800 font-semibold focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all cursor-pointer"
                 >
-                  {memberList.length > 0 ? (
-                    memberList.map((m) => (
-                      <option key={m.id} value={m.fullName || m.name}>
-                        {m.fullName || m.name} (Mã: {m.code || m.id})
-                      </option>
-                    ))
-                  ) : (
-                    defaultStudents.map((st) => (
-                      <option key={st.id} value={st.name}>
-                        {st.name} ({st.target})
-                      </option>
-                    ))
+                  {memberList.length === 0 && (
+                    <option value="">{isEn ? 'No assigned students' : 'Chưa có học viên được phân công'}</option>
                   )}
+                  {memberList.map((member) => (
+                    <option key={member.id} value={member.id}>
+                      {member.name} (Mã: {member.memberCode || member.code || member.id})
+                    </option>
+                  ))}
                 </select>
 
                 {/* Tag mục tiêu học viên hiển thị trực quan */}
                 <div className="mt-1.5 p-2 rounded-lg bg-blue-50/70 border border-blue-100 text-[11px] text-blue-900 flex items-center gap-1.5">
                   <span className="font-bold text-blue-700 shrink-0">{isEn ? 'Goal:' : 'Mục tiêu:'}</span>
-                  <span className="truncate">{progressForm.target}</span>
+                  <span className="truncate">{progressForm.target || (isEn ? 'Not updated' : 'Chưa cập nhật')}</span>
                 </div>
               </div>
 
@@ -650,10 +623,13 @@ export function CoachDashboard() {
               {/* Nút Submit Form */}
               <button
                 type="submit"
-                className="w-full h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-2"
+                disabled={savingProgress || memberList.length === 0}
+                className="w-full h-11 rounded-xl bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs uppercase tracking-wider transition-all duration-200 shadow-sm flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <span className="material-symbols-outlined text-[17px] text-emerald-400">save</span>
-                <span>{isEn ? 'Save Progress & Evaluation' : 'Lưu kết quả & Đánh giá'}</span>
+                <span className={`material-symbols-outlined text-[17px] text-emerald-400 ${savingProgress ? 'animate-spin' : ''}`}>
+                  {savingProgress ? 'progress_activity' : 'save'}
+                </span>
+                <span>{savingProgress ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save Progress & Evaluation' : 'Lưu kết quả & Đánh giá')}</span>
               </button>
 
               {/* Alert Lưu Thành Công */}
@@ -864,14 +840,14 @@ export function CoachDashboard() {
 
                     <span
                       className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold ${
-                        member.status === 'Present' || member.status === 'Late'
+                        member.status === 'PRESENT' || member.status === 'LATE'
                           ? 'bg-emerald-100 text-emerald-800'
-                          : member.status === 'Absent'
+                        : member.status === 'ABSENT'
                           ? 'bg-rose-100 text-rose-800'
                           : 'bg-slate-200 text-slate-700'
                       }`}
                     >
-                      {member.status === 'Present' || member.status === 'Late' ? 'Có mặt' : member.status === 'Absent' ? 'Vắng' : 'Chờ điểm danh'}
+                      {member.status === 'PRESENT' || member.status === 'LATE' ? 'Có mặt' : member.status === 'ABSENT' ? 'Vắng' : 'Chờ điểm danh'}
                     </span>
                   </div>
                 ))
@@ -927,8 +903,8 @@ export function CoachDashboard() {
             <div className="space-y-2.5 max-h-80 overflow-y-auto pr-1">
               {activeSession.members && activeSession.members.length > 0 ? (
                 activeSession.members.map((member, i) => {
-                  const isPresent = member.status === 'Present' || member.status === 'Late';
-                  const isAbsent = member.status === 'Absent';
+                  const isPresent = member.status === 'PRESENT' || member.status === 'LATE';
+                  const isAbsent = member.status === 'ABSENT';
                   const hasLateNote = (member.note || '').includes('Đến muộn');
 
                   return (
@@ -946,7 +922,7 @@ export function CoachDashboard() {
                           <button
                             type="button"
                             onClick={() => {
-                              member.status = 'Present';
+                              member.status = 'PRESENT';
                               setActiveSession({ ...activeSession });
                             }}
                             className={`px-3 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
@@ -961,7 +937,7 @@ export function CoachDashboard() {
                           <button
                             type="button"
                             onClick={() => {
-                              member.status = 'Absent';
+                              member.status = 'ABSENT';
                               setActiveSession({ ...activeSession });
                             }}
                             className={`px-3 py-1 rounded-lg text-[11px] font-bold cursor-pointer transition-all ${
@@ -990,7 +966,7 @@ export function CoachDashboard() {
                         <button
                           type="button"
                           onClick={() => {
-                            member.status = 'Present';
+                            member.status = 'LATE';
                             const current = member.note || '';
                             if (current.includes('Đến muộn')) {
                               member.note = current.replace(/Đến muộn(\s*\d+\s*(phút|p))?\.?,?\s*/gi, '').trim();
@@ -1022,7 +998,7 @@ export function CoachDashboard() {
                               onClick={() => {
                                 const cleaned = (member.note || '').replace(/Đến muộn(\s*\d+\s*(phút|p))?\.?,?\s*/gi, '').trim();
                                 member.note = cleaned ? `Đến muộn ${mins}p. ${cleaned}` : `Đến muộn ${mins}p`;
-                                member.status = 'Present';
+                                member.status = 'LATE';
                                 setActiveSession({ ...activeSession });
                               }}
                               className={`px-1.5 py-0.5 rounded border transition-colors cursor-pointer ${
@@ -1056,10 +1032,10 @@ export function CoachDashboard() {
             </div>
 
             {/* Cảnh báo khóa thời gian nếu ca học ở tương lai */}
-            {activeSession.status === 'UPCOMING' && (
+            {!activeSession.canTakeAttendance && (
               <div className="p-3 bg-amber-50 rounded-xl border border-amber-200 text-amber-800 text-xs flex items-center gap-2">
                 <span className="material-symbols-outlined text-[18px] text-amber-600 shrink-0">schedule</span>
-                <span>{isEn ? 'This session has not started yet. Attendance recording is locked until class commencement.' : 'Ca học chưa tới giờ diễn ra. Chức năng lưu điểm danh bị khóa cho đến khi ca học bắt đầu.'}</span>
+                <span>{isEn ? 'Attendance is only editable on the session date after the class has started.' : 'Chỉ có thể lưu điểm danh đúng ngày diễn ra và sau khi ca học đã bắt đầu.'}</span>
               </div>
             )}
 
@@ -1074,16 +1050,8 @@ export function CoachDashboard() {
               </button>
               <button
                 type="button"
-                disabled={savingAttendance || activeSession.status === 'UPCOMING'}
-                onClick={() => {
-                  if (savingAttendance) return;
-                  setSavingAttendance(true);
-                  setTimeout(() => {
-                    setSavingAttendance(false);
-                    alert(isEn ? 'Attendance recorded successfully!' : 'Đã lưu kết quả điểm danh thành công!');
-                    setIsAttendanceModalOpen(false);
-                  }, 600);
-                }}
+                disabled={savingAttendance || !activeSession.canTakeAttendance}
+                onClick={handleSaveAttendance}
                 className="px-4 py-2 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-bold shadow-sm cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 {savingAttendance ? (

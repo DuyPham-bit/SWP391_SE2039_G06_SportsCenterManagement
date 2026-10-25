@@ -14,6 +14,7 @@ public sealed record AiWorkoutSafetyProfile(
     bool IsUnderweight,
     bool IsSeverelyUnderweight,
     bool IsOverweight,
+    bool HasSevereInjury,
     bool HasBackIssue,
     bool HasWristOrShoulderIssue,
     bool HasKneeIssue,
@@ -31,8 +32,14 @@ public static class AiWorkoutSafetyPolicy
     {
         "skinny_gain", "fit_meso", "overweight_endo", "low_stamina", "high_endurance",
         "back_pain", "knee_pain", "shoulder_pain", "wrist_pain", "hypertension",
-        "kyphosis_posture", "mass_focus", "machine_focus", "core_focus", "low_impact"
+        "kyphosis_posture", "severe_injury", "mass_focus", "machine_focus", "core_focus", "low_impact"
     };
+
+    private static readonly string[] SevereInjuryTerms =
+    [
+        "gãy", "nứt xương", "đứt dây chằng", "đứt chằng", "rách dây chằng", "vừa mổ", "sau mổ",
+        "phẫu thuật", "bó bột", "trật khớp", "fracture", "ligament tear", "post-surgery", "surgery"
+    ];
 
     private static readonly string[] BackTerms =
     [
@@ -106,6 +113,12 @@ public static class AiWorkoutSafetyPolicy
         "box jump", "calf raise", "leg press"
     ];
 
+    private static readonly string[] SevereInjuryBannedExercises =
+    [
+        "squat", "deadlift", "lunge", "sprint", "running", "run ", "treadmill", "step-up", "step up",
+        "calf raise", "box jump", "jump"
+    ];
+
     public static AiWorkoutSafetyProfile Resolve(
         RecommendationContext context,
         string requestedGoal,
@@ -139,6 +152,9 @@ public static class AiWorkoutSafetyPolicy
             .Concat((context.HealthRecords ?? []).SelectMany(record => new[] { record.Title, record.Details }))
             .Where(value => !string.IsNullOrWhiteSpace(value))).ToLowerInvariant();
         var subjectiveHealthText = coachNotes?.Trim() ?? string.Empty;
+        var hasSevereInjury = ContainsAny(medicalText, SevereInjuryTerms) ||
+            ContainsAny(subjectiveHealthText, SevereInjuryTerms) ||
+            tags.Contains("severe_injury", StringComparer.OrdinalIgnoreCase);
         var hasBackIssue = ContainsAny(medicalText, BackTerms) || ContainsAny(subjectiveHealthText, BackTerms) ||
             tags.Any(tag => tag.Equals("back_pain", StringComparison.OrdinalIgnoreCase) ||
                 tag.Equals("kyphosis_posture", StringComparison.OrdinalIgnoreCase));
@@ -215,6 +231,15 @@ public static class AiWorkoutSafetyPolicy
             adjustments.Add("Ưu tiên máy tập, dây cáp và trọng lượng cơ thể; không dùng tạ tự do nặng hoặc HIIT.");
         }
 
+        if (hasSevereInjury)
+        {
+            if (!effectiveGoal.Contains("phục hồi", StringComparison.OrdinalIgnoreCase))
+                warnings.Add($"Chấn thương nặng ghi đè mục tiêu '{effectiveGoal}'; hệ thống chuyển sang phục hồi chức năng và tập cô lập vùng an toàn.");
+            effectiveGoal = "Phục hồi chức năng và tập cô lập vùng an toàn";
+            effectiveLevel = "Beginner - Medical Rehabilitation";
+            adjustments.Add("Cấm squat, lunge, deadlift, chạy, nhảy và mọi bài chịu tải lên vùng chấn thương; chỉ tập cô lập vùng an toàn ở Zone 1-2.");
+        }
+
         if (isOverweight)
             adjustments.Add("Bắt buộc thâm hụt calo có kiểm soát; loại bỏ bật nhảy và plyometric cường độ cao để bảo vệ khớp.");
 
@@ -267,7 +292,7 @@ public static class AiWorkoutSafetyPolicy
 
         return new AiWorkoutSafetyProfile(bmi, effectiveGoal, effectiveLevel, tags.ToArray(), discarded.ToArray(),
             conditions.ToArray(), warnings.Distinct().ToArray(), adjustments.Distinct().ToArray(), isUnderweight,
-            isSeverelyUnderweight, isOverweight, hasBackIssue, hasWristOrShoulderIssue, hasKneeIssue, hasHypertension,
+            isSeverelyUnderweight, isOverweight, hasSevereInjury, hasBackIssue, hasWristOrShoulderIssue, hasKneeIssue, hasHypertension,
             wantsMuscleGain, wantsFatLoss, wantsEndurance, hasSevereLegInjury, extractedTagsList.ToArray(), aiReasoning);
     }
 
@@ -278,6 +303,8 @@ public static class AiWorkoutSafetyPolicy
         foreach (var name in names)
         {
             var normalized = name.ToLowerInvariant();
+            if (profile.HasSevereInjury && ContainsAny(normalized, SevereInjuryBannedExercises))
+                violations.Add($"'{name}' tạo tải lên vùng đang chấn thương nặng.");
             if ((profile.IsSeverelyUnderweight || profile.HasBackIssue) && ContainsAny(normalized, BackBannedExercises))
                 violations.Add($"'{name}' tạo tải cột sống hoặc mức tải không phù hợp với hồ sơ hiện tại.");
             if (profile.HasWristOrShoulderIssue && ContainsAny(normalized, WristShoulderBannedExercises))

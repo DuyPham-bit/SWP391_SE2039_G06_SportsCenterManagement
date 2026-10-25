@@ -258,8 +258,9 @@ public sealed class TrainingService(SportsCenterDbContext db)
             WorkoutResult = request.WorkoutResult.Trim(), CoachFeedback = request.CoachFeedback?.Trim(), CreatedAt = DateTime.UtcNow };
         db.TrainingResults.Add(row);
         AddAudit(userId, coach.CenterId, "TRAINING_PROGRESS_RECORDED", "TrainingResult");
-        await FlowNotificationWriter.CreateForMemberAsync(db, userId, request.MemberId, "Có kết quả tập luyện mới",
-            $"HLV {coach.FullName} đã ghi nhận kết quả tập ngày {date:dd/MM/yyyy}. Xem Giáo án & Kết quả tập để biết chi tiết.", "ProgressUpdated", ct);
+        if (request.NotifyMember)
+            await FlowNotificationWriter.CreateForMemberAsync(db, userId, request.MemberId, "Có kết quả tập luyện mới",
+                $"HLV {coach.FullName} đã ghi nhận kết quả tập ngày {date:dd/MM/yyyy}. Xem Giáo án & Kết quả tập để biết chi tiết.", "ProgressUpdated", ct);
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         return row.Id;
     }

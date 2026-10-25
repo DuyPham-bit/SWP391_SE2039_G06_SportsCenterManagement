@@ -29,7 +29,8 @@ public sealed record RecordProgressRequest(
     [param: Required, StringLength(1000)] string WorkoutResult,
     [param: StringLength(1000)] string? CoachFeedback,
     DateOnly? Date,
-    [param: Range(1, long.MaxValue)] long? SessionId = null);
+    [param: Range(1, long.MaxValue)] long? SessionId = null,
+    bool NotifyMember = true);
 
 public sealed record SendNotificationRequest(
     [param: Range(1, long.MaxValue)] long? ClassId,
