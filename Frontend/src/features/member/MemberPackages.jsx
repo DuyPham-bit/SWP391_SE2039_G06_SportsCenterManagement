@@ -54,13 +54,13 @@ const PACKAGE_PERKS = {
   },
   olympic: {
     vi: [
-      'Toàn quyền sử dụng 15 bộ môn và 8 sàn thi đấu Olympic quốc tế',
+      'Toàn quyền sử dụng 10 bộ môn và 10 cụm sân thi đấu Olympic quốc tế',
       'Không giới hạn số buổi tập và thời gian trong suốt 365 ngày',
       'Đặc quyền phòng VIP Lounge, khăn tập cao cấp & đồ uống thể thao',
       'Ưu tiên đặt lịch số 1, quyền bảo lưu gói tập lên đến 60 ngày'
     ],
     en: [
-      'Unlimited all-access to 15 Olympic sports & 8 international courts',
+      'Unlimited all-access to all 10 Olympic sports & 10 international courts',
       'Unlimited sessions and hours throughout 365 days',
       'VIP Lounge access, complimentary premium towels & sports drinks',
       'Tier-1 booking priority and up to 60 days membership freeze'
@@ -102,7 +102,7 @@ function resolveAllowedSports(pkg) {
   if (pkg?.allowedSports && pkg.allowedSports > 1) return pkg.allowedSports;
   const name = (pkg?.name || '').toLowerCase();
   const access = (pkg?.accessType || '').toLowerCase();
-  if (access.includes('15') || access.includes('toàn quyền') || name.includes('all-access') || name.includes('olympic') || pkg?.durationDays >= 365) return 15;
+  if (access.includes('10') || access.includes('15') || access.includes('toàn quyền') || name.includes('all-access') || name.includes('olympic') || pkg?.durationDays >= 365) return 10;
   if (access.includes('6') || name.includes('elite') || pkg?.durationDays >= 180) return 6;
   if (access.includes('3') || name.includes('pro') || pkg?.durationDays >= 90) return 3;
   return pkg?.allowedSports || 1;
@@ -572,7 +572,7 @@ export function MemberPackages() {
                     <span>
                       {isEn ? 'Applicable sports: ' : 'Môn áp dụng: '}
                       <strong className="text-slate-900 dark:text-white">
-                        {resolveAllowedSports(pkg) >= 6 ? (isEn ? 'All Sports (All-Access)' : 'Toàn quyền các môn (All-Access)') : (isEn ? `${resolveAllowedSports(pkg)} elective sports` : `${resolveAllowedSports(pkg)} môn tự chọn`)}
+                        {resolveAllowedSports(pkg) >= 10 ? (isEn ? 'All 10 Sports (All-Access)' : 'Toàn bộ 10 môn (All-Access)') : (isEn ? `${resolveAllowedSports(pkg)} elective sports` : `${resolveAllowedSports(pkg)} môn tự chọn`)}
                       </strong>
                     </span>
                   </div>

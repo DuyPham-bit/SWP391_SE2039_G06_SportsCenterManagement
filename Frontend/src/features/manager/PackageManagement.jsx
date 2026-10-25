@@ -29,7 +29,7 @@ export function PackageManagement() {
   const [badge, setBadge] = useState('TIẾT KIỆM');
   const [saving, setSaving] = useState(false);
 
-  const totalSports = centerSports.length > 0 ? centerSports.length : 6;
+  const totalSports = centerSports.length > 0 ? centerSports.length : 10;
 
   const loadPackages = async () => {
     try {

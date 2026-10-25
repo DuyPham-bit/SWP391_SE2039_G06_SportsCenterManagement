@@ -14,7 +14,7 @@ public static class DbInitializer
         else await context.Database.EnsureCreatedAsync();
         await EnsureRolesAndPermissionsAsync(context);
         await EnsureAuthAndReceptionPermissionsAsync(context);
-        await EnsureGolfCatalogAsync(context);
+        await EnsureCompleteSportsCatalogAsync(context);
         await EnsureMembershipPackageSportsAsync(context);
     }
 
@@ -385,118 +385,107 @@ public static class DbInitializer
             END
             """);
     }
-    private static async Task EnsureGolfCatalogAsync(SportsCenterDbContext context)
+    private static async Task EnsureCompleteSportsCatalogAsync(SportsCenterDbContext context)
     {
         var center = await context.Centers.FirstOrDefaultAsync(c => c.Id == 15)
                      ?? await context.Centers.FirstOrDefaultAsync();
         if (center == null) return;
 
-        var golfSport = await context.Sports.FirstOrDefaultAsync(s => s.Name == "Golf");
-        if (golfSport == null)
+        // Definition of all 10 sports and corresponding facilities matching site.landing-content
+        var catalog = new (string SportName, string SportDesc, string RoomName, string RoomType, int RoomCapacity, string RoomLocation)[]
         {
-            golfSport = new Sport
-            {
-                CenterId = center.Id,
-                Name = "Golf",
-                Description = "Học viện đào tạo Golf chuẩn quốc tế, driving range 18 làn và phòng mô phỏng 3D TrackMan 4K",
-                Status = "Active"
-            };
-            await context.Sports.AddAsync(golfSport);
-            await context.SaveChangesAsync();
-        }
-        else if (golfSport.Status != "Active")
-        {
-            golfSport.Status = "Active";
-            await context.SaveChangesAsync();
-        }
+            ("Bơi lội", "Bơi lội thể thao, cải thiện thể lực và sức bền toàn diện", "Bể bơi Olympic 50m", "Swimming Pool", 30, "Khu Thể Thao Dưới Nước • Tầng 1"),
+            ("Gym & Fitness", "Rèn luyện thể hình, tăng cơ giảm mỡ và tăng cường sức mạnh", "Phòng Gym High-Performance", "Gym", 45, "Khu A • Tầng 2"),
+            ("Yoga & Pilates", "Phục hồi chức năng, tăng độ dẻo dai và tĩnh tâm", "Phòng Yoga & Pilates Reformer", "Studio", 20, "Khu C • Tầng 3"),
+            ("Cầu lông", "Tập luyện phản xạ nhanh, di chuyển linh hoạt và đối kháng", "Sân Cầu lông Tiêu chuẩn #1", "Badminton Court", 24, "Khu B • Tầng 2"),
+            ("Boxing & Võ thuật", "Đốt cháy calo, rèn luyện kỹ năng tự vệ và phản xạ chiến đấu", "Võ đài Boxing & Kickfit", "Combat Ring", 25, "Khu C • Tầng 1"),
+            ("Golf", "Học viện đào tạo Golf chuẩn quốc tế, driving range 18 làn và phòng mô phỏng 3D TrackMan 4K", "Tổ Hợp Sân Tập Golf & 3D Simulator", "Golf Complex", 30, "Khu Ngoài Trời & Khu C • Tầng 2"),
+            ("Bóng đá", "Sân cỏ nhân tạo 7 người tiêu chuẩn FIFA, mặt cỏ êm ái chống chấn thương, hệ thống thoát nước và dàn đèn LED cao áp ban đêm.", "Sân Bóng Đá Cỏ Nhân Tạo (Sân 5 & Sân 7)", "Outdoor Field", 30, "Khu Ngoài Trời"),
+            ("Bóng rổ", "Sân bóng rổ tiêu chuẩn thi đấu phong trào, mặt sân sơn acrylic chống trượt, trụ rổ kính cường lực độ nảy tốt và mái che mát.", "Sân Bóng Rổ Tiêu Chuẩn Phong Trào", "Basketball Court", 25, "Khu B • Tầng 1"),
+            ("Bóng bàn", "Khu bóng bàn trong nhà trang bị bàn thi đấu đạt chuẩn quốc tế, ánh sáng đều chống lóa và không gian di chuyển an toàn.", "Khu Bóng Bàn Trong Nhà", "Table Tennis Area", 20, "Khu B • Tầng 3"),
+            ("Pickleball", "Cụm sân Pickleball ngoài trời hiện đại, mặt sân acrylic chuyên dụng, vạch bếp chuẩn thi đấu và rào chắn bóng kiên cố.", "Cụm Sân Pickleball Ngoài Trời", "Pickleball Complex", 20, "Khu Ngoài Trời")
+        };
 
-        var golfRoom = await context.Rooms.FirstOrDefaultAsync(r => r.Name.Contains("Golf"));
-        if (golfRoom == null)
-        {
-            golfRoom = new Room
-            {
-                CenterId = center.Id,
-                Name = "Tổ Hợp Sân Tập Golf & 3D Simulator",
-                RoomType = "Golf Complex",
-                Capacity = 30,
-                LocationDescription = "Khu Ngoài Trời & Khu C • Tầng 2",
-                Status = "Active",
-                CreatedAt = DateTime.UtcNow
-            };
-            await context.Rooms.AddAsync(golfRoom);
-            await context.SaveChangesAsync();
-        }
+        var sportsDict = new Dictionary<string, Sport>(StringComparer.OrdinalIgnoreCase);
+        var roomsDict = new Dictionary<string, Room>(StringComparer.OrdinalIgnoreCase);
 
-        // 3. Ensure Coach Specialization
-        var coach = await context.CoachProfiles.FirstOrDefaultAsync(c => c.Id == 13)
-                    ?? await context.CoachProfiles.FirstOrDefaultAsync();
-        if (coach != null)
+        foreach (var item in catalog)
         {
-            if (!await context.CoachSports.AnyAsync(cs => cs.CoachId == coach.Id && cs.SportId == golfSport.Id))
+            var sport = await context.Sports.FirstOrDefaultAsync(s => s.Name == item.SportName);
+            if (sport == null)
             {
-                context.CoachSports.Add(new CoachSport { CoachId = coach.Id, SportId = golfSport.Id });
-                if (string.IsNullOrWhiteSpace(coach.Specialization) || coach.Specialization.Contains("Thể lực"))
+                sport = new Sport
                 {
-                    coach.Specialization = "Golf Chuẩn PGA, Phân Tích Swing TrackMan 4K";
-                }
+                    CenterId = center.Id,
+                    Name = item.SportName,
+                    Description = item.SportDesc,
+                    Status = "Active"
+                };
+                await context.Sports.AddAsync(sport);
                 await context.SaveChangesAsync();
+            }
+            else if (sport.Status != "Active")
+            {
+                sport.Status = "Active";
+                await context.SaveChangesAsync();
+            }
+            sportsDict[item.SportName] = sport;
+
+            var room = await context.Rooms.FirstOrDefaultAsync(r => r.Name == item.RoomName);
+            if (room == null)
+            {
+                room = new Room
+                {
+                    CenterId = center.Id,
+                    Name = item.RoomName,
+                    RoomType = item.RoomType,
+                    Capacity = item.RoomCapacity,
+                    LocationDescription = item.RoomLocation,
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow
+                };
+                await context.Rooms.AddAsync(room);
+                await context.SaveChangesAsync();
+            }
+            else if (room.Status != "Active")
+            {
+                room.Status = "Active";
+                await context.SaveChangesAsync();
+            }
+            roomsDict[item.RoomName] = room;
+        }
+
+        // Coach sports assignment
+        var coaches = await context.CoachProfiles.ToListAsync();
+        if (coaches.Count > 0)
+        {
+            var coachList = coaches.OrderBy(c => c.Id).ToList();
+            var assignments = new (int CoachIndex, string SportName)[]
+            {
+                (0, "Golf"),
+                (1, "Golf"),
+                (2, "Bóng đá"),
+                (3, "Bóng rổ"),
+                (4, "Bóng bàn"),
+                (4, "Pickleball")
+            };
+
+            foreach (var a in assignments)
+            {
+                var c = coachList.Count > a.CoachIndex ? coachList[a.CoachIndex] : coachList[0];
+                if (sportsDict.TryGetValue(a.SportName, out var sp))
+                {
+                    if (!await context.CoachSports.AnyAsync(cs => cs.CoachId == c.Id && cs.SportId == sp.Id))
+                    {
+                        context.CoachSports.Add(new CoachSport { CoachId = c.Id, SportId = sp.Id });
+                        await context.SaveChangesAsync();
+                    }
+                }
             }
         }
 
-        // 4. Ensure Golf Class
-        var golfClass = await context.Classes.FirstOrDefaultAsync(c => c.SportId == golfSport.Id);
-        if (golfClass == null)
-        {
-            golfClass = new ClassEntity
-            {
-                CenterId = center.Id,
-                SportId = golfSport.Id,
-                RoomId = golfRoom.Id,
-                Name = "Golf Nhập Môn & Kỹ Thuật Swing TrackMan",
-                Description = "Khóa đào tạo Golf chuẩn quốc tế từ tư thế cầm gậy (grip), nhịp swing đến phân tích thông số đường bóng trên máy TrackMan 4K.",
-                Level = "All Levels",
-                Capacity = 12,
-                DurationMinutes = 60,
-                Status = "Published",
-                AllowWaitlist = true,
-                CreatedAt = DateTime.UtcNow
-            };
-            await context.Classes.AddAsync(golfClass);
-            await context.SaveChangesAsync();
-        }
-
-        // 5. Ensure Class Coach Assignment
-        if (coach != null && !await context.ClassCoaches.AnyAsync(cc => cc.ClassId == golfClass.Id && cc.CoachId == coach.Id))
-        {
-            context.ClassCoaches.Add(new ClassCoach
-            {
-                ClassId = golfClass.Id,
-                CoachId = coach.Id,
-                AssignedDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                IsPrimary = true
-            });
-            await context.SaveChangesAsync();
-        }
-
-        // 6. Ensure Class Schedule
-        if (!await context.ClassSchedules.AnyAsync(cs => cs.ClassId == golfClass.Id))
-        {
-            context.ClassSchedules.Add(new ClassSchedule
-            {
-                ClassId = golfClass.Id,
-                RoomId = golfRoom.Id,
-                DayOfWeek = 6, // Saturday
-                StartTime = new TimeOnly(8, 0),
-                EndTime = new TimeOnly(9, 0),
-                StartDate = DateOnly.FromDateTime(DateTime.UtcNow),
-                EndDate = DateOnly.FromDateTime(DateTime.UtcNow.AddMonths(3)),
-                Status = "Active"
-            });
-            await context.SaveChangesAsync();
-        }
-
-        // 7. Ensure Golf Exercises
-        if (!await context.Exercises.AnyAsync(e => e.SportId == golfSport.Id))
+        // Ensure Golf Exercises
+        if (sportsDict.TryGetValue("Golf", out var golfSport) && !await context.Exercises.AnyAsync(e => e.SportId == golfSport.Id))
         {
             context.Exercises.AddRange(
                 new Exercise
@@ -535,23 +524,6 @@ public static class DbInitializer
             );
             await context.SaveChangesAsync();
         }
-
-        // 8. Ensure Golf in Published Landing Content
-        var landingSetting = await context.SystemSettings.FirstOrDefaultAsync(s => s.SettingKey == "site.landing-content");
-        if (landingSetting != null && !string.IsNullOrWhiteSpace(landingSetting.SettingValue))
-        {
-            if (!landingSetting.SettingValue.Contains("\"id\":\"golf\"", StringComparison.OrdinalIgnoreCase) &&
-                !landingSetting.SettingValue.Contains("\"id\": \"golf\"", StringComparison.OrdinalIgnoreCase))
-            {
-                // Inject golf into sportsList and facilitiesList if not present
-                try
-                {
-                    using var doc = System.Text.Json.JsonDocument.Parse(landingSetting.SettingValue);
-                    // If setting is valid json but missing golf, it will be kept up to date
-                }
-                catch { /* ignore json parse failure */ }
-            }
-        }
     }
 
     private static async Task EnsureMembershipPackageSportsAsync(SportsCenterDbContext context)
@@ -564,8 +536,15 @@ public static class DbInitializer
             var access = (pkg.AccessType ?? string.Empty).ToLowerInvariant();
             int targetSports = pkg.AllowedSports;
 
-            if (access.Contains("15") || access.Contains("toàn quyền") || name.Contains("all-access") || name.Contains("olympic") || pkg.DurationDays >= 365)
-                targetSports = 15;
+            if (access.Contains("10") || access.Contains("15") || access.Contains("toàn quyền") || name.Contains("all-access") || name.Contains("olympic") || pkg.DurationDays >= 365)
+            {
+                targetSports = 10;
+                if (pkg.AccessType != "Toàn quyền 10 môn")
+                {
+                    pkg.AccessType = "Toàn quyền 10 môn";
+                    changed = true;
+                }
+            }
             else if (access.Contains("6") || name.Contains("elite") || pkg.DurationDays >= 180)
                 targetSports = 6;
             else if (access.Contains("3") || name.Contains("pro") || pkg.DurationDays >= 90)
