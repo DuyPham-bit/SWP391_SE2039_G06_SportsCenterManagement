@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { createPortal } from 'react-dom';
 import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { translateCoachName } from '../../services/i18nHelper.js';
@@ -511,10 +512,10 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
       <aside
         className={`fixed top-16 left-0 bottom-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col transition-all duration-300 ease-in-out select-none ${
           isOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full'
-        } ${
+        } lg:transform-none ${
           isDesktopCollapsed
-            ? 'lg:translate-x-0 lg:w-20'
-            : 'lg:translate-x-0 lg:w-64'
+            ? 'lg:w-20'
+            : 'lg:w-64'
         }`}
       >
         {/* Seamless Top Role / Section Bar (Merged with Header's Logo Column above) */}
@@ -824,9 +825,9 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
         </div>
 
         {/* Fixed Floating Flyout Menu: unclipped, locked on click, opens on hover */}
-        {isDesktopCollapsed && flyoutState && (
+        {isDesktopCollapsed && flyoutState && typeof document !== 'undefined' && createPortal(
           <div
-            className="mini-flyout-fixed-card fixed w-64 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl shadow-2xl shadow-slate-400/20 dark:shadow-black/60 p-2.5 z-50 animate-in fade-in zoom-in-95 duration-150"
+            className="mini-flyout-fixed-card fixed w-64 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl shadow-2xl shadow-slate-400/20 dark:shadow-black/60 p-2.5 z-[9999] animate-in fade-in zoom-in-95 duration-150"
             style={{ left: '88px', top: `${flyoutState.top}px` }}
             onMouseEnter={() => {
               if (flyoutTimerRef.current) clearTimeout(flyoutTimerRef.current);
@@ -884,18 +885,20 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
                 );
               })}
             </div>
-          </div>
+          </div>,
+          document.body
         )}
 
         {/* Fixed Floating Tooltip on Hover */}
-        {isDesktopCollapsed && tooltipState && !flyoutState && (
+        {isDesktopCollapsed && tooltipState && !flyoutState && typeof document !== 'undefined' && createPortal(
           <div
-            className="fixed px-3 py-1.5 bg-[#1E2235] text-white text-xs font-semibold rounded-xl shadow-lg border border-slate-700 whitespace-nowrap z-50 pointer-events-none animate-in fade-in duration-150"
+            className="fixed px-3 py-1.5 bg-[#1E2235] text-white text-xs font-semibold rounded-xl shadow-lg border border-slate-700 whitespace-nowrap z-[9999] pointer-events-none animate-in fade-in duration-150"
             style={{ left: '88px', top: `${tooltipState.top}px` }}
           >
             <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-[#1E2235] border-l border-t border-slate-700 -rotate-45" />
             {tooltipState.text}
-          </div>
+          </div>,
+          document.body
         )}
       </aside>
     </>

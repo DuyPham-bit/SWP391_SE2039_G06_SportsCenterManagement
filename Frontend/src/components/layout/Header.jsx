@@ -259,33 +259,41 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
 
   return (
     <header className="h-16 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 pr-3 sm:pr-6 flex items-center justify-between shadow-xs transition-colors">
-      {/* Left: Brand Logo SCMS & Sidebar Toggle (Merged seamlessly with sidebar below) */}
+      {/* Left: Brand Logo SCMS & Edge Toggle Button (Merged seamlessly with sidebar below) */}
       <div className="flex items-center h-full">
         {/* Brand Logo Zone: smoothly transitions between full logo (w-64) and compact logo (w-20) */}
         <div
-          className={`h-full flex items-center transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 ${
+          className={`relative h-full flex items-center transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 ${
             isSidebarCollapsed
               ? 'w-16 lg:w-20 justify-center px-0'
               : 'w-56 lg:w-64 justify-start px-3 sm:px-4'
           }`}
         >
           <Logo variant="auto" size={isSidebarCollapsed ? 'sm' : 'md'} compact={isSidebarCollapsed} />
-        </div>
 
-        {/* Unified Toggle Button: sleek circular button with chevron matching reference */}
-        <div className="px-2.5 sm:px-3">
+          {/* Desktop Circular Edge Toggle Button: straddles the dividing border seam (thụt ra vô theo thanh menu) */}
           <button
             onClick={onToggleSidebar}
             type="button"
-            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-[#81B29A] flex items-center justify-center text-slate-600 dark:text-slate-300 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
+            className="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 w-7 h-7 rounded-full border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-[#81B29A] items-center justify-center text-slate-500 dark:text-slate-400 hover:text-[#2D6A4F] dark:hover:text-emerald-400 transition-all cursor-pointer shadow-md hover:scale-110 active:scale-95"
             title={isSidebarCollapsed ? (language === 'vi' ? 'Mở rộng thanh menu' : 'Expand sidebar') : (language === 'vi' ? 'Thu gọn thanh menu' : 'Collapse sidebar')}
             aria-label={isSidebarCollapsed ? 'Show sidebar' : 'Collapse sidebar'}
           >
-            <span className="material-symbols-outlined text-[18px]">
+            <span className="material-symbols-outlined text-[15px] select-none">
               {isSidebarCollapsed ? 'chevron_right' : 'chevron_left'}
             </span>
           </button>
         </div>
+
+        {/* Mobile Hamburger Drawer Trigger */}
+        <button
+          onClick={onToggleSidebar}
+          type="button"
+          className="lg:hidden ml-2 p-2 rounded-xl text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+          aria-label="Open mobile menu"
+        >
+          <span className="material-symbols-outlined text-[22px]">menu</span>
+        </button>
       </div>
 
       {/* Right Controls: Language, Notification, DarkMode, Fullscreen, User Profile */}
