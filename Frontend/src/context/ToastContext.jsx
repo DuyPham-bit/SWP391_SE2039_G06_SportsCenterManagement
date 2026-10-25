@@ -99,9 +99,9 @@ export function ToastProvider({ children }) {
           icon: 'check',
           titleColor: 'text-emerald-700 dark:text-emerald-400',
           orbBg: 'bg-[radial-gradient(circle_at_30%_25%,#ffffff_0%,#a7f3d0_25%,#10b981_60%,#047857_90%,#022c22_100%)]',
-          orbShadow: 'shadow-[0_2px_10px_rgba(16,185,129,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-2px_3px_rgba(0,0,0,0.35)]',
+          orbShadow: 'shadow-[0_2px_8px_rgba(16,185,129,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.7),inset_0_-1.5px_2px_rgba(0,0,0,0.35)]',
           cardBorder: 'border-emerald-300 dark:border-emerald-500/30',
-          cardShadow: 'shadow-[0_12px_32px_-6px_rgba(16,185,129,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_36px_-6px_rgba(16,185,129,0.25),0_8px_20px_-4px_rgba(0,0,0,0.6)]'
+          cardShadow: 'shadow-[0_8px_20px_-4px_rgba(16,185,129,0.16),0_2px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_24px_-4px_rgba(16,185,129,0.22),0_4px_12px_-2px_rgba(0,0,0,0.5)]'
         };
       case 'error':
         return {
@@ -109,9 +109,9 @@ export function ToastProvider({ children }) {
           icon: 'priority_high',
           titleColor: 'text-rose-700 dark:text-rose-400',
           orbBg: 'bg-[radial-gradient(circle_at_30%_25%,#ffffff_0%,#fecdd3_25%,#f43f5e_60%,#be123c_90%,#4c0519_100%)]',
-          orbShadow: 'shadow-[0_2px_10px_rgba(244,63,94,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-2px_3px_rgba(0,0,0,0.35)]',
+          orbShadow: 'shadow-[0_2px_8px_rgba(244,63,94,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.7),inset_0_-1.5px_2px_rgba(0,0,0,0.35)]',
           cardBorder: 'border-rose-300 dark:border-rose-500/30',
-          cardShadow: 'shadow-[0_12px_32px_-6px_rgba(244,63,94,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_36px_-6px_rgba(244,63,94,0.25),0_8px_20px_-4px_rgba(0,0,0,0.6)]'
+          cardShadow: 'shadow-[0_8px_20px_-4px_rgba(244,63,94,0.16),0_2px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_24px_-4px_rgba(244,63,94,0.22),0_4px_12px_-2px_rgba(0,0,0,0.5)]'
         };
       case 'warning':
         return {
@@ -119,9 +119,9 @@ export function ToastProvider({ children }) {
           icon: 'warning',
           titleColor: 'text-amber-700 dark:text-amber-400',
           orbBg: 'bg-[radial-gradient(circle_at_30%_25%,#ffffff_0%,#fef3c7_25%,#f59e0b_60%,#d97706_90%,#451a03_100%)]',
-          orbShadow: 'shadow-[0_2px_10px_rgba(245,158,11,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-2px_3px_rgba(0,0,0,0.35)]',
+          orbShadow: 'shadow-[0_2px_8px_rgba(245,158,11,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.7),inset_0_-1.5px_2px_rgba(0,0,0,0.35)]',
           cardBorder: 'border-amber-300 dark:border-amber-500/30',
-          cardShadow: 'shadow-[0_12px_32px_-6px_rgba(245,158,11,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_36px_-6px_rgba(245,158,11,0.25),0_8px_20px_-4px_rgba(0,0,0,0.6)]'
+          cardShadow: 'shadow-[0_8px_20px_-4px_rgba(245,158,11,0.16),0_2px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_24px_-4px_rgba(245,158,11,0.22),0_4px_12px_-2px_rgba(0,0,0,0.5)]'
         };
       default:
         return {
@@ -129,9 +129,9 @@ export function ToastProvider({ children }) {
           icon: 'info',
           titleColor: 'text-blue-700 dark:text-blue-400',
           orbBg: 'bg-[radial-gradient(circle_at_30%_25%,#ffffff_0%,#dbeafe_25%,#3b82f6_60%,#1d4ed8_90%,#172554_100%)]',
-          orbShadow: 'shadow-[0_2px_10px_rgba(59,130,246,0.35),inset_0_1.5px_2px_rgba(255,255,255,0.7),inset_0_-2px_3px_rgba(0,0,0,0.35)]',
+          orbShadow: 'shadow-[0_2px_8px_rgba(59,130,246,0.3),inset_0_1px_1.5px_rgba(255,255,255,0.7),inset_0_-1.5px_2px_rgba(0,0,0,0.35)]',
           cardBorder: 'border-blue-300 dark:border-blue-500/30',
-          cardShadow: 'shadow-[0_12px_32px_-6px_rgba(59,130,246,0.18),0_4px_12px_-2px_rgba(0,0,0,0.06)] dark:shadow-[0_16px_36px_-6px_rgba(59,130,246,0.25),0_8px_20px_-4px_rgba(0,0,0,0.6)]'
+          cardShadow: 'shadow-[0_8px_20px_-4px_rgba(59,130,246,0.16),0_2px_6px_-1px_rgba(0,0,0,0.05)] dark:shadow-[0_10px_24px_-4px_rgba(59,130,246,0.22),0_4px_12px_-2px_rgba(0,0,0,0.5)]'
         };
     }
   };
@@ -183,12 +183,12 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast, showSuccess, showError, showWarning, showInfo, confirm, removeToast }}>
       {children}
 
-      {/* 3D Floating Spatial Capsule Container (Top-Center VisionOS style) */}
+      {/* 3D Floating Spatial Capsule Container (Top-Center compact pill) */}
       <div
         role="region"
         aria-live="polite"
         aria-label="Thông báo hệ thống"
-        className="fixed top-6 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2.5 pointer-events-none w-full max-w-md sm:max-w-lg px-4"
+        className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none w-fit max-w-[92vw] sm:max-w-md px-3"
       >
         {toasts.map(t => {
           const cfg = getToastConfig(t.type);
@@ -196,54 +196,49 @@ export function ToastProvider({ children }) {
             <div
               key={t.id}
               role={t.type === 'error' ? 'alert' : 'status'}
-              className={`pointer-events-auto relative w-full flex items-center gap-3.5 px-4 sm:px-5 py-3.5 rounded-2xl bg-white dark:bg-[#0c1322] toast-capsule-bg backdrop-blur-2xl border ${cfg.cardBorder} ${cfg.cardShadow} overflow-hidden animate-toast-3d ring-1 ring-slate-900/5 dark:ring-white/10 group transition-all duration-300 hover:scale-[1.01]`}
+              className={`pointer-events-auto relative flex items-center gap-2.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl sm:rounded-full bg-white dark:bg-[#0c1322] toast-capsule-bg backdrop-blur-2xl border ${cfg.cardBorder} ${cfg.cardShadow} overflow-hidden animate-toast-3d ring-1 ring-slate-900/5 dark:ring-white/10 group transition-all duration-300 hover:scale-[1.01]`}
             >
               {/* 3D Top Specular Light Beam (Refraction Line) */}
-              <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-6 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
 
-              {/* 3D Gemstone Orb Sphere (Perfect centering & spherical specular lighting) */}
-              <div className={`relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
-                <span className="material-symbols-outlined text-[20px] text-white font-bold drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)] select-none">
+              {/* 3D Gemstone Orb Sphere (Compact & centered) */}
+              <div className={`relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
+                <span className="material-symbols-outlined text-[16px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.5)] select-none">
                   {cfg.icon}
                 </span>
               </div>
 
               {/* Message & Context */}
-              <div className="flex-1 min-w-0 flex flex-col justify-center">
-                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                  <span className={`text-[11px] font-black tracking-wider uppercase ${cfg.titleColor}`}>
-                    {cfg.label}
-                  </span>
+              <div className="flex-1 min-w-0 pr-0.5">
+                <div className="flex items-center gap-1.5 flex-wrap">
                   {t.code && (
-                    <span className="px-1.5 py-0.5 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/15">
+                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/15">
                       {t.code}
                     </span>
                   )}
+                  <p className="text-[13px] font-semibold text-slate-900 dark:text-white leading-snug break-words">
+                    {t.message}
+                  </p>
                 </div>
 
-                {/* Primary Message: High-Contrast Bold Text */}
-                <p className="text-[13.5px] font-bold text-slate-900 dark:text-white leading-snug break-words tracking-tight">
-                  {t.message}
-                </p>
-
                 {t.proposedHandling && (
-                  <div className="mt-2 p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-xs text-slate-700 dark:text-slate-300 leading-relaxed shadow-inner">
-                    <span className="font-bold flex items-center gap-1 text-[11px] text-amber-700 dark:text-amber-400 mb-0.5">
-                      <span className="material-symbols-outlined text-[13px]">lightbulb</span>
-                      Hướng dẫn khắc phục:
+                  <div className="mt-1.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300 leading-snug shadow-inner">
+                    <span className="font-bold flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 mb-0.5">
+                      <span className="material-symbols-outlined text-[12px]">lightbulb</span>
+                      Hướng dẫn:
                     </span>
                     <span>{t.proposedHandling}</span>
                   </div>
                 )}
               </div>
 
-              {/* Minimal Circular Glass Close Button (Centered vertically) */}
+              {/* Minimal Circular Close Button */}
               <button
                 onClick={() => removeToast(t.id)}
                 aria-label="Đóng thông báo"
-                className="w-8 h-8 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-0.5"
               >
-                <span className="material-symbols-outlined text-[17px]">close</span>
+                <span className="material-symbols-outlined text-[15px]">close</span>
               </button>
             </div>
           );
@@ -291,26 +286,26 @@ export function ToastProvider({ children }) {
               aria-labelledby="confirm-dialog-title"
               aria-describedby="confirm-dialog-desc"
               onClick={(e) => e.stopPropagation()}
-              className="relative w-full max-w-md sm:max-w-lg rounded-3xl bg-white dark:bg-[#0c1322] border border-white/60 dark:border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.35),0_0_0_1px_rgba(0,0,0,0.06)] dark:shadow-[0_30px_70px_-15px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.08)] p-6 sm:p-7 overflow-hidden animate-modal-3d text-slate-900 dark:text-white"
+              className="relative w-full max-w-sm sm:max-w-md rounded-2xl bg-white dark:bg-[#0c1322] border border-white/60 dark:border-white/10 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.35),0_0_0_1px_rgba(0,0,0,0.06)] dark:shadow-[0_25px_60px_-12px_rgba(0,0,0,0.85),0_0_0_1px_rgba(255,255,255,0.08)] p-5 sm:p-6 overflow-hidden animate-modal-3d text-slate-900 dark:text-white"
             >
               {/* 3D Top Specular Light Refraction Beam */}
               <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/90 dark:via-white/30 to-transparent pointer-events-none" />
 
-              <div className="relative z-10 space-y-4">
+              <div className="relative z-10 space-y-3.5">
                 {/* Header Row: 3D Gemstone Orb Sphere + Title */}
                 <div className="flex items-start justify-between gap-3">
-                  <div className="flex items-center gap-3.5">
-                    <div className={`relative w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
-                      <span className="material-symbols-outlined text-[24px] text-white font-bold drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)] select-none">
+                  <div className="flex items-center gap-3">
+                    <div className={`relative w-10 h-10 rounded-xl flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
+                      <span className="material-symbols-outlined text-[20px] text-white font-bold drop-shadow-[0_2px_3px_rgba(0,0,0,0.6)] select-none">
                         {cfg.icon}
                       </span>
                     </div>
                     <div>
-                      <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border ${cfg.tagColor}`}>
+                      <div className={`inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border ${cfg.tagColor}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotColor}`} />
                         <span>{cfg.tagLabel}</span>
                       </div>
-                      <h3 id="confirm-dialog-title" className="text-lg sm:text-xl font-black text-slate-900 dark:text-white tracking-tight mt-1">
+                      <h3 id="confirm-dialog-title" className="text-base sm:text-lg font-black text-slate-900 dark:text-white tracking-tight mt-0.5">
                         {title}
                       </h3>
                     </div>
@@ -321,31 +316,30 @@ export function ToastProvider({ children }) {
                     type="button"
                     onClick={() => confirmDialog.resolve(false)}
                     aria-label="Đóng hộp thoại"
-                    className="w-8 h-8 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0 -mr-1 -mt-1"
+                    className="w-7 h-7 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white flex items-center justify-center transition-all cursor-pointer shrink-0 -mr-0.5 -mt-0.5"
                   >
-                    <span className="material-symbols-outlined text-[18px]">close</span>
+                    <span className="material-symbols-outlined text-[16px]">close</span>
                   </button>
                 </div>
 
                 {/* Primary Message */}
-                <p id="confirm-dialog-desc" className="text-sm sm:text-base font-bold text-slate-800 dark:text-slate-100 leading-relaxed pt-1">
+                <p id="confirm-dialog-desc" className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 leading-relaxed pt-0.5">
                   {message}
                 </p>
 
-                {/* Consequence / Detail Callout Box */}
                 {detail && (
-                  <div className={`p-3.5 rounded-2xl border flex items-start gap-2.5 text-xs sm:text-sm leading-relaxed ${cfg.detailBox}`}>
-                    <span className="material-symbols-outlined text-[18px] shrink-0 mt-0.5 opacity-90">info</span>
+                  <div className={`p-3 rounded-xl border flex items-start gap-2 text-xs leading-relaxed ${cfg.detailBox}`}>
+                    <span className="material-symbols-outlined text-[16px] shrink-0 mt-0.5 opacity-90">info</span>
                     <span className="font-semibold">{detail}</span>
                   </div>
                 )}
 
                 {/* Action Buttons */}
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <div className="flex items-center justify-end gap-2.5 pt-2.5 border-t border-slate-100 dark:border-slate-800">
                   <button
                     type="button"
                     onClick={() => confirmDialog.resolve(false)}
-                    className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs sm:text-sm font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
+                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 text-xs font-bold transition-all active:scale-95 cursor-pointer shadow-xs"
                   >
                     {cancelText}
                   </button>
@@ -354,9 +348,9 @@ export function ToastProvider({ children }) {
                     type="button"
                     autoFocus
                     onClick={() => confirmDialog.resolve(true)}
-                    className={`inline-flex items-center gap-1.5 px-6 py-2.5 rounded-xl text-white font-black text-xs sm:text-sm shadow-md transition-all active:scale-95 cursor-pointer ${cfg.confirmBtn}`}
+                    className={`inline-flex items-center gap-1.5 px-5 py-2 rounded-xl text-white font-black text-xs shadow-md transition-all active:scale-95 cursor-pointer ${cfg.confirmBtn}`}
                   >
-                    <span className="material-symbols-outlined text-[17px]">{cfg.confirmIcon}</span>
+                    <span className="material-symbols-outlined text-[16px]">{cfg.confirmIcon}</span>
                     <span>{confirmText}</span>
                   </button>
                 </div>
