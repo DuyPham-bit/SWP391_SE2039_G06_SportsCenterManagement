@@ -15,7 +15,8 @@ import {
   formatMemberDateTime,
   isUpcomingBooking,
   bookingStart,
-  getSportTheme
+  getSportTheme,
+  vietnamDate
 } from './memberOverview.js';
 import {
   translateClassName,
@@ -23,6 +24,34 @@ import {
   translateCoachName,
   translateRoomName
 } from '../../services/i18nHelper.js';
+
+function formatGroupHeaderDate(dateStr, isEn) {
+  if (!dateStr) return { fullDate: isEn ? 'Unscheduled' : 'Chưa xếp ngày', relativeLabel: '', isToday: false };
+
+  const todayStr = vietnamDate();
+  const isToday = dateStr === todayStr;
+
+  const dObj = new Date(`${dateStr}T12:00:00+07:00`);
+  const todayObj = new Date(`${todayStr}T12:00:00+07:00`);
+  const diffDays = Math.round((dObj.getTime() - todayObj.getTime()) / (24 * 60 * 60 * 1000));
+
+  let relativeLabel = '';
+  if (diffDays === 0) relativeLabel = isEn ? 'Today' : 'Hôm nay';
+  else if (diffDays === 1) relativeLabel = isEn ? 'Tomorrow' : 'Ngày mai';
+  else if (diffDays === -1) relativeLabel = isEn ? 'Yesterday' : 'Hôm qua';
+
+  const fullDate = !Number.isNaN(dObj.getTime())
+    ? dObj.toLocaleDateString(isEn ? 'en-US' : 'vi-VN', {
+        weekday: 'long',
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        timeZone: 'Asia/Ho_Chi_Minh'
+      })
+    : dateStr;
+
+  return { fullDate, relativeLabel, isToday };
+}
 
 export function MyBookings() {
   const { currentUser } = useAuth();
@@ -182,6 +211,33 @@ export function MyBookings() {
       return startB - startA;
     });
   }, [bookings, activeTab, searchQuery, selectedSport, selectedDate, isEn]);
+
+  // Phân chia danh sách vé đặt theo từng ngày tập hoàn toàn
+  const groupedBookings = useMemo(() => {
+    const groups = [];
+    const dateMap = new Map();
+
+    filteredBookings.forEach(b => {
+      const dateKey = String(b.bookingDate || '').slice(0, 10);
+      if (!dateMap.has(dateKey)) {
+        const group = { date: dateKey, items: [] };
+        dateMap.set(dateKey, group);
+        groups.push(group);
+      }
+      dateMap.get(dateKey).items.push(b);
+    });
+
+    // Sắp xếp các ca trong cùng ngày theo thứ tự thời gian tăng dần (sáng -> tối)
+    groups.forEach(g => {
+      g.items.sort((a, b) => {
+        const startA = bookingStart(a) || 0;
+        const startB = bookingStart(b) || 0;
+        return startA - startB;
+      });
+    });
+
+    return groups;
+  }, [filteredBookings]);
 
   const handleOpenBookingDetail = (booking) => {
     setSelectedBookingDetail(booking);
@@ -589,69 +645,106 @@ export function MyBookings() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-100 text-slate-700">
-                    {filteredBookings.map(b => {
-                      const sportTheme = getSportTheme(b.sportName, b.className, isEn);
-                      const isUpcoming = isUpcomingBooking(b);
+                    {groupedBookings.map(group => {
+                      const headerInfo = formatGroupHeaderDate(group.date, isEn);
 
                       return (
-                        <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
-                          <td className="py-3.5 px-4 font-mono font-bold text-slate-400">
-                            #{b.id}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <button
-                              type="button"
-                              onClick={() => handleOpenBookingDetail(b)}
-                              className="text-left font-bold text-slate-900 font-chivo hover:text-red-600 transition-colors block"
-                            >
-                              {translateClassName(b.className, isEn)}
-                            </button>
-                            <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wide border mt-0.5 ${sportTheme.badge}`}>
-                              {sportTheme.tag}
-                            </span>
-                          </td>
-                          <td className="py-3.5 px-4 font-semibold text-slate-900">
-                            {formatMemberDate(b.bookingDate, isEn)}
-                          </td>
-                          <td className="py-3.5 px-4 font-mono font-medium text-slate-600">
-                            {b.timeSlot}
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-600">
-                            {translateRoomName(b.roomName, isEn)}
-                          </td>
-                          <td className="py-3.5 px-4 text-slate-800 font-medium">
-                            {translateCoachName(b.coachName, isEn)}
-                          </td>
-                          <td className="py-3.5 px-4">
-                            <Badge variant={b.status}>
-                              {b.sessionStatus === 'CANCELLED'
-                                ? (isEn ? 'Cancelled' : 'Buổi học bị hủy')
-                                : getBookingStatusLabel(b.status, isEn)}
-                            </Badge>
-                          </td>
-                          <td className="py-3.5 px-4 text-right">
-                            <div className="inline-flex items-center gap-1.5 justify-end">
-                              <button
-                                type="button"
-                                onClick={() => handleOpenBookingDetail(b)}
-                                title={isEn ? "View ticket details" : "Xem chi tiết vé"}
-                                className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
-                              >
-                                <span className="material-symbols-outlined text-[16px]">visibility</span>
-                              </button>
-                              {currentUser?.capabilities?.includes('cancel_booking') && isUpcoming && (
-                                <button
-                                  type="button"
-                                  onClick={() => openCancelModal(b)}
-                                  className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-bold uppercase transition-colors inline-flex items-center gap-1"
-                                >
-                                  <span className="material-symbols-outlined text-[14px]">cancel</span>
-                                  <span>{isEn ? 'Cancel' : 'Hủy'}</span>
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
+                        <React.Fragment key={group.date || 'unknown'}>
+                          {/* Thanh Tiêu Đề Ngày Tập */}
+                          <tr className="bg-slate-100/90 dark:bg-slate-800/90 border-t-2 border-b border-slate-200 dark:border-slate-700 sticky top-0 z-10">
+                            <td colSpan={8} className="py-2.5 px-4 bg-slate-100 dark:bg-slate-800">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-2.5">
+                                  <span className="w-6 h-6 rounded-md bg-[#24828F]/15 text-[#24828F] dark:bg-[#3FAEB8]/20 dark:text-[#3FAEB8] flex items-center justify-center">
+                                    <span className="material-symbols-outlined text-[15px]">calendar_today</span>
+                                  </span>
+                                  <span className="font-chivo font-black text-slate-900 dark:text-white text-xs uppercase tracking-wide">
+                                    {headerInfo.fullDate}
+                                  </span>
+                                  {headerInfo.relativeLabel && (
+                                    <span className={`px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                                      headerInfo.isToday
+                                        ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300 border border-emerald-300'
+                                        : 'bg-slate-200 text-slate-700 dark:bg-slate-700 dark:text-slate-200'
+                                    }`}>
+                                      {headerInfo.relativeLabel}
+                                    </span>
+                                  )}
+                                </div>
+                                <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400">
+                                  {group.items.length} {isEn ? (group.items.length > 1 ? 'sessions' : 'session') : 'ca tập'}
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+
+                          {/* Danh Sách Các Ca Tập Thuộc Ngày */}
+                          {group.items.map(b => {
+                            const sportTheme = getSportTheme(b.sportName, b.className, isEn);
+                            const isUpcoming = isUpcomingBooking(b);
+
+                            return (
+                              <tr key={b.id} className="hover:bg-slate-50/80 transition-colors">
+                                <td className="py-3.5 px-4 font-mono font-bold text-slate-400">
+                                  #{b.id}
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <button
+                                    type="button"
+                                    onClick={() => handleOpenBookingDetail(b)}
+                                    className="text-left font-bold text-slate-900 font-chivo hover:text-red-600 transition-colors block"
+                                  >
+                                    {translateClassName(b.className, isEn)}
+                                  </button>
+                                  <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wide border mt-0.5 ${sportTheme.badge}`}>
+                                    {sportTheme.tag}
+                                  </span>
+                                </td>
+                                <td className="py-3.5 px-4 font-semibold text-slate-900">
+                                  {formatMemberDate(b.bookingDate, isEn)}
+                                </td>
+                                <td className="py-3.5 px-4 font-mono font-medium text-slate-600">
+                                  {b.timeSlot}
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-600">
+                                  {translateRoomName(b.roomName, isEn)}
+                                </td>
+                                <td className="py-3.5 px-4 text-slate-800 font-medium">
+                                  {translateCoachName(b.coachName, isEn)}
+                                </td>
+                                <td className="py-3.5 px-4">
+                                  <Badge variant={b.status}>
+                                    {b.sessionStatus === 'CANCELLED'
+                                      ? (isEn ? 'Cancelled' : 'Buổi học bị hủy')
+                                      : getBookingStatusLabel(b.status, isEn)}
+                                  </Badge>
+                                </td>
+                                <td className="py-3.5 px-4 text-right">
+                                  <div className="inline-flex items-center gap-1.5 justify-end">
+                                    <button
+                                      type="button"
+                                      onClick={() => handleOpenBookingDetail(b)}
+                                      title={isEn ? "View ticket details" : "Xem chi tiết vé"}
+                                      className="p-1.5 rounded-lg border border-slate-200 text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors"
+                                    >
+                                      <span className="material-symbols-outlined text-[16px]">visibility</span>
+                                    </button>
+                                    {currentUser?.capabilities?.includes('cancel_booking') && isUpcoming && (
+                                      <button
+                                        type="button"
+                                        onClick={() => openCancelModal(b)}
+                                        className="px-3 py-1 rounded-lg border border-red-200 text-red-600 hover:bg-red-50 text-[11px] font-bold uppercase transition-colors inline-flex items-center gap-1"
+                                      >
+                                        <span className="material-symbols-outlined text-[14px]">cancel</span>
+                                        <span>{isEn ? 'Cancel' : 'Hủy'}</span>
+                                      </button>
+                                    )}
+                                  </div>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </React.Fragment>
                       );
                     })}
                   </tbody>
