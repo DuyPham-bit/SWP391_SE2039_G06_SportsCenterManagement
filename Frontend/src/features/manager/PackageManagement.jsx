@@ -30,7 +30,126 @@ export function PackageManagement() {
   const [badge, setBadge] = useState('TIẾT KIỆM');
   const [saving, setSaving] = useState(false);
 
+  // Search and Filter State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('ALL'); // 'ALL' | 'ACTIVE' | 'INACTIVE'
+
   const totalSports = centerSports.length > 0 ? centerSports.length : 10;
+
+  const activeCount = packages.filter(p => String(p.status).toUpperCase() === 'ACTIVE').length;
+  const inactiveCount = packages.length - activeCount;
+  const totalSubscribers = packages.reduce((acc, p) => acc + (p.subscriberCount || (p.hasOrders ? 1 : 0)), 0);
+
+  const filteredPackages = packages.filter(pkg => {
+    const matchesSearch = !searchTerm || pkg.name?.toLowerCase().includes(searchTerm.toLowerCase());
+    const isActive = String(pkg.status).toUpperCase() === 'ACTIVE';
+    const matchesStatus =
+      statusFilter === 'ALL' ||
+      (statusFilter === 'ACTIVE' && isActive) ||
+      (statusFilter === 'INACTIVE' && !isActive);
+    return matchesSearch && matchesStatus;
+  });
+
+  const getPackageTier = (pkg, sportsCount) => {
+    const name = (pkg.name || '').toLowerCase();
+    const days = Number(pkg.durationDays) || 0;
+    const sports = Number(pkg.allowedSports) || 0;
+
+    // VIP Olympic All-Access
+    if (
+      name.includes('olympic') ||
+      name.includes('all-access') ||
+      name.includes('vip') ||
+      days >= 365 ||
+      sports >= sportsCount
+    ) {
+      return {
+        tierKey: 'olympic',
+        tierLabel: 'VIP OLYMPIC PASS',
+        tierIcon: 'workspace_premium',
+        isVip: true,
+        cardClasses:
+          'bg-gradient-to-br from-[#071912] via-[#0d2a1e] to-[#05140d] text-white border-2 border-amber-400/60 shadow-xl shadow-emerald-950/40 relative overflow-hidden ring-1 ring-amber-400/20',
+        badgeGradient: 'bg-gradient-to-r from-amber-400 via-yellow-400 to-amber-500 text-slate-950 font-black shadow-md',
+        priceColor: 'text-amber-300 drop-shadow-[0_2px_10px_rgba(251,191,36,0.25)]',
+        unitColor: 'text-amber-200/70',
+        titleColor: 'text-white drop-shadow-xs',
+        termColor: 'text-emerald-300 font-bold',
+        checkColor: 'text-amber-400',
+        textColor: 'text-slate-100',
+        mutedText: 'text-emerald-200/70',
+        divider: 'border-white/10',
+        descBorder: 'border-amber-400/40 text-slate-300',
+      };
+    }
+
+    // Elite
+    if (name.includes('elite') || days >= 180 || sports >= 6) {
+      return {
+        tierKey: 'elite',
+        tierLabel: 'ELITE ATHLETE',
+        tierIcon: 'diamond',
+        isVip: false,
+        cardClasses:
+          'bg-white dark:bg-slate-900 border-2 border-teal-300/80 dark:border-teal-700/80 shadow-md shadow-teal-500/5 hover:border-teal-400 dark:hover:border-teal-600 relative overflow-hidden',
+        accentBar: 'bg-gradient-to-r from-teal-400 to-cyan-500',
+        badgeGradient: 'bg-gradient-to-r from-teal-500 to-cyan-600 text-white font-black shadow-xs',
+        priceColor: 'text-teal-600 dark:text-teal-300',
+        unitColor: 'text-teal-600/70 dark:text-teal-400/70',
+        titleColor: 'text-slate-900 dark:text-white',
+        termColor: 'text-teal-700 dark:text-teal-400 font-bold',
+        checkColor: 'text-teal-500',
+        textColor: 'text-slate-800 dark:text-slate-100',
+        mutedText: 'text-slate-500 dark:text-slate-400',
+        divider: 'border-slate-100 dark:border-slate-800',
+        descBorder: 'border-teal-500/40 text-slate-600 dark:text-slate-300',
+      };
+    }
+
+    // Pro
+    if (name.includes('pro') || days >= 90 || sports >= 3) {
+      return {
+        tierKey: 'pro',
+        tierLabel: 'PRO ATHLETE',
+        tierIcon: 'bolt',
+        isVip: false,
+        cardClasses:
+          'bg-white dark:bg-slate-900 border-2 border-emerald-300/80 dark:border-emerald-700/80 shadow-sm shadow-emerald-500/5 hover:border-emerald-400 dark:hover:border-emerald-600 relative overflow-hidden',
+        accentBar: 'bg-gradient-to-r from-emerald-500 to-teal-500',
+        badgeGradient: 'bg-gradient-to-r from-emerald-600 to-teal-700 text-white font-black shadow-xs',
+        priceColor: 'text-[#2D6A4F] dark:text-[#81B29A]',
+        unitColor: 'text-emerald-700/70 dark:text-emerald-400/70',
+        titleColor: 'text-slate-900 dark:text-white',
+        termColor: 'text-emerald-700 dark:text-emerald-400 font-bold',
+        checkColor: 'text-emerald-500',
+        textColor: 'text-slate-800 dark:text-slate-100',
+        mutedText: 'text-slate-500 dark:text-slate-400',
+        divider: 'border-slate-100 dark:border-slate-800',
+        descBorder: 'border-emerald-500/40 text-slate-600 dark:text-slate-300',
+      };
+    }
+
+    // Starter / Basic
+    return {
+      tierKey: 'starter',
+      tierLabel: 'STARTER PASS',
+      tierIcon: 'fitness_center',
+      isVip: false,
+      cardClasses:
+        'bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 shadow-xs hover:border-slate-300 dark:hover:border-slate-700 relative overflow-hidden',
+      accentBar: 'bg-slate-300 dark:bg-slate-700',
+      badgeGradient: 'bg-slate-700 text-white font-black shadow-xs',
+      priceColor: 'text-slate-900 dark:text-white',
+      unitColor: 'text-slate-500 dark:text-slate-400',
+      titleColor: 'text-slate-900 dark:text-white',
+      termColor: 'text-slate-600 dark:text-slate-400 font-bold',
+      checkColor: 'text-emerald-500',
+      textColor: 'text-slate-800 dark:text-slate-100',
+      mutedText: 'text-slate-500 dark:text-slate-400',
+      divider: 'border-slate-100 dark:border-slate-800',
+      descBorder: 'border-slate-300 dark:border-slate-700 text-slate-600 dark:text-slate-300',
+    };
+  };
 
   const loadPackages = async () => {
     try {
@@ -248,114 +367,318 @@ export function PackageManagement() {
         </button>
       </section>
 
+      {/* Controls & Filter Strip */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 bg-white dark:bg-slate-900 p-3 sm:p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+        {/* Status Filter Tabs */}
+        <div className="flex items-center gap-1.5 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl overflow-x-auto">
+          <button
+            type="button"
+            onClick={() => setStatusFilter('ALL')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo transition-all cursor-pointer whitespace-nowrap ${
+              statusFilter === 'ALL'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            {isEn ? 'All Plans' : 'Tất cả'} ({packages.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('ACTIVE')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              statusFilter === 'ACTIVE'
+                ? 'bg-white dark:bg-slate-700 text-emerald-700 dark:text-emerald-400 shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0" />
+            <span>{isEn ? 'On Sale' : 'Đang mở bán'} ({activeCount})</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setStatusFilter('INACTIVE')}
+            className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo transition-all cursor-pointer whitespace-nowrap flex items-center gap-1.5 ${
+              statusFilter === 'INACTIVE'
+                ? 'bg-white dark:bg-slate-700 text-slate-900 dark:text-white shadow-xs'
+                : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+            }`}
+          >
+            <span className="w-2 h-2 rounded-full bg-slate-400 shrink-0" />
+            <span>{isEn ? 'Sales Locked' : 'Đã khóa bán'} ({inactiveCount})</span>
+          </button>
+        </div>
+
+        {/* Search Input & Total Stats */}
+        <div className="flex items-center gap-3">
+          <div className="relative flex-1 sm:w-64">
+            <span className="material-symbols-outlined text-[18px] text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none">
+              search
+            </span>
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={e => setSearchTerm(e.target.value)}
+              placeholder={isEn ? 'Search package name...' : 'Tìm kiếm theo tên gói...'}
+              className="w-full pl-9 pr-8 py-2 rounded-xl text-xs font-medium border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
+            />
+            {searchTerm && (
+              <button
+                type="button"
+                onClick={() => setSearchTerm('')}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 cursor-pointer"
+              >
+                <span className="material-symbols-outlined text-[16px]">close</span>
+              </button>
+            )}
+          </div>
+
+          <div className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-900/60 text-amber-800 dark:text-amber-300 text-xs font-bold whitespace-nowrap">
+            <span className="material-symbols-outlined text-[16px] text-amber-600 dark:text-amber-400">group</span>
+            <span>{totalSubscribers} {isEn ? 'members registered' : 'lượt hội viên'}</span>
+          </div>
+        </div>
+      </div>
+
       {/* Packages Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-        {packages.map(pkg => {
-          const isActive = String(pkg.status).toUpperCase() === 'ACTIVE';
-          return (
-            <div
-              key={pkg.id}
-              className={`bg-white dark:bg-slate-900 rounded-2xl border p-6 flex flex-col justify-between shadow-sm hover:shadow-md transition-all relative hover-lift ${
-                isActive ? 'border-emerald-200 dark:border-emerald-900/70' : 'border-slate-300 dark:border-slate-700 bg-slate-50 dark:bg-slate-800/40'
-              }`}
+      {filteredPackages.length === 0 ? (
+        <div className="bg-white dark:bg-slate-900 rounded-3xl border border-slate-200 dark:border-slate-800 p-12 text-center space-y-3">
+          <div className="w-16 h-16 rounded-2xl bg-slate-100 dark:bg-slate-800 mx-auto flex items-center justify-center text-slate-400">
+            <span className="material-symbols-outlined text-3xl">sports_gymnastics</span>
+          </div>
+          <h4 className="text-base font-bold text-slate-800 dark:text-slate-200">
+            {isEn ? 'No membership packages match the filter' : 'Không tìm thấy gói tập phù hợp với bộ lọc'}
+          </h4>
+          <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto">
+            {isEn
+              ? 'Try modifying your search keywords or switch the status filter above.'
+              : 'Hãy thử đổi từ khóa tìm kiếm hoặc chọn hiển thị tất cả các gói tập.'}
+          </p>
+          {(searchTerm || statusFilter !== 'ALL') && (
+            <button
+              type="button"
+              onClick={() => {
+                setSearchTerm('');
+                setStatusFilter('ALL');
+              }}
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl text-xs font-bold bg-[#1E2235] text-white hover:bg-[#2B2D42] transition-colors cursor-pointer"
             >
-              {pkg.badge && (
-                <span className="absolute top-4 right-4 px-2.5 py-0.5 rounded-full bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] font-chivo text-[10px] font-black uppercase tracking-wider border border-[#81B29A]/30">
-                  {pkg.badge}
-                </span>
-              )}
+              <span className="material-symbols-outlined text-[15px]">filter_alt_off</span>
+              <span>{isEn ? 'Clear Filters' : 'Đặt lại bộ lọc'}</span>
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {filteredPackages.map(pkg => {
+            const isActive = String(pkg.status).toUpperCase() === 'ACTIVE';
+            const tier = getPackageTier(pkg, totalSports);
 
-              <div>
-                <div className="mb-2 flex items-center gap-2 flex-wrap">
-                  <span className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider ${isActive
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-300'
-                    : 'border-slate-300 bg-slate-100 text-slate-600 dark:border-slate-700 dark:bg-slate-800 dark:text-slate-300'}`}>
-                    <span className="material-symbols-outlined text-[13px]">{isActive ? 'storefront' : 'lock'}</span>
-                    {isActive ? (isEn ? 'On sale' : 'Đang mở bán') : (isEn ? 'Sales locked' : 'Đã khóa bán')}
-                  </span>
+            return (
+              <div
+                key={pkg.id}
+                className={`${tier.cardClasses} rounded-3xl p-6 flex flex-col justify-between transition-all duration-300 hover-lift ${
+                  !isActive ? 'opacity-85 border-dashed' : ''
+                }`}
+              >
+                {/* Accent bar on top for non-VIP cards */}
+                {tier.accentBar && (
+                  <div className={`h-1.5 w-full ${tier.accentBar} absolute top-0 left-0 right-0`} />
+                )}
 
-                  {(pkg.hasOrders || !canEditPackage(pkg)) && (
-                    <span
-                      title={isEn ? 'Package has active member registrations or orders' : 'Gói đã có hội viên đăng ký hoặc đặt mua'}
-                      className="inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-black uppercase tracking-wider border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-700 dark:bg-amber-950/50 dark:text-amber-300 shadow-2xs"
-                    >
-                      <span className="material-symbols-outlined text-[13px] text-amber-600 dark:text-amber-400">how_to_reg</span>
-                      <span>
-                        {pkg.subscriberCount > 0
-                          ? (isEn ? `${pkg.subscriberCount} booked` : `${pkg.subscriberCount} người đặt`)
-                          : (isEn ? 'Has orders' : 'Đã có người đặt')}
-                      </span>
+                {/* VIP ambient decorative effects */}
+                {tier.isVip && (
+                  <>
+                    <div className="pointer-events-none absolute -right-12 -top-12 w-48 h-48 rounded-full bg-gradient-to-br from-amber-400/15 via-emerald-500/10 to-transparent blur-2xl" />
+                    <div className="pointer-events-none absolute -left-12 -bottom-12 w-48 h-48 rounded-full bg-gradient-to-tr from-emerald-500/20 via-teal-500/10 to-transparent blur-2xl" />
+                    <span className="material-symbols-outlined pointer-events-none absolute -right-4 -bottom-4 text-9xl text-white/5 rotate-12 select-none">
+                      military_tech
                     </span>
+                  </>
+                )}
+
+                {/* Upper Card Content */}
+                <div className="relative z-10">
+                  {/* Micro Header: Status & Badge */}
+                  <div className="flex items-center justify-between gap-2 flex-wrap mb-3.5">
+                    <span
+                      className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                        isActive
+                          ? tier.isVip
+                            ? 'bg-emerald-400/20 text-emerald-300 border border-emerald-400/30'
+                            : 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-300 dark:border-emerald-800'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 border border-slate-300 dark:border-slate-700'
+                      }`}
+                    >
+                      <span
+                        className={`w-1.5 h-1.5 rounded-full ${
+                          isActive
+                            ? (tier.isVip ? 'bg-emerald-400' : 'bg-emerald-500') + ' animate-pulse'
+                            : 'bg-slate-400'
+                        }`}
+                      />
+                      <span>{isActive ? (isEn ? 'On sale' : 'Đang mở bán') : (isEn ? 'Sales locked' : 'Đã khóa bán')}</span>
+                    </span>
+
+                    {/* Badge or Tier Pill */}
+                    {pkg.badge ? (
+                      <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${tier.badgeGradient}`}>
+                        {pkg.badge}
+                      </span>
+                    ) : (
+                      <span
+                        className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider ${
+                          tier.isVip
+                            ? 'bg-amber-400/20 text-amber-300 border border-amber-400/30'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[13px]">{tier.tierIcon}</span>
+                        <span>{tier.tierLabel}</span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Subhead: Duration & Active Subscribers */}
+                  <div className="flex items-center justify-between gap-2 text-xs mb-1.5">
+                    <div className={`flex items-center gap-1 text-[11px] uppercase tracking-wider ${tier.termColor}`}>
+                      <span className="material-symbols-outlined text-[14px]">timelapse</span>
+                      <span>
+                        {isEn ? 'Term' : 'Thời hạn'}: <strong className="font-extrabold">{pkg.durationDays} {isEn ? 'days' : 'ngày'}</strong>
+                      </span>
+                    </div>
+
+                    {(pkg.hasOrders || !canEditPackage(pkg)) && (
+                      <span
+                        title={isEn ? 'Package has active member registrations or orders' : 'Gói đã có hội viên đăng ký hoặc đặt mua'}
+                        className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider border border-amber-400/50 bg-amber-400/15 text-amber-700 dark:text-amber-300 shadow-2xs"
+                      >
+                        <span className="material-symbols-outlined text-[12px]">how_to_reg</span>
+                        <span>
+                          {pkg.subscriberCount > 0
+                            ? isEn
+                              ? `${pkg.subscriberCount} booked`
+                              : `${pkg.subscriberCount} người đặt`
+                            : isEn
+                            ? 'Has orders'
+                            : 'Đã có người đặt'}
+                        </span>
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Package Name */}
+                  <h3 className={`font-chivo text-xl font-black tracking-tight leading-tight line-clamp-1 ${tier.titleColor}`}>
+                    {pkg.name}
+                  </h3>
+
+                  {/* Price Block */}
+                  <div className={`mt-3 pt-3 border-t ${tier.divider} flex items-baseline gap-1.5`}>
+                    <span className={`text-2xl sm:text-3xl font-black font-chivo tracking-tight ${tier.priceColor}`}>
+                      {Number(pkg.price).toLocaleString('vi-VN')}
+                    </span>
+                    <span className={`text-xs font-bold uppercase tracking-wider ${tier.unitColor}`}>
+                      VNĐ
+                    </span>
+                  </div>
+
+                  {/* Athletic Feature Matrix */}
+                  <div className="mt-4 space-y-2 text-xs">
+                    <div className="flex items-start gap-2">
+                      <span className={`material-symbols-outlined text-[17px] shrink-0 mt-0.5 ${tier.checkColor}`}>
+                        sports_score
+                      </span>
+                      <span className={`font-semibold ${tier.textColor}`}>
+                        {pkg.allowedSports >= totalSports
+                          ? isEn
+                            ? `All ${totalSports} disciplines (All-Access)`
+                            : `Toàn bộ ${totalSports} môn (All-Access)`
+                          : isEn
+                          ? `${pkg.allowedSports} sport disciplines included`
+                          : `${pkg.allowedSports} môn thể thao tự chọn`}
+                      </span>
+                    </div>
+
+                    <div className="flex items-start gap-2">
+                      <span className={`material-symbols-outlined text-[17px] shrink-0 mt-0.5 ${tier.checkColor}`}>
+                        check_circle
+                      </span>
+                      <span className={`font-medium ${tier.mutedText}`}>
+                        {isEn ? 'Digital locker & Olympic amenities' : 'Tủ locker & tiện ích tập luyện chuẩn Olympic'}
+                      </span>
+                    </div>
+
+                    {pkg.description && (
+                      <p className={`mt-2.5 text-[11px] leading-relaxed line-clamp-2 pl-2.5 border-l-2 italic ${tier.descBorder}`}>
+                        {pkg.description}
+                      </p>
+                    )}
+                  </div>
+                </div>
+
+                {/* Card Footer Actions */}
+                <div className={`mt-6 pt-4 border-t ${tier.divider} flex items-center justify-between gap-2 relative z-10`}>
+                  <button
+                    type="button"
+                    onClick={() => handleToggleStatus(pkg)}
+                    title={
+                      isActive
+                        ? isEn
+                          ? 'Stop new members from buying this package'
+                          : 'Ngăn hội viên mới mua gói này'
+                        : isEn
+                        ? 'Allow members to buy this package'
+                        : 'Cho phép hội viên mua gói này'
+                    }
+                    className={`inline-flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      isActive
+                        ? tier.isVip
+                          ? 'bg-rose-500/20 text-rose-300 border border-rose-500/30 hover:bg-rose-500/30'
+                          : 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100 dark:hover:bg-rose-900/40'
+                        : 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs hover:shadow-md'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">{isActive ? 'lock' : 'lock_open'}</span>
+                    <span>{isActive ? (isEn ? 'Lock sales' : 'Khóa bán') : (isEn ? 'Open sales' : 'Mở bán')}</span>
+                  </button>
+
+                  {canEditPackage(pkg) ? (
+                    <button
+                      type="button"
+                      onClick={() => openEditModal(pkg)}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer shadow-xs ${
+                        tier.isVip
+                          ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black shadow-md'
+                          : 'bg-[#1E2235] hover:bg-[#2B2D42] text-white'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[15px]">edit</span>
+                      <span>{isEn ? 'Edit' : 'Sửa'}</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      title={
+                        isEn
+                          ? 'Cannot edit: This package has existing members or orders.'
+                          : 'Gói đã kích hoạt và có người đặt, không thể chỉnh sửa.'
+                      }
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider cursor-not-allowed opacity-60 ${
+                        tier.isVip
+                          ? 'bg-white/10 text-slate-400 border border-white/10'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[15px]">lock</span>
+                      <span>{isEn ? 'Locked' : 'Khóa sửa'}</span>
+                    </button>
                   )}
                 </div>
-                <div className="text-xs font-bold uppercase tracking-widest text-slate-400 mb-1">
-                  {isEn ? 'Term' : 'Thời hạn'}: {pkg.durationDays} {isEn ? 'days' : 'ngày'}
-                </div>
-                <h3 className="font-chivo text-lg font-black text-slate-900 dark:text-white leading-tight">
-                  {pkg.name}
-                </h3>
-
-                <div className="mt-3 flex items-baseline gap-1">
-                  <span className="text-2xl font-black font-chivo text-[#2D6A4F] dark:text-[#81B29A]">
-                    {Number(pkg.price).toLocaleString()}
-                  </span>
-                  <span className="text-xs font-bold text-slate-500">VNĐ</span>
-                </div>
-
-                <div className="mt-2 text-xs font-semibold text-slate-600 dark:text-slate-400">
-                  {isEn ? 'Sport Disciplines' : 'Môn được tập'}:{' '}
-                  <strong className="text-slate-900 dark:text-white">
-                    {pkg.allowedSports >= totalSports
-                      ? (isEn ? `All ${totalSports} disciplines (All-Access)` : `Toàn bộ ${totalSports} môn (All-Access)`)
-                      : (isEn ? `${pkg.allowedSports} sports` : `${pkg.allowedSports} môn tự chọn`)}
-                  </strong>
-                </div>
-
-                <p className="mt-3 text-xs text-slate-500 dark:text-slate-400 leading-relaxed line-clamp-3">
-                  {pkg.description || (isEn ? 'Full facility & locker room access.' : 'Bao gồm quyền sử dụng tủ locker và tiện ích tập luyện.')}
-                </p>
               </div>
-
-              <div className="mt-6 pt-4 border-t border-slate-100 dark:border-slate-800 flex items-center justify-between gap-2">
-                <button
-                  type="button"
-                  onClick={() => handleToggleStatus(pkg)}
-                  title={isActive ? (isEn ? 'Stop new members from buying this package' : 'Ngăn hội viên mới mua gói này') : (isEn ? 'Allow members to buy this package' : 'Cho phép hội viên mua gói này')}
-                  className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-bold uppercase tracking-wider transition-colors cursor-pointer ${
-                    isActive
-                      ? 'bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-300 border border-rose-200 dark:border-rose-800 hover:bg-rose-100'
-                      : 'bg-emerald-600 text-white border border-emerald-600 hover:bg-emerald-700 shadow-sm'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[15px]">{isActive ? 'lock' : 'lock_open'}</span>
-                  {isActive ? (isEn ? 'Lock sales' : 'Khóa bán') : (isEn ? 'Open sales' : 'Mở bán')}
-                </button>
-
-                {canEditPackage(pkg) ? (
-                  <button
-                    type="button"
-                    onClick={() => openEditModal(pkg)}
-                    className="px-3.5 py-1.5 rounded-lg bg-[#1E2235] hover:bg-[#2B2D42] text-white text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer flex items-center gap-1"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">edit</span>
-                    <span>{isEn ? 'Edit' : 'Sửa'}</span>
-                  </button>
-                ) : (
-                  <button
-                    type="button"
-                    disabled
-                    title={isEn ? 'Cannot edit: This package has existing members or orders.' : 'Gói đã kích hoạt và có người đặt, không thể chỉnh sửa.'}
-                    className="px-3.5 py-1.5 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700 text-xs font-bold font-chivo uppercase tracking-wider cursor-not-allowed flex items-center gap-1 opacity-70"
-                  >
-                    <span className="material-symbols-outlined text-[15px]">lock</span>
-                    <span>{isEn ? 'Locked' : 'Khóa sửa'}</span>
-                  </button>
-                )}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+            );
+          })}
+        </div>
+      )}
 
       {/* Modal Create/Edit Package */}
       <Modal
