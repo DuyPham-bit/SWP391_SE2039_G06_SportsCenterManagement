@@ -58,7 +58,7 @@ export function BusinessAlert({
     <div
       role="alert"
       aria-live="polite"
-      className={`p-4 rounded-xl border flex items-start gap-3.5 transition-all text-sm ${current.container} ${className}`}
+      className={`p-4 rounded-2xl border flex items-start gap-3.5 transition-all text-sm ${current.container} ${className}`}
     >
       <div className={`p-1 rounded-lg shrink-0 ${current.iconColor}`}>
         <span className="material-symbols-outlined text-[24px]">
