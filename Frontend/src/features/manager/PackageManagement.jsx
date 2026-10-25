@@ -8,6 +8,78 @@ import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
 import { MAX_PACKAGE_PRICE, sortMembershipPackages, validatePackagePrice, canEditPackage } from './packageManagementForm.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
+const PACKAGE_PRESETS = [
+  {
+    id: 'starter',
+    icon: 'fitness_center',
+    tag: 'STARTER',
+    tagEn: 'STARTER',
+    name: 'Gói Basic Thể Thao',
+    nameEn: 'Starter Fitness Pass',
+    price: 650000,
+    durationDays: 30,
+    allowedSports: 1,
+    badge: 'TIẾT KIỆM',
+    badgeEn: 'SAVER',
+    description: 'Rèn luyện 1 bộ môn tự chọn, phù hợp cho người mới bắt đầu hoặc lịch tập cố định. Bao gồm quyền sử dụng tủ locker và tiện ích tập luyện.',
+    descriptionEn: 'Single discipline pass ideal for beginners. Includes smart locker and standard Olympic amenities.'
+  },
+  {
+    id: 'pro',
+    icon: 'bolt',
+    tag: 'PRO ATHLETE',
+    tagEn: 'PRO ATHLETE',
+    name: 'Gói Pro Bứt Phá',
+    nameEn: 'Pro Athlete Pass',
+    price: 1800000,
+    durationDays: 90,
+    allowedSports: 3,
+    badge: 'PHỔ BIẾN',
+    badgeEn: 'POPULAR',
+    description: 'Lựa chọn 3 bộ môn kết hợp (Gym + Bơi lội + Cầu lông), kèm 1 buổi kiểm tra chỉ số InBody và tủ locker riêng.',
+    descriptionEn: 'Access to 3 sports of choice, 1 complimentary InBody fitness assessment, and digital locker.'
+  },
+  {
+    id: 'elite',
+    icon: 'diamond',
+    tag: 'ELITE ATHLETE',
+    tagEn: 'ELITE ATHLETE',
+    name: 'Gói Elite Chuyên Nghiệp',
+    nameEn: 'Elite Performance Pass',
+    price: 3200000,
+    durationDays: 180,
+    allowedSports: 6,
+    badge: 'ELITE ATHLETE',
+    badgeEn: 'ELITE',
+    description: 'Trải nghiệm thể thao đa năng toàn diện, hỗ trợ đặt sân ưu tiên và quyền vào phòng xông hơi Sauna đẳng cấp quốc tế.',
+    descriptionEn: 'Comprehensive multi-sport pass with priority court booking and Finnish Sauna access.'
+  },
+  {
+    id: 'olympic',
+    icon: 'workspace_premium',
+    tag: 'VIP OLYMPIC',
+    tagEn: 'VIP OLYMPIC',
+    name: 'Gói All-Access Olympic Pass',
+    nameEn: 'Olympic VIP All-Access',
+    price: 5800000,
+    durationDays: 365,
+    allowedSports: 10,
+    badge: 'VIP OLYMPIC',
+    badgeEn: 'VIP PASS',
+    description: 'Toàn quyền sử dụng toàn bộ môn thể thao và cụm sân thi đấu đẳng cấp quốc tế 365 ngày, dịch vụ phục hồi thể lực VIP.',
+    descriptionEn: 'Unlimited 365-day access to all Olympic disciplines, championship arenas, and VIP recovery zone.'
+  }
+];
+
+const QUICK_PRICES = [500000, 650000, 1200000, 1800000, 3200000, 5800000];
+const QUICK_DURATIONS = [
+  { days: 30, label: '30 ngày' },
+  { days: 90, label: '90 ngày' },
+  { days: 180, label: '180 ngày' },
+  { days: 365, label: '365 ngày' }
+];
+const QUICK_BADGES = ['TIẾT KIỆM', 'PHỔ BIẾN', 'HOT', 'ELITE ATHLETE', 'VIP OLYMPIC', 'ƯU ĐÃI'];
+
 export function PackageManagement() {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -178,6 +250,28 @@ export function PackageManagement() {
     setAllowedSports(1);
     setDescription('');
     setBadge(isEn ? 'SAVER' : 'TIẾT KIỆM');
+    setModalOpen(true);
+  };
+
+  const applyPreset = preset => {
+    setName(isEn ? preset.nameEn : preset.name);
+    setPrice(preset.price);
+    setDurationDays(preset.durationDays);
+    const maxSports = centerSports.length > 0 ? centerSports.length : 10;
+    setAllowedSports(Math.min(preset.allowedSports, maxSports));
+    setBadge(isEn ? preset.badgeEn : preset.badge);
+    setDescription(isEn ? preset.descriptionEn : preset.description);
+  };
+
+  const handleDuplicatePackage = pkg => {
+    setEditingPkg(null);
+    setName(isEn ? `${pkg.name} (Copy)` : `${pkg.name} (Bản sao)`);
+    setDurationDays(pkg.durationDays);
+    setPrice(pkg.price);
+    const sportsCount = centerSports.length > 0 ? centerSports.length : 10;
+    setAllowedSports(pkg.allowedSports >= sportsCount ? sportsCount : (pkg.allowedSports || 1));
+    setDescription(pkg.description || '');
+    setBadge(pkg.badge || (isEn ? 'NEW' : 'MỚI'));
     setModalOpen(true);
   };
 
@@ -567,7 +661,7 @@ export function PackageManagement() {
                   </div>
 
                   {/* Package Name */}
-                  <h3 className={`font-chivo text-xl font-black tracking-tight leading-tight line-clamp-1 ${tier.titleColor}`}>
+                  <h3 className={`font-chivo text-lg sm:text-xl font-black tracking-tight leading-snug line-clamp-2 min-h-[3.25rem] flex items-center ${tier.titleColor}`}>
                     {pkg.name}
                   </h3>
 
@@ -641,38 +735,54 @@ export function PackageManagement() {
                     <span>{isActive ? (isEn ? 'Lock sales' : 'Khóa bán') : (isEn ? 'Open sales' : 'Mở bán')}</span>
                   </button>
 
-                  {canEditPackage(pkg) ? (
+                  <div className="flex items-center gap-1.5">
                     <button
                       type="button"
-                      onClick={() => openEditModal(pkg)}
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer shadow-xs ${
+                      onClick={() => handleDuplicatePackage(pkg)}
+                      title={isEn ? 'Duplicate this package as a new template' : 'Nhân bản gói này làm mẫu tạo gói mới'}
+                      className={`inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
                         tier.isVip
-                          ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black shadow-md'
-                          : 'bg-[#1E2235] hover:bg-[#2B2D42] text-white'
+                          ? 'bg-white/10 hover:bg-white/20 text-amber-300 border border-amber-400/30'
+                          : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[15px]">edit</span>
-                      <span>{isEn ? 'Edit' : 'Sửa'}</span>
+                      <span className="material-symbols-outlined text-[15px]">content_copy</span>
+                      <span className="hidden sm:inline">{isEn ? 'Clone' : 'Nhân bản'}</span>
                     </button>
-                  ) : (
-                    <button
-                      type="button"
-                      disabled
-                      title={
-                        isEn
-                          ? 'Cannot edit: This package has existing members or orders.'
-                          : 'Gói đã kích hoạt và có người đặt, không thể chỉnh sửa.'
-                      }
-                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider cursor-not-allowed opacity-60 ${
-                        tier.isVip
-                          ? 'bg-white/10 text-slate-400 border border-white/10'
-                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
-                      }`}
-                    >
-                      <span className="material-symbols-outlined text-[15px]">lock</span>
-                      <span>{isEn ? 'Locked' : 'Khóa sửa'}</span>
-                    </button>
-                  )}
+
+                    {canEditPackage(pkg) ? (
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(pkg)}
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer shadow-xs ${
+                          tier.isVip
+                            ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black shadow-md'
+                            : 'bg-[#1E2235] hover:bg-[#2B2D42] text-white'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">edit</span>
+                        <span>{isEn ? 'Edit' : 'Sửa'}</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        disabled
+                        title={
+                          isEn
+                            ? 'Cannot edit: This package has existing members or orders.'
+                            : 'Gói đã kích hoạt và có người đặt, không thể chỉnh sửa.'
+                        }
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider cursor-not-allowed opacity-60 ${
+                          tier.isVip
+                            ? 'bg-white/10 text-slate-400 border border-white/10'
+                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
+                        }`}
+                      >
+                        <span className="material-symbols-outlined text-[15px]">lock</span>
+                        <span>{isEn ? 'Locked' : 'Khóa sửa'}</span>
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
             );
@@ -700,6 +810,40 @@ export function PackageManagement() {
           </div>
         )}
         <form onSubmit={handleSavePackage} className="space-y-4">
+          {/* 1-Click Quick Presets Banner */}
+          {!editingPkg && (
+            <div className="p-3.5 rounded-2xl bg-gradient-to-r from-emerald-50 via-teal-50 to-emerald-50 dark:from-emerald-950/40 dark:via-teal-950/30 dark:to-emerald-950/40 border border-emerald-200 dark:border-emerald-800/80">
+              <div className="flex items-center justify-between mb-2">
+                <span className="text-xs font-black uppercase tracking-wider text-emerald-900 dark:text-emerald-300 flex items-center gap-1.5 font-chivo">
+                  <span className="material-symbols-outlined text-[16px] text-emerald-600">bolt</span>
+                  {isEn ? '⚡ 1-Click Quick Presets (Auto-fill)' : '⚡ Gợi ý gói mẫu chuẩn Olympic (1-Click điền nhanh)'}
+                </span>
+                <span className="text-[10px] text-emerald-700 dark:text-emerald-400 font-medium">
+                  {isEn ? 'Click to auto-fill all fields' : 'Nhấp để tự động điền nhanh'}
+                </span>
+              </div>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                {PACKAGE_PRESETS.map(preset => (
+                  <button
+                    key={preset.id}
+                    type="button"
+                    onClick={() => applyPreset(preset)}
+                    className="p-2.5 rounded-xl bg-white dark:bg-slate-800 border border-emerald-200/80 dark:border-emerald-800/70 hover:border-emerald-500 hover:shadow-xs text-left transition-all cursor-pointer group hover:-translate-y-0.5"
+                  >
+                    <div className="flex items-center gap-1 text-[11px] font-black text-slate-800 dark:text-slate-100 group-hover:text-emerald-600 truncate">
+                      <span className="material-symbols-outlined text-[14px] text-emerald-500 shrink-0">{preset.icon}</span>
+                      <span className="truncate">{isEn ? preset.nameEn : preset.name}</span>
+                    </div>
+                    <div className="mt-1 flex items-baseline justify-between text-[10px] text-slate-500 dark:text-slate-400">
+                      <span className="font-bold text-emerald-700 dark:text-emerald-300">{Number(preset.price).toLocaleString()}đ</span>
+                      <span>{preset.durationDays}d</span>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
               {isEn ? 'Package Name *' : 'Tên gói tập *'}
@@ -715,7 +859,7 @@ export function PackageManagement() {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 {isEn ? 'Price (VNĐ) *' : 'Học phí (VNĐ) *'}
@@ -730,7 +874,26 @@ export function PackageManagement() {
                 onChange={e => setPrice(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
               />
+              <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{isEn ? 'Quick pick:' : 'Gợi ý nhanh:'}</span>
+                {QUICK_PRICES.map(qp => (
+                  <button
+                    key={qp}
+                    type="button"
+                    disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
+                    onClick={() => setPrice(qp)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-chivo transition-all cursor-pointer ${
+                      price === qp
+                        ? 'bg-[#2D6A4F] text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {(qp / 1000).toLocaleString()}k
+                  </button>
+                ))}
+              </div>
             </div>
+
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 {isEn ? 'Validity (Days) *' : 'Thời hạn (Ngày) *'}
@@ -744,10 +907,28 @@ export function PackageManagement() {
                 onChange={e => setDurationDays(Number(e.target.value))}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
               />
+              <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">{isEn ? 'Terms:' : 'Mốc chuẩn:'}</span>
+                {QUICK_DURATIONS.map(qd => (
+                  <button
+                    key={qd.days}
+                    type="button"
+                    disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
+                    onClick={() => setDurationDays(qd.days)}
+                    className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-chivo transition-all cursor-pointer ${
+                      durationDays === qd.days
+                        ? 'bg-[#2D6A4F] text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {qd.days}d
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
                 {isEn ? 'Disciplines Included *' : 'Số môn được tập *'}
@@ -798,13 +979,59 @@ export function PackageManagement() {
                 placeholder={isEn ? 'e.g. POPULAR, BEST VALUE' : 'Ví dụ: PHỔ BIẾN, TIẾT KIỆM'}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#81B29A] disabled:bg-slate-100 disabled:dark:bg-slate-800/60 disabled:cursor-not-allowed"
               />
+              <div className="mt-1.5 flex items-center gap-1 flex-wrap">
+                {QUICK_BADGES.map(qb => (
+                  <button
+                    key={qb}
+                    type="button"
+                    disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
+                    onClick={() => setBadge(qb)}
+                    className={`px-1.5 py-0.5 rounded text-[9px] font-bold uppercase tracking-wider transition-all cursor-pointer ${
+                      badge === qb
+                        ? 'bg-amber-500 text-white shadow-xs'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700'
+                    }`}
+                  >
+                    {qb}
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1">
-              {isEn ? 'Description & Member Benefits' : 'Mô tả quyền lợi'}
-            </label>
+            <div className="flex items-center justify-between mb-1">
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                {isEn ? 'Description & Member Benefits' : 'Mô tả quyền lợi'}
+              </label>
+              <div className="flex items-center gap-1">
+                <span className="text-[10px] text-slate-400 font-bold">{isEn ? 'Templates:' : 'Mẫu:'}</span>
+                <button
+                  type="button"
+                  disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
+                  onClick={() => setDescription(isEn ? 'Single discipline pass. Includes smart locker and standard amenities.' : 'Rèn luyện 1 bộ môn tự chọn, phù hợp cho người mới bắt đầu. Bao gồm quyền sử dụng tủ locker và tiện ích chuẩn Olympic.')}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                >
+                  {isEn ? 'Basic' : 'Cơ bản'}
+                </button>
+                <button
+                  type="button"
+                  disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
+                  onClick={() => setDescription(isEn ? 'Access to 3 sports of choice, 1 InBody assessment, and smart locker.' : 'Lựa chọn 3 bộ môn kết hợp (Gym + Bơi lội + Cầu lông), kèm 1 buổi kiểm tra chỉ số InBody và tủ locker riêng.')}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                >
+                  {isEn ? 'Pro' : 'Pro Đa môn'}
+                </button>
+                <button
+                  type="button"
+                  disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
+                  onClick={() => setDescription(isEn ? 'Unlimited 365-day access to all Olympic disciplines, arenas, and VIP recovery zone.' : 'Toàn quyền sử dụng toàn bộ môn thể thao và cụm sân thi đấu đẳng cấp quốc tế 365 ngày, kèm phòng xông hơi Sauna.')}
+                  className="px-1.5 py-0.5 rounded text-[9px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 cursor-pointer"
+                >
+                  {isEn ? 'VIP' : 'Olympic VIP'}
+                </button>
+              </div>
+            </div>
             <textarea
               rows={3}
               disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
