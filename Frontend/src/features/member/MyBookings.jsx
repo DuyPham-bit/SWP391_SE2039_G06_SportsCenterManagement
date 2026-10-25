@@ -45,7 +45,7 @@ export function MyBookings() {
   // Bộ lọc & Chế độ xem
   // activeTab: 'ALL' | 'UPCOMING' | 'WAITLIST' | 'COMPLETED' | 'CANCELLED'
   const [activeTab, setActiveTab] = useState('ALL');
-  // viewMode: 'week' (Lịch Tuần) | 'grid' (Dạng thẻ) | 'table' (Dạng bảng)
+  // viewMode: 'week' (Lịch Tuần) | 'table' (Dạng bảng)
   const [viewMode, setViewMode] = useState('week');
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
@@ -414,7 +414,7 @@ export function MyBookings() {
             ))}
           </div>
 
-          {/* Segmented Control View Mode: Lịch Tuần | Dạng Thẻ | Dạng Bảng */}
+          {/* Segmented Control View Mode: Lịch Tuần | Dạng Bảng */}
           {activeTab !== 'WAITLIST' && (
             <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0 self-start md:self-auto">
               <button
@@ -426,16 +426,6 @@ export function MyBookings() {
               >
                 <span className="material-symbols-outlined text-[16px]">calendar_view_week</span>
                 <span>{isEn ? 'Week Timetable' : 'Lịch Tuần'}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => setViewMode('grid')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo flex items-center gap-1.5 transition-all ${
-                  viewMode === 'grid' ? 'bg-white text-slate-900 shadow-xs' : 'text-slate-500 hover:text-slate-900'
-                }`}
-              >
-                <span className="material-symbols-outlined text-[16px]">grid_view</span>
-                <span>{isEn ? 'Cards' : 'Dạng Thẻ'}</span>
               </button>
               <button
                 type="button"
@@ -853,145 +843,6 @@ export function MyBookings() {
                   </a>
                 )}
               </div>
-            </div>
-          ) : viewMode === 'grid' ? (
-            /* DẠNG THẺ (GRID VIEW) - Chuẩn màu sắc nhận diện Olympic & getSportTheme */
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {filteredBookings.map(b => {
-                const sportTheme = getSportTheme(b.sportName, b.className, isEn);
-                const isUpcoming = isUpcomingBooking(b);
-                const startMs = bookingStart(b);
-                const hoursUntil = startMs ? (startMs - Date.now()) / (1000 * 60 * 60) : null;
-                const isTooLateToCancel = hoursUntil !== null && hoursUntil < 2 && isUpcoming;
-
-                return (
-                  <div
-                    key={b.id}
-                    className={`bg-white rounded-2xl border p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative overflow-hidden ${
-                      isUpcoming ? 'border-slate-300' : 'border-slate-200 opacity-90'
-                    }`}
-                  >
-                    {/* Dải màu nhận diện trên đầu thẻ theo bộ môn */}
-                    <div className={`absolute top-0 left-0 right-0 h-1.5 ${sportTheme.dot}`}></div>
-
-                    <div>
-                      {/* Top Meta: Sport Tag, Booking Code & Status Badge */}
-                      <div className="flex items-center justify-between gap-2 mb-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${sportTheme.badge}`}>
-                            {sportTheme.tag}
-                          </span>
-                          <span className="font-mono text-xs text-slate-400 font-bold">
-                            #{b.id}
-                          </span>
-                        </div>
-                        <Badge variant={b.status}>
-                          {b.sessionStatus === 'CANCELLED'
-                            ? (isEn ? 'Cancelled' : 'Buổi học bị hủy')
-                            : getBookingStatusLabel(b.status, isEn)}
-                        </Badge>
-                      </div>
-
-                      {/* Class Name */}
-                      <h3 className="font-chivo text-lg font-black text-slate-900 leading-snug">
-                        {translateClassName(b.className, isEn)}
-                      </h3>
-
-                      {/* Info Details Box */}
-                      <div className="mt-3 p-3.5 rounded-xl bg-slate-50/90 border border-slate-100 space-y-2 text-xs text-slate-700">
-                        {/* Ngày & Giờ tập */}
-                        <div className="flex items-center justify-between">
-                          <div className="flex items-center gap-2">
-                            <span className="material-symbols-outlined text-red-600 text-[18px]">
-                              calendar_month
-                            </span>
-                            <span className="font-bold text-slate-900">
-                              {formatMemberDate(b.bookingDate, isEn)}
-                            </span>
-                            <span className="text-slate-600 font-semibold">({b.timeSlot})</span>
-                          </div>
-
-                          {isUpcoming && hoursUntil !== null && hoursUntil >= 0 && (
-                            <span className="text-[10px] font-black px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 uppercase">
-                              {hoursUntil < 24
-                                ? (isEn ? `${Math.ceil(hoursUntil)}h left` : `Còn ${Math.ceil(hoursUntil)}h nữa`)
-                                : (isEn ? `${Math.ceil(hoursUntil / 24)} days left` : `Còn ${Math.ceil(hoursUntil / 24)} ngày`)}
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Sân / Phòng tập */}
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-slate-400 text-[18px]">
-                            stadium
-                          </span>
-                          <span className="font-medium text-slate-700">{translateRoomName(b.roomName, isEn)}</span>
-                        </div>
-
-                        {/* Huấn luyện viên */}
-                        <div className="flex items-start gap-2">
-                          <span className="material-symbols-outlined text-slate-400 text-[18px]">
-                            sports
-                          </span>
-                          <div>
-                            <span className="font-medium">{isEn ? 'Coach: ' : 'HLV: '}</span>
-                            <strong className="text-slate-900">{translateCoachName(b.coachName, isEn)}</strong>
-                            {b.coachSpecialization && (
-                              <span className="block text-[11px] text-slate-500">
-                                {isEn ? 'Specialization' : 'Chuyên môn'}: {b.coachSpecialization}
-                              </span>
-                            )}
-                          </div>
-                        </div>
-
-                        {/* Điểm danh nếu đã có */}
-                        {b.attendanceStatus && (
-                          <div className="pt-2 border-t border-slate-200/60 flex items-center justify-between text-[11px]">
-                            <span className="text-slate-500">{isEn ? 'Attendance:' : 'Điểm danh:'}</span>
-                            <span className="font-bold text-slate-800">
-                              {b.attendanceStatus === 'PRESENT' && (isEn ? '✅ Present' : '✅ Có mặt')}
-                              {b.attendanceStatus === 'LATE' && (isEn ? '⏰ Late' : '⏰ Đi muộn')}
-                              {b.attendanceStatus === 'ABSENT' && (isEn ? '❌ Absent' : '❌ Vắng mặt')}
-                              {b.attendanceStatus === 'EXCUSED' && (isEn ? '📝 Excused' : '📝 Vắng có phép')}
-                            </span>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Policy Reminder for Upcoming Classes */}
-                      {isUpcoming && (
-                        <div className="mt-2.5 px-2 py-1.5 rounded-lg bg-slate-100/70 text-[11px] text-slate-500 flex items-center gap-1.5">
-                          <span className="material-symbols-outlined text-[15px] text-slate-400">info</span>
-                          <span>
-                            {isTooLateToCancel
-                              ? (isEn ? 'Under 2 hours to start: Please contact reception directly for urgent handling.' : 'Ca học dưới 2 tiếng: Cần liên hệ trực tiếp lễ tân để xử lý hủy khẩn cấp.')
-                              : (isEn ? 'Cancellation policy: Cancel 2 hours before start to retain session credit and release spot.' : 'Chính sách hủy: Hủy trước 2 tiếng để hoàn lại lượt và mở chỗ cho hội viên khác.')}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Card Footer */}
-                    <div className="pt-3 border-t border-slate-100 flex flex-wrap items-center justify-between gap-2 text-xs">
-                      <span className="text-slate-400 text-[11px]">
-                        {isEn ? 'Booked on: ' : 'Đăng ký: '}{formatMemberDateTime(b.createdAt, isEn)}
-                      </span>
-
-                      {/* Action Hủy Chỗ */}
-                      {currentUser?.capabilities?.includes('cancel_booking') && isUpcoming && (
-                        <button
-                          type="button"
-                          onClick={() => openCancelModal(b)}
-                          className="px-3.5 py-1.5 rounded-xl border border-red-200 text-red-600 hover:bg-red-50 text-xs font-bold font-chivo uppercase tracking-wider transition-colors flex items-center gap-1.5 shadow-2xs"
-                        >
-                          <span className="material-symbols-outlined text-[16px]">cancel</span>
-                          <span>{isEn ? 'Cancel Booking' : 'Hủy Chỗ'}</span>
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
             </div>
           ) : (
             /* DẠNG BẢNG (TABLE VIEW) - Tối ưu cho hội viên quản lý danh sách dài */

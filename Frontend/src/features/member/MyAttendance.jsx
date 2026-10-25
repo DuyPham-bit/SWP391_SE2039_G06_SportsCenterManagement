@@ -40,7 +40,7 @@ export function MyAttendance() {
   // Bộ lọc & Chế độ xem
   // statusFilter: 'ALL' | 'PRESENT' | 'LATE' | 'ABSENT' | 'EXCUSED' | 'PENDING'
   const [statusFilter, setStatusFilter] = useState('ALL');
-  // viewMode: 'week' (Lịch Tuần) | 'grid' (Dạng thẻ) | 'table' (Dạng bảng)
+  // viewMode: 'week' (Lịch Tuần) | 'table' (Dạng bảng)
   const [viewMode, setViewMode] = useState('week');
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
@@ -443,7 +443,7 @@ export function MyAttendance() {
             ))}
           </div>
 
-          {/* Segmented Control View Mode: Lịch Tuần | Dạng Thẻ | Dạng Bảng */}
+          {/* Segmented Control View Mode: Lịch Tuần | Dạng Bảng */}
           <div className="inline-flex p-1 bg-slate-100 rounded-xl border border-slate-200/80 shrink-0 self-start md:self-auto">
             <button
               type="button"
@@ -456,18 +456,6 @@ export function MyAttendance() {
             >
               <span className="material-symbols-outlined text-[16px]">calendar_view_week</span>
               <span>{isEn ? 'Week Timetable' : 'Lịch Tuần'}</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setViewMode('grid')}
-              className={`px-3 py-1.5 rounded-lg text-xs font-bold font-chivo flex items-center gap-1.5 transition-all ${
-                viewMode === 'grid'
-                  ? 'bg-white text-slate-900 shadow-xs'
-                  : 'text-slate-500 hover:text-slate-900'
-              }`}
-            >
-              <span className="material-symbols-outlined text-[16px]">grid_view</span>
-              <span>{isEn ? 'Cards' : 'Dạng Thẻ'}</span>
             </button>
             <button
               type="button"
@@ -834,121 +822,6 @@ export function MyAttendance() {
                 </a>
               )}
             </div>
-          </div>
-        ) : viewMode === 'grid' ? (
-          /* DẠNG THẺ (GRID VIEW) - Chuẩn màu sắc nhận diện Olympic & getSportTheme */
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredRecords.map(b => {
-              const sportTheme = getSportTheme(b.sportName, b.className, isEn);
-              const attendanceStatus = b.attendanceStatus || 'PENDING';
-
-              return (
-                <div
-                  key={b.id}
-                  className="bg-white rounded-2xl border border-slate-200 p-5 shadow-xs hover:shadow-md transition-all flex flex-col justify-between space-y-4 relative overflow-hidden"
-                >
-                  {/* Dải màu nhận diện trên đầu thẻ theo bộ môn */}
-                  <div className={`absolute top-0 left-0 right-0 h-1.5 ${sportTheme.dot}`}></div>
-
-                  <div>
-                    {/* Top Meta: Sport Tag, Booking Code & Attendance Badge */}
-                    <div className="flex items-center justify-between gap-2 mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider border ${sportTheme.badge}`}>
-                          {sportTheme.tag}
-                        </span>
-                        <span className="font-mono text-xs text-slate-400 font-bold">
-                          #{b.id}
-                        </span>
-                      </div>
-                      {renderAttendanceBadge(attendanceStatus)}
-                    </div>
-
-                    {/* Class Name */}
-                    <h3 className="font-chivo text-lg font-black text-slate-900 leading-snug">
-                      {translateClassName(b.className, isEn)}
-                    </h3>
-
-                    {/* Info Details Box */}
-                    <div className="mt-3 p-3.5 rounded-xl bg-slate-50/90 border border-slate-100 space-y-2 text-xs text-slate-700">
-                      {/* Ngày & Giờ tập */}
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined text-red-600 text-[18px]">
-                            calendar_month
-                          </span>
-                          <span className="font-bold text-slate-900">
-                            {formatMemberDate(b.bookingDate, isEn)}
-                          </span>
-                          <span className="text-slate-600 font-semibold">({b.timeSlot})</span>
-                        </div>
-                      </div>
-
-                      {/* Sân / Phòng tập */}
-                      <div className="flex items-center gap-2">
-                        <span className="material-symbols-outlined text-slate-400 text-[18px]">
-                          stadium
-                        </span>
-                        <span className="font-medium text-slate-700">{translateRoomName(b.roomName, isEn)}</span>
-                      </div>
-
-                      {/* Huấn luyện viên */}
-                      <div className="flex items-start gap-2">
-                        <span className="material-symbols-outlined text-slate-400 text-[18px]">
-                          sports
-                        </span>
-                        <div>
-                          <span className="font-medium">{isEn ? 'Coach: ' : 'HLV: '}</span>
-                          <strong className="text-slate-900">{translateCoachName(b.coachName, isEn)}</strong>
-                          {b.coachSpecialization && (
-                            <span className="block text-[11px] text-slate-500">
-                              {isEn ? 'Specialization' : 'Chuyên môn'}: {b.coachSpecialization}
-                            </span>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* Giờ Check-in thực tế */}
-                      {b.checkInTime && (
-                        <div className="pt-2 border-t border-slate-200/60 flex items-center gap-2 text-[11px] text-emerald-800 font-bold">
-                          <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
-                          <span>{isEn ? 'Check-in scan timestamp: ' : 'Giờ quét thẻ check-in: '}{formatMemberDateTime(b.checkInTime, isEn)}</span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Nhận xét của Huấn Luyện Viên */}
-                    <div className="mt-3 p-3 rounded-xl bg-amber-50/60 border border-amber-200/70 text-xs">
-                      <div className="flex items-center gap-1.5 text-amber-900 font-bold text-[11px] uppercase tracking-wide mb-1">
-                        <span className="material-symbols-outlined text-[15px] text-amber-700">chat</span>
-                        <span>{isEn ? 'Assessment from coach:' : 'Đánh giá từ HLV phụ trách:'}</span>
-                      </div>
-                      <p className="text-slate-700 italic leading-relaxed whitespace-pre-wrap break-words pl-5">
-                        {b.attendanceNote ? `"${b.attendanceNote}"` : (isEn ? 'No specific note for this session.' : 'Chưa có ghi chú riêng cho buổi này.')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Card Footer: Xem chi tiết */}
-                  <div className="pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-                    <span className="text-slate-400 text-[11px]">
-                      {isEn ? 'Session: ' : 'Buổi học: '}{b.bookingDate}
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setSelectedRecord(b);
-                        setDetailModalOpen(true);
-                      }}
-                      className="px-3 py-1.5 rounded-xl border border-slate-200 hover:bg-slate-50 text-slate-700 text-xs font-bold font-chivo uppercase tracking-wider transition-colors flex items-center gap-1 shadow-2xs"
-                    >
-                      <span className="material-symbols-outlined text-[15px]">visibility</span>
-                      <span>{isEn ? 'Details' : 'Chi Tiết'}</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
           </div>
         ) : (
           /* DẠNG BẢNG (TABLE VIEW) - Tối ưu cho hội viên tra cứu và đối soát */

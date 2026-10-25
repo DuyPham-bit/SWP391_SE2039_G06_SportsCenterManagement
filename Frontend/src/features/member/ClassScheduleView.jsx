@@ -157,7 +157,7 @@ export function ClassScheduleView() {
   const [loading, setLoading] = useState(true);
 
   // --- QUẢN LÝ LỊCH VÀ CHẾ ĐỘ XEM (CALENDAR MODES) ---
-  // viewMode: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu) | 'grid' (Lưới thẻ)
+  // viewMode: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu)
   const [viewMode, setViewMode] = useState('week');
   const [currentDate, setCurrentDate] = useState(() => new Date());
   const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
@@ -521,8 +521,7 @@ export function ClassScheduleView() {
             {[
               { id: 'week', label: isEn ? 'Week (Timetable)' : 'Tuần (Timetable)', icon: 'view_week' },
               { id: 'month', label: isEn ? 'Month' : 'Tháng', icon: 'calendar_view_month' },
-              { id: 'agenda', label: isEn ? 'Agenda' : 'Lịch Biểu', icon: 'view_agenda' },
-              { id: 'grid', label: isEn ? 'Cards' : 'Dạng Thẻ', icon: 'grid_view' }
+              { id: 'agenda', label: isEn ? 'Agenda' : 'Lịch Biểu', icon: 'view_agenda' }
             ].map(tab => (
               <button
                 key={tab.id}
@@ -1064,117 +1063,6 @@ export function ClassScheduleView() {
                         </div>
                       );
                     })}
-                  </div>
-                </div>
-              );
-            })
-          )}
-        </div>
-      )}
-
-      {/* --- D. CHẾ ĐỘ LƯỚI THẺ (TRADITIONAL GRID VIEW) --- */}
-      {viewMode === 'grid' && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-          {filteredClasses.length === 0 ? (
-            <div className="col-span-3 p-12 text-center text-slate-400 bg-white rounded-2xl border border-slate-200 text-xs">
-              <span className="material-symbols-outlined text-4xl text-slate-300 block mb-2">event_busy</span>
-              <p>{isEn ? 'No classes match the current filter.' : 'Không có ca học nào phù hợp với bộ lọc hiện tại.'}</p>
-            </div>
-          ) : (
-            filteredClasses.map(cls => {
-              const theme = getSportTheme(cls.sportName, isEn);
-              const isFull = cls.enrolledCount >= cls.capacity;
-              const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
-
-              return (
-                <div
-                  key={cls.sessionId || cls.id}
-                  className={`bg-white rounded-2xl border transition-all flex flex-col justify-between p-5 ${
-                    isBooked
-                      ? 'border-emerald-400 ring-2 ring-emerald-500/20 shadow-md bg-emerald-50/15'
-                      : 'border-slate-200 shadow-xs hover:shadow-md'
-                  }`}
-                >
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase border ${theme.badge}`}>
-                          {translateSportName(cls.sportName, isEn)}
-                        </span>
-                        {isBooked && (
-                          <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300 flex items-center gap-1">
-                            <span className="material-symbols-outlined text-[13px]">check_circle</span>
-                            {isEn ? 'ATTENDED' : 'ĐÃ THAM GIA'}
-                          </span>
-                        )}
-                      </div>
-                      <span className="text-xs text-slate-500 font-bold">{translateDayOfWeek(cls.dayOfWeek, isEn)}</span>
-                    </div>
-
-                    <h3 className="font-chivo text-base font-black text-slate-900 leading-tight">
-                      {translateClassName(cls.name, isEn)}
-                    </h3>
-
-                    <div className="mt-3.5 p-3 rounded-xl bg-slate-50 border border-slate-100 space-y-1.5 text-xs">
-                      <div className="flex items-center gap-2 text-slate-700">
-                        <span className="material-symbols-outlined text-[18px] text-red-600">schedule</span>
-                        <span className="font-bold">{cls.sessionDate} · {cls.timeSlot}</span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-700">
-                        <span className="material-symbols-outlined text-[18px] text-slate-400">person</span>
-                        <span>{isEn ? 'Coach' : 'HLV'}: <strong className="text-slate-900">{translateCoachName(cls.coachName, isEn)}</strong></span>
-                      </div>
-                      <div className="flex items-center gap-2 text-slate-700">
-                        <span className="material-symbols-outlined text-[18px] text-slate-400">stadium</span>
-                        <span>{translateRoomName(cls.roomName, isEn)}</span>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-5 pt-3.5 border-t border-slate-100 flex items-center justify-between">
-                    <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">{isEn ? 'Remaining Spots' : 'Số chỗ còn lại'}</span>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-chivo text-sm font-bold text-slate-900">
-                          {cls.enrolledCount}/{cls.capacity}
-                        </span>
-                        <Badge variant={isFull ? 'FULL' : 'OPEN'} size="sm">
-                          {isFull ? (isEn ? 'FULL' : 'HẾT CHỖ') : (isEn ? 'AVAILABLE' : 'CÒN CHỖ')}
-                        </Badge>
-                      </div>
-                    </div>
-
-                    {isBooked ? (
-                      <div className="flex flex-col items-end">
-                        <button
-                          type="button"
-                          disabled
-                          className="px-3.5 py-1.5 rounded-lg font-chivo text-xs font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 border border-emerald-300 shadow-xs flex items-center gap-1.5 cursor-default"
-                        >
-                          <span className="material-symbols-outlined text-[16px] text-emerald-600">verified</span>
-                          <span>{isEn ? 'BOOKED' : 'ĐÃ ĐẶT CHỖ'}</span>
-                        </button>
-                        <a
-                          href="#/member/bookings"
-                          className="text-[10px] text-emerald-700 hover:text-emerald-900 hover:underline font-bold mt-1 flex items-center gap-0.5"
-                        >
-                          <span>{isEn ? 'View booking details' : 'Xem chi tiết vé tập'}</span>
-                          <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
-                        </a>
-                      </div>
-                    ) : (
-                      <button
-                        onClick={() => handleOpenSessionDetail(cls)}
-                        disabled={!cls.isBookable}
-                        className={`px-4 py-2 rounded-lg font-chivo text-xs font-bold uppercase tracking-wider transition-all shadow-xs ${
-                          !cls.isBookable
-                            ? 'bg-slate-200 text-slate-400 cursor-not-allowed'
-                            : 'bg-red-600 hover:bg-red-700 text-white'
-                        }`}
-                      >
-                        {!cls.isBookable ? (isEn ? 'Closed' : 'Đã đóng') : isFull ? (isEn ? 'Waitlist' : 'Vào danh sách chờ') : (isEn ? 'Book Now' : 'Đặt Chỗ')}
-                      </button>
-                    )}
                   </div>
                 </div>
               );
