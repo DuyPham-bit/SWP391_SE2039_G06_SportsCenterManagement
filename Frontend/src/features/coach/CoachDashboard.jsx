@@ -125,8 +125,8 @@ export function CoachDashboard() {
     if (savingProgress) return;
     const w = parseFloat(progressForm.weight);
     const hl = parseFloat(progressForm.heavyLift);
-    if (isNaN(w) || w <= 0 || w > 500) {
-      alert(isEn ? 'Please enter a valid weight (0 - 500 kg).' : 'Vui lòng nhập cân nặng hợp lệ (từ 1 đến 500 kg).');
+    if (isNaN(w) || w < 25 || w > 300) {
+      alert(isEn ? 'Please enter a valid weight (25 - 300 kg).' : 'Vui lòng nhập cân nặng hợp lệ (từ 25 đến 300 kg).');
       return;
     }
     if (isNaN(hl) || hl < 0 || hl > 500) {
@@ -533,8 +533,8 @@ export function CoachDashboard() {
                   <input
                     type="number"
                     step="0.1"
-                    min="1"
-                    max="500"
+                    min="25"
+                    max="300"
                     value={progressForm.weight}
                     onChange={(e) => {
                       const val = e.target.value;

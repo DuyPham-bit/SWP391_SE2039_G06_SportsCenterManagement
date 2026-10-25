@@ -36,7 +36,8 @@ public sealed record SendNotificationRequest(
     [param: Range(1, long.MaxValue)] long? ClassId,
     [param: Required, StringLength(200)] string Title,
     [param: Required, StringLength(4000)] string Content,
-    [param: Range(1, long.MaxValue)] long? MemberId = null);
+    [param: Range(1, long.MaxValue)] long? MemberId = null,
+    long[]? ClassIds = null);
 
 public sealed record TrainingPlanResponse(long Id, long? ClassId, string? ClassName, string? SportName,
     long? MemberId, string? MemberName, long CoachId, string CoachName, string Title, string? Goal,

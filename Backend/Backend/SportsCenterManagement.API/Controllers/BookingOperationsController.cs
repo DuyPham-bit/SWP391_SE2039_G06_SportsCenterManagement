@@ -76,11 +76,18 @@ public sealed class BookingOperationsController(SportsCenterDbContext db, ISessi
     public async Task<IActionResult> Roster(long sessionId, CancellationToken ct)
     {
         await EnsureCoach(sessionId, ct);
-        return Ok(await (from b in db.SessionBookings join m in db.MemberProfiles on b.MemberId equals m.Id
+        var classId = await db.ClassSessions.Where(s => s.Id == sessionId).Select(s => s.ClassId).SingleAsync(ct);
+        return Ok(await (from m in db.MemberProfiles
             join u in db.Users on m.UserId equals u.Id
-            where b.SessionId == sessionId && b.Status == "Booked"
+            where u.Status == "Active" &&
+                (db.SessionBookings.Any(b => b.SessionId == sessionId && b.MemberId == m.Id && b.Status == "Booked") ||
+                 db.ClassEnrollments.Any(e => e.ClassId == classId && e.MemberId == m.Id &&
+                    (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")))
             orderby m.FullName
-            select new { BookingId = b.Id, MemberId = m.Id, MemberName = m.FullName, m.MemberCode,
+            select new {
+                BookingId = db.SessionBookings.Where(b => b.SessionId == sessionId && b.MemberId == m.Id && b.Status == "Booked")
+                    .Select(b => (long?)b.Id).FirstOrDefault(),
+                MemberId = m.Id, MemberName = m.FullName, m.MemberCode,
                 u.Email, u.Phone, m.FitnessGoal, m.FitnessLevel,
                 AttendanceStatus = db.Attendances.Where(a => a.SessionId == sessionId && a.MemberId == m.Id).Select(a => a.AttendanceStatus).FirstOrDefault(),
                 Note = db.Attendances.Where(a => a.SessionId == sessionId && a.MemberId == m.Id).Select(a => a.Note).FirstOrDefault()
@@ -108,7 +115,12 @@ public sealed class BookingOperationsController(SportsCenterDbContext db, ISessi
         if (session.SessionDate.ToDateTime(session.StartTime) > vietnamNow)
             throw new InvalidOperationException("Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.") { Data = { ["StatusCode"] = 409 } };
         var ids = records.Select(r => r.MemberId).ToArray();
-        var eligible = await db.SessionBookings.Where(b => b.SessionId == sessionId && b.Status == "Booked" && ids.Contains(b.MemberId)).Select(b => b.MemberId).ToListAsync(ct);
+        var eligible = await db.MemberProfiles.Where(m => ids.Contains(m.Id) &&
+            db.Users.Any(u => u.Id == m.UserId && u.Status == "Active") &&
+            (db.SessionBookings.Any(b => b.SessionId == sessionId && b.MemberId == m.Id && b.Status == "Booked") ||
+             db.ClassEnrollments.Any(e => e.ClassId == session.ClassId && e.MemberId == m.Id &&
+                (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled"))))
+            .Select(m => m.Id).ToListAsync(ct);
         if (eligible.Count != records.Length) throw new InvalidOperationException("Có học viên không đăng ký buổi học này.") { Data = { ["StatusCode"] = 400 } };
         var existing = await db.Attendances.Where(a => a.SessionId == sessionId && ids.Contains(a.MemberId)).ToDictionaryAsync(a => a.MemberId, ct);
         foreach (var r in records)
@@ -138,9 +150,12 @@ public sealed class BookingOperationsController(SportsCenterDbContext db, ISessi
 
     private async Task EnsureCoach(long sessionId, CancellationToken ct)
     {
-        if (!await (from s in db.ClassSessions join c in db.Classes on s.ClassId equals c.Id
-            join a in db.ClassCoaches on c.Id equals a.ClassId join coach in db.CoachProfiles on a.CoachId equals coach.Id
-            where s.Id == sessionId && coach.UserId == CurrentUserId && coach.Status == "Active" && coach.CenterId == c.CenterId
+        if (!await (from s in db.ClassSessions
+            join c in db.Classes on s.ClassId equals c.Id
+            join coach in db.CoachProfiles on c.CenterId equals coach.CenterId
+            where s.Id == sessionId && coach.UserId == CurrentUserId && coach.Status == "Active" &&
+                (s.CoachId == coach.Id || (s.CoachId == null &&
+                    db.ClassCoaches.Any(a => a.ClassId == c.Id && a.CoachId == coach.Id)))
             select s.Id).AnyAsync(ct))
             throw new InvalidOperationException("Bạn không được phân công phụ trách buổi học này.") { Data = { ["StatusCode"] = 403 } };
     }

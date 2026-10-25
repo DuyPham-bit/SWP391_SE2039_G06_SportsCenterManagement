@@ -160,7 +160,7 @@ export function CoachProfessionalHub() {
     return () => window.removeEventListener('hashchange', handleHash);
   }, []);
 
-  const act = async (fn, successMsg) => {
+  const act = async (fn, successMsg, onError) => {
     setWorking(true);
     try {
       await fn();
@@ -168,6 +168,7 @@ export function CoachProfessionalHub() {
       await load();
       return true;
     } catch (e) {
+      onError?.(e);
       showError(e);
       return false;
     } finally {

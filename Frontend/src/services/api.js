@@ -48,6 +48,7 @@ export const coachApi = {
     method: 'POST', body: {
       classId: data.classId ? Number(data.classId) : null,
       memberId: data.memberId ? Number(data.memberId) : null,
+      classIds: Array.isArray(data.classIds) ? data.classIds.map(Number) : null,
       title: data.title,
       content: data.content
     }

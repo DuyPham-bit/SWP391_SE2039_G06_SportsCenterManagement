@@ -22,6 +22,10 @@ public class Notification : Common.BaseEntity
     [Column("notification_type")]
     public string NotificationType { get; set; } = null!;
 
+    [MaxLength(1000)]
+    [Column("target_class_ids")]
+    public string? TargetClassIds { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; }
 

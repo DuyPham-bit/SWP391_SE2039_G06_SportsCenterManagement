@@ -91,18 +91,10 @@ export default defineConfig(({ mode }) => {
       target: 'esnext',
       minify: 'esbuild',
       cssMinify: true,
-      rollupOptions: {
-        output: {
-          manualChunks(id) {
-            if (id.includes('node_modules')) {
-              if (id.includes('react') || id.includes('react-dom')) {
-                return 'vendor-react';
-              }
-              return 'vendor-libs';
-            }
-          }
-        }
-      },
+      // Let Rollup own the chunk graph. Splitting every dependency into either
+      // vendor-react or vendor-libs creates a circular chunk when libraries
+      // such as motion/react import React, which can execute createContext
+      // before the React chunk has initialized in a production build.
       chunkSizeWarningLimit: 1000
     },
     resolve: {

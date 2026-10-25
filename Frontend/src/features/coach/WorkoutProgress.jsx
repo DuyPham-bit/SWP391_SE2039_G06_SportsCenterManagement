@@ -295,7 +295,7 @@ export function WorkoutProgress() {
             </select>
           </label>
           <p className="text-xs text-slate-500">
-            {isEn ? 'Student must have a valid booking in the selected session. Body metrics are optional.' : 'Học viên cần có đặt chỗ hợp lệ trong buổi đã chọn. Các chỉ số cơ thể có thể để trống.'}
+            {isEn ? 'Student must have a valid session booking or an active class enrollment. Body metrics are optional.' : 'Học viên cần có đặt chỗ buổi tập hoặc ghi danh lớp còn hiệu lực. Các chỉ số cơ thể có thể để trống.'}
           </p>
           <div className="grid sm:grid-cols-3 gap-3">
             {Object.entries(metrics).map(([key, [label, unit, min, max]]) => (

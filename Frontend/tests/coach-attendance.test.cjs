@@ -16,6 +16,21 @@ test('coach dashboard persists quick progress and attendance through the real AP
   assert.doesNotMatch(dashboard, /defaultStudents|defaultSessions|demo-[1-9]|09xx xxx xxx/);
 });
 
+test('backend roster and attendance honor replacement coach and active class enrollment', () => {
+  const controller = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.API/Controllers/BookingOperationsController.cs'), 'utf8');
+  assert.match(controller, /s\.CoachId == coach\.Id/);
+  assert.match(controller, /s\.CoachId == null/);
+  assert.match(controller, /db\.ClassEnrollments\.Any/);
+  assert.match(controller, /e\.Status == "Active" \|\| e\.Status == "Confirmed" \|\| e\.Status == "Enrolled"/);
+});
+
+test('session progress is upserted and overnight completion uses the Vietnam session end', () => {
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.BLL/Services/TrainingService.cs'), 'utf8');
+  assert.match(service, /SessionEndVietnam\(session\.SessionDate, session\.StartTime, session\.EndTime\)/);
+  assert.match(service, /r\.SessionId == request\.SessionId && r\.MemberId == request\.MemberId/);
+  assert.match(service, /TRAINING_PROGRESS_UPDATED/);
+});
+
 test('attendance cannot be edited after the session date has passed', async () => {
   const { attendanceRestriction, canAttendSession } = await overview;
   const session = { sessionDate: '2026-10-16', startTime: '08:00:00', status: 'SCHEDULED' };

@@ -2181,6 +2181,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("sender_id");
 
+                    b.Property<string>("TargetClassIds")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("target_class_ids");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)

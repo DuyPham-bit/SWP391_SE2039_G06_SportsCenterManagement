@@ -90,12 +90,42 @@ public sealed class TrainingService(SportsCenterDbContext db)
         return coach;
     }
 
+    private async Task<CoachProfile> EnsureSessionCoachAsync(
+        long userId,
+        ClassSession session,
+        long memberId,
+        CancellationToken ct)
+    {
+        var coach = await db.CoachProfiles.SingleOrDefaultAsync(c => c.UserId == userId && c.Status == "Active", ct)
+            ?? throw new InvalidOperationException("Tài khoản chưa có hồ sơ HLV hoạt động.") { Data = { ["StatusCode"] = 403 } };
+        var sameCenter = await db.Classes.AnyAsync(c => c.Id == session.ClassId && c.CenterId == coach.CenterId, ct);
+        var isEffectiveCoach = session.CoachId.HasValue
+            ? session.CoachId.Value == coach.Id
+            : await db.ClassCoaches.AnyAsync(a => a.ClassId == session.ClassId && a.CoachId == coach.Id, ct);
+        if (!sameCenter || !isEffectiveCoach)
+            throw new InvalidOperationException("Bạn không được phân công phụ trách buổi học này.")
+            {
+                Data =
+                {
+                    ["StatusCode"] = 403,
+                    ["Code"] = "CO-02",
+                    ["ProposedHandling"] = "Chỉ HLV hiệu lực của buổi học (HLV chính hoặc HLV dạy thay) được ghi kết quả."
+                }
+            };
+        if (!await ClassMembers(session.ClassId).AnyAsync(m => m.Id == memberId &&
+                db.Users.Any(u => u.Id == m.UserId && u.Status == "Active"), ct))
+            throw new InvalidOperationException("Hội viên không thuộc danh sách lớp của buổi học.")
+            {
+                Data = { ["StatusCode"] = 403, ["Code"] = "CO-02" }
+            };
+        return coach;
+    }
+
     public static void ValidatePlan(SaveTrainingPlanRequest request)
     {
-        if (request.StartDate == default || request.EndDate < request.StartDate ||
-            request.Exercises is null || request.Exercises.Length is < 1 or > 50 ||
-            request.Exercises.Any(e => e is null || string.IsNullOrWhiteSpace(e.Name)))
-            throw new InvalidOperationException("Ngày hoặc danh sách bài tập của giáo án không hợp lệ.")
+        var validationError = CoachWorkflowRules.PlanValidationError(request);
+        if (validationError is not null)
+            throw new InvalidOperationException(validationError)
             {
                 Data =
                 {
@@ -236,31 +266,63 @@ public sealed class TrainingService(SportsCenterDbContext db)
 
     public async Task<long> RecordProgressAsync(long userId, RecordProgressRequest request, CancellationToken ct)
     {
-        var date = request.Date ?? DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7));
-        if (date > DateOnly.FromDateTime(DateTime.UtcNow.AddHours(7))) throw new InvalidOperationException("Không ghi tiến độ cho ngày tương lai.") { Data = { ["StatusCode"] = 400 } };
+        var validationError = CoachWorkflowRules.ProgressValidationError(request);
+        if (validationError is not null)
+            throw new InvalidOperationException(validationError) { Data = { ["StatusCode"] = 400, ["Code"] = "CO-04" } };
+        var date = request.Date ?? ScheduleTime.VietnamToday;
+        if (date > ScheduleTime.VietnamToday) throw new InvalidOperationException("Không ghi tiến độ cho ngày tương lai.") { Data = { ["StatusCode"] = 400 } };
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        var coach = await EnsureCoachAsync(userId, request.ClassId, request.MemberId, ct);
+        CoachProfile coach;
         if (request.SessionId.HasValue)
         {
             var session = await db.ClassSessions.SingleOrDefaultAsync(s => s.Id == request.SessionId && s.ClassId == request.ClassId, ct)
                 ?? throw new InvalidOperationException("Buổi tập không thuộc lớp đã chọn.") { Data = { ["StatusCode"] = 400 } };
-            if (session.SessionStatus == "Cancelled" || session.SessionDate.ToDateTime(session.EndTime) > DateTime.UtcNow.AddHours(7))
+            coach = await EnsureSessionCoachAsync(userId, session, request.MemberId, ct);
+            if (session.SessionStatus == "Cancelled" ||
+                CoachWorkflowRules.SessionEndVietnam(session.SessionDate, session.StartTime, session.EndTime) > ScheduleTime.VietnamNow)
                 throw new InvalidOperationException("Chỉ ghi kết quả sau khi buổi tập kết thúc và không bị hủy.") { Data = { ["StatusCode"] = 409 } };
-            if (!await db.SessionBookings.AnyAsync(b => b.SessionId == session.Id && b.MemberId == request.MemberId && b.Status == "Booked", ct))
-                throw new InvalidOperationException("Học viên chưa đăng ký buổi tập này.") { Data = { ["StatusCode"] = 400 } };
+            var eligible = await db.SessionBookings.AnyAsync(b => b.SessionId == session.Id && b.MemberId == request.MemberId && b.Status == "Booked", ct) ||
+                await db.ClassEnrollments.AnyAsync(e => e.ClassId == session.ClassId && e.MemberId == request.MemberId &&
+                    (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled"), ct);
+            if (!eligible)
+                throw new InvalidOperationException("Học viên chưa đăng ký buổi tập hoặc chưa ghi danh vào lớp này.") { Data = { ["StatusCode"] = 400 } };
             if (request.Date.HasValue && request.Date != session.SessionDate)
                 throw new InvalidOperationException("Ngày ghi nhận phải trùng ngày của buổi tập.") { Data = { ["StatusCode"] = 400 } };
             date = session.SessionDate;
         }
-        var row = new TrainingResult { MemberId = request.MemberId, ClassId = request.ClassId, CoachId = coach.Id,
-            SessionId = request.SessionId,
-            ResultDate = date, Weight = request.Weight, BodyFatPercentage = request.BodyFat, MuscleMass = request.MuscleMass,
-            WorkoutResult = request.WorkoutResult.Trim(), CoachFeedback = request.CoachFeedback?.Trim(), CreatedAt = DateTime.UtcNow };
-        db.TrainingResults.Add(row);
-        AddAudit(userId, coach.CenterId, "TRAINING_PROGRESS_RECORDED", "TrainingResult");
+        else coach = await EnsureCoachAsync(userId, request.ClassId, request.MemberId, ct);
+
+        var workoutResult = request.WorkoutResult.Trim();
+        var coachFeedback = string.IsNullOrWhiteSpace(request.CoachFeedback) ? null : request.CoachFeedback.Trim();
+        var row = request.SessionId.HasValue
+            ? await db.TrainingResults.SingleOrDefaultAsync(r => r.SessionId == request.SessionId && r.MemberId == request.MemberId, ct)
+            : null;
+        var isNew = row is null;
+        if (row is null)
+        {
+            row = new TrainingResult { MemberId = request.MemberId, SessionId = request.SessionId, CreatedAt = DateTime.UtcNow };
+            db.TrainingResults.Add(row);
+        }
+        else if (row.ClassId == request.ClassId && row.CoachId == coach.Id && row.ResultDate == date &&
+                 row.Weight == request.Weight && row.BodyFatPercentage == request.BodyFat && row.MuscleMass == request.MuscleMass &&
+                 row.WorkoutResult == workoutResult && row.CoachFeedback == coachFeedback)
+        {
+            await tx.CommitAsync(ct);
+            return row.Id;
+        }
+
+        row.ClassId = request.ClassId;
+        row.CoachId = coach.Id;
+        row.ResultDate = date;
+        row.Weight = request.Weight;
+        row.BodyFatPercentage = request.BodyFat;
+        row.MuscleMass = request.MuscleMass;
+        row.WorkoutResult = workoutResult;
+        row.CoachFeedback = coachFeedback;
+        AddAudit(userId, coach.CenterId, isNew ? "TRAINING_PROGRESS_RECORDED" : "TRAINING_PROGRESS_UPDATED", "TrainingResult", row.Id > 0 ? row.Id : null);
         if (request.NotifyMember)
             await FlowNotificationWriter.CreateForMemberAsync(db, userId, request.MemberId, "Có kết quả tập luyện mới",
-                $"HLV {coach.FullName} đã ghi nhận kết quả tập ngày {date:dd/MM/yyyy}. Xem Giáo án & Kết quả tập để biết chi tiết.", "ProgressUpdated", ct);
+                $"HLV {coach.FullName} đã {(isNew ? "ghi nhận" : "cập nhật")} kết quả tập ngày {date:dd/MM/yyyy}. Xem Giáo án & Kết quả tập để biết chi tiết.", "ProgressUpdated", ct);
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         return row.Id;
     }
@@ -279,7 +341,7 @@ public sealed class TrainingService(SportsCenterDbContext db)
         int? age = null;
         if (profile.DateOfBirth.HasValue)
         {
-            var today = DateOnly.FromDateTime(DateTime.UtcNow);
+            var today = ScheduleTime.VietnamToday;
             age = today.Year - profile.DateOfBirth.Value.Year;
             if (profile.DateOfBirth.Value > today.AddYears(-age.Value)) age--;
         }
@@ -325,15 +387,25 @@ public sealed class TrainingService(SportsCenterDbContext db)
 
     public async Task SendNotificationAsync(long userId, SendNotificationRequest request, CancellationToken ct)
     {
+        var validationError = CoachWorkflowRules.NotificationValidationError(request);
+        if (validationError is not null)
+            throw new InvalidOperationException(validationError) { Data = { ["StatusCode"] = 400, ["Code"] = "CO-05" } };
         await using var tx = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var coach = await db.CoachProfiles.SingleOrDefaultAsync(c => c.UserId == userId && c.Status == "Active", ct)
             ?? throw new InvalidOperationException("Không có hồ sơ HLV hoạt động.") { Data = { ["StatusCode"] = 403 } };
         var classIds = await db.Classes.Where(c => c.CenterId == coach.CenterId && db.ClassCoaches.Any(a =>
             a.ClassId == c.Id && a.CoachId == coach.Id)).Select(c => c.Id).ToListAsync(ct);
+        var requestedClassIds = CoachWorkflowRules.NormalizeClassTargets(request.ClassIds);
         if (request.ClassId.HasValue)
         {
             if (!classIds.Contains(request.ClassId.Value)) throw new InvalidOperationException("Bạn không được phụ trách lớp này.") { Data = { ["StatusCode"] = 403 } };
             classIds = [request.ClassId.Value];
+        }
+        else if (requestedClassIds.Length > 0)
+        {
+            if (requestedClassIds.Except(classIds).Any())
+                throw new InvalidOperationException("Danh sách có lớp bạn không được phụ trách.") { Data = { ["StatusCode"] = 403 } };
+            classIds = requestedClassIds.ToList();
         }
         var recipientQuery = db.MemberProfiles.Where(m => db.SessionBookings.Any(b => b.MemberId == m.Id &&
             b.Status == "Booked" && db.ClassSessions.Any(s => s.Id == b.SessionId && classIds.Contains(s.ClassId))) ||
@@ -348,7 +420,9 @@ public sealed class TrainingService(SportsCenterDbContext db)
 
         var recipientIds = await recipientQuery.Select(m => m.UserId).Distinct().ToArrayAsync(ct);
         if (recipientIds.Length == 0) throw new InvalidOperationException("Không có học viên để nhận thông báo.") { Data = { ["StatusCode"] = 409 } };
-        await FlowNotificationWriter.CreateAsync(db, userId, recipientIds, request.Title.Trim(), request.Content.Trim(), "CoachMessage", ct);
+        var targetClassIds = request.MemberId.HasValue ? null : JsonSerializer.Serialize(classIds);
+        await FlowNotificationWriter.CreateAsync(db, userId, recipientIds, request.Title.Trim(), request.Content.Trim(),
+            "CoachMessage", ct, targetClassIds);
         AddAudit(userId, coach.CenterId, "COACH_NOTIFICATION_SENT", "Notification");
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
     }

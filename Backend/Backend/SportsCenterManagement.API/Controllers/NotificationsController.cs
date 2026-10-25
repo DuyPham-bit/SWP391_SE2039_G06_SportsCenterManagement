@@ -1,6 +1,7 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
+using System.Text.Json;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.API.Filters;
 using SportsCenterManagement.BLL.DTOs.Notifications;
@@ -51,18 +52,49 @@ public sealed class NotificationsController(
     [HttpGet("coaches/me/notifications")]
     [Authorize(Roles = "COACH")]
     [CenterCapability("view_teaching_schedule")]
-    public async Task<IActionResult> Sent(CancellationToken ct) => Ok(await db.Notifications
-        .Where(n => n.SenderId == CurrentUserId && n.NotificationType == "CoachMessage")
-        .OrderByDescending(n => n.CreatedAt).ThenByDescending(n => n.Id).Take(200)
-        .Select(n => new {
-            n.Id,
-            n.Title,
-            Content = n.Message,
-            n.CreatedAt,
-            RecipientCount = db.UserNotifications.Count(l => l.NotificationId == n.Id),
-            Target = db.UserNotifications.Count(l => l.NotificationId == n.Id) == 1
-                ? (db.MemberProfiles.Where(m => db.UserNotifications.Any(l => l.NotificationId == n.Id && l.UserId == m.UserId)).Select(m => "Học viên: " + m.FullName).FirstOrDefault() ?? "Học viên được phân công")
-                : "Học viên được phân công"
-        })
-        .ToListAsync(ct));
+    public async Task<IActionResult> Sent(CancellationToken ct)
+    {
+        var rows = await db.Notifications
+            .Where(n => n.SenderId == CurrentUserId && n.NotificationType == "CoachMessage")
+            .OrderByDescending(n => n.CreatedAt).ThenByDescending(n => n.Id).Take(200)
+            .Select(n => new {
+                n.Id,
+                n.Title,
+                Content = n.Message,
+                n.CreatedAt,
+                n.TargetClassIds,
+                RecipientCount = db.UserNotifications.Count(l => l.NotificationId == n.Id),
+                SingleMemberName = db.UserNotifications.Count(l => l.NotificationId == n.Id) == 1
+                    ? db.MemberProfiles.Where(m => db.UserNotifications.Any(l => l.NotificationId == n.Id && l.UserId == m.UserId))
+                        .Select(m => m.FullName).FirstOrDefault()
+                    : null
+            })
+            .ToListAsync(ct);
+        var targetIds = rows.SelectMany(row => ParseClassIds(row.TargetClassIds)).Distinct().ToArray();
+        var classNames = await db.Classes.Where(c => targetIds.Contains(c.Id))
+            .Select(c => new { c.Id, c.Name }).ToDictionaryAsync(c => c.Id, c => c.Name, ct);
+
+        return Ok(rows.Select(row =>
+        {
+            var classIds = ParseClassIds(row.TargetClassIds);
+            var target = classIds.Length > 0
+                ? "Lớp: " + string.Join(", ", classIds.Select(id => classNames.GetValueOrDefault(id, $"#{id}")))
+                : row.SingleMemberName is not null ? "Học viên: " + row.SingleMemberName : "Học viên được phân công";
+            return new { row.Id, row.Title, row.Content, row.CreatedAt, row.RecipientCount,
+                ClassId = classIds.Length == 1 ? (long?)classIds[0] : null, ClassIds = classIds, Target = target };
+        }).ToArray());
+    }
+
+    private static long[] ParseClassIds(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return [];
+        try
+        {
+            return (JsonSerializer.Deserialize<long[]>(value) ?? []).Where(id => id > 0).Distinct().ToArray();
+        }
+        catch (JsonException)
+        {
+            return [];
+        }
+    }
 }

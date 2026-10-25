@@ -168,21 +168,17 @@ export function CoachNotifications() {
             content: content.trim()
           });
         } else {
-          // Gửi lần lượt tới từng lớp đã chọn
-          await Promise.all(
-            selectedClassIds.map(async cid => {
-              const cls = classes.find(c => String(c.id) === String(cid));
-              return coachApi.sendNotification({
-                classId: Number(cid),
-                memberId: null,
-                coachId: currentUser?.id,
-                coachName: currentUser?.fullName || 'HLV',
-                target: `Lớp: ${cls?.name || cid}`,
-                title: title.trim(),
-                content: content.trim()
-              });
-            })
-          );
+          // Một request duy nhất giúp backend giao dịch nguyên tử và khử trùng học viên học nhiều lớp.
+          await coachApi.sendNotification({
+            classId: null,
+            classIds: selectedClassIds.map(Number),
+            memberId: null,
+            coachId: currentUser?.id,
+            coachName: currentUser?.fullName || 'HLV',
+            target: isEn ? 'Selected assigned classes' : 'Các lớp phụ trách đã chọn',
+            title: title.trim(),
+            content: content.trim()
+          });
         }
 
         showSuccess(
@@ -284,7 +280,8 @@ export function CoachNotifications() {
       // 2. Lọc đối tượng gửi (Tất cả các lớp hoặc lớp cụ thể)
       if (selectedClassFilter !== 'ALL') {
         const cid = Number(selectedClassFilter);
-        if (n.classId !== cid && !n.target?.includes(String(selectedClassFilter))) return false;
+        const classIds = Array.isArray(n.classIds) ? n.classIds.map(Number) : [];
+        if (Number(n.classId) !== cid && !classIds.includes(cid)) return false;
       }
 
       // 3. Lọc theo thể loại bài tập / thông báo

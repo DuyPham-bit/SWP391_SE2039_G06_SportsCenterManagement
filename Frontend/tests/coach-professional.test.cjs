@@ -119,3 +119,23 @@ test('coach, member and manager professional clients call role-scoped endpoints'
     ['manager/coach-operations/leaves/5', 'PATCH']
   ]);
 });
+
+test('partial multi-class notification is one atomic API request with normalized class IDs', async () => {
+  const api = loadProfessionalApis();
+  await api.coachApi.sendNotification({ classIds: ['7', '9'], title: 'Bài tập tuần', content: 'Hoàn thành trước thứ Sáu' });
+  const call = api.calls.at(-1);
+  assert.equal(call.route, 'coaches/me/notifications');
+  assert.equal(call.options.method, 'POST');
+  assert.deepEqual(JSON.parse(JSON.stringify(call.options.body)), {
+    classId: null,
+    memberId: null,
+    classIds: [7, 9],
+    title: 'Bài tập tuần',
+    content: 'Hoàn thành trước thứ Sáu'
+  });
+
+  const source = fs.readFileSync(path.join(__dirname, '../src/features/coach/CoachNotifications.jsx'), 'utf8');
+  assert.match(source, /classIds:\s*selectedClassIds\.map\(Number\)/);
+  assert.match(source, /classIds\.includes\(cid\)/);
+  assert.doesNotMatch(source, /selectedClassIds\.map\(async cid/);
+});

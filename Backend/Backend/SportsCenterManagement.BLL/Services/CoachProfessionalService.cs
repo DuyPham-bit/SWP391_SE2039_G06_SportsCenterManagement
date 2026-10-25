@@ -684,36 +684,52 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
 
     public async Task<long> SaveHomework(long userId, SaveHomeworkRequest request, CancellationToken ct)
     {
+        var validationError = CoachWorkflowRules.HomeworkValidationError(
+            request.ClassId, request.MemberId, request.Title, request.Description);
+        if (validationError is not null) throw Invalid(validationError, "HOMEWORK-TARGET");
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var coach = await Coach(userId, ct);
-        if (!request.ClassId.HasValue && !request.MemberId.HasValue) throw Invalid("Bài tập phải giao cho lớp hoặc học viên.");
         if (request.ClassId.HasValue && !await AssignedClassIds(coach.Id).AnyAsync(x => x == request.ClassId, ct))
             throw BusinessException.Forbidden("Bạn không phụ trách lớp đã chọn.");
         if (request.MemberId.HasValue) await EnsureCoachMember(coach.Id, request.MemberId.Value, ct);
         if (request.DueDate.HasValue && ToUtc(request.DueDate.Value) <= UtcNow) throw Invalid("Hạn hoàn thành phải ở tương lai.");
+        var recipients = request.MemberId.HasValue
+            ? await db.MemberProfiles.Where(x => x.Id == request.MemberId &&
+                    db.Users.Any(u => u.Id == x.UserId && u.Status == "Active"))
+                .Select(x => x.UserId).ToArrayAsync(ct)
+            : await db.MemberProfiles.Where(x => AssignedMemberIds(coach.Id).Contains(x.Id) &&
+                db.Users.Any(u => u.Id == x.UserId && u.Status == "Active") &&
+                (db.ClassEnrollments.Any(e => e.ClassId == request.ClassId && e.MemberId == x.Id &&
+                    (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")) ||
+                 db.SessionBookings.Any(b => b.MemberId == x.Id && b.Status == "Booked" &&
+                    db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == request.ClassId))))
+                .Select(x => x.UserId).Distinct().ToArrayAsync(ct);
+        if (recipients.Length == 0) throw BusinessException.Conflict("Không có học viên đang hoạt động để nhận bài tập.", "HOMEWORK-NO-RECIPIENT");
         var row = new Assignment { CoachId = coach.Id, ClassId = request.ClassId, MemberId = request.MemberId,
             Title = request.Title.Trim(), Description = request.Description.Trim(), DueDate = request.DueDate.HasValue ? ToUtc(request.DueDate.Value) : null,
             CreatedAt = UtcNow, Status = "Active" };
-        db.Assignments.Add(row); await db.SaveChangesAsync(ct);
-        var recipients = request.MemberId.HasValue
-            ? await db.MemberProfiles.Where(x => x.Id == request.MemberId).Select(x => x.UserId).ToArrayAsync(ct)
-            : await db.MemberProfiles.Where(x => AssignedMemberIds(coach.Id).Contains(x.Id) &&
-                (db.ClassEnrollments.Any(e => e.ClassId == request.ClassId && e.MemberId == x.Id && e.Status != "Cancelled") ||
-                 db.SessionBookings.Any(b => b.MemberId == x.Id && b.Status == "Booked" && db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == request.ClassId))))
-                .Select(x => x.UserId).Distinct().ToArrayAsync(ct);
+        db.Assignments.Add(row);
         await NotifyUsers(userId, recipients, "Bài tập tại nhà mới", row.Title, "HomeworkAssigned", ["InApp", "Push"], ct);
+        await transaction.CommitAsync(ct);
         return row.Id;
     }
 
     public async Task ReviewHomework(long userId, long submissionId, ReviewHomeworkRequest request, CancellationToken ct)
     {
+        var validationError = CoachWorkflowRules.HomeworkReviewValidationError(request.Score, request.CoachFeedback);
+        if (validationError is not null) throw Invalid(validationError, "HOMEWORK-REVIEW-EMPTY");
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var coach = await Coach(userId, ct);
         var row = await (from submission in db.AssignmentSubmissions
             join assignment in db.Assignments on submission.AssignmentId equals assignment.Id
             where submission.Id == submissionId && assignment.CoachId == coach.Id select submission).SingleOrDefaultAsync(ct)
             ?? throw BusinessException.NotFound("Không tìm thấy bài nộp thuộc phạm vi phụ trách.");
-        row.Score = request.Score; row.CoachFeedback = request.CoachFeedback?.Trim(); row.Status = "Reviewed";
-        await db.SaveChangesAsync(ct);
-        await FlowNotificationWriter.CreateForMemberAsync(db, userId, row.MemberId, "HLV đã nhận xét bài tập", request.CoachFeedback ?? "Bài tập đã được chấm.", "HomeworkReviewed", ct);
+        row.Score = request.Score;
+        row.CoachFeedback = string.IsNullOrWhiteSpace(request.CoachFeedback) ? null : request.CoachFeedback.Trim();
+        row.Status = "Reviewed";
+        await FlowNotificationWriter.CreateForMemberAsync(db, userId, row.MemberId, "HLV đã nhận xét bài tập",
+            row.CoachFeedback ?? $"Bài tập đã được chấm {row.Score:0.##}/100.", "HomeworkReviewed", ct);
+        await transaction.CommitAsync(ct);
     }
 
     public async Task<long> SaveNutrition(long userId, SaveNutritionPlanRequest request, CancellationToken ct)
@@ -756,20 +772,25 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
 
     public async Task<long> SendMessage(long userId, SendCoachMessageRequest request, CancellationToken ct)
     {
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var member = await db.MemberProfiles.SingleOrDefaultAsync(x => x.UserId == userId, ct);
         long recipient;
         if (member is not null)
         {
             if (member.Id != request.MemberId || !await AssignedMemberIds(request.CoachId).AnyAsync(x => x == member.Id, ct))
                 throw BusinessException.Forbidden("Bạn không thuộc phạm vi trao đổi với HLV này.");
-            recipient = await db.CoachProfiles.Where(x => x.Id == request.CoachId && x.Status == "Active").Select(x => x.UserId).SingleOrDefaultAsync(ct);
+            recipient = await db.CoachProfiles.Where(x => x.Id == request.CoachId && x.Status == "Active" &&
+                    db.Users.Any(u => u.Id == x.UserId && u.Status == "Active"))
+                .Select(x => x.UserId).SingleOrDefaultAsync(ct);
         }
         else
         {
             var coach = await Coach(userId, ct);
             if (coach.Id != request.CoachId) throw BusinessException.Forbidden("Bạn không được gửi tin trong cuộc trò chuyện này.");
             await EnsureCoachMember(coach.Id, request.MemberId, ct);
-            recipient = await db.MemberProfiles.Where(x => x.Id == request.MemberId).Select(x => x.UserId).SingleAsync(ct);
+            recipient = await db.MemberProfiles.Where(x => x.Id == request.MemberId &&
+                    db.Users.Any(u => u.Id == x.UserId && u.Status == "Active"))
+                .Select(x => x.UserId).SingleOrDefaultAsync(ct);
         }
         if (recipient == 0) throw BusinessException.NotFound("Không tìm thấy người nhận.");
         var row = new CoachMessage { CoachId = request.CoachId, MemberId = request.MemberId,
@@ -777,11 +798,16 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         db.CoachMessages.Add(row); await db.SaveChangesAsync(ct);
         await NotifyUsers(userId, [recipient], "Tin nhắn mới từ chương trình huấn luyện", row.Content.Length > 120 ? row.Content[..120] + "…" : row.Content,
             "CoachChat", ["InApp", "Push"], ct);
+        await transaction.CommitAsync(ct);
         return row.Id;
     }
 
     public async Task<object> Broadcast(long userId, SendBroadcastRequest request, CancellationToken ct)
     {
+        var validationError = CoachWorkflowRules.BroadcastValidationError(
+            request.ClassId, request.MemberIds, request.Title, request.Content);
+        if (validationError is not null) throw Invalid(validationError, "BROADCAST-TARGET");
+        await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var coach = await Coach(userId, ct);
         var allowedIds = await AssignedMemberIds(coach.Id).ToArrayAsync(ct);
         long[] memberIds;
@@ -789,16 +815,20 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         {
             if (!await AssignedClassIds(coach.Id).AnyAsync(x => x == request.ClassId, ct)) throw BusinessException.Forbidden("Bạn không phụ trách lớp đã chọn.");
             memberIds = await db.MemberProfiles.Where(x => allowedIds.Contains(x.Id) &&
-                (db.ClassEnrollments.Any(e => e.MemberId == x.Id && e.ClassId == request.ClassId && e.Status != "Cancelled") ||
+                (db.ClassEnrollments.Any(e => e.MemberId == x.Id && e.ClassId == request.ClassId &&
+                    (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")) ||
                  db.SessionBookings.Any(b => b.MemberId == x.Id && b.Status == "Booked" && db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == request.ClassId))))
                 .Select(x => x.Id).Distinct().ToArrayAsync(ct);
         }
         else memberIds = request.MemberIds is { Length: > 0 } ? request.MemberIds.Distinct().ToArray() : allowedIds;
         if (memberIds.Except(allowedIds).Any()) throw BusinessException.Forbidden("Danh sách có học viên ngoài phạm vi phụ trách.");
-        var recipients = await db.MemberProfiles.Where(x => memberIds.Contains(x.Id)).Select(x => x.UserId).ToArrayAsync(ct);
+        var recipients = await db.MemberProfiles.Where(x => memberIds.Contains(x.Id) &&
+                db.Users.Any(u => u.Id == x.UserId && u.Status == "Active"))
+            .Select(x => x.UserId).Distinct().ToArrayAsync(ct);
         if (recipients.Length == 0) throw BusinessException.Conflict("Không có học viên nhận thông báo.");
         var channels = NormalizeChannels(request.Channels);
         await NotifyUsers(userId, recipients, request.Title.Trim(), request.Content.Trim(), "CoachBroadcast", channels, ct);
+        await transaction.CommitAsync(ct);
         return new { RecipientCount = recipients.Length, Channels = channels };
     }
 

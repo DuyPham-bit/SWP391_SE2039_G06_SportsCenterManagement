@@ -34,9 +34,10 @@ internal static class FlowNotificationWriter
         string title,
         string message,
         string type,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? targetClassIds = null)
     {
-        await CreateWithResultAsync(db, senderId, recipientUserIds, title, message, type, cancellationToken);
+        await CreateWithResultAsync(db, senderId, recipientUserIds, title, message, type, cancellationToken, targetClassIds);
     }
 
     public static async Task<Notification?> CreateWithResultAsync(
@@ -46,7 +47,8 @@ internal static class FlowNotificationWriter
         string title,
         string message,
         string type,
-        CancellationToken cancellationToken)
+        CancellationToken cancellationToken,
+        string? targetClassIds = null)
     {
         var recipients = recipientUserIds.Distinct().Where(id => id > 0).ToList();
         if (recipients.Count == 0) return null;
@@ -58,6 +60,7 @@ internal static class FlowNotificationWriter
             Title = title,
             Message = message,
             NotificationType = type,
+            TargetClassIds = targetClassIds,
             CreatedAt = now
         };
         await db.Notifications.AddAsync(notification, cancellationToken);
