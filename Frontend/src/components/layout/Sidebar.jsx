@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { translateCoachName } from '../../services/i18nHelper.js';
 
-export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPath }) {
+export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPath, onToggleDesktop }) {
   const { currentUser, role, logout } = useAuth();
   const { language } = useLanguage();
   const [expandedGroups, setExpandedGroups] = useState({});
@@ -410,43 +410,78 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
     }));
   };
 
-  // State to track clicked/pinned flyout in collapsed mini-sidebar
-  const [activeFlyoutId, setActiveFlyoutId] = useState(null);
+  // Floating Popover state for Collapsed Mini-Sidebar (rendered fixed outside scroll container)
+  const [activeFlyout, setActiveFlyout] = useState(null); // { item, top, left, isLocked }
+  const flyoutTimerRef = useRef(null);
+
+  const handleFlyoutHover = (item, e) => {
+    if (!isDesktopCollapsed) return;
+    if (flyoutTimerRef.current) clearTimeout(flyoutTimerRef.current);
+    const rect = e.currentTarget.getBoundingClientRect();
+    setActiveFlyout(prev => {
+      if (prev?.isLocked && prev.item.id !== item.id) return prev;
+      return {
+        item,
+        top: Math.round(rect.top + rect.height / 2),
+        left: Math.round(rect.right + 12),
+        isLocked: prev?.item?.id === item.id ? prev.isLocked : false
+      };
+    });
+  };
+
+  const handleFlyoutLeave = () => {
+    if (flyoutTimerRef.current) clearTimeout(flyoutTimerRef.current);
+    flyoutTimerRef.current = setTimeout(() => {
+      setActiveFlyout(prev => (prev?.isLocked ? prev : null));
+    }, 180);
+  };
+
+  const handleItemClickToggle = (item, e) => {
+    if (!isDesktopCollapsed) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    setActiveFlyout(prev => {
+      if (prev?.item?.id === item.id && prev.isLocked) {
+        return null;
+      }
+      return {
+        item,
+        top: Math.round(rect.top + rect.height / 2),
+        left: Math.round(rect.right + 12),
+        isLocked: true
+      };
+    });
+  };
 
   // Close flyout when route changes or sidebar collapses/expands
   useEffect(() => {
-    setActiveFlyoutId(null);
+    setActiveFlyout(null);
   }, [currentPath, isDesktopCollapsed]);
 
-  // Click outside to dismiss pinned flyout (debounced listener to avoid dismissing on same-tick click bubbling)
+  // Click outside to dismiss pinned flyout
   useEffect(() => {
-    if (!activeFlyoutId) return;
+    if (!activeFlyout?.isLocked) return;
 
-    let cleanup = () => {};
-    const timer = setTimeout(() => {
-      const handleClickOutside = (e) => {
-        if (e.target && typeof e.target.closest === 'function' && e.target.closest('.mini-flyout-container')) {
-          return;
-        }
-        setActiveFlyoutId(null);
-      };
-      const handleKeyDown = (e) => {
-        if (e.key === 'Escape') setActiveFlyoutId(null);
-      };
-      document.addEventListener('click', handleClickOutside);
-      document.addEventListener('keydown', handleKeyDown);
+    const handleClickOutside = (e) => {
+      if (e.target && typeof e.target.closest === 'function' && (
+        e.target.closest('.scms-floating-flyout') || e.target.closest('.mini-icon-btn')
+      )) {
+        return;
+      }
+      setActiveFlyout(null);
+    };
 
-      cleanup = () => {
-        document.removeEventListener('click', handleClickOutside);
-        document.removeEventListener('keydown', handleKeyDown);
-      };
-    }, 50);
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setActiveFlyout(null);
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
 
     return () => {
-      clearTimeout(timer);
-      cleanup();
+      document.removeEventListener('click', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
     };
-  }, [activeFlyoutId]);
+  }, [activeFlyout]);
 
   return (
     <>
@@ -459,29 +494,88 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
         />
       )}
 
-      {/* Sidebar Container */}
+      {/* Sidebar Container: Floating Capsule Dock on Desktop */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col transition-all duration-300 ease-in-out ${
-          isOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full'
+        className={`fixed z-40 flex flex-col transition-all duration-300 ease-in-out ${
+          isOpen
+            ? 'top-0 left-0 bottom-0 w-64 bg-white dark:bg-slate-900 shadow-2xl translate-x-0'
+            : 'top-0 left-0 bottom-0 w-64 bg-white dark:bg-slate-900 -translate-x-full lg:translate-x-0'
         } ${
           isDesktopCollapsed
-            ? 'lg:translate-x-0 lg:w-20'
-            : 'lg:translate-x-0 lg:w-64'
+            ? 'lg:top-[74px] lg:bottom-4 lg:left-3.5 lg:w-[72px] lg:rounded-[28px] lg:border lg:border-slate-200/80 dark:lg:border-slate-800/80 lg:bg-white/90 dark:lg:bg-slate-900/90 lg:backdrop-blur-xl lg:shadow-2xl lg:shadow-slate-900/10 dark:lg:shadow-black/50'
+            : 'lg:top-[74px] lg:bottom-4 lg:left-3.5 lg:w-64 lg:rounded-[28px] lg:border lg:border-slate-200/80 dark:lg:border-slate-800/80 lg:bg-white/95 dark:lg:bg-slate-900/95 lg:backdrop-blur-xl lg:shadow-2xl lg:shadow-slate-900/10 dark:lg:shadow-black/50'
         }`}
-        style={isDesktopCollapsed ? { overflow: 'visible' } : undefined}
       >
-        {/* Navigation Menu Body: overflow-visible guaranteed in collapsed mode so popovers are never clipped */}
-        <div
-          className={`flex-1 ${isDesktopCollapsed ? 'px-2 py-4 space-y-3' : 'overflow-y-auto px-3 py-4 space-y-5'}`}
-          style={isDesktopCollapsed ? { overflow: 'visible' } : undefined}
-        >
+        {/* Floating Expand/Collapse Button on Edge matching reference */}
+        {onToggleDesktop && (
+          <button
+            type="button"
+            onClick={onToggleDesktop}
+            className="hidden lg:flex absolute -right-3 top-6 z-50 w-6 h-6 rounded-full bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-md items-center justify-center text-slate-600 dark:text-slate-300 hover:text-[#2D6A4F] dark:hover:text-emerald-400 hover:scale-110 active:scale-95 transition-all cursor-pointer"
+            title={isDesktopCollapsed ? (isEn ? 'Expand vertical sidebar' : 'Mở rộng thanh menu') : (isEn ? 'Collapse vertical sidebar' : 'Thu gọn thanh menu')}
+            aria-label={isDesktopCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <span className="material-symbols-outlined text-[15px] font-bold">
+              {isDesktopCollapsed ? 'chevron_right' : 'chevron_left'}
+            </span>
+          </button>
+        )}
+
+        {/* Capsule Top: macOS traffic lights & SCMS branding */}
+        <div className="pt-3 pb-1 px-3 shrink-0 flex flex-col items-center">
+          {/* Traffic Light Dots */}
+          <div className="flex items-center justify-center gap-1.5 mb-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-[#EF4444] shadow-2xs" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#F59E0B] shadow-2xs" />
+            <span className="w-2.5 h-2.5 rounded-full bg-[#10B981] shadow-2xs" />
+          </div>
+
+          {isDesktopCollapsed ? (
+            <>
+              {/* Brand Logo & Monogram (Collapsed) */}
+              <span className="text-[12px] font-black tracking-widest text-[#2D6A4F] dark:text-[#81B29A] uppercase mb-1">
+                SCMS
+              </span>
+              <div className="w-7 h-[1px] bg-slate-200/80 dark:bg-slate-800 my-1 mx-auto" />
+              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#2D6A4F] to-[#81B29A] text-white font-black text-sm flex items-center justify-center shadow-xs italic my-0.5">
+                S
+              </div>
+              <div className="w-7 h-[1px] bg-slate-200/80 dark:bg-slate-800 my-1 mx-auto" />
+              <span className="text-[9px] font-extrabold text-[#2D6A4F]/70 dark:text-emerald-400/70 tracking-widest uppercase text-center py-0.5">
+                MENU
+              </span>
+            </>
+          ) : (
+            <div className="w-full flex items-center justify-between gap-2.5 px-1 py-1 mb-1">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-[#2D6A4F] to-[#81B29A] text-white font-black text-sm flex items-center justify-center shadow-xs italic shrink-0">
+                  S
+                </div>
+                <div className="flex flex-col min-w-0">
+                  <span className="text-sm font-black tracking-wider text-[#2D6A4F] dark:text-[#81B29A] leading-tight">
+                    SCMS
+                  </span>
+                  <span className="text-[10px] text-slate-400 font-semibold truncate">
+                    {roleLabel}
+                  </span>
+                </div>
+              </div>
+              <span className="text-[10px] font-black text-[#2D6A4F] dark:text-emerald-400 tracking-wider uppercase px-2 py-0.5 rounded-full bg-[#81B29A]/15 border border-[#81B29A]/20">
+                MENU
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Navigation Menu Body: Smoothly scrollable with sleek slim scrollbar */}
+        <div className={`flex-1 overflow-y-auto scms-sidebar-scroll ${isDesktopCollapsed ? 'px-2 py-1 space-y-2' : 'px-3 py-2 space-y-4'}`}>
           {sections.map((section, idx) => (
-            <div key={idx} className={isDesktopCollapsed ? 'space-y-2' : 'space-y-1'}>
+            <div key={idx} className={isDesktopCollapsed ? 'space-y-1.5' : 'space-y-1'}>
               {/* Category Divider / Header */}
               {isDesktopCollapsed ? (
-                idx > 0 && <div className="w-8 h-[1px] bg-slate-200 dark:bg-slate-800 my-2 mx-auto" />
+                idx > 0 && <div className="w-6 h-[1px] bg-slate-200 dark:bg-slate-800 my-1.5 mx-auto" />
               ) : (
-                <div className="px-2.5 py-1.5 text-[11px] font-bold text-[#2D6A4F] dark:text-emerald-400 uppercase tracking-wider">
+                <div className="px-2.5 py-1 text-[11px] font-bold text-[#2D6A4F] dark:text-emerald-400 uppercase tracking-wider">
                   {section.category}
                 </div>
               )}
@@ -517,129 +611,68 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
                     item.path !== '#/coach' &&
                     item.path !== '#/coach/dashboard');
 
-                /* ─────────────────────────────────────────────────────────────
-                   MODE 1: COLLAPSED MINI-SIDEBAR (MATCHING USER REFERENCE)
-                ───────────────────────────────────────────────────────────── */
+                /* MODE 1: COLLAPSED MINI-SIDEBAR */
                 if (isDesktopCollapsed) {
-                  const isFlyoutOpen = activeFlyoutId === item.id;
+                  const isFlyoutOpen = activeFlyout?.item?.id === item.id;
 
                   if (hasSubItems) {
                     return (
-                      <div key={item.id} className="relative group mini-flyout-container flex justify-center w-full">
+                      <div key={item.id} className="relative flex justify-center w-full">
                         <button
                           type="button"
+                          onMouseEnter={(e) => handleFlyoutHover(item, e)}
+                          onMouseLeave={handleFlyoutLeave}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
-                            setActiveFlyoutId(prev => prev === item.id ? null : item.id);
+                            handleItemClickToggle(item, e);
                           }}
-                          className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                          className={`mini-icon-btn w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative ${
                             isAnyChildActive || isFlyoutOpen
-                              ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/40 font-bold shadow-2xs scale-105'
-                              : 'bg-[#F0F4F8] dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-[#81B29A]/15 hover:text-[#2D6A4F] dark:hover:text-emerald-400'
+                              ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/50 font-bold shadow-xs scale-105 ring-2 ring-[#81B29A]/20'
+                              : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-[#81B29A]/15 hover:text-[#2D6A4F] dark:hover:text-emerald-400'
                           }`}
                           title={item.label}
                           aria-expanded={isFlyoutOpen}
                         >
-                          <span className={`material-symbols-outlined text-[20px] ${isAnyChildActive || isFlyoutOpen ? 'text-[#81B29A] dark:text-emerald-400' : ''}`}>
+                          <span className={`material-symbols-outlined text-[20px] ${isAnyChildActive || isFlyoutOpen ? 'text-[#2D6A4F] dark:text-emerald-400' : ''}`}>
                             {item.icon}
                           </span>
+                          <span className="absolute bottom-1 right-1 w-1.5 h-1.5 rounded-full bg-[#81B29A] dark:bg-emerald-400" />
                         </button>
-
-                        {/* Floating Flyout Menu: unclipped, locked on click, opens on hover */}
-                        <div
-                          className={`absolute left-full top-1/2 -translate-y-1/2 ml-3 w-64 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl shadow-2xl shadow-slate-400/30 dark:shadow-black/60 p-2.5 z-50 pointer-events-auto transition-all ${
-                            isFlyoutOpen ? 'block' : 'hidden group-hover:block'
-                          }`}
-                          style={{ zIndex: 100 }}
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          {/* Anchor Notch pointing to button */}
-                          <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-slate-200/90 dark:border-slate-700/80 -rotate-45 z-10" />
-
-                          {/* Hover bridge covering the entire gap */}
-                          <div className="absolute -left-6 top-0 bottom-0 w-6 pointer-events-auto" />
-
-                          {/* Header with Group Title */}
-                          <div className="px-3 py-2 text-xs font-bold text-[#1E2235] dark:text-white border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 mb-1.5">
-                            <div className="w-6 h-6 rounded-lg bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-400 flex items-center justify-center shrink-0">
-                              <span className="material-symbols-outlined text-[15px]">{item.icon}</span>
-                            </div>
-                            <span className="truncate">{item.label}</span>
-                          </div>
-
-                          {/* Submenu Links matching user photo with mini hamburger icon boxes */}
-                          <div className="space-y-1">
-                            {item.subItems.map((sub, sIdx) => {
-                              const isChildActive = currentPath === sub.path || (currentPath?.startsWith(sub.path) && sub.path !== '#/manager/dashboard');
-                              return (
-                                <a
-                                  key={sIdx}
-                                  href={sub.path}
-                                  onClick={() => {
-                                    setActiveFlyoutId(null);
-                                    onClose?.();
-                                  }}
-                                  className={`flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all ${
-                                    isChildActive
-                                      ? 'bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/30 shadow-2xs'
-                                      : 'text-slate-700 dark:text-slate-300 hover:bg-[#81B29A]/10 hover:text-[#2D6A4F] dark:hover:text-emerald-300'
-                                  }`}
-                                >
-                                  <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
-                                    isChildActive
-                                      ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-400'
-                                      : 'bg-[#F0F4F8] dark:bg-slate-800 text-slate-500 dark:text-slate-400'
-                                  }`}>
-                                    <span className="material-symbols-outlined text-[16px]">menu</span>
-                                  </div>
-                                  <span className="truncate">{sub.label}</span>
-                                </a>
-                              );
-                            })}
-                          </div>
-                        </div>
                       </div>
                     );
                   }
 
                   return (
-                    <div key={item.id} className="relative group flex justify-center w-full">
+                    <div key={item.id} className="relative flex justify-center w-full">
                       <a
                         href={item.path}
+                        onMouseEnter={(e) => handleFlyoutHover(item, e)}
+                        onMouseLeave={handleFlyoutLeave}
                         onClick={(e) => {
                           if (item.isPopup) {
                             e.preventDefault();
                             window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP'));
                           }
+                          setActiveFlyout(null);
                         }}
-                        className={`w-11 h-11 rounded-xl flex items-center justify-center transition-all cursor-pointer ${
+                        className={`mini-icon-btn w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer relative ${
                           isActive
-                            ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/40 font-bold shadow-2xs scale-105'
-                            : 'bg-[#F0F4F8] dark:bg-slate-800/80 text-slate-600 dark:text-slate-400 hover:bg-[#81B29A]/15 hover:text-[#2D6A4F] dark:hover:text-emerald-400'
+                            ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/50 font-bold shadow-xs scale-105 ring-2 ring-[#81B29A]/20'
+                            : 'bg-transparent text-slate-600 dark:text-slate-400 hover:bg-[#81B29A]/15 hover:text-[#2D6A4F] dark:hover:text-emerald-400'
                         }`}
                         title={item.label}
                       >
-                        <span className={`material-symbols-outlined text-[20px] ${isActive ? 'text-[#81B29A] dark:text-emerald-400' : ''}`}>
+                        <span className={`material-symbols-outlined text-[20px] ${isActive ? 'text-[#2D6A4F] dark:text-emerald-400' : ''}`}>
                           {item.icon}
                         </span>
                       </a>
-
-                      {/* Tooltip on Hover (Synchronized light card, NO black) */}
-                      <div
-                        className="absolute left-full top-1/2 -translate-y-1/2 ml-3 px-3 py-1.5 bg-white dark:bg-slate-800 text-[#1E2235] dark:text-white text-xs font-semibold rounded-xl shadow-lg border border-slate-200/90 dark:border-slate-700 whitespace-nowrap hidden group-hover:block z-50 pointer-events-none"
-                        style={{ zIndex: 100 }}
-                      >
-                        <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-white dark:bg-slate-800 border-l border-t border-slate-200/90 dark:border-slate-700 -rotate-45" />
-                        {item.label}
-                      </div>
                     </div>
                   );
                 }
 
-                /* ─────────────────────────────────────────────────────────────
-                   MODE 2: EXPANDED FULL-SIDEBAR (MATCHING IMAGE 2)
-                ───────────────────────────────────────────────────────────── */
+                /* MODE 2: EXPANDED FULL-SIDEBAR */
                 if (hasSubItems) {
                   return (
                     <div key={item.id} className="space-y-1">
@@ -743,29 +776,21 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
           ))}
         </div>
 
-        {/* Sidebar Footer: SCMS Status & Logout */}
-        <div className="p-3 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70">
+        {/* Capsule Bottom Footer */}
+        <div className="p-2 border-t border-slate-200/80 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-900/50 rounded-b-[28px] shrink-0">
           {isDesktopCollapsed ? (
             <div className="flex justify-center">
               <button
                 type="button"
                 onClick={() => { logout(); window.location.hash = '#/login'; }}
-                className="w-10 h-10 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-center text-slate-500 hover:text-rose-600 dark:hover:text-rose-400 transition-colors cursor-pointer shadow-2xs"
+                className="w-11 h-11 rounded-2xl bg-slate-100 dark:bg-slate-800/90 border border-slate-200/80 dark:border-slate-700/80 flex items-center justify-center text-slate-600 hover:text-rose-600 hover:bg-rose-50 dark:text-slate-400 dark:hover:text-rose-400 dark:hover:bg-rose-950/40 transition-all cursor-pointer shadow-2xs hover:scale-105 active:scale-95"
                 title={`${displayName} (${roleLabel}) - ${isEn ? 'Sign Out' : 'Đăng xuất'}`}
               >
-                {currentUser?.avatar ? (
-                  <img
-                    src={currentUser.avatar}
-                    alt={displayName}
-                    className="w-7 h-7 rounded-lg object-cover"
-                  />
-                ) : (
-                  <span className="text-xs font-black text-[#2D6A4F] dark:text-[#81B29A]">{userInitials}</span>
-                )}
+                <span className="material-symbols-outlined text-[20px]">power_settings_new</span>
               </button>
             </div>
           ) : (
-            <div className="p-2 rounded-xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-2xs gap-2 min-w-0">
+            <div className="p-2 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center justify-between shadow-2xs gap-2 min-w-0">
               <div className="flex items-center gap-2.5 min-w-0">
                 {currentUser?.avatar ? (
                   <img
@@ -779,7 +804,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
                   </div>
                 )}
                 <div className="flex flex-col min-w-0">
-                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight truncate max-w-[130px]" title={displayName}>
+                  <span className="text-xs font-bold text-slate-800 dark:text-slate-100 leading-tight truncate max-w-[120px]" title={displayName}>
                     {displayName}
                   </span>
                   <span className="text-[10px] text-[#2D6A4F] dark:text-[#81B29A] font-semibold truncate leading-tight">
@@ -793,12 +818,79 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onClose, currentPa
                 className="text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 p-1.5 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700/60 transition-colors cursor-pointer shrink-0"
                 title={isEn ? 'Sign Out' : 'Đăng xuất'}
               >
-                <span className="material-symbols-outlined text-[18px]">logout</span>
+                <span className="material-symbols-outlined text-[18px]">power_settings_new</span>
               </button>
             </div>
           )}
         </div>
       </aside>
+
+      {/* Floating Popover / Tooltip System for Collapsed Mini-Sidebar */}
+      {isDesktopCollapsed && activeFlyout && (
+        <div
+          className="fixed z-50 pointer-events-auto scms-floating-flyout transition-all duration-150 animate-in fade-in zoom-in-95"
+          style={{
+            top: `${activeFlyout.top}px`,
+            left: `${activeFlyout.left}px`,
+            transform: 'translateY(-50%)'
+          }}
+          onMouseEnter={() => {
+            if (flyoutTimerRef.current) clearTimeout(flyoutTimerRef.current);
+          }}
+          onMouseLeave={handleFlyoutLeave}
+        >
+          {activeFlyout.item.subItems && activeFlyout.item.subItems.length > 0 ? (
+            <div className="w-64 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl shadow-2xl shadow-slate-900/20 dark:shadow-black/70 p-2.5 relative">
+              {/* Anchor Notch pointing back to button */}
+              <div className="absolute -left-1.5 top-1/2 -translate-y-1/2 w-3 h-3 bg-white dark:bg-slate-900 border-l border-t border-slate-200/90 dark:border-slate-700/80 -rotate-45" />
+
+              {/* Group Title Header */}
+              <div className="px-3 py-2 text-xs font-bold text-[#1E2235] dark:text-white border-b border-slate-100 dark:border-slate-800 flex items-center gap-2 mb-1.5">
+                <div className="w-6 h-6 rounded-lg bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-400 flex items-center justify-center shrink-0">
+                  <span className="material-symbols-outlined text-[15px]">{activeFlyout.item.icon}</span>
+                </div>
+                <span className="truncate">{activeFlyout.item.label}</span>
+              </div>
+
+              {/* Submenu Links */}
+              <div className="space-y-1">
+                {activeFlyout.item.subItems.map((sub, sIdx) => {
+                  const isChildActive = currentPath === sub.path || (currentPath?.startsWith(sub.path) && sub.path !== '#/manager/dashboard');
+                  return (
+                    <a
+                      key={sIdx}
+                      href={sub.path}
+                      onClick={() => {
+                        setActiveFlyout(null);
+                        onClose?.();
+                      }}
+                      className={`flex items-center gap-3 px-2.5 py-2 rounded-xl text-xs font-semibold transition-all ${
+                        isChildActive
+                          ? 'bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-300 border border-[#81B29A]/30 shadow-2xs'
+                          : 'text-slate-700 dark:text-slate-300 hover:bg-[#81B29A]/10 hover:text-[#2D6A4F] dark:hover:text-emerald-300'
+                      }`}
+                    >
+                      <div className={`w-7 h-7 rounded-lg flex items-center justify-center shrink-0 transition-colors ${
+                        isChildActive
+                          ? 'bg-[#81B29A]/25 text-[#2D6A4F] dark:text-emerald-400'
+                          : 'bg-[#F0F4F8] dark:bg-slate-800 text-slate-500 dark:text-slate-400'
+                      }`}>
+                        <span className="material-symbols-outlined text-[16px]">menu</span>
+                      </div>
+                      <span className="truncate">{sub.label}</span>
+                    </a>
+                  );
+                })}
+              </div>
+            </div>
+          ) : (
+            <div className="px-3 py-1.5 bg-white dark:bg-slate-800 text-[#1E2235] dark:text-white text-xs font-semibold rounded-xl shadow-xl border border-slate-200/90 dark:border-slate-700 whitespace-nowrap relative">
+              <div className="absolute -left-1 top-1/2 -translate-y-1/2 w-2 h-2 bg-white dark:bg-slate-800 border-l border-t border-slate-200/90 dark:border-slate-700 -rotate-45" />
+              {activeFlyout.item.label}
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 }
