@@ -37,7 +37,8 @@ export const coachApi = {
       classId: Number(data.classId), memberId: Number(data.memberId),
       weight: data.weight ?? null, bodyFat: data.bodyFat ?? null, muscleMass: data.muscleMass ?? null,
       workoutResult: data.workoutResult, coachFeedback: data.coachFeedback || null, date: data.date || null,
-      sessionId: data.sessionId ? Number(data.sessionId) : null
+      sessionId: data.sessionId ? Number(data.sessionId) : null,
+      notifyMember: data.notifyMember !== false
     }
   }),
   takeAttendance: (sessionId, _className, _coachId, _coachName, records) =>

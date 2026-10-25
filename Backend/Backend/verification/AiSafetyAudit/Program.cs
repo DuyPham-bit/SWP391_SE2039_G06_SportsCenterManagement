@@ -1,4 +1,5 @@
 using System.Text.Json;
+using SportsCenterManagement.API.Services;
 using SportsCenterManagement.BLL.DTOs.Training;
 using SportsCenterManagement.BLL.Services;
 
@@ -199,9 +200,9 @@ Check("NLP schema is parsed: tags keep emoji, volume splits into sets/reps, seve
 {
     var safety = AiWorkoutSafetyPolicy.Resolve(
         Context(22m, "Gãy chân trái"), "Nâng cao sức mạnh", "Intermediate", [], "Gãy chân trái");
-    var result = AiWorkoutRecommendationProcessor.Process(NlpJson(
+    var result = MedicalNlpRecommendationProcessor.Process(NlpJson(
         "Seated Dumbbell Shoulder Press - Đẩy vai ngồi", "Chest-Supported Row - Kéo có tựa ngực",
-        "Seated Cable Biceps Curl - Cuốn tay trước cáp", "Dead Bug - Core nằm"), safety, 64m);
+        "Seated Cable Biceps Curl - Cuốn tay trước cáp", "Dead Bug - Core nằm"), safety, 64m, null, "Nâng cao sức mạnh");
     var first = result["exercises"]![0]!;
     var tags = result["extractedTags"]!.AsArray().Select(tag => tag!.GetValue<string>()).ToArray();
     return tags.Contains("⚠️ Gãy chân trái") && tags.Contains("🪑 Chế độ tĩnh tại chỗ") &&
@@ -209,7 +210,7 @@ Check("NLP schema is parsed: tags keep emoji, volume splits into sets/reps, seve
         first["sets"]?.GetValue<string>() == "3" && first["reps"]?.GetValue<string>() == "12" &&
         first["medical_focus"]?.GetValue<string>().Length > 0 &&
         result["recommendedVolume"]?.GetValue<string>().Contains("Zone 1-2", StringComparison.Ordinal) == true &&
-        result["aiReasoning"]?.GetValue<string>().Contains("Hệ thống bảo vệ", StringComparison.Ordinal) == true;
+        result["aiReasoning"]?.GetValue<string>().Contains("GHI ĐÈ", StringComparison.Ordinal) == true;
 });
 
 Check("NLP schema still rejects a leg-loading exercise for a severe injury", () =>
@@ -218,8 +219,9 @@ Check("NLP schema still rejects a leg-loading exercise for a severe injury", () 
         Context(22m, "Gãy chân trái"), "Nâng cao sức mạnh", "Intermediate", [], "Gãy chân trái");
     try
     {
-        AiWorkoutRecommendationProcessor.Process(NlpJson(
-            "Barbell Back Squat", "Chest-Supported Row", "Seated Cable Curl", "Dead Bug"), safety, 64m);
+        MedicalNlpRecommendationProcessor.Process(NlpJson(
+            "Barbell Back Squat", "Chest-Supported Row", "Seated Cable Curl", "Dead Bug"),
+            safety, 64m, "Gãy chân trái", "Nâng cao sức mạnh");
         return false;
     }
     catch (InvalidOperationException exception)
@@ -249,11 +251,11 @@ Check("User exact schema (extracted_keywords, ai_reasoning, protocol, sets_reps)
 {
     var safety = AiWorkoutSafetyPolicy.Resolve(
         Context(23m, "Thoát vị đĩa đệm L4-L5"), "Tăng cơ", "Intermediate", [], "Đau thắt lưng khi cúi");
-    var result = AiWorkoutRecommendationProcessor.Process(UserExactJson(
+    var result = MedicalNlpRecommendationProcessor.Process(UserExactJson(
         "Chest-Supported Machine Row - Kéo xô có tựa ngực",
         "Seated Neutral-Grip Dumbbell Press - Đẩy ngực tạ đơn ngồi",
         "Cable Face Pull - Kéo cáp mặt",
-        "Dead Bug - Ổn định cơ lõi"), safety, 68m);
+        "Dead Bug - Ổn định cơ lõi"), safety, 68m, "Đau lưng dưới", "Tăng cơ");
 
     var keywords = result["extracted_keywords"]!.AsArray().Select(n => n!.GetValue<string>()).ToArray();
     var firstEx = result["exercises"]![0]!;

@@ -7,5 +7,6 @@
   </PropertyGroup>
   <ItemGroup>
     <ProjectReference Include="../../SportsCenterManagement.BLL/SportsCenterManagement.BLL.csproj" />
+    <ProjectReference Include="../../SportsCenterManagement.API/SportsCenterManagement.API.csproj" />
   </ItemGroup>
 </Project>

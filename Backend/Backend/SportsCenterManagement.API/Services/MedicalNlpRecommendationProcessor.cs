@@ -76,7 +76,7 @@ public static class MedicalNlpRecommendationProcessor
         }
 
         var fullContextText = $"{coachNotes} {coachGoal} {safety.EffectiveGoal}".ToLowerInvariant();
-        var hasSevereInjury = ContainsAny(fullContextText, SevereInjuryTerms) ||
+        var hasSevereInjury = safety.HasSevereInjury || ContainsAny(fullContextText, SevereInjuryTerms) ||
                               safety.AcceptedTags.Contains("severe_injury", StringComparer.OrdinalIgnoreCase);
         var hasHernia = ContainsAny(fullContextText, HerniaTerms) ||
                         safety.AcceptedTags.Contains("hernia", StringComparer.OrdinalIgnoreCase);
@@ -173,33 +173,44 @@ public static class MedicalNlpRecommendationProcessor
             nutrition = GetStringCoerced(parsed, "nutritionGuidance", "nutrition") ?? string.Empty;
         }
 
-        if (string.IsNullOrWhiteSpace(frequency))
+        if (hasSevereInjury)
         {
-            frequency = hasSevereInjury
-                ? "2-3 buổi/tuần • 30-40 phút/buổi • Cường độ thấp (Zone 1-2), tư thế có tựa lưng"
-                : safety.IsUnderweight
-                    ? "2-3 buổi/tuần • 35-45 phút/buổi • Cường độ vừa (Zone 1-2)"
-                    : hasHypertension
-                        ? "3-4 buổi/tuần • 40-50 phút/buổi • Nhịp tim Zone 1-2 (dưới 75% HRmax)"
-                        : "3-4 buổi/tuần • 45-60 phút/buổi • Zone 2 (60-70% HRmax)";
+            frequency = "2-3 buổi/tuần • 30-40 phút/buổi • Cường độ thấp (Zone 1-2), tư thế có điểm tựa";
+        }
+        else if (safety.IsUnderweight)
+        {
+            frequency = safety.IsSeverelyUnderweight
+                ? "2-3 buổi/tuần • 30-40 phút/buổi • Cường độ thấp đến vừa (Zone 1-2)"
+                : "2-3 buổi/tuần • 35-45 phút/buổi • Cường độ vừa (Zone 2), không HIIT";
+        }
+        else if (hasHypertension)
+        {
+            frequency = "3-4 buổi/tuần • 40-50 phút/buổi • Nhịp tim Zone 1-2 (dưới 75% HRmax)";
+        }
+        else if (string.IsNullOrWhiteSpace(frequency))
+        {
+            frequency = "3-4 buổi/tuần • 45-60 phút/buổi • Zone 2 (60-70% HRmax)";
         }
 
-        if (string.IsNullOrWhiteSpace(nutrition))
+        if (safety.IsUnderweight)
         {
-            if (safety.IsUnderweight)
-            {
-                var minProt = Math.Round(weightKg * 1.6m);
-                var maxProt = Math.Round(weightKg * 2.0m);
-                nutrition = $"Thặng dư 300-500 kcal/ngày; protein tham khảo {minProt:0}-{maxProt:0}g/ngày (1.6-2.0 g/kg), chia nhỏ 4-5 bữa dễ tiêu hóa.";
-            }
-            else if (safety.IsOverweight)
-            {
-                nutrition = "Thâm hụt 300-500 kcal/ngày; ưu tiên đạm nạc 1.6-2.0 g/kg, rau xanh giàu chất xơ và uống đủ nước.";
-            }
-            else
-            {
-                nutrition = "Duy trì năng lượng cân bằng, protein 1.6-2.2 g/kg/ngày, tăng cường carbohydrate phức hợp quanh buổi tập.";
-            }
+            var minProt = Math.Round(weightKg * 1.6m);
+            var maxProt = Math.Round(weightKg * 2.0m);
+            nutrition = $"Thặng dư 300-500 kcal/ngày; protein tham khảo {minProt:0}-{maxProt:0}g/ngày (1.6-2.0 g/kg), chia nhỏ 4-5 bữa dễ tiêu hóa.";
+        }
+        else if (safety.IsOverweight)
+        {
+            nutrition = "Thâm hụt 300-500 kcal/ngày; ưu tiên đạm nạc 1.6-2.0 g/kg, rau xanh giàu chất xơ và uống đủ nước.";
+        }
+        else if (safety.WantsMuscleGain && safety.WantsFatLoss)
+        {
+            var minProt = Math.Round(weightKg * 1.6m);
+            var maxProt = Math.Round(weightKg * 2.2m);
+            nutrition = $"Duy trì năng lượng hoặc thâm hụt nhẹ 100-250 kcal/ngày; protein {minProt:0}-{maxProt:0}g/ngày (1.6-2.2 g/kg), theo dõi vòng eo, sức mạnh và cân nặng.";
+        }
+        else if (string.IsNullOrWhiteSpace(nutrition))
+        {
+            nutrition = "Duy trì năng lượng cân bằng, protein 1.6-2.2 g/kg/ngày, tăng cường carbohydrate phức hợp quanh buổi tập.";
         }
 
         // 4. Bóc tách & Chuẩn hóa danh sách bài tập (Exercises)
@@ -241,17 +252,29 @@ public static class MedicalNlpRecommendationProcessor
             canonicalExercises.Clear();
             if (hasSevereInjury)
             {
-                AddExercise(canonicalExercises, "Seated Dumbbell Bicep Curl (Ngồi tựa lưng)", "3 hiệp x 12-15 lần", "Ngồi thẳng có tựa lưng chắc chắn, cô lập cơ tay trước, không tạo áp lực lên chi bị chấn thương.");
-                AddExercise(canonicalExercises, "Seated Resistance Band Chest Press (Máy ép ngực có tựa)", "3 hiệp x 12 lần", "Chuyển động có kiểm soát, hít thở đều, nhịp tim duy trì Zone 1-2.");
-                AddExercise(canonicalExercises, "Seated Cable Face Pull (Kéo cáp ngang mặt)", "3 hiệp x 15 lần", "Kích hoạt cơ vai sau và lưng trên, cải thiện tư thế lồng ngực mà không tải trọng lên cột sống.");
-                AddExercise(canonicalExercises, "Controlled Diaphragmatic Breathing & Core Activation", "3 hiệp x 10 nhịp thở", "Tập thở cơ hoành và gồng cơ lõi nhẹ nhàng ở tư thế nằm ngửa co gối.");
+                AddExercise(canonicalExercises, "Chest-Supported Machine Row (Kéo máy có tựa ngực)", "3 hiệp x 12 lần", "Tựa ngực và lưng chắc chắn, tập cô lập thân trên mà không tải lên chi bị chấn thương.");
+                AddExercise(canonicalExercises, "Seated Cable Face Pull (Kéo cáp ngang mặt)", "3 hiệp x 15 lần", "Kích hoạt vai sau và lưng trên, không tạo tải nén lên cột sống.");
+                AddExercise(canonicalExercises, "Dead Bug Core Stabilization (Ổn định cơ lõi)", "3 hiệp x 10 lần mỗi bên", "Nằm ngửa, giữ lưng dưới ổn định và không chịu tải lên vùng chấn thương.");
+                AddExercise(canonicalExercises, "Seated Neutral-Grip Machine Chest Press (Máy ép ngực tay cầm trung tính)", "3 hiệp x 12 lần", "Tựa lưng hoàn toàn, cổ tay trung tính và duy trì nhịp tim Zone 1-2.");
+                if (hasKnee)
+                    AddExercise(canonicalExercises, "Seated Leg Curl Machine (Máy cuốn đùi sau)", "2 hiệp x 12 lần", "Chỉ dùng biên độ không đau và dừng ngay khi vùng chấn thương khó chịu.");
+                else
+                    AddExercise(canonicalExercises, "Seated Cable Biceps Curl (Cuốn tay trước cáp ngồi)", "2 hiệp x 12-15 lần", "Ngồi tựa lưng và cô lập thân trên, không truyền lực xuống chi bị chấn thương.");
             }
             else if (hasBack || hasHernia)
             {
                 AddExercise(canonicalExercises, "Chest-Supported Dumbbell Row (Kéo tạ đơn ngực tựa ghế dốc)", "3 hiệp x 10-12 lần", "Tựa ngực chắc chắn vào đệm dốc để triệt tiêu hoàn toàn lực nén ép dọc trục lên thắt lưng L4-L5.");
                 AddExercise(canonicalExercises, "Seated Cable Row (Kéo cáp ngồi thẳng có đệm chân)", "3 hiệp x 10-12 lần", "Giữ cột sống trung tính, kéo khuỷu tay sát sườn, siết chặt cơ xô lưng.");
-                AddExercise(canonicalExercises, "Goblet Box Squat (Ngồi xổm chạm hộp với tạ trước ngực)", "3 hiệp x 8-10 lần", "Ngồi chạm ghế có kiểm soát, tải trọng phân bổ đều vào cơ mông, không cong gập lưng dưới.");
+                AddExercise(canonicalExercises, "Seated Leg Curl Machine (Máy cuốn đùi sau có tựa)", "3 hiệp x 10-12 lần", "Giữ lưng tựa sát đệm, không tạo tải nén dọc trục lên cột sống.");
+                AddExercise(canonicalExercises, "Cable Face Pull (Kéo cáp ngang mặt)", "3 hiệp x 12-15 lần", "Kéo về ngang mặt, giữ vai hạ thấp và không ưỡn lưng.");
                 AddExercise(canonicalExercises, "Dead Bug (Tập cơ lõi chống xoay)", "3 hiệp x 10 lần mỗi bên", "Duy trì áp lực lưng dưới chạm sát mặt sàn, kích hoạt cơ bụng sâu bảo vệ đĩa đệm.");
+            }
+            else if (hasKnee)
+            {
+                AddExercise(canonicalExercises, "Seated Leg Curl Machine (Máy cuốn đùi sau)", "3 hiệp x 10-12 lần", "Dùng biên độ không đau, không khóa khớp gối.");
+                AddExercise(canonicalExercises, "Hip Thrust (Đẩy hông có kiểm soát)", "3 hiệp x 10-12 lần", "Giữ cẳng chân gần vuông góc và dừng nếu xuất hiện đau gối.");
+                AddExercise(canonicalExercises, "Machine Chest Press (Máy đẩy ngực có tựa)", "3 hiệp x 10-12 lần", "Lưng tựa chắc chắn, thở liên tục và kiểm soát biên độ.");
+                AddExercise(canonicalExercises, "Seated Cable Row (Kéo cáp ngồi)", "3 hiệp x 10-12 lần", "Giữ cột sống trung tính và không dùng lực giật.");
             }
             else
             {
@@ -274,7 +297,7 @@ public static class MedicalNlpRecommendationProcessor
             .Where(n => !string.IsNullOrWhiteSpace(n))
             .ToList();
 
-        var violations = new List<string>();
+        var violations = AiWorkoutSafetyPolicy.FindExerciseViolations(safety, exerciseNames).ToList();
         foreach (var name in exerciseNames)
         {
             var norm = name.ToLowerInvariant();
@@ -319,9 +342,18 @@ public static class MedicalNlpRecommendationProcessor
             ["targetAudience"] = $"Học viên BMI {safety.Bmi:0.0}, trình độ {safety.EffectiveLevel}; mục tiêu: {safety.EffectiveGoal}.",
             ["clinicalAssessment"] = aiReasoning,
             ["weeklyVolume"] = frequency,
-            ["heartRateZone"] = hasHypertension ? "Zone 1-2 (dưới 75% HRmax)" : "Zone 2 (60-70% HRmax)",
+            ["heartRateZone"] = hasSevereInjury || safety.IsSeverelyUnderweight
+                ? "Zone 1-2 • ưu tiên phục hồi và khả năng dung nạp"
+                : hasHypertension
+                    ? "Zone 1-2 (dưới 75% HRmax)"
+                    : safety.IsUnderweight
+                        ? "Zone 2 (60-70% HRmax) • không HIIT"
+                        : safety.WantsEndurance && !safety.EffectiveLevel.Equals("Beginner", StringComparison.OrdinalIgnoreCase)
+                            ? "Zone 2 (60-70% HRmax) xây nền • 1 buổi/tuần interval Zone 3-4 (70-85% HRmax)"
+                            : "Zone 2 (60-70% HRmax)",
             ["nutritionGuidance"] = nutrition,
             ["coachReviewNote"] = aiReasoning,
+            ["aiReasoning"] = aiReasoning,
             ["recommendedVolume"] = frequency,
             ["conflictWarnings"] = JsonSerializer.SerializeToNode(safety.ConflictWarnings),
             ["mandatoryAdjustments"] = JsonSerializer.SerializeToNode(safety.MandatoryAdjustments),
