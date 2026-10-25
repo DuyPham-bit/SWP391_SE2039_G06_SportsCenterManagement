@@ -780,7 +780,7 @@ export function AIRecommendation() {
                     <div className="flex items-center gap-1.5">
                       <span className="material-symbols-outlined text-[16px] text-blue-500">fitness_center</span>
                       <strong>{isEn ? 'Volume:' : 'Khối lượng:'}</strong>
-                      <span className="font-semibold">{result.weeklyVolume}</span>
+                      <span className="font-semibold">{result.weeklyVolume || result.recommendedVolume}</span>
                     </div>
                     <span className="text-slate-300 dark:text-slate-600 hidden sm:inline">•</span>
                     <div className="flex items-center gap-1.5">
