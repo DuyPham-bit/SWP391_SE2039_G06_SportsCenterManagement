@@ -18,7 +18,9 @@ import {
   getUpcomingBookings,
   getMemberReminders,
   isUpcomingBooking,
-  getBookingStatusLabel
+  getBookingStatusLabel,
+  bookingStart,
+  getSportTheme
 } from './memberOverview.js';
 import {
   translateClassName,
@@ -1229,60 +1231,133 @@ export function MemberDashboard() {
         </div>
       </Modal>
 
-      {/* Cancel Booking Confirmation Modal */}
+      {/* Cancel Booking Confirmation Modal (User-Centric & Anti-Slop) */}
       <Modal
         isOpen={cancelModalOpen}
         onClose={() => setCancelModalOpen(false)}
-        title={isEn ? 'Confirm Class Cancellation' : 'Xác Nhận Hủy Ca Học'}
+        title={isEn ? 'Cancel Class Booking' : 'Xác nhận hủy đặt chỗ'}
+        maxWidth="max-w-md"
       >
-        {bookingToCancel && (
-          <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900/50 text-xs text-rose-950 dark:text-rose-200 space-y-2">
-              <span className="font-bold text-sm block text-rose-900 dark:text-rose-300">
-                {isEn ? 'Are you sure you want to cancel this booking?' : 'Bạn có chắc chắn muốn hủy đặt chỗ cho buổi học này?'}
-              </span>
-              <div className="text-slate-800 dark:text-slate-200 space-y-1">
-                <div>{isEn ? 'Class:' : 'Lớp:'} <strong className="text-slate-900 dark:text-white">{translateClassName(bookingToCancel.className, isEn)}</strong></div>
-                <div>{isEn ? 'Time:' : 'Thời gian:'} <strong>{formatMemberDate(bookingToCancel.bookingDate, isEn)} ({bookingToCancel.timeSlot})</strong></div>
-                <div>{isEn ? 'Location:' : 'Địa điểm:'} <strong>{translateRoomName(bookingToCancel.roomName, isEn)}</strong></div>
-              </div>
-              <p className="pt-2 text-rose-700 dark:text-rose-300 text-[11px] leading-relaxed border-t border-rose-200 dark:border-rose-900/50">
-                {isEn
-                  ? '[ME-06] Cancellation Policy: Cancellations at least 2 hours before class start will have session credits returned. Late cancellations or no-shows count as attended.'
-                  : '[ME-06] Quy định hủy: Hủy trước thời gian diễn ra tối thiểu 2 giờ sẽ được hoàn lại lượt tập. Hủy muộn hoặc không đến sẽ tính là đã tham gia ca học.'}
-              </p>
-            </div>
+        {bookingToCancel && (() => {
+          const startTime = bookingStart(bookingToCancel);
+          const hasTimeInfo = !Number.isNaN(startTime);
+          const isEligibleForRefund = hasTimeInfo ? (startTime - Date.now() >= 2 * 60 * 60 * 1000) : true;
+          const sportTheme = getSportTheme(bookingToCancel.sportName, bookingToCancel.className, isEn);
 
-            <div className="flex justify-end gap-2 pt-2">
-              <button
-                type="button"
-                onClick={() => setCancelModalOpen(false)}
-                disabled={cancelling}
-                className="px-4 py-2 rounded-xl border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-bold cursor-pointer"
-              >
-                {isEn ? 'Keep Session' : 'Giữ lại buổi học'}
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmCancelBooking}
-                disabled={cancelling}
-                className="px-4 py-2 rounded-xl bg-[#C85A3F] hover:bg-[#B34D34] text-white text-xs font-bold flex items-center gap-1.5 shadow-sm transition active:scale-95 cursor-pointer"
-              >
-                {cancelling ? (
-                  <>
-                    <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                    <span>{isEn ? 'Processing...' : 'Đang xử lý...'}</span>
-                  </>
-                ) : (
-                  <>
-                    <span className="material-symbols-outlined text-[16px]">cancel</span>
-                    <span>{isEn ? 'Confirm Cancellation' : 'Xác nhận hủy chỗ'}</span>
-                  </>
-                )}
-              </button>
+          return (
+            <div className="space-y-4">
+              {/* Question heading */}
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-2xl bg-rose-50 dark:bg-rose-950/40 text-rose-600 dark:text-rose-400 flex items-center justify-center shrink-0 border border-rose-100 dark:border-rose-900/50">
+                  <span className="material-symbols-outlined text-[22px]">event_busy</span>
+                </div>
+                <div>
+                  <h4 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white leading-snug">
+                    {isEn ? 'Cancel this class booking?' : 'Bạn muốn hủy lịch ca tập này?'}
+                  </h4>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {isEn ? 'Please review session info and refund policy below.' : 'Vui lòng kiểm tra thông tin ca tập và quyền lợi hoàn lượt bên dưới.'}
+                  </p>
+                </div>
+              </div>
+
+              {/* Class Info Card */}
+              <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200/80 dark:border-slate-700/60 space-y-2.5">
+                <div className="flex items-start justify-between gap-2">
+                  <span className="font-bold text-sm text-slate-900 dark:text-white">
+                    {translateClassName(bookingToCancel.className, isEn)}
+                  </span>
+                  <span className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider border shrink-0 ${sportTheme.badge}`}>
+                    {sportTheme.tag}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs pt-1.5 border-t border-slate-200/60 dark:border-slate-700/60">
+                  <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                    <span className="material-symbols-outlined text-[16px] text-slate-400">calendar_month</span>
+                    <span>{formatMemberDate(bookingToCancel.bookingDate, isEn)}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300">
+                    <span className="material-symbols-outlined text-[16px] text-slate-400">schedule</span>
+                    <span className="font-mono font-semibold">{bookingToCancel.timeSlot}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 text-slate-700 dark:text-slate-300 sm:col-span-2">
+                    <span className="material-symbols-outlined text-[16px] text-slate-400">location_on</span>
+                    <span>{translateRoomName(bookingToCancel.roomName, isEn)}</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Policy Callout - Clear, Dynamic & No Technical Jargon */}
+              {isEligibleForRefund ? (
+                <div className="p-3 rounded-2xl bg-emerald-50 dark:bg-emerald-950/30 border border-emerald-200 dark:border-emerald-800/40 flex items-start gap-2.5 text-xs text-emerald-900 dark:text-emerald-200">
+                  <span className="material-symbols-outlined text-[20px] text-emerald-600 dark:text-emerald-400 shrink-0 mt-0.5">check_circle</span>
+                  <div className="space-y-0.5">
+                    <span className="font-bold block text-emerald-800 dark:text-emerald-300">
+                      {isEn ? '1 Session Credit will be refunded' : 'Được hoàn lại 01 lượt tập'}
+                    </span>
+                    <p className="text-[11.5px] text-emerald-700 dark:text-emerald-300/90 leading-relaxed">
+                      {isEn
+                        ? 'Because you are cancelling more than 2 hours before start time, your session credit will be returned automatically.'
+                        : 'Do bạn hủy trước giờ học hơn 2 tiếng, 1 lượt tập sẽ được tự động hoàn lại vào gói của bạn ngay sau khi xác nhận hủy.'}
+                    </p>
+                  </div>
+                </div>
+              ) : (
+                <div className="p-3 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800/40 flex items-start gap-2.5 text-xs text-amber-900 dark:text-amber-200">
+                  <span className="material-symbols-outlined text-[20px] text-amber-600 dark:text-amber-400 shrink-0 mt-0.5">warning</span>
+                  <div className="space-y-0.5">
+                    <span className="font-bold block text-amber-800 dark:text-amber-300">
+                      {isEn ? 'Session starts in less than 2 hours' : 'Ca học diễn ra trong vòng 2 giờ tới'}
+                    </span>
+                    <p className="text-[11.5px] text-amber-700 dark:text-amber-300/90 leading-relaxed">
+                      {isEn
+                        ? 'According to center policy, late cancellations will not refund session credit. For medical emergencies, please visit the front desk.'
+                        : 'Theo quy định trung tâm, việc hủy sát giờ sẽ không được hoàn lại lượt tập. Nếu có sự cố sức khỏe khẩn cấp, vui lòng liên hệ trực tiếp quầy lễ tân.'}
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {/* Emergency Footnote */}
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed px-0.5">
+                {isEn
+                  ? '* Need emergency assistance or medical exception? Please contact the reception desk directly.'
+                  : '* Cần hỗ trợ ngoại lệ khẩn cấp do sức khỏe hoặc chấn thương? Vui lòng liên hệ trực tiếp quầy lễ tân.'}
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-slate-100 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setCancelModalOpen(false)}
+                  disabled={cancelling}
+                  className="px-4 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors cursor-pointer"
+                >
+                  {isEn ? 'Keep Session' : 'Giữ lại ca học'}
+                </button>
+                <button
+                  type="button"
+                  onClick={handleConfirmCancelBooking}
+                  disabled={cancelling}
+                  className="px-4.5 py-2 text-xs font-bold rounded-xl bg-rose-600 hover:bg-rose-700 text-white shadow-sm transition-all disabled:opacity-50 flex items-center gap-1.5 cursor-pointer active:scale-95"
+                >
+                  {cancelling ? (
+                    <>
+                      <span className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></span>
+                      <span>{isEn ? 'Cancelling...' : 'Đang xử lý...'}</span>
+                    </>
+                  ) : (
+                    <>
+                      <span className="material-symbols-outlined text-[16px]">close</span>
+                      <span>{isEn ? 'Confirm Cancellation' : 'Đồng ý hủy chỗ'}</span>
+                    </>
+                  )}
+                </button>
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
       </Modal>
 
       {/* Profile Update Modal */}

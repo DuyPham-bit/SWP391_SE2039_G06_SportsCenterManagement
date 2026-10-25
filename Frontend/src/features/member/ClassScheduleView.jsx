@@ -1187,7 +1187,7 @@ export function ClassScheduleView() {
               <div className="p-3 rounded-lg bg-slate-50 border border-slate-200 text-[11px] text-slate-600 leading-relaxed space-y-1">
                 <div className="font-bold text-slate-800 flex items-center gap-1">
                   <span className="material-symbols-outlined text-[15px] text-red-600">verified_user</span>
-                  <span>{isEn ? 'Booking & Cancellation Policy [ME-06]:' : 'Chính sách đặt & hủy chỗ [ME-06]:'}</span>
+                  <span>{isEn ? 'Booking & Cancellation Policy:' : 'Chính sách đặt & hủy chỗ:'}</span>
                 </div>
                 <p>
                   {isEn
