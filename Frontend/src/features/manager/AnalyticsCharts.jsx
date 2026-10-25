@@ -874,3 +874,641 @@ export function SportRevenueBarChart({ sports = [] }) {
     </div>
   );
 }
+
+/**
+ * 7. VISION UI ARC GAUGE CHART (Satisfaction Rate / Center Occupancy)
+ * Semi-circular 180° SVG gauge matching Image 1
+ */
+export function ArcGaugeChart({
+  value = 0,
+  min = 0,
+  max = 100,
+  title = 'Tỷ lệ lấp đầy trung tâm',
+  subtitle = 'Dựa trên sức chứa toàn cơ sở',
+  note = 'Chỉ số vận hành tối ưu'
+}) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const val = Math.min(max, Math.max(min, Number(value || 0)));
+  const fraction = (val - min) / (max - min || 1);
+
+  const cx = 110;
+  const cy = 85;
+  const r = 68;
+  const strokeWidth = 14;
+  const arcLength = Math.PI * r; // ~213.6
+  const dashOffset = arcLength * (1 - fraction);
+
+  return (
+    <div className="flex flex-col items-center justify-between h-full p-1 text-center">
+      <div className="w-full flex items-center justify-between text-xs mb-1">
+        <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
+          {title}
+        </span>
+        <span className="material-symbols-outlined text-slate-400 text-[18px]">more_horiz</span>
+      </div>
+      <p className="w-full text-left text-[11px] text-slate-500 dark:text-slate-400 mb-2">
+        {subtitle}
+      </p>
+
+      {/* SVG Semi-Circle Arc */}
+      <div className="relative w-full max-w-[220px] aspect-[220/130] select-none">
+        <svg viewBox="0 0 220 130" className="w-full h-auto overflow-visible">
+          <defs>
+            <linearGradient id="arcGaugeGrad" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#24828F" />
+              <stop offset="50%" stopColor="#81B29A" />
+              <stop offset="100%" stopColor="#2D6A4F" />
+            </linearGradient>
+            <filter id="arcGlow" x="-20%" y="-20%" width="140%" height="140%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#24828F" floodOpacity="0.25" />
+            </filter>
+          </defs>
+
+          {/* Background Track Arc */}
+          <path
+            d={`M ${cx - r},${cy} A ${r},${r} 0 0,1 ${cx + r},${cy}`}
+            fill="none"
+            stroke="#e2e8f0"
+            strokeWidth={strokeWidth}
+            strokeLinecap="round"
+            className="dark:stroke-slate-800"
+          />
+
+          {/* Progress Arc */}
+          <path
+            d={`M ${cx - r},${cy} A ${r},${r} 0 0,1 ${cx + r},${cy}`}
+            fill="none"
+            stroke="url(#arcGaugeGrad)"
+            strokeWidth={strokeWidth}
+            strokeDasharray={arcLength}
+            strokeDashoffset={dashOffset}
+            strokeLinecap="round"
+            filter="url(#arcGlow)"
+            className="transition-all duration-1000 ease-out"
+          />
+
+          {/* Center Circular Icon Badge */}
+          <circle cx={cx} cy={cy - 20} r="20" fill="#f8fafc" className="dark:fill-slate-800 shadow-sm" />
+          <circle cx={cx} cy={cy - 20} r="18" fill="url(#arcGaugeGrad)" opacity="0.15" />
+          <text
+            x={cx}
+            y={cy - 14}
+            textAnchor="middle"
+            className="text-[17px] select-none font-bold fill-[#2D6A4F] dark:fill-[#81B29A]"
+            style={{ fontFamily: 'Material Symbols Outlined' }}
+          >
+            speed
+          </text>
+
+          {/* Scale min / max text */}
+          <text x={cx - r - 2} y={cy + 16} textAnchor="start" className="text-[10px] font-bold fill-slate-400 dark:fill-slate-500">
+            {min}%
+          </text>
+          <text x={cx + r + 2} y={cy + 16} textAnchor="end" className="text-[10px] font-bold fill-slate-400 dark:fill-slate-500">
+            {max}%
+          </text>
+
+          {/* Big value inside arc */}
+          <text
+            x={cx}
+            y={cy + 12}
+            textAnchor="middle"
+            className="text-2xl font-black font-chivo fill-slate-900 dark:fill-white"
+          >
+            {val}%
+          </text>
+          {/* Subtitle note */}
+          <text
+            x={cx}
+            y={cy + 28}
+            textAnchor="middle"
+            className="text-[10px] font-semibold fill-[#2D6A4F] dark:fill-[#81B29A]"
+          >
+            {note}
+          </text>
+        </svg>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 8. VISION UI RADIAL PROGRESS SCORE (Referral Tracking / Facility Load Score)
+ * Circular radial gauge + 2 mini pill metrics matching Image 1
+ */
+export function RadialScoreChart({
+  score = 9.3,
+  maxScore = 10,
+  title = 'Khai thác cơ sở vật chất',
+  subtitle = 'Facility Load Index',
+  stat1Label = 'Khách tiếp nhận',
+  stat1Val = '19 lượt',
+  stat2Label = 'Ca tổ chức',
+  stat2Val = '8 ca',
+  scoreLabel = 'Điểm tải',
+  scoreSub = 'Tối ưu'
+}) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const numScore = Math.min(maxScore, Math.max(0, Number(score || 0)));
+  const fraction = numScore / (maxScore || 1);
+
+  const size = 110;
+  const cx = size / 2;
+  const cy = size / 2;
+  const r = 42;
+  const circumference = 2 * Math.PI * r;
+  const dashOffset = circumference * (1 - fraction);
+
+  return (
+    <div className="flex flex-col justify-between h-full p-1">
+      <div className="w-full flex items-center justify-between text-xs mb-1">
+        <span className="font-bold text-slate-900 dark:text-white uppercase tracking-wider text-[11px]">
+          {title}
+        </span>
+        <span className="material-symbols-outlined text-slate-400 text-[18px]">more_horiz</span>
+      </div>
+
+      <div className="grid grid-cols-2 items-center gap-2 my-auto">
+        {/* Left Side: 2 metric pill cards */}
+        <div className="space-y-2">
+          <div className="bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 block">
+              {stat1Label}
+            </span>
+            <strong className="text-sm font-chivo font-black text-slate-900 dark:text-white">
+              {stat1Val}
+            </strong>
+          </div>
+          <div className="bg-slate-50 dark:bg-slate-800/80 p-2.5 rounded-xl border border-slate-200/70 dark:border-slate-700/70">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-slate-400 dark:text-slate-500 block">
+              {stat2Label}
+            </span>
+            <strong className="text-sm font-chivo font-black text-[#2D6A4F] dark:text-[#81B29A]">
+              {stat2Val}
+            </strong>
+          </div>
+        </div>
+
+        {/* Right Side: Circular radial ring */}
+        <div className="relative flex items-center justify-center">
+          <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="select-none transform -rotate-90">
+            <defs>
+              <linearGradient id="radialScoreGrad" x1="0" y1="0" x2="1" y2="1">
+                <stop offset="0%" stopColor="#24828F" />
+                <stop offset="50%" stopColor="#81B29A" />
+                <stop offset="100%" stopColor="#F2CC8F" />
+              </linearGradient>
+            </defs>
+
+            {/* Background ring */}
+            <circle
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill="none"
+              stroke="#e2e8f0"
+              strokeWidth="10"
+              className="dark:stroke-slate-800"
+            />
+
+            {/* Progress ring */}
+            <circle
+              cx={cx}
+              cy={cy}
+              r={r}
+              fill="none"
+              stroke="url(#radialScoreGrad)"
+              strokeWidth="10"
+              strokeDasharray={circumference}
+              strokeDashoffset={dashOffset}
+              strokeLinecap="round"
+              className="transition-all duration-1000 ease-out"
+            />
+          </svg>
+
+          {/* Center text */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
+            <span className="text-[9px] uppercase font-bold tracking-wider text-slate-400">
+              {scoreLabel}
+            </span>
+            <span className="font-chivo font-black text-xl text-slate-900 dark:text-white leading-none my-0.5">
+              {numScore}
+            </span>
+            <span className="text-[9px] font-bold text-[#2D6A4F] dark:text-[#81B29A]">
+              {scoreSub}
+            </span>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 9. VISION UI SALES OVERVIEW (Dual Spline Wave Chart)
+ * Smooth glowing spline area chart matching Image 1
+ */
+export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+
+  if (!data || !data.length) {
+    return (
+      <div className="py-12 text-center text-xs text-slate-400 dark:text-slate-500 bg-slate-50/50 dark:bg-slate-900/40 rounded-xl border border-dashed border-slate-200 dark:border-slate-800">
+        {isEn ? 'No sales data in selected period.' : 'Chưa có dữ liệu doanh thu trong kỳ.'}
+      </div>
+    );
+  }
+
+  const values = data.map(d => Number(d.net || 0));
+  const maxVal = Math.max(1, ...values);
+  const totalRevenue = values.reduce((sum, v) => sum + v, 0);
+
+  const chartHeight = 230;
+  const chartWidth = 640;
+  const paddingLeft = 55;
+  const paddingRight = 20;
+  const paddingTop = 25;
+  const paddingBottom = 40;
+
+  const innerWidth = chartWidth - paddingLeft - paddingRight;
+  const innerHeight = chartHeight - paddingTop - paddingBottom;
+
+  const points = data.map((d, i) => ({
+    x: paddingLeft + (i / Math.max(1, data.length - 1)) * innerWidth,
+    y: paddingTop + innerHeight - (Number(d.net || 0) / maxVal) * innerHeight,
+    raw: d
+  }));
+
+  // Catmull-Rom spline path generator
+  const getSmoothPath = (pts) => {
+    if (!pts || pts.length < 2) return '';
+    let d = `M ${pts[0].x.toFixed(1)} ${pts[0].y.toFixed(1)}`;
+    for (let i = 0; i < pts.length - 1; i++) {
+      const p0 = pts[i === 0 ? 0 : i - 1];
+      const p1 = pts[i];
+      const p2 = pts[i + 1];
+      const p3 = pts[i + 2 >= pts.length ? i + 1 : i + 2];
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+    return d;
+  };
+
+  const lineD = getSmoothPath(points);
+  const areaD = points.length > 1
+    ? `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${(paddingTop + innerHeight).toFixed(1)} L ${points[0].x.toFixed(1)} ${(paddingTop + innerHeight).toFixed(1)} Z`
+    : '';
+
+  // Dual secondary decorative wave curve (similar to Image 1's dual neon lines)
+  const secondaryPoints = points.map(pt => ({
+    x: pt.x,
+    y: Math.min(paddingTop + innerHeight, pt.y + 16 + Math.sin(pt.x / 40) * 10)
+  }));
+  const secondaryLineD = getSmoothPath(secondaryPoints);
+
+  const yTicks = [0, 0.33, 0.66, 1].map(pct => ({
+    val: Math.round(maxVal * pct),
+    y: paddingTop + innerHeight * (1 - pct)
+  }));
+
+  return (
+    <div className="space-y-3">
+      {/* Chart Top Banner */}
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <div>
+          <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+            <span className="material-symbols-outlined text-[15px]">trending_up</span>
+            {isEn ? '(+12%) net revenue increase' : '(+12%) tăng trưởng doanh thu'}
+          </span>
+          <span className="text-slate-400 text-[10px] block">
+            {isEn ? `Aggregated by ${groupBy}` : `Tổng hợp theo ${groupBy === 'month' ? 'tháng' : 'ngày'}`}
+          </span>
+        </div>
+        <div className="text-right">
+          <span className="text-xs font-bold text-slate-500 dark:text-slate-400 mr-2">
+            {isEn ? 'Total:' : 'Tổng:'}
+          </span>
+          <strong className="text-base font-black font-chivo text-[#2D6A4F] dark:text-[#81B29A]">
+            {formatVnd(totalRevenue)}
+          </strong>
+        </div>
+      </div>
+
+      {/* SVG Interactive Chart */}
+      <div className="relative overflow-x-auto">
+        <svg data-chart-id="chart-revenue" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px] select-none">
+          <defs>
+            <linearGradient id="visionSalesAreaGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#24828F" stopOpacity="0.35" />
+              <stop offset="100%" stopColor="#24828F" stopOpacity="0.0" />
+            </linearGradient>
+            <filter id="visionGlowLine" x="-10%" y="-10%" width="120%" height="120%">
+              <feDropShadow dx="0" dy="2" stdDeviation="3" floodColor="#24828F" floodOpacity="0.4" />
+            </filter>
+          </defs>
+
+          {/* Grid lines */}
+          {yTicks.map((tick, i) => (
+            <g key={i}>
+              <line
+                x1={paddingLeft}
+                y1={tick.y}
+                x2={chartWidth - paddingRight}
+                y2={tick.y}
+                stroke="#e2e8f0"
+                strokeDasharray="4 4"
+                className="dark:stroke-slate-800"
+              />
+              <text
+                x={paddingLeft - 8}
+                y={tick.y + 4}
+                textAnchor="end"
+                className="text-[10px] fill-slate-400 dark:fill-slate-500 font-medium"
+              >
+                {formatShortVnd(tick.val)}
+              </text>
+            </g>
+          ))}
+
+          {/* Area Fill */}
+          {areaD && <path d={areaD} fill="url(#visionSalesAreaGrad)" />}
+
+          {/* Secondary subtle wave line */}
+          {secondaryLineD && (
+            <path
+              d={secondaryLineD}
+              fill="none"
+              stroke="#81B29A"
+              strokeWidth="1.8"
+              strokeOpacity="0.65"
+              strokeDasharray="2 2"
+              strokeLinecap="round"
+            />
+          )}
+
+          {/* Primary wave line */}
+          {lineD && (
+            <path
+              d={lineD}
+              fill="none"
+              stroke="#24828F"
+              strokeWidth="3"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              filter="url(#visionGlowLine)"
+            />
+          )}
+
+          {/* Data Points */}
+          {points.map((pt, i) => {
+            const isHovered = hoveredIdx === i;
+            const val = Number(pt.raw.net || 0);
+            const dateLabel = pt.raw.periodStart.slice(5);
+
+            return (
+              <g
+                key={pt.raw.periodStart}
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                className="cursor-pointer"
+              >
+                {/* Guide line on hover */}
+                {isHovered && (
+                  <line
+                    x1={pt.x}
+                    y1={paddingTop}
+                    x2={pt.x}
+                    y2={paddingTop + innerHeight}
+                    stroke="#24828F"
+                    strokeWidth="1.5"
+                    strokeDasharray="3 3"
+                  />
+                )}
+
+                {/* Point circle */}
+                <circle
+                  cx={pt.x}
+                  cy={pt.y}
+                  r={isHovered ? 6 : val > 0 ? 3.5 : 2}
+                  fill={val > 0 ? '#2D6A4F' : '#94a3b8'}
+                  stroke="#ffffff"
+                  strokeWidth="2"
+                  className="transition-all duration-150"
+                />
+
+                {/* X-axis date label */}
+                {(points.length <= 15 || i % Math.ceil(points.length / 12) === 0) && (
+                  <text
+                    x={pt.x}
+                    y={chartHeight - 12}
+                    textAnchor="middle"
+                    className={`text-[10px] ${isHovered ? 'fill-[#24828F] font-bold' : 'fill-slate-500 dark:fill-slate-400'}`}
+                  >
+                    {dateLabel}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
+        {/* Hover Tooltip */}
+        {hoveredIdx !== null && (
+          <div
+            className="absolute top-2 pointer-events-none bg-slate-900 text-white text-xs px-3 py-1.5 rounded-lg shadow-xl border border-slate-700 flex items-center gap-2 transform -translate-x-1/2"
+            style={{
+              left: `${(points[hoveredIdx].x / chartWidth) * 100}%`
+            }}
+          >
+            <span className="text-slate-300 font-medium">{data[hoveredIdx].periodStart}:</span>
+            <strong className="text-emerald-300 font-black">{formatVnd(data[hoveredIdx].net)}</strong>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+/**
+ * 10. VISION UI ACTIVE USERS (Bar Chart with 4 Mini Stat Pills)
+ * Matches the right chart in Image 1 with bar visualization & 4 stat cards
+ */
+export function VisionActiveUsersChart({
+  data = [],
+  totalUsers = 0,
+  totalBookings = 0,
+  netSales = 0,
+  totalSessions = 0
+}) {
+  const { language } = useLanguage();
+  const isEn = language === 'en';
+  const [hoveredIdx, setHoveredIdx] = useState(null);
+
+  const values = data.map(d => Number(d.newMembers || d.booked || 0));
+  const maxVal = Math.max(1, ...values);
+
+  const chartHeight = 150;
+  const chartWidth = 500;
+  const paddingLeft = 30;
+  const paddingRight = 20;
+  const paddingTop = 15;
+  const paddingBottom = 30;
+
+  const innerWidth = chartWidth - paddingLeft - paddingRight;
+  const innerHeight = chartHeight - paddingTop - paddingBottom;
+  const barWidth = Math.max(8, Math.min(24, (innerWidth / Math.max(1, data.length)) * 0.6));
+
+  return (
+    <div className="space-y-4">
+      {/* Top Header */}
+      <div>
+        <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+          <span className="material-symbols-outlined text-[15px]">group</span>
+          {isEn ? '(+23%) active member traffic' : '(+23%) lượt tương tác học viên'}
+        </span>
+        <span className="text-slate-400 text-[10px] block">
+          {isEn ? 'Daily activity & attendance volume' : 'Lưu lượng tham gia & hội viên tích cực'}
+        </span>
+      </div>
+
+      {/* SVG Bar Chart with rounded capsule bars */}
+      <div className="relative overflow-x-auto bg-slate-50 dark:bg-slate-800/60 p-2 rounded-2xl border border-slate-200/70 dark:border-slate-700/70">
+        <svg data-chart-id="chart-members" viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[380px] select-none">
+          <defs>
+            <linearGradient id="activeUserBarGrad" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#2D6A4F" />
+              <stop offset="100%" stopColor="#81B29A" />
+            </linearGradient>
+          </defs>
+
+          {/* Bars */}
+          {data.map((item, i) => {
+            const val = Number(item.newMembers || item.booked || 0);
+            const x = paddingLeft + (i + 0.5) * (innerWidth / data.length);
+            const h = (val / maxVal) * innerHeight;
+            const y = paddingTop + innerHeight - h;
+            const isHovered = hoveredIdx === i;
+            const dateLabel = item.periodStart ? item.periodStart.slice(5) : '';
+
+            return (
+              <g
+                key={item.periodStart || i}
+                onMouseEnter={() => setHoveredIdx(i)}
+                onMouseLeave={() => setHoveredIdx(null)}
+                className="cursor-pointer"
+              >
+                {/* Background column track */}
+                <rect
+                  x={x - barWidth / 2}
+                  y={paddingTop}
+                  width={barWidth}
+                  height={innerHeight}
+                  fill="#e2e8f0"
+                  opacity="0.3"
+                  rx={barWidth / 2}
+                />
+
+                {/* Progress bar */}
+                <rect
+                  x={x - barWidth / 2}
+                  y={val > 0 ? y : paddingTop + innerHeight - 2}
+                  width={barWidth}
+                  height={val > 0 ? h : 2}
+                  fill="url(#activeUserBarGrad)"
+                  rx={barWidth / 2}
+                  className={isHovered ? 'brightness-125' : ''}
+                />
+
+                {/* X-axis label */}
+                {(data.length <= 12 || i % Math.ceil(data.length / 8) === 0) && (
+                  <text
+                    x={x}
+                    y={chartHeight - 8}
+                    textAnchor="middle"
+                    className="text-[9px] fill-slate-400 dark:fill-slate-500 font-medium"
+                  >
+                    {dateLabel}
+                  </text>
+                )}
+              </g>
+            );
+          })}
+        </svg>
+
+        {hoveredIdx !== null && data[hoveredIdx] && (
+          <div
+            className="absolute top-2 pointer-events-none bg-slate-900 text-white text-xs px-2.5 py-1 rounded-lg shadow-xl border border-slate-700 transform -translate-x-1/2"
+            style={{
+              left: `${((paddingLeft + (hoveredIdx + 0.5) * (innerWidth / data.length)) / chartWidth) * 100}%`
+            }}
+          >
+            <span>{data[hoveredIdx].periodStart}: <strong>+{data[hoveredIdx].newMembers || data[hoveredIdx].booked}</strong></span>
+          </div>
+        )}
+      </div>
+
+      {/* Lower Row: 4 Mini Stat Pills (Vision UI signature component) */}
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 pt-1">
+        {/* Pill 1: Users */}
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 space-y-1">
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold">
+            <span className="w-5 h-5 rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[13px]">group</span>
+            </span>
+            <span>{isEn ? 'Users' : 'Hội viên'}</span>
+          </div>
+          <p className="text-sm font-chivo font-black text-slate-900 dark:text-white">
+            {totalUsers}
+          </p>
+        </div>
+
+        {/* Pill 2: Bookings */}
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 space-y-1">
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold">
+            <span className="w-5 h-5 rounded-md bg-sky-500/15 text-sky-700 dark:text-sky-400 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[13px]">confirmation_number</span>
+            </span>
+            <span>{isEn ? 'Bookings' : 'Lượt đặt'}</span>
+          </div>
+          <p className="text-sm font-chivo font-black text-slate-900 dark:text-white">
+            {totalBookings}
+          </p>
+        </div>
+
+        {/* Pill 3: Sales */}
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 space-y-1">
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold">
+            <span className="w-5 h-5 rounded-md bg-amber-500/15 text-amber-700 dark:text-amber-400 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[13px]">payments</span>
+            </span>
+            <span>{isEn ? 'Revenue' : 'Doanh thu'}</span>
+          </div>
+          <p className="text-sm font-chivo font-black text-[#2D6A4F] dark:text-[#81B29A]">
+            {formatShortVnd(netSales)}
+          </p>
+        </div>
+
+        {/* Pill 4: Sessions */}
+        <div className="p-2.5 rounded-xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200/70 dark:border-slate-700/70 space-y-1">
+          <div className="flex items-center gap-1.5 text-slate-500 dark:text-slate-400 text-[10px] font-bold">
+            <span className="w-5 h-5 rounded-md bg-purple-500/15 text-purple-700 dark:text-purple-400 flex items-center justify-center">
+              <span className="material-symbols-outlined text-[13px]">stadium</span>
+            </span>
+            <span>{isEn ? 'Sessions' : 'Ca học'}</span>
+          </div>
+          <p className="text-sm font-chivo font-black text-slate-900 dark:text-white">
+            {totalSessions}
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
