@@ -259,33 +259,31 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
 
   return (
     <header className="h-16 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 pr-3 sm:pr-6 flex items-center justify-between shadow-xs transition-colors">
-      {/* Left: Brand Logo SCMS & Hamburger Toggle matching FPT Portal */}
+      {/* Left: Brand Logo SCMS & Sidebar Toggle (Merged seamlessly with sidebar below) */}
       <div className="flex items-center h-full">
-        {/* Brand Logo Column: collapses to 0 width when sidebar is collapsed */}
+        {/* Brand Logo Zone: smoothly transitions between full logo (w-64) and compact logo (w-20) */}
         <div
-          className={`h-full flex items-center transition-all duration-300 ease-in-out overflow-hidden ${
+          className={`h-full flex items-center transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 ${
             isSidebarCollapsed
-              ? 'w-0 opacity-0 px-0 border-r-0 pointer-events-none'
-              : 'w-56 lg:w-64 justify-start px-3 sm:px-4 border-r border-slate-200 dark:border-slate-800 opacity-100'
+              ? 'w-16 lg:w-20 justify-center px-0'
+              : 'w-56 lg:w-64 justify-start px-3 sm:px-4'
           }`}
         >
-          <Logo variant="auto" size="md" compact={false} />
+          <Logo variant="auto" size={isSidebarCollapsed ? 'sm' : 'md'} compact={isSidebarCollapsed} />
         </div>
 
-        {/* Sidebar Toggle Button (Hamburger):
-            When collapsed: centered in a w-16 lg:w-20 zone to align with the mini-sidebar below it!
-            When expanded: px-2.5 sm:px-3.5 next to the brand logo divider */}
-        <div className={`h-full flex items-center justify-center transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-16 lg:w-20 border-r border-slate-200 dark:border-slate-800' : 'px-2.5 sm:px-3.5'
-        }`}>
+        {/* Unified Toggle Button: sleek circular button with chevron matching reference */}
+        <div className="px-2.5 sm:px-3">
           <button
             onClick={onToggleSidebar}
             type="button"
-            className="w-10 h-10 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/90 dark:bg-slate-800/90 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center justify-center text-slate-600 dark:text-slate-300 transition-colors cursor-pointer shadow-2xs"
-            title={isSidebarCollapsed ? (language === 'vi' ? 'Mở thanh menu dọc' : 'Show vertical sidebar') : (language === 'vi' ? 'Thu gọn thanh menu dọc' : 'Collapse vertical sidebar')}
+            className="w-8 h-8 rounded-full border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-[#81B29A] flex items-center justify-center text-slate-600 dark:text-slate-300 transition-all cursor-pointer shadow-xs hover:scale-105 active:scale-95"
+            title={isSidebarCollapsed ? (language === 'vi' ? 'Mở rộng thanh menu' : 'Expand sidebar') : (language === 'vi' ? 'Thu gọn thanh menu' : 'Collapse sidebar')}
             aria-label={isSidebarCollapsed ? 'Show sidebar' : 'Collapse sidebar'}
           >
-            <span className="material-symbols-outlined text-[22px]">menu</span>
+            <span className="material-symbols-outlined text-[18px]">
+              {isSidebarCollapsed ? 'chevron_right' : 'chevron_left'}
+            </span>
           </button>
         </div>
       </div>

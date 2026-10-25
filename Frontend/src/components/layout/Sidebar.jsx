@@ -517,60 +517,21 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             : 'lg:translate-x-0 lg:w-64'
         }`}
       >
-        {/* Floating circular chevron toggle button on the right edge (like reference photo) */}
-        {onToggleDesktopCollapse && (
-          <button
-            type="button"
-            onClick={onToggleDesktopCollapse}
-            className="hidden lg:flex absolute -right-3.5 top-6 z-40 w-7 h-7 rounded-full bg-white dark:bg-slate-800 border border-slate-200/90 dark:border-slate-700 shadow-md items-center justify-center text-slate-500 dark:text-slate-400 hover:text-[#2D6A4F] dark:hover:text-emerald-400 hover:border-[#81B29A] transition-all cursor-pointer hover:scale-110 active:scale-95"
-            title={isDesktopCollapsed ? (isEn ? 'Expand sidebar' : 'Mở rộng thanh menu') : (isEn ? 'Collapse sidebar' : 'Thu gọn thanh menu')}
-            aria-label={isDesktopCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <span className="material-symbols-outlined text-[16px] transition-transform duration-200">
-              {isDesktopCollapsed ? 'chevron_right' : 'chevron_left'}
-            </span>
-          </button>
-        )}
-
-        {/* Top Brand Header in Collapsed Mode (3 Olympic accent dots + S capsule logo + MENU) */}
+        {/* Seamless Top Role / Section Bar (Merged with Header's Logo Column above) */}
         {isDesktopCollapsed ? (
-          <div className="pt-4 pb-2 px-2 flex flex-col items-center border-b border-slate-200/80 dark:border-slate-800 shrink-0">
-            {/* 3 Olympic Accent Dots inspired by reference */}
-            <div className="flex items-center gap-1.5 mb-2.5">
-              <span className="w-2 h-2 rounded-full bg-[#E07A5F] shadow-2xs" title="SCMS Terracotta" />
-              <span className="w-2 h-2 rounded-full bg-[#F2CC8F] shadow-2xs" title="SCMS Olympic Gold" />
-              <span className="w-2 h-2 rounded-full bg-[#81B29A] shadow-2xs" title="SCMS Sage Green" />
-            </div>
-
-            {/* Brand Logo "S" capsule badge matching reference image */}
-            <a
-              href="#/"
-              className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#81B29A] to-[#2D6A4F] text-white flex items-center justify-center font-black text-lg shadow-sm ring-2 ring-[#81B29A]/20 hover:scale-105 transition-transform"
-              title="SCMS Olympic Arena"
-            >
-              <span className="font-serif italic font-black">S</span>
-            </a>
-
-            {/* "MENU" label matching reference photo */}
-            <div className="mt-2.5 text-[9px] font-black text-slate-400 dark:text-slate-500 uppercase tracking-widest text-center select-none">
+          <div className="py-2.5 px-1 border-b border-slate-100 dark:border-slate-800/80 flex justify-center shrink-0">
+            <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               MENU
-            </div>
+            </span>
           </div>
         ) : (
-          <div className="p-3.5 border-b border-slate-200/80 dark:border-slate-800 flex items-center justify-between shrink-0">
-            <div className="flex items-center gap-2.5 min-w-0">
-              <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-[#81B29A] to-[#2D6A4F] text-white flex items-center justify-center font-black text-base shadow-sm ring-2 ring-[#81B29A]/20 shrink-0">
-                <span className="font-serif italic font-black">S</span>
-              </div>
-              <div className="flex flex-col min-w-0">
-                <span className="text-xs font-black tracking-wider text-[#1E2235] dark:text-white uppercase truncate">
-                  SCMS OLYMPIC
-                </span>
-                <span className="text-[10px] text-[#2D6A4F] dark:text-[#81B29A] font-bold truncate">
-                  {roleLabel}
-                </span>
-              </div>
-            </div>
+          <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
+            <span className="text-[11px] font-bold text-[#2D6A4F] dark:text-emerald-400 uppercase tracking-wider">
+              {roleLabel}
+            </span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-300">
+              {effectiveRole}
+            </span>
           </div>
         )}
 
