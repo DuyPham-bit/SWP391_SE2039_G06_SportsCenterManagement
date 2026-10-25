@@ -19,6 +19,12 @@ export function AppLayout({ children, currentPath }) {
   const { role } = useAuth();
   const { language, t } = useLanguage();
 
+  React.useEffect(() => {
+    const handleOpenProfile = () => setProfileModalOpen(true);
+    window.addEventListener('SCMS_OPEN_PROFILE', handleOpenProfile);
+    return () => window.removeEventListener('SCMS_OPEN_PROFILE', handleOpenProfile);
+  }, []);
+
   const handleToggleSidebar = () => {
     if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
       setDesktopCollapsed(prev => {
@@ -124,15 +130,15 @@ export function AppLayout({ children, currentPath }) {
         <Sidebar
           isOpen={mobileOpen}
           isDesktopCollapsed={desktopCollapsed}
+          onToggleDesktopCollapse={handleToggleSidebar}
           onClose={handleCloseMobile}
           currentPath={currentPath}
-          onToggleDesktop={handleToggleSidebar}
         />
 
         {/* Main Content Viewport */}
         <main
           className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
-            desktopCollapsed ? 'lg:pl-[92px]' : 'lg:pl-[280px]'
+            desktopCollapsed ? 'lg:pl-20' : 'lg:pl-64'
           }`}
         >
           <div className="flex-1 p-3.5 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto">
