@@ -735,54 +735,38 @@ export function PackageManagement() {
                     <span>{isActive ? (isEn ? 'Lock sales' : 'Khóa bán') : (isEn ? 'Open sales' : 'Mở bán')}</span>
                   </button>
 
-                  <div className="flex items-center gap-1.5">
+                  {canEditPackage(pkg) ? (
                     <button
                       type="button"
-                      onClick={() => handleDuplicatePackage(pkg)}
-                      title={isEn ? 'Duplicate this package as a new template' : 'Nhân bản gói này làm mẫu tạo gói mới'}
-                      className={`inline-flex items-center gap-1 px-2.5 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+                      onClick={() => openEditModal(pkg)}
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer shadow-xs ${
                         tier.isVip
-                          ? 'bg-white/10 hover:bg-white/20 text-amber-300 border border-amber-400/30'
-                          : 'bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700'
+                          ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black shadow-md'
+                          : 'bg-[#1E2235] hover:bg-[#2B2D42] text-white'
                       }`}
                     >
-                      <span className="material-symbols-outlined text-[15px]">content_copy</span>
-                      <span className="hidden sm:inline">{isEn ? 'Clone' : 'Nhân bản'}</span>
+                      <span className="material-symbols-outlined text-[15px]">edit</span>
+                      <span>{isEn ? 'Edit' : 'Sửa'}</span>
                     </button>
-
-                    {canEditPackage(pkg) ? (
-                      <button
-                        type="button"
-                        onClick={() => openEditModal(pkg)}
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer shadow-xs ${
-                          tier.isVip
-                            ? 'bg-gradient-to-r from-amber-400 to-amber-500 hover:from-amber-300 hover:to-amber-400 text-slate-950 font-black shadow-md'
-                            : 'bg-[#1E2235] hover:bg-[#2B2D42] text-white'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[15px]">edit</span>
-                        <span>{isEn ? 'Edit' : 'Sửa'}</span>
-                      </button>
-                    ) : (
-                      <button
-                        type="button"
-                        disabled
-                        title={
-                          isEn
-                            ? 'Cannot edit: This package has existing members or orders.'
-                            : 'Gói đã kích hoạt và có người đặt, không thể chỉnh sửa.'
-                        }
-                        className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider cursor-not-allowed opacity-60 ${
-                          tier.isVip
-                            ? 'bg-white/10 text-slate-400 border border-white/10'
-                            : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[15px]">lock</span>
-                        <span>{isEn ? 'Locked' : 'Khóa sửa'}</span>
-                      </button>
-                    )}
-                  </div>
+                  ) : (
+                    <button
+                      type="button"
+                      disabled
+                      title={
+                        isEn
+                          ? 'Cannot edit: This package has existing members or orders.'
+                          : 'Gói đã kích hoạt và có người đặt, không thể chỉnh sửa.'
+                      }
+                      className={`inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider cursor-not-allowed opacity-60 ${
+                        tier.isVip
+                          ? 'bg-white/10 text-slate-400 border border-white/10'
+                          : 'bg-slate-100 dark:bg-slate-800 text-slate-400 dark:text-slate-500 border border-slate-200 dark:border-slate-700'
+                      }`}
+                    >
+                      <span className="material-symbols-outlined text-[15px]">lock</span>
+                      <span>{isEn ? 'Locked' : 'Khóa sửa'}</span>
+                    </button>
+                  )}
                 </div>
               </div>
             );

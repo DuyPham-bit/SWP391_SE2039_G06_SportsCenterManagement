@@ -204,23 +204,23 @@ export function ToastProvider({ children }) {
             <div
               key={t.id}
               role={t.type === 'error' ? 'alert' : 'status'}
-              className={`pointer-events-auto relative w-full flex items-start gap-3.5 px-4.5 py-4 rounded-2xl bg-white dark:bg-[#0c1322] toast-capsule-bg backdrop-blur-2xl border ${cfg.cardBorder} ${cfg.cardShadow} overflow-hidden animate-toast-3d ring-1 ring-slate-900/5 dark:ring-white/10 group transition-all duration-300 hover:scale-[1.01]`}
+              className={`pointer-events-auto relative w-full flex items-center gap-3.5 px-5 py-3.5 sm:px-6 sm:py-4 rounded-2xl bg-white dark:bg-[#0c1322] toast-capsule-bg backdrop-blur-2xl border ${cfg.cardBorder} ${cfg.cardShadow} overflow-hidden animate-toast-3d ring-1 ring-slate-900/5 dark:ring-white/10 group transition-all duration-300 hover:scale-[1.01]`}
             >
               {/* 3D Top Specular Light Beam (Refraction Line) */}
-              <div className="absolute inset-x-8 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
+              <div className="absolute inset-x-8 top-0 h-[1.5px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
 
-              {/* 3D Gemstone Orb Sphere */}
-              <div className={`relative w-10 h-10 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${cfg.orbBg} ${cfg.orbShadow}`}>
+              {/* 3D Gemstone Orb Sphere (Perfect centering & breathing room) */}
+              <div className={`relative w-11 h-11 rounded-full flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
                 {/* Specular Highlight Glint */}
                 <div className="absolute top-1 left-2.5 w-3.5 h-1.5 rounded-full bg-white/80 blur-[0.3px] -rotate-35 pointer-events-none" />
-                <span className="material-symbols-outlined text-[20px] text-white font-bold drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)] select-none">
+                <span className="material-symbols-outlined text-[22px] text-white font-bold drop-shadow-[0_2px_2px_rgba(0,0,0,0.6)] select-none">
                   {cfg.icon}
                 </span>
               </div>
 
               {/* Message & Context */}
-              <div className="flex-1 min-w-0 pt-0.5">
-                <div className="flex items-center gap-2 mb-1.5 flex-wrap">
+              <div className="flex-1 min-w-0 py-0.5">
+                <div className="flex items-center gap-2 mb-1 flex-wrap">
                   <div className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase border ${cfg.tagColor}`}>
                     <span className={`w-1.5 h-1.5 rounded-full ${cfg.dotColor}`} />
                     <span>{cfg.label}</span>
@@ -248,22 +248,24 @@ export function ToastProvider({ children }) {
                 )}
               </div>
 
-              {/* Minimal Circular Glass Close Button */}
+              {/* Minimal Circular Glass Close Button (Centered vertically) */}
               <button
                 onClick={() => removeToast(t.id)}
                 aria-label="Đóng thông báo"
-                className="w-7 h-7 rounded-full bg-slate-100 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200 dark:border-white/10 active:scale-90 flex items-center justify-center text-slate-500 hover:text-slate-800 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer shrink-0 -mr-1 -mt-0.5"
+                className="w-8 h-8 rounded-full bg-slate-100/80 dark:bg-white/10 hover:bg-slate-200 dark:hover:bg-white/20 border border-slate-200/80 dark:border-white/10 active:scale-90 flex items-center justify-center text-slate-400 hover:text-slate-700 dark:text-slate-400 dark:hover:text-white transition-all cursor-pointer shrink-0"
               >
                 <span className="material-symbols-outlined text-[16px]">close</span>
               </button>
 
-              {/* Glowing Hairline Progress Beam */}
-              <div
-                className={`absolute bottom-0 left-0 right-0 h-[3px] origin-left ${cfg.beam}`}
-                style={{
-                  animation: `toast-progress-beam ${t.duration || 3500}ms linear forwards`
-                }}
-              />
+              {/* Full-width Hairline Bottom Progress Bar with Track */}
+              <div className="absolute bottom-0 inset-x-0 h-[2.5px] bg-slate-100 dark:bg-white/10 overflow-hidden pointer-events-none">
+                <div
+                  className={`h-full origin-left ${cfg.beam}`}
+                  style={{
+                    animation: `toast-progress-beam ${t.duration || 3500}ms linear forwards`
+                  }}
+                />
+              </div>
             </div>
           );
         })}
