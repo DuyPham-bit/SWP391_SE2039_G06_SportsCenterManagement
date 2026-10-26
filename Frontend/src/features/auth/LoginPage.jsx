@@ -166,7 +166,7 @@ export function LoginPage() {
           setGoogleLoading(true);
           try {
             const user = await loginWithGoogle({ credential });
-            showSuccess('Đăng nhập Google thành công! Chào mừng ' + (user.fullName || 'bạn') + '.');
+            showSuccess(`Đăng nhập thành công, ${user.fullName || 'bạn'}!`);
             redirectToRoleDashboard(user.role);
           } catch (err) {
             showError(err.message || 'Đăng nhập Google thất bại.');
@@ -246,7 +246,7 @@ export function LoginPage() {
     try {
       const user = await login(email, loginPassword);
       saveRememberedEmail(rememberEmail ? email : '');
-      showSuccess('Đăng nhập thành công! Chào mừng ' + user.fullName + '.');
+      showSuccess(`Đăng nhập thành công, ${user.fullName}!`);
       redirectToRoleDashboard(user.role);
     } catch (error) {
       const rawMessage = error.payload?.message || error.message || 'Đăng nhập thất bại. Vui lòng thử lại.';

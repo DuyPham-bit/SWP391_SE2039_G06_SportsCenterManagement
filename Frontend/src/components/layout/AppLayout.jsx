@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Header } from './Header.js';
 import { Sidebar } from './Sidebar.js';
-import { ProfileModal } from '../../features/auth/ProfileModal.js';
-import { useAuth } from '../../context/AuthContext.js';
+import { ProfileModal } from '../../features/auth/ProfileModal.jsx';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { MemberAIChatPopup, openMemberAIChat } from '../../features/member/MemberAIChatPopup.jsx';
 

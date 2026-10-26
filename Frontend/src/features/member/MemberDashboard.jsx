@@ -412,14 +412,23 @@ export function MemberDashboard() {
           <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
             {/* White VIP Avatar Squircle with vibrant Olympic logo gradient text */}
             <div className="relative shrink-0">
-              <div
-                className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 text-[#1B4332] dark:text-[#81B29A] flex items-center justify-center font-black text-2xl sm:text-3xl uppercase tracking-wider shadow-lg border-2 border-white/90 dark:border-white/20 select-none transition-transform duration-300 hover:scale-105"
-                style={{ boxShadow: '0 8px 24px rgba(0, 0, 0, 0.16)' }}
-              >
-                <span className="bg-gradient-to-tr from-[#2D6A4F] via-[#24828F] to-[#D99A38] bg-clip-text text-transparent font-black">
-                  {currentUser?.fullName?.charAt(0) || 'M'}
-                </span>
-              </div>
+              {currentUser?.avatar ? (
+                <img
+                  src={currentUser.avatar}
+                  alt={currentUser?.fullName || 'Avatar'}
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl object-cover shadow-lg border-2 border-white/90 dark:border-white/20 select-none transition-transform duration-300 hover:scale-105"
+                  style={{ boxShadow: '0 8px 24px rgba(0, 0, 0, 0.16)' }}
+                />
+              ) : (
+                <div
+                  className="w-16 h-16 sm:w-20 sm:h-20 rounded-2xl bg-white/95 dark:bg-slate-900/95 text-[#1B4332] dark:text-[#81B29A] flex items-center justify-center font-black text-2xl sm:text-3xl uppercase tracking-wider shadow-lg border-2 border-white/90 dark:border-white/20 select-none transition-transform duration-300 hover:scale-105"
+                  style={{ boxShadow: '0 8px 24px rgba(0, 0, 0, 0.16)' }}
+                >
+                  <span className="bg-gradient-to-tr from-[#2D6A4F] via-[#24828F] to-[#D99A38] bg-clip-text text-transparent font-black">
+                    {currentUser?.fullName?.charAt(0) || 'M'}
+                  </span>
+                </div>
+              )}
               <span
                 className="absolute -bottom-1 -right-1 w-5 h-5 rounded-full bg-emerald-400 border-2 border-white dark:border-slate-900 flex items-center justify-center shadow-xs animate-pulse-ring"
                 title={isEn ? 'Account Online' : 'Tài khoản đang trực tuyến'}

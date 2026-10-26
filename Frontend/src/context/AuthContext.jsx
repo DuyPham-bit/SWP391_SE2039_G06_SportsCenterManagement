@@ -86,6 +86,25 @@ export function AuthProvider({ children }) {
     return applyUser(updated);
   };
 
+  const updateAvatar = async (avatarUrl) => {
+    if (!currentUser) return;
+    const updated = await authApi.updateAvatar(currentUser.id, avatarUrl);
+    return applyUser(updated);
+  };
+
+  useEffect(() => {
+    const handleAvatarChange = (e) => {
+      const { userId, avatar } = e.detail || {};
+      if (currentUser && Number(userId) === Number(currentUser.id)) {
+        if (currentUser.avatar !== avatar) {
+          setCurrentUser(prev => prev ? { ...prev, avatar: avatar || null } : prev);
+        }
+      }
+    };
+    window.addEventListener('scms:avatar-changed', handleAvatarChange);
+    return () => window.removeEventListener('scms:avatar-changed', handleAvatarChange);
+  }, [currentUser?.id, currentUser?.avatar]);
+
   const changePassword = async (currentPassword, newPassword) => {
     if (!currentUser) return;
     const updated = await authApi.changePassword(currentUser.id, currentPassword, newPassword);
@@ -104,6 +123,7 @@ export function AuthProvider({ children }) {
     register,
     logout,
     updateProfile,
+    updateAvatar,
     changePassword,
     refreshUser
   };

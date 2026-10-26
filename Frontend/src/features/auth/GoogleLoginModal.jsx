@@ -52,7 +52,7 @@ export function GoogleLoginModal({ isOpen, onClose, onSuccess, linkAccount = fal
               onClose();
             } else {
               const user = await loginWithGoogle({ credential });
-              showSuccess('Đăng nhập Google thành công.');
+              showSuccess(`Đăng nhập thành công, ${user.fullName || 'bạn'}!`);
               onClose();
               onSuccess?.(user);
             }

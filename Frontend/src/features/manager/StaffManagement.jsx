@@ -1707,15 +1707,23 @@ export function StaffManagement() {
           <div className="space-y-6">
             {/* Header info */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-              <div
-                className={`w-16 h-16 rounded-2xl bg-gradient-to-tr ${getAvatarGradient(
-                  detailModalStaff.fullName,
-                  detailModalStaff.role,
-                  roleConfig
-                )} flex items-center justify-center text-white font-black text-xl shadow-md flex-shrink-0`}
-              >
-                {getInitials(detailModalStaff.fullName)}
-              </div>
+              {detailModalStaff.avatar ? (
+                <img
+                  src={detailModalStaff.avatar}
+                  alt={detailModalStaff.fullName}
+                  className="w-16 h-16 rounded-2xl object-cover shadow-md flex-shrink-0"
+                />
+              ) : (
+                <div
+                  className={`w-16 h-16 rounded-2xl bg-gradient-to-tr ${getAvatarGradient(
+                    detailModalStaff.fullName,
+                    detailModalStaff.role,
+                    roleConfig
+                  )} flex items-center justify-center text-white font-black text-xl shadow-md flex-shrink-0`}
+                >
+                  {getInitials(detailModalStaff.fullName)}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">{detailModalStaff.fullName}</h3>

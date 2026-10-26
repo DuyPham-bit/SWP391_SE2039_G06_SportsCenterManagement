@@ -1,6 +1,33 @@
 import { apiRequest, clearApiToken, createIdempotencyKey, getApiToken, setApiToken } from './http.js';
 import { assertAuthVersion, beginAuthOperation, getAuthUser, getAuthVersion, setAuthUser } from './authState.js';
 
+function safeGetAvatar(userId) {
+  if (!userId || typeof localStorage === 'undefined') return null;
+  try {
+    return localStorage.getItem(`scms_avatar_${userId}`) || null;
+  } catch {
+    return null;
+  }
+}
+
+function safeSetAvatar(userId, avatarUrl) {
+  if (!userId || typeof localStorage === 'undefined') return;
+  try {
+    if (avatarUrl) {
+      localStorage.setItem(`scms_avatar_${userId}`, avatarUrl);
+    } else {
+      localStorage.removeItem(`scms_avatar_${userId}`);
+    }
+    if (typeof window !== 'undefined') {
+      window.dispatchEvent(new CustomEvent('scms:avatar-changed', {
+        detail: { userId, avatar: avatarUrl || null }
+      }));
+    }
+  } catch {
+    // ignore storage quota errors
+  }
+}
+
 function centerId() {
   const id = getAuthUser()?.centerId || import.meta.env.VITE_SPORTS_CENTER_ID;
   if (!id || !Number.isSafeInteger(Number(id)) || Number(id) <= 0) {
@@ -66,7 +93,7 @@ function mapMember(member) {
     packageStartDate: member.packageStartDate || null,
     packageId: member.packageId || null,
     subscriptionId: member.subscriptionId || null,
-    avatar: null
+    avatar: safeGetAvatar(member.userId || member.id)
   };
 }
 
@@ -110,7 +137,7 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
     packageStartDate: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStartDate || null) : null,
     packageStatus: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStatus || 'INACTIVE') : null,
     scheduledSubscriptions,
-    avatar: null
+    avatar: safeGetAvatar(profile.userId)
   };
   setAuthUser(user);
   return user;
@@ -271,11 +298,27 @@ export const authApi = {
   async updateProfile(_userId, profileData) {
     const version = getAuthVersion();
     const token = getApiToken();
+    if (profileData && profileData.avatar !== undefined) {
+      safeSetAvatar(_userId, profileData.avatar || null);
+    }
     await apiRequest('profile/me', {
       method: 'PATCH', token,
       body: { fullName: profileData.fullName, phone: profileData.phone || null }
     });
     assertAuthVersion(version);
+    return loadCurrentUser(token, version);
+  },
+
+  async updateAvatar(userId, avatarUrl) {
+    const version = getAuthVersion();
+    const token = getApiToken();
+    safeSetAvatar(userId, avatarUrl || null);
+    const current = getAuthUser();
+    if (current && Number(current.id) === Number(userId)) {
+      const updated = { ...current, avatar: avatarUrl || null };
+      setAuthUser(updated);
+      return updated;
+    }
     return loadCurrentUser(token, version);
   },
 
@@ -357,7 +400,7 @@ function mapStaff(item) {
     certification: item.certification || '',
     experienceYears: item.experienceYears,
     bio: item.bio,
-    avatar: null
+    avatar: safeGetAvatar(item.userId)
   };
 }
 
@@ -749,6 +792,10 @@ export const receptionApi = {
 };
 
 export const memberApi = {
+  async updateMemberAvatar(memberId, avatarUrl) {
+    safeSetAvatar(memberId, avatarUrl || null);
+  },
+
   async getCenterMembers(query = '', page = 1) {
     const params = new URLSearchParams({ query: query.trim(), page: String(page), pageSize: '20' });
     return apiRequest(`centers/${centerId()}/members?${params}`);

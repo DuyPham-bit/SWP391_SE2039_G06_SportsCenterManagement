@@ -590,13 +590,21 @@ export function MemberManagement() {
                         {/* Member Column */}
                         <td className="py-3.5 px-5">
                           <div className="flex items-center gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-full bg-gradient-to-tr ${getAvatarGradient(
-                                r.fullName
-                              )} flex items-center justify-center text-white font-black text-xs shadow-sm flex-shrink-0`}
-                            >
-                              {getInitials(r.fullName)}
-                            </div>
+                            {r.avatar ? (
+                              <img
+                                src={r.avatar}
+                                alt={r.fullName}
+                                className="w-10 h-10 rounded-full object-cover shadow-sm flex-shrink-0"
+                              />
+                            ) : (
+                              <div
+                                className={`w-10 h-10 rounded-full bg-gradient-to-tr ${getAvatarGradient(
+                                  r.fullName
+                                )} flex items-center justify-center text-white font-black text-xs shadow-sm flex-shrink-0`}
+                              >
+                                {getInitials(r.fullName)}
+                              </div>
+                            )}
                             <div className="min-w-0">
                               <div className="flex items-center gap-2">
                                 <span className="font-bold text-slate-900 dark:text-slate-100 group-hover:text-[#2D6A4F] dark:group-hover:text-[#81B29A] transition-colors whitespace-nowrap">
@@ -1024,13 +1032,21 @@ export function MemberManagement() {
           <div className="space-y-6">
             {/* Header info */}
             <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700">
-              <div
-                className={`w-16 h-16 rounded-2xl bg-gradient-to-tr ${getAvatarGradient(
-                  modal.row.fullName
-                )} flex items-center justify-center text-white font-black text-xl shadow-md flex-shrink-0`}
-              >
-                {getInitials(modal.row.fullName)}
-              </div>
+              {modal.row.avatar ? (
+                <img
+                  src={modal.row.avatar}
+                  alt={modal.row.fullName}
+                  className="w-16 h-16 rounded-2xl object-cover shadow-md flex-shrink-0"
+                />
+              ) : (
+                <div
+                  className={`w-16 h-16 rounded-2xl bg-gradient-to-tr ${getAvatarGradient(
+                    modal.row.fullName
+                  )} flex items-center justify-center text-white font-black text-xl shadow-md flex-shrink-0`}
+                >
+                  {getInitials(modal.row.fullName)}
+                </div>
+              )}
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2">
                   <h3 className="text-lg font-black text-slate-900 dark:text-slate-100">{modal.row.fullName}</h3>

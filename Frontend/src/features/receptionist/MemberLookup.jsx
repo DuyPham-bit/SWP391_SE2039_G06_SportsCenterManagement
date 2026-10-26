@@ -6,12 +6,14 @@ import { useToast } from '../../context/ToastContext.js';
 import { CounterError } from './ReceptionistShared.jsx';
 import { formatMemberDate } from '../member/memberOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
+import { processAvatarFile, setStoredAvatar } from '../../services/avatarHelper.js';
 
 export function MemberLookup() {
   const { language } = useLanguage();
   const isEn = language === 'en';
 
   const { showSuccess, showError } = useToast();
+  const memberAvatarInputRef = React.useRef(null);
   const [query, setQuery] = useState('');
   const [results, setResults] = useState([]);
   const [selectedMember, setSelectedMember] = useState(null);
@@ -285,11 +287,44 @@ export function MemberLookup() {
                 <div className="lg:col-span-2 bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-6 shadow-sm space-y-6 hover-lift transition-all">
                   <div className="flex items-start justify-between pb-6 border-b border-slate-100 dark:border-slate-800">
                     <div className="flex items-center gap-4">
-                      <img
-                        src={selectedMember.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}
-                        alt=""
-                        className="w-16 h-16 rounded-full object-cover border-2 border-[#81B29A] shadow"
-                      />
+                      <div className="relative group shrink-0">
+                        <img
+                          src={selectedMember.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}
+                          alt={selectedMember.fullName}
+                          onClick={() => memberAvatarInputRef.current?.click()}
+                          className="w-16 h-16 rounded-2xl object-cover border-2 border-[#81B29A] shadow cursor-pointer transition-transform group-hover:scale-105"
+                          title={isEn ? "Click to change photo from phone or computer" : "Nhấp để đổi ảnh thẻ hội viên từ máy tính/điện thoại"}
+                        />
+                        <button
+                          type="button"
+                          onClick={() => memberAvatarInputRef.current?.click()}
+                          className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-[#1E2235] text-[#F2CC8F] hover:text-white border-2 border-white dark:border-slate-800 flex items-center justify-center shadow transition-transform hover:scale-110 cursor-pointer"
+                          title={isEn ? "Upload photo" : "Tải ảnh thẻ"}
+                        >
+                          <span className="material-symbols-outlined text-[13px]">photo_camera</span>
+                        </button>
+                        <input
+                          ref={memberAvatarInputRef}
+                          type="file"
+                          accept="image/*"
+                          className="hidden"
+                          onChange={async (e) => {
+                            const file = e.target.files?.[0];
+                            if (!file || !selectedMember) return;
+                            try {
+                              const result = await processAvatarFile(file, 360, 0.88);
+                              const key = selectedMember.userId || selectedMember.id;
+                              setStoredAvatar(key, result.dataUrl);
+                              setSelectedMember(prev => ({ ...prev, avatar: result.dataUrl }));
+                              setResults(prev => prev.map(m => (m.id === selectedMember.id ? { ...m, avatar: result.dataUrl } : m)));
+                              showSuccess(isEn ? 'Member photo updated successfully!' : 'Đã cập nhật ảnh thẻ hội viên thành công!');
+                            } catch (err) {
+                              showError(err.message || (isEn ? 'Failed to process image!' : 'Không thể xử lý hình ảnh!'));
+                            }
+                            e.target.value = '';
+                          }}
+                        />
+                      </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <h2 className="font-chivo text-xl font-black text-slate-900 dark:text-white">{selectedMember.fullName}</h2>

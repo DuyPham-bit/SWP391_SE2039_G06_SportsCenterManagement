@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
@@ -8,9 +8,10 @@ import { GoogleLoginModal } from './GoogleLoginModal.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { translatePackageName } from '../../services/i18nHelper.js';
+import { processAvatarFile, getInitials } from '../../services/avatarHelper.js';
 
 export function ProfileModal({ isOpen, onClose }) {
-  const { currentUser, updateProfile, changePassword } = useAuth();
+  const { currentUser, updateProfile, updateAvatar, changePassword } = useAuth();
   const { showSuccess, showError } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -22,6 +23,81 @@ export function ProfileModal({ isOpen, onClose }) {
   const [fullName, setFullName] = useState(currentUser?.fullName || '');
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [savingProfile, setSavingProfile] = useState(false);
+
+  // Avatar Management State
+  const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar || '');
+  const [avatarChanged, setAvatarChanged] = useState(false);
+  const [isProcessingAvatar, setIsProcessingAvatar] = useState(false);
+  const [isDraggingAvatar, setIsDraggingAvatar] = useState(false);
+  const [savingAvatarOnly, setSavingAvatarOnly] = useState(false);
+  const fileInputRef = useRef(null);
+
+  // Synchronize state when modal opens or currentUser updates
+  useEffect(() => {
+    if (isOpen && currentUser) {
+      setFullName(currentUser.fullName || '');
+      setPhone(currentUser.phone || '');
+      setAvatarPreview(currentUser.avatar || '');
+      setAvatarChanged(false);
+    }
+  }, [isOpen, currentUser]);
+
+  const userInitials = useMemo(() => {
+    return getInitials(fullName || currentUser?.fullName || currentUser?.username || 'U');
+  }, [fullName, currentUser?.fullName, currentUser?.username]);
+
+  // Xử lý tệp hình ảnh được chọn từ máy tính hoặc chụp từ camera điện thoại
+  const handleProcessImage = async (file) => {
+    if (!file) return;
+    setIsProcessingAvatar(true);
+    try {
+      const result = await processAvatarFile(file, 360, 0.88);
+      setAvatarPreview(result.dataUrl);
+      setAvatarChanged(true);
+      showSuccess(
+        isEn
+          ? `Photo selected (${result.sizeKb} KB). Click "Save Photo" or "Save Changes" to apply.`
+          : `Đã tải ảnh lên (${result.sizeKb} KB). Nhấn "Lưu ảnh" hoặc "Lưu Thay Đổi" để áp dụng.`
+      );
+    } catch (err) {
+      showError(err.message || (isEn ? 'Failed to process image!' : 'Không thể xử lý hình ảnh!'));
+    } finally {
+      setIsProcessingAvatar(false);
+    }
+  };
+
+  const handleRemoveAvatar = () => {
+    setAvatarPreview('');
+    setAvatarChanged(true);
+    showSuccess(
+      isEn
+        ? 'Avatar removed. Click "Save Changes" or "Save Photo" to apply.'
+        : 'Đã gỡ ảnh đại diện. Nhấn "Lưu Thay Đổi" để áp dụng.'
+    );
+  };
+
+  const handleRevertAvatar = () => {
+    setAvatarPreview(currentUser?.avatar || '');
+    setAvatarChanged(false);
+  };
+
+  const handleQuickSaveAvatar = async () => {
+    if (!avatarChanged) return;
+    setSavingAvatarOnly(true);
+    try {
+      if (updateAvatar) {
+        await updateAvatar(avatarPreview || null);
+      } else {
+        await updateProfile({ fullName: fullName.trim(), phone: phone.trim(), avatar: avatarPreview || null });
+      }
+      setAvatarChanged(false);
+      showSuccess(isEn ? 'Avatar updated successfully!' : 'Đã cập nhật ảnh đại diện thành công!');
+    } catch (err) {
+      showError(err.message || (isEn ? 'Failed to update avatar!' : 'Cập nhật ảnh đại diện thất bại!'));
+    } finally {
+      setSavingAvatarOnly(false);
+    }
+  };
 
   // Password Form State
   const [currentPassword, setCurrentPassword] = useState('');
@@ -37,7 +113,12 @@ export function ProfileModal({ isOpen, onClose }) {
     }
     setSavingProfile(true);
     try {
-      await updateProfile({ fullName: fullName.trim(), phone: phone.trim() });
+      await updateProfile({
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        avatar: avatarChanged ? (avatarPreview || null) : currentUser?.avatar
+      });
+      setAvatarChanged(false);
       showSuccess(isEn ? 'Profile updated successfully!' : 'Cập nhật hồ sơ cá nhân thành công!');
     } catch (err) {
       showError(err.message || (isEn ? 'Profile update failed!' : 'Cập nhật thất bại!'));
@@ -121,23 +202,158 @@ export function ProfileModal({ isOpen, onClose }) {
 
       {activeTab === 'profile' ? (
         <form onSubmit={handleUpdateProfile} className="space-y-4">
-          <div className="flex items-center gap-4 p-4 rounded-xl bg-slate-50 border border-slate-200">
-            <img
-              src={currentUser?.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}
-              alt="Avatar"
-              className="w-16 h-16 rounded-full object-cover border-2 border-[#81B29A] shadow-xs"
+          {/* Avatar & Device Upload Section */}
+          <div
+            onDragOver={(e) => { e.preventDefault(); setIsDraggingAvatar(true); }}
+            onDragLeave={() => setIsDraggingAvatar(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDraggingAvatar(false);
+              const file = e.dataTransfer.files?.[0];
+              if (file) handleProcessImage(file);
+            }}
+            className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+              isDraggingAvatar
+                ? 'bg-[#81B29A]/15 border-[#81B29A] ring-2 ring-[#81B29A]/40'
+                : 'bg-slate-50 dark:bg-slate-800/50 border-slate-200 dark:border-slate-700'
+            }`}
+          >
+            {/* Hidden native file input - accept="image/*" gives Phone camera/gallery and PC file picker */}
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              className="hidden"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) handleProcessImage(file);
+                e.target.value = '';
+              }}
             />
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-chivo text-base font-bold text-slate-900">{currentUser?.fullName}</span>
-                <Badge variant={currentUser?.role}>{currentUser?.role}</Badge>
+
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
+              {/* Avatar Squircle with Camera Overlay & Floating Badge */}
+              <div className="relative group shrink-0">
+                <div
+                  onClick={() => fileInputRef.current?.click()}
+                  className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden cursor-pointer relative shadow-md ring-2 ring-[#81B29A]/50 transition-all group-hover:scale-105 select-none bg-slate-200 dark:bg-slate-700"
+                  title={isEn ? "Click to change avatar from phone or computer" : "Nhấp để tải ảnh đại diện từ điện thoại hoặc máy tính"}
+                >
+                  {avatarPreview ? (
+                    <img
+                      src={avatarPreview}
+                      alt="Avatar Preview"
+                      className="w-full h-full object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#81B29A] via-[#A8DADC] to-[#F2CC8F] text-white font-black text-xl flex items-center justify-center">
+                      <span>{userInitials}</span>
+                    </div>
+                  )}
+
+                  {/* Hover Camera Overlay */}
+                  <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
+                    <span className="material-symbols-outlined text-[24px]">photo_camera</span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">
+                      {isEn ? 'Change' : 'Đổi ảnh'}
+                    </span>
+                  </div>
+
+                  {/* Processing Spinner during image compression */}
+                  {isProcessingAvatar && (
+                    <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white">
+                      <span className="material-symbols-outlined text-[24px] animate-spin">progress_activity</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Floating Camera Button Badge */}
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white border-2 border-white dark:border-slate-800 flex items-center justify-center shadow-md transition-transform hover:scale-110 cursor-pointer"
+                  title={isEn ? 'Upload photo from phone or computer' : 'Tải ảnh từ điện thoại hoặc máy tính'}
+                >
+                  <span className="material-symbols-outlined text-[15px]">add_a_photo</span>
+                </button>
               </div>
-              <p className="text-xs text-slate-500 mt-0.5">{currentUser?.email}</p>
-              {currentUser?.memberCode && (
-                <p className="text-[11px] font-semibold text-[#2D6A4F] mt-1">
-                  {isEn ? `Member Code: ${currentUser.memberCode}` : `Mã thẻ: ${currentUser.memberCode}`}
+
+              {/* User Info & Avatar Controls */}
+              <div className="flex-1 min-w-0 text-center sm:text-left space-y-2">
+                <div>
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
+                    <span className="font-chivo text-base font-bold text-slate-900 dark:text-slate-100">
+                      {currentUser?.fullName}
+                    </span>
+                    <Badge variant={currentUser?.role}>{currentUser?.role}</Badge>
+                    {avatarChanged && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold bg-amber-100 dark:bg-amber-950/60 text-amber-800 dark:text-amber-300 border border-amber-300 dark:border-amber-700 animate-pulse">
+                        {isEn ? 'Unsaved Photo' : 'Ảnh chưa lưu'}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">{currentUser?.email}</p>
+                  {currentUser?.memberCode && (
+                    <p className="text-[11px] font-semibold text-[#2D6A4F] dark:text-[#81B29A] mt-0.5">
+                      {isEn ? `Member Code: ${currentUser.memberCode}` : `Mã thẻ: ${currentUser.memberCode}`}
+                    </p>
+                  )}
+                </div>
+
+                {/* Action Buttons for Avatar */}
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5">
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isProcessingAvatar}
+                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-slate-700 hover:bg-slate-100 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-slate-600 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                  >
+                    <span className="material-symbols-outlined text-[16px] text-[#2D6A4F] dark:text-[#81B29A]">upload_file</span>
+                    <span>{isEn ? 'Choose Photo / Camera' : 'Tải ảnh từ máy / Chụp ảnh'}</span>
+                  </button>
+
+                  {avatarChanged && (
+                    <button
+                      type="button"
+                      onClick={handleQuickSaveAvatar}
+                      disabled={savingAvatarOnly}
+                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#2D6A4F] hover:bg-[#1B4332] text-white flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                      <span>{savingAvatarOnly ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save Photo' : 'Lưu ảnh')}</span>
+                    </button>
+                  )}
+
+                  {avatarChanged && (
+                    <button
+                      type="button"
+                      onClick={handleRevertAvatar}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-slate-600 hover:text-slate-900 hover:bg-slate-200/60 dark:text-slate-400 dark:hover:text-slate-200 transition-colors cursor-pointer"
+                      title={isEn ? 'Revert change' : 'Hoàn tác'}
+                    >
+                      {isEn ? 'Revert' : 'Hoàn tác'}
+                    </button>
+                  )}
+
+                  {avatarPreview && (
+                    <button
+                      type="button"
+                      onClick={handleRemoveAvatar}
+                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 transition-colors flex items-center gap-1 cursor-pointer"
+                    >
+                      <span className="material-symbols-outlined text-[15px]">delete</span>
+                      <span>{isEn ? 'Remove' : 'Gỡ ảnh'}</span>
+                    </button>
+                  )}
+                </div>
+
+                {/* Helper Tips */}
+                <p className="text-[11px] text-slate-400 dark:text-slate-500 leading-normal">
+                  {isEn
+                    ? '📱 Mobile: Take a photo or pick from photo library • 💻 PC: Select JPG, PNG, WEBP. Auto-cropped & optimized.'
+                    : '📱 Điện thoại: Chụp ảnh trực tiếp hoặc chọn từ Album • 💻 Máy tính: Chọn tệp ảnh JPG, PNG, WEBP. Tự động cắt tròn chuẩn nét.'}
                 </p>
-              )}
+              </div>
             </div>
           </div>
 
