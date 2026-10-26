@@ -55,6 +55,36 @@ services:
       - MailSettings__Host=${EMAIL_SMTP_HOST:-}
       - MailSettings__Port=${EMAIL_SMTP_PORT:-587}
       - AI__ApiKey=${AI_API_KEY:-}
+      # VnPay payment gateway
+      - VnPay__TmnCode=${VNPAY_TMN_CODE:-}
+      - VnPay__HashSecret=${VNPAY_HASH_SECRET:-}
+      - VnPay__BaseUrl=${VNPAY_BASE_URL:-https://sandbox.vnpayment.vn/paymentv2/vpcpay.html}
+      - VnPay__Version=${VNPAY_VERSION:-2.1.0}
+      - VnPay__Command=${VNPAY_COMMAND:-pay}
+      - VnPay__CurrCode=${VNPAY_CURR_CODE:-VND}
+      - VnPay__Locale=${VNPAY_LOCALE:-vn}
+      - VnPay__ReturnUrl=${VNPAY_RETURN_URL:-http://localhost:3004/payment-result}
+      # Momo payment gateway
+      - Momo__PartnerCode=${MOMO_PARTNER_CODE:-MOMO}
+      - Momo__PaymentUrl=${MOMO_PAYMENT_URL:-https://test-payment.momo.vn/v2/gateway/api/create}
+      - Momo__ReturnUrl=${MOMO_RETURN_URL:-http://localhost:3004/payment-result}
+      - Momo__NotifyUrl=${MOMO_NOTIFY_URL:-http://localhost:5000/api/payments/momo-ipn}
+      - Momo__RequestType=${MOMO_REQUEST_TYPE:-captureWallet}
+      - Momo__AccessKey=${MOMO_ACCESS_KEY:-}
+      - Momo__SecretKey=${MOMO_SECRET_KEY:-}
+      # PayOS payment gateway
+      - PayOS__BaseUrl=${PAYOS_BASE_URL:-https://api-merchant.payos.vn}
+      - PayOS__ClientId=${PAYOS_CLIENT_ID:-}
+      - PayOS__ApiKey=${PAYOS_API_KEY:-}
+      - PayOS__ChecksumKey=${PAYOS_CHECKSUM_KEY:-}
+      - PayOS__ReturnUrl=${PAYOS_RETURN_URL:-http://localhost:3004/payment-result}
+      - PayOS__CancelUrl=${PAYOS_CANCEL_URL:-http://localhost:3004/payment-result?cancel=true}
+      # Cloudflare R2 Storage
+      - R2Storage__ServiceUrl=${R2_SERVICE_URL:-}
+      - R2Storage__AccessKey=${R2_ACCESS_KEY:-}
+      - R2Storage__SecretKey=${R2_SECRET_KEY:-}
+      - R2Storage__BucketName=${R2_BUCKET_NAME:-}
+      - R2Storage__PublicDomain=${R2_PUBLIC_DOMAIN:-}
     volumes:
       - backend_media:/app/App_Data/media
 
