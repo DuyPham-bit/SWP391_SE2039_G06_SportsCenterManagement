@@ -219,9 +219,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
         }
       ]);
     } catch (err) {
-      const errorText = err.proposedHandling
-        ? `${err.message || (isEn ? 'AI Assistant connection error' : 'Lỗi kết nối Trợ lý AI')}\n\n💡 ${isEn ? 'Handling suggestion:' : 'Hướng dẫn xử lý:'} ${err.proposedHandling}`
-        : `${err.message || (isEn ? 'Connection error to the center AI service. Please try again later.' : 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.')}`;
+      const errorText = err.message || (isEn ? 'Connection error to the center AI service. Please try again later.' : 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.');
 
       setMessages((prev) => [
         ...prev,

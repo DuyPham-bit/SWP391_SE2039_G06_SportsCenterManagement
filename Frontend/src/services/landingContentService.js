@@ -5,6 +5,7 @@
  */
 
 import { apiRequest } from './http.js';
+import { fixMojibake } from './encodingHelper.js';
 
 const LEGACY_STORAGE_KEY = 'SCMS_DYNAMIC_LANDING_CONTENT_V1';
 const PREVIEW_STORAGE_KEY = 'SCMS_LANDING_PREVIEW_V1';
@@ -135,19 +136,19 @@ export function getDefaultLandingContent() {
 }
 
 export function getLandingContent() {
-  return clone(publishedContent || DEFAULT_LANDING_CONTENT);
+  return fixMojibake(clone(publishedContent || DEFAULT_LANDING_CONTENT));
 }
 
 export function getLegacyLandingContent() {
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
-    return raw ? mergeContent(DEFAULT_LANDING_CONTENT, JSON.parse(raw)) : null;
+    return raw ? fixMojibake(mergeContent(DEFAULT_LANDING_CONTENT, JSON.parse(raw))) : null;
   } catch { return null; }
 }
 
 export async function loadLandingContent({ signal } = {}) {
   const response = await apiRequest('landing-content', { signal, token: null });
-  publishedContent = mergeContent(DEFAULT_LANDING_CONTENT, response?.content);
+  publishedContent = fixMojibake(mergeContent(DEFAULT_LANDING_CONTENT, response?.content));
   return { content: getLandingContent(), hasPublishedContent: response?.content != null };
 }
 
@@ -173,7 +174,8 @@ export function normalizeZaloPhone(value) {
 }
 
 export async function saveLandingContent(content) {
-  const footer = { ...content.ctaAndFooter };
+  const cleaned = fixMojibake(content);
+  const footer = { ...cleaned.ctaAndFooter };
   const zaloValue = footer.contactZaloPhone ?? '';
   const zaloPhone = normalizeZaloPhone(zaloValue);
   if (typeof zaloValue !== 'string' || (zaloValue.trim() && !zaloPhone)) {
@@ -186,8 +188,8 @@ export async function saveLandingContent(content) {
     throw new Error('Liên kết Facebook phải là đường dẫn HTTP/HTTPS hợp lệ hoặc để trống.');
   }
   footer.contactFacebookUrl = facebookUrl;
-  const response = await apiRequest('landing-content', { method: 'PUT', body: { content: { ...content, ctaAndFooter: footer } } });
-  publishedContent = mergeContent(DEFAULT_LANDING_CONTENT, response.content);
+  const response = await apiRequest('landing-content', { method: 'PUT', body: { content: { ...cleaned, ctaAndFooter: footer } } });
+  publishedContent = fixMojibake(mergeContent(DEFAULT_LANDING_CONTENT, response.content));
   notifyPublishedContent();
   return getLandingContent();
 }
@@ -197,7 +199,7 @@ export function getLandingPreviewContent() {
   if (new URLSearchParams(query).get('preview') !== '1') return null;
   try {
     const raw = sessionStorage.getItem(PREVIEW_STORAGE_KEY);
-    return raw ? mergeContent(DEFAULT_LANDING_CONTENT, JSON.parse(raw)) : null;
+    return raw ? fixMojibake(mergeContent(DEFAULT_LANDING_CONTENT, JSON.parse(raw))) : null;
   } catch { return null; }
 }
 

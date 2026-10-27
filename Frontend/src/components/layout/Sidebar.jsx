@@ -68,7 +68,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
           items: [
             {
               id: 'member_dashboard',
-              label: isEn ? 'Member Dashboard' : 'Trang cá nhân',
+              label: isEn ? 'Member Dashboard' : 'Tổng quan Hội viên',
               icon: 'dashboard',
               path: '#/member/dashboard'
             },
@@ -518,7 +518,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             : 'lg:w-64'
         }`}
       >
-        {/* Seamless Top Role / Section Bar (Merged with Header's Logo Column above) */}
+        {/* Seamless Top Bar: display only 'MENU' as requested */}
         {isDesktopCollapsed ? (
           <div className="py-2.5 px-1 border-b border-slate-100 dark:border-slate-800/80 flex justify-center shrink-0">
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
@@ -526,12 +526,9 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             </span>
           </div>
         ) : (
-          <div className="px-3.5 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center justify-between shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
-            <span className="text-[11px] font-bold text-[#2D6A4F] dark:text-emerald-400 uppercase tracking-wider">
-              {roleLabel}
-            </span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-semibold bg-[#81B29A]/15 text-[#2D6A4F] dark:text-emerald-300">
-              {effectiveRole}
+          <div className="px-4 py-2.5 border-b border-slate-100 dark:border-slate-800 flex items-center shrink-0 bg-slate-50/50 dark:bg-slate-900/50">
+            <span className="text-[11px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
+              MENU
             </span>
           </div>
         )}
@@ -574,19 +571,31 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
                 const isManagerDashboard =
                   (item.path === '#/manager' || item.path === '#/manager/dashboard') &&
                   (currentPath === '#/manager' || currentPath === '#/manager/dashboard');
+                const isAdminDashboard =
+                  (item.path === '#/admin' || item.path === '#/admin/dashboard') &&
+                  (currentPath === '#/admin' || currentPath === '#/admin/dashboard');
+                const isReceptionistDashboard =
+                  (item.path === '#/receptionist' || item.path === '#/receptionist/dashboard') &&
+                  (currentPath === '#/receptionist' || currentPath === '#/receptionist/dashboard');
 
                 const isActive =
                   currentPath === item.path ||
+                  isAdminDashboard ||
                   isMemberDashboard ||
                   isCoachDashboard ||
                   isManagerDashboard ||
+                  isReceptionistDashboard ||
                   (currentPath?.startsWith(item.path) &&
+                    item.path !== '#/admin/dashboard' &&
+                    item.path !== '#/admin' &&
                     item.path !== '#/manager/dashboard' &&
                     item.path !== '#/manager' &&
                     item.path !== '#/member' &&
                     item.path !== '#/member/dashboard' &&
                     item.path !== '#/coach' &&
-                    item.path !== '#/coach/dashboard');
+                    item.path !== '#/coach/dashboard' &&
+                    item.path !== '#/receptionist' &&
+                    item.path !== '#/receptionist/dashboard');
 
                 /* ─────────────────────────────────────────────────────────────
                    MODE 1: COLLAPSED MINI-SIDEBAR (MATCHING USER REFERENCE)

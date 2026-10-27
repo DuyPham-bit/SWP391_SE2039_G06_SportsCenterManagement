@@ -314,6 +314,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     const displayLocation = isEn ? translateLocation(fac.location, true) : fac.location;
     const displayBadge = isEn ? translateFacilityBadge(fac.badge, true) : (fac.badge || '');
     const displayHighlight = isEn ? (translateFacilityHighlight(fac.highlights, true) || translateFacilityDescription(fac.description, true)) : (fac.highlights || fac.description);
+    const displayPrice = fac.priceRate || (isEn ? 'View Packages' : 'Xem gói tập');
 
     return (
       <div
@@ -349,7 +350,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
 
             {/* Bottom Right Price Pill */}
             <div style={{ position: 'absolute', bottom: '10px', right: '12px', padding: '4px 12px', borderRadius: '8px', background: 'rgba(0,0,0,0.7)', color: 'var(--custom-btn-bg-color)', fontSize: '12px', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
-              <a href={membershipAction.href} onClick={event => event.stopPropagation()} style={{color:'inherit'}}>{membershipAction.label}</a>
+              <span style={{ color: 'inherit' }}>{displayPrice}</span>
             </div>
           </div>
 

@@ -3411,6 +3411,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("int")
                         .HasColumnName("auth_version");
 
+                    b.Property<string>("AvatarKey")
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasColumnName("avatar_key");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");

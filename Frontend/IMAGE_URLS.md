@@ -35,7 +35,7 @@ Các ảnh đại diện cho 9 bộ môn trong danh mục đào tạo của SCMS
 | 2 | **Gym & Fitness** | Phòng tạ kháng lực hiện đại | `https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1200&auto=format&fit=crop` |
 | 3 | **Yoga & Pilates** | Không gian thiền định sàn gỗ | `https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=1200&auto=format&fit=crop` |
 | 4 | **Võ Thuật & Boxing** | Sàn đấu & bao cát đấm bốc | `https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=1200&auto=format&fit=crop` |
-| 5 | **Bóng Đá** | Sân cỏ nhân tạo 7 người | `https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop` |
+| 5 | **Bóng Đá** | Sân cỏ nhân tạo 5 người | `https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop` |
 | 6 | **Cầu Lông** | Vận động viên đập cầu trên thảm | `https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop` |
 | 7 | **Bóng Rổ** | Trụ rổ kính cường lực sàn acrylic | `https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop` |
 | 8 | **Bóng Bàn** | Bàn bóng bàn thi đấu tiêu chuẩn | `https://images.unsplash.com/photo-1708268411988-d30e0e1eef0c?q=80&w=1200&auto=format&fit=crop` |
@@ -52,13 +52,13 @@ Mỗi cụm sân gồm 1 **ảnh chính (1200px)** và 1 **ảnh phụ chi tiế
 - **Ảnh chính:** `https://images.unsplash.com/photo-1519315901367-f34ff9154487?q=80&w=1200&auto=format&fit=crop`
 - **Ảnh phụ (Bơi bướm):** `https://images.unsplash.com/photo-1530549387789-4c1017266635?q=80&w=800&auto=format&fit=crop`
 
-### 2. Sân Bóng Đá Cỏ Nhân Tạo (`room-02`)
+### 2. Sân Bóng Đá Cỏ Nhân Tạo (Sân 5) (`room-02`)
 - **Ảnh chính:** `https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop`
 - **Ảnh phụ (Bóng & giày đinh):** `https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=800&auto=format&fit=crop`
 
 ### 3. Cụm Sân Cầu Lông Thảm Chống Trượt (`room-03`)
 - **Ảnh chính:** `https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop`
-- **Ảnh phụ (Vợt & quả cầu):** `https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=800&auto=format&fit=crop`
+- **Ảnh phụ (Vợt & quả cầu):** `https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=800&auto=format&fit=crop`
 
 ### 4. Khu Bóng Bàn Trong Nhà (`room-04`)
 - **Ảnh chính:** `https://images.unsplash.com/photo-1708268411988-d30e0e1eef0c?q=80&w=1200&auto=format&fit=crop`
@@ -102,10 +102,10 @@ Danh mục kho ảnh được tích hợp sẵn trong bộ chọn ảnh `cloudMe
 | `asset-gym-02` | Gym & Fitness | Tập luyện thể hình tăng cơ giảm mỡ | `https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=300&auto=format&fit=crop` |
 | `asset-yoga-01` | Yoga & Pilates | Lớp Yoga thiền định & sàn gỗ tự nhiên | `https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1545205597-3d9d02c29597?q=80&w=300&auto=format&fit=crop` |
 | `asset-yoga-02` | Yoga & Pilates | Máy tập Pilates Reformer chuyên sâu | `https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=300&auto=format&fit=crop` |
-| `asset-football-01` | Bóng đá | Sân cỏ nhân tạo 7 người tiêu chuẩn | `https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=300&auto=format&fit=crop` |
+| `asset-football-01` | Bóng đá | Sân cỏ nhân tạo 5 người tiêu chuẩn | `https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1574629810360-7efbbe195018?q=80&w=300&auto=format&fit=crop` |
 | `asset-football-02` | Bóng đá | Bóng thi đấu và giày đinh cỏ nhân tạo | `https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1529900748604-07564a03e7a6?q=80&w=300&auto=format&fit=crop` |
 | `asset-badminton-01` | Cầu lông | Vận động viên bật nhảy đập cầu thảm PVC | `https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=300&auto=format&fit=crop` |
-| `asset-badminton-02` | Cầu lông | Vợt cầu lông và quả cầu tốc độ chuẩn | `https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1613918108466-292b78a8ef95?q=80&w=300&auto=format&fit=crop` |
+| `asset-badminton-02` | Cầu lông | Vợt cầu lông và quả cầu tốc độ chuẩn | `https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1626224583764-f87db24ac4ea?q=80&w=300&auto=format&fit=crop` |
 | `asset-basketball-01` | Bóng rổ | Trụ rổ bảng kính cường lực & sân acrylic | `https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1504450758481-7338eba7524a?q=80&w=300&auto=format&fit=crop` |
 | `asset-basketball-02` | Bóng rổ | Trái bóng rổ trên sàn đấu trong nhà | `https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1546519638-68e109498ffc?q=80&w=300&auto=format&fit=crop` |
 | `asset-tabletennis-01` | Bóng bàn | Bàn bóng bàn thi đấu phòng điều hòa | `https://images.unsplash.com/photo-1708268411988-d30e0e1eef0c?q=80&w=1200&auto=format&fit=crop` | `https://images.unsplash.com/photo-1708268411988-d30e0e1eef0c?q=80&w=300&auto=format&fit=crop` |

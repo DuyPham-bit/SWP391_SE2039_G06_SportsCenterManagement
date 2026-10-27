@@ -1,4 +1,4 @@
-import { defineConfig, loadEnv } from 'vite';
+import { defineConfig, loadEnv, normalizePath } from 'vite';
 import react from '@vitejs/plugin-react';
 import fs from 'fs';
 import path from 'path';
@@ -18,7 +18,7 @@ function resolveJsToJsx() {
         // Nếu file .jsx tồn tại thay thế, ánh xạ trực tiếp sang file .jsx
         const jsxPath = resolvedPath.replace(/\.js$/, '.jsx');
         if (fs.existsSync(jsxPath)) {
-          return jsxPath;
+          return normalizePath(jsxPath);
         }
       }
       return null;

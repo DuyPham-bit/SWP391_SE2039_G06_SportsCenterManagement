@@ -1,8 +1,7 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../services/api.js';
 import { getApiToken } from '../services/http.js';
 import { assertAuthUser, getAuthVersion } from '../services/authState.js';
-
-const { createContext, useContext, useState, useEffect } = React;
 
 const AuthContext = createContext(null);
 

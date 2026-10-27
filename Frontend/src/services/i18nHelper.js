@@ -468,8 +468,10 @@ export const FACILITY_NAME_MAP = {
   'Bể bơi 4 mùa 25m trong nhà nước ấm': '25m 4-Season Heated Indoor Pool',
   'Bể Bơi 4 Mùa': '4-Season Heated Pool',
   'Bể bơi Olympic 25m': '25m Olympic Pool',
+  'Sân Bóng Đá Cỏ Nhân Tạo (Sân 5)': 'Artificial Turf Football Pitch (5-a-side)',
   'Sân Bóng Đá Cỏ Nhân Tạo (Sân 5 & Sân 7)': 'Artificial Turf Football Pitches (5- & 7-a-side)',
   'Sân Bóng Đá Cỏ Nhân Tạo': 'Artificial Turf Football Pitch',
+  'Cụm sân bóng đá cỏ nhân tạo (sân 5)': 'Artificial Turf Football Pitch (5-a-side)',
   'Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)': 'Artificial Turf Football Pitches (5- & 7-a-side)',
   'Cụm Sân Cầu Lông Thảm Chống Trượt': 'Cluster of 4 Anti-Slip Badminton Courts',
   'Cụm 4 sân cầu lông thảm cao su chống trượt': 'Cluster of 4 Anti-Slip Badminton Courts',
@@ -612,6 +614,8 @@ export const FACILITY_HIGHLIGHTS_MAP = {
 export const FACILITY_DESCRIPTION_MAP = {
   'Bể bơi trong nhà kích thước 25m x 12.5m với 5 làn bơi riêng biệt, độ sâu an toàn từ 1.2m đến 1.8m. Hệ thống lọc nước tuần hoàn khử khuẩn sạch sẽ mỗi ngày, nước ấm ổn định phù hợp cho việc học bơi và rèn luyện thể lực quanh năm cho cả người lớn lẫn trẻ em.':
     'Indoor 25m x 12.5m swimming pool featuring 5 lanes and safety depths from 1.2m to 1.8m. Continuous circulation ozone filtration keeps water crystal clear, maintaining comfortable warm temperatures for all ages.',
+  'Cụm sân bóng đá mini cỏ nhân tạo ngoài trời chuẩn sân 5 người. Mặt cỏ dày, rải hạt cao su đàn hồi giảm chấn động cho khớp gối và cổ chân. Hệ thống thoát nước nhanh chóng giúp sân luôn khô ráo sau mưa.':
+    'Outdoor mini artificial turf football complex for 5-a-side matches. High-density grass with rubber granule infill absorbs joint impact, while efficient drainage ensures quick drying after rain.',
   'Cụm sân bóng đá cỏ nhân tạo ngoài trời gồm các sân 5 người và có thể ghép thành sân 7 người. Mặt cỏ dày, rải hạt cao su đàn hồi giảm chấn động cho khớp gối và cổ chân. Hệ thống thoát nước nhanh chóng giúp sân luôn khô ráo sau mưa.':
     'Outdoor artificial turf football complex supporting 5-a-side and 7-a-side matches. High-density grass with rubber granule infill absorbs joint impact, while efficient drainage ensures quick drying after rain.',
   'Khu vực gồm 4 sân cầu lông tiêu chuẩn trong nhà, mặt sàn trải thảm cao su chuyên dụng bám giày và giảm chấn êm ái. Hệ thống đèn chiếu sáng bố trí góc chếch hạn chế chói mắt khi ngửa đầu đón cầu, thông gió tự nhiên không tạo gió xoáy làm bạt cầu.':
@@ -676,6 +680,9 @@ export const SPEC_VALUE_MAP = {
   'Lọc tuần hoàn & Gia nhiệt 4 mùa': 'Circulation filtration & 4-season heating',
   '06:00 - 21:00 hàng ngày': '06:00 - 21:00 Daily',
   '2 sân 5 hoặc ghép thành 1 sân 7': 'Two 5-a-side pitches or one 7-a-side pitch',
+  'Sân bóng đá mini 5 người tiêu chuẩn': 'Regulation 5-a-side mini football pitch',
+  'Cụm sân bóng đá mini 5 người tiêu chuẩn': 'Regulation 5-a-side mini football complex',
+  'Cụm 2 sân 5 người tiêu chuẩn': 'Two regulation 5-a-side pitches',
   'Cỏ nhân tạo chuyên dụng rải hạt cao su': 'High-grade artificial turf with rubber infill',
   'Dàn đèn LED cao áp rõ nét ban đêm': 'High-power LED floodlights for crisp night play',
   'Lưới chắn bóng cao 6m chắc chắn': '6m high durable perimeter safety netting',
@@ -805,6 +812,9 @@ export const ZONE_ITEM_MAP = {
   'Tầng 3: Phòng tập Yoga & Pilates, khu thảm và máy Reformer': '3rd Floor: Yoga & Pilates studio with mats & Reformers',
   'Tủ đồ cá nhân và khu thay đồ phục vụ học viên': 'Personal lockers and student changing facilities',
   'Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)': 'Artificial turf football pitch complex (5- & 7-a-side)',
+  'Cụm sân bóng đá cỏ nhân tạo (sân 5)': 'Artificial turf football pitch complex (5-a-side)',
+  'Cụm sân bóng đá cỏ nhân tạo (sân 5 người tiêu chuẩn)': 'Regulation 5-a-side artificial turf football complex',
+  'Cụm sân bóng đá mini cỏ nhân tạo (sân 5 người)': 'Mini artificial turf football complex (5-a-side)',
   'Cụm 4 sân Pickleball, có lưới riêng và vạch khu vực bếp': 'Cluster of 4 Pickleball courts with regulation nets & kitchen zones',
   'Dàn đèn pha LED chiếu sáng ban đêm rõ nét': 'High-powered LED floodlights for crisp night play',
   'Tầng 2: Studio Golf 3D Simulator cảm biến TrackMan 4K': '2nd Floor: TrackMan 4K sensor 3D Golf Simulator Studio',
@@ -827,6 +837,18 @@ export const COURSE_HIGHLIGHT_MAP = {
     '25m standard pool with 5 heated 4-season lanes and safe ozone water purification.',
   'Mặt cỏ nhân tạo dày êm chân rải hạt cao su giảm chấn, thoát nước nhanh và dàn đèn LED cao áp đêm.':
     'Shock-absorbing cushioned artificial turf with rapid drainage and powerful night LED illumination.',
+  'Sân cỏ nhân tạo 5 người tiêu chuẩn, mặt cỏ êm ái chống chấn thương, hệ thống thoát nước và dàn đèn LED cao áp ban đêm.':
+    'Regulation 5-a-side artificial turf pitch, cushioned anti-injury grass, rapid drainage, and night LED floodlights.',
+  'Sân cỏ nhân tạo 7 người tiêu chuẩn FIFA, mặt cỏ êm ái chống chấn thương, hệ thống thoát nước và dàn đèn LED cao áp ban đêm.':
+    'Standard artificial turf football pitch, cushioned anti-injury grass, rapid drainage, and night LED floodlights.',
+  'Sân 5 mini • Phong trào & Năng khiếu':
+    '5-a-side mini • Recreational & Talent',
+  'Sân 5 • Phong trào & Năng khiếu':
+    '5-a-side • Recreational & Talent',
+  'Sân 5 & Sân 7 • Phong trào & Năng khiếu':
+    '5-a-side & 7-a-side • Recreational & Talent',
+  'Bóng đá mini sân 5':
+    '5-a-side Mini Football',
   '4 sân cầu lông trong nhà với thảm PVC vân kim cương chống trơn, trần 8m không gió tạt, đèn chống lóa.':
     '4 indoor badminton courts with diamond-textured anti-slip PVC mats, 8m ceiling, and glare-free lights.',
   '4 bàn thi đấu đạt chuẩn quốc tế, ánh sáng đều hạn chế chói mắt, khoảng trống di chuyển an toàn.':

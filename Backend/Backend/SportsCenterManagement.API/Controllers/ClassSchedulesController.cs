@@ -18,20 +18,23 @@ public sealed class ClassSchedulesController(IClassScheduleQueryService service)
         [FromQuery] long? coachId,
         [FromQuery] DateOnly? from,
         [FromQuery] DateOnly? to,
+        [FromQuery] long? centerId,
         [FromQuery] int page = 1,
         [FromQuery] int pageSize = 20,
         CancellationToken ct = default)
     {
-        long? centerId = null;
+        long? scopedCenterId = null;
         if (User.IsInRole("MEMBER") || User.IsInRole("MANAGER") || User.IsInRole("RECEPTIONIST"))
         {
             if (!long.TryParse(User.FindFirst("centerId")?.Value, out var assignedCenterId) || assignedCenterId <= 0)
                 throw new InvalidOperationException("Tài khoản chưa được gán vào trung tâm hoạt động.") { Data = { ["StatusCode"] = 403 } };
-            centerId = assignedCenterId;
+            scopedCenterId = assignedCenterId;
         }
+        else if (User.IsInRole("ADMIN") && centerId is > 0)
+            scopedCenterId = centerId;
 
         return Ok(await service.GetSessionsAsync(
-            new SessionScheduleQuery(sportId, coachId, from, to, page, pageSize, centerId), ct));
+            new SessionScheduleQuery(sportId, coachId, from, to, page, pageSize, scopedCenterId), ct));
     }
 
     /// <summary>No coach id parameter on purpose: the coach is taken from the token.</summary>

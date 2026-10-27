@@ -36,7 +36,7 @@ export const TRANSLATIONS = {
     'nav.home': 'Trang chủ',
     'nav.login': 'Đăng nhập',
     'nav.payment_result': 'Kết quả thanh toán',
-    'nav.member_dashboard': 'Trang cá nhân',
+    'nav.member_dashboard': 'Bảng điều khiển Hội viên',
     'nav.member_schedule': 'Thời khóa biểu',
     'nav.member_bookings': 'Đơn đổi lớp & Đặt chỗ',
     'nav.member_attendance': 'Báo cáo điểm danh',
@@ -46,7 +46,7 @@ export const TRANSLATIONS = {
     'nav.member_notifications': 'Tin tức & Thông báo',
     'nav.member_coach_portal': 'Tương tác với HLV',
     'nav.member_ai_assistant': 'Trợ lý thể thao AI',
-    'nav.coach_dashboard': 'Tổng quan giảng viên',
+    'nav.coach_dashboard': 'Bảng điều khiển Huấn luyện viên',
     'nav.coach_schedule': 'Lịch giảng dạy',
     'nav.coach_members': 'Danh sách học viên',
     'nav.coach_attendance': 'Báo cáo điểm danh',
@@ -78,6 +78,15 @@ export const TRANSLATIONS = {
     'nav.receptionist_counter_register': 'Đăng ký gói tại quầy',
     'nav.receptionist_invoices': 'Hóa đơn & Thu tiền',
     'nav.receptionist_support': 'Tiếp nhận yêu cầu hỗ trợ',
+    // Admin
+    'nav.admin_dashboard': 'Bảng quản trị hệ thống',
+    'nav.admin_centers': 'Quản lý cơ sở thể thao',
+    'nav.admin_managers': 'Tài khoản Quản lý (Manager)',
+    'nav.admin_accounts': 'Quản lý tài khoản & phiên',
+    'nav.admin_roles_permissions': 'Vai trò & phân quyền',
+    'nav.admin_audit_logs': 'Nhật ký audit hệ thống',
+    'nav.admin_home_content': 'Nội dung trang chủ',
+    'nav.admin_payroll': 'Lương toàn hệ thống',
 
     // Sidebar Categories
     'cat.learning': 'HỌC TẬP',
@@ -212,6 +221,15 @@ export const TRANSLATIONS = {
     'nav.receptionist_counter_register': 'Counter Package Sign-up',
     'nav.receptionist_invoices': 'Invoices & Cashier',
     'nav.receptionist_support': 'Support Inquiries',
+    // Admin
+    'nav.admin_dashboard': 'System Administration',
+    'nav.admin_centers': 'Sports Centers',
+    'nav.admin_managers': 'Manager Accounts',
+    'nav.admin_accounts': 'Accounts & Sessions',
+    'nav.admin_roles_permissions': 'Roles & Permissions',
+    'nav.admin_audit_logs': 'System Audit Logs',
+    'nav.admin_home_content': 'Homepage Content',
+    'nav.admin_payroll': 'System Payroll',
 
     // Sidebar Categories
     'cat.learning': 'TRAINING & SCHEDULE',

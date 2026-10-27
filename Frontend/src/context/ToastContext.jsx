@@ -1,7 +1,22 @@
-import React from 'react';
-const { createContext, useContext, useState, useCallback, useEffect } = React;
+import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
 
 const ToastContext = createContext(null);
+
+// Helper to format messages concisely without raw developer boilerplates or specs
+function formatToastMessage(payload) {
+  if (!payload) return '';
+  let msg = typeof payload === 'string' ? payload : (payload?.message || String(payload));
+  msg = msg.replace(/^Error:\s*/i, '');
+  // Remove technical spec sentences that belong in specs, not toast alerts
+  msg = msg.replace(/\.?\s*Không tạo bản ghi trùng cho cùng lượt vào\.?/gi, '');
+  msg = msg.replace(/\.?\s*Mọi ngoại lệ cần đúng quyền và có ghi nhận\.?/gi, '');
+  msg = msg.replace(/\.?\s*hiển thị lý do không đủ điều kiện\.?/gi, '');
+  msg = msg.trim();
+  if (msg && !/[.!?]$/.test(msg)) {
+    msg += '.';
+  }
+  return msg;
+}
 
 export function ToastProvider({ children }) {
   const [toasts, setToasts] = useState([]);
@@ -13,18 +28,11 @@ export function ToastProvider({ children }) {
 
   const showToast = useCallback((payload, type = 'info', customDuration) => {
     const id = `toast-${Date.now()}-${Math.random()}`;
-    let message = payload;
-    let code = null;
-    let proposedHandling = null;
+    const message = formatToastMessage(payload);
+    // Concise auto-dismiss timing: 4s for errors, 3s for others
+    const duration = customDuration ?? (type === 'error' ? 4000 : 3000);
 
-    if (payload && typeof payload === 'object') {
-      message = payload.message || String(payload);
-      code = payload.code || null;
-      proposedHandling = payload.proposedHandling || null;
-    }
-
-    const duration = customDuration ?? (type === 'error' && (code || proposedHandling) ? 7000 : (type === 'error' ? 5000 : 3500));
-    setToasts(prev => [...prev, { id, message, code, proposedHandling, type, duration }]);
+    setToasts(prev => [...prev, { id, message, type, duration }]);
 
     if (duration > 0) {
       setTimeout(() => {
@@ -183,12 +191,12 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast, showSuccess, showError, showWarning, showInfo, confirm, removeToast }}>
       {children}
 
-      {/* 3D Floating Spatial Capsule Container (Top-Center compact pill) */}
+      {/* Sleek Floating Spatial Pill Toast (Top-Center compact pill) */}
       <div
         role="region"
         aria-live="polite"
         aria-label="Thông báo hệ thống"
-        className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none w-fit max-w-[92vw] sm:max-w-md px-3"
+        className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none w-fit max-w-[92vw] sm:max-w-lg px-3"
       >
         {toasts.map(t => {
           const cfg = getToastConfig(t.type);
@@ -196,49 +204,30 @@ export function ToastProvider({ children }) {
             <div
               key={t.id}
               role={t.type === 'error' ? 'alert' : 'status'}
-              className={`pointer-events-auto relative flex items-center gap-2.5 px-3.5 py-2 sm:px-4 sm:py-2.5 rounded-2xl sm:rounded-full bg-white dark:bg-[#0c1322] toast-capsule-bg backdrop-blur-2xl border ${cfg.cardBorder} ${cfg.cardShadow} overflow-hidden animate-toast-3d ring-1 ring-slate-900/5 dark:ring-white/10 group transition-all duration-300 hover:scale-[1.01]`}
+              className={`pointer-events-auto relative flex items-center gap-2.5 px-3.5 py-2 sm:px-4 sm:py-2 rounded-full bg-white/95 dark:bg-[#0c1322]/95 backdrop-blur-xl border ${cfg.cardBorder} ${cfg.cardShadow} shadow-lg overflow-hidden animate-toast-3d ring-1 ring-slate-900/5 dark:ring-white/10 group transition-all duration-300 hover:scale-[1.01]`}
             >
               {/* 3D Top Specular Light Beam (Refraction Line) */}
               <div className="absolute inset-x-6 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
 
               {/* 3D Gemstone Orb Sphere (Compact & centered) */}
-              <div className={`relative w-7 h-7 rounded-full flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
-                <span className="material-symbols-outlined text-[16px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.5)] select-none">
+              <div className={`relative w-6 h-6 rounded-full flex items-center justify-center shrink-0 ${cfg.orbBg} ${cfg.orbShadow}`}>
+                <span className="material-symbols-outlined text-[15px] text-white font-bold drop-shadow-[0_1px_1.5px_rgba(0,0,0,0.5)] select-none">
                   {cfg.icon}
                 </span>
               </div>
 
-              {/* Message & Context */}
-              <div className="flex-1 min-w-0 pr-0.5">
-                <div className="flex items-center gap-1.5 flex-wrap">
-                  {t.code && (
-                    <span className="px-1.5 py-0.2 rounded text-[10px] font-mono font-bold bg-slate-100 dark:bg-white/10 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-white/15">
-                      {t.code}
-                    </span>
-                  )}
-                  <p className="text-[13px] font-semibold text-slate-900 dark:text-white leading-snug break-words">
-                    {t.message}
-                  </p>
-                </div>
-
-                {t.proposedHandling && (
-                  <div className="mt-1.5 p-2 rounded-lg bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 text-[11px] text-slate-700 dark:text-slate-300 leading-snug shadow-inner">
-                    <span className="font-bold flex items-center gap-1 text-[10px] text-amber-700 dark:text-amber-400 mb-0.5">
-                      <span className="material-symbols-outlined text-[12px]">lightbulb</span>
-                      Hướng dẫn:
-                    </span>
-                    <span>{t.proposedHandling}</span>
-                  </div>
-                )}
-              </div>
+              {/* Concise Message Text */}
+              <p className="text-[13px] font-medium text-slate-800 dark:text-slate-100 leading-snug break-words">
+                {t.message}
+              </p>
 
               {/* Minimal Circular Close Button */}
               <button
                 onClick={() => removeToast(t.id)}
                 aria-label="Đóng thông báo"
-                className="w-6 h-6 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-0.5"
+                className="w-5 h-5 rounded-full flex items-center justify-center text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-0.5"
               >
-                <span className="material-symbols-outlined text-[15px]">close</span>
+                <span className="material-symbols-outlined text-[14px]">close</span>
               </button>
             </div>
           );

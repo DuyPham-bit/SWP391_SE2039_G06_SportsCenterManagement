@@ -499,7 +499,7 @@ export function MemberLookup() {
         onClose={() => setRegisterModalOpen(false)}
         title={isEn ? 'Register New Member at Counter' : 'Đăng Ký Thành Viên Mới Tại Quầy'}
       >
-        <form onSubmit={handleRegisterMember} className="space-y-4">
+        <form onSubmit={handleRegisterMember} noValidate className="space-y-4">
           {regError && (
             <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px]">error</span>
@@ -513,7 +513,6 @@ export function MemberLookup() {
             </label>
             <input
               type="text"
-              required
               placeholder={isEn ? 'John Doe' : 'Nguyễn Văn A'}
               value={regFullName}
               onChange={e => setRegFullName(e.target.value)}
@@ -528,7 +527,6 @@ export function MemberLookup() {
               </label>
               <input
                 type="tel"
-                required
                 placeholder="0912345678"
                 value={regPhone}
                 onChange={e => setRegPhone(e.target.value)}
@@ -541,7 +539,6 @@ export function MemberLookup() {
               </label>
               <input
                 type="email"
-                required
                 placeholder="member@example.com"
                 value={regEmail}
                 onChange={e => setRegEmail(e.target.value)}

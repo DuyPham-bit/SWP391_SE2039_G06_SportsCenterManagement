@@ -1,9 +1,9 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext.js';
-import { ToastProvider } from './context/ToastContext.js';
+import { AuthProvider, useAuth } from './context/AuthContext.jsx';
+import { ToastProvider } from './context/ToastContext.jsx';
 import { LanguageProvider } from './context/LanguageContext.jsx';
-import { ProtectedRoute, RoleGuard } from './components/auth/RoleGuard.js';
-import { AppLayout } from './components/layout/AppLayout.js';
+import { ProtectedRoute, RoleGuard } from './components/auth/RoleGuard.jsx';
+import { AppLayout } from './components/layout/AppLayout.jsx';
 
 // Public & Auth Pages (Lazy Loaded)
 const LandingPage = lazy(() => import('./features/landing/LandingPage.js').then(m => ({ default: m.LandingPage })));
@@ -246,6 +246,10 @@ function AppRouter() {
 
       // RECEPTIONIST ROUTES (4 chức năng)
       case '#/receptionist':
+        if (typeof window !== 'undefined' && window.location.hash === '#/receptionist') {
+          window.location.replace('#/receptionist/dashboard');
+        }
+        return renderReceptionistRoute(ReceptionistDashboard);
       case '#/receptionist/dashboard':
         return renderReceptionistRoute(ReceptionistDashboard);
       case '#/receptionist/lookup':

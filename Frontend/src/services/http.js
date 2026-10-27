@@ -1,4 +1,5 @@
 import { assertAuthVersion, beginAuthOperation, getAuthVersion, setAuthUser } from './authState.js';
+import { fixMojibake } from './encodingHelper.js';
 
 const API_BASE_URL = (import.meta.env.VITE_API_BASE_URL || '/api').replace(/\/+$/, '');
 const TOKEN_STORAGE_KEY = 'scms.auth.token.v1';
@@ -74,9 +75,10 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
   }
 
   const contentType = response.headers.get('content-type') || '';
-  const payload = contentType.includes('json')
+  const rawPayload = contentType.includes('json')
     ? await response.json().catch(() => null)
     : await response.text().catch(() => '');
+  const payload = typeof fixMojibake === 'function' ? fixMojibake(rawPayload) : rawPayload;
 
   if (!response.ok) {
     const validationErrors = payload?.errors && Object.values(payload.errors).flat().join(' ');
@@ -102,12 +104,10 @@ export async function apiRequest(path, { method = 'GET', body, token = getApiTok
         (typeof payload === 'string' && payload) || `Yêu cầu không thể hoàn tất (Mã: ${response.status}). Vui lòng thử lại sau.`;
     const traceSuffix = payload?.traceId ? `, traceId ${payload.traceId}` : '';
     const error = new Error(message);
-    error.code = payload?.code || (expiredToken ? 'COMMON-04' : (response.status === 409 ? 'COMMON-03' : null));
+    error.code = payload?.code || (expiredToken ? 'COMMON-04' : null);
     error.proposedHandling = payload?.proposedHandling || (expiredToken
       ? 'Kiểm tra lại quyền trước thao tác; yêu cầu đăng nhập lại khi cần và không tiếp tục lưu bằng quyền cũ.'
-      : (response.status === 409
-        ? 'Phát hiện dữ liệu đã thay đổi; yêu cầu tải bản mới để đối chiếu, tránh âm thầm ghi đè.'
-        : null));
+      : null);
     error.isDraftPolicy = Boolean(payload?.isDraftPolicy);
     error.diagnostic = `[${method} /${diagnosticPath}, HTTP ${response.status}${traceSuffix}]`;
     error.status = response.status;

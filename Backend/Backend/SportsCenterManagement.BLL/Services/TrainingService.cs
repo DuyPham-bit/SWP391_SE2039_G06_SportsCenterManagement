@@ -188,7 +188,10 @@ public sealed class TrainingService(SportsCenterDbContext db)
                 {
                     exercises = JsonSerializer.Deserialize<PlanExercise[]>(x.Plan.ExercisesJson, jsonOpts) ?? [];
                 }
-                catch { }
+                catch (JsonException)
+                {
+                    // Older plans may hold malformed legacy JSON; use the normalized exercise rows when available.
+                }
             }
             if (exercises.Length == 0 && exercisesByPlanId.TryGetValue(x.Plan.Id, out var fromTable))
             {

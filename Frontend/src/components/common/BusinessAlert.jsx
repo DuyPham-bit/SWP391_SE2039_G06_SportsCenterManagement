@@ -15,7 +15,7 @@ export function BusinessAlert({
   onClose,
   className = ''
 }) {
-  if (!message && !title && !proposedHandling) return null;
+  if (!message && !title) return null;
 
   const styles = {
     error: {
@@ -67,33 +67,18 @@ export function BusinessAlert({
       </div>
 
       <div className="flex-1 min-w-0 space-y-1.5">
-        <div className="flex flex-wrap items-center gap-2">
-          {code && (
-            <span className={`px-2 py-0.5 rounded text-[11px] font-mono font-bold border uppercase tracking-wider ${current.badge}`}>
-              Mã: {code}
-            </span>
-          )}
-          {title && (
-            <h4 className="font-chivo font-bold text-sm tracking-tight text-slate-900">
-              {title}
-            </h4>
-          )}
-        </div>
+        {title && (
+          <h4 className="font-chivo font-bold text-sm tracking-tight text-slate-900">
+            {title}
+          </h4>
+        )}
 
         {message && (
           <p className="text-xs sm:text-sm font-medium leading-relaxed">
-            {message}
+            {typeof message === 'string'
+              ? message.replace(/\.?\s*Không tạo bản ghi trùng cho cùng lượt vào\.?/gi, '').trim()
+              : message}
           </p>
-        )}
-
-        {proposedHandling && (
-          <div className={`p-2.5 rounded-lg border text-xs leading-relaxed mt-2 ${current.handlingBox}`}>
-            <div className="flex items-center gap-1 font-bold text-[11px] uppercase tracking-wider mb-1 text-slate-700">
-              <span className="material-symbols-outlined text-[15px] text-amber-600">lightbulb</span>
-              <span>Hướng dẫn xử lý nghiệp vụ:</span>
-            </div>
-            <p className="font-normal text-slate-800">{proposedHandling}</p>
-          </div>
         )}
 
         {actionText && onAction && (

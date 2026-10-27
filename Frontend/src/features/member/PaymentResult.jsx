@@ -43,8 +43,7 @@ export function PaymentResult() {
       window.close();
       return;
     }
-    if (isAuthenticated) window.location.hash = '#/member/packages';
-    else window.close();
+    window.location.href = `${window.location.origin}/#/${isAuthenticated ? 'member/packages' : 'login'}`;
   };
 
   const orderCode = query.get('orderCode');

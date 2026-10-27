@@ -1,5 +1,7 @@
 using System.Text;
 using System.Text.Json;
+using System.Text.Json.Nodes;
+using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Context;
@@ -9,7 +11,7 @@ namespace SportsCenterManagement.BLL.Services;
 
 public sealed record LandingContentResponse(JsonElement? Content, DateTime? UpdatedAt);
 
-public sealed class LandingContentService(SportsCenterDbContext db)
+public sealed class LandingContentService(SportsCenterDbContext db, IConfiguration configuration)
 {
     private const string SettingKey = "site.landing-content";
     private static readonly string[] RequiredSections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter"];
@@ -23,23 +25,56 @@ public sealed class LandingContentService(SportsCenterDbContext db)
         var setting = await db.SystemSettings.AsNoTracking().SingleOrDefaultAsync(s => s.SettingKey == SettingKey, ct);
         if (setting?.SettingValue is null) return new(null, null);
         using var document = JsonDocument.Parse(setting.SettingValue);
-        return new(document.RootElement.Clone(), setting.UpdatedAt);
+        return new(TransformR2Urls(document.RootElement, toPublicUrl: true), setting.UpdatedAt);
     }
 
     public async Task<LandingContentResponse> SaveAsync(JsonElement content, long userId, CancellationToken ct)
     {
-        Validate(content);
+        var storedContent = TransformR2Urls(content, toPublicUrl: false);
+        Validate(storedContent);
         var setting = await db.SystemSettings.SingleOrDefaultAsync(s => s.SettingKey == SettingKey, ct);
         if (setting is null)
         {
             setting = new SystemSetting { SettingKey = SettingKey, Description = "Nội dung trang chủ công khai" };
             db.SystemSettings.Add(setting);
         }
-        setting.SettingValue = content.GetRawText();
+        setting.SettingValue = storedContent.GetRawText();
         setting.UpdatedBy = userId;
         setting.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return new(content.Clone(), setting.UpdatedAt);
+        return new(TransformR2Urls(storedContent, toPublicUrl: true), setting.UpdatedAt);
+    }
+
+    private JsonElement TransformR2Urls(JsonElement content, bool toPublicUrl)
+    {
+        var node = JsonNode.Parse(content.GetRawText())!;
+        var publicDomain = configuration["R2Storage:PublicDomain"]?.Trim().TrimEnd('/')
+            ?? throw new InvalidOperationException("R2Storage:PublicDomain is not configured.");
+        TransformNode(node, publicDomain, toPublicUrl);
+        return JsonSerializer.SerializeToElement(node);
+    }
+
+    private static void TransformNode(JsonNode node, string publicDomain, bool toPublicUrl)
+    {
+        if (node is JsonObject obj)
+        {
+            foreach (var property in obj.ToArray())
+            {
+                if (property.Value is JsonValue value && value.TryGetValue<string>(out var text))
+                {
+                    if (toPublicUrl && text.StartsWith("dashboard/", StringComparison.Ordinal))
+                        obj[property.Key] = $"{publicDomain}/{text}";
+                    else if (!toPublicUrl && text.StartsWith($"{publicDomain}/dashboard/", StringComparison.Ordinal))
+                        obj[property.Key] = text[(publicDomain.Length + 1)..];
+                }
+                else if (property.Value is not null) TransformNode(property.Value, publicDomain, toPublicUrl);
+            }
+        }
+        else if (node is JsonArray array)
+        {
+            foreach (var child in array)
+                if (child is not null) TransformNode(child, publicDomain, toPublicUrl);
+        }
     }
 
     private static void Validate(JsonElement content)
@@ -102,7 +137,8 @@ public sealed class LandingContentService(SportsCenterDbContext db)
             var url = value.GetString()!.Trim();
             if (url.Length == 0) return;
             if (url.Any(char.IsControl) || url.Contains('\\') || url.StartsWith("//")) throw InvalidContent();
-            if (url.StartsWith('#') || url.StartsWith('/') || url.StartsWith("./")) return;
+            if (url.StartsWith('#') || url.StartsWith('/') || url.StartsWith("./") ||
+                url.StartsWith("dashboard/", StringComparison.Ordinal)) return;
             if (!Uri.TryCreate(url, UriKind.Absolute, out var uri) || uri.Scheme is not ("http" or "https")) throw InvalidContent();
         }
     }

@@ -191,6 +191,30 @@ export function ManagerDashboard() {
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
 
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    setLogError('');
+    Promise.allSettled([reportApi.getOverview(), systemApi.getAuditLogs()]).then(([overview, activity]) => {
+      if (!active) return;
+      if (overview.status === 'fulfilled') setMetrics(overview.value);
+      else {
+        setMetrics(null);
+        setError(overview.reason?.message || 'Không thể tải dữ liệu bảng điều khiển.');
+      }
+      if (activity.status === 'fulfilled') setLogs(activity.value?.slice(0, 6) || []);
+      else {
+        setLogs([]);
+        setLogError(activity.reason?.message || '');
+      }
+      setLoading(false);
+    });
+    return () => {
+      active = false;
+    };
+  }, [revision]);
+
   const revenue = metrics?.revenuePeriods || [];
   const membership = metrics?.membershipPeriods || [];
   const topClasses = metrics?.topClasses || [];

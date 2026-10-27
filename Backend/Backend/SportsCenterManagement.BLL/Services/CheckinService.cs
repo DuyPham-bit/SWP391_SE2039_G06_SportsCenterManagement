@@ -61,13 +61,11 @@ public sealed class CheckinService(IUnitOfWork unitOfWork) : ICheckinService
             .FirstOrDefaultAsync(u => u.Id == member.UserId, cancellationToken);
         if (user == null || user.Status != "Active" || (user.LockedUntil.HasValue && user.LockedUntil.Value > DateTime.UtcNow))
         {
-            throw new InvalidOperationException($"Tài khoản hội viên {member.FullName} ({member.MemberCode}) đang bị khóa hoặc không hoạt động.")
+            throw new InvalidOperationException($"Tài khoản hội viên {member.FullName} ({member.MemberCode}) đang bị khóa.")
             {
                 Data =
                 {
-                    ["StatusCode"] = 400,
-                    ["Code"] = "RE-05",
-                    ["ProposedHandling"] = "Không tạo bản ghi trùng cho cùng lượt vào; hiển thị lý do không đủ điều kiện. Mọi ngoại lệ cần đúng quyền và có ghi nhận."
+                    ["StatusCode"] = 400
                 }
             };
         }
@@ -85,13 +83,11 @@ public sealed class CheckinService(IUnitOfWork unitOfWork) : ICheckinService
 
         if (activeSub == null)
         {
-            throw new InvalidOperationException($"Hội viên {member.FullName} ({member.MemberCode}) chưa có gói tập hợp lệ hoặc gói đã hết hạn. Vui lòng gia hạn gói tập tại quầy.")
+            throw new InvalidOperationException($"Hội viên {member.FullName} ({member.MemberCode}) chưa có gói tập hợp lệ hoặc gói đã hết hạn.")
             {
                 Data =
                 {
-                    ["StatusCode"] = 400,
-                    ["Code"] = "RE-05",
-                    ["ProposedHandling"] = "Không tạo bản ghi trùng cho cùng lượt vào; hiển thị lý do không đủ điều kiện. Mọi ngoại lệ cần đúng quyền và có ghi nhận."
+                    ["StatusCode"] = 400
                 }
             };
         }
@@ -104,13 +100,11 @@ public sealed class CheckinService(IUnitOfWork unitOfWork) : ICheckinService
         if (recentCheckin != null)
         {
             var localRecentTime = recentCheckin.CheckInTime.AddHours(7).ToString("HH:mm");
-            throw new InvalidOperationException($"Hội viên {member.FullName} ({member.MemberCode}) vừa được check-in lúc {localRecentTime}. Không tạo bản ghi trùng cho cùng lượt vào.")
+            throw new InvalidOperationException($"Hội viên {member.FullName} ({member.MemberCode}) vừa được check-in lúc {localRecentTime}.")
             {
                 Data =
                 {
-                    ["StatusCode"] = 409,
-                    ["Code"] = "RE-05",
-                    ["ProposedHandling"] = "Không tạo bản ghi trùng cho cùng lượt vào; hiển thị lý do không đủ điều kiện. Mọi ngoại lệ cần đúng quyền và có ghi nhận."
+                    ["StatusCode"] = 409
                 }
             };
         }

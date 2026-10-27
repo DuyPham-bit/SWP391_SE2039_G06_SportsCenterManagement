@@ -106,7 +106,17 @@ export function AppLayout({ children, currentPath }) {
       '#/receptionist/bookings': 'nav.receptionist_bookings',
       '#/receptionist/counter-register': 'nav.receptionist_counter_register',
       '#/receptionist/invoices': 'nav.receptionist_invoices',
-      '#/receptionist/support': 'nav.receptionist_support'
+      '#/receptionist/support': 'nav.receptionist_support',
+      // Admin
+      '#/admin': 'nav.admin_dashboard',
+      '#/admin/dashboard': 'nav.admin_dashboard',
+      '#/admin/centers': 'nav.admin_centers',
+      '#/admin/managers': 'nav.admin_managers',
+      '#/admin/accounts': 'nav.admin_accounts',
+      '#/admin/roles-permissions': 'nav.admin_roles_permissions',
+      '#/admin/audit-logs': 'nav.admin_audit_logs',
+      '#/admin/home-content': 'nav.admin_home_content',
+      '#/admin/payroll': 'nav.admin_payroll'
     };
 
     const key = routeKeyMap[clean];

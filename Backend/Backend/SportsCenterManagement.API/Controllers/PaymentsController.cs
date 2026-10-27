@@ -280,7 +280,6 @@ public sealed class PaymentsController : ControllerBase
     }
 
     [Authorize(Roles = "MANAGER,ADMIN")]
-    [NonAction]
     [HttpPost("{paymentId:long}/refunds")]
     public async Task<ActionResult<PaymentRefundResponse>> Refund(
         [FromRoute] long paymentId,
@@ -295,7 +294,6 @@ public sealed class PaymentsController : ControllerBase
     }
 
     [Authorize(Roles = "MANAGER,ADMIN")]
-    [NonAction]
     [HttpPost("refunds/{refundId:long}/reconcile")]
     public async Task<ActionResult<PaymentRefundResponse>> ReconcileRefund(
         [FromRoute] long refundId,
