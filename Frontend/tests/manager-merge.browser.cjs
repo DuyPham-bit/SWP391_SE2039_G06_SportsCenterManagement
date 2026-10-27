@@ -220,6 +220,12 @@ async function closeDialog() {
   await setInput('#login-email', 'manager@example.test'); await setInput('#login-password', 'TestPassword123!');
   await evaluate(`document.querySelector('button[type=submit]').click()`);
   await until('authenticated', () => evaluate(`location.hash === '#/manager/dashboard'`));
+  await until('manager dashboard loaded', () => evaluate(`
+    document.querySelector('main')?.textContent.includes('Bảng Điều Hành Trung Tâm') &&
+    !document.querySelector('main')?.textContent.includes('Đang tải dữ liệu bảng điều khiển')
+  `));
+  assert.ok(requests.some(r => r.route === '/api/reports/revenue'), 'Dashboard must request report data');
+  checks.push('Manager dashboard leaves its loading state after report data settles');
 
   await route('#/manager/members', member.fullName);
   await click('Sửa', 'document.querySelector("main")');

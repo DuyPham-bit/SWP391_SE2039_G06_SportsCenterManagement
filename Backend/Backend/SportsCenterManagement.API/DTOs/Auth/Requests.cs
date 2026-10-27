@@ -31,6 +31,9 @@ namespace SportsCenterManagement.API.DTOs.Auth
 
         [MaxLength(20)]
         public string? Phone { get; init; }
+
+        [MaxLength(500)]
+        public string? AvatarKey { get; init; }
     }
 
     /// <summary>Requests a one-time password reset code.</summary>

@@ -203,12 +203,9 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             },
             {
               id: 'coach_performance',
-              label: isEn ? 'Performance & Salary' : 'Hiệu suất & Lương',
+              label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất',
               icon: 'monitoring',
-              subItems: [
-                { label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất', path: '#/coach/performance' },
-                { label: isEn ? 'My Salary' : 'Bảng lương của tôi', path: '#/coach/salary' }
-              ]
+              path: '#/coach/performance'
             }
           ]
         }
@@ -260,12 +257,6 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
               label: isEn ? 'Receive Support Requests' : 'Tiếp nhận hỗ trợ',
               icon: 'support_agent',
               path: '#/receptionist/support'
-            },
-            {
-              id: 'rec_payroll',
-              label: isEn ? 'My Salary' : 'Bảng lương của tôi',
-              icon: 'payments',
-              path: '#/receptionist/payroll'
             }
           ]
         }
@@ -298,8 +289,8 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
           items: [
             { id: 'admin_roles', label: isEn ? 'Roles & Permissions' : 'Vai trò & phân quyền', icon: 'policy', path: '#/admin/roles-permissions' },
             { id: 'admin_audit', label: isEn ? 'System Audit Log' : 'Nhật ký audit hệ thống', icon: 'history', path: '#/admin/audit-logs' },
-            { id: 'admin_content', label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', icon: 'dashboard_customize', path: '#/admin/home-content' },
-            { id: 'admin_payroll', label: isEn ? 'System Payroll' : 'Lương toàn hệ thống', icon: 'payments', path: '#/admin/payroll' }
+            { id: 'admin_reports', label: isEn ? 'System Reports' : 'Báo cáo hệ thống', icon: 'analytics', path: '#/admin/reports' },
+            { id: 'admin_content', label: isEn ? 'Homepage Content' : 'Nội dung trang chủ', icon: 'dashboard_customize', path: '#/admin/home-content' }
           ]
         }
       ];
@@ -349,12 +340,6 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
           }
         ]
       }]),
-      {
-        category: isEn ? 'SALARY' : 'TIỀN LƯƠNG',
-        items: [
-          { id: 'mgr_payroll', label: isEn ? 'Salary & Payroll Report' : 'Lương & Báo cáo tiền lương', icon: 'payments', path: '#/manager/payroll' }
-        ]
-      },
       {
         category: isEn ? 'CENTER STAFF' : 'NHÂN SỰ CƠ SỞ',
         items: [

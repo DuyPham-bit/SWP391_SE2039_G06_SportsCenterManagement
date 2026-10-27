@@ -41,7 +41,7 @@ function asArray(value) {
   return Array.isArray(value?.items) ? value.items : [];
 }
 
-async function loadSessionsBetween(from, to) {
+async function loadSessionsBetween(from, to, requestedCenterId = null) {
   const sessions = [];
   let rangeStart = from;
   while (rangeStart <= to) {
@@ -50,11 +50,14 @@ async function loadSessionsBetween(from, to) {
     const rangeEnd = startDate.toISOString().slice(0, 10) < to
       ? startDate.toISOString().slice(0, 10)
       : to;
-    const firstPage = await apiRequest(`class-sessions?${new URLSearchParams({ from: rangeStart, to: rangeEnd, page: '1', pageSize: '100' })}`);
+    const pageParams = { from: rangeStart, to: rangeEnd, page: '1', pageSize: '100' };
+    if (requestedCenterId) pageParams.centerId = String(requestedCenterId);
+    const firstPage = await apiRequest(`class-sessions?${new URLSearchParams(pageParams)}`);
     sessions.push(...asArray(firstPage));
     const totalPages = Math.ceil((firstPage.totalCount || 0) / (firstPage.pageSize || 100));
     for (let page = 2; page <= totalPages; page += 1) {
-      const result = await apiRequest(`class-sessions?${new URLSearchParams({ from: rangeStart, to: rangeEnd, page: String(page), pageSize: '100' })}`);
+      const nextPageParams = { ...pageParams, page: String(page) };
+      const result = await apiRequest(`class-sessions?${new URLSearchParams(nextPageParams)}`);
       sessions.push(...asArray(result));
     }
     const nextDate = new Date(`${rangeEnd}T00:00:00Z`);
@@ -137,7 +140,8 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
     packageStartDate: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStartDate || null) : null,
     packageStatus: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStatus || 'INACTIVE') : null,
     scheduledSubscriptions,
-    avatar: safeGetAvatar(profile.userId)
+    avatar: profile.avatar || null,
+    avatarKey: profile.avatarKey || null
   };
   setAuthUser(user);
   return user;
@@ -298,12 +302,13 @@ export const authApi = {
   async updateProfile(_userId, profileData) {
     const version = getAuthVersion();
     const token = getApiToken();
-    if (profileData && profileData.avatar !== undefined) {
-      safeSetAvatar(_userId, profileData.avatar || null);
-    }
     await apiRequest('profile/me', {
       method: 'PATCH', token,
-      body: { fullName: profileData.fullName, phone: profileData.phone || null }
+      body: {
+        fullName: profileData.fullName,
+        phone: profileData.phone || null,
+        avatarKey: profileData.avatarKey ?? null
+      }
     });
     assertAuthVersion(version);
     return loadCurrentUser(token, version);
@@ -859,7 +864,7 @@ export const memberApi = {
 };
 
 export const reportApi = {
-  async getOverview(period = 'MONTH') {
+  async getOverview(period = 'MONTH', { centerId: explicitCenterId } = {}) {
     const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
     const year = Number(today.slice(0, 4));
     const month = Number(today.slice(5, 7));
@@ -886,18 +891,22 @@ export const reportApi = {
         || from > to || (endDate - startDate) / 86400000 > 365 || !['day', 'month'].includes(groupBy)) {
       throw new Error('Chọn khoảng ngày hợp lệ, tối đa 366 ngày, nhóm theo ngày hoặc tháng.');
     }
-    const query = new URLSearchParams({ from, to, groupBy, centerId: String(centerId()) });
-    const checkinQuery = new URLSearchParams({ from: today, to: today, centerId: String(centerId()) });
+    const scopedCenterId = Number(explicitCenterId ?? centerId());
+    if (!Number.isSafeInteger(scopedCenterId) || scopedCenterId <= 0) {
+      throw new Error('Cơ sở dùng để lập báo cáo không hợp lệ.');
+    }
+    const query = new URLSearchParams({ from, to, groupBy, centerId: String(scopedCenterId) });
+    const checkinQuery = new URLSearchParams({ from: today, to: today, centerId: String(scopedCenterId) });
     const [revenue, sportRevenue, membership, classes, rawSessionItems, operations, checkins, rawRooms, rawClasses] = await Promise.all([
       apiRequest(`reports/revenue?${query}`),
-      apiRequest(`reports/revenue-by-sport?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
+      apiRequest(`reports/revenue-by-sport?${new URLSearchParams({ from, to, centerId: String(scopedCenterId) })}`),
       apiRequest(`reports/membership?${query}`),
       apiRequest(`reports/classes?${query}`),
-      loadSessionsBetween(from, to),
-      apiRequest(`reports/operations?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
+      loadSessionsBetween(from, to, scopedCenterId),
+      apiRequest(`reports/operations?${new URLSearchParams({ from, to, centerId: String(scopedCenterId) })}`),
       apiRequest(`reports/checkins?${checkinQuery}`),
-      apiRequest(`centers/${centerId()}/rooms`),
-      apiRequest(`centers/${centerId()}/classes/all`)
+      apiRequest(`centers/${scopedCenterId}/rooms`),
+      apiRequest(`centers/${scopedCenterId}/classes/all`)
     ]);
     const sessionItems = rawSessionItems.filter(item => String(item.sessionStatus).toUpperCase() !== 'CANCELLED');
     const capacity = sessionItems.reduce((sum, item) => sum + (item.capacity || 0), 0);
@@ -1053,7 +1062,7 @@ export const reportApi = {
     }));
 
     return {
-      from, to, groupBy,
+      from, to, groupBy, centerId: scopedCenterId,
       totalMembers: membership.totalMembers,
       activeMembers: membership.activeMembers,
       membersWithPackage: membership.membersWithPackage ?? membership.activeMembers ?? 0,
@@ -1102,8 +1111,134 @@ export const reportApi = {
         mostBookedRoom: reportRooms[0] || null
       }
     };
+  },
+
+  async getSystemOverview(period = 'MONTH', centers = []) {
+    const validCenters = centers
+      .map(center => ({ id: Number(center.id), name: center.name || `Cơ sở ${center.id}` }))
+      .filter(center => Number.isSafeInteger(center.id) && center.id > 0);
+    if (!validCenters.length) throw new Error('Chưa có cơ sở hợp lệ để lập báo cáo toàn hệ thống.');
+    const scopedReports = await Promise.all(validCenters.map(async center => ({
+      center,
+      report: await reportApi.getOverview(period, { centerId: center.id })
+    })));
+    return mergeCenterReports(scopedReports);
   }
 };
+
+function mergeCenterReports(scopedReports) {
+  const reports = scopedReports.map(item => item.report);
+  const sum = key => reports.reduce((total, report) => total + Number(report[key] || 0), 0);
+  const mergePeriods = key => {
+    const rows = new Map();
+    for (const report of reports) {
+      for (const item of report[key] || []) {
+        const id = item.periodStart || item.date || item.label || '';
+        const merged = rows.get(id) || {};
+        for (const [field, value] of Object.entries(item)) {
+          if (typeof value === 'number') merged[field] = Number(merged[field] || 0) + value;
+          else if (merged[field] == null) merged[field] = value;
+        }
+        rows.set(id, merged);
+      }
+    }
+    return [...rows.values()].sort((a, b) => String(a.periodStart || '').localeCompare(String(b.periodStart || '')));
+  };
+  const classStatusCounts = {};
+  for (const report of reports) {
+    for (const [status, count] of Object.entries(report.classStatusCounts || {})) {
+      classStatusCounts[status] = Number(classStatusCounts[status] || 0) + Number(count || 0);
+    }
+  }
+  const withCenter = key => scopedReports.flatMap(({ center, report }) => (report[key] || []).map(item => ({
+    ...item,
+    id: `${center.id}-${item.id ?? item.name}`,
+    centerId: center.id,
+    centerName: center.name
+  })));
+  const topClasses = withCenter('topClasses').sort((a, b) => Number(b.booked || 0) - Number(a.booked || 0));
+  const topRooms = withCenter('topRooms').sort((a, b) => Number(b.booked || 0) - Number(a.booked || 0));
+  const coaches = withCenter('coaches');
+  const sportMap = new Map();
+  for (const report of reports) {
+    for (const sport of report.topSports || []) {
+      const key = sport.name || `sport-${sport.sportId}`;
+      const current = sportMap.get(key) || { ...sport, booked: 0, capacity: 0, sessionsCount: 0, classesCount: 0 };
+      current.booked += Number(sport.booked || 0);
+      current.capacity += Number(sport.capacity || 0);
+      current.sessionsCount += Number(sport.sessionsCount || 0);
+      current.classesCount += Number(sport.classesCount || 0);
+      sportMap.set(key, current);
+    }
+  }
+  const totalSportBookings = [...sportMap.values()].reduce((total, sport) => total + sport.booked, 0);
+  const topSports = [...sportMap.values()].map(sport => ({
+    ...sport,
+    occupancyRate: sport.capacity > 0 ? Math.round((sport.booked / sport.capacity) * 100) : 0,
+    percentage: sport.capacity > 0 ? Math.round((sport.booked / sport.capacity) * 100) : 0,
+    bookingShare: totalSportBookings > 0 ? Math.round((sport.booked / totalSportBookings) * 100) : 0,
+    share: totalSportBookings > 0 ? Math.round((sport.booked / totalSportBookings) * 100) : 0
+  })).sort((a, b) => b.booked - a.booked);
+  const revenueSportMap = new Map();
+  for (const report of reports) {
+    for (const sport of report.revenueBySport || []) {
+      const key = sport.sportId ?? sport.name ?? 'unallocated';
+      const current = revenueSportMap.get(key) || {};
+      for (const [field, value] of Object.entries(sport)) {
+        if (typeof value === 'number' && field !== 'sportId') current[field] = Number(current[field] || 0) + value;
+        else if (current[field] == null) current[field] = value;
+      }
+      revenueSportMap.set(key, current);
+    }
+  }
+  const totalCapacity = topSports.reduce((total, sport) => total + Number(sport.capacity || 0), 0);
+  const totalBooked = topSports.reduce((total, sport) => total + Number(sport.booked || 0), 0);
+  const highestRevenueSport = [...revenueSportMap.values()].sort((a, b) => Number(b.net || b.revenue || 0) - Number(a.net || a.revenue || 0))[0] || null;
+  const centerSummaries = scopedReports.map(({ center, report }) => ({
+    centerId: center.id,
+    centerName: center.name,
+    netRevenue: Number(report.netRevenue || 0),
+    totalMembers: Number(report.totalMembers || 0),
+    activeMembers: Number(report.activeMembers || 0),
+    activeStaff: Number(report.activeStaff || 0),
+    totalRooms: Number(report.totalRooms || 0),
+    totalClasses: Number(report.totalClasses || 0),
+    totalBookings: Number(report.totalBookings || 0),
+    todayCheckins: Number(report.todayCheckins || 0),
+    occupancyRate: Number(report.occupancyRate || 0)
+  })).sort((a, b) => b.netRevenue - a.netRevenue || b.totalMembers - a.totalMembers);
+  return {
+    from: reports[0].from,
+    to: reports[0].to,
+    groupBy: reports[0].groupBy,
+    centerId: null,
+    centerCount: scopedReports.length,
+    totalMembers: sum('totalMembers'), activeMembers: sum('activeMembers'),
+    membersWithPackage: sum('membersWithPackage'), membersWithoutPackage: sum('membersWithoutPackage'),
+    expiredMembers: sum('expiredMembers'), newMembers: sum('newMembers'),
+    membershipPeriods: mergePeriods('membershipPeriods'), classStatusCounts,
+    classPeriods: mergePeriods('classPeriods'), totalStaff: sum('totalStaff'), activeStaff: sum('activeStaff'),
+    managerCount: sum('managerCount'), coachCount: sum('coachCount'), receptionistCount: sum('receptionistCount'),
+    totalRooms: sum('totalRooms'), activeRooms: sum('activeRooms'), totalClasses: sum('totalClasses'),
+    totalBookings: sum('totalBookings'), todayCheckins: sum('todayCheckins'),
+    occupancyRate: totalCapacity > 0 ? Math.round((totalBooked / totalCapacity) * 100) : 0,
+    netRevenue: sum('netRevenue'), monthlyRevenue: sum('monthlyRevenue'), grossRevenue: sum('grossRevenue'),
+    refundedRevenue: sum('refundedRevenue'), revenueGrowth: null, revenuePeriods: mergePeriods('revenuePeriods'),
+    revenueBySport: [...revenueSportMap.values()], allocatedSportRevenue: sum('allocatedSportRevenue'),
+    unallocatedSportRevenue: sum('unallocatedSportRevenue'),
+    utilizationBySport: topSports.map(item => ({ name: item.name, capacity: item.capacity, booked: item.booked, percentage: item.percentage })),
+    topSports, topClasses, topRooms, coaches,
+    centerSummaries,
+    coachesWithSessions: coaches.filter(coach => Number(coach.sessionsCount || 0) > 0).length,
+    coachesWithoutSessions: coaches.filter(coach => Number(coach.sessionsCount || 0) === 0).length,
+    highlights: {
+      mostPopularClass: topClasses[0] || null,
+      mostPopularSport: topSports[0] || null,
+      highestRevenueSport,
+      mostBookedRoom: topRooms[0] || null
+    }
+  };
+}
 
 export const systemApi = {
   async getAuditLogs() {

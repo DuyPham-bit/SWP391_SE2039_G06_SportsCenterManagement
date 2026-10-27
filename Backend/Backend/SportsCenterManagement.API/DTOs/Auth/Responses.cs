@@ -13,7 +13,9 @@ public sealed record ProfileResponse(
     string Status,
     string? MemberCode,
     DateTimeOffset CreatedAt,
-    long? CenterId = null);
+    long? CenterId = null,
+    string? Avatar = null,
+    string? AvatarKey = null);
 
 /// <summary>Result of requesting a password reset code.</summary>
 public sealed record PasswordResetRequestResponse(string Message, string? DevelopmentOtp);

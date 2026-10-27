@@ -7,7 +7,8 @@ import {
   saveLandingContent,
   openLandingPreview
 } from '../../services/landingContentService.js';
-import { CloudMediaPickerModal } from '../../components/common/CloudMediaPickerModal.jsx';
+import { R2ImagePickerModal } from '../../components/common/R2ImagePickerModal.jsx';
+import { deleteDashboardImage } from '../../services/r2ImageStorage.js';
 import { useToast } from '../../context/ToastContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
@@ -62,6 +63,8 @@ export function HomeContentManagement() {
   const [reloadKey, setReloadKey] = useState(0);
   const savedContentRef = useRef(null);
   const latestContentRef = useRef(content);
+  const pendingDashboardKeysRef = useRef(new Set());
+  const retiredDashboardKeysRef = useRef(new Set());
   const [discardKey, setDiscardKey] = useState(0);
 
   useEffect(() => {
@@ -194,6 +197,10 @@ export function HomeContentManagement() {
       setContent(saved);
       clearDraft();
       setIsDirty(false);
+      const retiredKeys = [...retiredDashboardKeysRef.current];
+      pendingDashboardKeysRef.current.clear();
+      retiredDashboardKeysRef.current.clear();
+      await Promise.allSettled(retiredKeys.map(deleteDashboardImage));
       addToast(
         isEn
           ? 'Homepage content saved and published successfully!'
@@ -214,6 +221,10 @@ export function HomeContentManagement() {
     setIsDirty(false);
     setDiscardKey(previous => previous + 1);
     setMediaPickerConfig(previous => ({ ...previous, isOpen: false, callback: null, onClose: undefined }));
+    const pendingKeys = [...pendingDashboardKeysRef.current];
+    pendingDashboardKeysRef.current.clear();
+    retiredDashboardKeysRef.current.clear();
+    Promise.allSettled(pendingKeys.map(deleteDashboardImage));
     addToast(
       isEn
         ? 'Unsaved changes discarded. Content restored to the last successful save.'
@@ -1609,7 +1620,7 @@ export function HomeContentManagement() {
       )}
 
       {/* 4. CLOUD MEDIA PICKER MODAL */}
-      <CloudMediaPickerModal
+      <R2ImagePickerModal
         isOpen={mediaPickerConfig.isOpen}
         title={mediaPickerConfig.title}
         currentImage={mediaPickerConfig.currentUrl}
@@ -1617,9 +1628,20 @@ export function HomeContentManagement() {
           setMediaPickerConfig(prev => ({ ...prev, isOpen: false }));
           mediaPickerConfig.onClose?.();
         }}
-        onSelectImage={(url) => {
+        onSelectImage={({ key, publicUrl }) => {
+          const marker = '/dashboard/';
+          const currentUrl = mediaPickerConfig.currentUrl || '';
+          const markerIndex = currentUrl.indexOf(marker);
+          const oldKey = currentUrl.startsWith('dashboard/')
+            ? currentUrl
+            : (markerIndex >= 0 ? currentUrl.slice(markerIndex + 1) : null);
+          if (oldKey && oldKey !== key) {
+            if (pendingDashboardKeysRef.current.delete(oldKey)) deleteDashboardImage(oldKey).catch(() => {});
+            else retiredDashboardKeysRef.current.add(oldKey);
+          }
+          pendingDashboardKeysRef.current.add(key);
           if (mediaPickerConfig.callback) {
-            mediaPickerConfig.callback(url);
+            mediaPickerConfig.callback(publicUrl);
           }
         }}
       />

@@ -79,7 +79,6 @@ export function AppLayout({ children, currentPath }) {
       '#/coach/messages': 'nav.coach_messages',
       '#/coach/ai-recommendation': 'nav.coach_ai_recommendation',
       '#/coach/performance': 'nav.coach_performance',
-      '#/coach/salary-kpi': 'nav.coach_performance',
       '#/coach/kpi': 'nav.coach_performance',
       '#/coach/resources': 'nav.coach_resources',
       '#/coach/equipment': 'nav.coach_resources',
@@ -98,6 +97,7 @@ export function AppLayout({ children, currentPath }) {
       '#/manager/roles-permissions': 'nav.manager_roles_permissions',
       '#/manager/audit-logs': 'nav.manager_audit_logs',
       '#/manager/home-content': 'nav.manager_home_content',
+      '#/admin/reports': 'nav.admin_reports',
       // Receptionist
       '#/receptionist': 'nav.receptionist_dashboard',
       '#/receptionist/dashboard': 'nav.receptionist_dashboard',

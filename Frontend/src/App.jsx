@@ -42,7 +42,6 @@ const WorkoutProgress = lazy(() => import('./features/coach/WorkoutProgress.js')
 const CoachNotifications = lazy(() => import('./features/coach/CoachNotifications.js').then(m => ({ default: m.CoachNotifications })));
 const AIRecommendation = lazy(() => import('./features/coach/AIRecommendation.js').then(m => ({ default: m.AIRecommendation })));
 const PerformanceDashboard = lazy(() => import('./features/coach/PerformanceDashboard.jsx').then(m => ({ default: m.PerformanceDashboard })));
-const CoachSalaryKPI = PerformanceDashboard;
 const CoachProfessionalHub = lazy(() => import('./features/coach/CoachProfessionalHub.jsx').then(m => ({ default: m.CoachProfessionalHub })));
 const ManagerCoachOperations = lazy(() => import('./features/manager/ManagerCoachOperations.jsx').then(m => ({ default: m.ManagerCoachOperations })));
 const ManagerSupportCommunications = lazy(() => import('./features/manager/ManagerSupportCommunications.jsx').then(m => ({ default: m.ManagerSupportCommunications })));
@@ -60,7 +59,6 @@ const PaymentResult = lazy(() => import('./features/member/PaymentResult.js').th
 const MemberCoachPortal = lazy(() => import('./features/member/MemberCoachPortal.jsx').then(m => ({ default: m.MemberCoachPortal })));
 const MySupportRequests = lazy(() => import('./features/shared/MySupportRequests.jsx').then(m => ({ default: m.MySupportRequests })));
 const MemberRefundRequests = lazy(() => import('./features/member/MemberRefundRequests.jsx').then(m => ({ default: m.MemberRefundRequests })));
-const PayrollPage = lazy(() => import('./features/shared/PayrollPage.jsx').then(m => ({ default: m.PayrollPage })));
 
 function RouteFallback() {
   return (
@@ -210,19 +208,16 @@ function AppRouter() {
         return renderAdminRoute(RolesPermissions);
       case '#/admin/audit-logs':
         return renderAdminRoute(AuditLogs);
+      case '#/admin/reports':
+        return renderAdminRoute(ReportsAnalytics, { adminMode: true });
       case '#/admin/home-content':
         return renderAdminRoute(HomeContentManagement);
-      case '#/admin/payroll':
-        return renderAdminRoute(PayrollPage);
-
       // MANAGER ROUTES: operations of the assigned center only.
       case '#/manager':
       case '#/manager/dashboard':
         return renderManagerRoute(ManagerDashboard);
       case '#/manager/invoices':
         return renderManagerRoute(CounterInvoices, undefined, ['MANAGER', 'ADMIN']);
-      case '#/manager/payroll':
-        return renderManagerRoute(PayrollPage, undefined, ['MANAGER', 'ADMIN']);
       case '#/manager/members':
         return renderManagerRoute(MemberManagement);
       case '#/manager/staff':
@@ -260,8 +255,6 @@ function AppRouter() {
         return renderReceptionistRoute(CounterInvoices, 'register_counter_package');
       case '#/receptionist/support':
         return renderReceptionistRoute(SupportRequests, 'lookup_member');
-      case '#/receptionist/payroll':
-        return renderReceptionistRoute(PayrollPage);
       case '#/member/support':
       case '#/coach/support':
         return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MEMBER', 'COACH']}><MySupportRequests /></RoleGuard></ProtectedRoute></AppLayout>;
@@ -289,11 +282,8 @@ function AppRouter() {
       case '#/coach/ai-recommendation':
         return renderCoachRoute(AIRecommendation, 'get_ai_recommendation');
       case '#/coach/performance':
-      case '#/coach/salary-kpi':
       case '#/coach/kpi':
         return renderCoachRoute(PerformanceDashboard, 'manage_coach_workspace');
-      case '#/coach/salary':
-        return renderCoachRoute(PayrollPage, 'manage_coach_workspace');
       case '#/coach/professional':
       case '#/coach/messages':
         return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');

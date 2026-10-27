@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useMemo } from 'react';
-import { reportApi } from '../../services/api.js';
+import { adminApi, reportApi } from '../../services/api.js';
 import { createReportCsv } from '../../services/reportExport.js';
 import { downloadReportFile } from '../../services/reportFiles.js';
 import { StatCard } from '../../components/common/StatCard.jsx';
@@ -51,7 +51,7 @@ const sportBadgeStyles = {
 
 const getSportStyle = (name) => sportBadgeStyles[name] || { bg: 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700', icon: 'sports', bar: 'bg-slate-600' };
 
-export function ReportsAnalytics() {
+export function ReportsAnalytics({ adminMode = false }) {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { showError } = useToast();
@@ -66,6 +66,10 @@ export function ReportsAnalytics() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingXlsx, setExportingXlsx] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [centers, setCenters] = useState([]);
+  const [selectedCenterId, setSelectedCenterId] = useState('ALL');
+  const [centersLoading, setCentersLoading] = useState(adminMode);
+  const [centersError, setCentersError] = useState(null);
 
   // Table filters
   const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | sports | rooms | coaches | logs
@@ -81,22 +85,47 @@ export function ReportsAnalytics() {
   }, [period, isEn]);
 
   useEffect(() => {
+    if (!adminMode) return undefined;
+    let active = true;
+    setCentersLoading(true);
+    setCentersError(null);
+    adminApi.getCenters()
+      .then(data => { if (active) setCenters(Array.isArray(data) ? data : []); })
+      .catch(e => { if (active) setCentersError(e); })
+      .finally(() => { if (active) setCentersLoading(false); });
+    return () => { active = false; };
+  }, [adminMode]);
+
+  useEffect(() => {
+    if (adminMode && centersLoading) return undefined;
     let active = true;
     setLoading(true);
     setError(null);
     setMetrics(null);
 
-    reportApi.getOverview(selection)
+    const request = adminMode
+      ? (selectedCenterId === 'ALL'
+          ? reportApi.getSystemOverview(selection, centers)
+          : reportApi.getOverview(selection, { centerId: Number(selectedCenterId) }))
+      : reportApi.getOverview(selection);
+    request
       .then(data => { if (active) setMetrics(data); })
       .catch(e => { if (active) setError(e); })
       .finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };
-  }, [selection, revision]);
+  }, [adminMode, centers, centersLoading, selectedCenterId, selection, revision]);
+
+  const selectedCenter = centers.find(center => String(center.id) === String(selectedCenterId));
+  const reportScopeLabel = adminMode
+    ? (selectedCenterId === 'ALL'
+        ? (isEn ? `All centers (${centers.length})` : `Toàn hệ thống (${centers.length} cơ sở)`)
+        : selectedCenter?.name || (isEn ? 'Selected center' : 'Cơ sở đã chọn'))
+    : 'SCMS Olympic Sports Arena';
 
   const exportOptions = () => ({
     language,
-    centerLabel: 'SCMS Olympic Sports Arena',
+    centerLabel: reportScopeLabel,
     generatedAt: new Date()
   });
 
@@ -173,13 +202,54 @@ export function ReportsAnalytics() {
 
   return (
     <div className="space-y-6 pb-12 animate-fade-slide-up print:space-y-4 print:pb-0">
+      {adminMode && (
+        <section className="no-print rounded-2xl border border-slate-200/80 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 shadow-sm">
+          <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
+            <div>
+              <div className="flex items-center gap-2 text-sm font-black text-slate-900 dark:text-white">
+                <span className="material-symbols-outlined text-[#2D6A4F]">domain</span>
+                {isEn ? 'System report scope' : 'Phạm vi báo cáo hệ thống'}
+              </div>
+              <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                {isEn
+                  ? 'Read-only analytics. Select the whole system or drill down into one center.'
+                  : 'Báo cáo chỉ đọc. Chọn toàn hệ thống hoặc xem chi tiết từng cơ sở.'}
+              </p>
+            </div>
+            <label className="flex min-w-72 items-center gap-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 px-3 py-2">
+              <span className="material-symbols-outlined text-slate-400">filter_alt</span>
+              <select
+                aria-label={isEn ? 'Report center' : 'Cơ sở báo cáo'}
+                className="w-full bg-transparent text-sm font-bold text-slate-800 dark:text-slate-100 outline-none"
+                value={selectedCenterId}
+                disabled={centersLoading || Boolean(centersError)}
+                onChange={event => setSelectedCenterId(event.target.value)}
+              >
+                <option value="ALL">{isEn ? `All centers (${centers.length})` : `Toàn hệ thống (${centers.length} cơ sở)`}</option>
+                {centers.map(center => (
+                  <option key={center.id} value={String(center.id)}>
+                    {center.name}{center.status && center.status !== 'Active' ? ` · ${center.status}` : ''}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+          {centersError && (
+            <p role="alert" className="mt-3 text-xs font-semibold text-red-600 dark:text-red-400">
+              {centersError.message || (isEn ? 'Could not load centers.' : 'Không thể tải danh sách cơ sở.')}
+            </p>
+          )}
+        </section>
+      )}
       {/* 0. PRINT-ONLY OFFICIAL REPORT HEADER */}
       <div className="hidden print:block mb-4 border-b-2 border-[#1E2235] pb-3">
         <div className="flex justify-between items-start">
           <div>
             <div className="text-xs font-black uppercase tracking-wider text-[#2D6A4F]">SCMS · Olympic Sports Arena</div>
             <h1 className="text-xl font-black text-[#1E2235] font-chivo">
-              {isEn ? 'REVENUE & OPERATIONAL ANALYTICS REPORT' : 'BÁO CÁO DOANH THU & THỐNG KÊ HOẠT ĐỘNG'}
+              {adminMode
+                ? (isEn ? 'SYSTEM REVENUE & OPERATIONAL ANALYTICS' : 'BÁO CÁO DOANH THU & VẬN HÀNH HỆ THỐNG')
+                : (isEn ? 'REVENUE & OPERATIONAL ANALYTICS REPORT' : 'BÁO CÁO DOANH THU & THỐNG KÊ HOẠT ĐỘNG')}
             </h1>
             <p className="text-xs text-slate-600 mt-1">
               {isEn ? 'Period:' : 'Kỳ báo cáo:'} <strong>{range.from}</strong> → <strong>{range.to}</strong> ({periodLabel})
@@ -187,7 +257,7 @@ export function ReportsAnalytics() {
           </div>
           <div className="text-right text-xs text-slate-600">
             <p><strong>{isEn ? 'Printed at:' : 'Thời điểm in:'}</strong> {new Date().toLocaleString('vi-VN')}</p>
-            <p className="text-[11px] text-slate-500">{isEn ? 'Issued by Management' : 'Đơn vị phát hành: Ban Quản Lý'}</p>
+            <p className="text-[11px] text-slate-500">{reportScopeLabel}</p>
           </div>
         </div>
       </div>
@@ -219,12 +289,16 @@ export function ReportsAnalytics() {
               <span>Olympic Analytics</span>
             </div>
             <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-              {isEn ? 'Reports & Operational Analytics' : 'Báo Cáo & Thống Kê Hoạt Động'}
+              {adminMode
+                ? (isEn ? 'System Reports & Analytics' : 'Báo Cáo & Phân Tích Toàn Hệ Thống')
+                : (isEn ? 'Reports & Operational Analytics' : 'Báo Cáo & Thống Kê Hoạt Động')}
             </h1>
             <p className="text-xs sm:text-sm text-white/95 mt-1 max-w-2xl leading-relaxed font-medium drop-shadow-xs">
-              {isEn
-                ? 'Visual analytics dashboard, sport market share metrics, and center-wide operational performance.'
-                : 'Tổng hợp biểu đồ thống kê trực quan, thị phần bộ môn và hiệu suất vận hành toàn trung tâm.'}
+              {adminMode
+                ? (isEn ? `Read-only system oversight · ${reportScopeLabel}` : `Giám sát chỉ đọc · ${reportScopeLabel}`)
+                : (isEn
+                    ? 'Visual analytics dashboard, sport market share metrics, and center-wide operational performance.'
+                    : 'Tổng hợp biểu đồ thống kê trực quan, thị phần bộ môn và hiệu suất vận hành toàn trung tâm.')}
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap no-print">
@@ -382,6 +456,121 @@ export function ReportsAnalytics() {
         />
       ) : metrics && (
         <>
+          {adminMode && selectedCenterId === 'ALL' && (
+            <section className="overflow-hidden rounded-3xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 shadow-lg shadow-slate-200/40 dark:shadow-none">
+              <div className="bg-gradient-to-r from-[#1E2235] via-[#2D6A4F] to-[#24828F] p-5 text-white sm:p-6">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+                  <div>
+                    <p className="text-[11px] font-black uppercase tracking-[0.2em] text-emerald-100">
+                      {isEn ? 'Administrator executive overview' : 'Tổng quan điều hành dành cho Admin'}
+                    </p>
+                    <h2 className="mt-1 font-chivo text-xl font-black sm:text-2xl">
+                      {isEn ? 'Cross-center performance comparison' : 'So sánh hiệu quả giữa các cơ sở'}
+                    </h2>
+                    <p className="mt-1 text-xs text-white/80">
+                      {isEn ? 'System totals and center-level drill-down for governance.' : 'Tổng hợp toàn hệ thống và truy cập chi tiết từng cơ sở để giám sát.'}
+                    </p>
+                  </div>
+                  <span className="inline-flex w-fit items-center gap-1.5 rounded-full border border-white/25 bg-white/10 px-3 py-1.5 text-xs font-bold backdrop-blur">
+                    <span className="material-symbols-outlined text-[16px]">visibility</span>
+                    {isEn ? 'Read only' : 'Chỉ đọc'}
+                  </span>
+                </div>
+                <div className="mt-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
+                  {[
+                    { icon: 'domain', label: isEn ? 'Centers' : 'Cơ sở', value: metrics.centerCount || centers.length },
+                    { icon: 'payments', label: isEn ? 'System net revenue' : 'Doanh thu thuần', value: `${Number(metrics.netRevenue || 0).toLocaleString('vi-VN')}đ` },
+                    { icon: 'groups', label: isEn ? 'Members' : 'Hội viên', value: Number(metrics.totalMembers || 0).toLocaleString('vi-VN') },
+                    { icon: 'badge', label: isEn ? 'Active staff' : 'Nhân sự hoạt động', value: Number(metrics.activeStaff || 0).toLocaleString('vi-VN') }
+                  ].map(card => (
+                    <div key={card.label} className="rounded-2xl border border-white/15 bg-white/10 p-3 backdrop-blur-sm">
+                      <span className="material-symbols-outlined text-[20px] text-amber-200">{card.icon}</span>
+                      <div className="mt-1 text-lg font-black sm:text-xl">{card.value}</div>
+                      <div className="text-[10px] font-bold uppercase tracking-wider text-white/70">{card.label}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              <div className="p-4 sm:p-6">
+                <div className="mb-4 flex items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-chivo text-base font-black text-slate-900 dark:text-white">
+                      {isEn ? 'Center ranking' : 'Bảng so sánh cơ sở'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400">
+                      {isEn ? 'Sorted by net revenue; select a center to inspect it.' : 'Sắp xếp theo doanh thu thuần; chọn một cơ sở để xem chi tiết.'}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-slate-100 dark:bg-slate-800 px-3 py-1 text-xs font-black text-slate-600 dark:text-slate-300">
+                    {(metrics.centerSummaries || []).length} {isEn ? 'centers' : 'cơ sở'}
+                  </span>
+                </div>
+                <div className="overflow-x-auto rounded-2xl border border-slate-200 dark:border-slate-800">
+                  <table className="min-w-[900px] w-full text-left text-xs">
+                    <thead className="bg-slate-50 dark:bg-slate-800/80 text-[10px] uppercase tracking-wider text-slate-500 dark:text-slate-400">
+                      <tr>
+                        <th className="px-4 py-3">{isEn ? 'Center' : 'Cơ sở'}</th>
+                        <th className="px-4 py-3 text-right">{isEn ? 'Net revenue' : 'Doanh thu thuần'}</th>
+                        <th className="px-4 py-3 text-right">{isEn ? 'Members' : 'Hội viên'}</th>
+                        <th className="px-4 py-3 text-right">{isEn ? 'Occupancy' : 'Lấp đầy'}</th>
+                        <th className="px-4 py-3 text-right">{isEn ? 'Sessions' : 'Ca học'}</th>
+                        <th className="px-4 py-3 text-right">{isEn ? 'Check-ins today' : 'Check-in hôm nay'}</th>
+                        <th className="px-4 py-3 text-center">{isEn ? 'Detail' : 'Chi tiết'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {(metrics.centerSummaries || []).map((center, index) => (
+                        <tr key={center.centerId} className="hover:bg-emerald-50/50 dark:hover:bg-emerald-950/10">
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-3">
+                              <span className="grid h-8 w-8 place-items-center rounded-xl bg-[#2D6A4F]/10 font-black text-[#2D6A4F]">{index + 1}</span>
+                              <div>
+                                <div className="font-bold text-slate-900 dark:text-white">{center.centerName}</div>
+                                <div className="text-[10px] text-slate-400">ID #{center.centerId} · {center.activeStaff} {isEn ? 'active staff' : 'nhân sự'}</div>
+                              </div>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-right font-black text-emerald-700 dark:text-emerald-400">{Number(center.netRevenue || 0).toLocaleString('vi-VN')}đ</td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{Number(center.totalMembers || 0).toLocaleString('vi-VN')}</td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{center.occupancyRate}%</td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{center.totalClasses}</td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{center.todayCheckins}</td>
+                          <td className="px-4 py-3 text-center">
+                            <button
+                              type="button"
+                              onClick={() => setSelectedCenterId(String(center.centerId))}
+                              className="inline-flex items-center gap-1 rounded-lg bg-[#1E2235] px-3 py-1.5 font-bold text-white transition hover:bg-[#2D6A4F]"
+                            >
+                              {isEn ? 'Open' : 'Xem'}
+                              <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            </section>
+          )}
+
+          {adminMode && selectedCenterId !== 'ALL' && (
+            <section className="no-print flex flex-col gap-3 rounded-2xl border border-[#2D6A4F]/20 bg-emerald-50/70 p-4 dark:bg-emerald-950/20 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3">
+                <span className="grid h-10 w-10 place-items-center rounded-xl bg-[#2D6A4F] text-white material-symbols-outlined">location_city</span>
+                <div>
+                  <div className="text-[10px] font-black uppercase tracking-wider text-[#2D6A4F] dark:text-emerald-400">{isEn ? 'Center drill-down' : 'Chi tiết cơ sở'}</div>
+                  <div className="font-chivo font-black text-slate-900 dark:text-white">{reportScopeLabel}</div>
+                </div>
+              </div>
+              <button type="button" onClick={() => setSelectedCenterId('ALL')} className="inline-flex items-center justify-center gap-1.5 rounded-xl border border-[#2D6A4F]/30 bg-white px-4 py-2 text-xs font-black text-[#2D6A4F] hover:bg-[#2D6A4F] hover:text-white dark:bg-slate-900">
+                <span className="material-symbols-outlined text-[16px]">arrow_back</span>
+                {isEn ? 'Back to system overview' : 'Về tổng quan hệ thống'}
+              </button>
+            </section>
+          )}
+
           {/* 3. TIER 1: EXECUTIVE TOP KPI CARDS (Vision UI 4-Card Style with Olympic Palette) */}
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
             {/* Card 1: Today's Money / Doanh thu thuần */}

@@ -609,7 +609,7 @@ export function AdminDashboard({ initialSection }) {
                   whileTap={{ scale: 0.98 }}
                   className="px-3.5 py-1.5 rounded-xl bg-blue-50 text-blue-700 hover:bg-blue-100 font-bold text-xs flex items-center gap-1.5 border border-blue-200 disabled:opacity-40"
                 >
-                  <span className="material-symbols-outlined text-[16px]">person_add</span>+ Tạo Manager
+                  <span className="material-symbols-outlined text-[16px]">person_add</span>Tạo Manager
                 </MotionButton>
                 <a
                   href="#/admin/roles-permissions"
@@ -738,7 +738,7 @@ export function AdminDashboard({ initialSection }) {
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
               <div style={{fontSize:15,fontWeight:800,color:'#0F172A'}}>Danh Sách Cơ Sở ({centers.length})</div>
               <MotionButton onClick={()=>setShowCC(true)} style={{padding:'8px 18px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',gap:6}}>
-                <span className='material-symbols-outlined' style={{fontSize:16}}>add</span>+ Tạo Cơ Sở
+                <span className='material-symbols-outlined' style={{fontSize:16}}>add</span>Tạo Cơ Sở
               </MotionButton>
             </div>
             {loadC?<div style={{textAlign:'center',padding:32,color:'#94A3B8'}}>Đang tải dữ liệu...</div>:(
@@ -775,7 +775,7 @@ export function AdminDashboard({ initialSection }) {
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
               <div style={{fontSize:15,fontWeight:800,color:'#0F172A'}}>Tài Khoản Manager ({managers.length})</div>
               <MotionButton onClick={()=>setShowCM(true)} disabled={ac.length===0} style={{padding:'8px 18px',borderRadius:8,border:'none',background:OG,color:'#fff',fontSize:12,fontWeight:700,display:'flex',alignItems:'center',gap:6,opacity:ac.length===0?.4:1}}>
-                <span className='material-symbols-outlined' style={{fontSize:16}}>person_add</span>+ Tạo Manager
+                <span className='material-symbols-outlined' style={{fontSize:16}}>person_add</span>Tạo Manager
               </MotionButton>
             </div>
             {loadM?<div style={{textAlign:'center',padding:32,color:'#94A3B8'}}>Đang tải dữ liệu...</div>:(

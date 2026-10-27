@@ -9,9 +9,10 @@ import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwo
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { translatePackageName } from '../../services/i18nHelper.js';
 import { processAvatarFile, getInitials } from '../../services/avatarHelper.js';
+import { deleteUploadedAvatar, uploadAvatar } from '../../services/r2ImageStorage.js';
 
 export function ProfileModal({ isOpen, onClose }) {
-  const { currentUser, updateProfile, updateAvatar, changePassword } = useAuth();
+  const { currentUser, updateProfile, changePassword } = useAuth();
   const { showSuccess, showError } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -26,6 +27,7 @@ export function ProfileModal({ isOpen, onClose }) {
 
   // Avatar Management State
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar || '');
+  const [avatarFile, setAvatarFile] = useState(null);
   const [avatarChanged, setAvatarChanged] = useState(false);
   const [isProcessingAvatar, setIsProcessingAvatar] = useState(false);
   const [isDraggingAvatar, setIsDraggingAvatar] = useState(false);
@@ -38,6 +40,7 @@ export function ProfileModal({ isOpen, onClose }) {
       setFullName(currentUser.fullName || '');
       setPhone(currentUser.phone || '');
       setAvatarPreview(currentUser.avatar || '');
+      setAvatarFile(null);
       setAvatarChanged(false);
     }
   }, [isOpen, currentUser]);
@@ -53,6 +56,7 @@ export function ProfileModal({ isOpen, onClose }) {
     try {
       const result = await processAvatarFile(file, 360, 0.88);
       setAvatarPreview(result.dataUrl);
+      setAvatarFile(result.file);
       setAvatarChanged(true);
       showSuccess(
         isEn
@@ -68,6 +72,7 @@ export function ProfileModal({ isOpen, onClose }) {
 
   const handleRemoveAvatar = () => {
     setAvatarPreview('');
+    setAvatarFile(null);
     setAvatarChanged(true);
     showSuccess(
       isEn
@@ -78,21 +83,28 @@ export function ProfileModal({ isOpen, onClose }) {
 
   const handleRevertAvatar = () => {
     setAvatarPreview(currentUser?.avatar || '');
+    setAvatarFile(null);
     setAvatarChanged(false);
   };
 
   const handleQuickSaveAvatar = async () => {
     if (!avatarChanged) return;
     setSavingAvatarOnly(true);
+    let uploadedAvatar = null;
     try {
-      if (updateAvatar) {
-        await updateAvatar(avatarPreview || null);
-      } else {
-        await updateProfile({ fullName: fullName.trim(), phone: phone.trim(), avatar: avatarPreview || null });
-      }
+      if (avatarFile) uploadedAvatar = await uploadAvatar(avatarFile);
+      await updateProfile({
+        fullName: fullName.trim(),
+        phone: phone.trim(),
+        avatarKey: uploadedAvatar?.key || (avatarChanged ? null : currentUser?.avatarKey || null)
+      });
+      setAvatarFile(null);
       setAvatarChanged(false);
       showSuccess(isEn ? 'Avatar updated successfully!' : 'Đã cập nhật ảnh đại diện thành công!');
     } catch (err) {
+      if (uploadedAvatar?.key) {
+        try { await deleteUploadedAvatar(uploadedAvatar.key); } catch { /* Preserve the profile error. */ }
+      }
       showError(err.message || (isEn ? 'Failed to update avatar!' : 'Cập nhật ảnh đại diện thất bại!'));
     } finally {
       setSavingAvatarOnly(false);
@@ -112,15 +124,21 @@ export function ProfileModal({ isOpen, onClose }) {
       return;
     }
     setSavingProfile(true);
+    let uploadedAvatar = null;
     try {
+      if (avatarFile) uploadedAvatar = await uploadAvatar(avatarFile);
       await updateProfile({
         fullName: fullName.trim(),
         phone: phone.trim(),
-        avatar: avatarChanged ? (avatarPreview || null) : currentUser?.avatar
+        avatarKey: uploadedAvatar?.key || (avatarChanged ? null : currentUser?.avatarKey || null)
       });
+      setAvatarFile(null);
       setAvatarChanged(false);
       showSuccess(isEn ? 'Profile updated successfully!' : 'Cập nhật hồ sơ cá nhân thành công!');
     } catch (err) {
+      if (uploadedAvatar?.key) {
+        try { await deleteUploadedAvatar(uploadedAvatar.key); } catch { /* Preserve the profile error. */ }
+      }
       showError(err.message || (isEn ? 'Profile update failed!' : 'Cập nhật thất bại!'));
     } finally {
       setSavingProfile(false);

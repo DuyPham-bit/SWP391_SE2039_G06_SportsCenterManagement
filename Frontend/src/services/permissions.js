@@ -332,6 +332,7 @@ export function getDynamicNavItems(role) {
         { label: 'BẢO MẬT & NỘI DUNG', isHeader: true },
         { path: '#/admin/roles-permissions', icon: 'policy', label: 'Vai Trò & Phân Quyền' },
         { path: '#/admin/audit-logs', icon: 'history', label: 'Nhật Ký Audit Hệ Thống' },
+        { path: '#/admin/reports', icon: 'analytics', label: 'Báo Cáo Hệ Thống' },
         { path: '#/admin/home-content', icon: 'dashboard_customize', label: 'Nội Dung Trang Chủ' }
       ];
     }

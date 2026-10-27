@@ -191,6 +191,37 @@ export function ManagerDashboard() {
   const [loading, setLoading] = useState(true);
   const [revision, setRevision] = useState(0);
 
+  useEffect(() => {
+    let active = true;
+    setLoading(true);
+    setError('');
+    setLogError('');
+
+    Promise.allSettled([reportApi.getOverview(), systemApi.getAuditLogs()]).then(([overview, activity]) => {
+      if (!active) return;
+
+      if (overview.status === 'fulfilled') {
+        setMetrics(overview.value);
+      } else {
+        setMetrics(null);
+        setError(overview.reason?.message || (isEn ? 'Unable to load dashboard data.' : 'Không thể tải dữ liệu bảng điều khiển.'));
+      }
+
+      if (activity.status === 'fulfilled') {
+        setLogs(activity.value.slice(0, 6));
+      } else {
+        setLogs([]);
+        setLogError(activity.reason?.message || (isEn ? 'Unable to load recent activity.' : 'Không thể tải nhật ký gần đây.'));
+      }
+
+      setLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [revision, isEn]);
+
   const revenue = metrics?.revenuePeriods || [];
   const membership = metrics?.membershipPeriods || [];
   const topClasses = metrics?.topClasses || [];

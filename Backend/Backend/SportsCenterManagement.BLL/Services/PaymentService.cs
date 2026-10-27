@@ -1292,9 +1292,9 @@ public sealed class PaymentService(
             throw BusinessException.BadRequest("Ảnh xác nhận chuyển khoản là bắt buộc khi duyệt hoàn tiền.");
         var transferProofUrl = request.TransferProofUrl?.Trim();
         if (status == "Approved" && transferProofUrl is not null &&
-            !(transferProofUrl.StartsWith("/uploads/", StringComparison.Ordinal) ||
-              (Uri.TryCreate(transferProofUrl, UriKind.Absolute, out var proofUri) &&
-               proofUri.Scheme is "http" or "https")))
+            (!transferProofUrl.StartsWith("refund-bills/", StringComparison.Ordinal) ||
+             transferProofUrl.Contains("../", StringComparison.Ordinal) ||
+             transferProofUrl.EndsWith("/", StringComparison.Ordinal)))
             throw BusinessException.BadRequest("Đường dẫn ảnh xác nhận chuyển khoản không hợp lệ.");
         if (status == "Rejected" && string.IsNullOrWhiteSpace(request.ReviewNote))
             throw BusinessException.BadRequest("Vui lòng nhập lý do từ chối hoàn tiền.");
@@ -2096,6 +2096,7 @@ public sealed class PaymentService(
         long? centerId = null,
         string? status = null)
     {
+        var publicDomain = _configuration["R2Storage:PublicDomain"]?.Trim().TrimEnd('/');
         var rows = from refund in _unitOfWork.Context.PaymentRefunds.AsNoTracking()
                    join payment in _unitOfWork.Context.Payments.AsNoTracking() on refund.PaymentId equals payment.Id
                    join invoice in _unitOfWork.Context.Invoices.AsNoTracking() on payment.InvoiceId equals invoice.Id
@@ -2134,7 +2135,11 @@ public sealed class PaymentService(
                    reviewerUser == null ? null : reviewerUser.Username,
                    row.Refund.ProcessedAt,
                    row.Refund.ReviewNote,
-                   row.Refund.TransferProofUrl,
+                   row.Refund.TransferProofUrl != null &&
+                       row.Refund.TransferProofUrl.StartsWith("refund-bills/") &&
+                       publicDomain != null
+                       ? publicDomain + "/" + row.Refund.TransferProofUrl
+                       : row.Refund.TransferProofUrl,
                    row.Refund.ExternalReference);
     }
 

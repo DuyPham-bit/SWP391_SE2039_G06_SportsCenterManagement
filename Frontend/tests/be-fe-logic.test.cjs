@@ -127,3 +127,55 @@ test('report API failure is not converted into an empty successful report', asyn
   });
   await assert.rejects(api.reportApi.getOverview('DAY'), /Rooms unavailable/);
 });
+
+test('Admin system report scopes every request and aggregates centers', async () => {
+  const api = client(route => {
+    const query = new URLSearchParams(route.split('?')[1] || '');
+    const scopedId = Number(query.get('centerId') || route.match(/^centers\/(\d+)/)?.[1] || 0);
+    if (route.startsWith('reports/revenue-by-sport?')) return {
+      allocatedNet: scopedId * 100, unallocatedNet: 0,
+      sports: [{ sportId: 1, name: 'Swimming', net: scopedId * 100 }]
+    };
+    if (route.startsWith('reports/revenue?')) return {
+      gross: scopedId * 100, refunds: 0, net: scopedId * 100,
+      periods: [{ periodStart: '2026-10-17', net: scopedId * 100 }]
+    };
+    if (route.startsWith('reports/membership?')) return {
+      totalMembers: scopedId, activeMembers: scopedId, membersWithPackage: scopedId,
+      membersWithoutPackage: 0, expiredMembers: 0, newMembers: scopedId,
+      periods: [{ periodStart: '2026-10-17', newMembers: scopedId }]
+    };
+    if (route.startsWith('reports/classes?')) return { currentStatusCounts: { Confirmed: scopedId }, periods: [] };
+    if (route.startsWith('reports/operations?')) return {
+      totalStaff: scopedId, activeStaff: scopedId, managerCount: 1, coachCount: scopedId,
+      receptionistCount: 0, totalRooms: scopedId, activeRooms: scopedId, sessionsCount: scopedId,
+      occupancyRate: 50,
+      classes: [{ id: 1, name: `Class ${scopedId}`, booked: scopedId, capacity: scopedId * 2, occupancyRate: 50 }],
+      sports: [{ name: 'Swimming', booked: scopedId, capacity: scopedId * 2, sessionsCount: scopedId, classesCount: 1, occupancyRate: 50, bookingShare: 100 }],
+      rooms: [{ id: 1, name: `Pool ${scopedId}`, booked: scopedId, capacity: scopedId * 2, occupancyRate: 50 }],
+      coaches: []
+    };
+    if (route.startsWith('reports/checkins?')) return { count: scopedId };
+    if (route.startsWith('class-sessions?')) return { items: [], totalCount: 0, pageSize: 100 };
+    if (route.includes('/rooms') || route.includes('/classes/all')) return [];
+    return {};
+  }, undefined, { role: 'ADMIN' });
+
+  const overview = await api.reportApi.getSystemOverview('DAY', [
+    { id: 1, name: 'Center 1' }, { id: 2, name: 'Center 2' }
+  ]);
+
+  assert.equal(overview.centerCount, 2);
+  assert.equal(overview.totalMembers, 3);
+  assert.equal(overview.netRevenue, 300);
+  assert.equal(overview.revenuePeriods[0].net, 300);
+  assert.equal(overview.classStatusCounts.Confirmed, 3);
+  assert.equal(overview.topSports[0].booked, 3);
+  assert.equal(overview.occupancyRate, 50);
+  assert.equal(overview.centerSummaries.length, 2);
+  assert.deepEqual(Array.from(overview.centerSummaries, item => item.centerId), [2, 1]);
+  assert.equal(overview.centerSummaries[0].netRevenue, 200);
+  const sessionCalls = api.calls.filter(route => route.startsWith('class-sessions?'));
+  assert.ok(sessionCalls.some(route => new URLSearchParams(route.split('?')[1]).get('centerId') === '1'));
+  assert.ok(sessionCalls.some(route => new URLSearchParams(route.split('?')[1]).get('centerId') === '2'));
+});
