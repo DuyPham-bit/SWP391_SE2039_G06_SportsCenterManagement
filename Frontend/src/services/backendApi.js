@@ -400,6 +400,7 @@ function mapStaff(item) {
     certification: item.certification || '',
     experienceYears: item.experienceYears,
     bio: item.bio,
+    activeClassCount: item.activeClassCount == null ? null : Number(item.activeClassCount),
     avatar: safeGetAvatar(item.userId)
   };
 }
@@ -1055,6 +1056,9 @@ export const reportApi = {
       from, to, groupBy,
       totalMembers: membership.totalMembers,
       activeMembers: membership.activeMembers,
+      membersWithPackage: membership.membersWithPackage ?? membership.activeMembers ?? 0,
+      membersWithoutPackage: membership.membersWithoutPackage ?? Math.max(0, Number(membership.totalMembers || 0) - Number(membership.activeMembers || 0)),
+      expiredMembers: membership.expiredMembers || 0,
       newMembers: membership.newMembers,
       membershipPeriods: membership.periods || [],
       classStatusCounts: classes.currentStatusCounts || {},
@@ -1089,6 +1093,8 @@ export const reportApi = {
       topClasses: reportClasses,
       topRooms: reportRooms,
       coaches: operations.coaches || [],
+      coachesWithSessions: (operations.coaches || []).filter(coach => Number(coach.sessionsCount || 0) > 0).length,
+      coachesWithoutSessions: (operations.coaches || []).filter(coach => Number(coach.sessionsCount || 0) === 0).length,
       highlights: {
         mostPopularClass: reportClasses[0] || null,
         mostPopularSport: reportSports[0] || null,
@@ -1138,13 +1144,12 @@ export const systemApi = {
   },
 
   async getPermissions() {
-    const [matrix, catalog] = await Promise.all([apiRequest('admin/roles'), apiRequest('admin/permissions')]);
-    return asArray(matrix).map(row => ({ ...row, availablePermissions: asArray(catalog) }));
+    return asArray(await apiRequest(`centers/${centerId()}/roles`));
   },
 
-  // Cập nhật quyền theo roleId (PUT /api/admin/roles/{roleId}/permissions)
+  // Cập nhật quyền theo vai trò trong phạm vi trung tâm hiện tại.
   async updatePermissions(roleId, permissionCodes, capabilityIds = []) {
-    return apiRequest(`admin/roles/${roleId}/permissions`, {
+    return apiRequest(`centers/${centerId()}/roles/${Number(roleId)}/permissions`, {
       method: 'PUT',
       body: { permissionCodes, capabilityIds }
     });

@@ -87,8 +87,19 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
             .Where(item => coachIds.Contains(item.CoachId))
             .GroupBy(item => item.CoachId)
             .ToDictionaryAsync(group => group.Key, group => (IReadOnlyList<long>)group.Select(item => item.SportId).ToArray(), cancellationToken);
+        var activeClassCountsByCoach = await (
+                from assignment in unitOfWork.Context.ClassCoaches.AsNoTracking()
+                join cls in unitOfWork.Context.Classes.AsNoTracking() on assignment.ClassId equals cls.Id
+                where coachIds.Contains(assignment.CoachId)
+                      && cls.CenterId == centerId
+                      && cls.Status != FlowStatuses.ClassCancelled
+                      && cls.Status != FlowStatuses.ClassCompleted
+                group assignment by assignment.CoachId into assignments
+                select new { CoachId = assignments.Key, Count = assignments.Select(item => item.ClassId).Distinct().Count() })
+            .ToDictionaryAsync(item => item.CoachId, item => item.Count, cancellationToken);
         return rows.Select(row => Map(row.Staff, row.User, row.RoleName, row.Coach,
-            row.Coach is not null && sportIdsByCoach.TryGetValue(row.Coach.Id, out var ids) ? ids : [])).ToArray();
+            row.Coach is not null && sportIdsByCoach.TryGetValue(row.Coach.Id, out var ids) ? ids : [],
+            row.Coach is null ? null : activeClassCountsByCoach.GetValueOrDefault(row.Coach.Id))).ToArray();
     }
 
     public async Task<StaffResponses.CenterStaffResponse> CreateAtCenterAsync(
@@ -522,10 +533,10 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
     }
 
     private static StaffResponses.CenterStaffResponse Map(StaffProfile staff, User user, string roleName, CoachProfile? coach,
-        IReadOnlyList<long>? sportIds = null) =>
+        IReadOnlyList<long>? sportIds = null, int? activeClassCount = null) =>
         new(user.Id, staff.CenterId, staff.StaffCode, coach?.CoachCode, user.Username, user.Email, user.Phone,
             roleName, staff.FullName, user.Status, staff.HireDate, coach?.Specialization,
-            coach?.Certification, coach?.ExperienceYears, coach?.Bio, sportIds ?? []);
+            coach?.Certification, coach?.ExperienceYears, coach?.Bio, sportIds ?? [], activeClassCount);
 
     private static string MakeCode(string prefix) => $"{prefix}{Guid.NewGuid():N}"[..12].ToUpperInvariant();
     private static string? Normalize(string? value) => string.IsNullOrWhiteSpace(value) ? null : value.Trim();

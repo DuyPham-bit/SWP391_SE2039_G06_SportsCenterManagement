@@ -18,5 +18,6 @@ public static class Responses
         string? Certification,
         int? ExperienceYears,
         string? Bio,
-        IReadOnlyList<long> SportIds);
+        IReadOnlyList<long> SportIds,
+        int? ActiveClassCount = null);
 }

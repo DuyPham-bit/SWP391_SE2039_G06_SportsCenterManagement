@@ -93,6 +93,33 @@ static class AuthChecks
             freshToken = body.GetProperty("accessToken").GetString()!;
             return (await Profile(freshToken)).IsSuccessStatusCode;
         });
+        await check("HTTP disabled account reports that it is locked after valid password verification", async () => {
+            await db.Users.Where(u => u.Id == owner.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.Status, "Disabled"));
+            try {
+                var response = await http.PostAsJsonAsync("api/auth/login", new { email = owner.Email, password });
+                var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+                return (int)response.StatusCode == 423
+                    && body.GetProperty("code").GetString() == "ACCOUNT_DISABLED"
+                    && body.GetProperty("message").GetString() == "Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.";
+            } finally {
+                await db.Users.Where(u => u.Id == owner.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(u => u.Status, "Active"));
+            }
+        });
+        await check("HTTP disabled account with a wrong password still reports invalid credentials", async () => {
+            await db.Users.Where(u => u.Id == owner.Id)
+                .ExecuteUpdateAsync(s => s.SetProperty(u => u.Status, "Disabled"));
+            try {
+                var response = await http.PostAsJsonAsync("api/auth/login", new { email = owner.Email, password = "Wrong_Password42!" });
+                var body = await response.Content.ReadFromJsonAsync<JsonElement>();
+                return response.StatusCode == HttpStatusCode.Unauthorized
+                    && body.GetProperty("message").GetString() == "Email hoặc mật khẩu không chính xác.";
+            } finally {
+                await db.Users.Where(u => u.Id == owner.Id)
+                    .ExecuteUpdateAsync(s => s.SetProperty(u => u.Status, "Active"));
+            }
+        });
         await check("HTTP five wrong OTP attempts consume the token and reject the correct code", async () => {
             if (!(await Issue()).IsSuccessStatusCode) return false;
             var code = mail.Otp;

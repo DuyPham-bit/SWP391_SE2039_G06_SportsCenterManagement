@@ -10,6 +10,7 @@ import {
   effectiveScheduleRoom,
   filterClasses,
   groupSchedulesByDay,
+  scheduleEndTime,
   splitAndSortClasses,
   validateClassForm,
   validateScheduleForm
@@ -281,7 +282,7 @@ export function ClassesAndRooms() {
       setSchedules(fetchedSchedules || []);
       const dur = Number(classRow.durationMinutes || 60);
       const defaultStart = '08:00';
-      const defaultEnd = addMinutesToTime(defaultStart, dur);
+      const defaultEnd = scheduleEndTime(defaultStart, dur);
       setForm({
         roomId: classRow.roomId || '',
         dayOfWeek: 1,
@@ -305,7 +306,7 @@ export function ClassesAndRooms() {
       modal.type === 'class'
         ? validateClassForm(form)
         : modal.type === 'schedule'
-        ? validateScheduleForm(form)
+        ? validateScheduleForm(form, modal.row?.durationMinutes)
         : '';
     if (validation) {
       setFormError(validation);
@@ -440,7 +441,7 @@ export function ClassesAndRooms() {
             dayOfWeek: 1,
             selectedDays: [1, 3, 5],
             startTime: '08:00',
-            endTime: addMinutesToTime('08:00', dur)
+            endTime: scheduleEndTime('08:00', dur)
           }));
           return;
         }
@@ -1613,7 +1614,7 @@ export function ClassesAndRooms() {
                     dayOfWeek: 1,
                     selectedDays: [1, 3, 5],
                     startTime: '08:00',
-                    endTime: addMinutesToTime('08:00', dur),
+                    endTime: scheduleEndTime('08:00', dur),
                     startDate: todayDate(),
                     endDate: futureDate(90)
                   });
@@ -2531,6 +2532,8 @@ function ScheduleManager({
                   required
                   type="time"
                   name="startTime"
+                  min="05:00"
+                  max="22:00"
                   value={form.startTime || '08:00'}
                   onChange={handleStartTimeChange}
                   className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#24828F]"
@@ -2545,6 +2548,8 @@ function ScheduleManager({
                   required
                   type="time"
                   name="endTime"
+                  min="05:00"
+                  max="22:00"
                   value={form.endTime || '09:30'}
                   onChange={change}
                   className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#24828F]"
@@ -2572,6 +2577,11 @@ function ScheduleManager({
                 </select>
               </div>
             </div>
+            <p className="text-[11px] text-slate-500 dark:text-slate-400">
+              {isEn
+                ? `Center hours: 05:00–22:00. Maximum ${durationMinutes} minutes per session.`
+                : `Giờ trung tâm: 05:00–22:00. Tối đa ${durationMinutes} phút mỗi buổi.`}
+            </p>
           </div>
 
           {/* ROW 3: Date Range & Unified Action Button */}

@@ -1621,11 +1621,24 @@ public sealed class PaymentService(
         {
             throw BusinessException.Conflict("PayOS không hỗ trợ số tiền vượt giới hạn số nguyên 32-bit.");
         }
-        if (await _unitOfWork.Context.Payments.AnyAsync(
-                candidate => candidate.InvoiceId == invoice.Id && candidate.PaymentStatus == "Pending",
-                cancellationToken))
+        var pendingPayments = await _unitOfWork.Context.Payments
+            .Where(candidate => candidate.InvoiceId == invoice.Id && candidate.PaymentStatus == "Pending")
+            .OrderByDescending(candidate => candidate.Id)
+            .Take(2)
+            .ToListAsync(cancellationToken);
+        if (pendingPayments.Count > 0)
         {
-            throw BusinessException.Conflict("Hóa đơn đã có payment Pending. Chờ callback hoặc quản lý đối soát trước khi thử lại.");
+            var pendingPayment = pendingPayments[0];
+            if (pendingPayments.Count == 1 &&
+                pendingPayment.PaymentMethod.StartsWith(provider, StringComparison.OrdinalIgnoreCase) &&
+                !string.IsNullOrWhiteSpace(pendingPayment.GatewayPaymentUrl))
+            {
+                await transaction.CommitAsync(cancellationToken);
+                return (invoice, pendingPayment, pendingPayment.GatewayPaymentUrl);
+            }
+
+            throw BusinessException.Conflict(
+                "Hóa đơn đang có giao dịch chờ xác nhận và chưa thể tiếp tục tự động. Vui lòng chờ callback hoặc liên hệ quản lý đối soát.");
         }
 
         var paymentAttemptTime = DateTime.UtcNow;

@@ -16,6 +16,8 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
 {
     private const int MaxScheduleSpanDays = 366;
     private const double MaxDailyTeachingHours = 8.0;
+    private static readonly TimeOnly CenterOpeningTime = new(5, 0);
+    private static readonly TimeOnly CenterClosingTime = new(22, 0);
 
     private SportsCenterDbContext Db => unitOfWork.Context;
 
@@ -329,6 +331,7 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
 
         await using var transaction = await Db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
         var entity = await LoadOpenClassAsync(classId, cancellationToken);
+        ValidateScheduleDuration(request.StartTime, request.EndTime, entity.DurationMinutes);
         var roomId = request.RoomId ?? entity.RoomId;
         await EnsureScheduleRoomAsync(entity, request.RoomId, cancellationToken);
 
@@ -371,6 +374,7 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
 
         await using var transaction = await Db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, cancellationToken);
         var entity = await LoadOpenClassAsync(classId, cancellationToken);
+        ValidateScheduleDuration(request.StartTime, request.EndTime, entity.DurationMinutes);
         var schedule = await LoadActiveScheduleAsync(classId, scheduleId, cancellationToken);
         var oldValues = new
         {
@@ -460,9 +464,18 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
     {
         if (dayOfWeek is < 0 or > 6) throw new InvalidOperationException("Thứ trong tuần phải từ 0 (Chủ nhật) đến 6 (Thứ bảy).") { Data = { ["StatusCode"] = 400 } };
         if (end <= start) throw new InvalidOperationException("Giờ kết thúc phải sau giờ bắt đầu.") { Data = { ["StatusCode"] = 400 } };
+        if (start < CenterOpeningTime || end > CenterClosingTime)
+            throw new InvalidOperationException("Lịch học phải nằm trong giờ hoạt động của trung tâm, từ 05:00 đến 22:00.") { Data = { ["StatusCode"] = 400 } };
         if (endDate < startDate) throw new InvalidOperationException("Ngày kết thúc phải sau hoặc bằng ngày bắt đầu.") { Data = { ["StatusCode"] = 400 } };
         if (endDate.DayNumber - startDate.DayNumber > MaxScheduleSpanDays)
             throw new InvalidOperationException($"Một lịch lặp tối đa {MaxScheduleSpanDays} ngày.") { Data = { ["StatusCode"] = 400 } };
+    }
+
+    private static void ValidateScheduleDuration(TimeOnly start, TimeOnly end, int maximumMinutes)
+    {
+        var scheduledMinutes = (end - start).TotalMinutes;
+        if (scheduledMinutes > maximumMinutes)
+            throw new InvalidOperationException($"Một buổi học không được vượt quá thời lượng {maximumMinutes} phút đã thiết lập cho lớp.") { Data = { ["StatusCode"] = 400 } };
     }
 
     private async Task EnsureSportAndRoomAsync(long centerId, long sportId, long? roomId, int capacity, CancellationToken ct)

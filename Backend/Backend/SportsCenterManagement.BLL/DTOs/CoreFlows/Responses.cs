@@ -88,7 +88,9 @@ public sealed record MembershipReportResponse(
     IReadOnlyList<MembershipReportPeriod> Periods,
     int ExpiredMembers = 0,
     int InactiveMembers = 0,
-    IReadOnlyList<MembershipPackageStatsItem>? Packages = null);
+    IReadOnlyList<MembershipPackageStatsItem>? Packages = null,
+    int MembersWithPackage = 0,
+    int MembersWithoutPackage = 0);
 
 public sealed record MembershipReportPeriod(DateOnly PeriodStart, int NewMembers);
 

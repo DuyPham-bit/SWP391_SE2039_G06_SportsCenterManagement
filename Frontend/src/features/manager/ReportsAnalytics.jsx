@@ -68,7 +68,7 @@ export function ReportsAnalytics() {
   const [exportingCsv, setExportingCsv] = useState(false);
 
   // Table filters
-  const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | sports | rooms | logs
+  const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | sports | rooms | coaches | logs
   const [classSearch, setClassSearch] = useState('');
   const [classSportFilter, setClassSportFilter] = useState('ALL');
   const [classSortBy, setClassSortBy] = useState('booked'); // booked | occupancy | sessions
@@ -476,6 +476,53 @@ export function ReportsAnalytics() {
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#F2CC8F] to-[#E5A33C] text-slate-950 flex items-center justify-center shadow-md shadow-[#E5A33C]/25 shrink-0">
                 <span className="material-symbols-outlined text-[24px]">fact_check</span>
               </div>
+            </div>
+          </div>
+
+          {/* 3a. CURRENT MEMBERSHIP DISTRIBUTION */}
+          <div className="grid md:grid-cols-3 gap-4">
+            <div className="md:col-span-2 bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs">
+              <div className="flex flex-wrap items-center justify-between gap-3 mb-3">
+                <div>
+                  <h2 className="text-sm font-black text-slate-900 dark:text-white">
+                    {isEn ? 'Current member package distribution' : 'Thống kê gói tập hiện tại của hội viên'}
+                  </h2>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">
+                    {isEn ? 'Based on packages valid today' : 'Tính theo gói tập còn hiệu lực trong ngày hôm nay'}
+                  </p>
+                </div>
+                <span className="text-xs font-bold text-slate-500 dark:text-slate-400">
+                  {isEn ? 'Total' : 'Tổng'}: {metrics.totalMembers}
+                </span>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-3">
+                <div className="rounded-xl border border-emerald-200 dark:border-emerald-800 bg-emerald-50/70 dark:bg-emerald-950/30 p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-emerald-700 dark:text-emerald-300">{isEn ? 'With active package' : 'Có gói hiệu lực'}</p>
+                    <p className="text-2xl font-black text-emerald-800 dark:text-emerald-200">{metrics.membersWithPackage}</p>
+                  </div>
+                  <span className="text-sm font-black text-emerald-700 dark:text-emerald-300">
+                    {metrics.totalMembers ? Math.round((metrics.membersWithPackage / metrics.totalMembers) * 100) : 0}%
+                  </span>
+                </div>
+                <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/30 p-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs font-semibold text-amber-700 dark:text-amber-300">{isEn ? 'Without active package' : 'Chưa có gói hiệu lực'}</p>
+                    <p className="text-2xl font-black text-amber-800 dark:text-amber-200">{metrics.membersWithoutPackage}</p>
+                  </div>
+                  <span className="text-sm font-black text-amber-700 dark:text-amber-300">
+                    {metrics.totalMembers ? Math.round((metrics.membersWithoutPackage / metrics.totalMembers) * 100) : 0}%
+                  </span>
+                </div>
+              </div>
+            </div>
+            <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200/80 dark:border-slate-800 shadow-xs flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-slate-500 dark:text-slate-400">{isEn ? 'Expired package members' : 'Hội viên có gói hết hạn'}</p>
+                <p className="text-2xl font-black text-slate-900 dark:text-white mt-1">{metrics.expiredMembers}</p>
+                <p className="text-[11px] text-slate-400 mt-1">{isEn ? 'Included in the group without an active package' : 'Thuộc nhóm chưa có gói hiệu lực'}</p>
+              </div>
+              <span className="material-symbols-outlined text-[32px] text-slate-300 dark:text-slate-600">event_busy</span>
             </div>
           </div>
 
@@ -1050,6 +1097,7 @@ export function ReportsAnalytics() {
                   ['classes', isEn ? '🏅 Classes Table' : '🏅 Bảng Lớp học'],
                   ['sports', isEn ? '🥋 Sports Directory' : '🥋 Danh sách Bộ môn'],
                   ['rooms', isEn ? '🏟️ Courts & Rooms' : '🏟️ Bảng Sân & Phòng'],
+                  ['coaches', isEn ? '🧑‍🏫 Coach Performance' : '🧑‍🏫 Hiệu suất HLV'],
                   ['logs', isEn ? '📋 Revenue & Logs' : '📋 Lịch sử & Đăng ký']
                 ].map(([tabKey, tabLabel]) => (
                   <button
@@ -1447,7 +1495,66 @@ export function ReportsAnalytics() {
               </section>
             )}
 
-            {/* TABLE TAB 4: LỊCH SỬ & ĐĂNG KÝ */}
+            {/* TABLE TAB 4: HIỆU SUẤT HUẤN LUYỆN VIÊN */}
+            {activeTableTab === 'coaches' && (
+              <section className="bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-5 shadow-sm space-y-4">
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <div>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-sm">
+                      {isEn ? 'Coach workload and class occupancy' : 'Khối lượng giảng dạy và tỷ lệ lấp đầy theo HLV'}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                      {isEn
+                        ? `${metrics.coachesWithSessions} coaches have sessions · ${metrics.coachesWithoutSessions} have no sessions in this period`
+                        : `${metrics.coachesWithSessions} HLV có ca dạy · ${metrics.coachesWithoutSessions} HLV chưa có ca dạy trong kỳ`}
+                    </p>
+                  </div>
+                  <span className="px-3 py-1.5 rounded-xl bg-slate-100 dark:bg-slate-800 text-xs font-bold text-slate-700 dark:text-slate-300">
+                    {isEn ? 'Total coaches' : 'Tổng HLV'}: {metrics.coaches.length}
+                  </span>
+                </div>
+                <div className="overflow-x-auto border border-slate-100 dark:border-slate-800 rounded-xl">
+                  <table className="w-full text-left border-collapse text-sm">
+                    <thead>
+                      <tr className="bg-slate-50 dark:bg-slate-800 text-slate-600 dark:text-slate-400 font-chivo text-xs uppercase tracking-wider border-b border-slate-200 dark:border-slate-700">
+                        <th className="py-3 px-4 min-w-[200px]">{isEn ? 'Coach' : 'Huấn luyện viên'}</th>
+                        <th className="py-3 px-4 min-w-[160px]">{isEn ? 'Specialization' : 'Chuyên môn'}</th>
+                        <th className="py-3 px-3 text-center">{isEn ? 'Classes' : 'Số lớp'}</th>
+                        <th className="py-3 px-3 text-center">{isEn ? 'Sessions' : 'Số ca'}</th>
+                        <th className="py-3 px-4 text-center min-w-[120px]">{isEn ? 'Booked / Capacity' : 'Lượt đặt / Sức chứa'}</th>
+                        <th className="py-3 px-4 min-w-[160px]">{isEn ? 'Occupancy' : 'Tỷ lệ lấp đầy'}</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-100 dark:divide-slate-800">
+                      {metrics.coaches.length ? metrics.coaches.map(coach => (
+                        <tr key={coach.id} className="hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors">
+                          <td className="py-3 px-4">
+                            <p className="font-bold text-slate-900 dark:text-white">{coach.fullName}</p>
+                            <p className="text-[11px] text-slate-400">{coach.coachCode || (isEn ? 'No coach code' : 'Chưa có mã HLV')} · {coach.status}</p>
+                          </td>
+                          <td className="py-3 px-4 text-xs text-slate-700 dark:text-slate-300">{coach.specialization || (isEn ? 'Not updated' : 'Chưa cập nhật')}</td>
+                          <td className="py-3 px-3 text-center font-bold text-slate-900 dark:text-white">{coach.classesCount}</td>
+                          <td className="py-3 px-3 text-center font-bold text-slate-900 dark:text-white">{coach.sessionsCount}</td>
+                          <td className="py-3 px-4 text-center"><strong>{coach.booked}</strong><span className="text-slate-400"> / {coach.capacity}</span></td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-3">
+                              <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+                                <div className="h-2 rounded-full bg-[#2D6A4F]" style={{ width: `${Math.min(100, coach.occupancyRate)}%` }} />
+                              </div>
+                              <strong className="text-xs text-[#2D6A4F] dark:text-[#81B29A] min-w-[42px] text-right">{coach.occupancyRate}%</strong>
+                            </div>
+                          </td>
+                        </tr>
+                      )) : (
+                        <tr><td colSpan={6} className="py-8 text-center text-slate-400 text-xs">{isEn ? 'No coach data available.' : 'Chưa có dữ liệu huấn luyện viên.'}</td></tr>
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+              </section>
+            )}
+
+            {/* TABLE TAB 5: LỊCH SỬ & ĐĂNG KÝ */}
             {activeTableTab === 'logs' && (
               <div className="grid lg:grid-cols-2 gap-5">
                 <section className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 space-y-3 shadow-sm">

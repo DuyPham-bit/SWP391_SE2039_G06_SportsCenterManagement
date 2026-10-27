@@ -440,10 +440,11 @@ export function MemberManagement() {
               <button
                 type="button"
                 onClick={() => setQuery('')}
-                className="absolute right-20 top-2.5 p-1 text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
+                aria-label={isEn ? 'Clear search' : 'Xóa tìm kiếm'}
+                className="absolute right-[4.75rem] top-1/2 -translate-y-1/2 inline-flex h-7 w-7 items-center justify-center text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors"
                 title={isEn ? 'Clear search' : 'Xóa tìm kiếm'}
               >
-                <span className="material-symbols-outlined text-[16px]">close</span>
+                <span className="material-symbols-outlined text-[16px] leading-none">close</span>
               </button>
             )}
             <button

@@ -165,12 +165,6 @@ public sealed class AuthService(IUnitOfWork unitOfWork) : IAuthService
 
         var now = DateTime.UtcNow;
 
-        // Check if account is inactive or currently locked out
-        if (user.Status != "Active" || user.LockedUntil > now)
-        {
-            throw new InvalidOperationException("Account is currently unavailable for login.");
-        }
-
         // Verify the entered password against the stored password hash
         if (!PasswordHashing.Verify(request.Password, user.PasswordHash))
         {
@@ -185,6 +179,31 @@ public sealed class AuthService(IUnitOfWork unitOfWork) : IAuthService
                         item => item.FailedLoginAttempts >= 4 ? now.AddMinutes(15) : item.LockedUntil)
                     .SetProperty(item => item.UpdatedAt, now), cancellationToken);
             throw new InvalidOperationException("Invalid username or password.");
+        }
+
+        // Only disclose an account lock after the caller has proved they know the password.
+        if (!string.Equals(user.Status, "Active", StringComparison.OrdinalIgnoreCase))
+        {
+            throw new InvalidOperationException("Tài khoản đã bị khóa. Vui lòng liên hệ quản trị viên.")
+            {
+                Data =
+                {
+                    ["StatusCode"] = 423,
+                    ["Code"] = "ACCOUNT_DISABLED"
+                }
+            };
+        }
+
+        if (user.LockedUntil.HasValue && user.LockedUntil.Value > now)
+        {
+            throw new InvalidOperationException("Tài khoản đang tạm thời bị khóa. Vui lòng thử lại sau.")
+            {
+                Data =
+                {
+                    ["StatusCode"] = 423,
+                    ["Code"] = "ACCOUNT_TEMPORARILY_LOCKED"
+                }
+            };
         }
 
         // Reset failed login counter and update login timestamp on successful authentication

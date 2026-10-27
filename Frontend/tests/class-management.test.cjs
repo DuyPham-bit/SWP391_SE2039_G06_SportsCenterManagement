@@ -9,7 +9,7 @@ function loadHelpers() {
     .replaceAll('export const ', 'const ')
     .replaceAll('export function ', 'function ');
   const context = vm.createContext({ Intl });
-  vm.runInContext(`${source}\nglobalThis.helpers = { CLASS_STATUS, WEEK_DAYS, splitAndSortClasses, filterClasses, groupSchedulesByDay, effectiveScheduleRoom, validateClassForm, validateScheduleForm };`, context);
+  vm.runInContext(`${source}\nglobalThis.helpers = { CLASS_STATUS, WEEK_DAYS, splitAndSortClasses, filterClasses, groupSchedulesByDay, effectiveScheduleRoom, scheduleEndTime, validateClassForm, validateScheduleForm };`, context);
   return context.helpers;
 }
 
@@ -60,6 +60,17 @@ test('form validation rejects invalid unhappy cases before calling the API', () 
   assert.match(validateClassForm({ name: 'A', sportId: 1, capacity: 0, durationMinutes: 60 }), /Sức chứa/);
   assert.match(validateScheduleForm({ startDate: '2026-10-16', endDate: '2026-10-15', startTime: '08:00', endTime: '09:00' }), /Ngày kết thúc/);
   assert.match(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '09:00', endTime: '09:00' }), /Giờ kết thúc/);
+  assert.match(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '01:00', endTime: '02:00' }, 60), /05:00.*22:00/);
+  assert.match(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '21:30', endTime: '22:01' }, 60), /05:00.*22:00/);
+  assert.match(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '08:00', endTime: '09:31' }, 90), /90 phút/);
   assert.equal(validateClassForm({ name: 'A', sportId: 1, capacity: 10, durationMinutes: 60 }), '');
-  assert.equal(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '08:00', endTime: '09:00' }), '');
+  assert.equal(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '05:00', endTime: '06:30' }, 90), '');
+  assert.equal(validateScheduleForm({ startDate: '2026-10-15', endDate: '2026-10-16', startTime: '20:30', endTime: '22:00' }, 90), '');
+});
+
+test('new schedule end time follows the configured class duration', () => {
+  const { scheduleEndTime } = loadHelpers();
+  assert.equal(scheduleEndTime('08:00', 60), '09:00');
+  assert.equal(scheduleEndTime('08:00', 90), '09:30');
+  assert.equal(scheduleEndTime('21:30', 60), '22:30');
 });

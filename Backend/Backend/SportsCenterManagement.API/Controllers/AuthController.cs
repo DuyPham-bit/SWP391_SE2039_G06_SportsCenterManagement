@@ -103,6 +103,7 @@ public sealed class AuthController(
     [AllowAnonymous]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(423)]
     public async Task<ActionResult<AuthResponse>> Login(
         [FromBody] LoginRequest request,
         CancellationToken cancellationToken)
@@ -120,9 +121,17 @@ public sealed class AuthController(
                 new SportsCenterManagement.BLL.DTOs.Auth.Requests.LoginRequest(loginIdentifier, request.Password),
                 cancellationToken);
         }
+        catch (InvalidOperationException exception) when (exception.Data["StatusCode"] is 423)
+        {
+            return StatusCode(423, new
+            {
+                code = exception.Data["Code"] as string,
+                message = exception.Message
+            });
+        }
         catch (InvalidOperationException)
         {
-            // Keep unknown, disabled and locked accounts indistinguishable to callers.
+            // Keep unknown accounts and invalid credentials indistinguishable to callers.
             return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác." });
         }
 

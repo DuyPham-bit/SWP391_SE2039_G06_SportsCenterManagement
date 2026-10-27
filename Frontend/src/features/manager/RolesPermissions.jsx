@@ -17,14 +17,6 @@ const CAPABILITY_CATEGORIES = [
   'BÁO CÁO & BẢO MẬT'
 ];
 
-// Manager permissions are fixed by the server and are deliberately not part of
-// the center-level delegation matrix. Only these staff/member roles can vary.
-const DELEGABLE_CAPABILITY_IDS = new Set(
-  SYSTEM_CAPABILITIES
-    .filter(capability => capability.defaultRole !== 'MANAGER')
-    .map(capability => capability.id)
-);
-
 const getCategoryLabel = (category, isEn) => {
   const map = {
     'VẬN HÀNH & NHÂN SỰ': isEn ? 'OPERATIONS & STAFF' : 'VẬN HÀNH & NHÂN SỰ',
@@ -67,6 +59,7 @@ export function RolesPermissions() {
   const [userCodes, setUserCodes] = useState([]);
 
   const centerId = currentUser?.centerId || Number(import.meta.env.VITE_SPORTS_CENTER_ID) || 15;
+  const isAdmin = String(currentUser?.role || '').toUpperCase() === 'ADMIN';
   const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
 
   // Load initial permissions and staff directory
@@ -241,7 +234,13 @@ export function RolesPermissions() {
   const filteredRoleCaps = useMemo(() => {
     if (!selectedRole) return [];
     const available = selectedRole.availableCapabilities || [];
+    const delegableIds = new Set(
+      SYSTEM_CAPABILITIES
+        .filter(c => isAdmin || c.defaultRole !== 'MANAGER')
+        .map(c => c.id)
+    );
     return available
+      .filter(id => delegableIds.has(id))
       .map(id => SYSTEM_CAPABILITIES.find(c => c.id === id) || { id, label: id, desc: isEn ? 'System feature' : 'Chức năng hệ thống', category: 'KHÁC', icon: 'settings' })
       .filter(cap => {
         const matchesCategory = roleCategoryFilter === 'ALL' || cap.category === roleCategoryFilter;
@@ -251,7 +250,7 @@ export function RolesPermissions() {
           (cap.desc || '').toLowerCase().includes(q);
         return matchesCategory && matchesQuery;
       });
-  }, [selectedRole, roleCategoryFilter, roleSearchQuery, isEn]);
+  }, [selectedRole, roleCategoryFilter, roleSearchQuery, isAdmin, isEn]);
 
   // Filtered data permissions for Tab 1
   const filteredRoleCodes = useMemo(() => {
@@ -378,7 +377,9 @@ export function RolesPermissions() {
           <section className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 p-4 shadow-sm h-fit">
             <h2 className="font-bold text-slate-900 dark:text-white">{isEn ? 'Select an account' : 'Chọn tài khoản'}</h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 mb-3">
-              {isEn ? 'Managers are excluded and cannot edit themselves.' : 'Không liệt kê Manager; người quản lý không thể tự sửa quyền.'}
+              {isAdmin
+                ? (isEn ? 'Admin can configure Managers and center staff; an account cannot edit itself.' : 'Admin có thể phân quyền cho Manager và nhân sự trung tâm; tài khoản không thể tự sửa quyền của chính mình.')
+                : (isEn ? 'Managers are excluded and cannot edit themselves.' : 'Không liệt kê Manager; người quản lý không thể tự sửa quyền.')}
             </p>
             <input value={userSearchQuery} onChange={event => setUserSearchQuery(event.target.value)}
               placeholder={isEn ? 'Search name or role...' : 'Tìm theo tên hoặc vai trò...'}

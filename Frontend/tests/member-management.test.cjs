@@ -3,6 +3,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
+const pageSource = fs.readFileSync(path.join(__dirname, '../src/features/manager/MemberManagement.jsx'), 'utf8');
 
 function loadHelpers() {
   const source = fs.readFileSync(path.join(__dirname, '../src/features/manager/memberManagementView.js'), 'utf8')
@@ -71,4 +72,10 @@ test('history formatting handles missing data and keeps newest subscriptions fir
   assert.equal(formatMembershipDateTime('not-a-date'), 'Chưa xác định');
   assert.equal(formatMembershipDuration(0), 'Chưa xác định');
   assert.equal(formatMembershipPrice(null), 'Chưa có thông tin');
+});
+
+test('member search clear button stays vertically centered inside the input', () => {
+  assert.match(pageSource, /aria-label=\{isEn \? 'Clear search' : 'Xóa tìm kiếm'\}/);
+  assert.match(pageSource, /top-1\/2 -translate-y-1\/2 inline-flex h-7 w-7 items-center justify-center/);
+  assert.match(pageSource, /text-\[16px\] leading-none/);
 });

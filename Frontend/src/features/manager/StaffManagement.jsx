@@ -5,6 +5,7 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { Modal } from '../../components/common/Modal.js';
 import { formatMemberDate } from '../member/memberOverview.js';
+import { COACH_CLASS_FILTER, matchesCoachClassFilter } from './staffManagementView.js';
 
 const getRoleConfig = (isEn) => ({
   COACH: {
@@ -94,6 +95,7 @@ export function StaffManagement() {
   const [searchQuery, setSearchQuery] = useState('');
   const [roleFilter, setRoleFilter] = useState('ALL');
   const [statusFilter, setStatusFilter] = useState('ALL');
+  const [coachClassFilter, setCoachClassFilter] = useState(COACH_CLASS_FILTER.ALL);
   const [sortBy, setSortBy] = useState('DEFAULT');
   const [copiedId, setCopiedId] = useState(null);
 
@@ -215,7 +217,9 @@ export function StaffManagement() {
     const managers = staffList.filter((s) => s.role === 'MANAGER' || s.role === 'ADMIN').length;
     const activeCount = staffList.filter((s) => s.status === 'ACTIVE').length;
     const disabledCount = total - activeCount;
-    return { total, coaches, receptionists, managers, activeCount, disabledCount };
+    const coachesWithoutClasses = staffList.filter((s) => s.role === 'COACH' && s.activeClassCount === 0).length;
+    const coachesWithClasses = staffList.filter((s) => s.role === 'COACH' && Number(s.activeClassCount) > 0).length;
+    return { total, coaches, receptionists, managers, activeCount, disabledCount, coachesWithoutClasses, coachesWithClasses };
   }, [staffList]);
 
   // Set of userIds who already have a staff or coach profile at this center
@@ -237,6 +241,10 @@ export function StaffManagement() {
       list = list.filter((s) => s.status === 'ACTIVE');
     } else if (statusFilter === 'DISABLED') {
       list = list.filter((s) => s.status !== 'ACTIVE');
+    }
+
+    if (roleFilter === 'COACH' && coachClassFilter !== COACH_CLASS_FILTER.ALL) {
+      list = list.filter((s) => matchesCoachClassFilter(s, coachClassFilter));
     }
 
     // Filter by search query
@@ -264,7 +272,7 @@ export function StaffManagement() {
     }
 
     return list;
-  }, [staffList, roleFilter, statusFilter, searchQuery, sortBy]);
+  }, [staffList, roleFilter, statusFilter, coachClassFilter, searchQuery, sortBy]);
 
   // Open Create Modal
   const openCreateModal = () => {
@@ -518,7 +526,13 @@ export function StaffManagement() {
     setSearchQuery('');
     setRoleFilter('ALL');
     setStatusFilter('ALL');
+    setCoachClassFilter(COACH_CLASS_FILTER.ALL);
     setSortBy('DEFAULT');
+  };
+
+  const handleRoleFilterChange = (role) => {
+    setRoleFilter(role);
+    if (role !== 'COACH') setCoachClassFilter(COACH_CLASS_FILTER.ALL);
   };
 
   return (
@@ -705,7 +719,7 @@ export function StaffManagement() {
               </select>
             </div>
 
-            {(searchQuery || roleFilter !== 'ALL' || statusFilter !== 'ALL' || sortBy !== 'DEFAULT') && (
+            {(searchQuery || roleFilter !== 'ALL' || statusFilter !== 'ALL' || coachClassFilter !== COACH_CLASS_FILTER.ALL || sortBy !== 'DEFAULT') && (
               <button
                 type="button"
                 onClick={handleResetFilters}
@@ -725,7 +739,7 @@ export function StaffManagement() {
               {isEn ? 'Role:' : 'Vai trò:'}
             </span>
             <button
-              onClick={() => setRoleFilter('ALL')}
+              onClick={() => handleRoleFilterChange('ALL')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 roleFilter === 'ALL'
                   ? 'bg-[#1E2235] text-white shadow-sm'
@@ -735,7 +749,7 @@ export function StaffManagement() {
               {isEn ? 'All' : 'Tất cả'} ({staffList.length})
             </button>
             <button
-              onClick={() => setRoleFilter('COACH')}
+              onClick={() => handleRoleFilterChange('COACH')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 roleFilter === 'COACH'
                   ? 'bg-amber-600 text-white shadow-sm shadow-amber-600/20'
@@ -745,7 +759,7 @@ export function StaffManagement() {
               {isEn ? 'Coaches' : 'HLV'} ({stats.coaches})
             </button>
             <button
-              onClick={() => setRoleFilter('RECEPTIONIST')}
+              onClick={() => handleRoleFilterChange('RECEPTIONIST')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 roleFilter === 'RECEPTIONIST'
                   ? 'bg-indigo-600 text-white shadow-sm shadow-indigo-600/20'
@@ -755,7 +769,7 @@ export function StaffManagement() {
               {isEn ? 'Receptionists' : 'Lễ tân'} ({stats.receptionists})
             </button>
             <button
-              onClick={() => setRoleFilter('MANAGER')}
+              onClick={() => handleRoleFilterChange('MANAGER')}
               className={`px-3 py-1.5 rounded-lg font-bold transition-all ${
                 roleFilter === 'MANAGER'
                   ? 'bg-[#2D6A4F] text-white shadow-sm shadow-[#2D6A4F]/20'
@@ -805,6 +819,34 @@ export function StaffManagement() {
             </span>
           </div>
         </div>
+
+        {roleFilter === 'COACH' && (
+          <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 dark:border-slate-800 pt-3 text-xs">
+            <span className="font-bold uppercase tracking-wider text-slate-400 mr-1">
+              {isEn ? 'Class assignment:' : 'Phân công lớp:'}
+            </span>
+            {[
+              [COACH_CLASS_FILTER.ALL, isEn ? 'All coaches' : 'Tất cả HLV', stats.coaches],
+              [COACH_CLASS_FILTER.UNASSIGNED, isEn ? 'Without classes' : 'Chưa có lớp', stats.coachesWithoutClasses],
+              [COACH_CLASS_FILTER.ASSIGNED, isEn ? 'With classes' : 'Đã có lớp', stats.coachesWithClasses]
+            ].map(([value, label, count]) => (
+              <button
+                key={value}
+                type="button"
+                onClick={() => setCoachClassFilter(value)}
+                className={`px-3 py-1.5 rounded-lg font-bold border transition-all ${
+                  coachClassFilter === value
+                    ? value === COACH_CLASS_FILTER.UNASSIGNED
+                      ? 'bg-rose-600 border-rose-600 text-white shadow-sm'
+                      : 'bg-amber-600 border-amber-600 text-white shadow-sm'
+                    : 'bg-white dark:bg-slate-900 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:border-amber-400'
+                }`}
+              >
+                {label} ({count})
+              </button>
+            ))}
+          </div>
+        )}
       </div>
 
       {/* 4. Table & Loading/Empty states */}
@@ -919,6 +961,17 @@ export function StaffManagement() {
                                   {staff.experienceYears} {isEn ? 'yrs exp' : 'năm KN'}
                                 </span>
                               )}
+                              {staff.role === 'COACH' && staff.activeClassCount != null && (
+                                <span className={`text-[9px] font-bold px-1.5 py-0.2 rounded border ${
+                                  staff.activeClassCount === 0
+                                    ? 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-950/40 border-rose-200 dark:border-rose-800'
+                                    : 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/40 border-amber-200 dark:border-amber-800'
+                                }`}>
+                                  {staff.activeClassCount === 0
+                                    ? (isEn ? 'No classes' : 'Chưa có lớp')
+                                    : `${staff.activeClassCount} ${isEn ? 'classes' : 'lớp'}`}
+                                </span>
+                              )}
                             </div>
                           </div>
                         </td>
@@ -1022,7 +1075,7 @@ export function StaffManagement() {
                               : 'Danh sách nhân sự hiện đang trống.'}
                           </p>
                         </div>
-                        {(searchQuery || roleFilter !== 'ALL' || statusFilter !== 'ALL') && (
+                        {(searchQuery || roleFilter !== 'ALL' || statusFilter !== 'ALL' || coachClassFilter !== COACH_CLASS_FILTER.ALL) && (
                           <button
                             onClick={handleResetFilters}
                             className="mt-2 px-4 py-2 bg-[#1E2235] text-white rounded-xl text-xs font-bold hover:bg-[#2B2D42] transition-colors shadow-sm"

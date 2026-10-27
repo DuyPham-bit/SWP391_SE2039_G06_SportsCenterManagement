@@ -28,7 +28,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
         var center = await CenterRolePolicy.CenterForUser(db, CurrentUserId, ct);
         var baseline = CenterRolePolicy.Capabilities(role.Name);
         var policy = center.HasValue ? await CenterRolePolicy.Read(db, center.Value, role.Id, ct) : null;
-        if (role.Name is "Manager" or "Admin" or "SystemAdmin" || !center.HasValue) return Ok(baseline);
+        if (role.Name is "Admin" or "SystemAdmin" || !center.HasValue) return Ok(baseline);
         var roleCapabilities = policy is null ? baseline : baseline.Intersect(policy.CapabilityIds).ToArray();
         var userPolicy = await CenterRolePolicy.ReadUser(db, center.Value, CurrentUserId, ct);
         return Ok(userPolicy is null ? roleCapabilities : roleCapabilities.Intersect(userPolicy.CapabilityIds).ToArray());
@@ -39,8 +39,12 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     public async Task<IActionResult> Matrix(long centerId, CancellationToken ct)
     {
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        var canManageManagers = User.IsInRole("ADMIN");
         var result = new List<object>();
-        foreach (var role in await db.Roles.Where(r => r.Name == "Member" || r.Name == "Coach" || r.Name == "Receptionist").OrderBy(r => r.Name).ToListAsync(ct))
+        foreach (var role in await db.Roles
+                     .Where(r => r.Name == "Member" || r.Name == "Coach" || r.Name == "Receptionist"
+                         || (canManageManagers && r.Name == "Manager"))
+                     .OrderBy(r => r.Name).ToListAsync(ct))
             result.Add(await Row(centerId, role, ct));
         return Ok(result);
     }
@@ -54,8 +58,11 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
             || request.PermissionCodes.Distinct().Count() != request.PermissionCodes.Length || request.CapabilityIds.Distinct().Count() != request.CapabilityIds.Length)
             throw new InvalidOperationException("Danh sách quyền không hợp lệ.") { Data = { ["StatusCode"] = 400 } };
         await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
-        var role = await db.Roles.SingleOrDefaultAsync(r => r.Id == roleId && (r.Name == "Member" || r.Name == "Coach" || r.Name == "Receptionist"), ct)
-            ?? throw new InvalidOperationException("Chỉ Admin được cấu hình quyền cho Member, Coach và Receptionist.") { Data = { ["StatusCode"] = 403 } };
+        var canManageManagers = User.IsInRole("ADMIN");
+        var role = await db.Roles.SingleOrDefaultAsync(r => r.Id == roleId
+            && (r.Name == "Member" || r.Name == "Coach" || r.Name == "Receptionist"
+                || (canManageManagers && r.Name == "Manager")), ct)
+            ?? throw new InvalidOperationException("Bạn không được cấu hình quyền cho vai trò này.") { Data = { ["StatusCode"] = 403 } };
         var allowedCodes = await (from rp in db.RolePermissions join p in db.Permissions on rp.PermissionId equals p.Id
             where rp.RoleId == roleId && p.Code != "roles.permissions.manage" select p.Code).ToArrayAsync(ct);
         if (request.PermissionCodes.Except(allowedCodes).Any() || request.CapabilityIds.Except(CenterRolePolicy.Capabilities(role.Name)).Any())
@@ -87,6 +94,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     public async Task<IActionResult> Users(long centerId, CancellationToken ct)
     {
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        var canManageManagers = User.IsInRole("ADMIN");
         var memberRows = await (from profile in db.MemberProfiles.AsNoTracking()
             join user in db.Users.AsNoTracking() on profile.UserId equals user.Id
             join role in db.Roles.AsNoTracking() on user.RoleId equals role.Id
@@ -95,7 +103,8 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
         var staffRows = await (from profile in db.StaffProfiles.AsNoTracking()
             join user in db.Users.AsNoTracking() on profile.UserId equals user.Id
             join role in db.Roles.AsNoTracking() on user.RoleId equals role.Id
-            where profile.CenterId == centerId && role.Name == "Receptionist"
+            where profile.CenterId == centerId
+                && (role.Name == "Receptionist" || (canManageManagers && role.Name == "Manager"))
             select new { UserId = user.Id, profile.FullName, role.Id, RoleName = role.Name, user.Status }).ToListAsync(ct);
         var coachRows = await (from profile in db.CoachProfiles.AsNoTracking()
             join user in db.Users.AsNoTracking() on profile.UserId equals user.Id
@@ -139,8 +148,10 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
             || request.PermissionCodes.Distinct().Count() != request.PermissionCodes.Length || request.CapabilityIds.Distinct().Count() != request.CapabilityIds.Length)
             throw new InvalidOperationException("Danh sách quyền không hợp lệ.") { Data = { ["StatusCode"] = 400 } };
 
+        var canManageManagers = User.IsInRole("ADMIN");
         var target = await (from user in db.Users join role in db.Roles on user.RoleId equals role.Id
-            where user.Id == targetUserId && (role.Name == "Member" || role.Name == "Coach" || role.Name == "Receptionist")
+            where user.Id == targetUserId && (role.Name == "Member" || role.Name == "Coach" || role.Name == "Receptionist"
+                || (canManageManagers && role.Name == "Manager"))
             select new { User = user, Role = role }).SingleOrDefaultAsync(ct)
             ?? throw new InvalidOperationException("Không tìm thấy tài khoản có thể phân quyền.") { Data = { ["StatusCode"] = 404 } };
         var belongsToCenter = await db.MemberProfiles.AnyAsync(p => p.UserId == targetUserId && p.CenterId == centerId, ct)
@@ -176,6 +187,18 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
         if (targetUserId == CurrentUserId)
             throw new InvalidOperationException("Bạn không thể thay đổi quyền của chính mình.") { Data = { ["StatusCode"] = 403 } };
+        var canManageManagers = User.IsInRole("ADMIN");
+        var target = await (from user in db.Users.AsNoTracking()
+            join role in db.Roles.AsNoTracking() on user.RoleId equals role.Id
+            where user.Id == targetUserId && (role.Name == "Member" || role.Name == "Coach" || role.Name == "Receptionist"
+                || (canManageManagers && role.Name == "Manager"))
+            select new { RoleName = role.Name }).SingleOrDefaultAsync(ct)
+            ?? throw new InvalidOperationException("Không tìm thấy tài khoản có thể phân quyền.") { Data = { ["StatusCode"] = 404 } };
+        var belongsToCenter = await db.MemberProfiles.AnyAsync(p => p.UserId == targetUserId && p.CenterId == centerId, ct)
+            || await db.StaffProfiles.AnyAsync(p => p.UserId == targetUserId && p.CenterId == centerId, ct)
+            || await db.CoachProfiles.AnyAsync(p => p.UserId == targetUserId && p.CenterId == centerId, ct);
+        if (!belongsToCenter)
+            throw new InvalidOperationException("Tài khoản không thuộc trung tâm này.") { Data = { ["StatusCode"] = 403 } };
         var key = CenterRolePolicy.UserKey(centerId, targetUserId);
         var setting = await db.SystemSettings.SingleOrDefaultAsync(s => s.SettingKey == key, ct);
         if (setting is not null) { db.SystemSettings.Remove(setting); await db.SaveChangesAsync(ct); }
@@ -187,9 +210,11 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     public async Task<IActionResult> ResetUsersForRole(long centerId, long roleId, CancellationToken ct)
     {
         await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        var canManageManagers = User.IsInRole("ADMIN");
         var role = await db.Roles.SingleOrDefaultAsync(r => r.Id == roleId
-            && (r.Name == "Member" || r.Name == "Coach" || r.Name == "Receptionist"), ct)
-            ?? throw new InvalidOperationException("Chỉ có thể đồng bộ quyền cho Member, Coach hoặc Receptionist.") { Data = { ["StatusCode"] = 403 } };
+            && (r.Name == "Member" || r.Name == "Coach" || r.Name == "Receptionist"
+                || (canManageManagers && r.Name == "Manager")), ct)
+            ?? throw new InvalidOperationException("Bạn không được đồng bộ quyền cho vai trò này.") { Data = { ["StatusCode"] = 403 } };
 
         long[] userIds = role.Name switch
         {

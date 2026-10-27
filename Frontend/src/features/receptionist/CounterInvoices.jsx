@@ -7,6 +7,7 @@ import { counterButton, counterInput, counterQuery, CounterError } from './Recep
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useAuth } from '../../context/AuthContext.js';
 import { RefundManagement } from '../manager/RefundManagement.jsx';
+import { Modal } from '../../components/common/Modal.jsx';
 
 const money = value => `${Number(value || 0).toLocaleString('vi-VN')} VNĐ`;
 
@@ -22,6 +23,7 @@ export function CounterInvoices() {
   const [detail, setDetail] = useState(null);
   const [detailError, setDetailError] = useState('');
   const [opening, setOpening] = useState(false);
+  const [requestedInvoice, setRequestedInvoice] = useState(null);
   const [busy, setBusy] = useState(false);
   const [amount, setAmount] = useState('');
   const [method, setMethod] = useState('CASH');
@@ -127,6 +129,7 @@ export function CounterInvoices() {
 
   const open = async number => {
     const id = ++sequence.current;
+    setRequestedInvoice(number);
     setOpening(true);
     setDetail(null);
     setDetailError('');
@@ -146,6 +149,16 @@ export function CounterInvoices() {
     } finally {
       if (id === sequence.current) setOpening(false);
     }
+  };
+
+  const closeDetail = () => {
+    sequence.current += 1;
+    setRequestedInvoice(null);
+    setOpening(false);
+    setDetail(null);
+    setDetailError('');
+    setSuccess('');
+    setWarning('');
   };
 
   const record = async event => {
@@ -471,8 +484,15 @@ export function CounterInvoices() {
         </div>
       )}
 
+      <Modal
+        isOpen={Boolean(requestedInvoice)}
+        onClose={closeDetail}
+        title={isEn ? 'Invoice details' : 'Chi tiết hóa đơn'}
+        maxWidth="max-w-5xl"
+      >
+      <div className="space-y-4">
       {opening && <p role="status" className="text-xs text-slate-500">{isEn ? 'Loading invoice details...' : 'Đang tải chi tiết hóa đơn...'}</p>}
-      <CounterError message={detailError} />
+      <CounterError message={detailError} retry={detailError ? () => open(requestedInvoice) : undefined} />
       {success && <p role="status" className="text-xs font-bold text-emerald-600 dark:text-emerald-400">{success}</p>}
       {warning && (
         <p role="status" className="text-xs font-bold text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-xl p-3">
@@ -484,7 +504,7 @@ export function CounterInvoices() {
       {detail && (
         <section
           aria-label={isEn ? 'Invoice Details' : 'Chi tiết hóa đơn'}
-          className="rounded-2xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 p-6 sm:p-8 space-y-6 shadow-sm hover-lift transition-all"
+          className="space-y-6"
         >
           <div className="flex flex-wrap justify-between gap-4 pb-4 border-b border-slate-100 dark:border-slate-800">
             <div>
@@ -729,6 +749,8 @@ export function CounterInvoices() {
           )}
         </section>
       )}
+      </div>
+      </Modal>
 
       {/* RECONCILE MODAL */}
       {reconcileTarget && (

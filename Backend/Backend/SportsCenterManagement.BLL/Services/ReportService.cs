@@ -222,7 +222,8 @@ public sealed class ReportService(
 
         return new MembershipReportResponse(
             centerId, from, to, timeZone.Id, totalMembers, activeMembers,
-            newMemberRows.Length, periods, expiredMembers, inactiveMembers, packageStats);
+            newMemberRows.Length, periods, expiredMembers, inactiveMembers, packageStats,
+            activeMembers, inactiveMembers);
     }
 
     public async Task<ClassEnrollmentReportResponse> GetClassEnrollmentReportAsync(

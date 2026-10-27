@@ -159,18 +159,6 @@ export function ManagerDashboard() {
       }
     },
     {
-      path: 'roles-permissions',
-      icon: 'admin_panel_settings',
-      title: isEn ? 'Roles & Permissions' : 'Phân quyền truy cập',
-      description: isEn ? 'Operational permissions for each center role.' : 'Quyền nghiệp vụ của từng vai trò trong trung tâm.',
-      tag: isEn ? 'Security' : 'Phân quyền',
-      theme: {
-        iconBg: 'bg-purple-50 dark:bg-purple-950/50 text-purple-700 dark:text-purple-400 border border-purple-200/80 dark:border-purple-800/60',
-        hoverCard: 'hover:border-purple-400 dark:hover:border-purple-600 hover:shadow-purple-500/10 hover:bg-purple-50/20',
-        badge: 'bg-purple-100/70 text-purple-800 dark:bg-purple-950/70 dark:text-purple-300'
-      }
-    },
-    {
       path: 'audit-logs',
       icon: 'history',
       title: isEn ? 'Audit Logs' : 'Lịch sử thao tác',

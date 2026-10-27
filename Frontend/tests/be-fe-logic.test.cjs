@@ -75,12 +75,27 @@ test('SystemAdmin uses system audit without inventing a center', async () => {
   assert.match(api.calls[0], /^admin\/audit-logs\?/);
 });
 
+test('Admin role-permission changes use the selected center scope', async () => {
+  const api = client(() => [], undefined, { role: 'ADMIN', centerId: 9 });
+  await api.systemApi.getPermissions();
+  await api.systemApi.updatePermissions(4, ['staff.center.read'], ['manage_staff']);
+  assert.equal(api.calls[0], 'centers/9/roles');
+  assert.equal(api.calls[1], 'centers/9/roles/4/permissions');
+});
+
 function reportFixture(route) {
+  if (route.startsWith('reports/membership?')) return {
+    totalMembers: 5, activeMembers: 3, membersWithPackage: 3, membersWithoutPackage: 2,
+    expiredMembers: 1, newMembers: 1, periods: []
+  };
   if (route.startsWith('reports/operations?')) return {
     totalStaff: 3, activeStaff: 2, managerCount: 1, coachCount: 1, receptionistCount: 1,
     totalRooms: 2, activeRooms: 1, sessionsCount: 1, occupancyRate: 20,
     classes: [{ id: 1, name: 'Active', booked: 2, capacity: 10, occupancyRate: 20 }],
-    sports: [], rooms: [], coaches: []
+    sports: [], rooms: [], coaches: [
+      { id: 1, fullName: 'Coach Active', classesCount: 1, sessionsCount: 2, booked: 2, capacity: 10, occupancyRate: 20 },
+      { id: 2, fullName: 'Coach Idle', classesCount: 0, sessionsCount: 0, booked: 0, capacity: 0, occupancyRate: 0 }
+    ]
   };
   if (route.startsWith('class-sessions?')) return { items: [
     { sessionId: 1, classId: 1, className: 'Active', sessionStatus: 'Scheduled', capacity: 10, bookedCount: 2 },
@@ -98,6 +113,11 @@ test('report utilization excludes cancelled sessions', async () => {
   assert.equal(overview.occupancyRate, 20);
   assert.equal(overview.activeStaff, 2);
   assert.equal(overview.totalStaff, 3);
+  assert.equal(overview.membersWithPackage, 3);
+  assert.equal(overview.membersWithoutPackage, 2);
+  assert.equal(overview.expiredMembers, 1);
+  assert.equal(overview.coachesWithSessions, 1);
+  assert.equal(overview.coachesWithoutSessions, 1);
 });
 
 test('report API failure is not converted into an empty successful report', async () => {
