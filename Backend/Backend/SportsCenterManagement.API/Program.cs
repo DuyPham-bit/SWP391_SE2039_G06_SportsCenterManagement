@@ -26,7 +26,7 @@ var connectionString = builder.Configuration.GetConnectionString("SportsCenter")
     ?? throw new InvalidOperationException("Connection string 'SportsCenter' is not configured.");
 var jwtIssuer = new JwtTokenIssuer(builder.Configuration);
 
-// Cấu hình HttpClient để gọi API ngoài (MoMo Sandbox, PayOS...)
+// Cấu hình HttpClient để gọi API ngoài (MoMo Sandbox...)
 builder.Services.AddHttpClient();
 
 // Layer 3: DAL (DbContext & Repository / Unit of Work Pattern)
@@ -86,7 +86,6 @@ builder.Services.AddScoped<IRolePermissionService, RolePermissionService>();
 builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddHttpClient<IVnPayService, VnPayService>();
 builder.Services.AddHttpClient<IMoMoService, MoMoService>();
-builder.Services.AddHttpClient<IPayOsService, PayOsService>();
 builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<ICheckinService, CheckinService>();
 builder.Services.AddScoped<SupportRequestService>();

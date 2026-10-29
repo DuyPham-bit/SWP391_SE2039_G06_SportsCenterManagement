@@ -20,13 +20,11 @@ public sealed class PaymentService(
     IUnitOfWork unitOfWork,
     IVnPayService vnPayService,
     IMoMoService moMoService,
-    IPayOsService payOsService,
     IConfiguration configuration) : IPaymentService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IVnPayService _vnPayService = vnPayService;
     private readonly IMoMoService _moMoService = moMoService;
-    private readonly IPayOsService _payOsService = payOsService;
     private readonly IConfiguration _configuration = configuration;
 
     public async Task<string> CreatePaymentUrlAsync(
@@ -146,57 +144,6 @@ public sealed class PaymentService(
         }
     }
 
-    public async Task<string> CreatePayOsPaymentUrlAsync(
-        long memberId,
-        CreatePaymentRequest request,
-        string idempotencyKey,
-        CancellationToken cancellationToken = default)
-    {
-        EnsureGatewayConfiguration("PayOS", "PayOS:ClientId", "PayOS:ApiKey", "PayOS:ChecksumKey", "PayOS:BaseUrl", "PayOS:ReturnUrl", "PayOS:CancelUrl");
-        EnsurePayOsUrlConfiguration();
-        var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, memberId, null, request, "PAYOS", idempotencyKey, cancellationToken);
-        if (!string.IsNullOrWhiteSpace(existingLink))
-        {
-            return existingLink;
-        }
-
-        try
-        {
-            var response = await _payOsService.CreatePaymentLinkAsync(
-                payment.Id,
-                payment.Amount,
-                $"HD{payment.Id.ToString(CultureInfo.InvariantCulture)}",
-                "Sports Center membership",
-                cancellationToken);
-            var paymentData = response.Data;
-            if (paymentData is null || paymentData.OrderCode != payment.Id ||
-                paymentData.Amount != payment.Amount || string.IsNullOrWhiteSpace(paymentData.CheckoutUrl))
-            {
-                throw new InvalidOperationException("PayOS payment response did not match the stored payment attempt.");
-            }
-
-            await SavePaymentLinkAsync(payment.Id, paymentData.CheckoutUrl, cancellationToken);
-            return paymentData.CheckoutUrl;
-        }
-        catch (BusinessException exception) when (exception.Code == "PAYOS_CHANNEL_UNAVAILABLE")
-        {
-            // Code 214 explicitly rejects creation. Keep uncertain responses Pending in the catch below.
-            await SetPaymentStatusAsync(payment.Id, "Failed", "PayOS từ chối tạo link: kênh không tồn tại hoặc tạm dừng (214).", cancellationToken);
-            throw;
-        }
-        catch (BusinessException)
-        {
-            throw;
-        }
-        catch (Exception)
-        {
-            await MarkPaymentPendingForReconciliationAsync(payment.Id, "PayOS chưa xác nhận kết quả khởi tạo; cần đối soát trước khi thử lại.");
-            throw new BusinessException(HttpStatusCode.ServiceUnavailable,
-                "Chưa xác định được kết quả tạo giao dịch PayOS. Hệ thống giữ Pending; quản lý cần đối soát trước lần thử mới.");
-        }
-    }
-
     public async Task<PaymentResultResponse> ProcessPaymentCallbackAsync(
         IDictionary<string, string> queryParams,
         CancellationToken cancellationToken = default)
@@ -252,101 +199,6 @@ public sealed class PaymentService(
         return CompleteGatewayPaymentAsync(
             "MOMO", callback.OrderId, callback.RequestId, callback.IsSuccess, callback.IsPending,
             callback.TransId, callback.Amount, $"MoMo result {callback.ResultCode}", cancellationToken);
-    }
-
-    public async Task<PaymentResultResponse> SyncVietQrPaymentAsync(
-        long memberId,
-        long orderCode,
-        CancellationToken cancellationToken = default)
-    {
-        var gatewayReference = orderCode.ToString(CultureInfo.InvariantCulture);
-        var payment = await _unitOfWork.Context.Payments.AsNoTracking()
-            .SingleOrDefaultAsync(candidate => candidate.Id == orderCode
-                && candidate.GatewayReference == gatewayReference && candidate.PaymentMethod == "PAYOS", cancellationToken)
-            ?? throw BusinessException.NotFound("Khong tim thay giao dich PayOS.");
-        var invoice = await _unitOfWork.Context.Invoices.AsNoTracking()
-            .SingleAsync(candidate => candidate.Id == payment.InvoiceId, cancellationToken);
-        if (payment.MemberId != memberId || invoice.MemberId != memberId)
-            throw BusinessException.Forbidden("Khong duoc dong bo giao dich cua hoi vien khac.");
-
-        PayOsPaymentInfo paymentInfo;
-        try
-        {
-            paymentInfo = await _payOsService.GetPaymentInfoAsync(orderCode, cancellationToken);
-        }
-        catch (Exception exception) when (exception is HttpRequestException or InvalidOperationException or JsonException
-            || exception is OperationCanceledException && !cancellationToken.IsCancellationRequested)
-        {
-            throw new BusinessException(HttpStatusCode.ServiceUnavailable,
-                "Chua the xac minh trang thai tu PayOS. Hay thu dong bo lai sau; khong thanh toan lai.");
-        }
-
-        if (paymentInfo.OrderCode != orderCode || paymentInfo.Amount != payment.Amount)
-            return FailedCallback("Thong tin PayOS khong khop giao dich.", invoice.InvoiceNumber);
-        if (paymentInfo.Status != "PAID")
-            return FailedCallback($"PayOS chua xac nhan thanh toan: {paymentInfo.Status}.", invoice.InvoiceNumber);
-        if (paymentInfo.AmountPaid != payment.Amount || paymentInfo.AmountRemaining != 0)
-            return FailedCallback("So tien PayOS da nhan khong khop giao dich.", invoice.InvoiceNumber);
-
-        var transactions = paymentInfo.Transactions;
-        if (transactions == null || transactions.Count == 0
-            || transactions.Any(transaction => string.IsNullOrWhiteSpace(transaction.Reference))
-            || transactions.Sum(transaction => transaction.Amount) != paymentInfo.AmountPaid)
-            return FailedCallback("PayOS chua tra ve giao dich ngan hang hop le.", invoice.InvoiceNumber);
-
-        return await CompleteGatewayPaymentAsync(
-            "PAYOS", gatewayReference, null, true, false, transactions[0].Reference,
-            paymentInfo.AmountPaid, "Dong bo trang thai thanh toan tu PayOS", cancellationToken);
-    }
-
-    public async Task<PaymentResultResponse> ProcessPayOsWebhookAsync(
-        PayOsWebhookRequest webhookRequest,
-        CancellationToken cancellationToken = default)
-    {
-        if (!_payOsService.VerifyWebhookSignature(webhookRequest))
-        {
-            throw BusinessException.BadRequest("Chữ ký webhook PayOS không hợp lệ.");
-        }
-
-        var data = webhookRequest.Data!;
-        if (!webhookRequest.Success || !string.Equals(webhookRequest.Code, "00", StringComparison.Ordinal) ||
-            !string.Equals(data.Code, "00", StringComparison.Ordinal))
-        {
-            return new PaymentResultResponse
-            {
-                Success = false,
-                Processed = true,
-                Message = "Webhook PayOS hợp lệ nhưng giao dịch chưa được xác nhận thành công. Payment vẫn Pending để đối soát.",
-                Amount = data.Amount
-            };
-        }
-
-        if (data.OrderCode <= 0 || data.Amount <= 0 ||
-            !string.Equals(data.Currency, "VND", StringComparison.Ordinal) ||
-            string.IsNullOrWhiteSpace(data.Reference))
-        {
-            if (data.OrderCode > 0)
-            {
-                return await MarkSignedGatewayCallbackReviewRequiredAsync(
-                    "PAYOS", data.OrderCode.ToString(CultureInfo.InvariantCulture),
-                    !string.Equals(data.Currency, "VND", StringComparison.Ordinal)
-                        ? "Currency callback không phải VND"
-                        : "Webhook thiếu amount hoặc reference hợp lệ",
-                    data.Amount, data.Reference, cancellationToken);
-            }
-            return FailedCallback("Webhook PayOS thiếu mã giao dịch, số tiền hoặc currency hợp lệ.");
-        }
-
-        return await CompleteGatewayPaymentAsync(
-            "PAYOS",
-            data.OrderCode.ToString(CultureInfo.InvariantCulture),
-            null,
-            true,
-            false,
-            data.Reference,
-            data.Amount,
-            $"PayOS payment {data.Desc}",
-            cancellationToken);
     }
 
     public async Task<PaymentResultResponse> ReconcilePendingPaymentAsync(
@@ -1618,13 +1470,9 @@ public sealed class PaymentService(
         {
             throw BusinessException.Conflict("Hóa đơn đã được thanh toán đủ.");
         }
-        if ((provider is "MOMO" or "PAYOS") && remaining != decimal.Truncate(remaining))
+        if (provider == "MOMO" && remaining != decimal.Truncate(remaining))
         {
             throw BusinessException.Conflict($"{provider} chỉ nhận số tiền VND nguyên; số dư hóa đơn đang có phần thập phân.");
-        }
-        if (provider == "PAYOS" && remaining > int.MaxValue)
-        {
-            throw BusinessException.Conflict("PayOS không hỗ trợ số tiền vượt giới hạn số nguyên 32-bit.");
         }
         var pendingPayments = await _unitOfWork.Context.Payments
             .Where(candidate => candidate.InvoiceId == invoice.Id && candidate.PaymentStatus == "Pending")
@@ -1661,11 +1509,6 @@ public sealed class PaymentService(
         };
         _unitOfWork.Context.Payments.Add(payment);
         await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
-        if (provider == "PAYOS")
-        {
-            payment.GatewayReference = payment.Id.ToString(CultureInfo.InvariantCulture);
-            await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
-        }
         await transaction.CommitAsync(cancellationToken);
         return (invoice, payment, null);
     }
@@ -2308,8 +2151,7 @@ public sealed class PaymentService(
 
     private static string GetProvider(string method) =>
         method.StartsWith("VNPAY", StringComparison.OrdinalIgnoreCase) ? "VNPAY" :
-        method.StartsWith("MOMO", StringComparison.OrdinalIgnoreCase) ? "MOMO" :
-        method.StartsWith("PAYOS", StringComparison.OrdinalIgnoreCase) ? "PAYOS" : method.ToUpperInvariant();
+        method.StartsWith("MOMO", StringComparison.OrdinalIgnoreCase) ? "MOMO" : method.ToUpperInvariant();
 
     private void EnsureGatewayConfiguration(string provider, params string[] keys)
     {
@@ -2326,26 +2168,6 @@ public sealed class PaymentService(
             throw new BusinessException(
                 HttpStatusCode.ServiceUnavailable,
                 $"{provider} thiếu cấu hình bắt buộc: {string.Join(", ", missingKeys)}. Hãy cấu hình bằng User Secrets hoặc biến môi trường.");
-        }
-    }
-
-    private void EnsurePayOsUrlConfiguration()
-    {
-        var baseUrl = _configuration["PayOS:BaseUrl"];
-        var returnUrl = _configuration["PayOS:ReturnUrl"];
-        var cancelUrl = _configuration["PayOS:CancelUrl"];
-        var validBaseUrl = Uri.TryCreate(baseUrl, UriKind.Absolute, out var baseUri)
-            && baseUri.Scheme == Uri.UriSchemeHttps;
-        var validReturnUrl = Uri.TryCreate(returnUrl, UriKind.Absolute, out var returnUri)
-            && returnUri.Scheme is "http" or "https";
-        var validCancelUrl = Uri.TryCreate(cancelUrl, UriKind.Absolute, out var cancelUri)
-            && cancelUri.Scheme is "http" or "https";
-
-        if (!validBaseUrl || !validReturnUrl || !validCancelUrl)
-        {
-            throw new BusinessException(
-                HttpStatusCode.ServiceUnavailable,
-                "PayOS cần BaseUrl HTTPS cùng ReturnUrl và CancelUrl tuyệt đối hợp lệ trước khi tạo payment.");
         }
     }
 

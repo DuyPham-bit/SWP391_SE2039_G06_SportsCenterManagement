@@ -1032,7 +1032,12 @@ export function translateCourseHighlight(hl, isEn) {
 }
 
 export function translatePriceRate(price, isEn) {
-  if (!price || !isEn) return price || '';
+  if (!price) return isEn ? 'Included in Packages' : 'Bao gồm trong gói tập';
+  if (/bao gồm trong gói/i.test(price)) return isEn ? 'Included in Packages' : 'Bao gồm trong gói tập';
+  if (/(?:giá thuê|\/giờ|\/sân|\/bàn|\/lượt|\/buổi|thuê sàn|thuê sân)/i.test(price)) {
+    return isEn ? 'Included in Packages' : 'Bao gồm trong gói tập';
+  }
+  if (!isEn) return price || '';
   if (price === 'Liên hệ trung tâm') return 'Contact Front Desk';
   if (price === 'Xem gói tập') return 'View Packages';
   let res = String(price);

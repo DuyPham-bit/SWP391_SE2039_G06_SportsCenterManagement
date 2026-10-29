@@ -182,21 +182,6 @@ export function MemberPackages() {
         return;
       }
 
-      const payOsPayment = (invDetails?.payments || []).find(p => p.paymentMethod === 'PAYOS' || p.paymentMethod === 'VIETQR');
-      if (payOsPayment) {
-        try {
-          const syncRes = await memberApi.syncVietQr(payOsPayment.id);
-          if (syncRes?.success) {
-            showSuccess(syncRes.message || (isEn ? 'VietQR synced successfully! Package active.' : 'Đã đồng bộ giao dịch VietQR thành công! Gói tập đã kích hoạt.'));
-            await loadData();
-            await refreshUser();
-            return;
-          }
-        } catch {
-          // Fallback to general advice
-        }
-      }
-
       await loadData();
       await refreshUser();
       showInfo(
@@ -723,7 +708,7 @@ export function MemberPackages() {
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[16px]">lock</span>
-                    <span>{isEn ? 'Confirm & Pay' : 'Xác Nhận & Thanh Toán'}</span>
+                    <span>{isEn ? 'Confirm Payment' : 'Xác Nhận Thanh Toán'}</span>
                   </>
                 )}
               </button>

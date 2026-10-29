@@ -5,17 +5,24 @@ const INVALID_BADMINTON_IMAGE_ID = 'photo-1613918108466-292b78a8ef95';
 
 export function sanitizeFacilityImages(fac) {
   if (!fac) return fac;
+  let updated = fac;
   const isBadminton = fac.id === 'room-03' || /cầu lông|badminton/i.test(fac.name || '');
   const hasInvalidMain = typeof fac.image === 'string' && fac.image.includes(INVALID_BADMINTON_IMAGE_ID);
   const hasInvalidSec = typeof fac.secondaryImage === 'string' && fac.secondaryImage.includes(INVALID_BADMINTON_IMAGE_ID);
   if (isBadminton && (hasInvalidMain || hasInvalidSec || !fac.image)) {
-    return {
-      ...fac,
+    updated = {
+      ...updated,
       image: hasInvalidMain || !fac.image ? BADMINTON_IMAGE : fac.image,
       secondaryImage: hasInvalidSec ? BADMINTON_IMAGE : fac.secondaryImage
     };
   }
-  return fac;
+  if (fac.priceRate && /(?:giá thuê|\/giờ|\/sân|\/bàn|\/lượt|\/buổi|thuê sàn|thuê sân)/i.test(fac.priceRate)) {
+    updated = {
+      ...updated,
+      priceRate: 'Bao gồm trong gói tập'
+    };
+  }
+  return updated;
 }
 
 export function getLandingPresentation(content, catalog) {

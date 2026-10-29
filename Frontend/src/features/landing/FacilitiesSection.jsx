@@ -314,7 +314,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     const displayLocation = isEn ? translateLocation(fac.location, true) : fac.location;
     const displayBadge = isEn ? translateFacilityBadge(fac.badge, true) : (fac.badge || '');
     const displayHighlight = isEn ? (translateFacilityHighlight(fac.highlights, true) || translateFacilityDescription(fac.description, true)) : (fac.highlights || fac.description);
-    const displayPrice = fac.priceRate || (isEn ? 'View Packages' : 'Xem gói tập');
+    const displayPrice = isEn ? 'Included in Packages' : 'Bao gồm trong gói tập';
 
     return (
       <div
@@ -511,7 +511,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           </div>
           <div className="flex items-center gap-2">
             <span className="w-2 h-2 rounded-full bg-emerald-500 inline-block animate-pulse" />
-            <span className="text-emerald-700">{isEn ? 'All venues ready for reservations' : 'Tất cả cụm sân đều sẵn sàng phục vụ'}</span>
+            <span className="text-emerald-700">{isEn ? 'All venues included in training packages' : 'Tất cả cụm sân phục vụ theo gói tập'}</span>
           </div>
         </div>
 

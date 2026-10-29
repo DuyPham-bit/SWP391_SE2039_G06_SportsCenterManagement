@@ -978,8 +978,8 @@ export function HomeContentManagement() {
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               {isEn
-                ? 'Update tournament event banner, hotline, email, Zalo, Facebook, address and business hours.'
-                : 'Cập nhật banner kêu gọi đặt sân giải đấu, số hotline liên hệ, email, Zalo, Facebook, địa chỉ và thời gian hoạt động.'}
+                ? 'Update membership registration banner, hotline, email, Zalo, Facebook, address and business hours.'
+                : 'Cập nhật banner kêu gọi đăng ký gói tập, số hotline liên hệ, email, Zalo, Facebook, địa chỉ và thời gian hoạt động.'}
             </p>
           </div>
 
@@ -987,7 +987,7 @@ export function HomeContentManagement() {
             {/* Banner CTA */}
             <div className="p-5 rounded-2xl bg-gradient-to-br from-[#1E2235] via-[#242A42] to-[#2D6A4F] text-white space-y-3 shadow-lg border border-white/10 hover-lift transition-all">
               <span className="text-[10px] font-bold uppercase tracking-wider bg-white/10 px-2.5 py-1 rounded-md inline-block text-slate-200">
-                {isEn ? 'Event Rental Call-to-Action' : 'Banner Kêu Gọi Thuê Sân Sự Kiện (Card Đỏ)'}
+                {isEn ? 'Membership Call-to-Action' : 'Banner Kêu Gọi Đăng Ký Gói Tập (Card Đỏ)'}
               </span>
               <div>
                 <label className="block text-[10px] font-bold uppercase opacity-80 mb-1">

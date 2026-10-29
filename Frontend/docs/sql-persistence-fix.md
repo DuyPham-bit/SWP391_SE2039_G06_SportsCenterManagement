@@ -66,6 +66,6 @@ Không đặt biến trên thì SQL integration được ghi rõ Skip; các regr
 
 Khởi động lại backend bằng bản code mới; bản backend đang chạy vẫn dùng code cũ cho tới khi restart. Dữ liệu đã bị seed cũ ghi đè trước đây không thể tự khôi phục nếu không có backup/audit chứa giá trị cũ. Đăng ký mới và lưu thay đổi sau khi áp dụng được kiểm tra đọc lại qua SQL. F5 vẫn yêu cầu đăng nhập lại, nhưng không xóa tài khoản hay dữ liệu SQL.
 
-Các máy phải truy cập cùng backend/database. Nếu chạy SQL khác hoặc chỉ chạy lại script tạo bảng, tài khoản/dữ liệu không tự chuyển sang. Cách chạy chung và chuyển database bằng backup/restore nằm trong [DEPLOYMENT.md](../../DEPLOYMENT.md).
+Các máy phải truy cập cùng backend/database. Nếu chạy SQL khác hoặc chỉ chạy lại script tạo bảng, tài khoản/dữ liệu không tự chuyển sang. Xem cách chạy chung và cấu hình cơ bản tại [PROJECT_SUMMARY.md](../../docs/PROJECT_SUMMARY.md).
 
 Target FE: `SWP391_SE2039_G06_SportsCenterManagement_FE`, nhánh `feature/fe-be-integration`; target BE: `SWP391_SE2039_G06_SportsCenterManagement_BE`, nhánh `feature/member-notification-and-support-fix`. Remote tương ứng là `https://github.com/DuyPham-bit/SWP391_SE2039_G06_SportsCenterManagement_FE.git` và `https://github.com/DuyPham-bit/SWP391_SE2039_G06_SportsCenterManagement_BE.git`. Giữ các thay đổi báo cáo có sẵn và thay đổi báo cáo phát sinh trong lúc kiểm chứng. Không commit, push hoặc deploy. Rollback bằng source/bundle trước bản sửa; không cần migration rollback. Không khuyến nghị rollback về seed cũ nếu cần giữ dữ liệu đã sửa.

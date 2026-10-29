@@ -34,21 +34,6 @@ public interface IPaymentService
         IDictionary<string, string> queryParams,
         CancellationToken cancellationToken = default);
 
-    Task<PaymentResultResponse> ProcessPayOsWebhookAsync(
-        PayOsWebhookRequest webhookRequest,
-        CancellationToken cancellationToken = default);
-
-    Task<string> CreatePayOsPaymentUrlAsync(
-        long memberId,
-        CreatePaymentRequest request,
-        string idempotencyKey,
-        CancellationToken cancellationToken = default);
-
-    Task<PaymentResultResponse> SyncVietQrPaymentAsync(
-        long memberId,
-        long orderCode,
-        CancellationToken cancellationToken = default);
-
     Task<PaymentResultResponse> ReconcilePendingPaymentAsync(
         long managerUserId,
         long? managerCenterId,

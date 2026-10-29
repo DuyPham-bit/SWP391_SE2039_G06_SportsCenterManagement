@@ -1,4 +1,6 @@
 using System.Globalization;
+using System.Data;
+using Dapper;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using SportsCenterManagement.BLL.Common;
@@ -315,169 +317,210 @@ public sealed class ReportService(
     {
         ValidateRequest(from, to, "day");
         await EnsureCenterExistsAsync(centerId, cancellationToken);
-        var db = _unitOfWork.Context;
+        var database = _unitOfWork.Context.Database;
+        var connection = database.GetDbConnection();
+        var openedHere = connection.State != ConnectionState.Open;
 
-        var staffRows = await (from profile in db.StaffProfiles.AsNoTracking()
-            join user in db.Users.AsNoTracking() on profile.UserId equals user.Id
-            join role in db.Roles.AsNoTracking() on user.RoleId equals role.Id
-            where profile.CenterId == centerId
-            select new { user.Id, Role = role.Name, ProfileStatus = profile.Status, UserStatus = user.Status })
-            .ToListAsync(cancellationToken);
-        var coachRows = await (from profile in db.CoachProfiles.AsNoTracking()
-            join user in db.Users.AsNoTracking() on profile.UserId equals user.Id
-            join role in db.Roles.AsNoTracking() on user.RoleId equals role.Id
-            where profile.CenterId == centerId
-            select new { user.Id, Role = role.Name, ProfileStatus = profile.Status, UserStatus = user.Status })
-            .ToListAsync(cancellationToken);
-        var personnel = staffRows.Concat(coachRows).GroupBy(row => row.Id).Select(group => group.First()).ToArray();
-        var isActive = (string profileStatus, string userStatus) =>
-            profileStatus.Equals("Active", StringComparison.OrdinalIgnoreCase)
-            && userStatus.Equals("Active", StringComparison.OrdinalIgnoreCase);
-
-        var classCounts = await db.Classes.AsNoTracking().Where(item => item.CenterId == centerId)
-            .GroupBy(_ => 1).Select(group => new
-            {
-                Total = group.Count(),
-                Active = group.Count(item => item.Status != "Cancelled" && item.Status != "Completed")
-            }).SingleOrDefaultAsync(cancellationToken);
-        var roomCounts = await db.Rooms.AsNoTracking().Where(item => item.CenterId == centerId)
-            .GroupBy(_ => 1).Select(group => new
-            {
-                Total = group.Count(),
-                Active = group.Count(item => item.Status == "Active")
-            }).SingleOrDefaultAsync(cancellationToken);
-
-        var centerRooms = await db.Rooms.AsNoTracking()
-            .Where(r => r.CenterId == centerId)
-            .ToListAsync(cancellationToken);
-        var roomMap = centerRooms.ToDictionary(r => r.Id, r => r);
-
-        var centerClasses = await (from cls in db.Classes.AsNoTracking()
-            join sport in db.Sports.AsNoTracking() on cls.SportId equals sport.Id
-            where cls.CenterId == centerId
-            select new { cls.Id, cls.Name, cls.Capacity, cls.Status, cls.RoomId, SportId = sport.Id, SportName = sport.Name })
-            .ToDictionaryAsync(c => c.Id, cancellationToken);
-
-        var classIds = centerClasses.Keys.ToArray();
-
-        var primaryCoaches = await (from assignment in db.ClassCoaches.AsNoTracking()
-            join coach in db.CoachProfiles.AsNoTracking() on assignment.CoachId equals coach.Id
-            where classIds.Contains(assignment.ClassId) && assignment.IsPrimary
-            select new { assignment.ClassId, coach.Id, coach.FullName })
-            .ToDictionaryAsync(c => c.ClassId, cancellationToken);
-
-        var allCoaches = await (from coach in db.CoachProfiles.AsNoTracking()
-            where coach.CenterId == centerId
-            select new { coach.Id, coach.FullName, coach.CoachCode, coach.Specialization, coach.Status })
-            .ToListAsync(cancellationToken);
-        var coachMap = allCoaches.ToDictionary(c => c.Id, c => c);
-
-        var rawSessions = await db.ClassSessions.AsNoTracking()
-            .Where(session => classIds.Contains(session.ClassId) && session.SessionDate >= @from && session.SessionDate <= to
-                && session.SessionStatus != "Cancelled")
-            .ToListAsync(cancellationToken);
-
-        var sessionIds = rawSessions.Select(s => s.Id).ToArray();
-        var bookingsCountBySession = await db.SessionBookings.AsNoTracking()
-            .Where(booking => sessionIds.Contains(booking.SessionId) && booking.Status == "Booked")
-            .GroupBy(booking => booking.SessionId)
-            .Select(g => new { SessionId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(item => item.SessionId, item => item.Count, cancellationToken);
-
-        var sessionRows = rawSessions.Select(session =>
+        if (openedHere)
         {
-            var cls = centerClasses[session.ClassId];
-            var roomId = session.RoomId ?? cls.RoomId;
-            var room = roomId.HasValue && roomMap.TryGetValue(roomId.Value, out var rm) ? rm : null;
-            var coachId = session.CoachId ?? (primaryCoaches.TryGetValue(session.ClassId, out var pc) ? pc.Id : (long?)null);
-            var coachName = coachId.HasValue && coachMap.TryGetValue(coachId.Value, out var cInfo) ? cInfo.FullName : "Chưa có Coach";
-            var booked = bookingsCountBySession.GetValueOrDefault(session.Id, 0);
+            await database.OpenConnectionAsync(cancellationToken);
+        }
 
-            return new
-            {
-                SessionId = session.Id,
-                ClassId = cls.Id,
-                ClassName = cls.Name,
-                SportId = cls.SportId,
-                SportName = cls.SportName,
-                RoomId = room?.Id,
-                RoomName = room?.Name,
-                RoomType = room?.RoomType,
-                RoomLocation = room?.LocationDescription,
-                RoomCapacity = room?.Capacity ?? 0,
-                CoachId = coachId,
-                CoachName = coachName,
-                Capacity = cls.Capacity,
-                Booked = booked
-            };
-        }).ToArray();
-
-        static decimal Rate(int booked, int capacity) => capacity > 0
-            ? decimal.Round((decimal)booked / capacity * 100, 2) : 0;
-        var totalBooked = sessionRows.Sum(row => row.Booked);
-        var totalCapacity = sessionRows.Sum(row => row.Capacity);
-
-        var classRows = sessionRows.GroupBy(row => new
-            { row.ClassId, row.ClassName, row.SportName, row.CoachName, row.RoomName })
-            .Select(group => new OperationalClassItem(
-                group.Key.ClassId, group.Key.ClassName, group.Key.SportName, group.Key.CoachName, group.Key.RoomName,
-                group.Count(), group.Sum(row => row.Booked), group.Sum(row => row.Capacity),
-                Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity))))
-            .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
-            .ToArray();
-
-        var sportRows = sessionRows.GroupBy(row => new { row.SportId, row.SportName })
-            .Select(group => new OperationalSportItem(
-                group.Key.SportId, group.Key.SportName, group.Count(), group.Select(row => row.ClassId).Distinct().Count(),
-                group.Sum(row => row.Booked), group.Sum(row => row.Capacity),
-                Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity)),
-                totalBooked > 0 ? decimal.Round((decimal)group.Sum(row => row.Booked) / totalBooked * 100, 2) : 0))
-            .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
-            .ToArray();
-
-        var roomRows = sessionRows.Where(row => row.RoomId.HasValue)
-            .GroupBy(row => new { Id = row.RoomId!.Value, row.RoomName, row.RoomType, row.RoomLocation, row.RoomCapacity })
-            .Select(group => new OperationalRoomItem(
-                group.Key.Id, group.Key.RoomName!, group.Key.RoomType, group.Key.RoomLocation, group.Key.RoomCapacity,
-                group.Count(), group.Select(row => row.ClassId).Distinct().Count(), group.Sum(row => row.Booked),
-                group.Sum(row => row.Capacity), Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity)),
-                group.Select(row => row.ClassName).Distinct().OrderBy(name => name).ToArray()))
-            .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
-            .ToArray();
-
-        var coachItems = allCoaches.Select(coach =>
+        try
         {
-            var cSessions = sessionRows.Where(s => s.CoachId == coach.Id).ToArray();
-            var cClassesCount = cSessions.Select(s => s.ClassId).Distinct().Count();
-            var sCount = cSessions.Length;
-            var booked = cSessions.Sum(s => s.Booked);
-            var cap = cSessions.Sum(s => s.Capacity);
-            return new OperationalCoachItem(
-                coach.Id,
-                coach.FullName,
-                coach.CoachCode,
-                coach.Specialization,
-                coach.Status,
-                cClassesCount,
-                sCount,
-                booked,
-                cap,
-                Rate(booked, cap)
-            );
-        }).OrderByDescending(c => c.Booked).ThenByDescending(c => c.SessionsCount).ToArray();
+            // A single batch keeps related dashboard data on one connection and eliminates N+1-style round trips.
+            var parameters = new DynamicParameters();
+            parameters.Add("CenterId", centerId, DbType.Int64);
+            parameters.Add("FromDate", from.ToDateTime(TimeOnly.MinValue), DbType.Date);
+            parameters.Add("ToDate", to.ToDateTime(TimeOnly.MinValue), DbType.Date);
+            var command = new CommandDefinition(
+                OperationsReportSql,
+                parameters,
+                cancellationToken: cancellationToken,
+                flags: CommandFlags.Buffered);
 
-        return new OperationsReportResponse(
-            centerId, from, to,
-            personnel.Length,
-            personnel.Count(row => isActive(row.ProfileStatus, row.UserStatus)),
-            personnel.Count(row => row.Role.Equals("Manager", StringComparison.OrdinalIgnoreCase)),
-            personnel.Count(row => row.Role.Equals("Coach", StringComparison.OrdinalIgnoreCase)),
-            personnel.Count(row => row.Role.Equals("Receptionist", StringComparison.OrdinalIgnoreCase)),
-            classCounts?.Total ?? 0, classCounts?.Active ?? 0,
-            roomCounts?.Total ?? 0, roomCounts?.Active ?? 0,
-            sessionRows.Length, totalBooked, totalCapacity, Rate(totalBooked, totalCapacity),
-            classRows, sportRows, roomRows, coachItems);
+            using var reader = await connection.QueryMultipleAsync(command);
+            var personnel = (await reader.ReadAsync<PersonnelRow>()).AsList();
+            var summary = await reader.ReadSingleAsync<OperationsSummaryRow>();
+            var sessionRows = (await reader.ReadAsync<OperationalSessionRow>()).AsList();
+            var coaches = (await reader.ReadAsync<OperationalCoachSourceRow>()).AsList();
+
+            var isActive = (PersonnelRow row) =>
+                row.ProfileStatus.Equals("Active", StringComparison.OrdinalIgnoreCase)
+                && row.UserStatus.Equals("Active", StringComparison.OrdinalIgnoreCase);
+
+            static decimal Rate(int booked, int capacity) => capacity > 0
+                ? decimal.Round((decimal)booked / capacity * 100, 2) : 0;
+            var totalBooked = sessionRows.Sum(row => row.Booked);
+            var totalCapacity = sessionRows.Sum(row => row.Capacity);
+
+            var classRows = sessionRows.GroupBy(row => new
+                { row.ClassId, row.ClassName, row.SportName, row.CoachName, row.RoomName })
+                .Select(group => new OperationalClassItem(
+                    group.Key.ClassId, group.Key.ClassName, group.Key.SportName, group.Key.CoachName, group.Key.RoomName,
+                    group.Count(), group.Sum(row => row.Booked), group.Sum(row => row.Capacity),
+                    Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity))))
+                .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
+                .ToArray();
+
+            var sportRows = sessionRows.GroupBy(row => new { row.SportId, row.SportName })
+                .Select(group => new OperationalSportItem(
+                    group.Key.SportId, group.Key.SportName, group.Count(), group.Select(row => row.ClassId).Distinct().Count(),
+                    group.Sum(row => row.Booked), group.Sum(row => row.Capacity),
+                    Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity)),
+                    totalBooked > 0 ? decimal.Round((decimal)group.Sum(row => row.Booked) / totalBooked * 100, 2) : 0))
+                .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
+                .ToArray();
+
+            var roomRows = sessionRows.Where(row => row.RoomId.HasValue)
+                .GroupBy(row => new { Id = row.RoomId!.Value, row.RoomName, row.RoomType, row.RoomLocation, row.RoomCapacity })
+                .Select(group => new OperationalRoomItem(
+                    group.Key.Id, group.Key.RoomName!, group.Key.RoomType, group.Key.RoomLocation, group.Key.RoomCapacity,
+                    group.Count(), group.Select(row => row.ClassId).Distinct().Count(), group.Sum(row => row.Booked),
+                    group.Sum(row => row.Capacity), Rate(group.Sum(row => row.Booked), group.Sum(row => row.Capacity)),
+                    group.Select(row => row.ClassName).Distinct().OrderBy(name => name).ToArray()))
+                .OrderByDescending(row => row.Booked).ThenByDescending(row => row.OccupancyRate).ThenBy(row => row.Name)
+                .ToArray();
+
+            var sessionsByCoach = sessionRows
+                .Where(session => session.CoachId.HasValue)
+                .GroupBy(session => session.CoachId!.Value)
+                .ToDictionary(group => group.Key, group => group.ToArray());
+            var coachItems = coaches.Select(coach =>
+            {
+                var coachSessions = sessionsByCoach.GetValueOrDefault(coach.Id) ?? [];
+                var booked = coachSessions.Sum(session => session.Booked);
+                var capacity = coachSessions.Sum(session => session.Capacity);
+                return new OperationalCoachItem(
+                    coach.Id,
+                    coach.FullName,
+                    coach.CoachCode,
+                    coach.Specialization,
+                    coach.Status,
+                    coachSessions.Select(session => session.ClassId).Distinct().Count(),
+                    coachSessions.Length,
+                    booked,
+                    capacity,
+                    Rate(booked, capacity));
+            }).OrderByDescending(coach => coach.Booked).ThenByDescending(coach => coach.SessionsCount).ToArray();
+
+            return new OperationsReportResponse(
+                centerId, from, to,
+                personnel.Count,
+                personnel.Count(isActive),
+                personnel.Count(row => row.Role.Equals("Manager", StringComparison.OrdinalIgnoreCase)),
+                personnel.Count(row => row.Role.Equals("Coach", StringComparison.OrdinalIgnoreCase)),
+                personnel.Count(row => row.Role.Equals("Receptionist", StringComparison.OrdinalIgnoreCase)),
+                summary.TotalClasses, summary.ActiveClasses,
+                summary.TotalRooms, summary.ActiveRooms,
+                sessionRows.Count, totalBooked, totalCapacity, Rate(totalBooked, totalCapacity),
+                classRows, sportRows, roomRows, coachItems);
+        }
+        finally
+        {
+            if (openedHere)
+            {
+                await database.CloseConnectionAsync();
+            }
+        }
     }
+
+    private const string OperationsReportSql = """
+        SELECT DISTINCT personnel.UserId, personnel.Role, personnel.ProfileStatus, personnel.UserStatus
+        FROM (
+            SELECT u.id AS UserId, r.name AS Role, sp.status AS ProfileStatus, u.status AS UserStatus
+            FROM dbo.staff_profiles AS sp
+            INNER JOIN dbo.users AS u ON u.id = sp.user_id
+            INNER JOIN dbo.roles AS r ON r.id = u.role_id
+            WHERE sp.center_id = @CenterId
+
+            UNION ALL
+
+            SELECT u.id AS UserId, r.name AS Role, cp.status AS ProfileStatus, u.status AS UserStatus
+            FROM dbo.coach_profiles AS cp
+            INNER JOIN dbo.users AS u ON u.id = cp.user_id
+            INNER JOIN dbo.roles AS r ON r.id = u.role_id
+            WHERE cp.center_id = @CenterId
+        ) AS personnel;
+
+        SELECT
+            (SELECT COUNT(1) FROM dbo.classes WHERE center_id = @CenterId) AS TotalClasses,
+            (SELECT COUNT(1) FROM dbo.classes WHERE center_id = @CenterId
+                AND status NOT IN (N'Cancelled', N'Completed')) AS ActiveClasses,
+            (SELECT COUNT(1) FROM dbo.rooms WHERE center_id = @CenterId) AS TotalRooms,
+            (SELECT COUNT(1) FROM dbo.rooms WHERE center_id = @CenterId AND status = N'Active') AS ActiveRooms;
+
+        WITH booked AS (
+            SELECT session_id, COUNT(1) AS Booked
+            FROM dbo.session_bookings
+            WHERE status = N'Booked'
+            GROUP BY session_id
+        )
+        SELECT
+            session_row.id AS SessionId,
+            class_row.id AS ClassId,
+            class_row.name AS ClassName,
+            sport.id AS SportId,
+            sport.name AS SportName,
+            room.id AS RoomId,
+            room.name AS RoomName,
+            room.room_type AS RoomType,
+            room.location_description AS RoomLocation,
+            ISNULL(room.capacity, 0) AS RoomCapacity,
+            COALESCE(session_row.coach_id, primary_coach.Id) AS CoachId,
+            COALESCE(session_coach.full_name, primary_coach.FullName, N'Chưa có Coach') AS CoachName,
+            class_row.capacity AS Capacity,
+            ISNULL(booked.Booked, 0) AS Booked
+        FROM dbo.class_sessions AS session_row
+        INNER JOIN dbo.classes AS class_row ON class_row.id = session_row.class_id
+        INNER JOIN dbo.sports AS sport ON sport.id = class_row.sport_id
+        LEFT JOIN dbo.rooms AS room ON room.id = COALESCE(session_row.room_id, class_row.room_id)
+        OUTER APPLY (
+            SELECT TOP (1) coach.id AS Id, coach.full_name AS FullName
+            FROM dbo.class_coaches AS assignment
+            INNER JOIN dbo.coach_profiles AS coach ON coach.id = assignment.coach_id
+            WHERE assignment.class_id = class_row.id AND assignment.is_primary = 1
+            ORDER BY assignment.coach_id
+        ) AS primary_coach
+        LEFT JOIN dbo.coach_profiles AS session_coach ON session_coach.id = session_row.coach_id
+        LEFT JOIN booked ON booked.session_id = session_row.id
+        WHERE class_row.center_id = @CenterId
+          AND session_row.session_date >= @FromDate
+          AND session_row.session_date <= @ToDate
+          AND session_row.session_status <> N'Cancelled';
+
+        SELECT id AS Id, full_name AS FullName, coach_code AS CoachCode,
+               specialization AS Specialization, status AS Status
+        FROM dbo.coach_profiles
+        WHERE center_id = @CenterId;
+        """;
+
+    private sealed record PersonnelRow(long UserId, string Role, string ProfileStatus, string UserStatus);
+
+    private sealed record OperationsSummaryRow(int TotalClasses, int ActiveClasses, int TotalRooms, int ActiveRooms);
+
+    private sealed record OperationalSessionRow(
+        long SessionId,
+        long ClassId,
+        string ClassName,
+        long SportId,
+        string SportName,
+        long? RoomId,
+        string? RoomName,
+        string? RoomType,
+        string? RoomLocation,
+        int RoomCapacity,
+        long? CoachId,
+        string CoachName,
+        int Capacity,
+        int Booked);
+
+    private sealed record OperationalCoachSourceRow(
+        long Id,
+        string FullName,
+        string? CoachCode,
+        string? Specialization,
+        string Status);
 
     private async Task EnsureCenterExistsAsync(long centerId, CancellationToken cancellationToken)
     {

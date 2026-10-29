@@ -82,7 +82,7 @@ try {
                 && (await db.Database.GetAppliedMigrationsAsync()).Last() == migrations[^1];
         });
         async Task<bool> Forbidden(Func<PaymentService, Task> action) {
-            try { await action(new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build())); return false; }
+            try { await action(new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build())); return false; }
             catch (BusinessException e) { return e.StatusCode == HttpStatusCode.Forbidden; }
         }
         await Check("coach cannot cancel another member invoice", () => Forbidden(s => s.CancelPendingInvoiceAsync(coach.Id, pending.InvoiceNumber)));
@@ -93,7 +93,7 @@ try {
         await db.Invoices.Where(i => i.Id == pending.InvoiceId).ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, "Issued"));
         await db.MemberSubscriptions.Where(s => s.Id == pending.SubscriptionId).ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, "PendingPayment"));
         await Check("staff must specify a member when cancelling by package", async () => {
-            try { await new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build()).CancelPendingPackageAsync(staff.Id, package.Id); return false; }
+            try { await new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build()).CancelPendingPackageAsync(staff.Id, package.Id); return false; }
             catch (BusinessException e) { return e.StatusCode is HttpStatusCode.BadRequest or HttpStatusCode.Forbidden; }
         });
         await db.Invoices.Where(i => i.Id == pending.InvoiceId).ExecuteUpdateAsync(s => s.SetProperty(i => i.Status, "PartiallyPaid"));
@@ -102,12 +102,12 @@ try {
         await db.SaveChangesAsync(); db.ChangeTracker.Clear();
         await Check("pending invoice keeps purchased duration and outstanding amount", async () => {
             await db.MembershipPackages.Where(p => p.Id == package.Id).ExecuteUpdateAsync(s => s.SetProperty(p => p.DurationDays, 180));
-            var list = await new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build()).GetMyPendingInvoicesAsync(owner.Id);
+            var list = await new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build()).GetMyPendingInvoicesAsync(owner.Id);
             return list.Count == 1 && list[0].DurationDays == 90 && list[0].Amount == 750000;
         });
         await Check("replacement checkout cannot void an invoice with a successful partial payment", async () => {
             try {
-                await new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build()).ProcessCounterPaymentAsync(staff.Id, center.Id, Guid.NewGuid().ToString(), new CounterPaymentRequest { MemberId = member.Id, PackageId = package.Id, AmountReceived = 1000000, PaymentMethod = "CASH", CancelPendingIfAny = true });
+                await new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build()).ProcessCounterPaymentAsync(staff.Id, center.Id, Guid.NewGuid().ToString(), new CounterPaymentRequest { MemberId = member.Id, PackageId = package.Id, AmountReceived = 1000000, PaymentMethod = "CASH", CancelPendingIfAny = true });
                 return false;
             } catch (BusinessException e) { return e.StatusCode == HttpStatusCode.Conflict; }
         });
@@ -125,7 +125,7 @@ try {
         db.Add(secondPackage); await db.SaveChangesAsync(); db.ChangeTracker.Clear();
         var personal = await core.CreatePendingMembershipAsync(member.Id, secondPackage.Id, owner.Id);
         await Check("owner may cancel own unpaid invoice", async () => {
-            var result = await new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build()).CancelPendingInvoiceAsync(owner.Id, personal.InvoiceNumber);
+            var result = await new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build()).CancelPendingInvoiceAsync(owner.Id, personal.InvoiceNumber);
             return result.Success && await db.Invoices.AnyAsync(i => i.Id == personal.InvoiceId && i.Status == "Voided")
                 && await db.MemberSubscriptions.AnyAsync(s => s.Id == personal.SubscriptionId && s.Status == "Cancelled")
                 && await db.AuditLogs.AnyAsync(a => a.EntityType == "Invoice" && a.EntityId == personal.InvoiceId && a.CenterId == center.Id);
@@ -133,7 +133,7 @@ try {
         await Check("same-center staff may cancel a selected unpaid invoice", async () => {
             await db.StaffProfiles.Where(s => s.UserId == staff.Id).ExecuteUpdateAsync(s => s.SetProperty(p => p.CenterId, center.Id));
             var pending2 = await core.CreatePendingMembershipAsync(member.Id, secondPackage.Id, owner.Id);
-            var result = await new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build()).CancelPendingPackageAsync(staff.Id, secondPackage.Id, member.Id);
+            var result = await new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build()).CancelPendingPackageAsync(staff.Id, secondPackage.Id, member.Id);
             return result.Success && await db.Invoices.AnyAsync(i => i.Id == pending2.InvoiceId && i.Status == "Voided");
         });
         await Check("center permission revocation prevents staff cancellation", async () => {
@@ -253,7 +253,7 @@ try {
                 Description = "Full refund fixture", Quantity = 1, UnitPrice = 300000, Amount = 300000 }, payment);
             await db.SaveChangesAsync(); db.ChangeTracker.Clear();
 
-            var result = await new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build())
+            var result = await new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build())
                 .RefundPaymentAsync(manager.Id, center.Id, payment.Id, "full-cash-refund",
                     new CreateRefundRequest { Amount = 300000, Reason = "Approved full refund" }, "127.0.0.1");
             db.ChangeTracker.Clear();
@@ -281,7 +281,7 @@ try {
                 Description = "Gateway refund fixture", Quantity = 1, UnitPrice = 450000, Amount = 450000 }, refund);
             await db.SaveChangesAsync(); db.ChangeTracker.Clear();
 
-            var service = new PaymentService(new UnitOfWork(db), null!, null!, null!, new ConfigurationBuilder().Build());
+            var service = new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build());
             var missingReferenceRejected = false;
             try {
                 await service.ReconcileRefundAsync(manager.Id, center.Id, refund.Id,
@@ -334,7 +334,7 @@ try {
             PasswordResetRateLimiting.Configure(o);
         });
         builder.Services.AddScoped<IClassScheduleQueryService, ClassScheduleQueryService>();
-        builder.Services.AddScoped<IPaymentService>(s => new PaymentService(s.GetRequiredService<IUnitOfWork>(), null!, null!, null!, builder.Configuration));
+        builder.Services.AddScoped<IPaymentService>(s => new PaymentService(s.GetRequiredService<IUnitOfWork>(), null!, null!, builder.Configuration));
         builder.Services.AddScoped<IMemberService, MemberService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
         builder.Services.AddScoped<ICoreFlowService, CoreFlowService>();

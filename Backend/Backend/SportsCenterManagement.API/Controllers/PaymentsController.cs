@@ -204,25 +204,6 @@ public sealed class PaymentsController : ControllerBase
         return Ok(new { resultCode = result.Processed ? 0 : 1, message = result.Processed ? "Success" : "Not confirmed" });
     }
 
-    [AllowAnonymous]
-    [HttpPost("payos-ipn")]
-    [HttpPost("payos-webhook")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> PayOsPaymentIpn(
-        [FromBody] PayOsWebhookRequest webhookRequest,
-        CancellationToken cancellationToken)
-    {
-        var result = await _paymentService.ProcessPayOsWebhookAsync(webhookRequest, cancellationToken);
-        if (!result.Success)
-        {
-            _logger.LogWarning("PayOS webhook was acknowledged without confirming payment. TraceId: {TraceId}",
-                HttpContext.TraceIdentifier);
-        }
-
-        // payOS retries deliveries that do not receive a 2xx response; signed events are always acknowledged.
-        return Ok(new { code = 0, message = "Success", data = result });
-    }
 
     [Authorize(Roles = "RECEPTIONIST,MANAGER,ADMIN")]
     [HttpPost("counter-checkout")]
@@ -248,22 +229,6 @@ public sealed class PaymentsController : ControllerBase
     {
         var result = await _paymentService.VoidCounterPaymentAsync(
             GetRequiredUserId(), GetCenterScope(), invoiceNumber, request.Reason, cancellationToken);
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// Đồng bộ trạng thái giao dịch VietQR / PayOS cho hội viên sở hữu giao dịch.
-    /// POST /api/payments/vietqr/{orderCode:long}/sync
-    /// </summary>
-    [Authorize]
-    [HttpPost("vietqr/{orderCode:long}/sync")]
-    public async Task<ActionResult<PaymentResultResponse>> SyncVietQrPayment(
-        [FromRoute] long orderCode,
-        CancellationToken cancellationToken)
-    {
-        var userId = GetRequiredUserId();
-        var memberId = await GetCurrentMemberIdAsync(userId, cancellationToken);
-        var result = await _paymentService.SyncVietQrPaymentAsync(memberId, orderCode, cancellationToken);
         return Ok(result);
     }
 

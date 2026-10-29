@@ -84,107 +84,11 @@ public class VnPayCallbackResult
 
 namespace SportsCenterManagement.BLL.DTOs.Payments
 {
-/// <summary>
-/// DTO trả về cho Frontend khi khởi tạo giao dịch thanh toán VietQR / PayOS.
-/// </summary>
-public class VietQrPaymentResponse
-{
-    public bool Success { get; set; } = true;
-    public string Message { get; set; } = "Khởi tạo mã VietQR thành công.";
-    public string InvoiceNumber { get; set; } = string.Empty;
-    public long OrderCode { get; set; }
-    public decimal Amount { get; set; }
-    public string Description { get; set; } = string.Empty;
-    public string AccountNumber { get; set; } = string.Empty;
-    public string AccountName { get; set; } = string.Empty;
-    public string Bin { get; set; } = string.Empty;
-    public string CheckoutUrl { get; set; } = string.Empty;
-    public string QrCode { get; set; } = string.Empty;
-}
-}
-
-namespace SportsCenterManagement.BLL.DTOs.Payments
-{
 public sealed record ProviderRefundResult(
     bool IsAuthenticated,
     string Status,
     string? ProviderRefundId,
     string Message);
-}
-
-namespace SportsCenterManagement.BLL.DTOs.Payments
-{
-/// <summary>
-/// Cấu hình thông tin tích hợp Cổng thanh toán VietQR / PayOS từ appsettings.json.
-/// </summary>
-public class PayOsOption
-{
-    public const string SectionName = "PayOS";
-
-    public string ClientId { get; set; } = string.Empty;
-    public string ApiKey { get; set; } = string.Empty;
-    public string ChecksumKey { get; set; } = string.Empty;
-    public string BaseUrl { get; set; } = "https://api-merchant.payos.vn";
-    public string ReturnUrl { get; set; } = string.Empty;
-    public string CancelUrl { get; set; } = string.Empty;
-}
-}
-
-namespace SportsCenterManagement.BLL.DTOs.Payments
-{
-/// <summary>
-/// DTO phản hồi trả về từ API PayOS khi khởi tạo link thanh toán VietQR thành công.
-/// </summary>
-public class PayOsCreatePaymentResponse
-{
-    [JsonPropertyName("code")]
-    public string Code { get; set; } = string.Empty;
-
-    [JsonPropertyName("desc")]
-    public string Desc { get; set; } = string.Empty;
-
-    [JsonPropertyName("data")]
-    public PayOsPaymentData? Data { get; set; }
-
-    [JsonPropertyName("signature")]
-    public string Signature { get; set; } = string.Empty;
-}
-
-public class PayOsPaymentData
-{
-    [JsonPropertyName("bin")]
-    public string Bin { get; set; } = string.Empty;
-
-    [JsonPropertyName("accountNumber")]
-    public string AccountNumber { get; set; } = string.Empty;
-
-    [JsonPropertyName("accountName")]
-    public string AccountName { get; set; } = string.Empty;
-
-    [JsonPropertyName("amount")]
-    public int Amount { get; set; }
-
-    [JsonPropertyName("description")]
-    public string Description { get; set; } = string.Empty;
-
-    [JsonPropertyName("orderCode")]
-    public long OrderCode { get; set; }
-
-    [JsonPropertyName("currency")]
-    public string Currency { get; set; } = "VND";
-
-    [JsonPropertyName("paymentLinkId")]
-    public string PaymentLinkId { get; set; } = string.Empty;
-
-    [JsonPropertyName("status")]
-    public string Status { get; set; } = string.Empty;
-
-    [JsonPropertyName("checkoutUrl")]
-    public string CheckoutUrl { get; set; } = string.Empty;
-
-    [JsonPropertyName("qrCode")]
-    public string QrCode { get; set; } = string.Empty;
-}
 }
 
 namespace SportsCenterManagement.BLL.DTOs.Payments

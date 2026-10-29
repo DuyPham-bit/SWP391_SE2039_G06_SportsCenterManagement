@@ -72,13 +72,6 @@ services:
       - Momo__RequestType=${MOMO_REQUEST_TYPE:-captureWallet}
       - Momo__AccessKey=${MOMO_ACCESS_KEY:-}
       - Momo__SecretKey=${MOMO_SECRET_KEY:-}
-      # PayOS payment gateway
-      - PayOS__BaseUrl=${PAYOS_BASE_URL:-https://api-merchant.payos.vn}
-      - PayOS__ClientId=${PAYOS_CLIENT_ID:-}
-      - PayOS__ApiKey=${PAYOS_API_KEY:-}
-      - PayOS__ChecksumKey=${PAYOS_CHECKSUM_KEY:-}
-      - PayOS__ReturnUrl=${PAYOS_RETURN_URL:-http://localhost:3004/payment-result}
-      - PayOS__CancelUrl=${PAYOS_CANCEL_URL:-http://localhost:3004/payment-result?cancel=true}
       # Cloudflare R2 Storage
       - R2Storage__ServiceUrl=${R2_SERVICE_URL:-}
       - R2Storage__AccessKey=${R2_ACCESS_KEY:-}
