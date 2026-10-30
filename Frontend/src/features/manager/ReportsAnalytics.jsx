@@ -199,6 +199,9 @@ export function ReportsAnalytics({ adminMode = false }) {
   const topSport = highlights.mostPopularSport;
   const topRevenueSport = highlights.highestRevenueSport;
   const topRoom = highlights.mostBookedRoom;
+  const growthLabel = value => value == null
+    ? (isEn ? 'No baseline' : 'Chưa có kỳ gốc')
+    : `${value > 0 ? '+' : ''}${Number(value).toLocaleString('vi-VN')}%`;
 
   return (
     <div className="space-y-6 pb-12 animate-fade-slide-up print:space-y-4 print:pb-0">
@@ -515,7 +518,7 @@ export function ReportsAnalytics({ adminMode = false }) {
                         <th className="px-4 py-3 text-right">{isEn ? 'Members' : 'Hội viên'}</th>
                         <th className="px-4 py-3 text-right">{isEn ? 'Occupancy' : 'Lấp đầy'}</th>
                         <th className="px-4 py-3 text-right">{isEn ? 'Sessions' : 'Ca học'}</th>
-                        <th className="px-4 py-3 text-right">{isEn ? 'Check-ins today' : 'Check-in hôm nay'}</th>
+                        <th className="px-4 py-3 text-right">{isEn ? 'Check-ins in period' : 'Check-in trong kỳ'}</th>
                         <th className="px-4 py-3 text-center">{isEn ? 'Detail' : 'Chi tiết'}</th>
                       </tr>
                     </thead>
@@ -534,8 +537,8 @@ export function ReportsAnalytics({ adminMode = false }) {
                           <td className="px-4 py-3 text-right font-black text-emerald-700 dark:text-emerald-400">{Number(center.netRevenue || 0).toLocaleString('vi-VN')}đ</td>
                           <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{Number(center.totalMembers || 0).toLocaleString('vi-VN')}</td>
                           <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{center.occupancyRate}%</td>
-                          <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{center.totalClasses}</td>
-                          <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{center.todayCheckins}</td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{center.totalSessions}</td>
+                          <td className="px-4 py-3 text-right font-bold text-slate-700 dark:text-slate-300">{center.periodCheckins}</td>
                           <td className="px-4 py-3 text-center">
                             <button
                               type="button"
@@ -578,10 +581,10 @@ export function ReportsAnalytics({ adminMode = false }) {
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {isEn ? "Today's Money" : 'Doanh thu thuần'}
+                    {isEn ? 'Net Revenue' : 'Doanh thu thuần'}
                   </span>
                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
-                    +12%
+                    {growthLabel(metrics.revenueGrowth)}
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
@@ -603,10 +606,10 @@ export function ReportsAnalytics({ adminMode = false }) {
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {isEn ? "Today's Users" : 'Tổng thành viên'}
+                    {isEn ? 'Total Members' : 'Tổng thành viên'}
                   </span>
                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
-                    +5%
+                    {growthLabel(metrics.memberGrowth)}
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
@@ -644,19 +647,19 @@ export function ReportsAnalytics({ adminMode = false }) {
               </div>
             </div>
 
-            {/* Card 4: Total Sales / Check-in hôm nay */}
+            {/* Card 4: Check-ins in the selected period */}
             <div className="bg-white dark:bg-slate-900 rounded-2xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs hover-lift transition-all flex items-center justify-between">
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {isEn ? 'Total Sales' : 'Check-in hôm nay'}
+                    {isEn ? 'Period Check-ins' : 'Check-in trong kỳ'}
                   </span>
                   <span className="text-[10px] font-black text-amber-700 dark:text-[#F2CC8F] bg-amber-50 dark:bg-amber-950/40 px-1.5 py-0.2 rounded border border-amber-200 dark:border-amber-800">
-                    Realtime
+                    {metrics.from} → {metrics.to}
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
-                  {metrics.todayCheckins}
+                  {metrics.periodCheckins}
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 truncate max-w-[200px]">
                   {isEn ? `${metrics.activeStaff} staff on duty` : `${metrics.activeStaff} nhân sự trực ca`}
@@ -720,7 +723,7 @@ export function ReportsAnalytics({ adminMode = false }) {
             <div className="flex items-center gap-2">
               <span className="material-symbols-outlined text-[#2D6A4F] dark:text-[#81B29A] text-[18px]">event_seat</span>
               <strong className="text-slate-900 dark:text-white">
-                {isEn ? 'Class Booking Status:' : 'Trạng thái đăng ký lớp học:'}
+                {isEn ? 'Booking Status in Period:' : 'Trạng thái đăng ký trong kỳ:'}
               </strong>
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -767,8 +770,8 @@ export function ReportsAnalytics({ adminMode = false }) {
                   </h2>
                   <p className="text-xs text-white/85 mt-1 leading-relaxed">
                     {isEn
-                      ? `Analytics period: ${metrics.from} → ${metrics.to} · Total ${metrics.totalClasses} scheduled sessions`
-                      : `Tổng hợp từ ${metrics.from} đến ${metrics.to} · Tổng ${metrics.totalClasses} ca học đã phân bổ`}
+                      ? `Analytics period: ${metrics.from} → ${metrics.to} · Total ${metrics.totalSessions} scheduled sessions`
+                      : `Tổng hợp từ ${metrics.from} đến ${metrics.to} · Tổng ${metrics.totalSessions} ca học đã phân bổ`}
                   </p>
                 </div>
 
@@ -834,23 +837,23 @@ export function ReportsAnalytics({ adminMode = false }) {
                 max={100}
                 title={isEn ? 'Satisfaction / Load' : 'Tỷ lệ lấp đầy'}
                 subtitle={isEn ? 'From all scheduled sessions' : 'Toàn bộ ca học đã mở'}
-                note={isEn ? 'Optimal utilization' : 'Công suất vận hành ổn định'}
+                note={`${metrics.totalBookings} / ${metrics.totalCapacity} ${isEn ? 'seats booked' : 'chỗ đã đặt'}`}
               />
             </div>
 
             {/* Right Card (4 cols): Radial Score Progress (Referral Tracking / Facility Load Score) */}
             <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs hover-lift transition-all flex flex-col justify-between">
               <RadialScoreChart
-                score={Number((8.5 + Math.min(1.0, ((metrics.occupancyRate || 0) / 100) * 1.0) + (topRoom?.booked ? 0.2 : 0)).toFixed(1))}
+                score={Number((Math.max(0, Math.min(100, metrics.occupancyRate || 0)) / 10).toFixed(1))}
                 maxScore={10}
                 title={isEn ? 'Facility Tracking' : 'Hiệu suất sân bãi'}
-                subtitle={isEn ? 'Court load & safety index' : 'Chỉ số tải & an toàn cơ sở'}
+                subtitle={isEn ? 'Occupancy converted to a 10-point scale' : 'Quy đổi tỷ lệ lấp đầy sang thang 10'}
                 stat1Label={isEn ? 'Guests received' : 'Khách tiếp nhận'}
                 stat1Val={`${topRoom?.booked || 0} lượt`}
                 stat2Label={isEn ? 'Sessions hosted' : 'Ca đã tổ chức'}
                 stat2Val={`${topRoom?.sessionsCount || 0} ca`}
-                scoreLabel={isEn ? 'Safety' : 'Điểm tải'}
-                scoreSub={isEn ? 'Total score' : 'Tổng điểm'}
+                scoreLabel={isEn ? 'Utilization' : 'Khai thác'}
+                scoreSub={isEn ? 'From actual occupancy' : 'Từ dữ liệu lấp đầy'}
               />
             </div>
           </div>
@@ -875,7 +878,7 @@ export function ReportsAnalytics({ adminMode = false }) {
                   {metrics.groupBy === 'month' ? (isEn ? 'Monthly' : 'Theo tháng') : (isEn ? 'Daily' : 'Theo ngày')}
                 </span>
               </div>
-              <VisionSalesOverviewChart data={revenue} groupBy={metrics.groupBy} />
+              <VisionSalesOverviewChart data={revenue} groupBy={metrics.groupBy} growth={metrics.revenueGrowth} />
             </section>
 
             {/* Right Card (5 cols): Active Users Bar Chart + 4 Stat Pills */}
@@ -899,9 +902,10 @@ export function ReportsAnalytics({ adminMode = false }) {
               <VisionActiveUsersChart
                 data={membership}
                 totalUsers={metrics.totalMembers}
-                totalBookings={metrics.classStatusCounts?.Confirmed || metrics.todayCheckins || 19}
+                totalBookings={metrics.totalBookings}
                 netSales={metrics.netRevenue}
-                totalSessions={metrics.totalClasses}
+                totalSessions={metrics.totalSessions}
+                growth={metrics.memberGrowth}
               />
             </section>
           </div>
@@ -1101,7 +1105,7 @@ export function ReportsAnalytics({ adminMode = false }) {
                       {isEn ? 'Orders Overview' : 'Nhật Ký Vận Hành & Sự Kiện'}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      <strong className="text-emerald-600 dark:text-emerald-400 font-bold">+30% {isEn ? 'this month' : 'tháng này'}</strong> · {isEn ? 'Live activity' : 'Sự kiện đăng ký'}
+                      <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{metrics.newMembers} {isEn ? 'new members' : 'hội viên mới'}</strong> · {isEn ? 'Activity in selected period' : 'Hoạt động trong kỳ đã chọn'}
                     </p>
                   </div>
                 </div>
@@ -1168,17 +1172,17 @@ export function ReportsAnalytics({ adminMode = false }) {
                     </div>
                   </div>
 
-                  {/* Node 5: Check-in hôm nay */}
+                  {/* Node 5: Check-ins in the selected period */}
                   <div className="flex items-start gap-3 relative">
                     <div className="w-7 h-7 rounded-full bg-rose-100 dark:bg-rose-950/60 text-rose-700 dark:text-rose-400 border border-rose-300 dark:border-rose-800 flex items-center justify-center shrink-0 z-10 shadow-xs">
                       <span className="material-symbols-outlined text-[15px]">fact_check</span>
                     </div>
                     <div>
                       <p className="text-xs font-bold text-slate-900 dark:text-white">
-                        {metrics.todayCheckins} {isEn ? 'check-in passes validated' : 'lượt check-in hợp lệ hôm nay'}
+                        {metrics.periodCheckins} {isEn ? 'check-ins validated in period' : 'lượt check-in hợp lệ trong kỳ'}
                       </p>
                       <span className="text-[10px] text-slate-400 dark:text-slate-500">
-                        {isEn ? 'Realtime gate control' : 'Cổng kiểm soát thẻ hội viên'}
+                        {isEn ? `${metrics.from} to ${metrics.to}` : `Từ ${metrics.from} đến ${metrics.to}`}
                       </span>
                     </div>
                   </div>

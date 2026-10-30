@@ -90,7 +90,8 @@ function reportFixture(route) {
   };
   if (route.startsWith('reports/operations?')) return {
     totalStaff: 3, activeStaff: 2, managerCount: 1, coachCount: 1, receptionistCount: 1,
-    totalRooms: 2, activeRooms: 1, sessionsCount: 1, occupancyRate: 20,
+    totalRooms: 2, activeRooms: 1, totalClasses: 1, activeClasses: 1,
+    sessionsCount: 1, bookedSeats: 2, capacitySeats: 10, occupancyRate: 20,
     classes: [{ id: 1, name: 'Active', booked: 2, capacity: 10, occupancyRate: 20 }],
     sports: [], rooms: [], coaches: [
       { id: 1, fullName: 'Coach Active', classesCount: 1, sessionsCount: 2, booked: 2, capacity: 10, occupancyRate: 20 },
@@ -110,6 +111,8 @@ test('report utilization excludes cancelled sessions', async () => {
   const api = client(reportFixture);
   const overview = await api.reportApi.getOverview('DAY');
   assert.equal(overview.totalClasses, 1);
+  assert.equal(overview.totalSessions, 1);
+  assert.equal(overview.totalBookings, 2);
   assert.equal(overview.occupancyRate, 20);
   assert.equal(overview.activeStaff, 2);
   assert.equal(overview.totalStaff, 3);
@@ -118,6 +121,45 @@ test('report utilization excludes cancelled sessions', async () => {
   assert.equal(overview.expiredMembers, 1);
   assert.equal(overview.coachesWithSessions, 1);
   assert.equal(overview.coachesWithoutSessions, 1);
+});
+
+test('report metrics use the selected period and calculate growth from the immediately preceding period', async () => {
+  const api = client(route => {
+    const query = new URLSearchParams(route.split('?')[1] || '');
+    const from = query.get('from');
+    if (route.startsWith('reports/revenue?')) {
+      return from === '2026-10-01'
+        ? { gross: 220, refunds: 20, net: 200, periods: [] }
+        : { gross: 100, refunds: 0, net: 100, periods: [] };
+    }
+    if (route.startsWith('reports/membership?')) {
+      return from === '2026-10-01'
+        ? { totalMembers: 20, activeMembers: 12, newMembers: 4, periods: [] }
+        : { totalMembers: 16, activeMembers: 10, newMembers: 2, periods: [] };
+    }
+    if (route.startsWith('reports/operations?')) return {
+      totalClasses: 3, activeClasses: 2, sessionsCount: 4,
+      bookedSeats: 12, capacitySeats: 20, occupancyRate: 60,
+      classes: [], sports: [], rooms: [], coaches: []
+    };
+    if (route.startsWith('reports/checkins?')) return { count: from === '2026-10-01' ? 7 : 1 };
+    if (route.startsWith('reports/classes?')) return { currentStatusCounts: { Booked: 12 }, periods: [] };
+    if (route.startsWith('reports/revenue-by-sport?')) return { sports: [], allocatedNet: 0, unallocatedNet: 0 };
+    if (route.startsWith('class-sessions?')) return { items: [], totalCount: 0, pageSize: 100 };
+    if (route.includes('/rooms') || route.includes('/classes/all')) return [];
+    return {};
+  });
+
+  const overview = await api.reportApi.getOverview({ from: '2026-10-01', to: '2026-10-10', groupBy: 'day' });
+  assert.equal(overview.revenueGrowth, 100);
+  assert.equal(overview.memberGrowth, 100);
+  assert.equal(overview.previousNetRevenue, 100);
+  assert.equal(overview.totalClasses, 3);
+  assert.equal(overview.totalSessions, 4);
+  assert.equal(overview.totalBookings, 12);
+  assert.equal(overview.periodCheckins, 7);
+  assert.equal(overview.todayCheckins, 1);
+  assert.ok(api.calls.some(route => route.includes('reports/revenue?') && route.includes('from=2026-09-21') && route.includes('to=2026-09-30')));
 });
 
 test('report API failure is not converted into an empty successful report', async () => {

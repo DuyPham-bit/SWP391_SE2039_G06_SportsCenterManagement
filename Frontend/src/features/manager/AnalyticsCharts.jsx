@@ -1110,7 +1110,7 @@ export function RadialScoreChart({
  * 9. VISION UI SALES OVERVIEW (Dual Spline Wave Chart)
  * Smooth glowing spline area chart matching Image 1
  */
-export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
+export function VisionSalesOverviewChart({ data = [], groupBy = 'day', growth = null }) {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const [hoveredIdx, setHoveredIdx] = useState(null);
@@ -1185,7 +1185,11 @@ export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
         <div>
           <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
             <span className="material-symbols-outlined text-[15px]">trending_up</span>
-            {isEn ? '(+12%) net revenue increase' : '(+12%) tăng trưởng doanh thu'}
+            {growth == null
+              ? (isEn ? 'No comparable previous-period baseline' : 'Chưa có dữ liệu kỳ trước để so sánh')
+              : (isEn
+                  ? `${growth > 0 ? '+' : ''}${growth}% net revenue vs previous period`
+                  : `${growth > 0 ? '+' : ''}${growth}% doanh thu thuần so với kỳ trước`)}
           </span>
           <span className="text-slate-400 text-[10px] block">
             {isEn ? `Aggregated by ${groupBy}` : `Tổng hợp theo ${groupBy === 'month' ? 'tháng' : 'ngày'}`}
@@ -1345,7 +1349,8 @@ export function VisionActiveUsersChart({
   totalUsers = 0,
   totalBookings = 0,
   netSales = 0,
-  totalSessions = 0
+  totalSessions = 0,
+  growth = null
 }) {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -1371,7 +1376,11 @@ export function VisionActiveUsersChart({
       <div>
         <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
           <span className="material-symbols-outlined text-[15px]">group</span>
-          {isEn ? '(+23%) active member traffic' : '(+23%) lượt tương tác học viên'}
+          {growth == null
+            ? (isEn ? 'No comparable previous-period baseline' : 'Chưa có dữ liệu kỳ trước để so sánh')
+            : (isEn
+                ? `${growth > 0 ? '+' : ''}${growth}% new members vs previous period`
+                : `${growth > 0 ? '+' : ''}${growth}% hội viên mới so với kỳ trước`)}
         </span>
         <span className="text-slate-400 text-[10px] block">
           {isEn ? 'Daily activity & attendance volume' : 'Lưu lượng tham gia & hội viên tích cực'}

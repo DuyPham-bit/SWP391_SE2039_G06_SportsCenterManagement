@@ -26,7 +26,7 @@ test('CSV export includes auditable revenue totals and sport allocation', () => 
     from: '2026-10-01', to: '2026-10-15', groupBy: 'day', grossRevenue: 1200000,
     refundedRevenue: 200000, netRevenue: 1000000, totalMembers: 3, activeMembers: 2,
     membersWithPackage: 2, membersWithoutPackage: 1, expiredMembers: 1,
-    newMembers: 1, totalBookings: 2, todayCheckins: 1,
+    newMembers: 1, totalBookings: 2, periodCheckins: 1,
     revenuePeriods: [{ periodStart: '2026-10-01', gross: 1200000, refunds: 200000, net: 1000000 }],
     revenueBySport: [{ sportId: 1, sportName: 'Bơi lội', gross: 1200000, refunds: 200000, net: 1000000, share: 100 }],
     coaches: [{ fullName: 'HLV Minh', specialization: 'Bơi lội', classesCount: 1, sessionsCount: 3, booked: 8, capacity: 10, occupancyRate: 80 }]
@@ -45,7 +45,7 @@ test('CSV export includes auditable revenue totals and sport allocation', () => 
 test('CSV export neutralizes spreadsheet formulas from labels', () => {
   const csv = loadCreateReportCsv()({
     from: '2026-10-15', to: '2026-10-15', groupBy: 'day', totalMembers: 0,
-    activeMembers: 0, newMembers: 0, totalBookings: 0, todayCheckins: 0,
+    activeMembers: 0, newMembers: 0, totalBookings: 0, periodCheckins: 0,
     revenueBySport: [{ sportId: 1, sportName: '=HYPERLINK("bad")', gross: 1, refunds: 0, net: 1, share: 100 }]
   }, 'DAY');
   assert.match(csv, /"'=HYPERLINK/);

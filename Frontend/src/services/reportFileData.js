@@ -26,8 +26,8 @@ export function reportSummary(metrics, language = 'vi') {
     [t('Hội viên hiện tại', 'Current members'), metrics.totalMembers, 'number'],
     [t('Hội viên có gói hiệu lực', 'Members with an active package'), metrics.membersWithPackage ?? metrics.activeMembers, 'number'],
     [t('Hội viên chưa có gói hiệu lực', 'Members without an active package'), metrics.membersWithoutPackage ?? Math.max(0, Number(metrics.totalMembers || 0) - Number(metrics.activeMembers || 0)), 'number'],
-    [t('Đăng ký lớp hiện tại', 'Current class bookings'), metrics.totalBookings, 'number'],
-    [t('Check-in hôm nay', "Today's check-ins"), metrics.todayCheckins, 'number'],
+    [t('Lượt đặt chỗ trong kỳ', 'Booked seats in period'), metrics.totalBookings, 'number'],
+    [t('Check-in trong kỳ', 'Check-ins in period'), metrics.periodCheckins, 'number'],
     [t('Tỷ lệ lấp đầy trong kỳ', 'Occupancy in period'), metrics.occupancyRate, 'percent']
   ];
 }
@@ -71,7 +71,7 @@ export function reportSections(metrics, language = 'vi') {
     { name: t('Hiệu suất huấn luyện viên', 'Coach performance'), sheet: t('Huấn luyện viên', 'Coaches'),
       columns: [col('Huấn luyện viên', 'Coach', 'text', 32), col('Mã HLV', 'Coach code', 'text', 18), col('Chuyên môn', 'Specialization', 'text', 25), col('Trạng thái', 'Status', 'text', 18), col('Số lớp', 'Classes', 'number', 12), sessions, booked, capacity, occupancy],
       rows: (metrics.coaches || []).map(x => [x.fullName, x.coachCode || '', x.specialization || '', x.status, x.classesCount, x.sessionsCount, x.booked, x.capacity, x.occupancyRate]) },
-    { name: t('Trạng thái đăng ký hiện tại', 'Current booking status'), sheet: t('Trạng thái', 'Status'),
+    { name: t('Trạng thái đăng ký trong kỳ', 'Booking status in period'), sheet: t('Trạng thái', 'Status'),
       columns: [col('Trạng thái', 'Status', 'text', 30), col('Số lượng', 'Count', 'number', 18)],
       rows: Object.entries(metrics.classStatusCounts || {}).map(([key, count]) => [status(key), count]) },
     { name: t('Trạng thái đăng ký theo kỳ', 'Booking status by period'), sheet: t('Trạng thái', 'Status'),

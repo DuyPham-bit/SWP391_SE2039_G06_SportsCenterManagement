@@ -237,33 +237,6 @@ public sealed class ReportService(
         await EnsureCenterExistsAsync(centerId, cancellationToken);
         var timeZone = GetReportTimeZone();
         var (startUtc, endUtc) = GetUtcRange(from, to, timeZone);
-        var enrollmentCounts = await (
-            from enrollment in _unitOfWork.Context.ClassEnrollments
-            join classEntity in _unitOfWork.Context.Classes on enrollment.ClassId equals classEntity.Id
-            where classEntity.CenterId == centerId
-            group enrollment by enrollment.Status into statusGroup
-            select new { Status = statusGroup.Key, Count = statusGroup.Count() })
-            .ToListAsync(cancellationToken);
-        var waitlistCounts = await (
-            from item in _unitOfWork.Context.ClassWaitlists
-            join classEntity in _unitOfWork.Context.Classes on item.ClassId equals classEntity.Id
-            where classEntity.CenterId == centerId
-            group item by item.Status into statusGroup
-            select new { Status = statusGroup.Key, Count = statusGroup.Count() })
-            .ToListAsync(cancellationToken);
-        var bookingCounts = await (
-            from booking in _unitOfWork.Context.SessionBookings
-            join session in _unitOfWork.Context.ClassSessions on booking.SessionId equals session.Id
-            join cls in _unitOfWork.Context.Classes on session.ClassId equals cls.Id
-            where cls.CenterId == centerId
-            group booking by booking.Status into statusGroup
-            select new { Status = statusGroup.Key, Count = statusGroup.Count() }).ToListAsync(cancellationToken);
-
-        var currentStatusCounts = enrollmentCounts.Concat(waitlistCounts).Concat(bookingCounts)
-            .GroupBy(row => NormalizeStatus(row.Status), StringComparer.OrdinalIgnoreCase)
-            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.Sum(row => row.Count), StringComparer.OrdinalIgnoreCase);
-
         var enrollmentEvents = await (
             from enrollment in _unitOfWork.Context.ClassEnrollments
             join classEntity in _unitOfWork.Context.Classes on enrollment.ClassId equals classEntity.Id
@@ -290,6 +263,10 @@ public sealed class ReportService(
             .Concat(waitlistEvents.Select(row => new StatusEvent(row.Status, row.CreatedAtUtc)))
             .Concat(bookingEvents.Select(row => new StatusEvent(row.Status, row.CreatedAtUtc)))
             .ToArray();
+        var currentStatusCounts = statusEvents
+            .GroupBy(row => NormalizeStatus(row.Status), StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
         var statusCountsByPeriod = statusEvents
             .GroupBy(row => PeriodFor(row.CreatedAtUtc, groupBy, timeZone))
             .ToDictionary(

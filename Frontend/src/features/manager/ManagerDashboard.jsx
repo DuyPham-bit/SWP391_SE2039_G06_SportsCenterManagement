@@ -229,6 +229,9 @@ export function ManagerDashboard() {
   const topClass = highlights.mostPopularClass;
   const topRevenueSport = highlights.highestRevenueSport;
   const topRoom = highlights.mostBookedRoom;
+  const growthLabel = value => value == null
+    ? (isEn ? 'No baseline' : 'Chưa có kỳ gốc')
+    : `${value > 0 ? '+' : ''}${Number(value).toLocaleString('vi-VN')}%`;
 
   const sportBadgeStyles = {
     'Bơi lội': { bg: 'bg-sky-50 dark:bg-sky-950/40 text-sky-700 dark:text-sky-300 border-sky-200 dark:border-sky-800', icon: 'pool' },
@@ -295,14 +298,14 @@ export function ManagerDashboard() {
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {isEn ? "Today's Money" : 'Doanh thu tháng'}
+                    {isEn ? 'Period Net Revenue' : 'Doanh thu thuần trong kỳ'}
                   </span>
                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
-                    +55%
+                    {growthLabel(metrics?.revenueGrowth)}
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
-                  {`${Number(metrics?.monthlyRevenue || metrics?.netRevenue || 20700000).toLocaleString('vi-VN')}đ`}
+                  {`${Number(metrics?.netRevenue ?? 0).toLocaleString('vi-VN')}đ`}
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate max-w-[200px]">
                   {isEn ? 'Net revenue realized' : 'Dòng tiền thực thu trong kỳ'}
@@ -318,17 +321,17 @@ export function ManagerDashboard() {
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {isEn ? "Today's Users" : 'Tổng hội viên'}
+                    {isEn ? 'Total Members' : 'Tổng hội viên'}
                   </span>
                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
-                    +3%
+                    {growthLabel(metrics?.memberGrowth)}
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
-                  {metrics?.totalMembers ?? 22}
+                  {metrics?.totalMembers ?? 0}
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate max-w-[200px]">
-                  {isEn ? `Active packages: ${metrics?.activeMembers || 9}` : `Có gói hiệu lực: ${metrics?.activeMembers || 9}`}
+                  {isEn ? `Active packages: ${metrics?.activeMembers ?? 0}` : `Có gói hiệu lực: ${metrics?.activeMembers ?? 0}`}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#24828F] to-[#3FAEB8] text-white flex items-center justify-center shadow-md shadow-[#24828F]/25 shrink-0">
@@ -344,11 +347,11 @@ export function ManagerDashboard() {
                     {isEn ? 'New Clients' : 'Hội viên mới'}
                   </span>
                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
-                    +{metrics?.newMembers ?? 22}
+                    +{metrics?.newMembers ?? 0}
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
-                  +{metrics?.newMembers ?? 22}
+                  +{metrics?.newMembers ?? 0}
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-0.5 truncate max-w-[200px]">
                   {isEn ? 'Registered this period' : 'Tài khoản đăng ký mới'}
@@ -421,10 +424,10 @@ export function ManagerDashboard() {
                       {isEn ? 'Top Class' : 'Lớp Hot #1'}
                     </span>
                     <strong className="text-white font-bold block truncate text-xs">
-                      {topClass?.name || 'Bơi sải K01'}
+                      {topClass?.name || (isEn ? 'No data' : 'Chưa có dữ liệu')}
                     </strong>
                     <span className="text-emerald-300 text-[10px]">
-                      {topClass?.booked || 21} chỗ
+                      {topClass?.booked ?? 0} chỗ
                     </span>
                   </div>
 
@@ -433,10 +436,10 @@ export function ManagerDashboard() {
                       {isEn ? 'Top Court' : 'Sân Bận #1'}
                     </span>
                     <strong className="text-white font-bold block truncate text-xs">
-                      {topRoom?.name || 'Bể bơi 50m'}
+                      {topRoom?.name || (isEn ? 'No data' : 'Chưa có dữ liệu')}
                     </strong>
                     <span className="text-[#F2CC8F] text-[10px]">
-                      {topRoom?.booked || 23} khách
+                      {topRoom?.booked ?? 0} khách
                     </span>
                   </div>
 
@@ -445,10 +448,10 @@ export function ManagerDashboard() {
                       {isEn ? 'Top Sport' : 'Bộ Môn #1'}
                     </span>
                     <strong className="text-white font-bold block truncate text-xs">
-                      {topRevenueSport?.sportName || 'Yoga & Pilates'}
+                      {topRevenueSport?.sportName || (isEn ? 'No data' : 'Chưa có dữ liệu')}
                     </strong>
                     <span className="text-sky-300 text-[10px]">
-                      {topRevenueSport?.share || 13}% dt
+                      {topRevenueSport?.share ?? 0}% dt
                     </span>
                   </div>
                 </div>
@@ -470,7 +473,7 @@ export function ManagerDashboard() {
             {/* Card 2 (3 cols): Satisfaction Rate (Semi-circular Arc Gauge) */}
             <div className="lg:col-span-3 bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs hover-lift transition-all flex flex-col justify-between">
               <ArcGaugeChart
-                value={metrics?.occupancyRate || 13.73}
+                value={metrics?.occupancyRate ?? 0}
                 min={0}
                 max={100}
                 title={isEn ? 'Satisfaction Rate' : 'Tỷ lệ lấp đầy'}
@@ -482,16 +485,16 @@ export function ManagerDashboard() {
             {/* Card 3 (4 cols): Referral Tracking (Radial Progress Score) */}
             <div className="lg:col-span-4 bg-white dark:bg-slate-900 rounded-3xl p-4 border border-slate-200/90 dark:border-slate-800 shadow-xs hover-lift transition-all flex flex-col justify-between">
               <RadialScoreChart
-                score={Number((8.5 + Math.min(1.0, ((metrics?.occupancyRate || 0) / 100) * 1.0) + (topRoom?.booked ? 0.2 : 0)).toFixed(1))}
+                score={Number((Math.max(0, Math.min(100, metrics?.occupancyRate || 0)) / 10).toFixed(1))}
                 maxScore={10}
                 title={isEn ? 'Referral Tracking' : 'Hiệu suất sân bãi'}
                 subtitle={isEn ? 'Facility tracking' : 'Chỉ số tải cơ sở'}
                 stat1Label={isEn ? 'Visitors' : 'Khách tiếp nhận'}
-                stat1Val={`${topRoom?.booked || 23} lượt`}
+                stat1Val={`${topRoom?.booked ?? 0} lượt`}
                 stat2Label={isEn ? 'Sessions' : 'Ca đã chạy'}
-                stat2Val={`${topRoom?.sessionsCount || 10} ca`}
-                scoreLabel={isEn ? 'Safety' : 'Điểm tải'}
-                scoreSub={isEn ? 'Total score' : 'Tổng điểm'}
+                stat2Val={`${topRoom?.sessionsCount ?? 0} ca`}
+                scoreLabel={isEn ? 'Utilization' : 'Khai thác'}
+                scoreSub={isEn ? 'From actual occupancy' : 'Từ dữ liệu lấp đầy'}
               />
             </div>
           </div>
@@ -508,15 +511,15 @@ export function ManagerDashboard() {
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {isEn
-                      ? '(+12%) more in 2026 · Smooth cashflow trajectory'
-                      : '(+12%) tăng trưởng dòng tiền thực nhận theo thời gian.'}
+                      ? `${growthLabel(metrics?.revenueGrowth)} net revenue vs previous period`
+                      : `${growthLabel(metrics?.revenueGrowth)} doanh thu thuần so với kỳ trước`}
                   </p>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700">
                   Daily Wave
                 </span>
               </div>
-              <VisionSalesOverviewChart data={revenue} groupBy="day" />
+              <VisionSalesOverviewChart data={revenue} groupBy="day" growth={metrics?.revenueGrowth} />
             </section>
 
             {/* Right Card (5 cols): Active Users Bar Chart + 4 Stat Pills */}
@@ -529,8 +532,8 @@ export function ManagerDashboard() {
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                     {isEn
-                      ? '(+23) than last week · Core operational pillars'
-                      : '(+23) lượt tương tác học viên và 4 chỉ số vận hành cốt lõi.'}
+                      ? 'Actual activity and four core operational indicators.'
+                      : 'Dữ liệu hoạt động thực tế và 4 chỉ số vận hành cốt lõi.'}
                   </p>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 text-[11px] font-bold border border-emerald-200 dark:border-emerald-800">
@@ -539,10 +542,11 @@ export function ManagerDashboard() {
               </div>
               <VisionActiveUsersChart
                 data={membership}
-                totalUsers={metrics?.totalMembers || 22}
-                totalBookings={metrics?.totalBookings || 68}
-                netSales={metrics?.netRevenue || 20700000}
-                totalSessions={metrics?.totalClasses || 28}
+                totalUsers={metrics?.totalMembers ?? 0}
+                totalBookings={metrics?.totalBookings ?? 0}
+                netSales={metrics?.netRevenue ?? 0}
+                totalSessions={metrics?.totalSessions ?? 0}
+                growth={metrics?.memberGrowth}
               />
             </section>
           </div>
@@ -558,7 +562,7 @@ export function ManagerDashboard() {
                     {isEn ? 'Projects' : 'Danh Sách Lớp Học (Projects)'}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                    <strong className="text-emerald-600 dark:text-emerald-400 font-bold">✓ {topClasses.length || 7} {isEn ? 'done this month' : 'lớp đang hoạt động'}</strong> {isEn ? 'in center catalog' : 'trong hệ thống trung tâm'}
+                    <strong className="text-emerald-600 dark:text-emerald-400 font-bold">✓ {topClasses.length} {isEn ? 'classes in period' : 'lớp trong kỳ'}</strong> {isEn ? 'from report data' : 'theo dữ liệu báo cáo'}
                   </p>
                 </div>
 
@@ -669,7 +673,7 @@ export function ManagerDashboard() {
                       {isEn ? 'Orders overview' : 'Nhật Ký Thao Tác (Orders)'}
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-                      <strong className="text-emerald-600 dark:text-emerald-400 font-bold">+30% {isEn ? 'this month' : 'tháng này'}</strong> · {isEn ? 'Live activity' : 'Thời gian thực'}
+                      <strong className="text-emerald-600 dark:text-emerald-400 font-bold">{logs.length} {isEn ? 'recent events' : 'sự kiện gần nhất'}</strong> · {isEn ? 'Live activity' : 'Thời gian thực'}
                     </p>
                   </div>
                 </div>
