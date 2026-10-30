@@ -4,7 +4,7 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useNotifications } from './useNotifications.js';
 import { formatMemberDateTime } from '../../features/member/memberOverview.js';
 import { translateNotificationTitle, translateNotificationContent } from '../../services/i18nHelper.js';
-import { notificationTarget } from './notificationNavigation.js';
+import { notificationTarget, getNotificationActionLabel } from './notificationNavigation.js';
 
 export function NotificationInbox() {
   const [open, setOpen] = useState(false);
@@ -43,7 +43,12 @@ export function NotificationInbox() {
     const target = notificationTarget(item, role);
     if (target) {
       setOpen(false);
-      window.location.hash = target;
+      if (window.location.hash === target) {
+        window.dispatchEvent(new HashChangeEvent('hashchange'));
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        window.location.hash = target;
+      }
     }
   };
 
@@ -129,8 +134,8 @@ export function NotificationInbox() {
                     {formatMemberDateTime ? formatMemberDateTime(item.createdAt, isEn) : new Date(item.createdAt).toLocaleString(isEn ? 'en-US' : 'vi-VN')} · {item.isRead ? (isEn ? 'Read' : 'Đã đọc') : (isEn ? 'Unread' : 'Chưa đọc')}
                   </span>
                   {notificationTarget(item, role) && (
-                    <span className="block mt-2 text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A]">
-                      {isEn ? 'Open conversation & reply →' : 'Mở cuộc trò chuyện & trả lời →'}
+                    <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A] hover:underline">
+                      {getNotificationActionLabel(item, role, isEn)}
                     </span>
                   )}
                 </button>

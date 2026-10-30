@@ -3,7 +3,7 @@ import { formatMemberDateTime } from '../../../features/member/memberOverview.js
 import { useLanguage } from '../../../app/providers/LanguageContext.jsx';
 import { translateNotificationTitle, translateNotificationContent } from '../../../services/i18nHelper.js';
 import { useAuth } from '../../../app/providers/AuthContext.jsx';
-import { notificationTarget } from './notificationNavigation.js';
+import { notificationTarget, getNotificationActionLabel } from './notificationNavigation.js';
 
 export function NotificationList({ notifications, title }) {
   const { role } = useAuth();
@@ -153,7 +153,7 @@ export function NotificationList({ notifications, title }) {
               </time>
               {notificationTarget(item, role) && (
                 <a href={notificationTarget(item, role)} onClick={() => markRead(item)} className="font-bold text-[#2D6A4F] hover:underline">
-                  {isEn ? 'Open conversation & reply' : 'Mở cuộc trò chuyện & trả lời'}
+                  {getNotificationActionLabel(item, role, isEn)}
                 </a>
               )}
               {!item.isRead && (
