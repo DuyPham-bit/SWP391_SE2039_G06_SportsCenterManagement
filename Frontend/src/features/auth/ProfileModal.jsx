@@ -1,4 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { createPortal } from 'react-dom';
+import { authApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
@@ -105,6 +107,54 @@ export function ProfileModal({ isOpen, onClose }) {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [savingPassword, setSavingPassword] = useState(false);
 
+  // OTP Verification for Password Change
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpCode, setOtpCode] = useState('');
+  const [otpError, setOtpError] = useState('');
+  const [isVerifyingOtp, setIsVerifyingOtp] = useState(false);
+  const [isVerifiedOtp, setIsVerifiedOtp] = useState(false);
+  const [shakeKey, setShakeKey] = useState(0);
+  const [resendSeconds, setResendSeconds] = useState(0);
+
+  // Reset OTP state when modal closes
+  useEffect(() => {
+    if (!isOpen) {
+      setShowOtpModal(false);
+      setOtpCode('');
+      setOtpError('');
+      setIsVerifyingOtp(false);
+      setIsVerifiedOtp(false);
+      setShakeKey(0);
+      setResendSeconds(0);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    }
+  }, [isOpen]);
+
+  // Resend cooldown countdown
+  useEffect(() => {
+    if (resendSeconds <= 0) return;
+    const interval = setInterval(() => {
+      setResendSeconds((prev) => (prev > 0 ? prev - 1 : 0));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, [resendSeconds]);
+
+  // Auto focus OTP input when modal opens
+  useEffect(() => {
+    if (showOtpModal) {
+      const focusOtp = () => document.getElementById('profile-change-pwd-otp')?.focus();
+      focusOtp();
+      const frame = requestAnimationFrame(focusOtp);
+      const timer = setTimeout(focusOtp, 60);
+      return () => {
+        cancelAnimationFrame(frame);
+        clearTimeout(timer);
+      };
+    }
+  }, [showOtpModal]);
+
   const handleUpdateProfile = async (e) => {
     e.preventDefault();
     if (!fullName.trim()) {
@@ -141,23 +191,116 @@ export function ProfileModal({ isOpen, onClose }) {
       showError(isEn ? 'New password must be at least 6 characters!' : 'Mật khẩu mới phải có tối thiểu 6 ký tự!');
       return;
     }
+    if (newPassword === currentPassword) {
+      showError(isEn ? 'New password must be different from current password!' : 'Mật khẩu mới không được trùng với mật khẩu hiện tại!');
+      return;
+    }
     if (newPassword !== confirmPassword) {
       showError(isEn ? 'Password confirmation does not match!' : 'Mật khẩu xác nhận không khớp!');
+      return;
+    }
+    if (!currentUser?.email) {
+      showError(isEn ? 'Your account does not have an associated email for verification!' : 'Tài khoản chưa có email để gửi mã xác thực!');
       return;
     }
 
     setSavingPassword(true);
     try {
-      await changePassword(currentPassword, newPassword);
-      showSuccess(isEn ? 'Password changed successfully! New credentials are now active.' : 'Đổi mật khẩu thành công! Mật khẩu mới đã được cập nhật.');
-      setCurrentPassword('');
-      setNewPassword('');
-      setConfirmPassword('');
-      setActiveTab('profile');
+      await authApi.requestChangePasswordOtp(currentPassword, newPassword);
+      setOtpCode('');
+      setOtpError('');
+      setResendSeconds(60);
+      setShowOtpModal(true);
+      showSuccess(
+        isEn
+          ? 'Verification code has been sent to your email. Please check your inbox.'
+          : 'Mã xác thực đã được gửi tới email của bạn. Vui lòng kiểm tra hộp thư.'
+      );
     } catch (err) {
-      showError(err.message || (isEn ? 'Failed to change password!' : 'Đổi mật khẩu thất bại!'));
+      showError(err.message || (isEn ? 'Failed to send verification code!' : 'Không thể gửi mã xác thực qua email!'));
     } finally {
       setSavingPassword(false);
+    }
+  };
+
+  const handleFinishAndProceed = () => {
+    setShowOtpModal(false);
+    setIsVerifiedOtp(false);
+    setShakeKey(0);
+    setCurrentPassword('');
+    setNewPassword('');
+    setConfirmPassword('');
+    setOtpCode('');
+    setOtpError('');
+    setActiveTab('profile');
+  };
+
+  const handleVerifyOtpAndChangePassword = async (codeToVerify) => {
+    if (isVerifyingOtp || isVerifiedOtp) return;
+    const code = (codeToVerify || otpCode).trim();
+    if (!code || code.length !== 6) {
+      setOtpError(isEn ? 'Please enter a valid 6-digit code.' : 'Vui lòng nhập đủ 6 chữ số mã xác thực.');
+      setShakeKey((prev) => prev + 1);
+      return;
+    }
+
+    setIsVerifyingOtp(true);
+    setOtpError('');
+    try {
+      await changePassword(currentPassword, newPassword, code);
+      setIsVerifiedOtp(true);
+      showSuccess(
+        isEn
+          ? 'Password changed successfully! New credentials are now active.'
+          : 'Đổi mật khẩu thành công! Mật khẩu mới đã được cập nhật.'
+      );
+
+      // Báo thành công xong khoảng 1.4s rồi mới chuyển vào trong
+      setTimeout(() => {
+        handleFinishAndProceed();
+      }, 1400);
+    } catch (err) {
+      const msg = err.message || (isEn ? "That code didn't match. Please enter again." : "Mã xác thực không chính xác. Vui lòng nhập lại.");
+      setOtpError(msg);
+      setShakeKey((prev) => prev + 1);
+
+      // Báo đỏ xong sau 500ms xóa mã và tự động focus để bắt người dùng nhập lại từ đầu
+      setTimeout(() => {
+        setOtpCode('');
+        const inputEl = document.getElementById('profile-change-pwd-otp');
+        if (inputEl) {
+          inputEl.focus();
+        }
+      }, 500);
+    } finally {
+      setIsVerifyingOtp(false);
+    }
+  };
+
+  const handleResendOtp = async () => {
+    if (resendSeconds > 0 || isVerifyingOtp) return;
+    try {
+      await authApi.requestChangePasswordOtp(currentPassword, newPassword);
+      setResendSeconds(60);
+      setOtpCode('');
+      setOtpError('');
+      showSuccess(
+        isEn
+          ? 'A new verification code has been sent to your email.'
+          : 'Đã gửi lại mã xác thực mới tới email của bạn.'
+      );
+    } catch (err) {
+      setOtpError(err.message || (isEn ? 'Failed to resend code.' : 'Không thể gửi lại mã xác thực.'));
+    }
+  };
+
+  const handleOtpInput = (val) => {
+    if (isVerifyingOtp || isVerifiedOtp) return;
+    const clean = val.replace(/[^0-9]/g, '').slice(0, 6);
+    setOtpCode(clean);
+    if (otpError) setOtpError('');
+    if (clean.length === 6) {
+      handleVerifyOtpAndChangePassword(clean);
     }
   };
 
@@ -493,12 +636,236 @@ export function ProfileModal({ isOpen, onClose }) {
               disabled={savingPassword}
               className="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-lg bg-[#1E2235] hover:bg-[#2B2D42] text-[#F2CC8F] hover:text-white shadow-md transition-colors cursor-pointer"
             >
-              {savingPassword ? (isEn ? 'Updating...' : 'Đang cập nhật...') : (isEn ? 'Change Password' : 'Đổi Mật Khẩu')}
+              {savingPassword ? (isEn ? 'Sending code...' : 'Đang gửi mã...') : (isEn ? 'Change Password' : 'Đổi Mật Khẩu')}
             </button>
           </div>
         </form>
       )}
       <GoogleLoginModal isOpen={googleOpen && isOpen} onClose={() => setGoogleOpen(false)} linkAccount />
+
+      {/* Modal Xác thực OTP bảo mật - Đồng bộ 100% giao diện với Đăng ký */}
+      {showOtpModal && typeof document !== 'undefined' && createPortal(
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-slate-950/70 backdrop-blur-md transition-all duration-300"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="profile-otp-dialog-title"
+          onClick={(e) => {
+            if (e.target === e.currentTarget && !isVerifyingOtp) {
+              if (isVerifiedOtp) {
+                handleFinishAndProceed();
+              } else {
+                setShowOtpModal(false);
+              }
+            }
+          }}
+        >
+          {/* Modal Card - Thiết kế chuẩn Card bo 36px và bóng tím mờ */}
+          <div
+            className="relative w-full max-w-[420px] bg-white rounded-[36px] shadow-[0_25px_70px_-15px_rgba(99,102,241,0.2),0_0_0_1px_rgba(238,242,255,0.8)] border border-slate-100/90 p-7 sm:p-9 text-center transition-all duration-300 overflow-hidden animate-scaleUp"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Nút đóng góc phải */}
+            <button
+              type="button"
+              disabled={isVerifyingOtp}
+              onClick={isVerifiedOtp ? handleFinishAndProceed : () => setShowOtpModal(false)}
+              aria-label="Đóng bảng xác thực"
+              className="absolute top-5 right-5 w-8 h-8 rounded-full bg-slate-50 hover:bg-slate-100 text-slate-400 hover:text-slate-600 flex items-center justify-center transition-all hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4f46e5] z-10 cursor-pointer disabled:opacity-50"
+            >
+              <span className="text-sm font-bold">✕</span>
+            </button>
+
+            {/* Top Badge: Ổ khóa tím hoặc Tích xanh thành công */}
+            {isVerifiedOtp ? (
+              <div className="relative mx-auto mb-4 w-20 h-20 flex items-center justify-center">
+                <div className="w-18 h-18 rounded-full bg-[#10b981] flex items-center justify-center shadow-lg shadow-emerald-500/30 ring-[8px] ring-emerald-100/80 transition-transform duration-300 scale-105">
+                  <svg className="w-9 h-9 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                </div>
+              </div>
+            ) : (
+              <div className="relative mx-auto mb-4 w-20 h-20 flex items-center justify-center">
+                <div className={`relative w-18 h-18 rounded-full ${otpError ? 'bg-rose-50' : 'bg-[#f4f3ff]'} flex items-center justify-center shadow-inner transition-colors duration-200`}>
+                  {/* Vòng cung viền tiến trình phía trên */}
+                  <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 72 72">
+                    <circle
+                      cx="36"
+                      cy="36"
+                      r="34"
+                      fill="none"
+                      stroke={otpError ? "#f87171" : "#4f46e5"}
+                      strokeWidth="2.2"
+                      strokeDasharray="213"
+                      strokeDashoffset="145"
+                      strokeLinecap="round"
+                    />
+                  </svg>
+                  <svg className={`w-7 h-7 ${otpError ? 'text-rose-500' : 'text-[#4f46e5]'}`} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="3" ry="3" />
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                    <circle cx="12" cy="16" r="1.2" fill="currentColor" />
+                  </svg>
+                </div>
+              </div>
+            )}
+
+            {/* Tiêu đề & Email gửi tới */}
+            <h3 id="profile-otp-dialog-title" className={`text-2xl sm:text-[26px] font-black tracking-tight ${isVerifiedOtp ? 'text-emerald-600' : 'text-gray-900'}`}>
+              {isVerifiedOtp ? (isEn ? "You're verified!" : "Xác thực thành công!") : "Verify it's you"}
+            </h3>
+            <p role="status" className="text-xs sm:text-sm text-gray-500 mt-2 mb-6 leading-relaxed font-normal">
+              {isVerifiedOtp ? (
+                <span className="font-semibold text-emerald-700">
+                  {isEn ? "Password updated successfully! Redirecting..." : "Mật khẩu đã được cập nhật thành công! Đang chuyển hướng..."}
+                </span>
+              ) : (
+                <>
+                  {isEn ? 'Enter the 6-digit code we just sent to' : 'Nhập mã gồm 6 chữ số đã được gửi tới'} <br />
+                  <strong className="font-bold text-gray-900">{currentUser?.email}</strong>
+                </>
+              )}
+            </p>
+
+            {/* Khối 6 Ô nhập OTP (có hiệu ứng rung khi sai mã) */}
+            <div className={`relative my-4 ${shakeKey ? 'animate-otp-shake' : ''}`} key={shakeKey}>
+              {/* Input ẩn nhận focus, bàn phím và Paste từ clipboard */}
+              <input
+                id="profile-change-pwd-otp"
+                name="profile-change-pwd-otp"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                maxLength={6}
+                pattern="[0-9]{6}"
+                placeholder="Nhập 6 chữ số"
+                required
+                autoFocus
+                disabled={isVerifyingOtp || isVerifiedOtp}
+                value={otpCode}
+                aria-invalid={Boolean(otpError)}
+                aria-describedby={otpError ? 'profile-otp-error' : undefined}
+                onChange={(e) => handleOtpInput(e.target.value)}
+                className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer text-center"
+              />
+
+              {/* 6 Ô hiển thị bo góc và thanh gạch chân */}
+              <div className="flex items-center justify-between gap-2 sm:gap-2.5 w-full">
+                {[0, 1, 2, 3, 4, 5].map((index) => {
+                  const digit = otpCode[index] || '';
+                  const isCurrent = otpCode.length === index;
+                  const isFilled = Boolean(digit);
+                  const isError = Boolean(otpError);
+
+                  let boxClass = 'bg-white border-2 border-[#3730a3] text-gray-900';
+                  let underlineClass = 'bg-[#3730a3]';
+
+                  if (isVerifiedOtp) {
+                    boxClass = 'bg-[#10b981] border-2 border-[#10b981] text-white shadow-md shadow-emerald-500/25 scale-[1.02]';
+                    underlineClass = 'opacity-0';
+                  } else if (isError) {
+                    boxClass = 'bg-rose-50/50 border-2 border-[#f87171] text-[#dc2626] shadow-xs';
+                    underlineClass = 'bg-[#dc2626]';
+                  } else if (isCurrent) {
+                    boxClass = 'bg-white border-2 border-[#4f46e5] text-gray-900 ring-4 ring-indigo-500/20 shadow-sm scale-[1.04]';
+                    underlineClass = 'bg-[#4f46e5]';
+                  } else if (isFilled) {
+                    boxClass = 'bg-white border-2 border-[#3730a3] text-gray-900 shadow-xs';
+                    underlineClass = 'bg-[#3730a3]';
+                  }
+
+                  return (
+                    <div key={index} className="flex flex-col items-center flex-1">
+                      <div
+                        className={`w-full h-[64px] sm:h-[70px] rounded-[20px] flex items-center justify-center text-2xl sm:text-3xl font-extrabold transition-all duration-150 select-none ${boxClass}`}
+                      >
+                        {digit ? (
+                          digit
+                        ) : isCurrent && !isVerifiedOtp ? (
+                          <span className="w-0.5 h-6 bg-[#4f46e5] animate-pulse rounded-full" />
+                        ) : null}
+                      </div>
+
+                      {/* Thanh gạch chân (Underline Bar) */}
+                      <div className={`w-5 h-[2.5px] rounded-full mt-2 transition-all duration-200 ${underlineClass}`} />
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Thông báo lỗi dạng pill đỏ */}
+            {otpError && !isVerifiedOtp && (
+              <div id="profile-otp-error" role="alert" className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-semibold text-rose-600 mt-2 mb-3 animate-fade-slide-up">
+                <svg className="w-4 h-4 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
+                  <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z" clipRule="evenodd" />
+                </svg>
+                <span>{otpError}</span>
+              </div>
+            )}
+
+            {/* Nút xác thực chính */}
+            <div className="mt-4 mb-2">
+              {isVerifiedOtp ? (
+                <button
+                  type="button"
+                  onClick={handleFinishAndProceed}
+                  className="w-full h-12 sm:h-13 rounded-2xl font-bold text-white bg-[#10b981] hover:bg-[#059669] shadow-lg shadow-emerald-500/30 flex items-center justify-center gap-2 transition-all cursor-pointer text-base"
+                >
+                  <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                    <polyline points="20 6 9 17 4 12" />
+                  </svg>
+                  <span>{isEn ? 'Completed' : 'Hoàn tất ✓'}</span>
+                </button>
+              ) : isVerifyingOtp ? (
+                <button
+                  type="button"
+                  disabled
+                  className="w-full h-12 sm:h-13 rounded-2xl font-bold text-white bg-[#4f46e5] opacity-95 shadow-lg shadow-indigo-500/25 flex items-center justify-center gap-2 cursor-wait"
+                >
+                  <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  <span className="tracking-wide">{isEn ? 'Verifying...' : 'Đang xác thực...'}</span>
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  disabled={otpCode.length !== 6 || isVerifyingOtp}
+                  onClick={() => handleVerifyOtpAndChangePassword(otpCode)}
+                  className="w-full h-12 sm:h-13 rounded-2xl font-bold text-white bg-[#4f46e5] hover:bg-[#4338ca] disabled:opacity-50 disabled:hover:bg-[#4f46e5] shadow-lg shadow-indigo-500/25 flex items-center justify-center transition-all active:scale-[0.98] cursor-pointer"
+                >
+                  <span>{isEn ? 'Verify code' : 'Xác thực & Đổi mật khẩu'}</span>
+                </button>
+              )}
+            </div>
+
+            {/* Dòng gửi lại mã ở chân modal */}
+            {!isVerifiedOtp && (
+              <div className="mt-3 text-xs sm:text-[13px] text-gray-500 flex items-center justify-center gap-1.5">
+                <span>{isEn ? "Didn't get a code?" : "Chưa nhận được mã?"}</span>
+                {resendSeconds > 0 ? (
+                  <span className="inline-flex items-center gap-1 font-medium text-gray-700">
+                    <svg className="w-3.5 h-3.5 text-indigo-600 animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+                      <path d="M21 12a9 9 0 1 1-6.219-8.56" />
+                    </svg>
+                    <span>Resend in 0:{resendSeconds < 10 ? `0${resendSeconds}` : resendSeconds}</span>
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={isVerifyingOtp}
+                    onClick={handleResendOtp}
+                    className="font-bold text-[#4f46e5] hover:underline cursor-pointer focus:outline-none"
+                  >
+                    {isEn ? 'Resend now' : 'Gửi lại ngay'}
+                  </button>
+                )}
+              </div>
+            )}
+          </div>
+        </div>,
+        document.body
+      )}
     </Modal>
   );
 }

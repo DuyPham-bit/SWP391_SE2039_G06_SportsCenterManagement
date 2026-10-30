@@ -284,11 +284,22 @@ export const authApi = {
     return true;
   },
 
-  async changePassword(_userId, currentPassword, newPassword) {
+  async requestChangePasswordOtp(currentPassword, newPassword = null, { signal } = {}) {
+    return apiRequest('auth/request-change-password-otp', {
+      method: 'POST',
+      signal,
+      body: {
+        currentPassword,
+        newPassword
+      }
+    });
+  },
+
+  async changePassword(_userId, currentPassword, newPassword, emailOtp = null) {
     const version = beginAuthOperation();
     const result = await apiRequest('auth/change-password', {
       method: 'POST',
-      body: { currentPassword, newPassword }
+      body: { currentPassword, newPassword, emailOtp: emailOtp ? emailOtp.trim() : null }
     });
     assertAuthVersion(version);
     setApiToken(result.accessToken);

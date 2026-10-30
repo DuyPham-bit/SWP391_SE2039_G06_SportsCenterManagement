@@ -1,0 +1,143 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import { authApi } from '../../services/api.js';
+import { getApiToken } from '../../services/http.js';
+import { assertAuthUser, getAuthVersion } from '../../services/authState.js';
+
+const AuthContext = createContext(null);
+
+export function AuthProvider({ children }) {
+  const [currentUser, setCurrentUser] = useState(null);
+
+  const [loading, setLoading] = useState(false);
+  const [initializing, setInitializing] = useState(() => Boolean(getApiToken()));
+  const [initializationError, setInitializationError] = useState('');
+
+  const applyUser = user => {
+    assertAuthUser(user);
+    setCurrentUser(user);
+    return user;
+  };
+
+  useEffect(() => {
+    let active = true;
+    if (!getApiToken()) { setInitializing(false); return; }
+    const version = getAuthVersion();
+    authApi.getCurrentUser().then(user => {
+      if (active) applyUser(user);
+    }).catch(error => {
+      if (!active || version !== getAuthVersion()) return;
+      setCurrentUser(null);
+      if (error.status !== 401) setInitializationError(error.message);
+    }).finally(() => { if (active) setInitializing(false); });
+    return () => { active = false; };
+  }, []);
+
+  useEffect(() => {
+    const handleExpiredToken = () => setCurrentUser(null);
+    window.addEventListener('scms:auth-expired', handleExpiredToken);
+    return () => window.removeEventListener('scms:auth-expired', handleExpiredToken);
+  }, []);
+
+  const refreshUser = async () => {
+    if (!currentUser) return;
+    const fresh = await authApi.getCurrentUser();
+    return applyUser(fresh);
+  };
+
+  const login = async (email, password) => {
+    setLoading(true);
+    try {
+      const res = await authApi.login(email, password);
+      return applyUser(res.user);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const register = async (userData) => {
+    setLoading(true);
+    try {
+      const newUser = await authApi.register(userData);
+      return applyUser(newUser);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loginWithGoogle = async (googleUser) => {
+    setLoading(true);
+    try {
+      const res = await authApi.loginWithGoogle(googleUser);
+      return applyUser(res.user);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const logout = () => {
+    authApi.logout();
+    setCurrentUser(null);
+  };
+
+  const updateProfile = async (profileData) => {
+    if (!currentUser) return;
+    const updated = await authApi.updateProfile(currentUser.id, profileData);
+    return applyUser(updated);
+  };
+
+  const updateAvatar = async (avatarUrl) => {
+    if (!currentUser) return;
+    const updated = await authApi.updateAvatar(currentUser.id, avatarUrl);
+    return applyUser(updated);
+  };
+
+  useEffect(() => {
+    const handleAvatarChange = (e) => {
+      const { userId, avatar } = e.detail || {};
+      if (currentUser && Number(userId) === Number(currentUser.id)) {
+        if (currentUser.avatar !== avatar) {
+          setCurrentUser(prev => prev ? { ...prev, avatar: avatar || null } : prev);
+        }
+      }
+    };
+    window.addEventListener('scms:avatar-changed', handleAvatarChange);
+    return () => window.removeEventListener('scms:avatar-changed', handleAvatarChange);
+  }, [currentUser?.id, currentUser?.avatar]);
+
+  const changePassword = async (currentPassword, newPassword, emailOtp = null) => {
+    if (!currentUser) return;
+    const updated = await authApi.changePassword(currentUser.id, currentPassword, newPassword, emailOtp);
+    return applyUser(updated);
+  };
+
+  const value = {
+    currentUser,
+    role: currentUser?.role || null,
+    isAuthenticated: Boolean(currentUser),
+    loading,
+    initializing,
+    initializationError,
+    login,
+    loginWithGoogle,
+    register,
+    logout,
+    updateProfile,
+    updateAvatar,
+    changePassword,
+    refreshUser
+  };
+
+  return (
+    <AuthContext.Provider value={value}>
+      {children}
+    </AuthContext.Provider>
+  );
+}
+
+export function useAuth() {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+}

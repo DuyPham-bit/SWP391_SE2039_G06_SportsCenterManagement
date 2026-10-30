@@ -17,7 +17,7 @@ test('coach dashboard persists quick progress and attendance through the real AP
 });
 
 test('backend roster and attendance honor replacement coach and active class enrollment', () => {
-  const controller = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.API/Controllers/BookingOperationsController.cs'), 'utf8');
+  const controller = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Controllers/BookingOperationsController.cs'), 'utf8');
   assert.match(controller, /s\.CoachId == coach\.Id/);
   assert.match(controller, /s\.CoachId == null/);
   assert.match(controller, /db\.ClassEnrollments\.Any/);
@@ -25,7 +25,7 @@ test('backend roster and attendance honor replacement coach and active class enr
 });
 
 test('session progress is upserted and overnight completion uses the Vietnam session end', () => {
-  const service = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.BLL/Services/TrainingService.cs'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/TrainingService.cs'), 'utf8');
   assert.match(service, /SessionEndVietnam\(session\.SessionDate, session\.StartTime, session\.EndTime\)/);
   assert.match(service, /r\.SessionId == request\.SessionId && r\.MemberId == request\.MemberId/);
   assert.match(service, /TRAINING_PROGRESS_UPDATED/);

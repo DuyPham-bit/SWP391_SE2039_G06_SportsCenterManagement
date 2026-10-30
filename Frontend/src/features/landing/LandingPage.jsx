@@ -525,7 +525,7 @@ export function LandingPage() {
     const normalized = String(role || '').toUpperCase();
     switch (normalized) {
       case 'SYSTEMADMIN':
-      case 'ADMIN':
+      case 'ADMIN': return '#/admin/dashboard';
       case 'MANAGER': return '#/manager/dashboard';
       case 'RECEPTIONIST': return '#/receptionist/dashboard';
       case 'COACH': return '#/coach/dashboard';

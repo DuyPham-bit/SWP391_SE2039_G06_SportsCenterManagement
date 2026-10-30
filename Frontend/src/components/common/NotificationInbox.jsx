@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useNotifications } from './useNotifications.js';
 import { formatMemberDateTime } from '../../features/member/memberOverview.js';

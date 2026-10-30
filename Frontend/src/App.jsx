@@ -1,14 +1,14 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { AuthProvider, useAuth } from './context/AuthContext.jsx';
-import { ToastProvider } from './context/ToastContext.jsx';
-import { LanguageProvider } from './context/LanguageContext.jsx';
-import { ProtectedRoute, RoleGuard } from './components/auth/RoleGuard.jsx';
-import { AppLayout } from './components/layout/AppLayout.jsx';
+import { useAuth } from './app/providers/AuthContext.jsx';
+
+
+import { ProtectedRoute, RoleGuard } from './shared/components/auth/RoleGuard.jsx';
+import { AppLayout } from './layouts/AppLayout.jsx';
 
 // Public & Auth Pages (Lazy Loaded)
 const LandingPage = lazy(() => import('./features/landing/LandingPage.js').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('./features/auth/LoginPage.js').then(m => ({ default: m.LoginPage })));
-const OtpVerification = lazy(() => import('./components/common/OtpVerification.jsx'));
+const OtpVerification = lazy(() => import('./shared/components/common/OtpVerification.jsx'));
 
 // Manager Pages (Lazy Loaded)
 const ManagerDashboard = lazy(() => import('./features/manager/ManagerDashboard.js').then(m => ({ default: m.ManagerDashboard })));
@@ -159,7 +159,7 @@ function AppRouter() {
   const renderAdminRoute = (Component, props = {}) => (
     <AppLayout currentPath={path}>
       <ProtectedRoute>
-        <RoleGuard allowedRoles={['ADMIN']}>
+        <RoleGuard allowedRoles={['ADMIN', 'SYSTEMADMIN']}>
           <Component {...props} />
         </RoleGuard>
       </ProtectedRoute>
@@ -198,6 +198,10 @@ function AppRouter() {
 
       // ADMIN ROUTES: global administration only.
       case '#/admin':
+        if (typeof window !== 'undefined' && window.location.hash === '#/admin') {
+          window.location.replace('#/admin/dashboard');
+        }
+        return renderAdminRoute(AdminDashboard);
       case '#/admin/dashboard':
         return renderAdminRoute(AdminDashboard);
       case '#/admin/centers':
@@ -368,14 +372,8 @@ function AppRouter() {
   );
 }
 
-export default function App() {
-  return (
-    <LanguageProvider>
-      <ToastProvider>
-        <AuthProvider>
-          <AppRouter />
-        </AuthProvider>
-      </ToastProvider>
-    </LanguageProvider>
-  );
-}
+
+export default AppRouter;
+export { AppRouter };
+
+export { default } from './app/App.jsx';

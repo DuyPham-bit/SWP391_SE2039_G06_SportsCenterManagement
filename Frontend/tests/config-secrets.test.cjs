@@ -4,7 +4,7 @@ const path = require('node:path');
 const { test } = require('node:test');
 
 const root = path.resolve(__dirname, '../..');
-const api = 'Backend/Backend/SportsCenterManagement.API';
+const api = 'Backend/SportsCenterManagement.API';
 
 test('tracked API configuration contains no private credentials or connection strings', () => {
   const privateFields = /^(password|key|secretkey|hashsecret|accesskey|apikey|clientsecret|refreshtoken|bearertoken|secret|checksumkey)$/i;
@@ -24,7 +24,7 @@ test('tracked API configuration contains no private credentials or connection st
 });
 
 test('tracked service-account templates have no signing key and local credentials cannot be published', () => {
-  for (const file of [`${api}/credentials.json`, 'Backend/Backend/credentials.json']) {
+  for (const file of [`${api}/credentials.json`, 'Backend/credentials.json']) {
     const credential = JSON.parse(fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, ''));
     assert.ok(!credential.private_key && !credential.private_key_id, `${file} contains private signing material`);
   }

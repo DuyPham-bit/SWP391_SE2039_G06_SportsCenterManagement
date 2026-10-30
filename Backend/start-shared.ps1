@@ -14,8 +14,8 @@ $projectRoot = if (Test-Path (Join-Path $PSScriptRoot 'Frontend')) {
     [System.IO.Path]::GetFullPath((Split-Path $PSScriptRoot -Parent))
 }
 $frontendRoot = Join-Path $projectRoot 'Frontend'
-$apiProject = Join-Path $projectRoot 'Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj'
-$webOutput = [System.IO.Path]::GetFullPath((Join-Path $projectRoot 'Backend/Backend/SportsCenterManagement.API/wwwroot'))
+$apiProject = Join-Path $projectRoot 'Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj'
+$webOutput = [System.IO.Path]::GetFullPath((Join-Path $projectRoot 'Backend/SportsCenterManagement.API/wwwroot'))
 if (-not $webOutput.StartsWith($projectRoot + [System.IO.Path]::DirectorySeparatorChar, [System.StringComparison]::OrdinalIgnoreCase)) {
     throw 'Frontend build output is outside the project.'
 }

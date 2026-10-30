@@ -7,11 +7,11 @@ Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai 
 
 ## Chạy local
 
-1. Cấu hình kết nối tới SQL Server đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/Backend/README.md](./Backend/Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mã seed dữ liệu nghiệp vụ đã được gỡ; ứng dụng chỉ đồng bộ schema/quyền, không tự tạo dữ liệu demo. Xem [kết nối DB thật](./Frontend/docs/real-database.md).
+1. Cấu hình kết nối tới SQL Server đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/README.md](./Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mã seed dữ liệu nghiệp vụ đã được gỡ; ứng dụng chỉ đồng bộ schema/quyền, không tự tạo dữ liệu demo. Xem [kết nối DB thật](./Frontend/docs/real-database.md).
 2. Chạy API từ thư mục workspace:
 
    ```powershell
-   dotnet run --project .\Backend\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
+   dotnet run --project .\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
    ```
 
    API dùng `http://localhost:3003` trong cấu hình launch profile; Vite proxy `/api` đến địa chỉ này.
@@ -46,11 +46,11 @@ Giáo án chung/cá nhân, tiến độ và thông báo HLV/hội viên đã n�
 
 Member và Coach có màn hình gửi/theo dõi yêu cầu hỗ trợ; Lễ tân/Manager tiếp nhận và phản hồi trong đúng trung tâm. Hộp thư có thao tác đọc tất cả. Gói đã thanh toán nhưng chưa đến ngày hiệu lực được hiển thị riêng với gói đang dùng.
 
-Nếu chạy giao diện nhúng trong backend, chạy `npm.cmd run build:api` từ `Frontend/` trước khi chạy/publish backend. Lệnh này tạo lại `Backend/Backend/SportsCenterManagement.API/wwwroot` từ source frontend và thay các bundle cũ, tránh tiếp tục phục vụ bản lưu Session trước đây. Giao diện chạy bằng Vite dùng source frontend trực tiếp.
+Nếu chạy giao diện nhúng trong backend, chạy `npm.cmd run build:api` từ `Frontend/` trước khi chạy/publish backend. Lệnh này tạo lại `Backend/SportsCenterManagement.API/wwwroot` từ source frontend và thay các bundle cũ, tránh tiếp tục phục vụ bản lưu Session trước đây. Giao diện chạy bằng Vite dùng source frontend trực tiếp.
 
 Google Login dùng ID token được xác minh ở backend. Chatbot/gợi ý giáo án cố định Gemini 3.5 Flash-Lite; API key đọc từ `AI:ApiKey` ở cấu hình backend. Khi thiếu cấu hình, API trả lỗi rõ ràng, không trả kết quả giả. Thanh toán online vẫn cần thông tin sandbox của cổng tương ứng. Member và Coach đã có giao diện/API gửi, theo dõi và bổ sung phản hồi yêu cầu hỗ trợ.
 
-Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](./Backend/Backend/docs/requirements/api-jwt-integration.md). Chi tiết Flow 2 trước đó: [flow2-delivery.md](./Backend/Backend/docs/requirements/flow2-delivery.md).
+Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](./Backend/docs/requirements/api-jwt-integration.md). Chi tiết Flow 2 trước đó: [flow2-delivery.md](./Backend/docs/requirements/flow2-delivery.md).
 
 ## Kiểm tra
 
@@ -60,5 +60,5 @@ Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](./Backend/Ba
 - Frontend regression: `npm test` trong `Frontend/`.
 - Quản lý nội dung trang chủ và media; kiểm thử Chrome: `npm.cmd run test:landing:browser` trong `Frontend/`.
 - Kiểm tra kết nối API thật và xử lý lỗi 500/proxy: [api-connection-fix.md](./Frontend/docs/api-connection-fix.md).
-- Backend: `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` từ `Backend/Backend/`.
+- Backend: `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` từ `Backend/`.
 - Bộ test backend đã được người dùng xóa ngày 16/10/2026; solution không còn tham chiếu project test. Các thay đổi hiện tại được kiểm chứng bằng HTTP/SQL Server riêng và Chrome; xem báo cáo trong tài liệu liên kết ở trên.

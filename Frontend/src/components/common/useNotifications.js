@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useAuth } from '../../context/AuthContext.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { notificationApi } from '../../services/api.js';
 
 export function useNotifications() {

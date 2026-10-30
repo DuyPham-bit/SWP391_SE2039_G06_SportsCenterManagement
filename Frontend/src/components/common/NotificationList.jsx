@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { formatMemberDateTime } from '../../features/member/memberOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { translateNotificationTitle, translateNotificationContent } from '../../services/i18nHelper.js';
-import { useAuth } from '../../context/AuthContext.js';
+import { useAuth } from '../../context/AuthContext.jsx';
 import { notificationTarget } from './notificationNavigation.js';
 
 export function NotificationList({ notifications, title }) {

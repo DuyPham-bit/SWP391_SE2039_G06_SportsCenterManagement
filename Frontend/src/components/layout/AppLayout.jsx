@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { Header } from './Header.js';
-import { Sidebar } from './Sidebar.js';
+import { Header } from './Header.jsx';
+import { Sidebar } from './Sidebar.jsx';
 import { ProfileModal } from '../../features/auth/ProfileModal.jsx';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';

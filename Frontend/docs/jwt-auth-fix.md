@@ -57,9 +57,9 @@ git diff --check
 Build và chạy API regression từ workspace root:
 
 ```powershell
-dotnet build --no-restore Backend/Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj
-$env:SCMS_TEST_WEB_ROOT = 'C:\Users\LENOVO\Downloads\New folder\Backend\Backend\SportsCenterManagement.API\wwwroot'
-dotnet run --no-build --no-restore --project Backend/Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj -- --sql --browser
+dotnet build --no-restore Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj
+$env:SCMS_TEST_WEB_ROOT = 'C:\Users\LENOVO\Downloads\New folder\Backend\SportsCenterManagement.API\wwwroot'
+dotnet run --no-build --no-restore --project Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj -- --sql --browser
 ```
 
 Bản frontend nhúng cho browser test ở API `wwwroot`, build với `VITE_GOOGLE_CLIENT_ID` rỗng và `VITE_API_BASE_URL=/api` trong môi trường tiến trình build. Report/ảnh ở `.validation/browser/`; log API ở `.validation/api-integration-runtime.log`.
