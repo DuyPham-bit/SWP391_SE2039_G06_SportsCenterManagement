@@ -1,3 +1,4 @@
+using SportsCenterManagement.BLL.Common;
 using Microsoft.EntityFrameworkCore;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
@@ -63,7 +64,7 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         {
             throw new ValidationException("Họ tên không được để trống.");
         }
-        if (request.DateOfBirth > DateOnly.FromDateTime(DateTime.UtcNow))
+        if (request.DateOfBirth > VietnamTime.Today)
         {
             throw new ValidationException("Ngày sinh không được ở tương lai.");
         }

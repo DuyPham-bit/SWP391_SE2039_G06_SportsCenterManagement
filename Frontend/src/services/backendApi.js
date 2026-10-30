@@ -175,9 +175,9 @@ function mapPackage(item) {
 
 function mapSession(item) {
   const date = String(item.sessionDate || '');
-  const parsedDate = date ? new Date(`${date}T12:00:00`) : null;
+  const parsedDate = date ? new Date(`${date}T12:00:00Z`) : null;
   const dayLabels = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-  const dayOfWeek = parsedDate && !Number.isNaN(parsedDate.valueOf()) ? dayLabels[parsedDate.getDay()] : '';
+  const dayOfWeek = parsedDate && !Number.isNaN(parsedDate.valueOf()) ? dayLabels[parsedDate.getUTCDay()] : '';
   return {
     id: item.sessionId,
     sessionId: item.sessionId,
@@ -452,7 +452,7 @@ export const staffApi = {
         method: 'POST', body: {
           memberId: Number(staffData.memberId),
           roleName: String(staffData.role).toUpperCase() === 'COACH' ? 'Coach' : 'Receptionist',
-          hireDate: staffData.hireDate || new Date().toISOString().slice(0, 10),
+          hireDate: staffData.hireDate || new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10),
           specialization: staffData.specialty?.trim() || null,
           certification: staffData.certification?.trim() || null,
           experienceYears: staffData.experienceYears != null && staffData.experienceYears !== '' ? Number(staffData.experienceYears) : null,
@@ -477,7 +477,7 @@ export const staffApi = {
         fullName: staffData.fullName.trim(),
         roleName: roleCapitalized,
         phone: staffData.phone?.trim() || null,
-        hireDate: staffData.hireDate || new Date().toISOString().slice(0, 10),
+        hireDate: staffData.hireDate || new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10),
         specialization: staffData.specialty?.trim() || null,
         certification: staffData.certification?.trim() || null,
         experienceYears: staffData.experienceYears ? Number(staffData.experienceYears) : (roleCapitalized === 'Coach' ? 1 : null),

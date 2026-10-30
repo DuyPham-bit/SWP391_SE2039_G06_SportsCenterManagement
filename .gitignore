@@ -63,3 +63,6 @@ migration-backups/
 # OS files
 .DS_Store
 Thumbs.db
+
+# Local Graphify index and extraction cache
+graphify-out/

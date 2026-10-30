@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '../../utils/dateTime.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import { CoachError, useTeachingSessions, coachInput } from './CoachShared.jsx';
 import { Modal } from '../../components/common/Modal.jsx';
@@ -7,23 +8,23 @@ import { translateClassName, translateRoomName, translateSportName } from '../..
 // --- TIỆN ÍCH NGÀY THÁNG VÀ LỊCH CHUẨN OLYMPIC ---
 
 function parseIsoDate(dateStr) {
-  if (!dateStr) return new Date();
+  if (!dateStr) return parseCalendarDate();
   const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d, 12, 0, 0);
+  return new Date(Date.UTC(y, m - 1, d, 12));
 }
 
 function formatIsoDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
 function getMonday(date) {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.getFullYear(), d.getMonth(), diff, 12, 0, 0);
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 12));
 }
 
 function getWeekDays(startDate) {
@@ -31,19 +32,19 @@ function getWeekDays(startDate) {
   const days = [];
   for (let i = 0; i < 7; i++) {
     const nextDay = new Date(monday);
-    nextDay.setDate(monday.getDate() + i);
+    nextDay.setUTCDate(monday.getUTCDate() + i);
     days.push(nextDay);
   }
   return days;
 }
 
 function getMonthCalendarGrid(year, month) {
-  const firstDay = new Date(year, month, 1, 12, 0, 0);
+  const firstDay = new Date(Date.UTC(year, month, 1, 12));
   const monday = getMonday(firstDay);
   const grid = [];
   for (let i = 0; i < 42; i++) {
     const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    d.setUTCDate(monday.getUTCDate() + i);
     grid.push(d);
   }
   return grid;
@@ -170,8 +171,8 @@ export function TeachingSchedule() {
 
   // Chế độ xem: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu)
   const [viewMode, setViewMode] = useState('week');
-  const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
+  const [currentDate, setCurrentDate] = useState(() => parseCalendarDate());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(parseCalendarDate()));
 
   // Bộ lọc
   const [selectedSport, setSelectedSport] = useState('ALL');
@@ -184,7 +185,7 @@ export function TeachingSchedule() {
   const [activeSession, setActiveSession] = useState(null);
   const [detailModalOpen, setDetailModalOpen] = useState(false);
 
-  const todayStr = useMemo(() => formatIsoDate(new Date()), []);
+  const todayStr = useMemo(() => formatIsoDate(parseCalendarDate()), []);
 
   // Tự động đọc date và search từ URL hash khi click thông báo
   useEffect(() => {
@@ -244,7 +245,7 @@ export function TeachingSchedule() {
     const hash = window.location.hash || '';
     if (hash.includes('?date=') || hash.includes('&date=')) return;
     if (schedule.sessions && schedule.sessions.length > 0) {
-      const today = formatIsoDate(new Date());
+      const today = formatIsoDate(parseCalendarDate());
       const hasToday = schedule.sessions.some(s => s.sessionDate === today);
       if (!hasToday && schedule.sessions[0]?.sessionDate) {
         setCurrentDate(parseIsoDate(schedule.sessions[0].sessionDate));
@@ -257,9 +258,9 @@ export function TeachingSchedule() {
   const handlePrev = () => {
     const d = new Date(currentDate);
     if (viewMode === 'month') {
-      d.setMonth(d.getMonth() - 1);
+      d.setUTCMonth(d.getUTCMonth() - 1);
     } else {
-      d.setDate(d.getDate() - 7);
+      d.setUTCDate(d.getUTCDate() - 7);
     }
     setCurrentDate(d);
   };
@@ -267,15 +268,15 @@ export function TeachingSchedule() {
   const handleNext = () => {
     const d = new Date(currentDate);
     if (viewMode === 'month') {
-      d.setMonth(d.getMonth() + 1);
+      d.setUTCMonth(d.getUTCMonth() + 1);
     } else {
-      d.setDate(d.getDate() + 7);
+      d.setUTCDate(d.getUTCDate() + 7);
     }
     setCurrentDate(d);
   };
 
   const handleToday = () => {
-    const now = new Date();
+    const now = parseCalendarDate();
     setCurrentDate(now);
     setSelectedCalendarDate(formatIsoDate(now));
   };
@@ -290,7 +291,7 @@ export function TeachingSchedule() {
   const formatDayOfWeek = (sessionDate, fallbackDay) => {
     if (sessionDate) {
       const d = parseIsoDate(sessionDate);
-      return DAY_LABELS[d.getDay()];
+      return DAY_LABELS[d.getUTCDay()];
     }
     return fallbackDay || '';
   };
@@ -351,17 +352,17 @@ export function TeachingSchedule() {
   const periodTitle = useMemo(() => {
     if (viewMode === 'month') {
       return isEn
-        ? currentDate.toLocaleString('en-US', { month: 'long', year: 'numeric' })
-        : `Tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
+        ? currentDate.toLocaleString('en-US', { timeZone: 'UTC', month: 'long', year: 'numeric' })
+        : `Tháng ${currentDate.getUTCMonth() + 1}, ${currentDate.getUTCFullYear()}`;
     }
     const start = weekDays[0];
     const end = weekDays[6];
     if (isEn) {
-      const startMonth = start.toLocaleString('en-US', { month: 'short' });
-      const endMonth = end.toLocaleString('en-US', { month: 'short' });
-      return `Week: ${start.getDate()} ${startMonth} - ${end.getDate()} ${endMonth}, ${end.getFullYear()}`;
+      const startMonth = start.toLocaleString('en-US', { timeZone: 'UTC', month: 'short' });
+      const endMonth = end.toLocaleString('en-US', { timeZone: 'UTC', month: 'short' });
+      return `Week: ${start.getUTCDate()} ${startMonth} - ${end.getUTCDate()} ${endMonth}, ${end.getUTCFullYear()}`;
     }
-    return `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
+    return `Tuần: ${start.getUTCDate()} Th${start.getUTCMonth() + 1} - ${end.getUTCDate()} Th${end.getUTCMonth() + 1}, ${end.getUTCFullYear()}`;
   }, [viewMode, currentDate, weekDays, isEn]);
 
   // Danh sách các bộ môn có ca dạy kèm số lượng
@@ -729,7 +730,7 @@ export function TeachingSchedule() {
                       }`}
                     >
                       <span className="text-[11px] font-bold uppercase text-slate-500 block truncate">
-                        {DAY_LABELS[day.getDay()]}
+                        {DAY_LABELS[day.getUTCDay()]}
                       </span>
                       <div className="mt-1 flex items-center justify-center gap-1">
                         <span
@@ -739,7 +740,7 @@ export function TeachingSchedule() {
                               : 'text-slate-900'
                           }`}
                         >
-                          {day.getDate()}
+                          {day.getUTCDate()}
                         </span>
                       </div>
                       {daySessionsCount > 0 ? (
@@ -770,7 +771,7 @@ export function TeachingSchedule() {
                     >
                       {/* Tiêu đề ngày trên mobile nhỏ */}
                       <div className="md:hidden pb-1 border-b border-slate-200 flex justify-between items-center text-xs font-bold">
-                        <span>{DAY_LABELS[day.getDay()]} ({dayStr})</span>
+                        <span>{DAY_LABELS[day.getUTCDay()]} ({dayStr})</span>
                         <span className="text-slate-500">
                           {daySessions.length} {isEn ? (daySessions.length === 1 ? 'session' : 'sessions') : 'ca dạy'}
                         </span>
@@ -879,9 +880,9 @@ export function TeachingSchedule() {
 
                 {/* Grid 42 Ngày của Tháng */}
                 <div className="grid grid-cols-7 divide-x divide-y divide-slate-100 bg-slate-50/20">
-                  {getMonthCalendarGrid(currentDate.getFullYear(), currentDate.getMonth()).map((d, index) => {
+                  {getMonthCalendarGrid(currentDate.getUTCFullYear(), currentDate.getUTCMonth()).map((d, index) => {
                     const dateStr = formatIsoDate(d);
-                    const isCurrentMonth = d.getMonth() === currentDate.getMonth();
+                    const isCurrentMonth = d.getUTCMonth() === currentDate.getUTCMonth();
                     const isToday = dateStr === todayStr;
                     const isSelected = dateStr === selectedCalendarDate;
                     const daySessions = sessionsByDate.get(dateStr) || [];
@@ -911,7 +912,7 @@ export function TeachingSchedule() {
                                 : 'text-slate-400'
                             }`}
                           >
-                            {d.getDate()}
+                            {d.getUTCDate()}
                           </span>
                           {daySessions.length > 0 && (
                             <span className="text-[10px] font-bold text-slate-600 bg-slate-100 px-1 rounded-full">
@@ -1048,7 +1049,7 @@ export function TeachingSchedule() {
                               : 'bg-slate-900 text-white'
                           }`}
                         >
-                          {DAY_LABELS[d.getDay()]} · {dateStr}
+                          {DAY_LABELS[d.getUTCDay()]} · {dateStr}
                         </span>
                         <span className="text-xs text-slate-500 font-bold">
                           {daySessions.length} {isEn ? (daySessions.length === 1 ? 'assigned session' : 'assigned sessions') : 'ca dạy phân công'}

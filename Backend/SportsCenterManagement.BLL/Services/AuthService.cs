@@ -1,3 +1,4 @@
+using SportsCenterManagement.BLL.Common;
 using System.Text.RegularExpressions;
 using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
@@ -48,7 +49,7 @@ public sealed class AuthService(IUnitOfWork unitOfWork) : IAuthService
         PasswordPolicy.ValidateOrThrow(request.Password, email, phone);
 
         // Validate date of birth cannot be in the future
-        if (request.DateOfBirth > DateOnly.FromDateTime(DateTime.UtcNow))
+        if (request.DateOfBirth > VietnamTime.Today)
         {
             throw new ValidationException("Date of birth cannot be in the future.");
         }

@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '../../utils/dateTime.js';
 import { translateClassName, translateRoomName } from '../../services/i18nHelper.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -24,26 +25,26 @@ export const DAY_LABELS = ['CHỦ NHẬT', 'THỨ 2', 'THỨ 3', 'THỨ 4', 'TH�
 export const DAY_LABELS_EN = ['SUNDAY', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
 
 export function parseIsoDate(dateStr) {
-  if (!dateStr) return new Date();
+  if (!dateStr) return parseCalendarDate();
   const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number);
-  return new Date(y, m - 1, d, 12, 0, 0);
+  return new Date(Date.UTC(y, m - 1, d, 12));
 }
 
 export function formatIsoDate(date) {
   if (!date) return '';
   const d = date instanceof Date ? date : new Date(date);
   if (Number.isNaN(d.getTime())) return '';
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
 
 export function getMonday(date) {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.getFullYear(), d.getMonth(), diff, 12, 0, 0);
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 12));
 }
 
 export function getWeekDays(startDate) {
@@ -51,7 +52,7 @@ export function getWeekDays(startDate) {
   const days = [];
   for (let i = 0; i < 7; i++) {
     const nextDay = new Date(monday);
-    nextDay.setDate(monday.getDate() + i);
+    nextDay.setUTCDate(monday.getUTCDate() + i);
     days.push(nextDay);
   }
   return days;

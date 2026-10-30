@@ -1,29 +1,24 @@
-export function localDateKey(value) {
-  if (!value) return '';
-  if (/^\d{4}-\d{2}-\d{2}$/.test(value)) return value;
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) return '';
-  const local = new Date(date.getTime() - date.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 10);
-}
+import { vietnamDate, parseCalendarDate, calendarDateKey, addCalendarDays, formatVietnamTime } from '../../utils/dateTime.js';
+
+export const localDateKey = value => value ? vietnamDate(value) : '';
 
 export function calendarWindow(anchorValue, mode) {
-  const anchor = new Date(`${anchorValue}T00:00:00`);
+  const anchor = parseCalendarDate(anchorValue);
   if (mode === 'day') return { from: anchorValue, to: anchorValue };
   if (mode === 'week') {
     const monday = new Date(anchor);
-    const day = monday.getDay() || 7;
-    monday.setDate(monday.getDate() - day + 1);
-    const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
-    return { from: localDateKey(monday), to: localDateKey(sunday) };
+    const day = monday.getUTCDay() || 7;
+    monday.setUTCDate(monday.getUTCDate() - day + 1);
+    const sunday = new Date(monday); sunday.setUTCDate(sunday.getUTCDate() + 6);
+    return { from: calendarDateKey(monday), to: calendarDateKey(sunday) };
   }
-  const first = new Date(anchor.getFullYear(), anchor.getMonth(), 1);
-  const last = new Date(anchor.getFullYear(), anchor.getMonth() + 1, 0);
-  return { from: localDateKey(first), to: localDateKey(last) };
+  const first = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth(), 1));
+  const last = new Date(Date.UTC(anchor.getUTCFullYear(), anchor.getUTCMonth() + 1, 0));
+  return { from: calendarDateKey(first), to: calendarDateKey(last) };
 }
 
 export function mergeCoachCalendar(events = [], classSessions = []) {
-  const personal = events.map(item => ({ ...item, date: localDateKey(item.startAt), startLabel: new Date(item.startAt).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' }) }));
+  const personal = events.map(item => ({ ...item, date: localDateKey(item.startAt), startLabel: formatVietnamTime(item.startAt) }));
   const classes = classSessions.map(item => ({ ...item, date: item.sessionDate, startLabel: String(item.startTime || '').slice(0, 5), eventType: item.eventType || 'ClassSession' }));
   return [...personal, ...classes].sort((a, b) => `${a.date}${a.startLabel}`.localeCompare(`${b.date}${b.startLabel}`));
 }
@@ -32,9 +27,7 @@ export function classSessionWindow(item) {
   const startAt = `${item.sessionDate}T${String(item.startTime).slice(0, 5)}`;
   let endDate = item.sessionDate;
   if (String(item.endTime).slice(0, 5) <= String(item.startTime).slice(0, 5)) {
-    const nextDay = new Date(`${item.sessionDate}T00:00:00`);
-    nextDay.setDate(nextDay.getDate() + 1);
-    endDate = localDateKey(nextDay);
+    endDate = addCalendarDays(item.sessionDate, 1);
   }
   return { startAt, endAt: `${endDate}T${String(item.endTime).slice(0, 5)}` };
 }

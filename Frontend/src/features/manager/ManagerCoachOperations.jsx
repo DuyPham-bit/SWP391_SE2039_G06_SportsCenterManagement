@@ -1,16 +1,16 @@
+import { vietnamDate, formatVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useState } from 'react';
 import { managerCoachApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
-import { currency, formatVietnamDateTime } from '../coach/coachProfessionalView.js';
+import { currency } from '../coach/coachProfessionalView.js';
 
 const inputStyle = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-3 py-2 text-sm text-slate-800 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A] transition-all';
 const primaryBtnStyle = 'rounded-xl bg-[#2D6A4F] hover:bg-[#1B4332] px-4 py-2 text-sm font-bold text-white transition-all shadow-sm hover-lift disabled:opacity-50';
 const secondaryBtnStyle = 'rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-4 py-2 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all disabled:opacity-50';
 const currentMonthStart = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`;
+  return `${vietnamDate().slice(0, 7)}-01`;
 };
 
 function Card({ title, badge, children }) {
@@ -48,7 +48,7 @@ export function ManagerCoachOperations() {
 
   const dt = (x) => {
     if (!x) return '—';
-    return new Date(x).toLocaleString(isEn ? 'en-US' : 'vi-VN', {
+    return formatVietnamDateTime(x, isEn, {
       hour: '2-digit',
       minute: '2-digit',
       day: '2-digit',

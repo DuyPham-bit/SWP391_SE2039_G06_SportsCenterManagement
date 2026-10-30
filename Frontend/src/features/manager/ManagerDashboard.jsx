@@ -1,3 +1,4 @@
+import { parseApiDate } from '../../utils/dateTime.js';
 import React, { useEffect, useState, useMemo } from 'react';
 import { reportApi, systemApi } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
@@ -56,9 +57,10 @@ function formatLogAction(action, isEn) {
 function formatLogTime(timestamp, isEn) {
   if (!timestamp) return '—';
   try {
-    const d = new Date(timestamp);
+    const d = parseApiDate(timestamp);
     if (isNaN(d.getTime())) return timestamp;
     return d.toLocaleString(isEn ? 'en-US' : 'vi-VN', {
+      timeZone: 'Asia/Ho_Chi_Minh',
       hour: '2-digit',
       minute: '2-digit',
       day: '2-digit',

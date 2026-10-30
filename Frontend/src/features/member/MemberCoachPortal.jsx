@@ -1,3 +1,4 @@
+import { vietnamDate, formatVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useRef, useState } from 'react';
 import { memberCoachApi } from '../../services/api.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
@@ -26,11 +27,8 @@ function Label({ title, children }) {
   );
 }
 
-const dt = (x, isEn) => (x ? new Date(x).toLocaleString(isEn ? 'en-US' : 'vi-VN') : '—');
-const today = () => {
-  const d = new Date(Date.now() - new Date().getTimezoneOffset() * 60000);
-  return d.toISOString().slice(0, 10);
-};
+const dt = (x, isEn) => formatVietnamDateTime(x, isEn);
+const today = () => vietnamDate();
 
 export function MemberCoachPortal() {
   const { language } = useLanguage();

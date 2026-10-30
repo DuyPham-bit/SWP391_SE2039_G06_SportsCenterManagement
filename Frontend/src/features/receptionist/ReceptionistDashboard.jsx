@@ -1,3 +1,4 @@
+import { vietnamDateTimeInput } from '../../utils/dateTime.js';
 import React, { useState, useEffect, useRef } from 'react';
 import { receptionApi } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
@@ -41,7 +42,7 @@ function playScannerBeep(isSuccess = true) {
 
 // Time-based polite greeting
 function getTimeGreeting(isEn = false) {
-  const hour = new Date().getHours();
+  const hour = Number(vietnamDateTimeInput().slice(11, 13));
   if (hour >= 5 && hour < 12) return isEn ? 'Good morning' : 'Chào buổi sáng';
   if (hour >= 12 && hour < 18) return isEn ? 'Good afternoon' : 'Chào buổi chiều';
   return isEn ? 'Good evening' : 'Chào buổi tối';
@@ -103,7 +104,7 @@ export function ReceptionistDashboard() {
         success: true,
         message: result?.message || (isEn ? 'Check-in confirmed. Turnstile gate opened.' : 'Xác thực thành công. Cổng kiểm soát đã mở.'),
         member: result?.member,
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        time: new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit' })
       });
       setQuickInput('');
       await loadData(true);
@@ -114,7 +115,7 @@ export function ReceptionistDashboard() {
       setLastCheckInResult({
         success: false,
         message: errMsg,
-        time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+        time: new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit', second: '2-digit' })
       });
     } finally {
       setCheckingIn(false);
@@ -208,7 +209,7 @@ export function ReceptionistDashboard() {
                 {/* Today's Date */}
                 <span className="flex items-center gap-1.5 px-3 py-1 rounded-xl bg-white/80 dark:bg-slate-900/80 backdrop-blur-md text-slate-800 dark:text-slate-200 shadow-xs font-medium border border-white/70 dark:border-white/20">
                   <span className="material-symbols-outlined text-[15px] text-slate-500">today</span>
-                  <span>{new Date().toLocaleDateString(isEn ? 'en-US' : 'vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
+                  <span>{new Date().toLocaleDateString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' })}</span>
                 </span>
               </div>
             </div>

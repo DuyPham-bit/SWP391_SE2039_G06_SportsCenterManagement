@@ -1,3 +1,4 @@
+import { formatVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { refundApi } from '../../services/api.js';
 import { createIdempotencyKey } from '../../services/http.js';
@@ -101,7 +102,7 @@ export function MemberRefundRequests() {
         <div className="mt-4 space-y-3">
           {!requests.length && <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">{isEn ? 'No refund request yet.' : 'Bạn chưa gửi yêu cầu hoàn tiền.'}</p>}
           {requests.map(item => <article key={item.id} className="rounded-xl border border-slate-200 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{item.invoiceNumber}</strong><p className="text-xs text-slate-500">{new Date(item.requestedAtUtc).toLocaleString(isEn ? 'en-US' : 'vi-VN')}</p></div><span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${statusStyle[item.status] || statusStyle.Pending}`}>{item.status}</span></div>
+            <div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{item.invoiceNumber}</strong><p className="text-xs text-slate-500">{formatVietnamDateTime(item.requestedAtUtc, isEn)}</p></div><span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${statusStyle[item.status] || statusStyle.Pending}`}>{item.status}</span></div>
             <p className="mt-3 text-xl font-black text-[#2D6A4F]">{money(item.amount)}</p>
             <p className="mt-1 text-sm text-slate-600">{item.bankName} · {item.bankAccountNumber} · {item.bankAccountName}</p>
             <p className="mt-2 text-sm">{item.reason}</p>

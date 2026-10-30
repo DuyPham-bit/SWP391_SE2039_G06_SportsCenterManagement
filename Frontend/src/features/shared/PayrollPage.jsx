@@ -1,3 +1,4 @@
+import { formatVietnamDate, vietnamDate } from '../../utils/dateTime.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -14,8 +15,7 @@ const money = (val) => {
 const dt = (d) => {
   if (!d) return '—';
   try {
-    const date = new Date(d);
-    return isNaN(date.getTime()) ? String(d) : date.toLocaleDateString('vi-VN');
+    return formatVietnamDate(d);
   } catch {
     return String(d);
   }
@@ -23,8 +23,8 @@ const dt = (d) => {
 
 // Current Month/Year helper
 const currentPeriod = () => {
-  const now = new Date();
-  return { year: now.getFullYear(), month: now.getMonth() + 1 };
+  const [year, month] = vietnamDate().split('-').map(Number);
+  return { year, month };
 };
 
 // Role badge styles

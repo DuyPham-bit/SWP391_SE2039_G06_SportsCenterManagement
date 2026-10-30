@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '../../utils/dateTime.js';
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { coachApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.js';
@@ -40,34 +41,34 @@ const DAY_FULL_LABELS_EN = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Frida
 
 function getMondayOfDate(d) {
   const date = new Date(d);
-  const day = date.getDay();
+  const day = date.getUTCDay();
   const diff = day === 0 ? -6 : 1 - day;
-  date.setDate(date.getDate() + diff);
-  date.setHours(0, 0, 0, 0);
+  date.setUTCDate(date.getUTCDate() + diff);
+  date.setUTCHours(0, 0, 0, 0);
   return date;
 }
 
 function getWeekDays(monday) {
   return Array.from({ length: 7 }, (_, i) => {
     const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    d.setUTCDate(monday.getUTCDate() + i);
     return d;
   });
 }
 
 function toIsoDate(d) {
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
+  const y = d.getUTCFullYear();
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
+  const day = String(d.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${day}`;
 }
 
 function formatDayMonth(d) {
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}`;
+  return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}`;
 }
 
 function formatFullDate(d) {
-  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+  return `${String(d.getUTCDate()).padStart(2, '0')}/${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`;
 }
 
 function getSessionStatusInfo(session, isEn = false) {
@@ -238,7 +239,7 @@ export function Attendance() {
   };
 
   const initialParams = getUrlParams();
-  const initialDate = initialParams.date ? new Date(initialParams.date + 'T12:00:00') : new Date();
+  const initialDate = initialParams.date ? parseCalendarDate(initialParams.date) : parseCalendarDate();
 
   // Schedule data hook: generous window (60 days) to allow smooth week navigation
   const schedule = useTeachingSessions(60);
@@ -267,7 +268,7 @@ export function Attendance() {
   const [filterRosterStatus, setFilterRosterStatus] = useState('ALL'); // 'ALL', 'PRESENT', 'ABSENT', 'LATE', 'EXCUSED', 'UNMARKED'
 
   const weekDays = useMemo(() => getWeekDays(currentMonday), [currentMonday]);
-  const todayIso = toIsoDate(new Date());
+  const todayIso = toIsoDate(parseCalendarDate());
 
   const weekStartIso = useMemo(() => toIsoDate(weekDays[0]), [weekDays]);
   const weekEndIso = useMemo(() => toIsoDate(weekDays[6]), [weekDays]);
@@ -347,7 +348,7 @@ export function Attendance() {
   const handlePrevWeek = () => {
     setCurrentMonday(prev => {
       const next = new Date(prev);
-      next.setDate(next.getDate() - 7);
+      next.setUTCDate(next.getUTCDate() - 7);
       return next;
     });
     setSelectedDateIso('ALL');
@@ -356,14 +357,14 @@ export function Attendance() {
   const handleNextWeek = () => {
     setCurrentMonday(prev => {
       const next = new Date(prev);
-      next.setDate(next.getDate() + 7);
+      next.setUTCDate(next.getUTCDate() + 7);
       return next;
     });
     setSelectedDateIso('ALL');
   };
 
   const handleThisWeek = () => {
-    const monday = getMondayOfDate(new Date());
+    const monday = getMondayOfDate(parseCalendarDate());
     setCurrentMonday(monday);
     setSelectedDateIso('ALL');
   };
@@ -541,7 +542,7 @@ export function Attendance() {
         dayFullLabel: DAY_FULL_LABELS[idx]
       };
     }
-    const d = new Date(selectedDateIso + 'T12:00:00');
+    const d = parseCalendarDate(selectedDateIso);
     return {
       date: d,
       iso: selectedDateIso,
@@ -1217,7 +1218,7 @@ export function Attendance() {
                               </span>
                             </div>
                             <div className="text-[11px] text-slate-500 font-semibold mt-0.5">
-                              {s.dayOfWeek}, {formatDayMonth(new Date(s.sessionDate + 'T12:00:00'))}
+                              {s.dayOfWeek}, {formatDayMonth(parseCalendarDate(s.sessionDate))}
                             </div>
                           </td>
                           <td className="py-3 px-4">
@@ -1331,7 +1332,7 @@ export function Attendance() {
                 <p className="text-slate-300 text-xs md:text-sm mt-1 flex items-center flex-wrap gap-x-3 gap-y-1">
                   <span className="flex items-center gap-1">
                     <span className="material-symbols-outlined text-sm text-red-400">calendar_month</span>
-                    <strong>{activeSession.dayOfWeek}, {formatFullDate(new Date(activeSession.sessionDate + 'T12:00:00'))}</strong>
+                    <strong>{activeSession.dayOfWeek}, {formatFullDate(parseCalendarDate(activeSession.sessionDate))}</strong>
                   </span>
                   <span>·</span>
                   <span className="flex items-center gap-1">

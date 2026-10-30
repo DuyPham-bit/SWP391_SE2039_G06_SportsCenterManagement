@@ -1,3 +1,4 @@
+import { formatVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useState } from 'react';
 import { coachProfessionalApi } from '../../services/api.js';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -39,7 +40,7 @@ function EmptyState({ icon = 'inbox', children, isEn = false }) {
 }
 
 function formatDate(value, isEn = false) {
-  return value ? new Date(value).toLocaleString(isEn ? 'en-US' : 'vi-VN') : '—';
+  return formatVietnamDateTime(value, isEn);
 }
 
 export function PerformanceDashboard() {

@@ -24,5 +24,6 @@ COPY --from=build /app/publish .
 EXPOSE 8080
 ENV ASPNETCORE_URLS=http://+:8080
 ENV ASPNETCORE_ENVIRONMENT=Production
+ENV TZ=Asia/Ho_Chi_Minh
 
 ENTRYPOINT ["dotnet", "SportsCenterManagement.API.dll"]

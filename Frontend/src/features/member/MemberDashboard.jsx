@@ -1,3 +1,4 @@
+import { parseCalendarDate, vietnamDateTimeInput } from '../../utils/dateTime.js';
 import React, { useEffect, useState } from 'react';
 import QRCode from 'qrcode';
 import { bookingApi, memberApi } from '../../services/api.js';
@@ -117,21 +118,21 @@ function getSportMeta(className = '', spec = '', isEn = false) {
 // Parse date into structured visual badge parts
 function parseDateParts(dateStr, isEn = false) {
   if (!dateStr) return { day: '--', month: '--', weekday: '--' };
-  const d = new Date(`${String(dateStr).slice(0, 10)}T12:00:00+07:00`);
+  const d = parseCalendarDate(dateStr);
   if (Number.isNaN(d.getTime())) return { day: '--', month: '--', weekday: '--' };
   const weekdaysVi = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
   const weekdaysEn = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const monthsEn = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   return {
-    day: String(d.getDate()).padStart(2, '0'),
-    month: isEn ? monthsEn[d.getMonth()] : `Tháng ${d.getMonth() + 1}`,
-    weekday: isEn ? weekdaysEn[d.getDay()] : weekdaysVi[d.getDay()]
+    day: String(d.getUTCDate()).padStart(2, '0'),
+    month: isEn ? monthsEn[d.getUTCMonth()] : `Tháng ${d.getUTCMonth() + 1}`,
+    weekday: isEn ? weekdaysEn[d.getUTCDay()] : weekdaysVi[d.getUTCDay()]
   };
 }
 
 // Time-based polite greeting
 function getTimeGreeting(isEn = false) {
-  const hour = new Date().getHours();
+  const hour = Number(vietnamDateTimeInput().slice(11, 13));
   if (hour >= 5 && hour < 12) return isEn ? 'Good morning' : 'Chào buổi sáng';
   if (hour >= 12 && hour < 18) return isEn ? 'Good afternoon' : 'Chào buổi chiều';
   return isEn ? 'Good evening' : 'Chào buổi tối';

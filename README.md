@@ -52,12 +52,19 @@ Google Login dùng ID token được xác minh ở backend. Chatbot/gợi ý gi�
 
 Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](./Backend/docs/requirements/api-jwt-integration.md). Chi tiết Flow 2 trước đó: [flow2-delivery.md](./Backend/docs/requirements/flow2-delivery.md).
 
+## Thời gian hệ thống
+
+Hệ thống hoạt động theo giờ Việt Nam (`Asia/Ho_Chi_Minh`, UTC+7). Timestamp lưu trong database là UTC; frontend đọc timestamp API không có offset là UTC và hiển thị theo giờ Việt Nam. Ngày nghiệp vụ (ngày sinh, ngày vào làm, ngày học, hiệu lực gói) giữ nguyên ngày Việt Nam; ô `datetime-local` nhận giờ Việt Nam. Đổi múi giờ thiết bị không làm đổi ngày/giờ hiển thị hoặc giờ đặt lịch. Backend xác thực nghiệp vụ bằng đồng hồ máy chủ; máy chủ cần được đồng bộ giờ chính xác.
+
+Docker đã cấu hình múi giờ cho backend/SQL Server và ranh giới ngày báo cáo là Việt Nam. Sau khi cập nhật, chạy `docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build` để áp dụng. Khi chạy frontend nhúng trong API, build lại bằng `npm.cmd run build:api` trong `Frontend/`.
+
 ## Kiểm tra
 
 - Trợ lý AI hội viên nhận dữ liệu công khai mới từ database của đúng trung tâm ở mỗi câu hỏi: lịch lớp Published/Scheduled, gói Active và giá VND, sân/phòng Active, địa chỉ, số điện thoại/email trung tâm và giờ mở cửa. Backend chỉ chọn các trường được phép; không gửi hồ sơ hội viên/HLV, ghi chú nội bộ, danh sách đặt chỗ, thanh toán, báo cáo, cấu hình hoặc hội thoại người khác. Ngày/tháng, ngày ISO, ngày tương đối và câu hỏi tiếp nối được xử lý theo giờ Việt Nam; khoảng truy vấn tối đa 31 ngày, tối đa 200 buổi học. Chưa có danh mục sự kiện riêng hoặc giá thuê sân trong database thì AI phải nói rõ thiếu dữ liệu. Nội dung biên tập trang chủ được lưu trong `system_settings` qua API. Trợ lý AI vẫn đọc dữ liệu nghiệp vụ Center/Room và chưa dùng nội dung biên tập này làm nguồn dữ liệu.
 - Nhắc lịch ca học: backend tự kiểm tra mỗi 15 giây và gửi thông báo trong ứng dụng khi ca học đã xác nhận còn tối đa 1 tiếng trước giờ bắt đầu (giờ Việt Nam). Chuông thông báo và hộp thư tự tải lại mỗi 15 giây khi trang đang mở. Lịch bị hủy và ca đã bắt đầu không được nhắc; lời nhắc được lưu trong database để tránh gửi trùng sau khi khởi động lại. Đặt chỗ trong vòng 1 tiếng trước ca học sẽ nhận lời nhắc ở lần kiểm tra kế tiếp. Backend cần hoạt động để tạo lời nhắc; migration `AddClassReminderKey` được áp dụng qua luồng khởi động hiện có.
 - Frontend: `npm run build` trong `Frontend/`.
 - Frontend regression: `npm test` trong `Frontend/`.
+- Múi giờ: `node --test tests/timezone.test.cjs` trong `Frontend/` kiểm tra 5 múi giờ thiết bị; `dotnet run --project Backend/verification/TimezoneAudit/TimezoneAudit.csproj` từ thư mục gốc kiểm tra ranh giới ngày Việt Nam ở backend.
 - Quản lý nội dung trang chủ và media; kiểm thử Chrome: `npm.cmd run test:landing:browser` trong `Frontend/`.
 - Kiểm tra kết nối API thật và xử lý lỗi 500/proxy: [api-connection-fix.md](./Frontend/docs/api-connection-fix.md).
 - Backend: `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` từ `Backend/`.

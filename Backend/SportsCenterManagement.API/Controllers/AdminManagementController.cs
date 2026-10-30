@@ -1,3 +1,4 @@
+using SportsCenterManagement.BLL.Common;
 using System.ComponentModel.DataAnnotations;
 using System.Security.Claims;
 using System.Text.Json;
@@ -198,7 +199,7 @@ public sealed class AdminManagementController(SportsCenterDbContext db) : Contro
             StaffCode = $"MGR-{manager.Id:D6}",
             FullName = request.FullName.Trim(),
             Position = RoleNames.Manager,
-            HireDate = DateOnly.FromDateTime(DateTime.UtcNow),
+            HireDate = VietnamTime.Today,
             Status = "Active",
             CreatedAt = DateTime.UtcNow
         });

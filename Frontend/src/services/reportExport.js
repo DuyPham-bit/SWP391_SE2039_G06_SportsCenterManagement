@@ -8,7 +8,7 @@ function cell(value) {
 export function createReportCsv(metrics, period) {
   const rows = [
     ['BÁO CÁO DOANH THU & VẬN HÀNH TRUNG TÂM'],
-    ['Thời điểm xuất', new Date().toLocaleString('vi-VN')],
+    ['Thời điểm xuất', new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })],
     ['Phạm vi dữ liệu', `${metrics.from} đến ${metrics.to}`],
     [],
     ['Chỉ tiêu', 'Giá trị', 'Kỳ'],

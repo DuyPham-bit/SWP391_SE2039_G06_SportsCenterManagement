@@ -9,6 +9,7 @@ services:
       - ACCEPT_EULA=Y
       - MSSQL_SA_PASSWORD=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in docker/.env}
       - MSSQL_PID=Developer
+      - TZ=Asia/Ho_Chi_Minh
     volumes:
       - sqlserver_data:/var/opt/mssql
     healthcheck:
@@ -32,6 +33,8 @@ services:
     environment:
       - ASPNETCORE_ENVIRONMENT=${ASPNETCORE_ENVIRONMENT:-Production}
       - ASPNETCORE_URLS=http://+:8080
+      - TZ=Asia/Ho_Chi_Minh
+      - Reports__TimeZoneId=Asia/Ho_Chi_Minh
       - ConnectionStrings__SportsCenter=Server=sqlserver,1433;Database=SportsCenterManagement;User Id=sa;Password=${MSSQL_SA_PASSWORD:?Set MSSQL_SA_PASSWORD in docker/.env};TrustServerCertificate=True;MultipleActiveResultSets=true;
       - Database__BaselineLegacySchema=${DATABASE_BASELINE_LEGACY_SCHEMA:-false}
       - Jwt__Key=${JWT_KEY:?Set JWT_KEY in docker/.env}

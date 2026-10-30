@@ -191,7 +191,7 @@ What would you like to explore today?`
 * **Hướng dẫn check-in mã thẻ, đổi lịch & hỗ trợ**.
 
 Bạn muốn tìm hiểu thông tin nào hôm nay?`,
-    time: new Date().toLocaleTimeString(en ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
+    time: new Date().toLocaleTimeString(en ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
   });
 
   const [isOpen, setIsOpen] = useState(false);
@@ -535,7 +535,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       id: `usr-${Date.now()}`,
       sender: 'user',
       text,
-      time: new Date().toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -553,7 +553,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           id: `ai-${Date.now()}`,
           sender: 'ai',
           text: reply,
-          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
         }
       ]);
 
@@ -572,7 +572,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           code: err.code || (err.status === 429 ? 'AI-RATE-LIMIT' : 'AI-ERROR'),
           text: errorText,
           failedQuestion: text,
-          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
         }
       ]);
       showError(err.message || (isEn ? 'Unable to receive AI response' : 'Không thể nhận phản hồi từ AI'));

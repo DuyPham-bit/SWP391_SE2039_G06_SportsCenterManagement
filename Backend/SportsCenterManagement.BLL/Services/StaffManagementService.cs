@@ -1,3 +1,4 @@
+using SportsCenterManagement.BLL.Common;
 using System.Data;
 using System.ComponentModel.DataAnnotations;
 using System.Text.RegularExpressions;
@@ -113,7 +114,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         {
             throw new ValidationException("Họ tên không được để trống.");
         }
-        if (request.HireDate > DateOnly.FromDateTime(DateTime.UtcNow))
+        if (request.HireDate > VietnamTime.Today)
         {
             throw new ValidationException("Ngày nhận việc không thể nằm trong tương lai.");
         }
@@ -215,7 +216,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         CancellationToken cancellationToken = default)
     {
         if (request.RoleName is not (RoleNames.Coach or RoleNames.Receptionist) ||
-            request.HireDate > DateOnly.FromDateTime(DateTime.UtcNow))
+            request.HireDate > VietnamTime.Today)
             throw new ValidationException("Vai trò hoặc ngày nhận việc không hợp lệ.");
         await using var transaction = await unitOfWork.Context.Database.BeginTransactionAsync(
             IsolationLevel.Serializable, cancellationToken);
@@ -266,7 +267,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork) : IStaffManag
         {
             throw new ValidationException("Họ tên không được để trống.");
         }
-        if (request.HireDate > DateOnly.FromDateTime(DateTime.UtcNow))
+        if (request.HireDate > VietnamTime.Today)
         {
             throw new ValidationException("Ngày nhận việc không thể nằm trong tương lai.");
         }

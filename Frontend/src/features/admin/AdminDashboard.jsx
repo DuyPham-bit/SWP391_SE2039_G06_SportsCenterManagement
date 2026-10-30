@@ -1,3 +1,4 @@
+import { formatVietnamDateTime, formatVietnamDate, parseApiDate } from '../../utils/dateTime.js';
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { apiRequest } from '../../services/http.js';
@@ -9,7 +10,7 @@ const OLYMPIC_GRADIENT = 'linear-gradient(115deg, #1B4332 0%, #2D6A4F 28%, #1D70
 
 const fmtDate = (v) => {
   try {
-    return v ? new Date(v).toLocaleString('vi-VN', { hour12: false }) : '—';
+    return formatVietnamDateTime(v, false, { hour12: false });
   } catch {
     return '—';
   }
@@ -17,7 +18,7 @@ const fmtDate = (v) => {
 
 const fmtDateOnly = (v) => {
   try {
-    return v ? new Date(v).toLocaleDateString('vi-VN') : '—';
+    return formatVietnamDate(v);
   } catch {
     return '—';
   }
@@ -1829,7 +1830,7 @@ export function AdminDashboard({ initialSection }) {
                   </thead>
                   <tbody className="divide-y divide-slate-100 dark:divide-slate-800/80">
                     {accs.map((a) => {
-                      const isLocked = a.lockedUntil && new Date(a.lockedUntil) > new Date();
+                      const isLocked = a.lockedUntil && parseApiDate(a.lockedUntil) > new Date();
                       return (
                         <tr
                           key={a.id}

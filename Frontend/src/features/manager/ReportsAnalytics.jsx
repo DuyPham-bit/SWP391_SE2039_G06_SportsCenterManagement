@@ -186,7 +186,7 @@ export function ReportsAnalytics() {
             </p>
           </div>
           <div className="text-right text-xs text-slate-600">
-            <p><strong>{isEn ? 'Printed at:' : 'Thời điểm in:'}</strong> {new Date().toLocaleString('vi-VN')}</p>
+            <p><strong>{isEn ? 'Printed at:' : 'Thời điểm in:'}</strong> {new Date().toLocaleString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' })}</p>
             <p className="text-[11px] text-slate-500">{isEn ? 'Issued by Management' : 'Đơn vị phát hành: Ban Quản Lý'}</p>
           </div>
         </div>

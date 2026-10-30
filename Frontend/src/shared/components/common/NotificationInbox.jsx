@@ -131,7 +131,7 @@ export function NotificationInbox() {
                     {itemContent}
                   </span>
                   <span className="text-[10px] text-slate-400 dark:text-slate-500 mt-1.5 block font-medium">
-                    {formatMemberDateTime ? formatMemberDateTime(item.createdAt, isEn) : new Date(item.createdAt).toLocaleString(isEn ? 'en-US' : 'vi-VN')} · {item.isRead ? (isEn ? 'Read' : 'Đã đọc') : (isEn ? 'Unread' : 'Chưa đọc')}
+                    {formatMemberDateTime(item.createdAt, isEn)} · {item.isRead ? (isEn ? 'Read' : 'Đã đọc') : (isEn ? 'Unread' : 'Chưa đọc')}
                   </span>
                   {notificationTarget(item, role) && (
                     <span className="inline-flex items-center gap-1 mt-2 text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A] hover:underline">
