@@ -190,13 +190,16 @@ export function ClassScheduleView() {
       );
       setBookedSessionIds(confirmedIds);
 
-      // Tự động căn chỉnh lịch vào tuần có lớp học nếu ngày hiện tại chưa có dữ liệu
-      if (classList && classList.length > 0) {
-        const todayStr = formatIsoDate(new Date());
-        const hasToday = classList.some(c => c.sessionDate === todayStr);
-        if (!hasToday && classList[0]?.sessionDate) {
-          setCurrentDate(parseIsoDate(classList[0].sessionDate));
-          setSelectedCalendarDate(classList[0].sessionDate);
+      // Tự động căn chỉnh lịch vào tuần có lớp học nếu ngày hiện tại chưa có dữ liệu (khi không có ?date=)
+      const currentHash = window.location.hash || '';
+      if (!currentHash.includes('?date=') && !currentHash.includes('&date=')) {
+        if (classList && classList.length > 0) {
+          const todayStr = formatIsoDate(new Date());
+          const hasToday = classList.some(c => c.sessionDate === todayStr);
+          if (!hasToday && classList[0]?.sessionDate) {
+            setCurrentDate(parseIsoDate(classList[0].sessionDate));
+            setSelectedCalendarDate(classList[0].sessionDate);
+          }
         }
       }
     } catch (error) {
