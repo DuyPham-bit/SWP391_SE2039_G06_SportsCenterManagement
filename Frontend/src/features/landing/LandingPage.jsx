@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { FacilitiesSection } from './FacilitiesSection.js';
+import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
 import { usePublicCatalog } from '../../hooks/usePublicCatalog.js';
 import { getLandingPresentation } from '../../services/landingPresentation.js';
 import { useLandingContent } from '../../hooks/useLandingContent.js';
@@ -525,7 +526,7 @@ export function LandingPage() {
     const normalized = String(role || '').toUpperCase();
     switch (normalized) {
       case 'SYSTEMADMIN':
-      case 'ADMIN':
+      case 'ADMIN': return '#/admin/dashboard';
       case 'MANAGER': return '#/manager/dashboard';
       case 'RECEPTIONIST': return '#/receptionist/dashboard';
       case 'COACH': return '#/coach/dashboard';
@@ -808,26 +809,20 @@ export function LandingPage() {
         {/* Hero Container */}
         <div className="hero-container">
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',maxWidth:'900px',margin:'0 auto'}}>
-            {/* Badge */}
-            <div className="hero-badge">
-              <span className="hero-badge-dot" />
-              {isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
-            </div>
-
-            {/* Headline */}
-            <h1 className="hero-title">
-              {landingContent.heroBanner?.title || 'SHAPING RESILIENCE THROUGH SPORTS'}
-            </h1>
+            {/* Animated Headline with Slide-up & Typewriter */}
+            <TypewriterHeroHeading
+              heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
+            />
 
             {/* Subtext */}
-            <p className="hero-desc">
+            <p className="hero-desc scms-hero-desc mt-5">
               {isEn
                 ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList.length} sports facilities and ${visibleSports.length} disciplines.`
                 : (landingContent.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList.length} cụm sân, phòng tập phục vụ ${visibleSports.length} bộ môn thể thao.`)}
             </p>
 
             {/* CTA Buttons */}
-            <div className="custom-btn-group" style={{justifyContent:'center'}}>
+            <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center'}}>
               <a href={landingContent.heroBanner?.primaryCtaLink || '#/register'}
                 className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
                 {isEn ? 'REGISTER NEW MEMBER' : (landingContent.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}

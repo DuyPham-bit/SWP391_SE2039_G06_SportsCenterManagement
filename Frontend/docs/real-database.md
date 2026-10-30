@@ -42,7 +42,7 @@ ID `15` đã được kiểm tra tồn tại trong DB. Khi chuyển database/tru
 Từ workspace, chạy backend:
 
 ```powershell
-dotnet run --project .\Backend\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
+dotnet run --project .\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
 ```
 
 Terminal khác:

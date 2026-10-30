@@ -1,0 +1,188 @@
+import React, { useState } from 'react';
+import { Header } from './Header.jsx';
+import { Sidebar } from './Sidebar.jsx';
+import { ProfileModal } from '../features/auth/ProfileModal.jsx';
+import { useAuth } from '../app/providers/AuthContext.jsx';
+import { useLanguage } from '../app/providers/LanguageContext.jsx';
+import { MemberAIChatPopup, openMemberAIChat } from '../features/member/MemberAIChatPopup.jsx';
+
+export function AppLayout({ children, currentPath }) {
+  const [desktopCollapsed, setDesktopCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('scms_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+  const [mobileOpen, setMobileOpen] = useState(false);
+  const [profileModalOpen, setProfileModalOpen] = useState(false);
+  const { role } = useAuth();
+  const { language, t } = useLanguage();
+
+  React.useEffect(() => {
+    const handleOpenProfile = () => setProfileModalOpen(true);
+    window.addEventListener('SCMS_OPEN_PROFILE', handleOpenProfile);
+    return () => window.removeEventListener('SCMS_OPEN_PROFILE', handleOpenProfile);
+  }, []);
+
+  const handleToggleSidebar = () => {
+    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+      setDesktopCollapsed(prev => {
+        const next = !prev;
+        try {
+          localStorage.setItem('scms_sidebar_collapsed', String(next));
+        } catch {
+          // ignore
+        }
+        return next;
+      });
+    } else {
+      setMobileOpen(prev => !prev);
+    }
+  };
+
+  const handleCloseMobile = () => {
+    setMobileOpen(false);
+  };
+
+  const isMemberArea = role === 'MEMBER' || (currentPath && currentPath.startsWith('#/member'));
+
+  const getBreadcrumbTitle = (path) => {
+    if (!path) return language === 'en' ? 'Dashboard' : 'Bảng điều khiển';
+    const clean = path.split('?')[0];
+
+    const routeKeyMap = {
+      '#/': 'nav.home',
+      '#/login': 'nav.login',
+      '#/payment-result': 'nav.payment_result',
+      // Member
+      '#/member': 'nav.member_dashboard',
+      '#/member/dashboard': 'nav.member_dashboard',
+      '#/member/schedule': 'nav.member_schedule',
+      '#/member/bookings': 'nav.member_bookings',
+      '#/member/attendance': 'nav.member_attendance',
+      '#/member/progress': 'nav.member_progress',
+      '#/member/packages': 'nav.member_packages',
+      '#/member/support': 'nav.member_support',
+      '#/member/notifications': 'nav.member_notifications',
+      '#/member/coach-portal': 'nav.member_coach_portal',
+      '#/member/ai-assistant': 'nav.member_ai_assistant',
+      // Coach
+      '#/coach': 'nav.coach_dashboard',
+      '#/coach/dashboard': 'nav.coach_dashboard',
+      '#/coach/schedule': 'nav.coach_schedule',
+      '#/coach/members': 'nav.coach_members',
+      '#/coach/attendance': 'nav.coach_attendance',
+      '#/coach/training-plan': 'nav.coach_training_plan',
+      '#/coach/progress': 'nav.coach_progress',
+      '#/coach/notifications': 'nav.coach_notifications',
+      '#/coach/messages': 'nav.coach_messages',
+      '#/coach/ai-recommendation': 'nav.coach_ai_recommendation',
+      '#/coach/performance': 'nav.coach_performance',
+      '#/coach/salary-kpi': 'nav.coach_performance',
+      '#/coach/kpi': 'nav.coach_performance',
+      '#/coach/resources': 'nav.coach_resources',
+      '#/coach/equipment': 'nav.coach_resources',
+      '#/coach/professional': 'nav.coach_professional',
+      '#/coach/support': 'nav.coach_support',
+      // Manager
+      '#/manager': 'nav.manager_dashboard',
+      '#/manager/dashboard': 'nav.manager_dashboard',
+      '#/manager/members': 'nav.manager_members',
+      '#/manager/staff': 'nav.manager_staff',
+      '#/manager/packages': 'nav.manager_packages',
+      '#/manager/classes-rooms': 'nav.manager_classes_rooms',
+      '#/manager/coach-assignment': 'nav.manager_coach_assignment',
+      '#/manager/coach-operations': 'nav.manager_coach_operations',
+      '#/manager/reports': 'nav.manager_reports',
+      '#/manager/roles-permissions': 'nav.manager_roles_permissions',
+      '#/manager/audit-logs': 'nav.manager_audit_logs',
+      '#/manager/home-content': 'nav.manager_home_content',
+      // Receptionist
+      '#/receptionist': 'nav.receptionist_dashboard',
+      '#/receptionist/dashboard': 'nav.receptionist_dashboard',
+      '#/receptionist/lookup': 'nav.receptionist_lookup',
+      '#/receptionist/check-in': 'nav.receptionist_check_in',
+      '#/receptionist/bookings': 'nav.receptionist_bookings',
+      '#/receptionist/counter-register': 'nav.receptionist_counter_register',
+      '#/receptionist/invoices': 'nav.receptionist_invoices',
+      '#/receptionist/support': 'nav.receptionist_support',
+      // Admin
+      '#/admin': 'nav.admin_dashboard',
+      '#/admin/dashboard': 'nav.admin_dashboard',
+      '#/admin/centers': 'nav.admin_centers',
+      '#/admin/managers': 'nav.admin_managers',
+      '#/admin/accounts': 'nav.admin_accounts',
+      '#/admin/roles-permissions': 'nav.admin_roles_permissions',
+      '#/admin/audit-logs': 'nav.admin_audit_logs',
+      '#/admin/home-content': 'nav.admin_home_content',
+      '#/admin/payroll': 'nav.admin_payroll'
+    };
+
+    const key = routeKeyMap[clean];
+    if (key) return t(key);
+    return language === 'en' ? 'Detail Page' : 'Trang chi tiết';
+  };
+
+  const breadcrumbTitle = getBreadcrumbTitle(currentPath);
+
+  return (
+    <div className="min-h-screen bg-[#FAF8F5] dark:bg-slate-950 flex flex-col font-sans transition-colors">
+      {/* Top Header */}
+      <Header
+        onOpenProfile={() => setProfileModalOpen(true)}
+        onToggleSidebar={handleToggleSidebar}
+        isSidebarCollapsed={desktopCollapsed}
+      />
+
+      <div className="flex-1 flex">
+        {/* Left Sidebar */}
+        <Sidebar
+          isOpen={mobileOpen}
+          isDesktopCollapsed={desktopCollapsed}
+          onToggleDesktopCollapse={handleToggleSidebar}
+          onClose={handleCloseMobile}
+          currentPath={currentPath}
+        />
+
+        {/* Main Content Viewport */}
+        <main
+          className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ease-in-out ${
+            desktopCollapsed ? 'lg:pl-20' : 'lg:pl-64'
+          }`}
+        >
+          <div className="flex-1 p-3.5 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto">
+            {/* FPT Portal Breadcrumb Bar */}
+            <div className="flex items-center gap-2 text-xs text-slate-500 dark:text-slate-400 mb-4 no-print">
+              <span className="material-symbols-outlined text-[17px] text-[#81B29A]">home</span>
+              <a href="#/" className="hover:text-[#E07A5F] dark:hover:text-[#F2CC8F] transition-colors">
+                {t('nav.home', 'Trang chủ')}
+              </a>
+              <span className="text-slate-300 dark:text-slate-600">/</span>
+              <span className="font-bold text-[#1E2235] dark:text-white">{breadcrumbTitle}</span>
+            </div>
+
+            {children}
+          </div>
+
+          {/* Theme Clean Footer */}
+          <footer className="py-3 px-6 bg-[#FAF8F5] dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 mt-auto transition-colors">
+            <span>{t('footer.copyright', 'Bản quyền © 2026 SCMS - Sports Center Management System. Đã đăng ký bản quyền.')}</span>
+            <div className="flex items-center gap-4 text-[11px] font-medium text-slate-500 dark:text-slate-400">
+              <span>{t('footer.version', 'Phiên bản: 2.0.0.0')}</span>
+            </div>
+          </footer>
+        </main>
+      </div>
+
+      {/* Floating AI Chat Popup Widget for Members */}
+      {isMemberArea && <MemberAIChatPopup />}
+
+      {/* User Profile & Password Modal */}
+      <ProfileModal
+        isOpen={profileModalOpen}
+        onClose={() => setProfileModalOpen(false)}
+      />
+    </div>
+  );
+}

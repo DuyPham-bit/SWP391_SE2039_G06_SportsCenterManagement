@@ -2,7 +2,7 @@
 ## Frontend Flow & Architecture Document – React + JavaScript (Vite)
 
 > **Tài liệu đặc tả luồng giao diện Frontend SCMS**  
-> **Cập nhật 11/10/2026:** Giao diện dùng API backend và JWT. Kết quả kiểm chứng và giới hạn tích hợp nằm trong [api-jwt-integration.md](../Backend/Backend/docs/requirements/api-jwt-integration.md).  
+> **Cập nhật 11/10/2026:** Giao diện dùng API backend và JWT. Kết quả kiểm chứng và giới hạn tích hợp nằm trong [api-jwt-integration.md](../Backend/docs/requirements/api-jwt-integration.md).
 > **Nền tảng công nghệ:** React 18, JavaScript (ES6+), Vite, Tailwind CSS (Chivo & Inter typography, Dark Olympic theme, Material Symbols Outlined).  
 > **Nguồn gốc Use Case:** Đối chiếu với tài liệu nghiệp vụ *Use Cases - Copy(2).docx*.
 
@@ -24,7 +24,7 @@ npm ci
 npm run dev
 ```
 
-Chạy backend theo [README gốc](../README.md), sao chép `.env.example` thành `.env.local` và đặt `VITE_SPORTS_CENTER_ID` đúng database. Mở `http://localhost:3004/` theo cấu hình Vite. Google/AI cần cấu hình riêng theo [hướng dẫn miễn phí](../Backend/Backend/docs/requirements/free-google-gemini-setup.md).
+Chạy backend theo [README gốc](../README.md), sao chép `.env.example` thành `.env.local` và đặt `VITE_SPORTS_CENTER_ID` đúng database. Mở `http://localhost:3004/` theo cấu hình Vite. Google/AI cần cấu hình riêng theo [hướng dẫn miễn phí](../Backend/docs/requirements/free-google-gemini-setup.md).
 
 ---
 
@@ -707,6 +707,6 @@ Hệ thống hiển thị thông báo góc trên bên phải màn hình qua hook
 
 ## 15. Tài liệu tham chiếu
 
-Bảng trên dùng để tra cứu màn hình/service, không thay thế bằng chứng chạy kiểm thử. Trạng thái triển khai, cấu hình còn thiếu và lệnh kiểm tra được ghi trong [tài liệu tích hợp API/JWT](../Backend/Backend/docs/requirements/api-jwt-integration.md).
+Bảng trên dùng để tra cứu màn hình/service, không thay thế bằng chứng chạy kiểm thử. Trạng thái triển khai, cấu hình còn thiếu và lệnh kiểm tra được ghi trong [tài liệu tích hợp API/JWT](../Backend/docs/requirements/api-jwt-integration.md).
 
 Đối chiếu yêu cầu và bằng chứng cho 8 nhóm chức năng Coach: [coach-feature-audit.md](docs/coach-feature-audit.md). Kết quả mới có thể gắn với buổi học đã kết thúc; ngữ cảnh AI lấy hồ sơ và tối đa 10 kết quả gần nhất từ server. Không cần migration database.

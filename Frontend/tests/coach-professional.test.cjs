@@ -62,7 +62,7 @@ test('leave timestamps stored as UTC are displayed in Vietnam time', async () =>
   assert.match(explicitUtc, /08:30/);
   assert.equal(sqlUnspecifiedUtc, explicitUtc);
 
-  const service = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.BLL/Services/CoachProfessionalService.cs'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/CoachProfessionalService.cs'), 'utf8');
   assert.match(service, /StartAt = AsUtc\(x\.StartAt\)/);
   assert.match(service, /StartAt = AsUtc\(leave\.StartAt\)/);
 });
@@ -77,7 +77,7 @@ test('replacement option API sends the selected leave window', async () => {
 test('manager has a dedicated pending leave approval entry and status filters', () => {
   const sidebar = fs.readFileSync(path.join(__dirname, '../src/components/layout/Sidebar.jsx'), 'utf8');
   const manager = fs.readFileSync(path.join(__dirname, '../src/features/manager/ManagerCoachOperations.jsx'), 'utf8');
-  const service = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.BLL/Services/CoachProfessionalService.cs'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/CoachProfessionalService.cs'), 'utf8');
   assert.match(sidebar, /Duyệt đơn nghỉ HLV/);
   assert.match(manager, /leaveStatusFilter.*Pending/);
   assert.match(manager, /pendingLeaveCount/);

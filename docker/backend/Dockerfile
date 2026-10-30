@@ -3,16 +3,16 @@ FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
 # Copy project definition files for layer caching
-COPY Backend/Backend/SportsCenterManagement.DAL/SportsCenterManagement.DAL.csproj Backend/Backend/SportsCenterManagement.DAL/
-COPY Backend/Backend/SportsCenterManagement.BLL/SportsCenterManagement.BLL.csproj Backend/Backend/SportsCenterManagement.BLL/
-COPY Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj Backend/Backend/SportsCenterManagement.API/
+COPY Backend/SportsCenterManagement.DAL/SportsCenterManagement.DAL.csproj Backend/SportsCenterManagement.DAL/
+COPY Backend/SportsCenterManagement.BLL/SportsCenterManagement.BLL.csproj Backend/SportsCenterManagement.BLL/
+COPY Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj Backend/SportsCenterManagement.API/
 
 # Restore dependencies
-RUN dotnet restore Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj
+RUN dotnet restore Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj
 
 # Copy all source files and publish release
-COPY Backend/Backend/ Backend/Backend/
-WORKDIR /src/Backend/Backend/SportsCenterManagement.API
+COPY Backend/ Backend/
+WORKDIR /src/Backend/SportsCenterManagement.API
 RUN dotnet publish -c Release -o /app/publish /p:UseAppHost=false
 
 # Runtime stage using ASP.NET Core 10 runtime

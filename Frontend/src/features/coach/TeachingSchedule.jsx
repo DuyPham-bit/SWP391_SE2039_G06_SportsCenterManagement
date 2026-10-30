@@ -186,8 +186,63 @@ export function TeachingSchedule() {
 
   const todayStr = useMemo(() => formatIsoDate(new Date()), []);
 
+  // Tự động đọc date và search từ URL hash khi click thông báo
+  useEffect(() => {
+    const handleHashParams = () => {
+      const hash = window.location.hash || '';
+      const qs = hash.includes('?') ? hash.split('?')[1] : '';
+      if (!qs) return;
+      const params = new URLSearchParams(qs);
+      const urlDate = params.get('date');
+      const urlSearch = params.get('search');
+      if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) {
+        const parsed = parseIsoDate(urlDate);
+        setCurrentDate(parsed);
+        setSelectedCalendarDate(urlDate);
+      }
+      if (urlSearch) {
+        setSearchQuery(decodeURIComponent(urlSearch));
+      }
+    };
+    handleHashParams();
+    window.addEventListener('hashchange', handleHashParams);
+    return () => window.removeEventListener('hashchange', handleHashParams);
+  }, []);
+
+  // Tự động mở modal chi tiết buổi dạy nếu có session khớp với date & search từ thông báo
+  useEffect(() => {
+    const hash = window.location.hash || '';
+    const qs = hash.includes('?') ? hash.split('?')[1] : '';
+    if (!qs || !schedule.sessions || schedule.sessions.length === 0) return;
+    const params = new URLSearchParams(qs);
+    const urlDate = params.get('date');
+    const urlSearch = params.get('search');
+    const urlSessionId = Number(params.get('sessionId'));
+
+    let matched = null;
+    if (urlSessionId) {
+      matched = schedule.sessions.find(s => s.id === urlSessionId || s.sessionId === urlSessionId);
+    }
+    if (!matched && (urlDate || urlSearch)) {
+      const normalizedSearch = urlSearch ? decodeURIComponent(urlSearch).toLowerCase() : '';
+      matched = schedule.sessions.find(s => {
+        const dateMatch = !urlDate || s.sessionDate === urlDate;
+        const searchMatch = !normalizedSearch || 
+          (s.className || '').toLowerCase().includes(normalizedSearch) || 
+          (s.sportName || '').toLowerCase().includes(normalizedSearch);
+        return dateMatch && searchMatch;
+      });
+    }
+    if (matched) {
+      setActiveSession(matched);
+      setDetailModalOpen(true);
+    }
+  }, [schedule.sessions]);
+
   // Tự động căn chỉnh tuần xem vào ngày có lớp nếu tuần hiện tại chưa có dữ liệu
   useEffect(() => {
+    const hash = window.location.hash || '';
+    if (hash.includes('?date=') || hash.includes('&date=')) return;
     if (schedule.sessions && schedule.sessions.length > 0) {
       const today = formatIsoDate(new Date());
       const hasToday = schedule.sessions.some(s => s.sessionDate === today);

@@ -15,7 +15,7 @@
     "test:api:live": "node tests/api-live.cjs",
     "test:api:proxy": "node tests/api-proxy.cjs",
     "build": "vite build",
-    "build:api": "vite build --outDir ../Backend/Backend/SportsCenterManagement.API/wwwroot --emptyOutDir",
+    "build:api": "vite build --outDir ../Backend/SportsCenterManagement.API/wwwroot --emptyOutDir",
     "preview": "vite preview"
   },
   "keywords": [

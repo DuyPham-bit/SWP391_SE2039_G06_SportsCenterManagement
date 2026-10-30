@@ -80,3 +80,171 @@ export function validateScheduleForm(form, maxDurationMinutes = null) {
   }
   return '';
 }
+
+
+const SPORT_ROOM_KEYWORDS = [
+  {
+    sport: ['bơi', 'swim', 'pool'],
+    room: ['bơi', 'swim', 'pool', 'bể bơi', 'hồ bơi']
+  },
+  {
+    sport: ['gym', 'fitness', 'thể hình'],
+    room: ['gym', 'fitness', 'thể hình', 'tạ', 'cardio']
+  },
+  {
+    sport: ['yoga', 'pilates', 'thiền'],
+    room: ['yoga', 'pilates', 'studio', 'reformer', 'thiền']
+  },
+  {
+    sport: ['cầu lông', 'badminton'],
+    room: ['cầu lông', 'badminton']
+  },
+  {
+    sport: ['boxing', 'võ', 'kickfit', 'mma', 'quyền anh'],
+    room: ['boxing', 'võ', 'kickfit', 'mma', 'combat', 'ring', 'quyền anh']
+  },
+  {
+    sport: ['golf'],
+    room: ['golf', 'driving range', 'simulator', 'trackman']
+  },
+  {
+    sport: ['bóng đá', 'football', 'soccer'],
+    room: ['bóng đá', 'football', 'soccer', 'sân cỏ', 'sân 5', 'sân 7', 'sân 11', 'outdoor field']
+  },
+  {
+    sport: ['bóng rổ', 'basketball'],
+    room: ['bóng rổ', 'basketball']
+  },
+  {
+    sport: ['bóng bàn', 'table tennis', 'ping pong'],
+    room: ['bóng bàn', 'table tennis', 'ping pong']
+  },
+  {
+    sport: ['pickleball'],
+    room: ['pickleball']
+  },
+  {
+    sport: ['tennis', 'quần vợt'],
+    room: ['tennis', 'quần vợt']
+  }
+];
+
+const SPORT_COACH_KEYWORDS = [
+  {
+    sport: ['bơi', 'swim'],
+    coach: ['bơi', 'swim']
+  },
+  {
+    sport: ['gym', 'fitness', 'thể hình'],
+    coach: ['gym', 'fitness', 'thể hình', 'cardio', 'tạ', 'hiit', 'tabata', 'conditioning']
+  },
+  {
+    sport: ['yoga', 'pilates', 'thiền'],
+    coach: ['yoga', 'pilates', 'thiền', 'reformer']
+  },
+  {
+    sport: ['cầu lông', 'badminton'],
+    coach: ['cầu lông', 'badminton']
+  },
+  {
+    sport: ['boxing', 'võ', 'kickfit', 'mma', 'quyền anh'],
+    coach: ['boxing', 'võ', 'kickfit', 'mma', 'quyền anh', 'đối kháng', 'tự vệ']
+  },
+  {
+    sport: ['golf'],
+    coach: ['golf', 'pga', 'swing', 'trackman']
+  },
+  {
+    sport: ['bóng đá', 'football', 'soccer'],
+    coach: ['bóng đá', 'football', 'soccer']
+  },
+  {
+    sport: ['bóng rổ', 'basketball'],
+    coach: ['bóng rổ', 'basketball']
+  },
+  {
+    sport: ['bóng bàn', 'table tennis', 'ping pong'],
+    coach: ['bóng bàn', 'table tennis', 'ping pong']
+  },
+  {
+    sport: ['pickleball'],
+    coach: ['pickleball']
+  },
+  {
+    sport: ['tennis', 'quần vợt'],
+    coach: ['tennis', 'quần vợt']
+  }
+];
+
+export function isRoomMatchingSport(room, sport) {
+  if (!sport) return true;
+  if (!room) return false;
+
+  const sName = normalize(sport.name);
+  const rCombined = `${normalize(room.name)} ${normalize(room.type)} ${normalize(room.location)}`;
+
+  if (sName && rCombined.includes(sName)) return true;
+
+  for (const group of SPORT_ROOM_KEYWORDS) {
+    if (group.sport.some(keyword => sName.includes(keyword))) {
+      if (group.room.some(keyword => rCombined.includes(keyword))) {
+        return true;
+      }
+    }
+  }
+
+  if (rCombined.includes('đa năng') || rCombined.includes('multi-purpose')) {
+    return true;
+  }
+
+  return false;
+}
+
+export function filterRoomsForSport(rooms = [], sport = null, selectedRoomId = null) {
+  const activeRooms = rooms.filter(r => r.status === 'Active');
+  if (!sport) return activeRooms;
+
+  const matched = activeRooms.filter(r =>
+    (selectedRoomId && String(r.id) === String(selectedRoomId)) || isRoomMatchingSport(r, sport)
+  );
+
+  return matched.length > 0 ? matched : activeRooms;
+}
+
+export function isCoachMatchingSport(coach, sport) {
+  if (!sport) return true;
+  if (!coach) return false;
+
+  const sportIds = coach.sportIds || coach.SportIds;
+  if (Array.isArray(sportIds) && sportIds.length > 0 && sport.id) {
+    if (sportIds.map(Number).includes(Number(sport.id))) {
+      return true;
+    }
+  }
+
+  const sName = normalize(sport.name);
+  const spec = normalize(coach.specialization);
+  if (!spec || !sName) return false;
+
+  if (spec.includes(sName)) return true;
+
+  for (const group of SPORT_COACH_KEYWORDS) {
+    if (group.sport.some(keyword => sName.includes(keyword))) {
+      if (group.coach.some(keyword => spec.includes(keyword))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+export function filterCoachesForSport(coaches = [], sport = null, selectedCoachId = null) {
+  if (!sport) return coaches;
+
+  const matched = coaches.filter(c =>
+    (selectedCoachId && String(c.id) === String(selectedCoachId)) || isCoachMatchingSport(c, sport)
+  );
+
+  return matched;
+}

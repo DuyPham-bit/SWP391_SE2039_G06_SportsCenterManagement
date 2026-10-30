@@ -13,7 +13,11 @@ import {
   scheduleEndTime,
   splitAndSortClasses,
   validateClassForm,
-  validateScheduleForm
+  validateScheduleForm,
+  filterRoomsForSport,
+  filterCoachesForSport,
+  isRoomMatchingSport,
+  isCoachMatchingSport
 } from './classManagementView.js';
 
 // Visual Sport Theme Mapping
@@ -178,14 +182,42 @@ export function ClassesAndRooms() {
 
   const classGroups = useMemo(() => splitAndSortClasses(data.classes), [data.classes]);
 
+  // Filtered rooms and coaches for class modal based on selected sport
+  const selectedClassSport = useMemo(() => {
+    if (!form.sportId) return null;
+    return data.sports.find((s) => String(s.id) === String(form.sportId)) || null;
+  }, [data.sports, form.sportId]);
+
+  const availableClassRooms = useMemo(() => {
+    return filterRoomsForSport(data.rooms, selectedClassSport, form.roomId);
+  }, [data.rooms, selectedClassSport, form.roomId]);
+
+  const availableClassCoaches = useMemo(() => {
+    return filterCoachesForSport(data.coaches, selectedClassSport, form.coachId);
+  }, [data.coaches, selectedClassSport, form.coachId]);
+
   // Form Change Handler
   const handleFormChange = (e) => {
     setFormError('');
     const { name, value, type, checked } = e.target;
-    setForm((prev) => ({
-      ...prev,
-      [name]: type === 'checkbox' ? checked : value
-    }));
+    setForm((prev) => {
+      const next = {
+        ...prev,
+        [name]: type === 'checkbox' ? checked : value
+      };
+      if (modal?.type === 'class' && name === 'sportId') {
+        const selectedSport = data.sports.find((s) => String(s.id) === String(value));
+        const currentRoom = data.rooms.find((r) => String(r.id) === String(prev.roomId));
+        if (currentRoom && !isRoomMatchingSport(currentRoom, selectedSport)) {
+          next.roomId = '';
+        }
+        const currentCoach = data.coaches.find((c) => String(c.id) === String(prev.coachId));
+        if (currentCoach && !isCoachMatchingSport(currentCoach, selectedSport)) {
+          next.coachId = '';
+        }
+      }
+      return next;
+    });
   };
 
   // Safe Action Wrapper
@@ -1599,6 +1631,7 @@ export function ClassesAndRooms() {
                 row={modal.row}
                 schedules={schedules}
                 rooms={data.rooms}
+                sports={data.sports}
                 form={form}
                 change={handleFormChange}
                 busy={busy}
@@ -1714,13 +1747,11 @@ export function ClassesAndRooms() {
                 className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
               >
                 <option value="">{isEn ? 'Select court or room' : 'Chọn phòng tập / Sân bãi'}</option>
-                {data.rooms
-                  .filter((r) => r.status === 'Active')
-                  .map((r) => (
-                    <option key={r.id} value={r.id}>
-                      {r.name} ({r.type || (isEn ? 'Cap' : 'Sức chứa')}: {r.capacity})
-                    </option>
-                  ))}
+                {availableClassRooms.map((r) => (
+                  <option key={r.id} value={r.id}>
+                    {r.name} ({r.type || (isEn ? 'Cap' : 'Sức chứa')}: {r.capacity})
+                  </option>
+                ))}
               </select>
             </div>
 
@@ -1735,9 +1766,9 @@ export function ClassesAndRooms() {
                 className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
               >
                 <option value="">{isEn ? 'Assign later' : 'Chưa phân công HLV ngay'}</option>
-                {data.coaches.map((c) => (
+                {availableClassCoaches.map((c) => (
                   <option key={c.id} value={c.id}>
-                    {c.fullName} {c.specialization ? `(${c.specialization})` : ''}
+                    {c.fullName}
                   </option>
                 ))}
               </select>
@@ -2056,6 +2087,7 @@ function ScheduleManager({
   row,
   schedules,
   rooms,
+  sports = [],
   form,
   change,
   busy,
@@ -2567,9 +2599,11 @@ function ScheduleManager({
                   className="w-full p-2 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-xs font-bold text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#24828F]"
                 >
                   <option value="">{isEn ? 'Class default court' : 'Phòng mặc định của lớp'}</option>
-                  {rooms
-                    .filter((room) => room.status === 'Active')
-                    .map((room) => (
+                  {filterRoomsForSport(
+                    rooms,
+                    sports.find((s) => String(s.id) === String(row?.sportId)),
+                    form.roomId
+                  ).map((room) => (
                       <option key={room.id} value={room.id}>
                         {room.name} · {room.capacity} {isEn ? 'people' : 'người'}
                       </option>

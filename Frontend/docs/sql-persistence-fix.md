@@ -53,14 +53,14 @@ npm.cmd run build
 npm.cmd run build:api
 ```
 
-Lệnh tại `Backend/Backend/` để chạy cả SQL integration (connection bên dưới dùng Windows Authentication, không chứa mật khẩu):
+Lệnh tại `Backend/` để chạy cả SQL integration (connection bên dưới dùng Windows Authentication, không chứa mật khẩu):
 
 ```powershell
 $env:SCMS_TEST_SQL_CONNECTION = 'Server=DESKTOP-M1NP3N6;Database=master;Integrated Security=True;TrustServerCertificate=True'
 dotnet test SportsCenterManagement.Tests/SportsCenterManagement.Tests.csproj --no-restore -p:OutputPath=bin/PersistenceValidation/ --logger trx
 ```
 
-Không đặt biến trên thì SQL integration được ghi rõ Skip; các regression khác vẫn chạy. Report `.trx` ở `Backend/Backend/SportsCenterManagement.Tests/TestResults/`.
+Không đặt biến trên thì SQL integration được ghi rõ Skip; các regression khác vẫn chạy. Report `.trx` ở `Backend/SportsCenterManagement.Tests/TestResults/`.
 
 ## Áp dụng và giới hạn
 

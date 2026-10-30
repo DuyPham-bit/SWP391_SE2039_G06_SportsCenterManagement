@@ -24,6 +24,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
 
   const getRoleLabel = (r) => {
     switch (String(r || '').toUpperCase()) {
+      case 'SYSTEMADMIN':
       case 'ADMIN':
         return isEn ? 'System Admin' : 'Quản trị hệ thống';
       case 'MANAGER':
@@ -272,7 +273,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
       ];
     }
 
-    if (normalizedRole === 'ADMIN') {
+    if (normalizedRole === 'ADMIN' || normalizedRole === 'SYSTEMADMIN') {
       return [
         {
           category: isEn ? 'SYSTEM OVERVIEW' : 'TỔNG QUAN HỆ THỐNG',

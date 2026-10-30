@@ -50,8 +50,8 @@ Backend chia thành ba layer: API, BLL và DAL. Dữ liệu được bảo vệ 
 3. Chạy backend:
 
    ```powershell
-   dotnet restore .\Backend\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
-   dotnet run --project .\Backend\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
+   dotnet restore .\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
+   dotnet run --project .\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
    ```
 
 4. Chạy frontend:
@@ -67,7 +67,7 @@ Frontend mặc định chạy ở `http://localhost:3004`; API dùng launch prof
 ## Kiểm tra cơ bản
 
 ```powershell
-dotnet build .\Backend\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
+dotnet build .\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
 
 cd .\Frontend
 npm test

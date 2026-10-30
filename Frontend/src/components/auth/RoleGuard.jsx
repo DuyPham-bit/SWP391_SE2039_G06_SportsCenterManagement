@@ -67,6 +67,7 @@ export function RoleGuard({ allowedRoles = [], requiredCapability, children }) {
         <button
           onClick={() => {
             switch (normalizedRole) {
+              case 'SYSTEMADMIN':
               case 'ADMIN': window.location.hash = '#/admin/dashboard'; break;
               case 'MANAGER': window.location.hash = '#/manager/dashboard'; break;
               case 'RECEPTIONIST': window.location.hash = '#/receptionist/dashboard'; break;

@@ -2,8 +2,8 @@ import React, { useState } from 'react';
 import { formatMemberDateTime } from '../../features/member/memberOverview.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { translateNotificationTitle, translateNotificationContent } from '../../services/i18nHelper.js';
-import { useAuth } from '../../context/AuthContext.js';
-import { notificationTarget } from './notificationNavigation.js';
+import { useAuth } from '../../context/AuthContext.jsx';
+import { notificationTarget, getNotificationActionLabel } from './notificationNavigation.js';
 
 export function NotificationList({ notifications, title }) {
   const { role } = useAuth();
@@ -153,7 +153,7 @@ export function NotificationList({ notifications, title }) {
               </time>
               {notificationTarget(item, role) && (
                 <a href={notificationTarget(item, role)} onClick={() => markRead(item)} className="font-bold text-[#2D6A4F] hover:underline">
-                  {isEn ? 'Open conversation & reply' : 'Mở cuộc trò chuyện & trả lời'}
+                  {getNotificationActionLabel(item, role, isEn)}
                 </a>
               )}
               {!item.isRead && (
