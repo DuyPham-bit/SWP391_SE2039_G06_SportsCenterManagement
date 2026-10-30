@@ -612,7 +612,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         else if (row.MemberId.HasValue)
         {
             var memberUserId = await db.MemberProfiles.Where(x => x.Id == row.MemberId).Select(x => x.UserId).SingleAsync(ct);
-            await NotifyUsers(userId, [memberUserId], "Cập nhật lịch tập", $"Lịch {row.Title}: {request.Status}. {request.Reason}", "AppointmentChanged", ["InApp", "Email", "SMS", "Push"], ct);
+            await NotifyUsers(userId, [memberUserId], "Cập nhật lịch tập", $"Lịch {row.Title}: {request.Status}. {request.Reason}", "AppointmentChanged", ["InApp", "Email"], ct);
         }
         await db.SaveChangesAsync(ct);
         await transaction.CommitAsync(ct);
@@ -709,7 +709,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             Title = request.Title.Trim(), Description = request.Description.Trim(), DueDate = request.DueDate.HasValue ? ToUtc(request.DueDate.Value) : null,
             CreatedAt = UtcNow, Status = "Active" };
         db.Assignments.Add(row);
-        await NotifyUsers(userId, recipients, "Bài tập tại nhà mới", row.Title, "HomeworkAssigned", ["InApp", "Push"], ct);
+        await NotifyUsers(userId, recipients, "Bài tập tại nhà mới", row.Title, "HomeworkAssigned", ["InApp"], ct);
         await transaction.CommitAsync(ct);
         return row.Id;
     }
@@ -797,7 +797,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             SenderUserId = userId, Content = request.Content.Trim(), CreatedAt = UtcNow };
         db.CoachMessages.Add(row); await db.SaveChangesAsync(ct);
         await NotifyUsers(userId, [recipient], "Tin nhắn mới từ chương trình huấn luyện", row.Content.Length > 120 ? row.Content[..120] + "…" : row.Content,
-            "CoachChat", ["InApp", "Push"], ct);
+            "CoachChat", ["InApp"], ct);
         await transaction.CommitAsync(ct);
         return row.Id;
     }
@@ -879,13 +879,13 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             PhotoUrl = request.PhotoUrl?.Trim(), Status = "Open", ReportedAt = UtcNow };
         db.EquipmentIssues.Add(row); await db.SaveChangesAsync(ct);
         var managers = await db.StaffProfiles.Where(x => x.CenterId == coach.CenterId && x.Status == "Active").Select(x => x.UserId).ToArrayAsync(ct);
-        await NotifyUsers(userId, managers, $"Sự cố thiết bị {request.Severity}", request.Title.Trim(), "EquipmentIssue", ["InApp", "Push"], ct);
+        await NotifyUsers(userId, managers, $"Sự cố thiết bị {request.Severity}", request.Title.Trim(), "EquipmentIssue", ["InApp"], ct);
         return row.Id;
     }
 
     private static string[] NormalizeChannels(string[]? channels)
     {
-        var allowed = new[] { "InApp", "Email", "SMS", "Push" };
+        var allowed = new[] { "InApp", "Email" };
         var result = (channels ?? ["InApp"]).Where(x => allowed.Contains(x, StringComparer.OrdinalIgnoreCase))
             .Select(x => allowed.First(a => a.Equals(x, StringComparison.OrdinalIgnoreCase))).Distinct().ToArray();
         return result.Length == 0 ? ["InApp"] : result;
@@ -969,7 +969,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         if (assignment.CoachId.HasValue)
         {
             var coachUser = await db.CoachProfiles.Where(x => x.Id == assignment.CoachId).Select(x => x.UserId).SingleAsync(ct);
-            await NotifyUsers(userId, [coachUser], "Học viên đã check-in bài tập", $"{member.FullName} đã hoàn thành: {assignment.Title}.", "HomeworkSubmitted", ["InApp", "Push"], ct);
+            await NotifyUsers(userId, [coachUser], "Học viên đã check-in bài tập", $"{member.FullName} đã hoàn thành: {assignment.Title}.", "HomeworkSubmitted", ["InApp"], ct);
         }
         return row.Id;
     }
@@ -1198,7 +1198,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         row.ResolvedAt = request.Status is "Resolved" or "Closed" or "Rejected" or "Cancelled" ? UtcNow : null;
         await db.SaveChangesAsync(ct);
         await NotifyUsers(userId, [row.ReportedByUserId], "Cập nhật sự cố thiết bị", $"{row.Title}: {request.Status}. {request.ResolutionNote}",
-            "EquipmentIssueUpdated", ["InApp", "Push"], ct);
+            "EquipmentIssueUpdated", ["InApp"], ct);
     }
 
     private void AddAudit(long userId, long centerId, string action, string entityType, long? entityId = null) =>

@@ -448,7 +448,7 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
             IsRead = false,
             CreatedAt = now
         }));
-        var channels = new[] { "InApp", "Email", "SMS", "Push" };
+        var channels = new[] { "InApp", "Email" };
         Db.CommunicationDeliveries.AddRange(coachUserIds.SelectMany(userId => channels.Select(channel =>
             new CommunicationDelivery
             {

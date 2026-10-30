@@ -57,6 +57,24 @@ public sealed class CenterNotificationService(IUnitOfWork unitOfWork) : ICenterN
         var notification = await FlowNotificationWriter.CreateWithResultAsync(
             unitOfWork.Context, actorUserId, recipientIds, title, message, "CenterAnnouncement", cancellationToken)
             ?? throw new FlowException(409, "Không thể xác định người nhận thông báo.");
+
+        var allowedChannels = new[] { "InApp", "Email" };
+        var channels = (request.Channels ?? ["InApp", "Email"])
+            .Where(x => allowedChannels.Contains(x, StringComparer.OrdinalIgnoreCase))
+            .Select(x => allowedChannels.First(a => a.Equals(x, StringComparison.OrdinalIgnoreCase)))
+            .Distinct().ToArray();
+        if (channels.Length == 0) channels = ["InApp"];
+
+        unitOfWork.Context.CommunicationDeliveries.AddRange(recipientIds.SelectMany(id => channels.Select(channel => new CommunicationDelivery
+        {
+            NotificationId = notification.Id,
+            RecipientUserId = id,
+            Channel = channel,
+            Status = channel == "InApp" ? "Delivered" : "Queued",
+            ProviderMessage = channel == "InApp" ? "Đã giao trong ứng dụng" : "Đang chờ cấu hình cổng gửi bên ngoài",
+            CreatedAt = notification.CreatedAt,
+            SentAt = channel == "InApp" ? notification.CreatedAt : null
+        })));
         unitOfWork.Context.AuditLogs.Add(new AuditLog
         {
             UserId = actorUserId,

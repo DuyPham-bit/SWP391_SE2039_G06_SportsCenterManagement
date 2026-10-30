@@ -1047,7 +1047,7 @@ function ProgramsTab({ data, act, working, isEn }) {
           description: f.get('description'),
           dueDate: f.get('dueDate') || null
         }),
-      isEn ? 'Homework assigned and push notification sent.' : 'Đã giao bài tập về nhà và kích hoạt thông báo Push.'
+      isEn ? 'Homework assigned and notification sent.' : 'Đã giao bài tập về nhà và kích hoạt thông báo.'
     ).then((ok) => ok && e.target.reset());
   };
 
@@ -1185,7 +1185,7 @@ function ProgramsTab({ data, act, working, isEn }) {
               <input name="dueDate" type="datetime-local" className={inputClass} />
             </FormField>
             <button disabled={working} className={`${buttonPrimary} w-full`}>
-              <span>{isEn ? 'Assign Homework & Send Push' : 'Giao bài tập & Gửi thông báo Push'}</span>
+              <span>{isEn ? 'Assign Homework & Send Notice' : 'Giao bài tập & Gửi thông báo'}</span>
             </button>
           </form>
         </SectionCard>
@@ -1476,7 +1476,7 @@ function CommunicationTab({ data, act, working, isEn }) {
   const broadcast = (e) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const channels = ['InApp', 'Email', 'SMS', 'Push'].filter(x => f.get(x));
+    const channels = ['InApp', 'Email'].filter(x => f.get(x));
     return act(
       () =>
         coachProfessionalApi.broadcast({
@@ -1606,16 +1606,16 @@ function CommunicationTab({ data, act, working, isEn }) {
           <fieldset>
             <legend className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">{isEn ? 'Delivery Channels' : 'Kênh gửi tin'}</legend>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              {['InApp', 'Email', 'SMS', 'Push'].map((ch, idx) => (
+              {['InApp', 'Email'].map((ch) => (
                 <label key={ch} className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-750 cursor-pointer">
-                  <input name={ch} type="checkbox" defaultChecked={idx === 0} className="rounded text-[#81B29A] focus:ring-[#81B29A]" />
+                  <input name={ch} type="checkbox" defaultChecked className="rounded text-[#81B29A] focus:ring-[#81B29A]" />
                   <span>{ch}</span>
                 </label>
               ))}
             </div>
           </fieldset>
           <p className="text-[11px] text-slate-400">
-            {isEn ? 'In-App messages are delivered instantly; Email/SMS/Push queued and supervised by the center.' : 'Tin nhắn In-App gửi tức thì; Email/SMS/Push vào hàng đợi được giám sát bởi trung tâm.'}
+            {isEn ? 'In-App messages are delivered instantly; Email queued and supervised by the center.' : 'Tin nhắn In-App gửi tức thì; Email vào hàng đợi được giám sát bởi trung tâm.'}
           </p>
           <button disabled={working} className={`${buttonPrimary} w-full`}>
             <span>{isEn ? 'Broadcast Notice' : 'Phát thông báo'}</span>

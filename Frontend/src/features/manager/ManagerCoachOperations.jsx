@@ -708,8 +708,8 @@ export function ManagerCoachOperations() {
           </div>
           <p className="mt-4 text-xs text-slate-500 dark:text-slate-400">
             {isEn
-              ? 'InApp notifications are delivered in real time. External channels remain queued until third-party providers (Email/SMS/Push) are configured.'
-              : 'InApp được giao trực tiếp; các kênh bên ngoài ở trạng thái Queued cho đến khi trung tâm cấu hình nhà cung cấp Email/SMS/Push.'}
+              ? 'InApp notifications are delivered in real time. External channels remain queued until third-party providers (Email) are configured.'
+              : 'InApp được giao trực tiếp; các kênh bên ngoài ở trạng thái Queued cho đến khi trung tâm cấu hình nhà cung cấp Email.'}
           </p>
         </Card>
       )}

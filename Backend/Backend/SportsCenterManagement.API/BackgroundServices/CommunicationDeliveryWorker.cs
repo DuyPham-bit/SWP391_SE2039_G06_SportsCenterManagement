@@ -16,7 +16,7 @@ public sealed class CommunicationDeliveryWorker(
     TimeProvider timeProvider,
     ILogger<CommunicationDeliveryWorker> logger) : BackgroundService
 {
-    private static readonly string[] ExternalChannels = ["Email", "SMS", "Push"];
+    private static readonly string[] ExternalChannels = ["Email"];
 
     protected override async Task ExecuteAsync(CancellationToken stoppingToken)
     {

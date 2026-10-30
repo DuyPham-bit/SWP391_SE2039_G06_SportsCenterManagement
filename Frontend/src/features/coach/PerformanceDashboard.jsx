@@ -81,7 +81,7 @@ export function PerformanceDashboard() {
         content: isEn
           ? `Coach ${coachName} reminds you to maintain regular workout schedule. Let's conquer your fitness goals!`
           : `HLV ${coachName} nhắc nhở bạn duy trì lịch tập đều đặn để đạt mục tiêu thể chất tốt nhất!`,
-        channels: ['InApp', 'Push']
+        channels: ['InApp', 'Email']
       });
       showSuccess(
         isEn
