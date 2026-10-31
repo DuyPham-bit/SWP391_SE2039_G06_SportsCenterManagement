@@ -3353,6 +3353,10 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<long?>("CenterId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("center_id");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
@@ -3395,6 +3399,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("web_view_link");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("CenterId", "CreatedAt");
+
+                    b.HasIndex("DriveFileId");
 
                     b.ToTable("uploaded_media", "dbo");
                 });

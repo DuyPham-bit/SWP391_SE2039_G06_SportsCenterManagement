@@ -96,6 +96,7 @@ builder.Services.AddScoped<CoachProfessionalService>();
 builder.Services.AddScoped<PayrollService>();
 builder.Services.AddScoped<MemberAiContextService>();
 builder.Services.AddSingleton(TimeProvider.System);
+builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ClassReminderService>();
 builder.Services.AddHostedService<ClassReminderWorker>();
 builder.Services.AddHostedService<CommunicationDeliveryWorker>();

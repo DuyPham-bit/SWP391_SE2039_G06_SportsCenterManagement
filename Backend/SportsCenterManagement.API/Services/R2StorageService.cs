@@ -1,15 +1,24 @@
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Options;
+using Microsoft.EntityFrameworkCore;
+using System.Security.Claims;
+using System.Text.RegularExpressions;
 using SportsCenterManagement.API.Models;
 using SportsCenterManagement.BLL.Common;
+using SportsCenterManagement.BLL.Services;
+using SportsCenterManagement.DAL.Context;
+using SportsCenterManagement.DAL.Entities;
 
 namespace SportsCenterManagement.API.Services;
 
 public sealed class R2StorageService(
     IAmazonS3 s3Client,
     IOptions<R2StorageOptions> options,
-    TimeProvider timeProvider) : IR2StorageService
+    TimeProvider timeProvider,
+    SportsCenterDbContext db,
+    IHttpContextAccessor httpContextAccessor,
+    ILogger<R2StorageService> logger) : IR2StorageService
 {
     private const long MaxFileSize = 5 * 1024 * 1024;
     private const string RefundBillPrefix = "refund-bills/";
@@ -38,6 +47,13 @@ public sealed class R2StorageService(
     {
         if (folder is not ("refund-bills" or "dashboard") && !folder.StartsWith("avatars/", StringComparison.Ordinal))
             throw new ArgumentException("R2 image folder is not allowed.", nameof(folder));
+        var scope = await CurrentScope(cancellationToken);
+        if (folder.StartsWith("avatars/", StringComparison.Ordinal))
+        {
+            if (folder != $"avatars/{scope.UserId}") throw BusinessException.Forbidden("Không có quyền tải ảnh đại diện này.");
+        }
+        else if (!scope.IsAdmin && (!scope.IsManager || !scope.CenterId.HasValue))
+            throw BusinessException.Forbidden("Tài khoản chưa được giao quyền tại trung tâm.");
         if (file.Length <= 0)
             throw BusinessException.BadRequest("Vui lòng chọn ảnh để tải lên.");
         if (file.Length > maxFileSize)
@@ -68,26 +84,81 @@ public sealed class R2StorageService(
         request.Headers.CacheControl = "public, max-age=31536000, immutable";
 
         await s3Client.PutObjectAsync(request, cancellationToken);
+        var media = new UploadedMedia
+        {
+            DriveFileId = MediaAccessScope.R2FileIdPrefix + key,
+            FileName = Path.GetFileName(file.FileName), MimeType = contentType, FileSize = file.Length,
+            FileUrl = $"{_options.PublicDomain.TrimEnd('/')}/{key}", UploadedByUserId = scope.UserId,
+            CenterId = scope.CenterId, CreatedAt = now.UtcDateTime
+        };
+        db.UploadedMedias.Add(media);
+        try { await db.SaveChangesAsync(cancellationToken); }
+        catch
+        {
+            // Do not leave an upload without ownership metadata if the database rejects it.
+            try { await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = request.BucketName, Key = key }, CancellationToken.None); }
+            catch (Exception cleanup) { logger.LogError(cleanup, "Could not clean up R2 upload after metadata persistence failed."); }
+            throw;
+        }
         return key;
     }
 
     public async Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
-        var normalizedKey = (key ?? string.Empty).Trim().Replace('\\', '/').TrimStart('/');
-        if (!(normalizedKey.StartsWith(RefundBillPrefix, StringComparison.Ordinal) ||
-              normalizedKey.StartsWith("dashboard/", StringComparison.Ordinal) ||
-              normalizedKey.StartsWith("avatars/", StringComparison.Ordinal)) ||
-            normalizedKey.Contains("../", StringComparison.Ordinal) ||
-            normalizedKey.EndsWith("/", StringComparison.Ordinal))
+        if (string.IsNullOrEmpty(key) || key.Length > 250 ||
+            !Regex.IsMatch(key, @"\A(?:refund-bills|dashboard|avatars)/[a-zA-Z0-9/_.-]+\z") ||
+            key.Split('/').Any(part => part is "" or "." or ".."))
         {
             throw BusinessException.BadRequest("Đường dẫn ảnh hóa đơn R2 không hợp lệ.");
+        }
+
+        var scope = await CurrentScope(cancellationToken);
+        // Object keys are case-sensitive even when SQL Server's default collation is not.
+        var fileId = MediaAccessScope.R2FileIdPrefix + key;
+        var metadata = await db.UploadedMedias.SingleOrDefaultAsync(m =>
+            EF.Functions.Collate(m.DriveFileId, "Latin1_General_100_BIN2") == fileId, cancellationToken);
+        if (key.StartsWith("avatars/", StringComparison.Ordinal))
+        {
+            // Legacy avatars already encode their owner; no other route may use this as a business-image delete.
+            if (!key.StartsWith($"avatars/{scope.UserId}/", StringComparison.Ordinal)
+                || (metadata is not null && metadata.UploadedByUserId != scope.UserId))
+                throw BusinessException.NotFound("Không tìm thấy ảnh trong phạm vi được phép.");
+        }
+        else
+        {
+            if (!scope.IsAdmin && !scope.IsManager) throw BusinessException.Forbidden("Không có quyền xóa ảnh này.");
+            var allowed = scope.IsAdmin || (scope.CenterId.HasValue && metadata?.CenterId == scope.CenterId);
+            if (!scope.IsAdmin && scope.CenterId.HasValue && key.StartsWith(RefundBillPrefix, StringComparison.Ordinal))
+            {
+                // Old refund evidence has no upload metadata. Its invoice is the authoritative tenant boundary.
+                var publicUrl = $"{_options.PublicDomain.TrimEnd('/')}/{key}";
+                var centers = await (from refund in db.PaymentRefunds join payment in db.Payments on refund.PaymentId equals payment.Id
+                    join invoice in db.Invoices on payment.InvoiceId equals invoice.Id
+                    where EF.Functions.Collate(refund.TransferProofUrl!, "Latin1_General_100_BIN2") == key
+                        || EF.Functions.Collate(refund.TransferProofUrl!, "Latin1_General_100_BIN2") == publicUrl
+                    select invoice.CenterId).Distinct().ToListAsync(cancellationToken);
+                if (centers.Any(center => center != scope.CenterId)) allowed = false;
+                else if (metadata is null) allowed = centers.Count > 0;
+            }
+            if (!allowed) throw BusinessException.NotFound("Không tìm thấy ảnh trong phạm vi được phép.");
         }
 
         await s3Client.DeleteObjectAsync(new DeleteObjectRequest
         {
             BucketName = Required(_options.BucketName, nameof(_options.BucketName)),
-            Key = normalizedKey
+            Key = key
         }, cancellationToken);
+        if (metadata is not null)
+        {
+            db.UploadedMedias.Remove(metadata);
+            await db.SaveChangesAsync(cancellationToken);
+        }
+    }
+
+    private Task<MediaAccessScope> CurrentScope(CancellationToken ct)
+    {
+        var id = httpContextAccessor.HttpContext?.User.FindFirstValue(ClaimTypes.NameIdentifier);
+        return MediaAccessScope.ForUser(db, long.TryParse(id, out var userId) ? userId : 0, ct);
     }
 
     private static async Task ValidateSignatureAsync(

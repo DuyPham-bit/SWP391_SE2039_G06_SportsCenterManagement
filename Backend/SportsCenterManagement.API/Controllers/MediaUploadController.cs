@@ -47,7 +47,7 @@ public class MediaUploadController : FlowControllerBase
         }
 
         using var stream = file.OpenReadStream();
-        var currentUserId = CurrentUserId > 0 ? CurrentUserId : (long?)null;
+        var currentUserId = CurrentUserId;
 
         var result = await _googleDriveService.UploadFileAsync(
             stream,
@@ -67,7 +67,7 @@ public class MediaUploadController : FlowControllerBase
     [HttpGet("drive-files")]
     public async Task<ActionResult<List<UploadMediaResultDto>>> GetDriveFiles(CancellationToken ct = default)
     {
-        var files = await _googleDriveService.GetDriveFolderImagesAsync(ct);
+        var files = await _googleDriveService.GetDriveFolderImagesAsync(CurrentUserId, ct);
         return Ok(files);
     }
 
@@ -77,7 +77,7 @@ public class MediaUploadController : FlowControllerBase
     [HttpGet("status")]
     public async Task<ActionResult<GoogleDriveStatusDto>> GetStatus(CancellationToken ct = default)
     {
-        var status = await _googleDriveService.GetStatusAsync(ct);
+        var status = await _googleDriveService.GetStatusAsync(CurrentUserId, ct);
         return Ok(status);
     }
 
@@ -87,7 +87,7 @@ public class MediaUploadController : FlowControllerBase
     [HttpGet("recent")]
     public async Task<ActionResult<List<UploadMediaResultDto>>> GetRecent([FromQuery] int limit = 50, CancellationToken ct = default)
     {
-        var list = await _googleDriveService.GetRecentUploadsAsync(Math.Clamp(limit, 1, 100), ct);
+        var list = await _googleDriveService.GetRecentUploadsAsync(CurrentUserId, Math.Clamp(limit, 1, 100), ct);
         return Ok(list);
     }
 }

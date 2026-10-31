@@ -28,6 +28,7 @@ public sealed class RefundBillStorageController(IR2StorageService storageService
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     public async Task<IActionResult> Delete([FromQuery] string key, CancellationToken cancellationToken)
     {
+        if (!key.StartsWith("refund-bills/", StringComparison.Ordinal)) return BadRequest();
         await storageService.DeleteAsync(key, cancellationToken);
         return NoContent();
     }

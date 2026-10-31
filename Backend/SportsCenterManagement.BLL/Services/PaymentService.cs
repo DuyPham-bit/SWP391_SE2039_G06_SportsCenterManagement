@@ -1166,6 +1166,21 @@ public sealed class PaymentService(
         if (refund.Status != "Pending")
             throw BusinessException.Conflict("Yêu cầu hoàn tiền này đã được xử lý.");
 
+        if (status == "Approved")
+        {
+            // A caller must not claim another tenant's object by attaching its key to a new refund.
+            var scope = await MediaAccessScope.ForUser(_unitOfWork.Context, managerUserId, cancellationToken);
+            if (!scope.IsAdmin)
+            {
+                var fileId = MediaAccessScope.R2FileIdPrefix + transferProofUrl;
+                var media = await _unitOfWork.Context.UploadedMedias.AsNoTracking()
+                    .Where(m => EF.Functions.Collate(m.DriveFileId, "Latin1_General_100_BIN2") == fileId)
+                    .Select(m => new { m.CenterId }).SingleOrDefaultAsync(cancellationToken);
+                if (!scope.IsManager || scope.CenterId != invoice.CenterId || media?.CenterId != invoice.CenterId)
+                    throw BusinessException.NotFound("Không tìm thấy ảnh trong phạm vi được phép. Vui lòng tải lại ảnh chứng từ.");
+            }
+        }
+
         var now = DateTime.UtcNow;
         refund.Status = status;
         refund.ReviewedBy = managerUserId;

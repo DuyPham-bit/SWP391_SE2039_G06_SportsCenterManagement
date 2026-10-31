@@ -33,6 +33,10 @@ public class UploadedMedia : BaseEntity
     [Column("uploaded_by_user_id")]
     public long? UploadedByUserId { get; set; }
 
+    // Snapshot the tenant at upload time; transferring an employee must not move their old media.
+    [Column("center_id")]
+    public long? CenterId { get; set; }
+
     [Column("created_at")]
     public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 }

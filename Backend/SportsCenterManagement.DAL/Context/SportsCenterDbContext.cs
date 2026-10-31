@@ -84,6 +84,8 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .IsBuiltIn();
 
         modelBuilder.HasDefaultSchema("dbo");
+        modelBuilder.Entity<UploadedMedia>().HasIndex(entity => new { entity.CenterId, entity.CreatedAt });
+        modelBuilder.Entity<UploadedMedia>().HasIndex(entity => entity.DriveFileId);
         modelBuilder.Entity<User>().HasIndex(entity => entity.GoogleSubject).IsUnique()
             .HasFilter("[google_subject] IS NOT NULL");
         modelBuilder.Entity<TrainingResult>().HasOne<ClassEntity>().WithMany()

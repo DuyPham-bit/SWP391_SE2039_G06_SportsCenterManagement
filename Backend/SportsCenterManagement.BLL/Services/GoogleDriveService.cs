@@ -119,6 +119,7 @@ public class GoogleDriveService
         string mimeType,
         long? fileSize,
         long? currentUserId,
+        long? centerId,
         CancellationToken cancellationToken)
     {
         var uploadsDir = Path.Combine(_storageRootPath, "uploads");
@@ -151,6 +152,7 @@ public class GoogleDriveService
             FileUrl = publicUrl,
             WebViewLink = publicUrl,
             UploadedByUserId = currentUserId,
+            CenterId = centerId,
             CreatedAt = DateTime.UtcNow
         };
 
@@ -174,9 +176,10 @@ public class GoogleDriveService
         string fileName,
         string mimeType,
         long? fileSize,
-        long? currentUserId = null,
+        long currentUserId,
         CancellationToken cancellationToken = default)
     {
+        var scope = await MediaAccessScope.ForUser(_dbContext, currentUserId, cancellationToken);
         var validated = await ImageUploadValidator.ValidateAsync(fileStream, fileName, mimeType, cancellationToken);
         fileName = validated.FileName;
         mimeType = validated.MimeType;
@@ -186,7 +189,7 @@ public class GoogleDriveService
         if (string.Equals(storageProvider, "Local", StringComparison.OrdinalIgnoreCase))
         {
             _logger.LogInformation("StorageProvider được chỉ định là 'Local'. Lưu trực tiếp vào bộ nhớ máy chủ.");
-            return await SaveLocalFileAsync(fileStream, fileName, mimeType, fileSize, currentUserId, cancellationToken);
+            return await SaveLocalFileAsync(fileStream, fileName, mimeType, fileSize, currentUserId, scope.CenterId, cancellationToken);
         }
 
         try
@@ -253,6 +256,7 @@ public class GoogleDriveService
                 FileUrl = publicUrl,
                 WebViewLink = driveFile.WebViewLink,
                 UploadedByUserId = currentUserId,
+                CenterId = scope.CenterId,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -275,7 +279,7 @@ public class GoogleDriveService
             _logger.LogError(ex, "Upload lên Google Drive thất bại: {Error}. Đang tự động lưu file cục bộ (Local Fallback)...", ex.Message);
             try
             {
-                return await SaveLocalFileAsync(fileStream, fileName, mimeType, fileSize, currentUserId, cancellationToken);
+                return await SaveLocalFileAsync(fileStream, fileName, mimeType, fileSize, currentUserId, scope.CenterId, cancellationToken);
             }
             catch (Exception localEx) when (localEx is not OperationCanceledException)
             {
@@ -296,7 +300,7 @@ public class GoogleDriveService
         return folderId;
     }
 
-    private async Task<List<Google.Apis.Drive.v3.Data.File>> ReadDriveImagesAsync(CancellationToken ct)
+    protected virtual async Task<List<Google.Apis.Drive.v3.Data.File>> ReadDriveImagesAsync(CancellationToken ct)
     {
         var folderId = GetFolderId();
         using var driveService = CreateDriveService();
@@ -320,9 +324,10 @@ public class GoogleDriveService
         return files.DistinctBy(f => f.Id).ToList();
     }
 
-    public async Task<List<UploadMediaResultDto>> GetDriveFolderImagesAsync(CancellationToken cancellationToken = default)
+    public async Task<List<UploadMediaResultDto>> GetDriveFolderImagesAsync(long currentUserId, CancellationToken cancellationToken = default)
     {
-        var dbList = await _dbContext.UploadedMedias.OrderByDescending(m => m.CreatedAt).ToListAsync(cancellationToken);
+        var scope = await MediaAccessScope.ForUser(_dbContext, currentUserId, cancellationToken);
+        var dbList = await scope.Library(_dbContext).AsTracking().OrderByDescending(m => m.CreatedAt).ToListAsync(cancellationToken);
         if (string.Equals(_configuration["GoogleDrive:StorageProvider"], "Local", StringComparison.OrdinalIgnoreCase))
             return dbList.Select(ToDto).ToList();
 
@@ -344,6 +349,8 @@ public class GoogleDriveService
         {
             if (!byFileId.TryGetValue(file.Id, out var entity))
             {
+                // A shared Drive folder is not proof that an unknown file belongs to this tenant.
+                if (!scope.IsAdmin) continue;
                 entity = new UploadedMedia
                 {
                     DriveFileId = file.Id,
@@ -359,7 +366,8 @@ public class GoogleDriveService
             entity.WebViewLink = file.WebViewLink;
         }
         await _dbContext.SaveChangesAsync(cancellationToken);
-        foreach (var file in files) results.Add(ToDto(byFileId[file.Id], file.ThumbnailLink));
+        foreach (var file in files)
+            if (byFileId.TryGetValue(file.Id, out var visible)) results.Add(ToDto(visible, file.ThumbnailLink));
         results.AddRange(dbList.Where(m => m.DriveFileId.StartsWith("local_", StringComparison.Ordinal)).Select(ToDto));
         // Missing files are hidden after a successful snapshot. Metadata is retained for recovery/auditing.
         return results.OrderByDescending(m => m.CreatedAt).ToList();
@@ -374,11 +382,13 @@ public class GoogleDriveService
     /// <summary>
     /// Kiểm tra trạng thái kết nối Google Drive API và quyền truy cập thư mục
     /// </summary>
-    public async Task<GoogleDriveStatusDto> GetStatusAsync(CancellationToken cancellationToken = default)
+    public async Task<GoogleDriveStatusDto> GetStatusAsync(long currentUserId, CancellationToken cancellationToken = default)
     {
+        var scope = await MediaAccessScope.ForUser(_dbContext, currentUserId, cancellationToken);
+        var visibleCount = await scope.Library(_dbContext).CountAsync(cancellationToken);
         var folderId = _configuration["GoogleDrive:FolderId"]?.Trim() ?? "";
         if (string.Equals(_configuration["GoogleDrive:StorageProvider"], "Local", StringComparison.OrdinalIgnoreCase))
-            return new GoogleDriveStatusDto(true, "", "", await _dbContext.UploadedMedias.CountAsync(cancellationToken), "Đang sử dụng thư viện ảnh trên máy chủ.");
+            return new GoogleDriveStatusDto(true, "", "", visibleCount, "Đang sử dụng thư viện ảnh trên máy chủ.");
         var authMode = _configuration["GoogleDrive:AuthMode"] ?? "ServiceAccount";
         string accountInfo = "";
 
@@ -403,7 +413,7 @@ public class GoogleDriveService
             }
 
             var images = await ReadDriveImagesAsync(cancellationToken);
-            var imageCount = images.Count;
+            var imageCount = scope.IsAdmin ? images.Count : visibleCount;
 
             return new GoogleDriveStatusDto(
                 IsConnected: true,
@@ -420,15 +430,16 @@ public class GoogleDriveService
                 IsConnected: false,
                 ServiceAccountEmail: accountInfo,
                 FolderId: folderId,
-                TotalImages: 0,
+                TotalImages: visibleCount,
                 Message: "Không thể kết nối Google Drive. Đang dùng thư viện đã lưu; vui lòng kiểm tra cấu hình hoặc thử lại."
             );
         }
     }
 
-    public async Task<List<UploadMediaResultDto>> GetRecentUploadsAsync(int limit = 50, CancellationToken cancellationToken = default)
+    public async Task<List<UploadMediaResultDto>> GetRecentUploadsAsync(long currentUserId, int limit = 50, CancellationToken cancellationToken = default)
     {
-        return await _dbContext.UploadedMedias
+        var scope = await MediaAccessScope.ForUser(_dbContext, currentUserId, cancellationToken);
+        return await scope.Library(_dbContext)
             .OrderByDescending(m => m.CreatedAt)
             .Take(limit)
             .Select(m => new UploadMediaResultDto(
