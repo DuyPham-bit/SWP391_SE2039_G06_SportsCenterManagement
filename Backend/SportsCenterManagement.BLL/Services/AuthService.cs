@@ -56,18 +56,6 @@ public sealed class AuthService(IUnitOfWork unitOfWork) : IAuthService
 
         var users = unitOfWork.Repository<User>();
 
-        // Ensure username or email is not already registered
-        if (await users.AnyAsync(user => user.Username == username || user.Email == email, cancellationToken))
-        {
-            throw new InvalidOperationException("Username or email is already in use.");
-        }
-
-        // Ensure phone number is not already registered if provided
-        if (phone is not null && await users.AnyAsync(user => user.Phone == phone, cancellationToken))
-        {
-            throw new InvalidOperationException("Phone number is already in use.");
-        }
-
         // Retrieve default 'Member' role from database
         var role = await unitOfWork.Repository<Role>()
             .Find(item => item.Name == "Member")
@@ -106,6 +94,12 @@ public sealed class AuthService(IUnitOfWork unitOfWork) : IAuthService
             }
             verification.UsedAt = now;
         }
+
+        // Only disclose duplicate account details after mailbox verification (or authenticated staff creation).
+        if (await users.AnyAsync(user => user.Username == username || user.Email == email, cancellationToken))
+            throw new InvalidOperationException("Username or email is already in use.");
+        if (phone is not null && await users.AnyAsync(user => user.Phone == phone, cancellationToken))
+            throw new InvalidOperationException("Phone number is already in use.");
 
         // Create new user entity with hashed password
         var user = new User

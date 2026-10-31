@@ -70,11 +70,8 @@ public sealed class AuthController(
         var now = DateTime.UtcNow;
         await using var transaction = await dbContext.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.Serializable, cancellationToken);
-        if (await dbContext.Users.AnyAsync(user => user.Email == email, cancellationToken))
-            return Conflict(new { message = "Email này đã được đăng ký." });
-        if (phone is not null && await dbContext.Users.AnyAsync(user => user.Phone == phone, cancellationToken))
-            return Conflict(new { message = "Số điện thoại này đã được đăng ký." });
-
+        // Issue the same challenge for every mailbox, regardless of existing accounts or phone numbers.
+        // Duplicate-account details are only available after the caller proves mailbox ownership.
         var latest = await dbContext.EmailVerificationTokens
             .Where(token => token.Email == email && token.UsedAt == null)
             .OrderByDescending(token => token.Id).FirstOrDefaultAsync(cancellationToken);
@@ -96,7 +93,7 @@ public sealed class AuthController(
         await transaction.CommitAsync(cancellationToken);
         if (!await resetEmail.SendVerificationAsync(verification, otp, cancellationToken))
             return StatusCode(503, new { message = "Chưa gửi được email xác thực. Vui lòng thử lại sau." });
-        return Ok(new { message = "Mã xác thực đã được gửi. Vui lòng kiểm tra hộp thư và thư rác. Mã có hạn 10 phút." });
+        return Ok(new { message = "Vui lòng kiểm tra hộp thư và thư rác để tiếp tục đăng ký. Mã xác thực có hạn 10 phút." });
     }
 
     [HttpPost("login")]

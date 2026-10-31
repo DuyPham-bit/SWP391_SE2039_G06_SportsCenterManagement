@@ -23,6 +23,16 @@ static class RegistrationChecks
         Task AllowResend() => db.EmailVerificationTokens.Where(t => t.Email == email)
             .ExecuteUpdateAsync(s => s.SetProperty(t => t.CreatedAt, DateTime.UtcNow.AddMinutes(-2)));
 
+        await check("anonymous registration cannot disclose an existing email or username before OTP verification", async () => {
+            var unknown = await Register(null);
+            var knownEmail = await Register(null, "owner@example.test", "privacy-probe");
+            var knownUsername = await Register(null, "privacy-probe@example.test", "owner");
+            var body = await unknown.Content.ReadAsStringAsync();
+            return unknown.StatusCode == HttpStatusCode.BadRequest
+                && knownEmail.StatusCode == unknown.StatusCode && knownUsername.StatusCode == unknown.StatusCode
+                && await knownEmail.Content.ReadAsStringAsync() == body
+                && await knownUsername.Content.ReadAsStringAsync() == body;
+        });
         await check("registration rejects a missing OTP without creating a user or profile", async () => {
             var profiles = await db.MemberProfiles.CountAsync();
             return (await Register(null)).StatusCode == HttpStatusCode.BadRequest
@@ -97,6 +107,20 @@ static class RegistrationChecks
             var results = await Task.WhenAll(Register(code, username: "concurrent-a"), Register(code, username: "concurrent-b"));
             return results.Count(r => r.StatusCode == HttpStatusCode.Created) == 1
                 && await db.Users.CountAsync(u => u.Email == email) == 1 && (await Latest()).UsedAt != null;
+        });
+        await check("verification requests and resend limits do not reveal whether an email is registered", async () => {
+            const string known = "owner@example.test", unknown = "privacy-check@example.test";
+            var existing = await Issue(known);
+            var fresh = await Issue(unknown);
+            if (existing.StatusCode != HttpStatusCode.OK || fresh.StatusCode != existing.StatusCode
+                || await existing.Content.ReadAsStringAsync() != await fresh.Content.ReadAsStringAsync()) return false;
+            if (!await db.EmailVerificationTokens.AnyAsync(t => t.Email == known && t.UsedAt == null)
+                || !await db.EmailVerificationTokens.AnyAsync(t => t.Email == unknown && t.UsedAt == null)) return false;
+            var existingRetry = await Issue(known);
+            var freshRetry = await Issue(unknown);
+            return existingRetry.StatusCode == HttpStatusCode.TooManyRequests && freshRetry.StatusCode == existingRetry.StatusCode
+                && existingRetry.Headers.RetryAfter?.Delta == freshRetry.Headers.RetryAfter?.Delta
+                && await existingRetry.Content.ReadAsStringAsync() == await freshRetry.Content.ReadAsStringAsync();
         });
         await using (var smtp = new FakeSmtpServer())
         {
