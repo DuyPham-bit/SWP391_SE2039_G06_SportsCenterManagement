@@ -166,8 +166,13 @@ static class AuthChecks
             var login = await http.PostAsJsonAsync("api/auth/login", new { email = owner.Email, password = laterPassword });
             var body = await login.Content.ReadFromJsonAsync<JsonElement>();
             var token = body.GetProperty("accessToken").GetString()!;
-            using var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/change-password") {
+            using var otpRequest = new HttpRequestMessage(HttpMethod.Post, "api/auth/request-change-password-otp") {
                 Content = JsonContent.Create(new { currentPassword = laterPassword, newPassword = longPassword })
+            };
+            otpRequest.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
+            if (!(await http.SendAsync(otpRequest)).IsSuccessStatusCode) return false;
+            using var request = new HttpRequestMessage(HttpMethod.Post, "api/auth/change-password") {
+                Content = JsonContent.Create(new { currentPassword = laterPassword, newPassword = longPassword, emailOtp = mail.Otp })
             };
             request.Headers.Authorization = new AuthenticationHeaderValue("Bearer", token);
             var response = await http.SendAsync(request);

@@ -135,6 +135,14 @@ public sealed class AuthController(
         return Ok(CreateAuthResponse(authenticated));
     }
 
+    [HttpPost("logout")]
+    [AllowAnonymous]
+    public IActionResult Logout()
+    {
+        BrowserSessionCookie.Clear(HttpContext);
+        return NoContent();
+    }
+
     [HttpPost("request-password-reset")]
     [EnableRateLimiting("password-reset")]
     [AllowAnonymous]
@@ -454,7 +462,7 @@ public sealed class AuthController(
         SportsCenterManagement.BLL.DTOs.Auth.Responses.AuthenticatedUser user)
     {
         var (token, expiresAt) = tokenIssuer.Issue(user);
-        return new AuthResponse(token, user.UserId, user.Role.ToUpperInvariant(), expiresAt);
+        return BrowserSessionCookie.Issue(HttpContext, token, user.UserId, user.Role.ToUpperInvariant(), expiresAt);
     }
 
     private static bool VerifyPassword(string password, string storedHash) => PasswordHashing.Verify(password, storedHash);

@@ -147,7 +147,7 @@ export function getLegacyLandingContent() {
 }
 
 export async function loadLandingContent({ signal } = {}) {
-  const response = await apiRequest('landing-content', { signal, token: null });
+  const response = await apiRequest('landing-content', { signal, session: null });
   publishedContent = fixMojibake(mergeContent(DEFAULT_LANDING_CONTENT, response?.content));
   return { content: getLandingContent(), hasPublishedContent: response?.content != null };
 }

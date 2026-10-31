@@ -17,9 +17,9 @@ function loadApi(request) {
     getAuthVersion: () => 1,
     beginAuthOperation: () => 1,
     assertAuthVersion: () => {},
-    getApiToken: () => 'fixture-token',
-    setApiToken: () => {},
-    clearApiToken: () => {},
+    getApiSession: () => 'fixture-token',
+    setApiSession: () => {},
+    clearApiSession: () => {},
     setAuthUser: () => {},
     apiRequest: async (route, options = {}) => { calls.push({ route, options }); return request(route, options); }
   });
@@ -43,7 +43,7 @@ test('email verification submits the normalized address and phone before request
   assert.equal(f.calls[0].route, 'auth/request-email-verification');
   assert.equal(f.calls[0].options.body.email, 'member@example.test');
   assert.equal(f.calls[0].options.body.phone, '0901 234 567');
-  assert.equal(f.calls[0].options.token, null);
+  assert.equal(f.calls[0].options.session, null);
   assert.equal(f.calls[0].options.signal, controller.signal);
 });
 

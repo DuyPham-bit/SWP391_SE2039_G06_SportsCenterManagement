@@ -24,7 +24,7 @@ test('empty and failed catalog requests cannot invent sports, rooms or prices', 
   const empty = { center: { id: 15 }, sports: [], rooms: [], classes: [] };
   const api = load('services/publicCatalog.js', async (route, options) => {
     assert.equal(route, 'public/centers/15/catalog');
-    assert.equal(options.token, null);
+    assert.equal(options.session, null);
     return empty;
   });
   const catalog = await api.getPublicCatalog();

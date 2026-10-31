@@ -4,7 +4,7 @@
  * Hỗ trợ tải tệp ảnh từ máy, thư viện ảnh đám mây thể thao chất lượng cao, và CDN link.
  */
 
-import { apiRequest, getApiToken, getApiUrl } from './http.js';
+import { apiRequest, getApiSession, getApiUrl } from './http.js';
 
 // Media is listed and persisted by the backend.
 export async function fetchDriveFiles() {
@@ -52,15 +52,16 @@ export async function uploadMediaFileToCloud(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    const token = getApiToken();
+    const session = getApiSession();
     const headers = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+    if (session) {
+      headers['X-SCMS-Session'] = session;
     }
 
     const response = await fetch(getApiUrl('media/upload'), {
       method: 'POST',
       headers,
+      credentials: 'include',
       body: formData
     });
 

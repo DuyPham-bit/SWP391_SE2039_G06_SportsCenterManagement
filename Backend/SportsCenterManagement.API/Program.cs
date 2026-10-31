@@ -43,6 +43,7 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
     options.TokenValidationParameters = jwtIssuer.ValidationParameters();
     options.Events = new JwtBearerEvents
     {
+        OnMessageReceived = BrowserSessionCookie.ReadAsync,
         OnTokenValidated = context => context.HttpContext.RequestServices
             .GetRequiredService<JwtAccountValidator>().ValidateAsync(context)
     };
@@ -54,7 +55,7 @@ var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 {
     if (allowedOrigins.Length > 0)
-        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().WithExposedHeaders("Retry-After");
+        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithExposedHeaders("Retry-After");
 }));
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();

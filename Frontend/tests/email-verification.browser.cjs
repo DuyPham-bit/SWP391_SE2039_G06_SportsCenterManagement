@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
+const { issueBrowserSession } = require('./browser-auth-fixture.cjs');
 
 const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, 'tmp/email-verification');
@@ -30,7 +31,7 @@ const server = http.createServer(async (req, res) => {
       if (body.otp !== '654321') return json(res, { message: 'Mã xác thực không hợp lệ hoặc đã hết hạn.' }, 400);
       res.writeHead(204); return res.end();
     }
-    if (route === '/api/auth/login') return json(res, { accessToken: 'browser-fixture-token' });
+    if (route === '/api/auth/login') return json(res, issueBrowserSession(req, res, 'browser-fixture-token'));
     if (route === '/api/profile/me') return json(res, { userId: 42, fullName: 'Hội viên kiểm thử', email: 'member@example.test', role: 'Member', status: 'Active', memberCode: 'MB-AUDIT', centerId: 15 });
     if (route === '/api/members/me') return json(res, { memberId: 7 });
     if (route === '/api/access/me/capabilities') return json(res, []);
@@ -137,7 +138,8 @@ async function screenshot(name, width, height) {
   await screenshot('register-otp-tablet', 768, 1024);
   await screenshot('register-otp-mobile', 375, 1000);
   checks.push('Missing and incorrect OTPs preserve the form; registration has no horizontal overflow at 1440, 768, and 375px.');
-  assert.equal(await evaluate('[...document.querySelectorAll("button")].find(b => b.textContent.includes("Gửi lại mã sau")).disabled'), true);
+  assert.equal(await evaluate('document.body.textContent.includes("Resend in 0:")'), true);
+  assert.equal(await evaluate('[...document.querySelectorAll("button")].some(b => b.textContent.includes("Resend now") && !b.disabled)'), false);
   await input('#register-email', 'changed@example.test');
   assert.equal(await evaluate('Boolean(document.querySelector("#register-otp"))'), false);
   await input('#register-email', 'member@example.test'); await submit();
@@ -150,6 +152,9 @@ async function screenshot(name, width, height) {
   await until('registered and logged in', () => evaluate('location.hash.startsWith("#/member/")'));
   assert.equal(requests.filter(r => r.route === '/api/auth/register').at(-1).body.emailOtp, '123456');
   checks.push('Changing email or phone discards the previous challenge; a valid OTP is sent with registration and then logs in.');
+  await cdp.send('Page.reload', {}, session);
+  await until('authenticated after F5', () => evaluate('location.hash.startsWith("#/member/") && document.body.textContent.includes("Hội viên kiểm thử")'));
+  checks.push('The full React app restores its authenticated profile after F5 using the tab cookie.');
   await evaluate('sessionStorage.clear(); location.hash = "#/login?logout=true"');
   await until('login', () => evaluate('Boolean(document.querySelector("#login-email"))'));
   await click('Quên mật khẩu?');

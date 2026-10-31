@@ -5,7 +5,7 @@ export async function getPublicCatalog({ signal } = {}) {
   if (!Number.isSafeInteger(centerId) || centerId <= 0) {
     throw new Error('Chưa cấu hình VITE_SPORTS_CENTER_ID cho trung tâm đang sử dụng.');
   }
-  const result = await apiRequest(`public/centers/${centerId}/catalog`, { signal, token: null });
+  const result = await apiRequest(`public/centers/${centerId}/catalog`, { signal, session: null });
   if (!result?.center || !Array.isArray(result.sports) || !Array.isArray(result.rooms) || !Array.isArray(result.classes)) {
     throw new Error('Dữ liệu danh mục trung tâm trả về không hợp lệ.');
   }

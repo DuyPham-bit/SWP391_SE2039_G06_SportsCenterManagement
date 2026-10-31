@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../../services/api.js';
-import { getApiToken } from '../../services/http.js';
+import { getApiSession } from '../../services/http.js';
 import { assertAuthUser, getAuthVersion } from '../../services/authState.js';
 
 const AuthContext = createContext(null);
@@ -9,7 +9,7 @@ export function AuthProvider({ children }) {
   const [currentUser, setCurrentUser] = useState(null);
 
   const [loading, setLoading] = useState(false);
-  const [initializing, setInitializing] = useState(() => Boolean(getApiToken()));
+  const [initializing, setInitializing] = useState(() => Boolean(getApiSession()));
   const [initializationError, setInitializationError] = useState('');
 
   const applyUser = user => {
@@ -20,7 +20,7 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     let active = true;
-    if (!getApiToken()) { setInitializing(false); return; }
+    if (!getApiSession()) { setInitializing(false); return; }
     const version = getAuthVersion();
     authApi.getCurrentUser().then(user => {
       if (active) applyUser(user);

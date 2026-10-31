@@ -19,9 +19,9 @@ function loadReceptionApi() {
     getAuthVersion: () => 1,
     beginAuthOperation: () => 1,
     assertAuthVersion: () => {},
-    getApiToken: () => 'fixture-token',
-    setApiToken: () => {},
-    clearApiToken: () => {},
+    getApiSession: () => 'fixture-token',
+    setApiSession: () => {},
+    clearApiSession: () => {},
     setAuthUser: () => {},
     createIdempotencyKey: () => { throw new Error('refund must use the caller-stable key'); },
     apiRequest: async (route, options = {}) => {

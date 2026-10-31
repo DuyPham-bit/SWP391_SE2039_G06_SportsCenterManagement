@@ -22,7 +22,7 @@ export function PaymentResult() {
     }
 
     const endpoint = hasVnPayResponse ? 'payments/vnpay-callback' : 'payments/momo-callback';
-    apiRequest(`${endpoint}${search}`, { token: null })
+    apiRequest(`${endpoint}${search}`, { session: null })
       .then(result => setState({ loading: false, result, error: '' }))
       .catch(error => setState({ loading: false, result: null, error: error.message || (isEn ? 'Cannot confirm transaction.' : 'Không thể xác nhận giao dịch.') }));
   }, [isEn]);

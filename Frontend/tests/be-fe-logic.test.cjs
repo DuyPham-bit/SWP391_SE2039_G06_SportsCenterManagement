@@ -16,8 +16,8 @@ function client(respond, now = '2026-10-17T18:00:00Z', user = { role: 'MEMBER', 
   const context = vm.createContext({
     URLSearchParams, Date: FixedDate, Map, Set,
     getAuthUser: () => user,
-    getAuthVersion: () => 1, assertAuthVersion: () => {}, getApiToken: () => 'token',
-    setAuthUser: () => {}, clearApiToken: () => {},
+    getAuthVersion: () => 1, assertAuthVersion: () => {}, getApiSession: () => 'token',
+    setAuthUser: () => {}, clearApiSession: () => {},
     apiRequest: async route => { calls.push(route); return respond(route); }
   });
   vm.runInContext(`${source}\nglobalThis.api = { authApi, classApi, receptionApi, systemApi, reportApi };`, context);

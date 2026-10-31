@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
+const { issueBrowserSession, browserCredential } = require('./browser-auth-fixture.cjs');
 
 const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, 'tmp/manager-merge');
@@ -37,8 +38,8 @@ const server = http.createServer(async (req, res) => {
     requests.push({ route, method: req.method, body, query: Object.fromEntries(url.searchParams) });
     if (route === '/api/auth/request-password-reset') { resetRequests.push({ res, body }); return; }
     if (route === '/api/auth/reset-password') { resetConfirmations.push({ res, body }); return; }
-    if (route === '/api/auth/login') return json(res, { accessToken: 'manager-fixture-token' });
-    if (req.headers.authorization !== 'Bearer manager-fixture-token') return json(res, { message: 'Unauthorized' }, 401);
+    if (route === '/api/auth/login') return json(res, issueBrowserSession(req, res, 'manager-fixture-token'));
+    if (browserCredential(req) !== 'manager-fixture-token') return json(res, { message: 'Unauthorized' }, 401);
     if (route === '/api/profile/me') return json(res, { userId: 99, role: 'Manager', status: 'Active', centerId: 1, fullName: 'Manager kiểm thử', email: 'manager@example.test' });
     if (route === '/api/access/me/capabilities') return json(res, ['manage_staff', 'manage_members', 'manage_classes', 'manage_packages', 'assign_coach', 'view_reports']);
     if (route === '/api/notifications/me') return json(res, []);

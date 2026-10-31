@@ -60,9 +60,9 @@ test('frontend sends either all-center or selected-role notification contract', 
     getAuthUser: () => ({ id: 7, role: 'MANAGER', centerId: 15 }),
     getAuthVersion: () => 1,
     assertAuthVersion: () => {},
-    getApiToken: () => 'token',
+    getApiSession: () => 'token',
     setAuthUser: () => {},
-    clearApiToken: () => {},
+    clearApiSession: () => {},
     apiRequest: async (route, options) => { calls.push({ route, options }); return { recipientCount: 2 }; }
   });
   vm.runInContext(`${source}\nglobalThis.systemApiForTest = systemApi;`, context);

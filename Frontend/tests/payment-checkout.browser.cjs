@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { issueBrowserSession, browserCredential } = require('./browser-auth-fixture.cjs');
 
 const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, '.validation/payment-checkout');
@@ -21,7 +22,8 @@ function json(res, data, status = 200) {
 
 const api = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', appOrigin || '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Idempotency-Key');
+  res.setHeader('Access-Control-Allow-Headers', 'X-SCMS-Session, Content-Type, Idempotency-Key');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   const url = new URL(req.url, apiOrigin);
@@ -32,12 +34,12 @@ const api = http.createServer(async (req, res) => {
     return;
   }
   if (route === '/payment-result' || route.startsWith('/assets/')) return serveApp(req, res);
-  if (route === '/api/auth/login') return json(res, { accessToken: 'fixture-member-token' });
+  if (route === '/api/auth/login') return json(res, issueBrowserSession(req, res, 'fixture-member-token'));
   if (route.includes('/callback') || route.endsWith('-callback')) {
     state.callbacks.push(route);
     return json(res, { success: true, message: 'Đã xác nhận bằng API kiểm thử.' });
   }
-  if (req.headers.authorization !== 'Bearer fixture-member-token') return json(res, { message: 'Unauthorized' }, 401);
+  if (browserCredential(req) !== 'fixture-member-token') return json(res, { message: 'Unauthorized' }, 401);
   if (route === '/api/profile/me') return json(res, { userId: 1, role: 'Member', status: 'Active', centerId: 1, fullName: 'Hội viên kiểm thử', email: 'member@example.test' });
   if (route === '/api/members/me') return json(res, { memberId: 1 });
   if (route === '/api/access/me/capabilities') return json(res, []);

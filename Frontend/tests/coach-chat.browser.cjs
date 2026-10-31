@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
+const { browserCredential } = require('./browser-auth-fixture.cjs');
 
 const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, 'tmp/coach-chat');
@@ -16,6 +17,7 @@ const messages = [{ id: 1, coachId: 10, memberId: 22, senderUserId: 122, content
 const requests = [], errors = [], checks = [];
 const token = role => `fixture.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600, role })).toString('base64url')}.fixture`;
 const coachToken = token('Coach'), memberToken = token('Member');
+const coachSession = '1'.repeat(32), memberSession = '2'.repeat(32);
 let browser, socket, session, cdp, failMessages = false, failSend = false;
 
 function json(res, body, status = 200) {
@@ -28,7 +30,7 @@ const server = http.createServer(async (req, res) => {
   if (route.startsWith('/api/')) {
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = raw ? JSON.parse(raw) : null;
-    const isMember = req.headers.authorization === `Bearer ${memberToken}`;
+    const isMember = browserCredential(req) === memberToken;
     requests.push({ route, method: req.method, body });
     if (route === '/api/profile/me') return json(res, { userId: isMember ? 122 : 110, role: isMember ? 'Member' : 'Coach', status: 'Active', centerId: 1, fullName: isMember ? clients[1].fullName : coaches[0].fullName });
     if (route === '/api/access/me/capabilities') return json(res, [isMember ? 'use_coach_portal' : 'manage_coach_workspace']);
@@ -128,7 +130,10 @@ async function typeMessage(value) {
   const { targetId } = await cdp.send('Target.createTarget', { url: 'about:blank' });
   ({ sessionId: session } = await cdp.send('Target.attachToTarget', { targetId, flatten: true }));
   await cdp.send('Runtime.enable', {}, session); await cdp.send('Page.enable', {}, session);
-  await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.origin === ${JSON.stringify(origin)} && !sessionStorage.getItem('scms.auth.token.v1')) sessionStorage.setItem('scms.auth.token.v1', ${JSON.stringify(coachToken)});` }, session);
+  for (const [id, value] of [[coachSession, coachToken], [memberSession, memberToken]]) {
+    await cdp.send('Network.setCookie', { name: `scms.session.${id}`, value, url: origin, path: '/api', httpOnly: true, sameSite: 'Strict' }, session);
+  }
+  await cdp.send('Page.addScriptToEvaluateOnNewDocument', { source: `if (location.origin === ${JSON.stringify(origin)} && !sessionStorage.getItem('scms.auth.tab.v1')) sessionStorage.setItem('scms.auth.tab.v1', ${JSON.stringify(coachSession)});` }, session);
   await cdp.send('Page.navigate', { url: `${origin}/#/coach/professional?tab=communication&senderUserId=122` }, session);
   await until('coach reply composer and notified student', () => evaluate(`Boolean(document.querySelector('input[placeholder="Nhập tin nhắn hướng dẫn, nhắc nhở học viên..."]')) && document.querySelector('main').textContent.includes('alo HLV Nam')`));
   assert.equal(await evaluate(`document.querySelector('main select').value`), '22');
@@ -155,7 +160,7 @@ async function typeMessage(value) {
   assert.equal(await evaluate(`document.querySelector('main').textContent.includes('alo HLV Nam')`), false);
   failMessages = false;
   checks.push('Switching students clears old history and displays loading failures');
-  await evaluate(`sessionStorage.setItem('scms.auth.token.v1', ${JSON.stringify(memberToken)}); location.hash = '#/member/coach-portal'; location.reload()`);
+  await evaluate(`sessionStorage.setItem('scms.auth.tab.v1', ${JSON.stringify(memberSession)}); location.hash = '#/member/coach-portal'; location.reload()`);
   await until('member portal', () => evaluate(`document.querySelector('main')?.textContent.includes('HLV')`));
   await evaluate(`document.querySelector('button[aria-label="Thông báo"]').click()`);
   await clickText('Tin nhắn mới từ chương trình huấn luyện');

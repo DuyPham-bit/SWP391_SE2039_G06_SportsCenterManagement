@@ -52,7 +52,7 @@ public sealed class GoogleAuthController(SportsCenterDbContext db, GoogleTokenVa
         var roleName = await db.Roles.Where(r => r.Id == user.RoleId).Select(r => r.Name).SingleAsync(ct);
         var centerId = await SportsCenterManagement.BLL.Services.CenterRolePolicy.CenterForUser(db, user.Id, ct);
         var (token, expiresAt) = jwt.Issue(new(user.Id, user.Username, roleName, centerId, user.Email, user.AuthVersion));
-        return Ok(new AuthResponse(token, user.Id, roleName.ToUpperInvariant(), expiresAt));
+        return Ok(BrowserSessionCookie.Issue(HttpContext, token, user.Id, roleName.ToUpperInvariant(), expiresAt));
     }
 
     [Authorize]

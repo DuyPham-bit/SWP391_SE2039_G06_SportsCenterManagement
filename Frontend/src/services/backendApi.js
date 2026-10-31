@@ -1,4 +1,4 @@
-import { apiRequest, clearApiToken, createIdempotencyKey, getApiToken, setApiToken } from './http.js';
+import { apiRequest, clearApiSession, createApiSession, createIdempotencyKey, getApiSession, setApiSession } from './http.js';
 import { assertAuthVersion, beginAuthOperation, getAuthUser, getAuthVersion, setAuthUser } from './authState.js';
 
 function safeGetAvatar(userId) {
@@ -97,27 +97,27 @@ function mapMember(member) {
   };
 }
 
-async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()) {
-  if (!token) return null;
-  const profile = await apiRequest('profile/me', { token });
+async function loadCurrentUser(session = getApiSession(), version = getAuthVersion()) {
+  if (!session) return null;
+  const profile = await apiRequest('profile/me', { session });
   assertAuthVersion(version);
   let memberId = null;
   let memberProfile = null;
   let scheduledSubscriptions = [];
 
   if (String(profile.role).toUpperCase() === 'MEMBER') {
-    const member = await apiRequest('members/me', { token });
+    const member = await apiRequest('members/me', { session });
     assertAuthVersion(version);
     memberId = member.memberId;
     memberProfile = member;
-    const subscriptions = await apiRequest(`members/${memberId}/subscriptions`, { token });
+    const subscriptions = await apiRequest(`members/${memberId}/subscriptions`, { session });
     assertAuthVersion(version);
     scheduledSubscriptions = asArray(subscriptions)
       .filter(item => item.effectiveStatus === 'SCHEDULED')
       .sort((a, b) => a.startDate.localeCompare(b.startDate) || Number(a.subscriptionId) - Number(b.subscriptionId));
   }
 
-  const capabilities = await apiRequest('access/me/capabilities', { token });
+  const capabilities = await apiRequest('access/me/capabilities', { session });
   assertAuthVersion(version);
   const user = {
     capabilities,
@@ -144,15 +144,17 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
 }
 
 async function loginAndLoad(path, body) {
+  // Rotate on every login so even a duplicated tab can sign in independently.
+  const session = createApiSession();
   let version = beginAuthOperation();
-  const result = await apiRequest(path, { method: 'POST', token: null, body });
+  await apiRequest(path, { method: 'POST', session, body });
   assertAuthVersion(version);
-  setApiToken(result.accessToken);
+  setApiSession(session);
   version = getAuthVersion();
   try {
-    return { token: result.accessToken, user: await loadCurrentUser(result.accessToken, version) };
+    return { user: await loadCurrentUser(session, version) };
   } catch (error) {
-    if (version === getAuthVersion()) clearApiToken();
+    if (version === getAuthVersion()) clearApiSession();
     throw error;
   }
 }
@@ -235,7 +237,7 @@ export const authApi = {
       ? phoneOrOptions.signal
       : options.signal;
     return apiRequest('auth/request-email-verification', {
-      method: 'POST', token: null, signal,
+      method: 'POST', session: null, signal,
       body: { email: email.trim().toLowerCase(), phone: phone?.trim() || null }
     });
   },
@@ -250,7 +252,7 @@ export const authApi = {
     const username = localPart.length >= 3 ? localPart : `user-${localPart}`;
     const version = beginAuthOperation();
     await apiRequest('auth/register', {
-      method: 'POST', token: null,
+      method: 'POST', session: null,
       body: {
         username,
         email: cleanEmail,
@@ -276,11 +278,11 @@ export const authApi = {
   },
 
   async requestPasswordReset(email, { signal } = {}) {
-    return apiRequest('auth/request-password-reset', { method: 'POST', token: null, signal, body: { email: email.trim() } });
+    return apiRequest('auth/request-password-reset', { method: 'POST', session: null, signal, body: { email: email.trim() } });
   },
 
   async resetPassword(email, otp, newPassword, { signal } = {}) {
-    await apiRequest('auth/reset-password', { method: 'POST', token: null, signal, body: { email: email.trim(), otp: otp.trim(), newPassword } });
+    await apiRequest('auth/reset-password', { method: 'POST', session: null, signal, body: { email: email.trim(), otp: otp.trim(), newPassword } });
     return true;
   },
 
@@ -297,32 +299,31 @@ export const authApi = {
 
   async changePassword(_userId, currentPassword, newPassword, emailOtp = null) {
     const version = beginAuthOperation();
-    const result = await apiRequest('auth/change-password', {
+    await apiRequest('auth/change-password', {
       method: 'POST',
       body: { currentPassword, newPassword, emailOtp: emailOtp ? emailOtp.trim() : null }
     });
     assertAuthVersion(version);
-    setApiToken(result.accessToken);
-    return loadCurrentUser(result.accessToken);
+    return loadCurrentUser();
   },
 
   async updateProfile(_userId, profileData) {
     const version = getAuthVersion();
-    const token = getApiToken();
+    const session = getApiSession();
     if (profileData && profileData.avatar !== undefined) {
       safeSetAvatar(_userId, profileData.avatar || null);
     }
     await apiRequest('profile/me', {
-      method: 'PATCH', token,
+      method: 'PATCH', session,
       body: { fullName: profileData.fullName, phone: profileData.phone || null }
     });
     assertAuthVersion(version);
-    return loadCurrentUser(token, version);
+    return loadCurrentUser(session, version);
   },
 
   async updateAvatar(userId, avatarUrl) {
     const version = getAuthVersion();
-    const token = getApiToken();
+    const session = getApiSession();
     safeSetAvatar(userId, avatarUrl || null);
     const current = getAuthUser();
     if (current && Number(current.id) === Number(userId)) {
@@ -330,11 +331,15 @@ export const authApi = {
       setAuthUser(updated);
       return updated;
     }
-    return loadCurrentUser(token, version);
+    return loadCurrentUser(session, version);
   },
 
   getCurrentUser: loadCurrentUser,
-  logout: clearApiToken
+  logout() {
+    const session = getApiSession();
+    clearApiSession();
+    if (session) void apiRequest('auth/logout', { method: 'POST', session }).catch(() => {});
+  }
 };
 
 export const packageApi = {

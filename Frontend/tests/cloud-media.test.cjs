@@ -9,7 +9,7 @@ function loadService(apiRequest, fetchImpl) {
   const context = vm.createContext({
     module: { exports: {} }, FormData, console,
     fetch: fetchImpl,
-    require: () => ({ apiRequest, getApiToken: () => 'manager-token', getApiUrl: route => `/api/${route}` })
+    require: () => ({ apiRequest, getApiSession: () => 'manager-tab', getApiUrl: route => `/api/${route}` })
   });
   const source = fs.readFileSync(path.join(__dirname, '../src/services/cloudMediaStorage.js'), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs' }).code, context);
@@ -29,7 +29,9 @@ test('AVIF upload reaches the API while SVG and fake AVIF extensions remain reje
   const api = loadService(async () => [], async (url, options) => {
     requests++;
     assert.equal(url, '/api/media/upload');
-    assert.equal(options.headers.Authorization, 'Bearer manager-token');
+    assert.equal(options.headers['X-SCMS-Session'], 'manager-tab');
+    assert.equal(options.headers.Authorization, undefined);
+    assert.equal(options.credentials, 'include');
     return { ok: true, json: async () => ({ url: '/uploads/photo.avif', fileId: 'local_avif', mimeType: 'image/avif' }) };
   });
   const result = await api.uploadMediaFileToCloud(new File(['avif fixture'], 'photo.avif', { type: 'image/avif' }));
