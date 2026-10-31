@@ -1,12 +1,16 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.RateLimiting;
 using SportsCenterManagement.API.Models;
 using SportsCenterManagement.API.Services;
+using SportsCenterManagement.DAL.Authorization;
 
 namespace SportsCenterManagement.API.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
+    [Authorize(Roles = RoleNames.Admin)]
+    [EnableRateLimiting("mail-send")]
     public class MailController : ControllerBase
     {
         private readonly ISendMailService _sendMailService;
@@ -17,19 +21,9 @@ namespace SportsCenterManagement.API.Controllers
         }
 
         [HttpPost("send")]
-        [AllowAnonymous]
-        public async Task<IActionResult> TestSendMail([FromBody] MailContent? request = null)
+        public async Task<IActionResult> TestSendMail([FromBody] MailContent request)
         {
-            var content = (request != null && !string.IsNullOrWhiteSpace(request.To))
-                ? request
-                : new MailContent
-                {
-                    To = "recipient-email@gmail.com",
-                    Subject = "Kiểm tra xác thực & Gửi mail ASP.NET Core",
-                    Body = "<h1>Chào bạn!</h1><p>Email này được gửi từ dịch vụ <b>SendMailService</b> bằng MailKit.</p>"
-                };
-
-            string result = await _sendMailService.SendMailAsync(content);
+            string result = await _sendMailService.SendMailAsync(request);
             return Ok(new { message = result });
         }
     }
