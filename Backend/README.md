@@ -72,7 +72,7 @@ API được xây bằng ASP.NET Core MVC Controllers và trả JSON; không dù
 
 Tự đăng ký yêu cầu OTP xác thực email: gọi `POST /api/auth/request-email-verification` rồi gửi `emailOtp` cùng request đăng ký. Reset mật khẩu cũng gửi OTP qua email và không trả mã trong Development. Mật khẩu cần ít nhất 6 ký tự gồm chữ hoa, chữ thường, số và ký tự đặc biệt. API dùng JWT HS256 qua JwtBearer, kiểm tra chữ ký, issuer, audience và thời hạn (mặc định 60 phút, cấu hình `Jwt:ExpiresMinutes`); trạng thái tài khoản, role và center được đọc lại từ DB mỗi request. Token Data Protection cũ cần đăng nhập lại. Subscription chỉ bắt đầu khi invoice được thanh toán đủ.
 
-Không sử dụng Session/cookie để đăng nhập. Frontend lưu JWT bằng sessionStorage riêng từng tab; F5 tải lại hồ sơ/quyền từ API và giữ đăng nhập nếu JWT còn hợp lệ. Nếu dùng frontend nhúng do API phục vụ, chạy `npm.cmd run build:api` tại `Frontend/` trước khi chạy/publish backend để cập nhật `SportsCenterManagement.API/wwwroot` và loại bỏ bundle cũ. `wwwroot` chỉ chứa tài nguyên build; sửa tài nguyên nguồn ở `Frontend/public/`.
+Frontend dùng cookie HttpOnly chứa JWT và header `X-SCMS-Session` chọn phiên riêng từng tab; sessionStorage chỉ giữ mã chọn phiên, không chứa JWT. F5 giữ đăng nhập và mỗi tab có thể dùng tài khoản khác nhau. Cookie có SameSite=Strict, Secure trên HTTPS; dùng `/api` cùng origin qua Vite proxy hoặc frontend nhúng. API client ngoài trình duyệt vẫn dùng Bearer JWT. Chi tiết: [cơ chế phiên từng tab](../Frontend/docs/tab-session-fix.md). Nếu dùng frontend nhúng do API phục vụ, chạy `npm.cmd run build:api` tại `Frontend/` trước khi chạy/publish backend để cập nhật `SportsCenterManagement.API/wwwroot` và loại bỏ bundle cũ. `wwwroot` chỉ chứa tài nguyên build; sửa tài nguyên nguồn ở `Frontend/public/`.
 
 Member/Coach gửi và theo dõi yêu cầu qua `GET/POST /api/support-requests/me`, xem chi tiết qua `GET /api/support-requests/me/{id}` và bổ sung phản hồi qua `POST /api/support-requests/me/{id}/messages`. Backend tự lấy người gửi/trung tâm; API tiếp nhận của Lễ tân/Manager giữ phạm vi trung tâm. `PUT /api/notifications/me/read-all` đọc tất cả thông báo của người dùng hiện tại.
 
@@ -94,18 +94,9 @@ System Admin là role duy nhất được sửa ma trận quyền và xem audit 
 
 Yêu cầu tiền mặt gửi `IdempotencyKey` từ 16 đến 100 ký tự cùng số tiền. Retry phải dùng cùng key cho cùng invoice/amount; tái sử dụng key cho yêu cầu khác sẽ trả conflict. Callback VNPay đã ký được lưu cả khi thất bại; callback báo thành công nhưng không khớp trạng thái/số dư được ghi `ReviewRequired`, không tự cộng doanh thu hoặc kích hoạt subscription.
 
-Backend không tự tạo tài khoản demo. Để có tài khoản local mà không sửa dữ liệu đang có, chỉ trong `Development` hãy bật rõ cấu hình sau rồi khởi động lại API:
+Mã tạo/đặt lại tài khoản demo bằng mật khẩu công khai đã được gỡ, kể cả trong Development. Các cờ `DevelopmentBootstrap` cũ không còn tác dụng. Tạo Admin đầu tiên bằng cấu hình bootstrap riêng của môi trường, sau đó tạo tài khoản qua các luồng quản trị/đăng ký hiện có. Dữ liệu tài khoản cũ không tự bị xóa hoặc sửa; trước deploy cần rà soát và khóa/đổi mật khẩu các tài khoản mẫu còn tồn tại.
 
-```powershell
-$env:DevelopmentBootstrap__SeedDemoAccounts = 'true'
-# Chỉ dùng khi cần đặt lại mật khẩu/khóa của chính các tài khoản demo đã tồn tại.
-$env:DevelopmentBootstrap__ResetExistingDemoAccounts = 'true'
-# Tùy chọn: gán các tài khoản vào một center Active đã có.
-$env:DevelopmentBootstrap__CenterId = '15'
-dotnet run --project .\SportsCenterManagement.API\SportsCenterManagement.API.csproj
-```
-
-Nếu không khai báo `CenterId`, API chỉ tạo một center tên `SCMS Local Development Center`. Mặc định bootstrap chỉ thêm bản ghi còn thiếu; không đổi mật khẩu, role hoặc profile của tài khoản đã tồn tại. `ResetExistingDemoAccounts` chỉ đặt lại mật khẩu, trạng thái Active và lockout của tài khoản có cả username/email đúng mẫu; không đổi role hoặc profile. Tài khoản local: `manager01@sportscenter.vn` / `Manager@123456`, `reception01@sportscenter.vn` / `Reception@123456`, `coach01@sportscenter.vn` / `Coach@123456`, `member01@sportscenter.vn` / `Member@123456`. Không bật cấu hình này trong môi trường thật.
+`POST /api/mail/send` yêu cầu vai trò `Admin`, kiểm tra người nhận/tiêu đề/nội dung và giới hạn 5 yêu cầu/phút/tài khoản. OTP đăng ký và đặt lại mật khẩu vẫn được gửi qua các endpoint riêng với nội dung do server tạo. Cấu hình secret, bảo vệ Docker build và xử lý credential đã lộ: [hướng dẫn bảo mật](docs/security-config-mail-bootstrap.md).
 
 ### Flow 3 — thanh toán và báo cáo
 
@@ -199,6 +190,8 @@ dotnet ef migrations script --idempotent --project .\SportsCenterManagement.DAL\
 ```
 
 ## Build
+
+Phân quyền R2, thư viện media và migration liên quan: [media-access-scope.md](docs/media-access-scope.md).
 
 ```powershell
 dotnet build .\SWP391_SE2039_G06_SportsCenterManagement1.slnx

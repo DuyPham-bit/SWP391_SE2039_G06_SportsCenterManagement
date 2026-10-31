@@ -52,6 +52,18 @@ try {
             SELECT 'upgrade-fixture', 'upgrade@example.test', 'existing-hash', id, 'Active', 0, SYSUTCDATETIME()
             FROM dbo.roles WHERE name = 'UpgradeFixture';
             """);
+        await db.GetService<IMigrator>().MigrateAsync("20261025073231_AddCoachNotificationTargets");
+        await db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO dbo.centers (name, address, status, created_at) VALUES ('Media upgrade center', 'Audit', 'Active', SYSUTCDATETIME());
+            INSERT INTO dbo.member_profiles (user_id, center_id, member_code, full_name, created_at)
+            SELECT u.id, c.id, 'UPGRADE-MEDIA', 'Upgrade fixture', SYSUTCDATETIME()
+            FROM dbo.users u CROSS JOIN dbo.centers c WHERE u.username = 'upgrade-fixture' AND c.name = 'Media upgrade center';
+            INSERT INTO dbo.uploaded_media (drive_file_id, file_name, mime_type, file_url, uploaded_by_user_id, created_at)
+            SELECT 'upgrade-owned', 'owned.png', 'image/png', '/uploads/upgrade-owned.png', id, SYSUTCDATETIME()
+            FROM dbo.users WHERE username = 'upgrade-fixture';
+            INSERT INTO dbo.uploaded_media (drive_file_id, file_name, mime_type, file_url, created_at)
+            VALUES ('upgrade-unowned', 'unowned.png', 'image/png', '/uploads/upgrade-unowned.png', SYSUTCDATETIME());
+            """);
         await db.Database.MigrateAsync();
         var center = new Center { Name = "Test center", Address = "Test", Status = "Active", CreatedAt = DateTime.UtcNow };
         var other = new Center { Name = "Other center", Address = "Test", Status = "Active", CreatedAt = DateTime.UtcNow };
@@ -80,6 +92,12 @@ try {
             var upgraded = await db.Users.SingleAsync(u => u.Username == "upgrade-fixture");
             return upgraded.PasswordHash == "existing-hash" && upgraded.AuthVersion == 0
                 && (await db.Database.GetAppliedMigrationsAsync()).Last() == migrations[^1];
+        });
+        await Check("media migration backfills a known owner's center and leaves unowned legacy files unassigned", async () => {
+            var known = await db.UploadedMedias.SingleAsync(m => m.DriveFileId == "upgrade-owned");
+            var unknown = await db.UploadedMedias.SingleAsync(m => m.DriveFileId == "upgrade-unowned");
+            var expectedCenter = await db.Centers.Where(c => c.Name == "Media upgrade center").Select(c => c.Id).SingleAsync();
+            return known.CenterId == expectedCenter && known.UploadedByUserId.HasValue && unknown.CenterId == null && unknown.UploadedByUserId == null;
         });
         async Task<bool> Forbidden(Func<PaymentService, Task> action) {
             try { await action(new PaymentService(new UnitOfWork(db), null!, null!, new ConfigurationBuilder().Build())); return false; }
@@ -320,7 +338,9 @@ try {
         builder.Logging.ClearProviders();
         builder.WebHost.UseUrls("http://127.0.0.1:0");
         builder.Configuration.AddInMemoryCollection(new Dictionary<string, string?> {
-            ["Jwt:Key"] = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N"), ["Jwt:Issuer"] = "logic-audit", ["Jwt:Audience"] = "logic-audit"
+            ["Jwt:Key"] = Guid.NewGuid().ToString("N") + Guid.NewGuid().ToString("N"), ["Jwt:Issuer"] = "logic-audit", ["Jwt:Audience"] = "logic-audit",
+            ["GoogleDrive:StorageProvider"] = "Local", ["GoogleDrive:FolderId"] = "audit-only-folder",
+            ["GoogleDrive:CredentialsPath"] = Path.Combine(root, name + "-no-credentials.json")
         });
         var issuer = new JwtTokenIssuer(builder.Configuration);
         builder.Services.AddSingleton(issuer);
@@ -329,9 +349,23 @@ try {
         builder.Services.AddScoped<JwtAccountValidator>();
         builder.Services.AddHttpClient();
         builder.Services.AddScoped<PasswordResetEmailSender>();
+        var mailFixture = new RecordingMailService();
+        builder.Services.AddSingleton<SportsCenterManagement.API.Services.ISendMailService>(mailFixture);
+        var objectStorage = new RecordingObjectStorage();
+        builder.Services.AddSingleton<Amazon.S3.IAmazonS3>(objectStorage);
+        builder.Services.AddSingleton(TimeProvider.System);
+        builder.Services.AddHttpContextAccessor();
+        builder.Services.Configure<SportsCenterManagement.API.Models.R2StorageOptions>(o => {
+            o.BucketName = "audit-only"; o.PublicDomain = "https://media.example.test";
+        });
+        builder.Services.AddScoped<SportsCenterManagement.API.Services.IR2StorageService, SportsCenterManagement.API.Services.R2StorageService>();
+        var driveSnapshot = new AuditDriveSnapshot();
+        builder.Services.AddScoped<GoogleDriveService>(s => new AuditGoogleDriveService(s.GetRequiredService<SportsCenterDbContext>(), builder.Configuration,
+            s.GetRequiredService<ILogger<GoogleDriveService>>(), Path.Combine(root, name + "-media"), driveSnapshot));
         builder.Services.AddRateLimiter(o => {
             o.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
             PasswordResetRateLimiting.Configure(o);
+            MailSendRateLimiting.Configure(o);
         });
         builder.Services.AddScoped<IClassScheduleQueryService, ClassScheduleQueryService>();
         builder.Services.AddScoped<IPaymentService>(s => new PaymentService(s.GetRequiredService<IUnitOfWork>(), null!, null!, builder.Configuration));
@@ -340,7 +374,10 @@ try {
         builder.Services.AddScoped<ICoreFlowService, CoreFlowService>();
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => {
             o.MapInboundClaims = false; o.TokenValidationParameters = issuer.ValidationParameters();
-            o.Events = new JwtBearerEvents { OnTokenValidated = c => c.HttpContext.RequestServices.GetRequiredService<JwtAccountValidator>().ValidateAsync(c) };
+            o.Events = new JwtBearerEvents {
+                OnMessageReceived = BrowserSessionCookie.ReadAsync,
+                OnTokenValidated = c => c.HttpContext.RequestServices.GetRequiredService<JwtAccountValidator>().ValidateAsync(c)
+            };
         });
         builder.Services.AddAuthorization(o => o.FallbackPolicy = new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
         builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
@@ -358,7 +395,7 @@ try {
                 context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             }
         });
-        web.UseRouting(); web.UseRateLimiter(); web.UseAuthentication(); web.UseAuthorization(); web.MapControllers();
+        web.UseRouting(); web.UseAuthentication(); web.UseAuthorization(); web.UseRateLimiter(); web.MapControllers();
         web.MapPost("/audit-email", mail.Receive).AllowAnonymous();
         await web.StartAsync();
         using var http = new HttpClient { BaseAddress = new Uri(web.Urls.Single()) };
@@ -397,6 +434,9 @@ try {
         builder.Configuration["ExternalCommunications:Email:BearerToken"] = "audit-only-token";
         await RegistrationChecks.Run(db, http, mail, builder.Configuration, center.Id, Check);
         await AuthChecks.Run(db, http, issuer, owner, mail, Check);
+        await BrowserSessionChecks.Run(db, http.BaseAddress!, mail, center.Id, Check);
+        await MailSecurityChecks.Run(db, http, issuer, mailFixture, Check);
+        await MediaSecurityChecks.Run(db, http, issuer, objectStorage, driveSnapshot, builder.Configuration, Check);
         await web.StopAsync();
     }
 } finally {

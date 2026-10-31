@@ -38,11 +38,11 @@ Muốn mọi máy nhìn thấy cùng tài khoản và dữ liệu, hãy triển 
 - Tra cứu hội viên, thu tiền tại quầy bằng CASH/POS (cần mã chuẩn chi cho POS).
 - Khởi tạo thanh toán online qua VNPay hoặc MoMo; callback VNPay/MoMo được gửi về backend để xác minh. VietQR đã được gỡ khỏi luồng thanh toán mới.
 
-Frontend gửi Bearer token, đọc lỗi Problem Details và `traceId`, đồng thời dùng `Idempotency-Key` cho thao tác thanh toán. Không dùng mock để giả lập các luồng trên.
+Frontend xác thực bằng cookie HttpOnly chứa JWT và header chọn phiên riêng từng tab, đọc lỗi Problem Details và `traceId`, đồng thời dùng `Idempotency-Key` cho thao tác thanh toán. Không dùng mock để giả lập các luồng trên.
 
 ## API mới và cấu hình Google/AI
 
-Giáo án chung/cá nhân, tiến độ và thông báo HLV/hội viên đã nối API lưu SQL Server. Xác thực dùng JWT HS256 qua JwtBearer, kiểm tra issuer/audience/thời hạn và tài khoản ở mỗi request; Swagger có nút Authorize. JWT được lưu bằng sessionStorage riêng từng tab để giữ đăng nhập khi F5; hồ sơ và quyền được tải lại từ API. Đăng xuất hoặc HTTP 401 xóa JWT của tab tương ứng. Chi tiết: [cấu trúc JWT](./Frontend/docs/jwt-auth-fix.md).
+Giáo án chung/cá nhân, tiến độ và thông báo HLV/hội viên đã nối API lưu SQL Server. Xác thực dùng JWT HS256 qua JwtBearer, kiểm tra issuer/audience/thời hạn và tài khoản ở mỗi request; Swagger có nút Authorize. JWT nằm trong cookie HttpOnly; sessionStorage chỉ giữ mã chọn phiên riêng từng tab. F5 giữ đăng nhập và các tab có thể dùng tài khoản khác nhau; hồ sơ/quyền được tải lại từ API. API client ngoài trình duyệt vẫn dùng Bearer JWT. Chi tiết: [cơ chế phiên từng tab](./Frontend/docs/tab-session-fix.md).
 
 Member và Coach có màn hình gửi/theo dõi yêu cầu hỗ trợ; Lễ tân/Manager tiếp nhận và phản hồi trong đúng trung tâm. Hộp thư có thao tác đọc tất cả. Gói đã thanh toán nhưng chưa đến ngày hiệu lực được hiển thị riêng với gói đang dùng.
 
