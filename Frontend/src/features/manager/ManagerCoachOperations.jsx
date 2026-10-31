@@ -1,6 +1,7 @@
 import { vietnamDate, formatVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useState } from 'react';
 import { managerCoachApi } from '../../services/api.js';
+import { safeHref } from '../../services/safeUrl.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
@@ -628,9 +629,9 @@ export function ManagerCoachOperations() {
                       {x.description}
                     </p>
 
-                    {x.photoUrl && (
+                    {safeHref(x.photoUrl) && (
                       <a
-                        href={x.photoUrl}
+                        href={safeHref(x.photoUrl)}
                         target="_blank"
                         rel="noreferrer"
                         className="inline-flex items-center gap-1 text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A] hover:underline"

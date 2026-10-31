@@ -9,6 +9,7 @@ import { useLandingContent } from '../../hooks/useLandingContent.js';
 import { getExternalContactUrl, normalizeZaloPhone } from '../../services/landingContentService.js';
 import { Logo } from '../../components/common/Logo.jsx';
 import { getMembershipAction } from '../../services/membershipEntry.js';
+import { safeHref } from '../../services/safeUrl.js';
 import {
   translateLandingContent,
   translateSportName,
@@ -823,12 +824,12 @@ export function LandingPage() {
 
             {/* CTA Buttons */}
             <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center'}}>
-              <a href={landingContent.heroBanner?.primaryCtaLink || '#/register'}
+              <a href={safeHref(landingContent.heroBanner?.primaryCtaLink) || '#/register'}
                 className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
                 {isEn ? 'REGISTER NEW MEMBER' : (landingContent.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>arrow_forward</span>
               </a>
-              <a href={landingContent.heroBanner?.secondaryCtaLink || '#khoa-hoc'}
+              <a href={safeHref(landingContent.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
                 className="link">
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
                 {isEn ? `EXPLORE ${visibleSports.length} DISCIPLINES` : (landingContent.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports.length} MÔN HỌC`)}

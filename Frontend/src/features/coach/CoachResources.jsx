@@ -1,6 +1,7 @@
 import { formatVietnamDateTime, parseVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { coachProfessionalApi } from '../../services/api.js';
+import { safeHref } from '../../services/safeUrl.js';
 import { uploadMediaFileToCloud } from '../../services/cloudMediaStorage.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
@@ -726,9 +727,9 @@ export function CoachResources() {
                   <span className="text-[11px] text-slate-400 block">
                     {x.resourceName || (isEn ? 'Other Equipment' : 'Thiết bị khác')} · {formatDate(x.reportedAt, isEn)}
                   </span>
-                  {x.photoUrl && (
+                  {safeHref(x.photoUrl) && (
                     <a
-                      href={x.photoUrl}
+                      href={safeHref(x.photoUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-[11px] font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1 pt-0.5"

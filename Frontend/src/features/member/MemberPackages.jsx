@@ -7,6 +7,7 @@ import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { formatMemberDate } from './memberOverview.js';
 import { translatePackageName } from '../../services/i18nHelper.js';
+import { safeHref } from '../../services/safeUrl.js';
 
 const PACKAGE_PERKS = {
   basic: {
@@ -207,12 +208,13 @@ export function MemberPackages() {
         paymentMethod,
         invoiceNumber: activeInvoiceNumber || undefined
       });
-      if (!res.paymentUrl) {
+      const paymentUrl = safeHref(res.paymentUrl);
+      if (!paymentUrl) {
         throw new Error(isEn ? 'Could not generate payment link.' : 'Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.');
       }
       setModalOpen(false);
       // Chuyển hướng trực tiếp trên trang hiện tại, không mở popup
-      window.location.href = res.paymentUrl;
+      window.location.href = paymentUrl;
     } catch (err) {
       setProcessing(false);
       const errMsg = err.message || (isEn ? 'Payment error' : 'Lỗi thanh toán');

@@ -1,6 +1,7 @@
 import { formatVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { refundApi } from '../../services/api.js';
+import { safeHref } from '../../services/safeUrl.js';
 import { createIdempotencyKey } from '../../services/http.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -107,7 +108,7 @@ export function MemberRefundRequests() {
             <p className="mt-1 text-sm text-slate-600">{item.bankName} · {item.bankAccountNumber} · {item.bankAccountName}</p>
             <p className="mt-2 text-sm">{item.reason}</p>
             {item.reviewNote && <p className="mt-2 rounded-lg bg-slate-50 p-2 text-xs text-slate-600"><strong>{isEn ? 'Manager note:' : 'Ghi chú quản lý:'}</strong> {item.reviewNote}</p>}
-            {item.transferProofUrl && <a href={item.transferProofUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 underline"><span className="material-symbols-outlined text-[16px]">receipt_long</span>{isEn ? 'View transfer proof' : 'Xem ảnh chuyển khoản'}</a>}
+            {safeHref(item.transferProofUrl) && <a href={safeHref(item.transferProofUrl)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 underline"><span className="material-symbols-outlined text-[16px]">receipt_long</span>{isEn ? 'View transfer proof' : 'Xem ảnh chuyển khoản'}</a>}
           </article>)}
         </div>
       </section>
