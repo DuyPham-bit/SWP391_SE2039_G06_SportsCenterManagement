@@ -32,7 +32,7 @@ export function MemberLookup() {
   const [regEmail, setRegEmail] = useState('');
   const [regUsername, setRegUsername] = useState('');
   const [regDob, setRegDob] = useState('');
-  const [regPassword, setRegPassword] = useState('Member@123456');
+  const [regPassword, setRegPassword] = useState('');
   const [regSaving, setRegSaving] = useState(false);
   const [regError, setRegError] = useState('');
 
@@ -112,6 +112,10 @@ export function MemberLookup() {
       setRegError(isEn ? 'Please provide Full Name, Phone number and Email!' : 'Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Email!');
       return;
     }
+    if (!regPassword.trim()) {
+      setRegError(isEn ? 'Please enter an initial password.' : 'Vui lòng nhập mật khẩu khởi tạo.');
+      return;
+    }
     setRegSaving(true);
     setRegError('');
     try {
@@ -120,7 +124,7 @@ export function MemberLookup() {
         phone: regPhone.trim(),
         email: regEmail.trim(),
         username: regUsername.trim() || undefined,
-        password: regPassword || 'Member@123456',
+        password: regPassword,
         dateOfBirth: regDob || undefined
       });
       showSuccess(isEn ? `Member created successfully! Code: ${newMember.memberCode}` : `Đăng ký hội viên thành công! Mã: ${newMember.memberCode}`);
@@ -130,7 +134,7 @@ export function MemberLookup() {
       setRegEmail('');
       setRegUsername('');
       setRegDob('');
-      setRegPassword('Member@123456');
+      setRegPassword('');
       setSelectedMember(newMember);
       setResults([newMember]);
       setHasSearched(true);
@@ -578,13 +582,17 @@ export function MemberLookup() {
               {isEn ? 'Initial Temporary Password' : 'Mật khẩu khởi tạo'}
             </label>
             <input
-              type="text"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={6}
+              maxLength={128}
               value={regPassword}
               onChange={e => setRegPassword(e.target.value)}
               className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
             />
             <p className="text-[11px] text-slate-400 mt-1">
-              {isEn ? 'Default: Member@123456 (Member can change after logging in)' : 'Mặc định: Member@123456 (Hội viên có thể đổi sau khi đăng nhập)'}
+              {isEn ? 'Required: use uppercase, lowercase, a number and a special character.' : 'Bắt buộc nhập, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.'}
             </p>
           </div>
 

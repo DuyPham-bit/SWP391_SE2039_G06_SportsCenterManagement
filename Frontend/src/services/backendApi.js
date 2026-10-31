@@ -461,6 +461,9 @@ export const staffApi = {
         }
       }));
     }
+    if (typeof staffData.password !== 'string' || !staffData.password.trim()) {
+      throw new Error('Vui lòng nhập mật khẩu khởi tạo cho nhân viên.');
+    }
     const roleCapitalized = String(staffData.role || '').toUpperCase() === 'COACH'
       ? 'Coach'
       : String(staffData.role || '').toUpperCase() === 'RECEPTIONIST'
@@ -473,7 +476,7 @@ export const staffApi = {
       body: {
         username,
         email: staffData.email.trim(),
-        password: staffData.password || 'Staff@123456',
+        password: staffData.password,
         fullName: staffData.fullName.trim(),
         roleName: roleCapitalized,
         phone: staffData.phone?.trim() || null,
@@ -636,6 +639,9 @@ export const receptionApi = {
   },
 
   async createMember({ username, email, password, fullName, phone, dateOfBirth }) {
+    if (typeof password !== 'string' || !password.trim()) {
+      throw new Error('Vui lòng nhập mật khẩu khởi tạo cho hội viên.');
+    }
     const cid = centerId();
     const emailPrefix = (email || '').split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
     const finalUsername = (username || `${emailPrefix}${Math.floor(100 + Math.random() * 900)}`).toLowerCase();
@@ -644,7 +650,7 @@ export const receptionApi = {
       body: {
         username: finalUsername,
         email: email.trim(),
-        password: password || 'Member@123456',
+        password,
         fullName: fullName.trim(),
         phone: phone?.trim() || null,
         dateOfBirth: dateOfBirth || null,

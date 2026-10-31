@@ -1227,7 +1227,7 @@ export function StaffManagement() {
                       onChange={handleFormChange}
                     />
                     <span className="text-[11px] text-slate-400 mt-1 block">
-                      {isEn ? 'Default: Staff@123456 if left empty' : 'Mặc định: Staff@123456 nếu để trống'}
+                      {isEn ? 'Required: use uppercase, lowercase, a number and a special character.' : 'Bắt buộc nhập, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.'}
                     </span>
                   </div>
 
