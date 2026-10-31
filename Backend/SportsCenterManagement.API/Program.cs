@@ -168,13 +168,12 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Đồng bộ schema/quyền; chỉ tạo dữ liệu demo khi cấu hình yêu cầu rõ ràng.
+// Đồng bộ schema/quyền; Admin đầu tiên chỉ được tạo từ cấu hình riêng của môi trường.
 using (var scope = app.Services.CreateScope())
 {
     var dbContext = scope.ServiceProvider.GetRequiredService<SportsCenterDbContext>();
     var baselineLegacySchema = app.Configuration.GetValue<bool>("Database:BaselineLegacySchema");
     await DbInitializer.SeedAsync(dbContext, baselineLegacySchema);
-    await DevelopmentAccountBootstrapper.SeedAsync(dbContext, app.Configuration, app.Environment);
     await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
 }
 

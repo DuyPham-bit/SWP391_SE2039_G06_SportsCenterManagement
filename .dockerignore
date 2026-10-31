@@ -6,3 +6,9 @@
 **/dist
 **/.validation
 **/tmp
+**/.env
+**/.env.*
+!**/.env.example
+# Existing tracked frontend settings contain only public build configuration.
+!Frontend/.env.local
+**/credentials.local.json

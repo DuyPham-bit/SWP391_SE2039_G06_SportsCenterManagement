@@ -12,10 +12,9 @@ build/
 credentials.local.json
 Frontend/.env.*.local
 .env
+.env.*
 *.env
 !.env.example
-!Frontend/.env.local
-!.env.local
 
 # .NET & Visual Studio build outputs
 bin/
