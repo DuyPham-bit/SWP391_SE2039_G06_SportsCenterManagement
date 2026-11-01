@@ -13,7 +13,7 @@ export function NotificationInbox() {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { items: backendItems, loading, error, readingId, readingAll, refresh, markRead: apiMarkRead, markAllRead: apiMarkAllRead } = useNotifications();
-  
+
 
   // Close when clicking outside
   useEffect(() => {
@@ -29,7 +29,7 @@ export function NotificationInbox() {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, [open]);
-
+  d
   const displayItems = backendItems;
   const unreadCount = displayItems.filter(item => !item.isRead).length;
 
@@ -113,11 +113,10 @@ export function NotificationInbox() {
                   type="button"
                   disabled={readingId !== null || readingAll}
                   onClick={() => handleMarkItemRead(item)}
-                  className={`block w-full text-left rounded-xl p-3 transition-all cursor-pointer ${
-                    item.isRead
+                  className={`block w-full text-left rounded-xl p-3 transition-all cursor-pointer ${item.isRead
                       ? 'bg-slate-50 hover:bg-slate-100 dark:bg-slate-800/60 dark:hover:bg-slate-750 text-slate-600 dark:text-slate-300 border border-slate-100 dark:border-slate-700/60'
                       : 'bg-[#81B29A]/10 hover:bg-[#81B29A]/20 dark:bg-[#81B29A]/15 dark:hover:bg-[#81B29A]/25 text-slate-900 dark:text-slate-100 border border-[#81B29A]/30 dark:border-[#81B29A]/30 shadow-2xs'
-                  }`}
+                    }`}
                 >
                   <div className="flex items-start justify-between gap-2">
                     <span className="block text-xs font-bold text-slate-900 dark:text-white leading-tight">

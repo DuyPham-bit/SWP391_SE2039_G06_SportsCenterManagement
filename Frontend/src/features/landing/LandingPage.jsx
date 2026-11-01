@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { FacilitiesSection } from './FacilitiesSection.js';
 import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
+import { IntroSplashScreen } from './IntroSplashScreen.jsx';
 import { usePublicCatalog } from '../../hooks/usePublicCatalog.js';
 import { getLandingPresentation } from '../../services/landingPresentation.js';
 import { useLandingContent } from '../../hooks/useLandingContent.js';
@@ -204,6 +205,7 @@ export function LandingPage() {
   const manualScrollTimerRef = useRef(null);
 
   // Tiya cd-headline rotate-1 3D perspective flip effect
+  const [showIntro, setShowIntro] = useState(true);
   const [headlineVisible, setHeadlineVisible] = useState(true);
   useEffect(() => {
     const interval = setInterval(() => {
@@ -538,6 +540,7 @@ export function LandingPage() {
 
   return (
     <div className="landing-page-root tiya-page w-full min-h-screen">
+      {showIntro && <IntroSplashScreen onFinish={() => setShowIntro(false)} />}
       {/* LANDING HEADER (TIYA NAVBAR) */}
       <header
         id="site-header"

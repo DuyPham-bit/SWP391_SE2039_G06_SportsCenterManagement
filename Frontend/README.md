@@ -673,7 +673,7 @@ Hệ thống hiển thị thông báo góc trên bên phải màn hình qua hook
 |---|---|---|---|---|---|
 | **UC-01** | Đăng nhập hệ thống | `src/features/auth/LoginPage.jsx` | `#/login` | `authApi.login` | **Có giao diện và service** |
 | **UC-01+**| Đăng nhập bằng Google | `src/features/auth/GoogleLoginModal.jsx` | Modal tại `#/login` | `authApi.loginWithGoogle` | **Có giao diện và service** |
-| **UC-02** | Đăng xuất hệ thống | `src/components/layout/Header.jsx` | Nút đăng xuất header | `AuthContext.logout` | **Có giao diện và service** |
+| **UC-02** | Đăng xuất hệ thống | `src/layouts/Header.jsx` | Nút đăng xuất header | `AuthContext.logout` | **Có giao diện và service** |
 | **UC-03** | Xem hồ sơ & Đổi mật khẩu | `src/features/auth/ProfileModal.jsx` | Modal tại Header | `authApi.changePassword` | **Có giao diện và service** |
 | **UC-04** | Khôi phục mật khẩu (OTP) | `src/features/auth/ForgotPasswordModal.jsx`| Modal tại `#/login` | `authApi.resetPassword` | **Có giao diện và service** |
 | **UC-10** | Quản lý tài khoản nhân viên | `src/features/manager/StaffManagement.jsx` | `#/manager/staff` | `staffApi` | **Có giao diện và service** |

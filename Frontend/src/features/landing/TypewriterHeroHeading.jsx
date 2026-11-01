@@ -5,16 +5,14 @@ const SCMS_SLOGANS_VI = [
   "LÊN MỘT BẬC HÀNH TRÌNH FITNESS",
   "BỨT PHÁ GIỚI HẠN THỂ CHẤT CÙNG SCMS",
   "HỆ THỐNG ĐA BỘ MÔN CHUẨN OLYMPIC",
-  "ĐỒNG HÀNH CÙNG ĐỘI NGŨ HLV CHUYÊN NGHIỆP",
-  "TẬP LUYỆN CÁ NHÂN & NHÓM ĐẲNG CẤP"
+  "ĐỒNG HÀNH CÙNG ĐỘI NGŨ HLV CHUYÊN NGHIỆP"
 ];
 
 const SCMS_SLOGANS_EN = [
   "ELEVATE YOUR FITNESS JOURNEY",
   "PUSH YOUR PHYSICAL LIMITS WITH SCMS",
   "OLYMPIC-STANDARD MULTI-SPORT SYSTEM",
-  "TRAIN WITH PROFESSIONAL CERTIFIED COACHES",
-  "ELITE PERSONAL & GROUP TRAINING"
+  "TRAIN WITH PROFESSIONAL CERTIFIED COACHES"
 ];
 
 export function TypewriterHeroHeading({ heroBadge }) {
@@ -27,7 +25,7 @@ export function TypewriterHeroHeading({ heroBadge }) {
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
 
-  // Chờ tiêu đề chính trượt lên xong (1.3s) rồi mới bắt đầu gõ chữ
+  // Chờ tiêu đề chính trượt lên hoàn tất rồi mới bắt đầu gõ chữ
   useEffect(() => {
     const startTimer = setTimeout(() => {
       setHasStartedTyping(true);
@@ -69,37 +67,70 @@ export function TypewriterHeroHeading({ heroBadge }) {
 
   const displayedText = (slogans[wordIndex] || '').substring(0, charIndex);
 
-  return (
-    <div className="flex flex-col items-center text-center max-w-4xl mx-auto px-4 select-none">
-      {/* 1. Dòng chào mừng trên cùng trượt lên */}
-      <p className="scms-hero-sub text-xs sm:text-sm font-bold tracking-[0.25em] sm:tracking-[0.35em] uppercase text-red-300 mb-3 drop-shadow">
-        {heroBadge || (isEn ? 'WELCOME TO SCMS SPORTS COMPLEX' : 'CHÀO MỪNG BẠN ĐẾN TRUNG TÂM THỂ THAO SCMS')}
-      </p>
+  const displayBadge = heroBadge && heroBadge.length <= 30
+    ? heroBadge
+    : (isEn ? 'SCMS OLYMPIC ARENA' : 'TRUNG TÂM THỂ THAO SCMS');
 
-      {/* 2. Tiêu đề chính dạng Khối Highlight Thể thao (Đỏ & Trắng) trượt lên nối tiếp */}
-      <h1 className="text-3xl sm:text-5xl md:text-6xl font-black uppercase tracking-tight text-white leading-tight sm:leading-snug drop-shadow-lg">
-        <span className="scms-hero-line-1 block mb-2">
-          {isEn ? 'PIONEERING IN' : 'ĐI ĐẦU VỀ TẬP LUYỆN'}{' '}
-          <span className="scms-highlight-red">
-            {isEn ? 'SMALL GROUP' : 'NHÓM NHỎ'}
-          </span>
+  return (
+    <div
+      className="flex flex-col items-center text-center max-w-5xl mx-auto px-4 select-none"
+      style={{ fontFamily: "'Montserrat', 'Lexend', system-ui, -apple-system, sans-serif" }}
+    >
+      {/* 1. Badge tinh gọn phía trên */}
+      <div className="hero-badge scms-hero-sub mb-3 sm:mb-4">
+        <span className="hero-badge-dot" />
+        {displayBadge}
+      </div>
+
+      {/* 2. Tiêu đề chính thể thao cao cấp: Bố cục 2 dòng tinh gọn, loại bỏ chữ thừa */}
+      <h1
+        className="text-center font-black uppercase text-white tracking-tight"
+        style={{
+          fontFamily: "'Montserrat', 'Lexend', system-ui, -apple-system, sans-serif",
+          textShadow: '0 4px 28px rgba(0, 0, 0, 0.9)',
+          lineHeight: '1.25'
+        }}
+      >
+        {/* Dòng 1: ĐI ĐẦU VỀ TẬP LUYỆN */}
+        <span className="scms-hero-line-1 block text-2xl sm:text-4xl md:text-5xl lg:text-6xl mb-2 sm:mb-3 font-black tracking-tight text-white">
+          {isEn ? 'PIONEERING IN' : 'ĐI ĐẦU VỀ TẬP LUYỆN'}
         </span>
-        <span className="scms-hero-line-2 block">
-          &{' '}
-          <span className="scms-highlight-white">
-            {isEn ? 'PERSONAL 1:1' : 'CÁ NHÂN'}
-          </span>{' '}
-          {isEn ? 'TRAINING IN VIETNAM' : 'TẠI VIỆT NAM'}
+
+        {/* Dòng 2: Cặp thẻ đôi cân xứng [NHÓM] & [CÁ NHÂN] tinh tế */}
+        <span className="scms-hero-line-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xl sm:text-3xl md:text-4xl lg:text-5xl">
+          <span className="scms-highlight-primary">
+            {isEn ? 'GROUP' : 'NHÓM'}
+          </span>
+          <span
+            className="font-bold text-[#F2CC8F] px-1"
+            style={{ textShadow: '0 2px 10px rgba(242, 204, 143, 0.4)' }}
+          >
+            &
+          </span>
+          <span className="scms-highlight-accent">
+            {isEn ? 'PERSONAL' : 'CÁ NHÂN'}
+          </span>
         </span>
       </h1>
 
-      {/* 3. Hiệu ứng Typewriter gõ chữ tự động với con trỏ nhấp nháy */}
-      <div className="scms-hero-typewriter mt-5 sm:mt-6 min-h-[38px] flex items-center justify-center text-sm sm:text-xl font-bold tracking-wider uppercase text-slate-100 drop-shadow">
-        <span className="text-slate-200 mr-2">
+      {/* 3. Hiệu ứng Typewriter gõ chữ với màu vàng đồng Warm Gold thương hiệu */}
+      <div
+        className="scms-hero-typewriter mt-4 sm:mt-5 min-h-[38px] flex items-center justify-center text-xs sm:text-base md:text-lg font-bold tracking-wider uppercase text-white"
+        style={{ fontFamily: "'Montserrat', 'Lexend', system-ui, sans-serif" }}
+      >
+        <span className="text-white/85 mr-2" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
           {isEn ? 'READY TO:' : 'SẴN SÀNG ĐỂ:'}
         </span>
-        <span className="text-red-400 font-extrabold">{displayedText}</span>
-        <span className="scms-hero-cursor ml-0.5">|</span>
+        <span
+          className="font-extrabold"
+          style={{
+            color: '#F2CC8F',
+            textShadow: '0 2px 14px rgba(242, 204, 143, 0.5)'
+          }}
+        >
+          {displayedText}
+        </span>
+        <span className="scms-hero-cursor ml-1">|</span>
       </div>
     </div>
   );
