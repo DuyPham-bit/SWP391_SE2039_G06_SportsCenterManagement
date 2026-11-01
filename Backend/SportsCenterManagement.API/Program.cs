@@ -1,5 +1,3 @@
-using Amazon.Runtime;
-using Amazon.S3;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -107,28 +105,6 @@ builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailS
 builder.Services.AddTransient<ISendMailService, SendMailService>();
 
 builder.Services.Configure<R2StorageOptions>(builder.Configuration.GetSection(R2StorageOptions.SectionName));
-builder.Services.AddSingleton<IAmazonS3>(provider =>
-{
-    var options = provider.GetRequiredService<Microsoft.Extensions.Options.IOptions<R2StorageOptions>>().Value;
-    if (string.IsNullOrWhiteSpace(options.ServiceUrl) ||
-        string.IsNullOrWhiteSpace(options.AccessKey) ||
-        string.IsNullOrWhiteSpace(options.SecretKey) ||
-        string.IsNullOrWhiteSpace(options.BucketName) ||
-        string.IsNullOrWhiteSpace(options.PublicDomain))
-    {
-        throw new InvalidOperationException(
-            "R2Storage:ServiceUrl, AccessKey, SecretKey, BucketName and PublicDomain must be configured.");
-    }
-
-    return new AmazonS3Client(
-        new BasicAWSCredentials(options.AccessKey, options.SecretKey),
-        new AmazonS3Config
-        {
-            ServiceURL = options.ServiceUrl,
-            ForcePathStyle = true,
-            AuthenticationRegion = "auto"
-        });
-});
 builder.Services.AddScoped<IR2StorageService, R2StorageService>();
 
 var localMediaRoot = Path.GetFullPath(

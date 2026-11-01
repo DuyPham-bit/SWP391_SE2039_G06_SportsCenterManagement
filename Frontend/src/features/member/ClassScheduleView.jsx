@@ -253,11 +253,11 @@ export function ClassScheduleView() {
     const target = sessionToBook || activeSession;
     if (!target || !currentUser) return;
 
-    if (target.enrolledCount >= target.capacity) {
+    if (target.enrolledCount >= target.capacity && !target.allowWaitlist) {
       setBookingError({
         message: isEn ? 'This class has reached maximum capacity (no spots left).' : 'Lớp học đã đủ sĩ số tối đa (hết chỗ trống).',
         code: 'BOOK-SLOT-FULL',
-        proposedHandling: isEn ? 'Please choose another session or contact the front desk to join the waitlist.' : 'Vui lòng chọn ca tập khác hoặc liên hệ nhân viên lễ tân quầy để vào danh sách chờ.'
+        proposedHandling: isEn ? 'Please choose another session.' : 'Vui lòng chọn ca tập khác.'
       });
       return;
     }
@@ -1162,9 +1162,13 @@ export function ClassScheduleView() {
                   message={isEn
                     ? 'All workout spots in this session have been reserved by members.'
                     : 'Tất cả các vị trí tập luyện trong ca học này đã có hội viên đăng ký giữ chỗ.'}
-                  proposedHandling={isEn
-                    ? 'Please choose another session or contact the front desk to join the waitlist.'
-                    : 'Vui lòng chọn ca tập khác hoặc liên hệ quầy lễ tân để ghi danh vào danh sách chờ.'}
+                  proposedHandling={activeSession.allowWaitlist
+                    ? (isEn
+                      ? 'Use the confirmation button below to join the waitlist. You will be notified when a spot becomes available.'
+                      : 'Nhấn nút xác nhận bên dưới để vào danh sách chờ. Hệ thống sẽ thông báo khi có chỗ trống.')
+                    : (isEn
+                      ? 'Please choose another session.'
+                      : 'Vui lòng chọn ca tập khác.')}
                 />
               ) : remainingSlots <= 3 ? (
                 <BusinessAlert
@@ -1219,7 +1223,7 @@ export function ClassScheduleView() {
                   <button
                     type="button"
                     onClick={() => handleExecuteBooking()}
-                    disabled={bookingLoading || isFull || !activeSession.isBookable}
+                    disabled={bookingLoading || (isFull && !activeSession.allowWaitlist) || !activeSession.isBookable}
                     className="px-6 py-2 text-xs font-bold font-chivo uppercase tracking-wider rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {bookingLoading ? (
@@ -1228,7 +1232,9 @@ export function ClassScheduleView() {
                         <span>{isEn ? 'Booking...' : 'Đang giữ chỗ...'}</span>
                       </>
                     ) : (
-                      <span>{isEn ? 'Confirm Booking' : 'Xác Nhận Giữ Chỗ'}</span>
+                      <span>{isFull && activeSession.allowWaitlist
+                        ? (isEn ? 'Join Waitlist' : 'Vào Danh Sách Chờ')
+                        : (isEn ? 'Confirm Booking' : 'Xác Nhận Giữ Chỗ')}</span>
                     )}
                   </button>
                 )}

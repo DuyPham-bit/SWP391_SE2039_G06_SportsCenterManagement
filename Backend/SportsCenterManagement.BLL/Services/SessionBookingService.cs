@@ -124,15 +124,14 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
         booking.Status = late ? FlowStatuses.BookingCancelledLate : FlowStatuses.BookingCancelled;
         AuditLogWriter.Add(unitOfWork, actorUserId ?? currentUserId, cls.CenterId, "CANCEL_SESSION_BOOKING", "SessionBooking", bookingId, newValues: new { IsLateCancellation = late });
 
-        long? promotedMemberId = null;
-        if (!late)
-        {
-            await SaveAsync(cancellationToken); // free the seat before promoting
-            promotedMemberId = await PromoteNextWaitlistAsync(session, cls, now, actorUserId ?? currentUserId, cancellationToken);
-        }
+        // A late cancellation still carries the member penalty, but the physical seat
+        // is free and must be offered fairly to the waitlist before direct booking.
+        await SaveAsync(cancellationToken);
+        var promotedMemberId = await PromoteNextWaitlistAsync(
+            session, cls, now, actorUserId ?? currentUserId, cancellationToken);
 
         await NotifyMemberAsync(actorUserId ?? currentUserId, member.Id, session, cls,
-            "Đã hủy đặt lớp", late ? "Bạn đã hủy muộn; buổi học vẫn được tính là đã tham gia" : "Chỗ học của bạn đã được hủy",
+            "Đã hủy đặt lớp", late ? "Bạn đã hủy muộn; lượt tập vẫn bị tính nhưng bạn không được ghi nhận có mặt" : "Chỗ học của bạn đã được hủy",
             "BookingCancelled", cancellationToken);
         await NotifyCoachesAsync(actorUserId ?? currentUserId, member.FullName, session, cls,
             "Học viên hủy lịch", late ? "đã hủy muộn buổi học" : "đã hủy buổi học",
@@ -141,8 +140,10 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
         await transaction.CommitAsync(cancellationToken);
 
         var message = late
-            ? "Hủy muộn (dưới 2 giờ trước giờ học): buổi này vẫn được tính là đã tham gia."
+            ? "Hủy muộn (dưới 2 giờ trước giờ học): lượt tập vẫn bị tính nhưng không được ghi nhận có mặt."
             : "Hủy đặt chỗ thành công.";
+        if (promotedMemberId.HasValue)
+            message += " Chỗ trống đã được tự động chuyển cho hội viên đầu tiên đủ điều kiện trong danh sách chờ.";
         return new CancelBookingResult(ToResponse(booking, session, cls), late, promotedMemberId, message);
     }
 
@@ -175,7 +176,8 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
 
     /// <summary>Throws when the member may not take a seat in the session right now.</summary>
     private async Task<MemberSubscription> EnsureEligibleAsync(
-        MemberProfile member, ClassSession session, ClassEntity cls, DateTime now, CancellationToken ct)
+        MemberProfile member, ClassSession session, ClassEntity cls, DateTime now, CancellationToken ct,
+        bool enforceMinimumLeadTime = true)
     {
         var activeUser = await Db.Users.AnyAsync(user => user.Id == member.UserId && user.Status == "Active"
             && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow), ct);
@@ -281,7 +283,7 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
         // BR-BOOK-01
         var start = session.SessionDate.ToDateTime(session.StartTime);
         var lead = start - now;
-        if (lead < MinLeadTime || lead > MaxLeadTime)
+        if (lead <= TimeSpan.Zero || lead > MaxLeadTime || (enforceMinimumLeadTime && lead < MinLeadTime))
             throw new InvalidOperationException("Chỉ được đặt lịch trước giờ học tối thiểu 30 phút và tối đa 7 ngày.")
             {
                 Data =
@@ -365,7 +367,7 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
 
     /// <summary>
     /// BR-BOOK-04. Promotes the earliest waiting member of the class who is still eligible for the freed session.
-    /// Ineligible members (no active package, clash, ...) stay in the waitlist.
+    /// Ineligible members (no active package, clash, ...) are closed and the next FIFO entry is evaluated.
     /// </summary>
     private async Task<long?> PromoteNextWaitlistAsync(ClassSession session, ClassEntity cls, DateTime now, long actorUserId, CancellationToken ct)
     {
@@ -393,10 +395,16 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork) : ISessionBook
             if (candidate is null) continue;
             try
             {
-                var subscription = await EnsureEligibleAsync(candidate, session, cls, now, ct);
+                // The member explicitly opted into auto-promotion when joining the waitlist.
+                // Direct bookings keep the 30-minute lead-time rule; a waiting member may
+                // receive a newly freed seat until the session actually starts.
+                var subscription = await EnsureEligibleAsync(
+                    candidate, session, cls, now, ct, enforceMinimumLeadTime: false);
                 await CreateOrReactivateBookingAsync(candidate.Id, session.Id, subscription.Id, ct);
             }
-            catch (InvalidOperationException failure) when (failure.Data["StatusCode"] is int)            {
+            catch (InvalidOperationException failure) when (failure.Data["StatusCode"] is int)
+            {
+                entry.Status = FlowStatuses.WaitlistCancelled;
                 continue;
             }
 

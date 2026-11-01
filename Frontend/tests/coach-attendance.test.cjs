@@ -24,6 +24,25 @@ test('backend roster and attendance honor replacement coach and active class enr
   assert.match(controller, /e\.Status == "Active" \|\| e\.Status == "Confirmed" \|\| e\.Status == "Enrolled"/);
 });
 
+test('attendance schedule excludes cancelled class and session history', () => {
+  const attendance = fs.readFileSync(path.join(__dirname, '../src/features/coach/Attendance.jsx'), 'utf8');
+  const shared = fs.readFileSync(path.join(__dirname, '../src/features/coach/CoachShared.jsx'), 'utf8');
+  const backendApi = fs.readFileSync(path.join(__dirname, '../src/services/backendApi.js'), 'utf8');
+
+  assert.match(attendance, /useTeachingSessions\(60, null, false\)/);
+  assert.match(shared, /getTeachingSchedule\(range\.from, range\.to, includeHistory\)/);
+  assert.match(backendApi, /includeHistory:\s*String\(Boolean\(includeHistory\)\)/);
+});
+
+test('cancelling any pre-start booking offers the released seat to the FIFO waitlist', () => {
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/SessionBookingService.cs'), 'utf8');
+
+  assert.doesNotMatch(service, /if \(!late\)\s*\{[\s\S]{0,250}PromoteNextWaitlistAsync/);
+  assert.match(service, /var promotedMemberId = await PromoteNextWaitlistAsync/);
+  assert.match(service, /OrderBy\(w => w\.JoinedAt\)\.ThenBy\(w => w\.Id\)/);
+  assert.match(service, /enforceMinimumLeadTime:\s*false/);
+});
+
 test('session progress is upserted and overnight completion uses the Vietnam session end', () => {
   const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/TrainingService.cs'), 'utf8');
   assert.match(service, /SessionEndVietnam\(session\.SessionDate, session\.StartTime, session\.EndTime\)/);

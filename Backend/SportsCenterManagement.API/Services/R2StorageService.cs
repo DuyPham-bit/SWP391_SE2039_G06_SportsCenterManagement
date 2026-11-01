@@ -1,3 +1,4 @@
+using Amazon.Runtime;
 using Amazon.S3;
 using Amazon.S3.Model;
 using Microsoft.Extensions.Options;
@@ -13,12 +14,11 @@ using SportsCenterManagement.DAL.Entities;
 namespace SportsCenterManagement.API.Services;
 
 public sealed class R2StorageService(
-    IAmazonS3 s3Client,
     IOptions<R2StorageOptions> options,
     TimeProvider timeProvider,
     SportsCenterDbContext db,
     IHttpContextAccessor httpContextAccessor,
-    ILogger<R2StorageService> logger) : IR2StorageService
+    ILogger<R2StorageService> logger) : IR2StorageService, IDisposable
 {
     private const long MaxFileSize = 5 * 1024 * 1024;
     private const string RefundBillPrefix = "refund-bills/";
@@ -33,6 +33,12 @@ public sealed class R2StorageService(
         };
 
     private readonly R2StorageOptions _options = options.Value;
+    private IAmazonS3? _s3Client;
+
+    // Object storage is optional for local/demo environments. Defer configuration
+    // validation until an upload/delete actually needs R2, while retaining all
+    // tenant and ownership checks below.
+    private IAmazonS3 S3Client => _s3Client ??= CreateS3Client(_options);
 
     public async Task<string> UploadRefundBillAsync(
         IFormFile file,
@@ -83,7 +89,7 @@ public sealed class R2StorageService(
         };
         request.Headers.CacheControl = "public, max-age=31536000, immutable";
 
-        await s3Client.PutObjectAsync(request, cancellationToken);
+        await S3Client.PutObjectAsync(request, cancellationToken);
         var media = new UploadedMedia
         {
             DriveFileId = MediaAccessScope.R2FileIdPrefix + key,
@@ -96,7 +102,7 @@ public sealed class R2StorageService(
         catch
         {
             // Do not leave an upload without ownership metadata if the database rejects it.
-            try { await s3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = request.BucketName, Key = key }, CancellationToken.None); }
+            try { await S3Client.DeleteObjectAsync(new DeleteObjectRequest { BucketName = request.BucketName, Key = key }, CancellationToken.None); }
             catch (Exception cleanup) { logger.LogError(cleanup, "Could not clean up R2 upload after metadata persistence failed."); }
             throw;
         }
@@ -143,7 +149,7 @@ public sealed class R2StorageService(
             if (!allowed) throw BusinessException.NotFound("Không tìm thấy ảnh trong phạm vi được phép.");
         }
 
-        await s3Client.DeleteObjectAsync(new DeleteObjectRequest
+        await S3Client.DeleteObjectAsync(new DeleteObjectRequest
         {
             BucketName = Required(_options.BucketName, nameof(_options.BucketName)),
             Key = key
@@ -194,4 +200,24 @@ public sealed class R2StorageService(
         !string.IsNullOrWhiteSpace(value)
             ? value
             : throw new InvalidOperationException($"R2Storage:{propertyName} is not configured.");
+
+    private static IAmazonS3 CreateS3Client(R2StorageOptions options)
+    {
+        var serviceUrl = Required(options.ServiceUrl, nameof(options.ServiceUrl));
+        var accessKey = Required(options.AccessKey, nameof(options.AccessKey));
+        var secretKey = Required(options.SecretKey, nameof(options.SecretKey));
+        _ = Required(options.BucketName, nameof(options.BucketName));
+        _ = Required(options.PublicDomain, nameof(options.PublicDomain));
+
+        return new AmazonS3Client(
+            new BasicAWSCredentials(accessKey, secretKey),
+            new AmazonS3Config
+            {
+                ServiceURL = serviceUrl,
+                ForcePathStyle = true,
+                AuthenticationRegion = "auto"
+            });
+    }
+
+    public void Dispose() => _s3Client?.Dispose();
 }

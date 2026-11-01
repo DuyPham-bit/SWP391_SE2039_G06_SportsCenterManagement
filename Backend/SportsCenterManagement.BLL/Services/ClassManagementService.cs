@@ -184,20 +184,30 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
                 throw new InvalidOperationException($"Sức chứa mới ({request.Capacity}) nhỏ hơn số chỗ đã đặt ({maxBooked}) của một buổi sắp tới.") { Data = { ["StatusCode"] = 409 } };
         }
 
-        // BR-CLASS-03: a room change must not collide with other classes for schedules inheriting the class room.
+        // BR-CLASS-03: a room change must not collide with other classes for schedules
+        // that follow the class default room. The manager UI historically persisted the
+        // current default room as an explicit schedule room, so those schedules must also
+        // follow a later default-room change.
         var roomChanged = request.RoomId != entity.RoomId;
-        List<ClassSchedule> inheriting = [];
+        List<ClassSchedule> schedulesFollowingDefaultRoom = [];
         if (roomChanged)
         {
-            inheriting = await Db.ClassSchedules
-                .Where(s => s.ClassId == classId && s.Status == FlowStatuses.ScheduleActive && s.RoomId == null)
+            schedulesFollowingDefaultRoom = await Db.ClassSchedules
+                .Where(s => s.ClassId == classId && s.Status == FlowStatuses.ScheduleActive
+                    && (s.RoomId == null || s.RoomId == entity.RoomId))
                 .ToListAsync(cancellationToken);
-            foreach (var schedule in inheriting)
+            foreach (var schedule in schedulesFollowingDefaultRoom)
             {
                 await EnsureRoomFreeAsync(request.RoomId, schedule.DayOfWeek, schedule.StartTime, schedule.EndTime,
                     schedule.StartDate, schedule.EndDate, schedule.Id, cancellationToken);
             }
         }
+
+        // A class-level capacity change must be effective for every active schedule.
+        // Without this check the manager can save (for example) 3 seats while a schedule
+        // still runs in a 2-seat override room, and members continue to see the session as full.
+        await EnsureActiveScheduleRoomsCanHostAsync(
+            entity, request.RoomId, request.Capacity, cancellationToken);
 
         entity.SportId = request.SportId;
         entity.RoomId = request.RoomId;
@@ -209,9 +219,14 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
         entity.DurationMinutes = request.DurationMinutes;
         entity.UpdatedAt = DateTime.UtcNow;
 
-        if (roomChanged && inheriting.Count > 0)
+        if (roomChanged && schedulesFollowingDefaultRoom.Count > 0)
         {
-            var scheduleIds = inheriting.Select(s => (long?)s.Id).ToList();
+            // Preserve true inheritance (null); update rows that only duplicated the old
+            // default room so future generated sessions use the new default as well.
+            foreach (var schedule in schedulesFollowingDefaultRoom.Where(schedule => schedule.RoomId.HasValue))
+                schedule.RoomId = request.RoomId;
+
+            var scheduleIds = schedulesFollowingDefaultRoom.Select(s => (long?)s.Id).ToList();
             var localToday = ScheduleTime.VietnamToday;
             var localNow = TimeOnly.FromDateTime(ScheduleTime.VietnamNow);
             var upcoming = await Db.ClassSessions
@@ -507,6 +522,69 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork) : IClassManag
     {
         if (scheduleRoomId is null) return;
         await EnsureSportAndRoomAsync(entity.CenterId, entity.SportId, scheduleRoomId, entity.Capacity, ct);
+    }
+
+    private async Task EnsureActiveScheduleRoomsCanHostAsync(
+        ClassEntity entity, long? requestedDefaultRoomId, int requestedCapacity, CancellationToken ct)
+    {
+        var defaultRoomChanged = requestedDefaultRoomId != entity.RoomId;
+        var schedules = await Db.ClassSchedules
+            .Where(schedule => schedule.ClassId == entity.Id
+                && schedule.Status == FlowStatuses.ScheduleActive)
+            .Select(schedule => new
+            {
+                schedule.RoomId,
+                schedule.DayOfWeek,
+                schedule.StartTime,
+                schedule.EndTime
+            })
+            .ToListAsync(ct);
+
+        var effectiveRooms = schedules.Select(schedule => new
+        {
+            Schedule = schedule,
+            RoomId = schedule.RoomId is null
+                || (defaultRoomChanged && schedule.RoomId == entity.RoomId)
+                    ? requestedDefaultRoomId
+                    : schedule.RoomId
+        }).ToList();
+        var roomIds = effectiveRooms.Where(item => item.RoomId.HasValue)
+            .Select(item => item.RoomId!.Value).Distinct().ToArray();
+        if (roomIds.Length == 0) return;
+
+        var rooms = await Db.Rooms.Where(room => roomIds.Contains(room.Id))
+            .ToDictionaryAsync(room => room.Id, ct);
+        foreach (var item in effectiveRooms.Where(item => item.RoomId.HasValue))
+        {
+            if (!rooms.TryGetValue(item.RoomId!.Value, out var room)
+                || room.CenterId != entity.CenterId
+                || !string.Equals(room.Status, "Active", StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException("Lịch đang sử dụng phòng không còn hoạt động tại trung tâm.")
+                {
+                    Data =
+                    {
+                        ["StatusCode"] = 409,
+                        ["Code"] = "CM-03",
+                        ["ProposedHandling"] = "Đổi phòng của lịch sang một phòng đang hoạt động trước khi cập nhật lớp."
+                    }
+                };
+            }
+
+            if (requestedCapacity <= room.Capacity) continue;
+            throw new InvalidOperationException(
+                $"Không thể đặt sức chứa lớp là {requestedCapacity}: lịch Thứ {item.Schedule.DayOfWeek} " +
+                $"{item.Schedule.StartTime:HH\\:mm}-{item.Schedule.EndTime:HH\\:mm} đang dùng phòng " +
+                $"'{room.Name}' chỉ có {room.Capacity} chỗ.")
+            {
+                Data =
+                {
+                    ["StatusCode"] = 409,
+                    ["Code"] = "CM-04",
+                    ["ProposedHandling"] = "Đổi lịch sang phòng có sức chứa phù hợp rồi cập nhật lại sĩ số lớp."
+                }
+            };
+        }
     }
 
     /// <summary>BR-CLASS-03: no two classes may use the same room at overlapping day/time/date ranges.</summary>

@@ -316,7 +316,9 @@ export function ClassesAndRooms() {
       const defaultStart = '08:00';
       const defaultEnd = scheduleEndTime(defaultStart, dur);
       setForm({
-        roomId: classRow.roomId || '',
+        // Empty means "use the class default room". Persisting the same room id
+        // as an override prevents later class-room changes from reaching sessions.
+        roomId: '',
         dayOfWeek: 1,
         selectedDays: [1, 3, 5],
         startTime: defaultStart,
@@ -1643,7 +1645,7 @@ export function ClassesAndRooms() {
                   setEditingScheduleId(null);
                   const dur = Number(modal.row?.durationMinutes || 60);
                   setForm({
-                    roomId: modal.row?.roomId || '',
+                    roomId: '',
                     dayOfWeek: 1,
                     selectedDays: [1, 3, 5],
                     startTime: '08:00',

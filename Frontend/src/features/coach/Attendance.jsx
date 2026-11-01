@@ -242,7 +242,9 @@ export function Attendance() {
   const initialDate = initialParams.date ? parseCalendarDate(initialParams.date) : parseCalendarDate();
 
   // Schedule data hook: generous window (60 days) to allow smooth week navigation
-  const schedule = useTeachingSessions(60);
+  // Attendance is an operational screen: cancelled classes/sessions must not
+  // remain selectable even though other coach reports may include history.
+  const schedule = useTeachingSessions(60, null, false);
 
   // Navigation states
   const [currentMonday, setCurrentMonday] = useState(() => getMondayOfDate(initialDate));

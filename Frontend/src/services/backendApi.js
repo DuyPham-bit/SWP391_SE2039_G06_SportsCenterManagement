@@ -532,8 +532,8 @@ export const roomApi = {
  async update(id, body) { return apiRequest('centers/'+centerId()+'/rooms/'+id, { method: 'PUT', body }); }
 };
 export const classApi = {
- async getTeachingSchedule(from, to) {
-   const query = new URLSearchParams({ from, to, includeHistory: 'true' });
+ async getTeachingSchedule(from, to, includeHistory = true) {
+   const query = new URLSearchParams({ from, to, includeHistory: String(Boolean(includeHistory)) });
    return asArray(await apiRequest('coaches/me/teaching-schedule?'+query)).map(mapSession);
  },
  async getManagementClasses() { return asArray(await apiRequest('centers/'+centerId()+'/classes/all')); },
