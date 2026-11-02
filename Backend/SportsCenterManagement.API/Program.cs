@@ -106,17 +106,6 @@ builder.Services.AddTransient<ISendMailService, SendMailService>();
 
 builder.Services.Configure<R2StorageOptions>(builder.Configuration.GetSection(R2StorageOptions.SectionName));
 builder.Services.AddScoped<IR2StorageService, R2StorageService>();
-
-var localMediaRoot = Path.GetFullPath(
-    builder.Configuration["GoogleDrive:LocalStoragePath"] ?? Path.Combine("App_Data", "media"),
-    builder.Environment.ContentRootPath);
-var localUploadsPath = Path.Combine(localMediaRoot, "uploads");
-Directory.CreateDirectory(localUploadsPath);
-builder.Services.AddScoped(provider => new GoogleDriveService(
-    provider.GetRequiredService<SportsCenterDbContext>(),
-    provider.GetRequiredService<IConfiguration>(),
-    provider.GetRequiredService<ILogger<GoogleDriveService>>(),
-    localMediaRoot));
 builder.Services.AddSingleton<GoogleTokenValidator>();
 builder.Services.AddHttpClient<GeminiService>(client => client.Timeout = TimeSpan.FromSeconds(45));
 builder.Services.AddRateLimiter(options =>
@@ -265,25 +254,8 @@ app.Use(async (context, next) =>
     }
 });
 
-app.Use(async (context, next) =>
-{
-    if (context.Request.Path.StartsWithSegments("/uploads") &&
-        !ImageUploadValidator.IsSupportedFileName(context.Request.Path.Value ?? ""))
-    {
-        context.Response.StatusCode = StatusCodes.Status404NotFound;
-        return;
-    }
-    await next();
-});
 var mediaContentTypes = new FileExtensionContentTypeProvider();
 mediaContentTypes.Mappings[".avif"] = "image/avif";
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(localUploadsPath),
-    RequestPath = "/uploads",
-    ContentTypeProvider = mediaContentTypes,
-    OnPrepareResponse = context => context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff"
-});
 app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
