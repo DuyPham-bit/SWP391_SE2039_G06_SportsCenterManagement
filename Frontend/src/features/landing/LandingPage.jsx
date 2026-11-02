@@ -548,7 +548,7 @@ export function LandingPage() {
       >
         <div className="tiya-navbar__container">
           {/* Brand Logo - SCMS Olympic Sports Arena */}
-          <Logo variant="dark" size="md" onClick={(e) => handleNavClick(navItems[0], e)} />
+          <Logo variant="dark" size="lg" onClick={(e) => handleNavClick(navItems[0], e)} />
 
           {/* Navigation Links */}
           <nav className="tiya-nav-menu">
@@ -1302,7 +1302,7 @@ export function LandingPage() {
             {/* Col 1: Brand */}
             <div>
               <div className="mb-4">
-                <Logo variant="dark" size="md" onClick={e => handleNavClick(navItems[0], e)} />
+                <Logo variant="dark" size="lg" onClick={e => handleNavClick(navItems[0], e)} />
               </div>
               <p style={{fontSize:'13.5px',lineHeight:1.7,color:'#CBD5E1',maxWidth:'320px'}}>
                 {isEn

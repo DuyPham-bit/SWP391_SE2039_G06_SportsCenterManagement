@@ -20,16 +20,17 @@ export function Logo({
 
   // Height and scale based on size
   const heightClass = {
-    sm: 'h-8 sm:h-9',
-    md: 'h-9 sm:h-11',
-    lg: 'h-12 sm:h-16'
-  }[size] || 'h-9 sm:h-11';
+    sm: 'h-10 sm:h-11',
+    md: 'h-12 sm:h-14',
+    lg: 'h-16 sm:h-20 lg:h-22',
+    xl: 'h-20 sm:h-24 lg:h-28'
+  }[size] || 'h-12 sm:h-14';
 
   const compactSizeClass = {
-    sm: 'w-8 h-8',
-    md: 'w-9 h-9 sm:w-10 sm:h-10',
-    lg: 'w-12 h-12 sm:w-14 sm:h-14'
-  }[size] || 'w-10 h-10';
+    sm: 'w-9 h-9 sm:w-10 sm:h-10',
+    md: 'w-11 h-11 sm:w-12 sm:h-12',
+    lg: 'w-14 h-14 sm:w-16 sm:h-16'
+  }[size] || 'w-11 h-11 sm:w-12 sm:h-12';
 
   let logoContent;
 
