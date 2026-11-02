@@ -1,11 +1,29 @@
                     import { useAuth } from '../../../app/providers/AuthContext.jsx';
 import { hasCapability, getCapabilityById } from '../../../services/permissions.js';
 
+import { useEffect } from 'react';
+
 export function ProtectedRoute({ children }) {
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, initializing } = useAuth();
+
+  useEffect(() => {
+    if (!initializing && !isAuthenticated) {
+      window.location.hash = '#/login';
+    }
+  }, [isAuthenticated, initializing]);
+
+  if (initializing) {
+    return (
+      <div className="min-h-[50vh] flex items-center justify-center p-8">
+        <div className="flex items-center gap-2.5 text-slate-500 text-sm font-medium">
+          <span className="w-4 h-4 border-2 border-[#81B29A] border-t-transparent rounded-full animate-spin" />
+          <span>Đang xác thực phiên làm việc...</span>
+        </div>
+      </div>
+    );
+  }
 
   if (!isAuthenticated) {
-    window.location.hash = '#/login';
     return null;
   }
 

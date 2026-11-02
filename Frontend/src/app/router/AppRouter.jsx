@@ -62,6 +62,18 @@ const MySupportRequests = lazy(() => import('../../pages/member/MySupportRequest
 const MemberRefundRequests = lazy(() => import('../../pages/member/MemberRefundRequestsPage.jsx').then(m => ({ default: m.MemberRefundRequests })));
 const PayrollPage = lazy(() => import('../../pages/shared/PayrollPage.jsx').then(m => ({ default: m.PayrollPage })));
 
+
+function Navigate({ to, replace = true }) {
+  useEffect(() => {
+    if (replace) {
+      window.location.replace(to);
+    } else {
+      window.location.hash = to;
+    }
+  }, [to, replace]);
+  return null;
+}
+
 function RouteFallback() {
   return (
     <div className="min-h-[50vh] flex items-center justify-center p-8">
@@ -117,53 +129,53 @@ function AppRouter() {
     requiredCapability,
     allowedRoles = ['MANAGER', 'ADMIN']
   ) => (
-    <AppLayout currentPath={path}>
-      <ProtectedRoute>
-        <RoleGuard allowedRoles={allowedRoles} requiredCapability={requiredCapability}>
+    <ProtectedRoute>
+      <RoleGuard allowedRoles={allowedRoles} requiredCapability={requiredCapability}>
+        <AppLayout currentPath={path}>
           <Component />
-        </RoleGuard>
-      </ProtectedRoute>
-    </AppLayout>
+        </AppLayout>
+      </RoleGuard>
+    </ProtectedRoute>
   );
 
   const renderReceptionistRoute = (Component, requiredCapability) => (
-    <AppLayout currentPath={path}>
-      <ProtectedRoute>
-        <RoleGuard allowedRoles={['RECEPTIONIST']} requiredCapability={requiredCapability}>
+    <ProtectedRoute>
+      <RoleGuard allowedRoles={['RECEPTIONIST']} requiredCapability={requiredCapability}>
+        <AppLayout currentPath={path}>
           <Component />
-        </RoleGuard>
-      </ProtectedRoute>
-    </AppLayout>
+        </AppLayout>
+      </RoleGuard>
+    </ProtectedRoute>
   );
 
   const renderCoachRoute = (Component, requiredCapability) => (
-    <AppLayout currentPath={path}>
-      <ProtectedRoute>
-        <RoleGuard allowedRoles={['COACH']} requiredCapability={requiredCapability}>
+    <ProtectedRoute>
+      <RoleGuard allowedRoles={['COACH']} requiredCapability={requiredCapability}>
+        <AppLayout currentPath={path}>
           <Component />
-        </RoleGuard>
-      </ProtectedRoute>
-    </AppLayout>
+        </AppLayout>
+      </RoleGuard>
+    </ProtectedRoute>
   );
 
   const renderMemberRoute = (Component, requiredCapability) => (
-    <AppLayout currentPath={path}>
-      <ProtectedRoute>
-        <RoleGuard allowedRoles={['MEMBER']} requiredCapability={requiredCapability}>
+    <ProtectedRoute>
+      <RoleGuard allowedRoles={['MEMBER']} requiredCapability={requiredCapability}>
+        <AppLayout currentPath={path}>
           <Component />
-        </RoleGuard>
-      </ProtectedRoute>
-    </AppLayout>
+        </AppLayout>
+      </RoleGuard>
+    </ProtectedRoute>
   );
 
   const renderAdminRoute = (Component, props = {}) => (
-    <AppLayout currentPath={path}>
-      <ProtectedRoute>
-        <RoleGuard allowedRoles={['ADMIN', 'SYSTEMADMIN']}>
+    <ProtectedRoute>
+      <RoleGuard allowedRoles={['ADMIN', 'SYSTEMADMIN']}>
+        <AppLayout currentPath={path}>
           <Component {...props} />
-        </RoleGuard>
-      </ProtectedRoute>
-    </AppLayout>
+        </AppLayout>
+      </RoleGuard>
+    </ProtectedRoute>
   );
 
   // Check if route is a dashboard or auth route
@@ -198,10 +210,7 @@ function AppRouter() {
 
       // ADMIN ROUTES: global administration only.
       case '#/admin':
-        if (typeof window !== 'undefined' && window.location.hash === '#/admin') {
-          window.location.replace('#/admin/dashboard');
-        }
-        return renderAdminRoute(AdminDashboard);
+        return <Navigate to="#/admin/dashboard" />;
       case '#/admin/dashboard':
         return renderAdminRoute(AdminDashboard);
       case '#/admin/centers':
@@ -244,16 +253,13 @@ function AppRouter() {
       case '#/manager/coach-operations':
         return renderManagerRoute(ManagerCoachOperations, 'manage_coach_operations');
       case '#/manager/support-communications':
-        return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MANAGER']}><ManagerSupportCommunications /></RoleGuard></ProtectedRoute></AppLayout>;
+        return <ProtectedRoute><RoleGuard allowedRoles={['MANAGER']}><AppLayout currentPath={path}><ManagerSupportCommunications /></AppLayout></RoleGuard></ProtectedRoute>;
       case '#/manager/home-content':
         return renderManagerRoute(HomeContentManagement, undefined, ['MANAGER', 'ADMIN']);
 
       // RECEPTIONIST ROUTES (4 chức năng)
       case '#/receptionist':
-        if (typeof window !== 'undefined' && window.location.hash === '#/receptionist') {
-          window.location.replace('#/receptionist/dashboard');
-        }
-        return renderReceptionistRoute(ReceptionistDashboard);
+        return <Navigate to="#/receptionist/dashboard" />;
       case '#/receptionist/dashboard':
         return renderReceptionistRoute(ReceptionistDashboard);
       case '#/receptionist/lookup':
@@ -272,14 +278,11 @@ function AppRouter() {
         return renderReceptionistRoute(PayrollPage);
       case '#/member/support':
       case '#/coach/support':
-        return <AppLayout currentPath={path}><ProtectedRoute><RoleGuard allowedRoles={['MEMBER', 'COACH']}><MySupportRequests /></RoleGuard></ProtectedRoute></AppLayout>;
+        return <ProtectedRoute><RoleGuard allowedRoles={['MEMBER', 'COACH']}><AppLayout currentPath={path}><MySupportRequests /></AppLayout></RoleGuard></ProtectedRoute>;
 
       // COACH ROUTES (8 chức năng)
       case '#/coach':
-        if (typeof window !== 'undefined' && window.location.hash === '#/coach') {
-          window.location.replace('#/coach/dashboard');
-        }
-        return renderCoachRoute(CoachDashboard);
+        return <Navigate to="#/coach/dashboard" />;
       case '#/coach/dashboard':
         return renderCoachRoute(CoachDashboard);
       case '#/coach/schedule':
@@ -308,10 +311,7 @@ function AppRouter() {
 
       // MEMBER ROUTES
       case '#/member':
-        if (typeof window !== 'undefined' && window.location.hash === '#/member') {
-          window.location.replace('#/member/dashboard');
-        }
-        return renderMemberRoute(MemberDashboard);
+        return <Navigate to="#/member/dashboard" />;
       case '#/member/dashboard':
         return renderMemberRoute(MemberDashboard);
       case '#/member/packages':

@@ -16,7 +16,7 @@ export function AppLayout({ children, currentPath }) {
   });
   const [mobileOpen, setMobileOpen] = useState(false);
   const [profileModalOpen, setProfileModalOpen] = useState(false);
-  const { role } = useAuth();
+  const { role, currentUser } = useAuth();
   const { language, t } = useLanguage();
 
   React.useEffect(() => {
@@ -45,7 +45,7 @@ export function AppLayout({ children, currentPath }) {
     setMobileOpen(false);
   };
 
-  const isMemberArea = role === 'MEMBER' || (currentPath && currentPath.startsWith('#/member'));
+  const isMemberArea = (role === 'MEMBER' || currentUser?.role?.toUpperCase() === 'MEMBER');
 
   const getBreadcrumbTitle = (path) => {
     if (!path) return language === 'en' ? 'Dashboard' : 'Bảng điều khiển';

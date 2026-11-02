@@ -1,3 +1,6 @@
+using Microsoft.AspNetCore.HttpOverrides;
+using Microsoft.AspNetCore.Diagnostics.HealthChecks;
+using SportsCenterManagement.BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -93,6 +96,15 @@ builder.Services.AddScoped<TrainingService>();
 builder.Services.AddScoped<CoachProfessionalService>();
 builder.Services.AddScoped<PayrollService>();
 builder.Services.AddScoped<MemberAiContextService>();
+builder.Services.AddSingleton<IBusinessClock, BusinessClock>();
+builder.Services.Configure<ForwardedHeadersOptions>(options =>
+{
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.KnownIPNetworks.Clear();
+    options.KnownProxies.Clear();
+});
+builder.Services.AddHealthChecks()
+    .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "ready" });
 builder.Services.AddSingleton(TimeProvider.System);
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddScoped<ClassReminderService>();
@@ -136,13 +148,33 @@ builder.Services.AddSwaggerGen(options =>
 
 var app = builder.Build();
 
-// Đồng bộ schema/quyền; Admin đầu tiên chỉ được tạo từ cấu hình riêng của môi trường.
-using (var scope = app.Services.CreateScope())
+app.UseForwardedHeaders();
+
+// BE-004: Đồng bộ schema/quyền có kiểm soát môi trường và distributed application lock
+var autoMigrateOnStartup = app.Configuration.GetValue<bool>("Database:AutoMigrateOnStartup", true);
+if (autoMigrateOnStartup)
 {
+    using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<SportsCenterDbContext>();
     var baselineLegacySchema = app.Configuration.GetValue<bool>("Database:BaselineLegacySchema");
-    await DbInitializer.SeedAsync(dbContext, baselineLegacySchema);
-    await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
+
+    await using var connection = dbContext.Database.GetDbConnection();
+    await connection.OpenAsync();
+    await using var lockCommand = connection.CreateCommand();
+    lockCommand.CommandText = "EXEC sp_getapplock @Resource = 'SCMS_Database_Migration_Lock', @LockMode = 'Exclusive', @LockOwner = 'Session', @LockTimeout = 60000";
+    await lockCommand.ExecuteNonQueryAsync();
+
+    try
+    {
+        await DbInitializer.SeedAsync(dbContext, baselineLegacySchema);
+        await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
+    }
+    finally
+    {
+        await using var releaseCommand = connection.CreateCommand();
+        releaseCommand.CommandText = "EXEC sp_releaseapplock @Resource = 'SCMS_Database_Migration_Lock', @LockOwner = 'Session'";
+        try { await releaseCommand.ExecuteNonQueryAsync(); } catch { }
+    }
 }
 
 if (app.Environment.IsDevelopment())
@@ -298,6 +330,23 @@ app.UseAuthentication();
 app.UseAuthorization();
 app.UseRateLimiter();
 app.MapControllers();
+
+// BE-007: Health Check Endpoints
+app.MapHealthChecks("/health/live", new HealthCheckOptions
+{
+    Predicate = _ => false
+}).AllowAnonymous();
+
+app.MapHealthChecks("/health/ready", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous();
+
+app.MapHealthChecks("/health", new HealthCheckOptions
+{
+    Predicate = check => check.Tags.Contains("ready")
+}).AllowAnonymous();
+
 app.MapGet("/payment-result", async context =>
 {
     var frontendIndex = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "index.html");
@@ -311,3 +360,23 @@ app.MapGet("/payment-result", async context =>
     await context.Response.SendFileAsync(frontendIndex);
 }).AllowAnonymous();
 app.Run();
+
+public sealed class DatabaseHealthCheck(SportsCenterDbContext db) : Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck
+{
+    public async Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> CheckHealthAsync(
+        Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext context,
+        CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var canConnect = await db.Database.CanConnectAsync(cancellationToken);
+            return canConnect
+                ? Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Database connection is healthy.")
+                : Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Database connection failed.");
+        }
+        catch (Exception ex)
+        {
+            return Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Database connection threw exception.", ex);
+        }
+    }
+}

@@ -6,10 +6,22 @@ const { test } = require('node:test');
 const { transformSync } = require('esbuild');
 
 function loadService(apiRequest, fetchImpl) {
+  const unifiedApiRequest = async (path, options) => {
+    if (options?.method === 'POST' && fetchImpl) {
+      const res = await fetchImpl(`/api/${path}`, {
+        ...options,
+        headers: { 'X-SCMS-Session': 'manager-tab' },
+        credentials: 'include'
+      });
+      return res.json ? res.json() : res;
+    }
+    return apiRequest ? apiRequest(path, options) : [];
+  };
+
   const context = vm.createContext({
     module: { exports: {} }, FormData, console,
     fetch: fetchImpl,
-    require: () => ({ apiRequest, getApiSession: () => 'manager-tab', getApiUrl: route => `/api/${route}` })
+    require: () => ({ apiRequest: unifiedApiRequest, getApiSession: () => 'manager-tab', getApiUrl: route => `/api/${route}` })
   });
   const source = fs.readFileSync(path.join(__dirname, '../src/features/media/api/mediaApi.js'), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs' }).code, context);

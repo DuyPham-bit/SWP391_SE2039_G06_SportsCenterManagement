@@ -49,11 +49,37 @@ export function createIdempotencyKey() {
   return `${Date.now()}-${Math.random().toString(16).slice(2)}-${Math.random().toString(16).slice(2)}`;
 }
 
-export async function apiRequest(path, { method = 'GET', body, session = getApiSession(), headers = {}, signal } = {}) {
+export async function apiRequest(path, { method = 'GET', body, session = getApiSession(), headers = {}, signal, timeoutMs } = {}) {
   const authVersion = getAuthVersion();
   const requestHeaders = new Headers(headers);
-  if (body !== undefined) requestHeaders.set('Content-Type', 'application/json');
+  const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
+  if (body !== undefined && !isFormData) requestHeaders.set('Content-Type', 'application/json');
   if (session) requestHeaders.set('X-SCMS-Session', session);
+
+  const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
+  const effectiveTimeout = timeoutMs ?? (isMutation ? 30000 : 15000);
+
+  const timeoutController = typeof AbortController !== 'undefined' ? new AbortController() : null;
+  let timeoutId = null;
+  let abortCleanup = null;
+  let requestSignal = signal;
+
+  if (timeoutController) {
+    timeoutId = setTimeout(() => {
+      timeoutController.abort(new DOMException('Request timeout', 'TimeoutError'));
+    }, effectiveTimeout);
+
+    if (signal) {
+      if (signal.aborted) {
+        clearTimeout(timeoutId);
+        throw signal.reason || new DOMException('Aborted', 'AbortError');
+      }
+      const onAbort = () => timeoutController.abort(signal.reason);
+      signal.addEventListener('abort', onAbort, { once: true });
+      abortCleanup = () => signal.removeEventListener('abort', onAbort);
+    }
+    requestSignal = timeoutController.signal;
+  }
 
   let response;
   try {
@@ -61,16 +87,20 @@ export async function apiRequest(path, { method = 'GET', body, session = getApiS
       method,
       headers: requestHeaders,
       credentials: 'include',
-      body: body === undefined ? undefined : (typeof body === 'string' ? body : JSON.stringify(body)),
-      signal
+      body: body === undefined ? undefined : (isFormData ? body : (typeof body === 'string' ? body : JSON.stringify(body))),
+      signal: requestSignal
     });
   } catch (cause) {
-    if (cause?.name === 'AbortError') throw cause;
+    if (cause?.name === 'AbortError' && !timeoutController?.signal.aborted) throw cause;
+    if (signal?.aborted && (cause?.name === 'AbortError' || cause?.name === 'TimeoutError')) throw cause;
     const error = new Error('Chưa xác định kết quả: Mất kết nối mạng hoặc quá thời gian chờ phản hồi từ hệ thống. Vui lòng kiểm tra lại trước khi thử lại.');
     error.cause = cause;
     error.code = 'COMMON-01';
     error.proposedHandling = 'Thông báo “Chưa xác định kết quả”; kiểm tra trạng thái trước khi thử lại. Tránh tạo hai đăng ký hoặc hai khoản thu.';
     throw error;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+    abortCleanup?.();
   }
 
   if (response.status === 204) {

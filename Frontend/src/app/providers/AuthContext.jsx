@@ -2,6 +2,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../../services/api.js';
 import { getApiSession } from '../../services/http.js';
 import { assertAuthUser, getAuthVersion } from '../../services/authState.js';
+import { clearMemberAIChatStorage } from '../../features/member/MemberAIChatPopup.jsx';
 
 const AuthContext = createContext(null);
 
@@ -14,6 +15,9 @@ export function AuthProvider({ children }) {
 
   const applyUser = user => {
     assertAuthUser(user);
+    if (currentUser && user && currentUser.id !== user.id) {
+      clearMemberAIChatStorage();
+    }
     setCurrentUser(user);
     return user;
   };
@@ -75,6 +79,7 @@ export function AuthProvider({ children }) {
   };
 
   const logout = () => {
+    clearMemberAIChatStorage();
     authApi.logout();
     setCurrentUser(null);
   };

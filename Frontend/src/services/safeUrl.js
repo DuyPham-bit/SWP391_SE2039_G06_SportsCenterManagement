@@ -11,3 +11,27 @@ export function safeHref(value) {
     return href;
   } catch { return undefined; }
 }
+
+const ALLOWED_GATEWAY_HOSTS = new Set([
+  'sandbox.vnpayment.vn',
+  'pay.vnpay.vn',
+  'test-payment.momo.vn',
+  'payment.momo.vn',
+  'momo.vn'
+]);
+
+export function safePaymentHref(value) {
+  if (typeof value !== 'string') return undefined;
+  const href = value.trim();
+  try {
+    const url = new URL(href);
+    const isDev = Boolean(import.meta.env?.DEV) || url.hostname === 'localhost' || url.hostname === '127.0.0.1';
+    if (!isDev && url.protocol !== 'https:') return undefined;
+    if (ALLOWED_GATEWAY_HOSTS.has(url.hostname.toLowerCase()) || isDev) {
+      return href;
+    }
+    return undefined;
+  } catch {
+    return undefined;
+  }
+}

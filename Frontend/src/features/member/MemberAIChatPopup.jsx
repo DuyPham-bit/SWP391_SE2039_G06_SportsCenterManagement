@@ -164,14 +164,32 @@ const QUICK_SUGGESTIONS_EN = [
   { label: '🥗 Post-workout Nutrition', query: 'What should I eat after a workout for optimal recovery?' }
 ];
 
-const STORAGE_KEY_MSGS = 'SCMS_MEMBER_AI_CHAT_MSGS_V5';
-const STORAGE_KEY_CONV = 'SCMS_MEMBER_AI_CONV_ID_V5';
+export const getMemberAIChatStorageKey = (centerId, userId) =>
+  `SCMS_MEMBER_AI_CHAT_${centerId ?? 'default'}_${userId ?? 'guest'}`;
+
+export function clearMemberAIChatStorage() {
+  try {
+    const keysToRemove = [];
+    for (let i = 0; i < sessionStorage.length; i++) {
+      const k = sessionStorage.key(i);
+      if (k && (k.startsWith('SCMS_MEMBER_AI_CHAT') || k.startsWith('SCMS_MEMBER_AI_CONV'))) {
+        keysToRemove.push(k);
+      }
+    }
+    keysToRemove.forEach(k => sessionStorage.removeItem(k));
+  } catch (e) {}
+}
 
 export function MemberAIChatPopup() {
   const { currentUser } = useAuth();
   const { showSuccess, showError } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
+
+  const userId = currentUser?.id || currentUser?.userId || null;
+  const centerId = currentUser?.centerId || null;
+  const storageKeyMsgs = `${getMemberAIChatStorageKey(centerId, userId)}_MSGS`;
+  const storageKeyConv = `${getMemberAIChatStorageKey(centerId, userId)}_CONV`;
 
   const getInitialMessage = (en = isEn) => ({
     id: 'welcome',
@@ -203,7 +221,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
         sessionStorage.removeItem(k);
       });
 
-      const saved = sessionStorage.getItem(STORAGE_KEY_MSGS);
+      const saved = sessionStorage.getItem(storageKeyMsgs);
       if (saved) {
         const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) {
@@ -220,7 +238,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   const [isAsking, setIsAsking] = useState(false);
   const [conversationId, setConversationId] = useState(() => {
     try {
-      return sessionStorage.getItem(STORAGE_KEY_CONV) || null;
+      return sessionStorage.getItem(storageKeyConv) || null;
     } catch (e) {
       return null;
     }
@@ -450,7 +468,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       const keysToRemove = [];
       for (let i = 0; i < sessionStorage.length; i++) {
         const k = sessionStorage.key(i);
-        if (k && k.startsWith('SCMS_MEMBER_AI_CHAT_MSGS') && k !== STORAGE_KEY_MSGS) {
+        if (k && k.startsWith('SCMS_MEMBER_AI_CHAT_MSGS') && k !== storageKeyMsgs) {
           keysToRemove.push(k);
         }
       }
@@ -470,19 +488,40 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     });
   }, [isEn]);
 
-  // Sync to session storage
+  // Reload chat when user/center changes
   useEffect(() => {
     try {
-      sessionStorage.setItem(STORAGE_KEY_MSGS, JSON.stringify(messages));
+      const saved = sessionStorage.getItem(storageKeyMsgs);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          const isCorrupted = parsed.some(m => hasCorruptedEncoding(m.text));
+          if (!isCorrupted) {
+            setMessages(parsed);
+            setConversationId(sessionStorage.getItem(storageKeyConv) || null);
+            return;
+          }
+        }
+      }
+    } catch (e) {}
+    setMessages([getInitialMessage(isEn)]);
+    setConversationId(null);
+  }, [userId, centerId, isEn]);
+
+  // Sync to session storage
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      sessionStorage.setItem(storageKeyMsgs, JSON.stringify(messages));
       if (conversationId) {
-        sessionStorage.setItem(STORAGE_KEY_CONV, conversationId);
+        sessionStorage.setItem(storageKeyConv, conversationId);
       } else {
-        sessionStorage.removeItem(STORAGE_KEY_CONV);
+        sessionStorage.removeItem(storageKeyConv);
       }
     } catch (e) {
       // ignore
     }
-  }, [messages, conversationId]);
+  }, [messages, conversationId, storageKeyMsgs, storageKeyConv, userId]);
 
   // Auto scroll to bottom
   const scrollToBottom = () => {
@@ -594,8 +633,8 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     setIsAsking(false);
     setUnreadCount(0);
     try {
-      sessionStorage.removeItem(STORAGE_KEY_MSGS);
-      sessionStorage.removeItem(STORAGE_KEY_CONV);
+      sessionStorage.removeItem(storageKeyMsgs);
+      sessionStorage.removeItem(storageKeyConv);
     } catch (e) {
       // ignore
     }

@@ -7,7 +7,7 @@ import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { formatMemberDate } from './memberOverview.js';
 import { translatePackageName } from '../../services/i18nHelper.js';
-import { safeHref } from '../../services/safeUrl.js';
+import { safeHref, safePaymentHref } from '../../services/safeUrl.js';
 
 const PACKAGE_PERKS = {
   basic: {
@@ -208,7 +208,7 @@ export function MemberPackages() {
         paymentMethod,
         invoiceNumber: activeInvoiceNumber || undefined
       });
-      const paymentUrl = safeHref(res.paymentUrl);
+      const paymentUrl = safePaymentHref(res.paymentUrl) || safeHref(res.paymentUrl);
       if (!paymentUrl) {
         throw new Error(isEn ? 'Could not generate payment link.' : 'Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.');
       }

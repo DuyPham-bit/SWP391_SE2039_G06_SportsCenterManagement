@@ -1,4 +1,4 @@
-import { apiRequest, getApiSession, getApiUrl } from '../../../services/http.js';
+import { apiRequest } from '../../../services/http.js';
 
 export async function fetchMediaFiles() {
   const data = await apiRequest('media/files');
@@ -22,16 +22,10 @@ export async function uploadMediaFileToCloud(file) {
 
   const formData = new FormData();
   formData.append('file', file);
-  const session = getApiSession();
-  const headers = session ? { 'X-SCMS-Session': session } : {};
-  const response = await fetch(getApiUrl('media/upload'), {
-    method: 'POST', headers, credentials: 'include', body: formData
+  const data = await apiRequest('media/upload', {
+    method: 'POST',
+    body: formData
   });
-  if (!response.ok) {
-    const payload = await response.json().catch(() => null);
-    throw new Error(payload?.message || `Không thể tải media lên R2 (HTTP ${response.status}).`);
-  }
-  const data = await response.json();
   return {
     url: data.url,
     fileId: data.fileId,

@@ -284,17 +284,17 @@ test('open notification inbox keeps empty/error states instead of fabricating un
         throw new Error(`Unexpected dependency: ${id}`);
       }
     });
-    const source = fs.readFileSync(path.join(__dirname, '../src/shared/components/common/NotificationInbox.jsx'), 'utf8');
+    const source = fs.readFileSync(path.join(__dirname, '../src/features/notifications/ui/NotificationInbox.jsx'), 'utf8');
     vm.runInContext(transformSync(source, { format: 'cjs', loader: 'jsx' }).code, context);
     return renderToStaticMarkup(React.createElement(module.exports.NotificationInbox));
   }
   const empty = render([]);
-  assert.match(empty, /Chưa có thông báo/);
-  assert.doesNotMatch(empty, /thông báo chưa đọc/);
+  assert.match(empty, /Chưa có thông báo|Không có thông báo mới/);
+  assert.doesNotMatch(empty, /1 mới|thông báo chưa đọc/);
   const failed = render([], 'SQL offline');
   assert.match(failed, /SQL offline/);
-  assert.doesNotMatch(failed, /Chưa có thông báo|thông báo chưa đọc/);
+  assert.doesNotMatch(failed, /Chưa có thông báo|thông báo chưa đọc|1 mới/);
   const real = render([{ id: 581, title: 'Stored title', content: 'Stored content', isRead: false, createdAt: '2026-10-19T10:00:00Z' }]);
   assert.match(real, /Stored title/); assert.match(real, /Stored content/);
-  assert.match(real, /1 thông báo chưa đọc/);
+  assert.match(real, /1 mới|1 thông báo chưa đọc/);
 });

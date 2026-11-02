@@ -58,7 +58,7 @@ export function RolesPermissions() {
   const [userCaps, setUserCaps] = useState([]);
   const [userCodes, setUserCodes] = useState([]);
 
-  const centerId = currentUser?.centerId || Number(import.meta.env.VITE_SPORTS_CENTER_ID) || 15;
+  const centerId = currentUser?.centerId || Number(import.meta.env.VITE_SPORTS_CENTER_ID) || null;
   const isAdmin = String(currentUser?.role || '').toUpperCase() === 'ADMIN';
   const isManager = currentUser?.role === 'MANAGER' || currentUser?.role === 'ADMIN';
 

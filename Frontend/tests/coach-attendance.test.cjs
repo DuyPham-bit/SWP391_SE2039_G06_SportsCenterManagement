@@ -17,11 +17,13 @@ test('coach dashboard persists quick progress and attendance through the real AP
 });
 
 test('backend roster and attendance honor replacement coach and active class enrollment', () => {
-  const controller = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Controllers/BookingOperationsController.cs'), 'utf8');
-  assert.match(controller, /s\.CoachId == coach\.Id/);
-  assert.match(controller, /s\.CoachId == null/);
-  assert.match(controller, /db\.ClassEnrollments\.Any/);
-  assert.match(controller, /e\.Status == "Active" \|\| e\.Status == "Confirmed" \|\| e\.Status == "Enrolled"/);
+  const repository = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.DAL/Repositories/Implementations/ClassRepository.cs'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/SessionBookingService.cs'), 'utf8');
+  const backendCode = repository + '\n' + service;
+  assert.match(backendCode, /s\.CoachId == coach\.Id/);
+  assert.match(backendCode, /s\.CoachId == null/);
+  assert.match(backendCode, /db\.ClassEnrollments\.Any/);
+  assert.match(backendCode, /e\.Status == "Active" \|\| e\.Status == "Confirmed" \|\| e\.Status == "Enrolled"/);
 });
 
 test('attendance schedule excludes cancelled class and session history', () => {

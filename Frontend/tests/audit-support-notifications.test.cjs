@@ -34,18 +34,20 @@ test('manager can process support tickets but cannot create a ticket for a reque
 
 test('center notification backend rebuilds a safe recipient list and records audit', () => {
   const service = read('Backend/SportsCenterManagement.BLL/Services/CenterNotificationService.cs');
+  const repository = read('Backend/SportsCenterManagement.DAL/Repositories/Implementations/NotificationRepository.cs');
   const controller = read('Backend/SportsCenterManagement.API/Controllers/NotificationsController.cs');
+  const code = service + '\n' + repository;
 
   assert.match(controller, /\[Authorize\(Roles = "MANAGER"\)\]/);
   assert.match(controller, /centerNotificationService\.SendAsync\(CurrentUserId, centerId/);
-  assert.match(service, /role\.Name == RoleNames\.Manager/);
-  assert.match(service, /staff\.CenterId == centerId/);
-  assert.match(service, /user\.Id != actorUserId/);
-  assert.match(service, /user\.Status == "Active"/);
-  assert.match(service, /user\.LockedUntil/);
-  assert.match(service, /profile\.CenterId == centerId/);
-  assert.match(service, /CENTER_NOTIFICATION_SENT/);
-  assert.match(service, /throw new FlowException\(409/);
+  assert.match(code, /role\.Name == RoleNames\.Manager/);
+  assert.match(code, /staff\.CenterId == centerId/);
+  assert.match(code, /user\.Id != actorUserId/);
+  assert.match(code, /user\.Status == "Active"/);
+  assert.match(code, /user\.LockedUntil/);
+  assert.match(code, /profile\.CenterId == centerId/);
+  assert.match(code, /CENTER_NOTIFICATION_SENT/);
+  assert.match(code, /throw new FlowException\(409/);
   assert.doesNotMatch(read('Backend/SportsCenterManagement.BLL/DTOs/Notifications/CenterNotificationDtos.cs'), /UserIds|RecipientIds/);
 });
 

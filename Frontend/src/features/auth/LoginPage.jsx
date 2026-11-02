@@ -90,6 +90,8 @@ export function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const isRegister = activeTab === 'register';
+  const lastFocusedElementRef = useRef(null);
+  const otpModalRef = useRef(null);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -99,21 +101,76 @@ export function LoginPage() {
 
   useEffect(() => {
     if (needsEmailCode) {
-      const focusOtp = () => document.getElementById('register-otp')?.focus();
+      lastFocusedElementRef.current = document.activeElement;
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      const focusOtp = () => {
+        const otpInput = document.getElementById('register-otp');
+        if (otpInput) {
+          otpInput.focus();
+        } else {
+          otpModalRef.current?.focus();
+        }
+      };
       focusOtp();
       const frame = requestAnimationFrame(focusOtp);
       const timer = setTimeout(focusOtp, 60);
+
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
+          e.preventDefault();
           setVerificationEmail('');
           setRegOtp('');
+          return;
+        }
+
+        if (e.key === 'Tab') {
+          const modal = otpModalRef.current;
+          if (!modal) return;
+          const focusable = [
+            ...modal.querySelectorAll(
+              'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )
+          ].filter(el => el.getClientRects().length > 0);
+
+          if (focusable.length === 0) {
+            e.preventDefault();
+            modal.focus();
+            return;
+          }
+
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          const active = document.activeElement;
+
+          if (e.shiftKey) {
+            if (active === first || !modal.contains(active)) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (active === last || !modal.contains(active)) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
         }
       };
+
       window.addEventListener('keydown', handleKeyDown);
       return () => {
         cancelAnimationFrame(frame);
         clearTimeout(timer);
         window.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = previousOverflow;
+        if (lastFocusedElementRef.current && typeof lastFocusedElementRef.current.focus === 'function') {
+          try {
+            lastFocusedElementRef.current.focus();
+          } catch {
+            // ignore
+          }
+        }
       };
     }
   }, [needsEmailCode]);
@@ -613,7 +670,9 @@ export function LoginPage() {
                     >
                       {/* Modal Card - Thiết kế chuẩn ảnh 2, 3, 4 */}
                       <div
-                        className="relative w-full max-w-[420px] bg-white rounded-[36px] shadow-[0_25px_70px_-15px_rgba(99,102,241,0.2),0_0_0_1px_rgba(238,242,255,0.8)] border border-slate-100/90 p-7 sm:p-9 text-center transition-all duration-300 overflow-hidden animate-scaleUp"
+                        ref={otpModalRef}
+                        tabIndex={-1}
+                        className="relative w-full max-w-[420px] bg-white rounded-[36px] shadow-[0_25px_70px_-15px_rgba(99,102,241,0.2),0_0_0_1px_rgba(238,242,255,0.8)] border border-slate-100/90 p-7 sm:p-9 text-center transition-all duration-300 overflow-hidden animate-scaleUp focus:outline-none"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* Nút đóng góc phải */}
@@ -728,7 +787,7 @@ export function LoginPage() {
 
                         {/* Thông báo lỗi dạng pill đỏ (Ảnh 4: "! That code didn't match. Try again.") */}
                         {(formError || fieldErrors['register-otp']) && (
-                          <div role="alert" className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-semibold text-rose-600 mt-2 mb-3">
+                          <div role="alert" aria-live="assertive" className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-semibold text-rose-600 mt-2 mb-3">
                             <svg className="w-4 h-4 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                               <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z" clipRule="evenodd" />
                             </svg>
@@ -760,7 +819,7 @@ export function LoginPage() {
                         </div>
 
                         {/* Dòng gửi lại mã ở chân modal (Ảnh 2 & 4: "Didn't get a code? ⭮ Resend in 0:xx") */}
-                        <div className="mt-3 text-xs sm:text-[13px] text-gray-500 flex items-center justify-center gap-1.5">
+                        <div className="mt-3 text-xs sm:text-[13px] text-gray-500 flex items-center justify-center gap-1.5" aria-live="polite">
                           <span>Didn't get a code?</span>
                           {resendSeconds > 0 ? (
                             <span className="inline-flex items-center gap-1 font-medium text-gray-700">
