@@ -1,12 +1,10 @@
 import React from 'react';
 
 /**
- * SCMS Olympic Sports Arena Logo
- * Unified brand logo matching the Olympic Arena visual design:
- * - Squircle "S" icon with soft mint-to-cream pastel gradient
- * - "SCMS" title
- * - "[OLYMPIC]" outline pill badge with light cyan text
- * - "OLYMPIC SPORTS ARENA" uppercase subtitle with wide letter spacing
+ * Olympic Sports Arena Logo
+ * Unified brand logo matching the official Olympic Sports Arena brand:
+ * - Left emblem: stylized wave swirls with athlete silhouettes
+ * - Right typography: OLYMPIC SPORTS ARENA
  */
 export function Logo({
   variant = 'auto', // 'auto' | 'dark' | 'light'
@@ -20,95 +18,112 @@ export function Logo({
   const isDark = variant === 'dark';
   const isLight = variant === 'light';
 
-  // S icon dimensions based on size
-  const iconSizeClass = {
-    sm: 'w-8 h-8 rounded-xl text-sm',
-    md: 'w-9 h-9 sm:w-10 sm:h-10 rounded-[14px] text-base sm:text-lg',
-    lg: 'w-11 h-11 rounded-2xl text-xl'
-  }[size] || 'w-10 h-10 rounded-2xl text-lg';
+  // Height and scale based on size
+  const heightClass = {
+    sm: 'h-8 sm:h-9',
+    md: 'h-9 sm:h-11',
+    lg: 'h-12 sm:h-16'
+  }[size] || 'h-9 sm:h-11';
 
-  // SCMS text size
-  const titleSizeClass = {
-    sm: 'text-sm font-black',
-    md: 'text-base sm:text-lg font-black',
-    lg: 'text-lg sm:text-xl font-black'
-  }[size] || 'text-base sm:text-lg font-black';
+  const compactSizeClass = {
+    sm: 'w-8 h-8',
+    md: 'w-9 h-9 sm:w-10 sm:h-10',
+    lg: 'w-12 h-12 sm:w-14 sm:h-14'
+  }[size] || 'w-10 h-10';
 
-  // Text color classes
-  const titleColor = isDark
-    ? 'text-white'
-    : isLight
-    ? 'text-[#1E2235]'
-    : 'text-[#1E2235] dark:text-white';
+  let logoContent;
 
-  const pillClasses = isDark
-    ? 'border border-white/80 text-[#7ED6DF]'
-    : isLight
-    ? 'border border-[#1E2235]/40 text-[#2D6A4F]'
-    : 'border border-[#1E2235]/30 dark:border-white/80 text-[#2D6A4F] dark:text-[#7ED6DF]';
+  if (compact) {
+    if (isDark) {
+      logoContent = (
+        <img
+          src="/logo-olympic-mark-dark.png"
+          alt="Olympic Sports Arena"
+          className={`${compactSizeClass} object-contain shrink-0 transition-transform duration-200 group-hover:scale-105`}
+        />
+      );
+    } else if (isLight) {
+      logoContent = (
+        <img
+          src="/logo-olympic-mark.png"
+          alt="Olympic Sports Arena"
+          className={`${compactSizeClass} object-contain shrink-0 transition-transform duration-200 group-hover:scale-105`}
+        />
+      );
+    } else {
+      logoContent = (
+        <>
+          <img
+            src="/logo-olympic-mark.png"
+            alt="Olympic Sports Arena"
+            className={`${compactSizeClass} object-contain shrink-0 dark:hidden transition-transform duration-200 group-hover:scale-105`}
+          />
+          <img
+            src="/logo-olympic-mark-dark.png"
+            alt="Olympic Sports Arena"
+            className={`${compactSizeClass} object-contain shrink-0 hidden dark:block transition-transform duration-200 group-hover:scale-105`}
+          />
+        </>
+      );
+    }
+  } else {
+    if (isDark) {
+      logoContent = (
+        <img
+          src="/logo-olympic-dark.png"
+          alt="Olympic Sports Arena"
+          className={`${heightClass} w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-[1.02]`}
+        />
+      );
+    } else if (isLight) {
+      logoContent = (
+        <img
+          src="/logo-olympic.png"
+          alt="Olympic Sports Arena"
+          className={`${heightClass} w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-[1.02]`}
+        />
+      );
+    } else {
+      logoContent = (
+        <>
+          <img
+            src="/logo-olympic.png"
+            alt="Olympic Sports Arena"
+            className={`${heightClass} w-auto object-contain shrink-0 dark:hidden transition-transform duration-200 group-hover:scale-[1.02]`}
+          />
+          <img
+            src="/logo-olympic-dark.png"
+            alt="Olympic Sports Arena"
+            className={`${heightClass} w-auto object-contain shrink-0 hidden dark:block transition-transform duration-200 group-hover:scale-[1.02]`}
+          />
+        </>
+      );
+    }
+  }
 
-  const subtitleColor = isDark
-    ? 'text-white'
-    : isLight
-    ? 'text-[#3D405B]'
-    : 'text-[#3D405B] dark:text-white';
-
-  const content = (
-    <>
-      {/* S Squircle Icon with pastel mint-to-cream gradient */}
-      <div
-        className={`${iconSizeClass} bg-gradient-to-tr from-[#81B29A] via-[#A8DADC] to-[#F2CC8F] text-white flex items-center justify-center font-black shadow-xs shrink-0 tracking-tight transition-transform duration-300 group-hover:scale-105`}
-        style={{
-          boxShadow: '0 3px 12px rgba(129, 178, 154, 0.28)'
-        }}
-      >
-        S
-      </div>
-
-      {/* Brand Text Block (hidden in compact mode) */}
-      {!compact && (
-        <div className="flex flex-col justify-center leading-none">
-          <div className="flex items-center gap-1.5 leading-none">
-            <span className={`${titleSizeClass} tracking-tight ${titleColor}`}>
-              SCMS
-            </span>
-            <span
-              className={`text-[9px] sm:text-[10px] font-bold uppercase rounded-md px-1.5 py-0.5 tracking-wider leading-none ${pillClasses}`}
-            >
-              OLYMPIC
-            </span>
-          </div>
-
-          {showSubtitle && (
-            <span
-              className={`text-[9px] sm:text-[10px] font-bold uppercase tracking-[0.18em] mt-1 leading-none ${subtitleColor}`}
-            >
-              OLYMPIC SPORTS ARENA
-            </span>
-          )}
-        </div>
-      )}
-    </>
-  );
-
-  const containerClasses = `inline-flex items-center gap-2.5 sm:gap-3 group select-none text-decoration-none ${className}`;
+  const containerClasses = `inline-flex items-center gap-2 group select-none text-decoration-none ${className}`;
 
   if (href) {
     return (
       <a
         href={href}
         onClick={onClick}
-        aria-label="SCMS Olympic Sports Arena"
+        aria-label="Olympic Sports Arena"
         className={containerClasses}
       >
-        {content}
+        {logoContent}
       </a>
     );
   }
 
   return (
-    <div onClick={onClick} className={containerClasses}>
-      {content}
+    <div
+      onClick={onClick}
+      role={onClick ? 'button' : undefined}
+      tabIndex={onClick ? 0 : undefined}
+      className={containerClasses}
+    >
+      {logoContent}
     </div>
   );
 }

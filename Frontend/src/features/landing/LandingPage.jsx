@@ -893,7 +893,7 @@ export function LandingPage() {
             <div className="tiya-reveal" style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
               <div className="about-badge">
                 <span className="material-symbols-outlined" style={{fontSize:'16px'}}>verified</span>
-                {isEn ? 'WHY CHOOSE SCMS' : (landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN SCMS')}
+                {isEn ? 'WHY CHOOSE OLYMPIC SPORTS ARENA' : (landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN OLYMPIC SPORTS ARENA')}
               </div>
               <h2 className="about-title">
                 {isEn
@@ -1306,8 +1306,8 @@ export function LandingPage() {
               </div>
               <p style={{fontSize:'13.5px',lineHeight:1.7,color:'#CBD5E1',maxWidth:'320px'}}>
                 {isEn
-                  ? 'Premier sports learning and training ground for all ages. Join SCMS to pursue your passion, enhance physical health, and connect with fellow athletes.'
-                  : 'Không gian học tập và rèn luyện thể thao dành cho mọi lứa tuổi. Cùng SCMS chọn bộ môn yêu thích, nâng cao thể lực và kết nối cộng đồng.'}
+                  ? 'Premier sports learning and training ground for all ages. Join Olympic Sports Arena to pursue your passion, enhance physical health, and connect with fellow athletes.'
+                  : 'Không gian học tập và rèn luyện thể thao dành cho mọi lứa tuổi. Cùng Olympic Sports Arena chọn bộ môn yêu thích, nâng cao thể lực và kết nối cộng đồng.'}
               </p>
               <div style={{display:'inline-flex',alignItems:'center',gap:'8px',marginTop:'16px',padding:'7px 16px',background:'rgba(129,178,154,0.12)',border:'1px solid rgba(129,178,154,0.3)',borderRadius:'100px',fontSize:'12px',fontWeight:600,color:'#A7F3D0'}}>
                 <span className="material-symbols-outlined" style={{fontSize:'16px',color:'#81B29A'}}>sports_score</span>
@@ -1386,7 +1386,7 @@ export function LandingPage() {
           {/* Bottom Copyright & Navigation */}
           <div className="footer-bottom-bar">
             <p className="footer-copyright">
-              {isEn ? '© 2026 SCMS Sports Center. All rights reserved.' : (landingContent.ctaAndFooter?.copyright || '© 2026 SCMS Sports Center. Bảo lưu mọi quyền.')}
+              {isEn ? '© 2026 Olympic Sports Arena. All rights reserved.' : (landingContent.ctaAndFooter?.copyright || '© 2026 Olympic Sports Arena. Bảo lưu mọi quyền.')}
             </p>
             <nav aria-label={isEn ? "Footer navigation" : "Liên kết cuối trang"} className="footer-bottom-nav">
               {navItems.filter(item => item.id !== 'trang-chu').map(item => (

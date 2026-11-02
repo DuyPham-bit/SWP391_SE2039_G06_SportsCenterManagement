@@ -8,7 +8,7 @@ export const TRANSLATIONS = {
     'branch.name': 'Cơ sở TP. Hồ Chí Minh (HCM)',
     'branch.tag': 'Cơ sở chính duy nhất',
     'branch.title': 'Thông tin cơ sở hoạt động',
-    'branch.desc': 'Hệ thống thể thao SCMS hiện vận hành tập trung tại 1 cơ sở tiêu chuẩn Olympic tại TP. Hồ Chí Minh.',
+    'branch.desc': 'Hệ thống thể thao Olympic Sports Arena hiện vận hành tập trung tại 1 cơ sở tiêu chuẩn Olympic tại TP. Hồ Chí Minh.',
     'branch.address': 'Lô E2a-7, Đường D1, Khu CNC, TP. Thủ Đức, TP. Hồ Chí Minh',
     'branch.hotline': '(028) 7300 5588',
     'branch.hours': '06:00 - 22:00 hàng ngày',
@@ -142,7 +142,7 @@ export const TRANSLATIONS = {
     'menu.reception_support': 'Tiếp nhận yêu cầu hỗ trợ',
 
     // Footer
-    'footer.copyright': 'Bản quyền © 2026 SCMS - Sports Center Management System. Đã đăng ký bản quyền.',
+    'footer.copyright': 'Bản quyền © 2026 Olympic Sports Arena. Đã đăng ký bản quyền.',
     'footer.version': 'Phiên bản: 2.0.0.0'
   },
 
@@ -151,7 +151,7 @@ export const TRANSLATIONS = {
     'branch.name': 'Ho Chi Minh City Campus (HCM)',
     'branch.tag': 'Sole Main Campus',
     'branch.title': 'Facility Information',
-    'branch.desc': 'The SCMS sports system is currently operating centrally at a single Olympic-standard campus in Ho Chi Minh City.',
+    'branch.desc': 'The Olympic Sports Arena sports system is currently operating centrally at a single Olympic-standard campus in Ho Chi Minh City.',
     'branch.address': 'Lot E2a-7, D1 Street, High-Tech Park, Thu Duc City, Ho Chi Minh City',
     'branch.hotline': '(028) 7300 5588',
     'branch.hours': '06:00 - 22:00 Daily',
@@ -285,7 +285,7 @@ export const TRANSLATIONS = {
     'menu.reception_support': 'Support Inquiries',
 
     // Footer
-    'footer.copyright': 'Copyright © 2026 SCMS - Sports Center Management System. All rights reserved.',
+    'footer.copyright': 'Copyright © 2026 Olympic Sports Arena. All rights reserved.',
     'footer.version': 'Version: 2.0.0.0'
   }
 };

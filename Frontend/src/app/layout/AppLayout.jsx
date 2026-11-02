@@ -167,7 +167,7 @@ export function AppLayout({ children, currentPath }) {
 
           {/* Theme Clean Footer */}
           <footer className="py-3 px-6 bg-[#FAF8F5] dark:bg-slate-900 border-t border-slate-200 dark:border-slate-800 text-xs text-slate-500 dark:text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2 mt-auto transition-colors">
-            <span>{t('footer.copyright', 'Bản quyền © 2026 SCMS - Sports Center Management System. Đã đăng ký bản quyền.')}</span>
+            <span>{t('footer.copyright', 'Bản quyền © 2026 Olympic Sports Arena. Đã đăng ký bản quyền.')}</span>
             <div className="flex items-center gap-4 text-[11px] font-medium text-slate-500 dark:text-slate-400">
               <span>{t('footer.version', 'Phiên bản: 2.0.0.0')}</span>
             </div>
