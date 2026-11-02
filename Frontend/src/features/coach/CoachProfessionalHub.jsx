@@ -2,6 +2,7 @@ import { addCalendarDays, vietnamDate, vietnamDateTimeInput, parseVietnamDateTim
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { coachApi, coachProfessionalApi } from '../../services/api.js';
 import { safeHref } from '../../services/safeUrl.js';
+import { uploadMediaFileToCloud } from '../media/api/mediaApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';

@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useAuth } from '../../context/AuthContext.js';
-import { useToast } from '../../context/ToastContext.js';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 import { loadGoogleIdentity, googleClientId } from '../../services/googleIdentity.js';
 import { AuthField } from './AuthField.js';
 import { ForgotPasswordModal } from './ForgotPasswordModal.js';
 import { GoogleLoginModal } from './GoogleLoginModal.js';
-import { Logo } from '../../components/common/Logo.jsx';
+import { Logo } from '../../shared/ui/Logo.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../services/membershipEntry.js';
 import { authApi } from '../../services/api.js';
 import { useLandingContent } from '../../hooks/useLandingContent.js';
@@ -828,3 +828,5 @@ export function LoginPage() {
     </div>
   );
 }
+
+export default LoginPage;

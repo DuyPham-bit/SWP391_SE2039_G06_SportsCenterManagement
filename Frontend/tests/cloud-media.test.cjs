@@ -1,4 +1,4 @@
-const assert = require('node:assert/strict');
+﻿const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
@@ -11,7 +11,7 @@ function loadService(apiRequest, fetchImpl) {
     fetch: fetchImpl,
     require: () => ({ apiRequest, getApiSession: () => 'manager-tab', getApiUrl: route => `/api/${route}` })
   });
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/cloudMediaStorage.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../src/features/media/api/mediaApi.js'), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs' }).code, context);
   return context.module.exports;
 }
@@ -19,7 +19,7 @@ function loadService(apiRequest, fetchImpl) {
 test('the cloud gallery keeps every API item including AVIF rather than limiting the list to four', async () => {
   const files = Array.from({ length: 7 }, (_, index) => ({ fileId: `image-${index}`, fileName: `photo-${index}.${index < 4 ? 'jpg' : 'avif'}` }));
   const api = loadService(async () => files);
-  const results = await api.fetchDriveFiles();
+  const results = await api.fetchMediaFiles();
   assert.equal(results.length, 7);
   assert.equal(results.filter(file => file.fileName.endsWith('.avif')).length, 3);
 });

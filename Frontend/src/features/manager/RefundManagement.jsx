@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { refundApi } from '../../services/api.js';
 import { safeHref } from '../../services/safeUrl.js';
-import { uploadMediaFileToCloud } from '../../services/cloudMediaStorage.js';
+import { uploadMediaFileToCloud } from '../media/api/mediaApi.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
 import { Modal } from '../../components/common/Modal.jsx';

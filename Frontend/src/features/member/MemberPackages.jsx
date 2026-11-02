@@ -1,8 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import { packageApi, memberApi, receptionApi } from '../../services/api.js';
-import { useAuth } from '../../context/AuthContext.js';
-import { useLanguage } from '../../context/LanguageContext.jsx';
-import { useToast } from '../../context/ToastContext.js';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useLanguage } from '../../app/providers/LanguageContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
 import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { formatMemberDate } from './memberOverview.js';

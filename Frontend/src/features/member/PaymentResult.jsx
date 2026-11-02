@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiRequest } from '../../services/http.js';
-import { useAuth } from '../../context/AuthContext.js';
-import { useLanguage } from '../../context/LanguageContext.jsx';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useLanguage } from '../../app/providers/LanguageContext.jsx';
 import { notifyPaymentReturn } from '../../services/paymentCheckout.js';
 
 export function PaymentResult() {

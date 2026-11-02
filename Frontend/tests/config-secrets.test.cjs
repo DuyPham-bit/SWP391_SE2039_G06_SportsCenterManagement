@@ -65,14 +65,8 @@ test('application startup cannot create or reset accounts with published demo pa
   }
 });
 
-test('tracked service-account templates have no signing key and local credentials cannot be published', () => {
+test('obsolete storage credentials are not tracked', () => {
   for (const file of [`${api}/credentials.json`, 'Backend/credentials.json']) {
-    const credential = JSON.parse(fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, ''));
-    assert.ok(!credential.private_key && !credential.private_key_id, `${file} contains private signing material`);
+    assert.ok(!fs.existsSync(path.join(root, file)), `${file} must not be present`);
   }
-  const ignore = fs.readFileSync(path.join(root, '.gitignore'), 'utf8');
-  const project = fs.readFileSync(path.join(root, api, 'SportsCenterManagement.API.csproj'), 'utf8');
-  assert.match(ignore, /^credentials\.local\.json$/m);
-  assert.match(project, /Content Remove="credentials\.local\.json"/);
-  assert.match(project, /None Include="credentials\.local\.json"[^>]*CopyToPublishDirectory="Never"/);
 });

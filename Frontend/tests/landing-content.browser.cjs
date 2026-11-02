@@ -41,7 +41,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, { content: published });
     }
     if (route === '/api/media/status') return json(res, { isConnected: true, totalImages: galleryFiles.length, folderId: 'fixture-folder' });
-    if (route === '/api/media/drive-files') return json(res, galleryFiles);
+    if (route === '/api/media/files') return json(res, galleryFiles);
     if (route.endsWith('/audit-logs')) return json(res, { items: [], totalCount: 0 });
     if (route.includes('/reports/')) return json(res, { periods: [], currentStatusCounts: {} });
     return json(res, { items: [], totalCount: 0 });

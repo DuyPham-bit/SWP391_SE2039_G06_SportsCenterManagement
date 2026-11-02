@@ -3,64 +3,64 @@ import { useAuth } from '../providers/AuthContext.jsx';
 
 
 import { ProtectedRoute, RoleGuard } from '../../shared/components/auth/RoleGuard.jsx';
-import { AppLayout } from '../../layouts/AppLayout.jsx';
+import { AppLayout } from '../layout/AppLayout.jsx';
 
 // Public & Auth Pages (Lazy Loaded)
-const LandingPage = lazy(() => import('../../features/landing/LandingPage.jsx').then(m => ({ default: m.LandingPage })));
-const LoginPage = lazy(() => import('../../features/auth/LoginPage.jsx').then(m => ({ default: m.LoginPage })));
+const LandingPage = lazy(() => import('../../pages/landing/LandingPage.jsx').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('../../pages/auth/LoginPage.jsx').then(m => ({ default: m.LoginPage })));
 const OtpVerification = lazy(() => import('../../shared/components/common/OtpVerification.jsx'));
 
 // Manager Pages (Lazy Loaded)
-const ManagerDashboard = lazy(() => import('../../features/manager/ManagerDashboard.jsx').then(m => ({ default: m.ManagerDashboard })));
-const StaffManagement = lazy(() => import('../../features/manager/StaffManagement.jsx').then(m => ({ default: m.StaffManagement })));
-const MemberManagement = lazy(() => import('../../features/manager/MemberManagement.jsx').then(m => ({ default: m.MemberManagement })));
-const PackageManagement = lazy(() => import('../../features/manager/PackageManagement.jsx').then(m => ({ default: m.PackageManagement })));
-const ClassesAndRooms = lazy(() => import('../../features/manager/ClassesAndRooms.jsx').then(m => ({ default: m.ClassesAndRooms })));
-const CoachAssignment = lazy(() => import('../../features/manager/CoachAssignment.jsx').then(m => ({ default: m.CoachAssignment })));
-const ReportsAnalytics = lazy(() => import('../../features/manager/ReportsAnalytics.jsx').then(m => ({ default: m.ReportsAnalytics })));
-const RolesPermissions = lazy(() => import('../../features/manager/RolesPermissions.jsx').then(m => ({ default: m.RolesPermissions })));
-const AuditLogs = lazy(() => import('../../features/manager/AuditLogs.jsx').then(m => ({ default: m.AuditLogs })));
-const HomeContentManagement = lazy(() => import('../../features/manager/HomeContentManagement.jsx').then(m => ({ default: m.HomeContentManagement })));
-const AdminDashboard = lazy(() => import('../../features/admin/AdminDashboard.jsx').then(m => ({ default: m.AdminDashboard })));
+const ManagerDashboard = lazy(() => import('../../pages/manager/ManagerDashboardPage.jsx').then(m => ({ default: m.ManagerDashboard })));
+const StaffManagement = lazy(() => import('../../pages/manager/StaffManagementPage.jsx').then(m => ({ default: m.StaffManagement })));
+const MemberManagement = lazy(() => import('../../pages/manager/MemberManagementPage.jsx').then(m => ({ default: m.MemberManagement })));
+const PackageManagement = lazy(() => import('../../pages/manager/PackageManagementPage.jsx').then(m => ({ default: m.PackageManagement })));
+const ClassesAndRooms = lazy(() => import('../../pages/manager/ClassesAndRoomsPage.jsx').then(m => ({ default: m.ClassesAndRooms })));
+const CoachAssignment = lazy(() => import('../../pages/manager/CoachAssignmentPage.jsx').then(m => ({ default: m.CoachAssignment })));
+const ReportsAnalytics = lazy(() => import('../../pages/manager/ReportsAnalyticsPage.jsx').then(m => ({ default: m.ReportsAnalytics })));
+const RolesPermissions = lazy(() => import('../../pages/manager/RolesPermissionsPage.jsx').then(m => ({ default: m.RolesPermissions })));
+const AuditLogs = lazy(() => import('../../pages/manager/AuditLogsPage.jsx').then(m => ({ default: m.AuditLogs })));
+const HomeContentManagement = lazy(() => import('../../pages/manager/HomeContentManagementPage.jsx').then(m => ({ default: m.HomeContentManagement })));
+const AdminDashboard = lazy(() => import('../../pages/admin/AdminDashboardPage.jsx').then(m => ({ default: m.AdminDashboard })));
 
 // Receptionist Pages (Lazy Loaded)
-const ReceptionistDashboard = lazy(() => import('../../features/receptionist/ReceptionistDashboard.jsx').then(m => ({ default: m.ReceptionistDashboard })));
-const MemberLookup = lazy(() => import('../../features/receptionist/MemberLookup.jsx').then(m => ({ default: m.MemberLookup })));
-const CounterMembership = lazy(() => import('../../features/receptionist/CounterMembership.jsx').then(m => ({ default: m.CounterMembership })));
-const MemberCheckIn = lazy(() => import('../../features/receptionist/MemberCheckIn.jsx').then(m => ({ default: m.MemberCheckIn })));
-const CounterBooking = lazy(() => import('../../features/receptionist/CounterBooking.jsx').then(m => ({ default: m.CounterBooking })));
-const CounterInvoices = lazy(() => import('../../features/receptionist/CounterInvoices.jsx').then(m => ({ default: m.CounterInvoices })));
-const SupportRequests = lazy(() => import('../../features/receptionist/SupportRequests.jsx').then(m => ({ default: m.SupportRequests })));
+const ReceptionistDashboard = lazy(() => import('../../pages/receptionist/ReceptionistDashboardPage.jsx').then(m => ({ default: m.ReceptionistDashboard })));
+const MemberLookup = lazy(() => import('../../pages/receptionist/MemberLookupPage.jsx').then(m => ({ default: m.MemberLookup })));
+const CounterMembership = lazy(() => import('../../pages/receptionist/CounterMembershipPage.jsx').then(m => ({ default: m.CounterMembership })));
+const MemberCheckIn = lazy(() => import('../../pages/receptionist/MemberCheckInPage.jsx').then(m => ({ default: m.MemberCheckIn })));
+const CounterBooking = lazy(() => import('../../pages/receptionist/CounterBookingPage.jsx').then(m => ({ default: m.CounterBooking })));
+const CounterInvoices = lazy(() => import('../../pages/receptionist/CounterInvoicesPage.jsx').then(m => ({ default: m.CounterInvoices })));
+const SupportRequests = lazy(() => import('../../pages/receptionist/SupportRequestsPage.jsx').then(m => ({ default: m.SupportRequests })));
 
 // Coach Pages (Lazy Loaded)
-const CoachDashboard = lazy(() => import('../../features/coach/CoachDashboard.jsx').then(m => ({ default: m.CoachDashboard })));
-const TeachingSchedule = lazy(() => import('../../features/coach/TeachingSchedule.jsx').then(m => ({ default: m.TeachingSchedule })));
-const ClassMembers = lazy(() => import('../../features/coach/ClassMembers.jsx').then(m => ({ default: m.ClassMembers })));
-const Attendance = lazy(() => import('../../features/coach/Attendance.jsx').then(m => ({ default: m.Attendance })));
-const TrainingPlan = lazy(() => import('../../features/coach/TrainingPlan.jsx').then(m => ({ default: m.TrainingPlan })));
-const WorkoutProgress = lazy(() => import('../../features/coach/WorkoutProgress.jsx').then(m => ({ default: m.WorkoutProgress })));
-const CoachNotifications = lazy(() => import('../../features/coach/CoachNotifications.jsx').then(m => ({ default: m.CoachNotifications })));
-const AIRecommendation = lazy(() => import('../../features/coach/AIRecommendation.jsx').then(m => ({ default: m.AIRecommendation })));
-const PerformanceDashboard = lazy(() => import('../../features/coach/PerformanceDashboard.jsx').then(m => ({ default: m.PerformanceDashboard })));
+const CoachDashboard = lazy(() => import('../../pages/coach/CoachDashboardPage.jsx').then(m => ({ default: m.CoachDashboard })));
+const TeachingSchedule = lazy(() => import('../../pages/coach/TeachingSchedulePage.jsx').then(m => ({ default: m.TeachingSchedule })));
+const ClassMembers = lazy(() => import('../../pages/coach/ClassMembersPage.jsx').then(m => ({ default: m.ClassMembers })));
+const Attendance = lazy(() => import('../../pages/coach/AttendancePage.jsx').then(m => ({ default: m.Attendance })));
+const TrainingPlan = lazy(() => import('../../pages/coach/TrainingPlanPage.jsx').then(m => ({ default: m.TrainingPlan })));
+const WorkoutProgress = lazy(() => import('../../pages/coach/WorkoutProgressPage.jsx').then(m => ({ default: m.WorkoutProgress })));
+const CoachNotifications = lazy(() => import('../../pages/coach/CoachNotificationsPage.jsx').then(m => ({ default: m.CoachNotifications })));
+const AIRecommendation = lazy(() => import('../../pages/coach/AIRecommendationPage.jsx').then(m => ({ default: m.AIRecommendation })));
+const PerformanceDashboard = lazy(() => import('../../pages/coach/PerformanceDashboardPage.jsx').then(m => ({ default: m.PerformanceDashboard })));
 const CoachSalaryKPI = PerformanceDashboard;
-const CoachProfessionalHub = lazy(() => import('../../features/coach/CoachProfessionalHub.jsx').then(m => ({ default: m.CoachProfessionalHub })));
-const ManagerCoachOperations = lazy(() => import('../../features/manager/ManagerCoachOperations.jsx').then(m => ({ default: m.ManagerCoachOperations })));
-const ManagerSupportCommunications = lazy(() => import('../../features/manager/ManagerSupportCommunications.jsx').then(m => ({ default: m.ManagerSupportCommunications })));
+const CoachProfessionalHub = lazy(() => import('../../pages/coach/CoachProfessionalHubPage.jsx').then(m => ({ default: m.CoachProfessionalHub })));
+const ManagerCoachOperations = lazy(() => import('../../pages/manager/ManagerCoachOperationsPage.jsx').then(m => ({ default: m.ManagerCoachOperations })));
+const ManagerSupportCommunications = lazy(() => import('../../pages/manager/ManagerSupportCommunicationsPage.jsx').then(m => ({ default: m.ManagerSupportCommunications })));
 
 // Member Pages (Lazy Loaded)
-const MemberDashboard = lazy(() => import('../../features/member/MemberDashboard.jsx').then(m => ({ default: m.MemberDashboard })));
-const MemberPackages = lazy(() => import('../../features/member/MemberPackages.jsx').then(m => ({ default: m.MemberPackages })));
-const ClassScheduleView = lazy(() => import('../../features/member/ClassScheduleView.jsx').then(m => ({ default: m.ClassScheduleView })));
-const MyBookings = lazy(() => import('../../features/member/MyBookings.jsx').then(m => ({ default: m.MyBookings })));
-const MyProgress = lazy(() => import('../../features/member/MyProgress.jsx').then(m => ({ default: m.MyProgress })));
-const MyAttendance = lazy(() => import('../../features/member/MyAttendance.jsx').then(m => ({ default: m.MyAttendance })));
-const MemberNotifications = lazy(() => import('../../features/member/MemberNotifications.jsx').then(m => ({ default: m.MemberNotifications })));
-const MemberAIAssistant = lazy(() => import('../../features/member/MemberAIAssistant.jsx').then(m => ({ default: m.MemberAIAssistant })));
-const PaymentResult = lazy(() => import('../../features/member/PaymentResult.jsx').then(m => ({ default: m.PaymentResult })));
-const MemberCoachPortal = lazy(() => import('../../features/member/MemberCoachPortal.jsx').then(m => ({ default: m.MemberCoachPortal })));
-const MySupportRequests = lazy(() => import('../../features/shared/MySupportRequests.jsx').then(m => ({ default: m.MySupportRequests })));
-const MemberRefundRequests = lazy(() => import('../../features/member/MemberRefundRequests.jsx').then(m => ({ default: m.MemberRefundRequests })));
-const PayrollPage = lazy(() => import('../../features/shared/PayrollPage.jsx').then(m => ({ default: m.PayrollPage })));
+const MemberDashboard = lazy(() => import('../../pages/member/MemberDashboardPage.jsx').then(m => ({ default: m.MemberDashboard })));
+const MemberPackages = lazy(() => import('../../pages/member/MemberPackagesPage.jsx').then(m => ({ default: m.MemberPackages })));
+const ClassScheduleView = lazy(() => import('../../pages/member/ClassSchedulePage.jsx').then(m => ({ default: m.ClassScheduleView })));
+const MyBookings = lazy(() => import('../../pages/member/MyBookingsPage.jsx').then(m => ({ default: m.MyBookings })));
+const MyProgress = lazy(() => import('../../pages/member/MyProgressPage.jsx').then(m => ({ default: m.MyProgress })));
+const MyAttendance = lazy(() => import('../../pages/member/MyAttendancePage.jsx').then(m => ({ default: m.MyAttendance })));
+const MemberNotifications = lazy(() => import('../../pages/member/MemberNotificationsPage.jsx').then(m => ({ default: m.MemberNotifications })));
+const MemberAIAssistant = lazy(() => import('../../pages/member/MemberAIAssistantPage.jsx').then(m => ({ default: m.MemberAIAssistant })));
+const PaymentResult = lazy(() => import('../../pages/member/PaymentResultPage.jsx').then(m => ({ default: m.PaymentResult })));
+const MemberCoachPortal = lazy(() => import('../../pages/member/MemberCoachPortalPage.jsx').then(m => ({ default: m.MemberCoachPortal })));
+const MySupportRequests = lazy(() => import('../../pages/member/MySupportRequestsPage.jsx').then(m => ({ default: m.MySupportRequests })));
+const MemberRefundRequests = lazy(() => import('../../pages/member/MemberRefundRequestsPage.jsx').then(m => ({ default: m.MemberRefundRequests })));
+const PayrollPage = lazy(() => import('../../pages/shared/PayrollPage.jsx').then(m => ({ default: m.PayrollPage })));
 
 function RouteFallback() {
   return (

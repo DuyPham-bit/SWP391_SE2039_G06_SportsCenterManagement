@@ -7,7 +7,7 @@ import {
   saveLandingContent,
   openLandingPreview
 } from '../../services/landingContentService.js';
-import { CloudMediaPickerModal } from '../../components/common/CloudMediaPickerModal.jsx';
+import { CloudMediaPickerModal } from '../media/ui/CloudMediaPickerModal.jsx';
 import { useToast } from '../../context/ToastContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 

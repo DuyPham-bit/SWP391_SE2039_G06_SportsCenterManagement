@@ -1,14 +1,14 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { authApi } from '../../services/api.js';
-import { useAuth } from '../../context/AuthContext.js';
-import { useToast } from '../../context/ToastContext.jsx';
-import { Modal } from '../../components/common/Modal.jsx';
-import { Badge } from '../../components/common/StatCard.js';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
+import { Modal } from '../../shared/ui/Modal.jsx';
+import { Badge } from '../../shared/ui/StatCard.jsx';
 import { PasswordInput } from './PasswordInput.js';
 import { GoogleLoginModal } from './GoogleLoginModal.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
-import { useLanguage } from '../../context/LanguageContext.jsx';
+import { useLanguage } from '../../app/providers/LanguageContext.jsx';
 import { translatePackageName } from '../../services/i18nHelper.js';
 import { processAvatarFile, getInitials } from '../../services/avatarHelper.js';
 

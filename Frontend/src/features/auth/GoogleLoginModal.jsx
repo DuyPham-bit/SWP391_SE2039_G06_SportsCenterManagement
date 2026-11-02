@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { useAuth } from '../../context/AuthContext.js';
-import { useToast } from '../../context/ToastContext.js';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
 import { authApi } from '../../services/api.js';
 import { loadGoogleIdentity, googleClientId } from '../../services/googleIdentity.js';
 

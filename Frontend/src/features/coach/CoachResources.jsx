@@ -2,7 +2,7 @@ import { formatVietnamDateTime, parseVietnamDateTime } from '../../utils/dateTim
 import React, { useEffect, useMemo, useState } from 'react';
 import { coachProfessionalApi } from '../../services/api.js';
 import { safeHref } from '../../services/safeUrl.js';
-import { uploadMediaFileToCloud } from '../../services/cloudMediaStorage.js';
+import { uploadMediaFileToCloud } from '../media/api/mediaApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';

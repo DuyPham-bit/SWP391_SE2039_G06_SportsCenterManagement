@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { bookingApi } from '../../services/api.js';
-import { useAuth } from '../../context/AuthContext.js';
-import { useToast } from '../../context/ToastContext.js';
-import { useLanguage } from '../../context/LanguageContext.jsx';
-import { Badge } from '../../components/common/StatCard.js';
-import { LoadingSpinner } from '../../components/common/Table.js';
-import { Modal } from '../../components/common/Modal.js';
-import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
+import { useLanguage } from '../../app/providers/LanguageContext.jsx';
+import { Badge } from '../../shared/ui/StatCard.jsx';
+import { LoadingSpinner } from '../../shared/ui/Table.jsx';
+import { Modal } from '../../shared/ui/Modal.jsx';
+import { BusinessAlert } from '../../shared/ui/BusinessAlert.jsx';
 import {
   BOOKING_LABELS,
   BOOKING_LABELS_EN,
