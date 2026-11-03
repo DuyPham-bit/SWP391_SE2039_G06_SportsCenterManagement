@@ -5,6 +5,41 @@ import { useLanguage } from '../../context/LanguageContext.jsx';
 import { useAuth } from '../../context/AuthContext.js';
 import { MotionButton } from '../../components/common/MotionButton.jsx';
 
+function formatLogDescription(log, isEn) {
+  const act = String(log.action || '').toUpperCase();
+  const name = log.entityName ? `"${log.entityName}"` : (log.entityId ? `#${log.entityId}` : '');
+  const actor = log.userName || (isEn ? 'System' : 'Hệ thống');
+
+  if (act.includes('COACH') && act.includes('ASSIGN') && !act.includes('UNASSIGN')) {
+    return isEn
+      ? `Coach assigned to class ${name}. Action verified and registered by ${actor}.`
+      : `Phân công Huấn luyện viên phụ trách lớp học ${name}. Thao tác được xác thực và lưu vết bởi ${actor}.`;
+  }
+  if (act.includes('UNASSIGN')) {
+    return isEn
+      ? `Coach unassigned from class ${name} schedule.`
+      : `Gỡ phân công Huấn luyện viên khỏi lớp học ${name}.`;
+  }
+  if (act.includes('CLASS') && act.includes('CREATE')) {
+    return isEn ? `New class ${name} registered in sports center catalog.` : `Khởi tạo lớp học mới ${name} trong chương trình đào tạo của trung tâm.`;
+  }
+  if (act.includes('MEMBER') && act.includes('CREATE')) {
+    return isEn ? `New member profile ${name} enrolled in center.` : `Hồ sơ hội viên mới ${name} được ghi nhận vào hệ thống cơ sở.`;
+  }
+  if (act.includes('PACKAGE')) {
+    return isEn ? `Membership package ${name} updated in center pricing catalog.` : `Gói tập hội viên ${name} được cập nhật trong danh mục bảng giá.`;
+  }
+  if (act.includes('ROLE') || act.includes('PERMISSION')) {
+    return isEn ? `Security access permissions updated for role ${name}.` : `Cập nhật phân quyền bảo mật cho vai trò ${name}.`;
+  }
+  if (act.includes('STAFF')) {
+    return isEn ? `Staff personnel profile ${name} updated in facility roster.` : `Hồ sơ nhân sự ${name} được cập nhật trong danh bạ trung tâm.`;
+  }
+  return isEn
+    ? `Operation ${log.action} successfully registered on ${log.entityType || 'resource'} ${name}.`
+    : `Thao tác ${log.action} được ghi nhận an toàn trên đối tượng ${log.entityType || 'tài nguyên'} ${name}.`;
+}
+
 function LogDetailModal({ log, isEn, onClose }) {
   if (!log) return null;
   const { date, time } = formatTimestamp(log.timestamp);
@@ -61,9 +96,9 @@ function LogDetailModal({ log, isEn, onClose }) {
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               {isEn ? 'Actor / Executor' : 'Người Thực Hiện'}
             </div>
-            <div className="text-sm font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-blue-600">person</span>
-              {log.userName || (isEn ? 'System automated' : 'Hệ thống tự động')}
+            <div className="text-sm font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-1.5 truncate">
+              <span className="material-symbols-outlined text-[16px] text-blue-600 shrink-0">person</span>
+              <span className="truncate">{log.userName || (isEn ? 'System automated' : 'Hệ thống tự động')}</span>
             </div>
             {log.role && (
               <span className="inline-block mt-1 text-[10px] font-bold px-2 py-0.5 rounded-md uppercase bg-blue-100 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300">
@@ -76,12 +111,12 @@ function LogDetailModal({ log, isEn, onClose }) {
             <div className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">
               {isEn ? 'Affected Object' : 'Đối Tượng Tác Động'}
             </div>
-            <div className="text-sm font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-1.5">
-              <span className="material-symbols-outlined text-[16px] text-purple-600">target</span>
-              {log.entityType || (isEn ? 'System Resource' : 'Tài nguyên hệ thống')}
+            <div className="text-sm font-bold text-slate-900 dark:text-white mt-1 flex items-center gap-1.5 truncate">
+              <span className="material-symbols-outlined text-[16px] text-purple-600 shrink-0">target</span>
+              <span className="truncate">{log.entityName || log.entityType || (isEn ? 'System Resource' : 'Tài nguyên hệ thống')}</span>
             </div>
             <div className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 font-mono">
-              {log.entityId ? `#${log.entityId}` : 'N/A'}
+              {log.entityType}{log.entityId ? ` #${log.entityId}` : ''}
             </div>
           </div>
 
@@ -93,8 +128,19 @@ function LogDetailModal({ log, isEn, onClose }) {
               <span className="material-symbols-outlined text-[16px]">verified</span>
               {isEn ? 'Immutable Ledger' : 'Đã Ghi Nhật Ký An Toàn'}
             </div>
-            <div className="text-[10px] text-slate-400 mt-0.5">SCMS Audit Trail Protocol</div>
+            <div className="text-[10px] text-slate-400 mt-0.5">Olympic Sports Arena Audit Trail Protocol</div>
           </div>
+        </div>
+
+        {/* Activity Details Context Note */}
+        <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800/60 text-xs mb-5">
+          <div className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5 mb-1">
+            <span className="material-symbols-outlined text-[16px] text-[#24828F]">info</span>
+            <span>{isEn ? 'Activity Details' : 'Chi Tiết Hoạt Động'}</span>
+          </div>
+          <p className="text-slate-600 dark:text-slate-400 leading-relaxed text-[11px]">
+            {formatLogDescription(log, isEn)}
+          </p>
         </div>
 
         {/* Footer */}
@@ -316,8 +362,12 @@ export function AuditLogs() {
         <div className="flex items-center gap-2">
           <span className="material-symbols-outlined text-[18px] text-slate-400">target</span>
           <div>
-            <div className="text-xs font-bold text-slate-800 dark:text-slate-200">{row.entityType || (isEn ? 'System' : 'Hệ thống')}</div>
-            <div className="text-[11px] text-slate-400">{row.entityId ? `${isEn ? 'ID' : 'Mã'} #${row.entityId}` : (isEn ? 'No object ID' : 'Không có mã đối tượng')}</div>
+            <div className="text-xs font-bold text-slate-800 dark:text-slate-200 truncate max-w-[220px]">
+              {row.entityName || row.entityType || (isEn ? 'System' : 'Hệ thống')}
+            </div>
+            <div className="text-[11px] text-slate-400">
+              {row.entityType}{row.entityId ? ` #${row.entityId}` : ''}
+            </div>
           </div>
         </div>
       )

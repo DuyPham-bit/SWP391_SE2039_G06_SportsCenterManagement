@@ -1171,13 +1171,17 @@ export const systemApi = {
       : `centers/${centerId()}/audit-logs?${params}`;
     const result = await apiRequest(path);
     const items = asArray(result).map(item => {
-      const role = item.actorUserId ? null : 'SYSTEM';
-      let userName = item.actorUserId ? `User #${item.actorUserId}` : 'Hệ thống';
+      const isCurrentUser = user && Number(item.actorUserId) === Number(user.id);
+      const role = item.actorRole || (isCurrentUser ? user.role : (item.actorUserId ? null : 'SYSTEM'));
+      let userName = item.actorUserName
+        || (isCurrentUser ? (user.fullName || user.username || 'Quản lý trung tâm') : '')
+        || (item.actorUserId ? `User #${item.actorUserId}` : 'Hệ thống');
 
       const searchContent = [
         item.action,
-        item.actorUserId ? `User #${item.actorUserId}` : 'Hệ thống',
+        userName,
         item.entityType,
+        item.entityName,
         item.entityId
       ].filter(Boolean).join(' ').toLowerCase();
 
@@ -1186,6 +1190,7 @@ export const systemApi = {
         userId: item.actorUserId,
         userName,
         role,
+        entityName: item.entityName,
         status: 'SUCCESS',
         timestamp: item.createdAt,
         searchIndex: searchContent
