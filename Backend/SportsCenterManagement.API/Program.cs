@@ -63,6 +63,10 @@ builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler
 
 builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+builder.Services.AddScoped<IUserRepository, UserRepository>();
+builder.Services.AddScoped<ICatalogRepository, CatalogRepository>();
+builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+builder.Services.AddScoped<IClassRepository, ClassRepository>();
 
 // Layer 2: BLL (Business Logic Services)
 // Flow 1 Services
@@ -70,6 +74,10 @@ builder.Services.AddScoped<IClassService, ClassService>();
 builder.Services.AddScoped<IMembershipPackageService, MembershipPackageService>();
 builder.Services.AddScoped<ICoreFlowService, CoreFlowService>();
 builder.Services.AddScoped<IAuthService, AuthService>();
+builder.Services.AddScoped<IProfileService, ProfileService>();
+builder.Services.AddScoped<ICenterScopeService, CenterScopeService>();
+builder.Services.AddScoped<IClassEnrollmentService, ClassEnrollmentService>();
+builder.Services.AddScoped<IPublicCatalogService, PublicCatalogService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 builder.Services.AddScoped<ICenterAccessService, CenterAccessService>();

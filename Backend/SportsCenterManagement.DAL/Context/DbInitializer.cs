@@ -340,7 +340,10 @@ public static class DbInitializer
     private static async Task BaselineLegacySchemaAsync(SportsCenterDbContext context)
     {
         var connection = context.Database.GetDbConnection();
-        await connection.OpenAsync();
+        if (connection.State != System.Data.ConnectionState.Open)
+        {
+            await connection.OpenAsync();
+        }
         await using var command = connection.CreateCommand();
         command.CommandText = """
             SELECT CASE WHEN OBJECT_ID(N'[dbo].[centers]', N'U') IS NULL THEN 0 ELSE 1 END
