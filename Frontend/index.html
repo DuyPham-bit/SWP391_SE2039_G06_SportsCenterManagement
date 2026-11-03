@@ -2,19 +2,20 @@
 <html lang="vi">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261102v4" />
-    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20261102v4" />
-    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20261102v4" />
-    <link rel="shortcut icon" href="/favicon-32x32.png?v=20261102v4" />
-    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261102v4" />
+    <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20261103v1" />
+    <link rel="shortcut icon" href="/favicon.ico?v=20261103v1" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261103v1" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=20261103v1" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png?v=20261103v1" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=20261103v1" />
     <script>
       (function() {
         try {
           var t = Date.now();
           var icons = document.querySelectorAll("link[rel*='icon']");
           icons.forEach(function(el) {
-            var sep = el.href.indexOf('?') >= 0 ? '&' : '?';
-            el.href = el.href.split('?')[0] + sep + 'v=' + t;
+            var raw = el.href.split('?')[0];
+            el.href = raw + '?v=' + t;
           });
         } catch (e) {}
       })();
