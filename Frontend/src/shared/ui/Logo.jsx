@@ -6,9 +6,11 @@ import React from 'react';
  * - Left emblem: stylized wave swirls with athlete silhouettes
  * - Right typography: OLYMPIC SPORTS ARENA
  */
+const LOGO_VERSION = '20261102v4';
+
 export function Logo({
-  variant = 'auto', // 'auto' | 'dark' | 'light'
-  size = 'md',      // 'sm' | 'md' | 'lg'
+  variant = 'auto', // 'auto' | 'dark' | 'light' | 'brand'
+  size = 'md',      // 'sm' | 'md' | 'lg' | 'xl'
   href = '#/',
   onClick,
   className = '',
@@ -17,6 +19,7 @@ export function Logo({
 }) {
   const isDark = variant === 'dark';
   const isLight = variant === 'light';
+  const isBrand = variant === 'brand';
 
   // Height and scale based on size
   const heightClass = {
@@ -38,7 +41,7 @@ export function Logo({
     if (isDark) {
       logoContent = (
         <img
-          src="/logo-olympic-mark-dark.png"
+          src={`/logo-olympic-mark-dark.png?v=${LOGO_VERSION}`}
           alt="Olympic Sports Arena"
           className={`${compactSizeClass} object-contain shrink-0 transition-transform duration-200 group-hover:scale-105`}
         />
@@ -46,7 +49,7 @@ export function Logo({
     } else if (isLight) {
       logoContent = (
         <img
-          src="/logo-olympic-mark.png"
+          src={`/logo-olympic-mark.png?v=${LOGO_VERSION}`}
           alt="Olympic Sports Arena"
           className={`${compactSizeClass} object-contain shrink-0 transition-transform duration-200 group-hover:scale-105`}
         />
@@ -55,12 +58,12 @@ export function Logo({
       logoContent = (
         <>
           <img
-            src="/logo-olympic-mark.png"
+            src={`/logo-olympic-mark.png?v=${LOGO_VERSION}`}
             alt="Olympic Sports Arena"
             className={`${compactSizeClass} object-contain shrink-0 dark:hidden transition-transform duration-200 group-hover:scale-105`}
           />
           <img
-            src="/logo-olympic-mark-dark.png"
+            src={`/logo-olympic-mark-dark.png?v=${LOGO_VERSION}`}
             alt="Olympic Sports Arena"
             className={`${compactSizeClass} object-contain shrink-0 hidden dark:block transition-transform duration-200 group-hover:scale-105`}
           />
@@ -68,10 +71,18 @@ export function Logo({
       );
     }
   } else {
-    if (isDark) {
+    if (isBrand) {
       logoContent = (
         <img
-          src="/logo-olympic-dark.png"
+          src={`/logo-olympic-brand.png?v=${LOGO_VERSION}`}
+          alt="Olympic Sports Arena"
+          className={`${heightClass} w-auto object-contain shrink-0 rounded-xl shadow-xs transition-transform duration-200 group-hover:scale-[1.02]`}
+        />
+      );
+    } else if (isDark) {
+      logoContent = (
+        <img
+          src={`/logo-olympic-dark.png?v=${LOGO_VERSION}`}
           alt="Olympic Sports Arena"
           className={`${heightClass} w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-[1.02]`}
         />
@@ -79,7 +90,7 @@ export function Logo({
     } else if (isLight) {
       logoContent = (
         <img
-          src="/logo-olympic.png"
+          src={`/logo-olympic.png?v=${LOGO_VERSION}`}
           alt="Olympic Sports Arena"
           className={`${heightClass} w-auto object-contain shrink-0 transition-transform duration-200 group-hover:scale-[1.02]`}
         />
@@ -88,12 +99,12 @@ export function Logo({
       logoContent = (
         <>
           <img
-            src="/logo-olympic.png"
+            src={`/logo-olympic.png?v=${LOGO_VERSION}`}
             alt="Olympic Sports Arena"
             className={`${heightClass} w-auto object-contain shrink-0 dark:hidden transition-transform duration-200 group-hover:scale-[1.02]`}
           />
           <img
-            src="/logo-olympic-dark.png"
+            src={`/logo-olympic-dark.png?v=${LOGO_VERSION}`}
             alt="Olympic Sports Arena"
             className={`${heightClass} w-auto object-contain shrink-0 hidden dark:block transition-transform duration-200 group-hover:scale-[1.02]`}
           />

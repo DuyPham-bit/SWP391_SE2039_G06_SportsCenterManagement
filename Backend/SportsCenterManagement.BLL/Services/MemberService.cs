@@ -302,6 +302,10 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         var package = await unitOfWork.Repository<MembershipPackage>().GetByIdAsync(packageId, cancellationToken)
             ?? throw new KeyNotFoundException("Không tìm thấy gói tập.");
 
+        // Authorization must succeed before assigning an unowned member to a center.
+        // Otherwise a rejected counter-sale request can still alter tenant ownership.
+        await EnsureCenterStaffAsync(actorUserId, package.CenterId, cancellationToken);
+
         if (!target.CenterId.HasValue)
         {
             target.CenterId = package.CenterId;
@@ -312,7 +316,6 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         {
             throw new UnauthorizedAccessException("Thành viên và gói tập không thuộc cùng trung tâm.");
         }
-        await EnsureCenterStaffAsync(actorUserId, package.CenterId, cancellationToken);
     }
 
     public async Task EnsureCanBuyPackageAsync(long userId, long packageId, CancellationToken cancellationToken = default)

@@ -19,7 +19,8 @@ public sealed class R2StorageService(
     SportsCenterDbContext db,
     IHttpContextAccessor httpContextAccessor,
     ILogger<R2StorageService> logger,
-    IHttpClientFactory httpClientFactory) : IR2StorageService, IDisposable
+    IHttpClientFactory httpClientFactory,
+    Amazon.S3.IAmazonS3? s3Client = null) : IR2StorageService, IDisposable
 {
     private const long MaxFileSize = 5 * 1024 * 1024;
     private const string RefundBillPrefix = "refund-bills/";
@@ -39,7 +40,7 @@ public sealed class R2StorageService(
         };
 
     private readonly R2StorageOptions _options = options.Value;
-    private IAmazonS3? _s3Client;
+    private IAmazonS3? _s3Client = s3Client;
 
     // Object storage is optional for local/demo environments. Defer configuration
     // validation until an upload/delete actually needs R2, while retaining all

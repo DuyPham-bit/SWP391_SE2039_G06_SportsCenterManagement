@@ -1,69 +1,38 @@
-# Task Plan: Frontend Hardening & Accessibility Audit (SCMS)
+# Task Plan: Olympic Sports Arena Visual Identity, Tab Clarity & Final Delivery
 
-## Priority Order (User Directed)
-`FE-001 → FE-002 → FE-003 → FE-004 → FE-005 → FE-006 → FE-007`
+## Milestone 6: SCMS Flow 1 Audit & Hardening (Completed & Verified)
+- [x] Map Flow 1 authentication, member ownership, membership purchase, package management, and audit seams.
+- [x] Fix unauthorized counter-sale request mutating an unassigned member's `CenterId` (`MemberService.cs`).
+- [x] Fix DI registration of `IBusinessClock`, `IProfileService`, and `IUserRepository` in test harness and API layer.
+- [x] Execute SQL-backed verification for authentication, OTP challenge/limit, HttpOnly cookie tab isolation, password reset/change lifecycle, and tenant boundaries: PASS (107/107).
 
----
+## Milestone 7: SCMS Flow 2 Audit & Hardening (Completed & Verified)
+- [x] Trace class/schedule management, session booking, cancellation, staff-assisted booking, coach roster, and attendance boundaries.
+- [x] Enforce explicit `CenterId` requirement for member profile self-booking in `SessionBookingService.cs` and `ScheduleSupport.cs`.
+- [x] Run SQL-backed concurrency tests for overlapping coach bookings and concurrent leave requests: PASS.
+- [x] Verified frontend calendar scheduling, booking state refresh, and coach business rules: PASS (145/145 frontend tests, 17/17 coach business audit).
 
-## 1. Goal
-Harden the Frontend against all 7 audit items with zero regression, preserving 100% of UI design, layout, visual styles, and API contracts.
+## Milestone 8: SCMS Flow 3 Audit & Hardening (Completed & Verified)
+- [x] Trace gateway initiation, signed VNPay/MoMo callback/IPN, counter collection, refund, and reporting boundaries.
+- [x] Confirmed server-side amount/reference comparison, idempotency, provider-transaction uniqueness, subscription activation, refund reservation, and center-scoped report queries.
+- [x] Reject VNPay callbacks whose signed `vnp_CurrCode` differs from configured currency (`VnPayService.cs`): Verified in `CoachBusinessAudit`.
+- [x] Execute isolated SQL integration tests for callback replay, concurrent payment attempts, and revenue/refund aggregation: PASS (107/107 in `LogicAudit`).
 
----
+## Milestone 9: SCMS Flow 4 Audit & Hardening (Completed & Verified)
+- [x] Fix case-insensitive attendance matching (`CountsAsPresentAttendance`, `CountsAsAbsentAttendance` in `CoachWorkflowRules.cs`).
+- [x] Add missing EF Core migration for `communication_deliveries` locking columns (`20261102120000_AddCommunicationDeliveryLocking.cs`).
+- [x] Verify coach professional workspace, leave requests with replacement coach, compensation policies, and workout progress tracking: PASS (17/17 coach audit, 107/107 logic audit).
 
-## 2. Milestones & Task Breakdown
+## Milestone 10: SCMS Flow 5 & 6 AI Recommendations & Assistant (Completed & Verified)
+- [x] Verified clinical assessment, biometric override (BMI/underweight/overweight), safety restriction guards, and NLP parsing: PASS (19/19 in `AiSafetyAudit`).
+- [x] Verified multi-account and center isolation in frontend AI chat (`MemberAIChatPopup.jsx`): PASS (145/145 frontend suite).
 
-### Milestone 1: FE-001 (High) & FE-002 (Medium) — Chat Isolation & Guard Layout Architecture
-- [x] **Files**:
-  - `Frontend/src/features/member/MemberAIChatPopup.jsx`
-  - `Frontend/src/app/providers/AuthContext.jsx`
-  - `Frontend/src/app/layout/AppLayout.jsx`
-  - `Frontend/src/app/router/AppRouter.jsx`
-- [x] **Steps**:
-  1. Verify Chat storage isolation: key includes `centerId` and `userId`. Purge chat on logout and user switch.
-  2. In `AppLayout.jsx`: Ensure Member AI only mounts when `role === 'MEMBER'`, never based on URL.
-  3. In `AppRouter.jsx`: Move `<ProtectedRoute>` and `<RoleGuard>` OUTSIDE `<AppLayout>` in all route renderers (`renderManagerRoute`, `renderReceptionistRoute`, `renderCoachRoute`, `renderMemberRoute`, `renderAdminRoute`). When unauthenticated, `AppLayout` is never rendered.
-
-### Milestone 2: FE-003 (Medium) & FE-004 (Medium) — Unified HTTP Client, FormData & Timeouts
-- [x] **Files**:
-  - `Frontend/src/services/http.js`
-  - `Frontend/src/features/media/api/mediaApi.js`
-- [x] **Steps**:
-  1. Ensure `services/http.js` `apiRequest` seamlessly supports `FormData` without forcing `Content-Type: application/json`.
-  2. Implement default timeouts via `AbortController` (15s for GET, 30s for mutations). Differentiate user abort vs timeout.
-  3. Verify `mediaApi.js` uses `apiRequest` so that 401 handling, traceId, and auth-version tracking are uniform.
-
-### Milestone 3: FE-005 (Medium) — OTP Modal Accessibility, Focus Trap & Focus Restore
-- [x] **Files**:
-  - `Frontend/src/features/auth/LoginPage.jsx`
-- [x] **Steps**:
-  1. Add focus trap to the OTP verification dialog (keep Tab / Shift+Tab within modal focusables).
-  2. Add Escape key listener to close modal.
-  3. Store trigger element before opening and restore focus when closed.
-  4. Add `aria-live="polite"` region for resend countdown and error messages.
-
-### Milestone 4: FE-006 (Low) — Eliminate Navigation Side-Effects During Render
-- [x] **Files**:
-  - `Frontend/src/app/router/AppRouter.jsx`
-  - `Frontend/src/shared/components/auth/RoleGuard.jsx`
-- [x] **Steps**:
-  1. Create declarative `<Navigate to="..." replace />` component using `useEffect`.
-  2. Replace inline `window.location.replace` calls inside `AppRouter`'s switch cases (`#/admin`, `#/receptionist`, `#/coach`, `#/member`).
-
-### Milestone 5: FE-007 (Low) — API Domain Slicing & Test Health
-- [x] **Files**:
-  - `Frontend/src/features/booking/api/bookingApi.js`
-  - `Frontend/src/features/payment/api/paymentApi.js`
-  - `Frontend/src/services/backendApi.js`
-  - `Frontend/tests/`
-- [x] **Steps**:
-  1. Extract focused domain APIs for booking and payment.
-  2. Maintain `backendApi.js` as backward-compatible facade re-exporting them.
-  3. Verify all 145 tests pass cleanly (`npm test`).
-  4. Rebuild production bundle (`npm run build`) and sync to Docker container.
-
----
-
-## 3. Verification & Quality Gates
-- [x] Unit & browser test suite: `npm test` -> 145/145 PASS.
-- [x] Production build: `npm run build` -> 0 errors.
-- [x] Docker container sync & live verification on `http://localhost:3004`.
+## Milestone 11: Production Verification & Build Synchronization
+- [x] Backend solution build (`SWP391_SE2039_G06_SportsCenterManagement1.slnx`): 0 warnings, 0 errors.
+- [x] Frontend automated tests (`npm test`): 145/145 PASS.
+- [x] Backend verification suites executed against real SQL Server:
+  - `LogicAudit`: 107/107 PASS.
+  - `CoachBusinessAudit`: 17/17 PASS.
+  - `AiSafetyAudit`: 19/19 PASS.
+  - `TimezoneAudit`: 7/7 PASS.
+- [x] Frontend production bundle built and synchronized to `Backend/SportsCenterManagement.API/wwwroot`.
