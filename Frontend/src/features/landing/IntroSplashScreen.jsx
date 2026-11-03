@@ -1,31 +1,58 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Cấu trúc 4 cột chữ SCMS định vị trên vành cung không gian 3D (Cylindrical Arc)
-// Bán kính R = 250px giúp 4 cột phân bổ góc xoay (-36°, -12°, +12°, +36°)
-const SCMS_COLUMNS = [
+// Cấu trúc 3 cột chữ OLYMPIC SPORTS ARENA định vị trên vành cung không gian 3D (Cylindrical Arc)
+// Phân bổ góc xoay cân xứng (-28°, 0°, +28°) tạo hiệu ứng vòm khán đài Olympic
+const OLYMPIC_COLUMNS = [
   {
-    key: 'col-s1',
-    angleDeg: -36,
-    zDepth: 250,
+    key: 'col-olympic',
+    angleDeg: -28,
+    zDepth: 260,
+    accentColor: '#3FAEB8',
+    glowColor: 'rgba(63, 174, 184, 0.95)',
+    shadowColor: 'rgba(36, 130, 143, 0.65)',
+    topTextClass: 'text-[#3FAEB8]',
+    rowStyles: [
+      'text-cyan-200/90 font-bold',
+      'text-teal-200/80 font-semibold',
+      'text-teal-200/65 font-medium',
+      'text-teal-300/50 font-normal',
+      'text-teal-300/35 font-normal',
+      'text-teal-400/22 font-normal'
+    ],
+    letters: ['O', 'L', 'Y', 'M', 'P', 'I', 'C']
+  },
+  {
+    key: 'col-sports',
+    angleDeg: 0,
+    zDepth: 275,
+    accentColor: '#81B29A',
+    glowColor: 'rgba(129, 178, 154, 0.95)',
+    shadowColor: 'rgba(45, 106, 79, 0.65)',
+    topTextClass: 'text-[#81B29A]',
+    rowStyles: [
+      'text-emerald-200/90 font-bold',
+      'text-emerald-200/80 font-semibold',
+      'text-emerald-300/65 font-medium',
+      'text-emerald-300/50 font-normal',
+      'text-emerald-400/25 font-normal'
+    ],
     letters: ['S', 'P', 'O', 'R', 'T', 'S']
   },
   {
-    key: 'col-c',
-    angleDeg: -12,
+    key: 'col-arena',
+    angleDeg: 28,
     zDepth: 260,
-    letters: ['C', 'E', 'N', 'T', 'E', 'R']
-  },
-  {
-    key: 'col-m',
-    angleDeg: 12,
-    zDepth: 260,
-    letters: ['M', 'A', 'N', 'A', 'G', 'E', 'M', 'E', 'N', 'T']
-  },
-  {
-    key: 'col-s2',
-    angleDeg: 36,
-    zDepth: 250,
-    letters: ['S', 'Y', 'S', 'T', 'E', 'M']
+    accentColor: '#F2CC8F',
+    glowColor: 'rgba(242, 204, 143, 0.95)',
+    shadowColor: 'rgba(229, 163, 60, 0.65)',
+    topTextClass: 'text-[#F2CC8F]',
+    rowStyles: [
+      'text-amber-200/90 font-bold',
+      'text-amber-200/80 font-semibold',
+      'text-amber-300/60 font-medium',
+      'text-amber-400/30 font-normal'
+    ],
+    letters: ['A', 'R', 'E', 'N', 'A']
   }
 ];
 
@@ -60,13 +87,13 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
 
     animFrameId = requestAnimationFrame(updateTimer);
 
-    // GIAI ĐOẠN 1: Ban đầu chỉ hiện 4 chữ cái SCMS và xoay mượt 1 vòng 360 độ (1.35s).
-    // GIAI ĐOẠN 2: Khi xoay xong 1 vòng, kích hoạt tuôn rơi toàn bộ chữ (full words)!
+    // GIAI ĐOẠN 1: Ban đầu chỉ hiện 3 chữ cái O - S - A và xoay mượt 1 vòng 360 độ (1.35s).
+    // GIAI ĐOẠN 2: Khi xoay xong 1 vòng, kích hoạt tuôn rơi toàn bộ chữ (full words OLYMPIC SPORTS ARENA)!
     const wordsTimer = setTimeout(() => {
       setShowFullWords(true);
     }, 1350);
 
-    // GIAI ĐOẠN 3: Khóa vị trí và phát sáng màu nhận diện thương hiệu SCMS (1.9s)
+    // GIAI ĐOẠN 3: Khóa vị trí và bùng sáng 3 gam màu nhận diện thương hiệu Olympic (1.9s)
     const lockTimer = setTimeout(() => {
       setIsLocked(true);
     }, 1900);
@@ -117,14 +144,14 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
       onClick={triggerExit}
       onTouchEnd={triggerExit}
       role="banner"
-      aria-label="SCMS Athletic 3D Preloader"
+      aria-label="Olympic Sports Arena 3D Preloader"
       className={`fixed inset-0 z-[99999] w-full h-full min-h-screen min-h-[100dvh] flex flex-col items-center justify-center select-none cursor-pointer overflow-hidden transition-all duration-700 ease-[cubic-bezier(0.77,0,0.175,1)] scms-intro-backdrop ${
         isExiting
           ? '-translate-y-full opacity-0 pointer-events-none'
           : 'translate-y-0 opacity-100'
       }`}
       style={{
-        backgroundColor: 'rgba(9, 15, 22, 0.88)',
+        backgroundColor: 'rgba(9, 15, 22, 0.92)',
         WebkitBackdropFilter: 'blur(20px)',
         backdropFilter: 'blur(20px)',
         WebkitTransform: isExiting ? 'translate3d(0, -100%, 0)' : 'translate3d(0, 0, 0)',
@@ -135,26 +162,29 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
       }}
       title="Bấm để vào nhanh (Click / Space to skip)"
     >
-      {/* 1. Hiệu ứng thể thao: Ánh đèn sân vận động (Stadium Spotlights) góc chéo */}
+      {/* 1. Hiệu ứng thể thao: Ánh đèn sân vận động đa sắc (Olympic Tri-Color Spotlights) */}
       <div
-        className="absolute -top-32 -left-32 w-80 sm:w-96 h-80 sm:h-96 rounded-full bg-gradient-to-br from-[#81B29A]/15 to-transparent blur-[80px] sm:blur-[120px] pointer-events-none"
+        className="absolute -top-32 -left-32 w-80 sm:w-96 h-80 sm:h-96 rounded-full bg-gradient-to-br from-[#24828F]/25 to-transparent blur-[80px] sm:blur-[120px] pointer-events-none"
       />
       <div
-        className="absolute -bottom-32 -right-32 w-80 sm:w-96 h-80 sm:h-96 rounded-full bg-gradient-to-tl from-[#F2CC8F]/10 to-transparent blur-[80px] sm:blur-[120px] pointer-events-none"
+        className="absolute -bottom-32 -right-32 w-80 sm:w-96 h-80 sm:h-96 rounded-full bg-gradient-to-tl from-[#F2CC8F]/20 to-transparent blur-[80px] sm:blur-[120px] pointer-events-none"
+      />
+      <div
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] sm:w-[480px] h-[380px] sm:h-[480px] rounded-full bg-gradient-to-tr from-[#2D6A4F]/15 via-transparent to-[#3FAEB8]/10 blur-[100px] pointer-events-none"
       />
 
-      {/* 2. Khung chữ 3D: Hiện SCMS trước, xoay đúng 1 vòng tròn 360 độ rồi mới tuôn rơi full chữ */}
-      <div className="scms-3d-stage relative flex items-center justify-center w-full px-2 sm:px-4 overflow-visible scale-[0.72] xs:scale-[0.82] sm:scale-90 md:scale-100">
-        {/* Khung chữ 3D: Cả 4 cột chữ đều căn thẳng hàng ngang ở đỉnh (top-0) để S C M S hoàn toàn đều nhau */}
+      {/* 2. Khung chữ 3D: Hiện O - S - A trước, xoay 1 vòng tròn 360 độ rồi tuôn rơi toàn bộ OLYMPIC SPORTS ARENA */}
+      <div className="scms-3d-stage relative flex items-center justify-center w-full px-2 sm:px-4 overflow-visible scale-[0.78] xs:scale-[0.88] sm:scale-95 md:scale-100">
+        {/* Khung chữ 3D: Cả 3 cột chữ đều căn thẳng hàng ngang ở đỉnh (top-0) để O - S - A hoàn toàn đều nhau */}
         <div
-          className="scms-spinner-1turn flex items-start justify-center w-[320px] sm:w-[360px] h-[460px] sm:h-[500px] md:h-[520px]"
+          className="scms-spinner-1turn flex items-start justify-center w-[280px] sm:w-[320px] md:w-[340px] h-[460px] sm:h-[500px] md:h-[520px]"
           style={{
             fontFamily: "'Montserrat', 'Lexend', system-ui, -apple-system, sans-serif",
             WebkitTransformStyle: 'preserve-3d',
             transformStyle: 'preserve-3d'
           }}
         >
-          {SCMS_COLUMNS.map((col) => {
+          {OLYMPIC_COLUMNS.map((col) => {
             return (
               <div
                 key={col.key}
@@ -172,24 +202,24 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
                 {col.letters.map((char, rowIdx) => {
                   const isTopHeader = rowIdx === 0;
 
-                  // Hàng đầu tiên (S C M S): Luôn hiển thị trong lúc xoay 1 vòng
+                  // Hàng đầu tiên (O - S - A): Luôn hiển thị trong lúc xoay 1 vòng
                   if (isTopHeader) {
                     const topColor = isLocked
-                      ? 'text-[#81B29A] font-black drop-shadow-[0_0_24px_rgba(129,178,154,0.95)] scale-105'
-                      : 'text-white font-bold drop-shadow-[0_0_14px_rgba(255,255,255,0.7)]';
+                      ? `${col.topTextClass} font-black scale-110`
+                      : 'text-white font-bold';
 
                     return (
                       <span
                         key={`${col.key}-${rowIdx}`}
-                        className={`scms-letter-cell flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-xl sm:text-2xl md:text-3xl transition-all duration-500 ${topColor}`}
+                        className={`scms-letter-cell flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 text-2xl sm:text-3xl md:text-4xl transition-all duration-500 ${topColor}`}
                         style={{
                           opacity: 1,
                           WebkitBackfaceVisibility: 'hidden',
                           backfaceVisibility: 'hidden',
                           WebkitFontSmoothing: 'antialiased',
                           textShadow: isLocked
-                            ? '0 0 20px rgba(129, 178, 154, 0.95)'
-                            : '0 0 12px rgba(255, 255, 255, 0.65)'
+                            ? `0 0 24px ${col.glowColor}, 0 0 45px ${col.shadowColor}`
+                            : '0 0 14px rgba(255, 255, 255, 0.75)'
                         }}
                       >
                         {char}
@@ -197,29 +227,26 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
                     );
                   }
 
-                  // Các ký tự bên dưới (P-O-R-T-S, E-N-T-E-R, v.v.):
-                  // Chỉ xuất hiện sau khi đã xoay xong 1 vòng tròn (showFullWords = true)
-                  let customOpacity = Math.max(0.12, 0.9 - rowIdx * 0.12);
-                  let textClasses = 'text-white/20 font-normal';
-
-                  if (rowIdx === 1) textClasses = 'text-white/85 font-semibold';
-                  else if (rowIdx === 2) textClasses = 'text-white/65 font-medium';
-                  else if (rowIdx === 3) textClasses = 'text-white/45 font-normal';
-                  else if (rowIdx === 4) textClasses = 'text-white/30 font-normal';
-                  else textClasses = 'text-white/18 font-normal';
+                  // Các ký tự bên dưới (L-Y-M-P-I-C, P-O-R-T-S, R-E-N-A):
+                  // Xuất hiện sau khi đã xoay xong 1 vòng tròn (showFullWords = true) với điểm nhấn màu đặc trưng
+                  const customOpacity = Math.max(0.18, 0.95 - (rowIdx - 1) * 0.13);
+                  const styleClass = col.rowStyles[rowIdx - 1] || 'text-white/20 font-normal';
 
                   return (
                     <span
                       key={`${col.key}-${rowIdx}`}
-                      className={`scms-letter-cell flex items-center justify-center w-8 h-8 sm:w-10 sm:h-10 text-xl sm:text-2xl md:text-3xl transition-all duration-500 ease-out ${textClasses}`}
+                      className={`scms-letter-cell flex items-center justify-center w-9 h-9 sm:w-11 sm:h-11 md:w-12 md:h-12 text-2xl sm:text-3xl md:text-4xl transition-all duration-500 ease-out ${styleClass}`}
                       style={{
                         opacity: showFullWords ? customOpacity : 0,
-                        WebkitTransform: showFullWords ? 'translateY(0)' : 'translateY(-14px)',
-                        transform: showFullWords ? 'translateY(0)' : 'translateY(-14px)',
+                        WebkitTransform: showFullWords ? 'translateY(0)' : 'translateY(-16px)',
+                        transform: showFullWords ? 'translateY(0)' : 'translateY(-16px)',
                         transitionDelay: `${rowIdx * 50}ms`,
                         WebkitBackfaceVisibility: 'hidden',
                         backfaceVisibility: 'hidden',
-                        WebkitFontSmoothing: 'antialiased'
+                        WebkitFontSmoothing: 'antialiased',
+                        textShadow: showFullWords && rowIdx <= 2
+                          ? `0 0 14px ${col.accentColor}40`
+                          : 'none'
                       }}
                     >
                       {char}
@@ -232,25 +259,34 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
         </div>
       </div>
 
-      {/* 3. Hiệu ứng thể thao: Đồng hồ điện tử bấm giờ mili-giây (Olympic Timing Meter) */}
-      <div className="absolute bottom-6 sm:bottom-10 md:bottom-12 pb-[env(safe-area-inset-bottom,0px)] flex flex-col items-center gap-1 font-mono text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.25em] uppercase text-white/50 pointer-events-none">
+      {/* 3. Hiệu ứng thể thao: Đồng hồ điện tử bấm giờ mili-giây (Olympic Timing Meter & Tri-Color Badge) */}
+      <div className="absolute bottom-6 sm:bottom-10 md:bottom-12 pb-[env(safe-area-inset-bottom,0px)] flex flex-col items-center gap-1.5 font-mono text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.25em] uppercase text-white/50 pointer-events-none">
         <div className="flex items-center gap-2">
           <span
-            className={`w-2 h-2 rounded-full transition-all duration-300 ${
-              isLocked ? 'bg-[#81B29A] shadow-[0_0_8px_#81B29A]' : 'bg-[#F2CC8F] animate-ping'
+            className={`w-2.5 h-2.5 rounded-full transition-all duration-500 ${
+              isLocked
+                ? 'bg-gradient-to-r from-[#3FAEB8] via-[#81B29A] to-[#F2CC8F] shadow-[0_0_12px_#81B29A]'
+                : 'bg-[#F2CC8F] animate-ping'
             }`}
           />
-          <span ref={tickerRef} className="font-semibold text-white/70">00:00.00</span>
+          <span ref={tickerRef} className="font-semibold text-white/85 tracking-widest">00:00.00</span>
           <span className="text-white/30">•</span>
-          <span className={isLocked ? 'text-[#81B29A] font-bold' : 'text-white/40'}>
-            {isLocked ? 'SYSTEM ACTIVE' : 'OLYMPIC ARENA'}
+          <span
+            className={`transition-all duration-500 ${
+              isLocked
+                ? 'text-transparent bg-clip-text bg-gradient-to-r from-[#3FAEB8] via-[#81B29A] to-[#F2CC8F] font-black tracking-wider drop-shadow-sm'
+                : 'text-white/40 font-medium'
+            }`}
+          >
+            {isLocked ? 'OLYMPIC SPORTS ARENA' : 'SYSTEM INITIALIZING'}
           </span>
         </div>
-        <span className="text-[9px] text-white/40 mt-1 tracking-[0.25em] sm:tracking-[0.3em]">
+        <span className="text-[9px] text-white/40 tracking-[0.25em] sm:tracking-[0.3em]">
           BẤM MÀN HÌNH / SPACE ĐỂ TIẾP TỤC
         </span>
       </div>
     </div>
   );
 }
+
 export default IntroSplashScreen;
