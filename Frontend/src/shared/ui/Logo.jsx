@@ -6,7 +6,7 @@ import React from 'react';
  * - Left emblem: stylized wave swirls with athlete silhouettes
  * - Right typography: OLYMPIC SPORTS ARENA
  */
-const LOGO_VERSION = '20261103v1';
+const LOGO_VERSION = '20261103v2';
 
 export function Logo({
   variant = 'auto', // 'auto' | 'dark' | 'light' | 'brand'
@@ -21,19 +21,19 @@ export function Logo({
   const isLight = variant === 'light';
   const isBrand = variant === 'brand';
 
-  // Height and scale based on size
+  // Height and scale based on size with responsive mobile breathing room
   const heightClass = {
-    sm: 'h-10 sm:h-11',
-    md: 'h-12 sm:h-14',
-    lg: 'h-16 sm:h-20 lg:h-22',
-    xl: 'h-20 sm:h-24 lg:h-28'
-  }[size] || 'h-12 sm:h-14';
+    sm: 'h-9 sm:h-10',
+    md: 'h-10 sm:h-12',
+    lg: 'h-11 sm:h-14 lg:h-16',
+    xl: 'h-14 sm:h-18 lg:h-22'
+  }[size] || 'h-10 sm:h-12';
 
   const compactSizeClass = {
-    sm: 'w-9 h-9 sm:w-10 sm:h-10',
-    md: 'w-11 h-11 sm:w-12 sm:h-12',
-    lg: 'w-14 h-14 sm:w-16 sm:h-16'
-  }[size] || 'w-11 h-11 sm:w-12 sm:h-12';
+    sm: 'w-8 h-8 sm:w-9 sm:h-9',
+    md: 'w-10 h-10 sm:w-11 sm:h-11',
+    lg: 'w-12 h-12 sm:w-14 sm:h-14'
+  }[size] || 'w-10 h-10 sm:w-11 sm:h-11';
 
   let logoContent;
 
