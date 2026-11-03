@@ -187,6 +187,7 @@ export function ManagerDashboard() {
   ];
 
   const [metrics, setMetrics] = useState(null);
+  const [period, setPeriod] = useState('30D');
   const [logs, setLogs] = useState([]);
   const [error, setError] = useState('');
   const [logError, setLogError] = useState('');
@@ -198,7 +199,7 @@ export function ManagerDashboard() {
     setLoading(true);
     setError('');
     setLogError('');
-    Promise.allSettled([reportApi.getOverview(), systemApi.getAuditLogs()]).then(([overview, activity]) => {
+    Promise.allSettled([reportApi.getOverview(period), systemApi.getAuditLogs()]).then(([overview, activity]) => {
       if (!active) return;
       if (overview.status === 'fulfilled') setMetrics(overview.value);
       else {
@@ -215,7 +216,7 @@ export function ManagerDashboard() {
     return () => {
       active = false;
     };
-  }, [revision]);
+  }, [revision, period]);
 
   const revenue = metrics?.revenuePeriods || [];
   const membership = metrics?.membershipPeriods || [];
@@ -253,7 +254,33 @@ export function ManagerDashboard() {
           </h1>
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Period Selector Tabs */}
+          <div className="flex items-center gap-1 p-1 bg-slate-100 dark:bg-slate-800/80 rounded-xl border border-slate-200/80 dark:border-slate-700/80">
+            {[
+              { id: '30D', label: isEn ? '30 Days' : '30 ngày qua' },
+              { id: 'MONTH', label: isEn ? 'This Month' : 'Tháng 11' },
+              { id: 'LAST_MONTH', label: isEn ? 'Last Month' : 'Tháng 10' },
+              { id: 'QUARTER', label: isEn ? 'Quarter' : 'Quý 4' }
+            ].map((p) => {
+              const active = period === p.id;
+              return (
+                <button
+                  key={p.id}
+                  type="button"
+                  onClick={() => setPeriod(p.id)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                    active
+                      ? 'bg-white dark:bg-slate-900 text-[#2D6A4F] dark:text-[#81B29A] shadow-xs'
+                      : 'text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
+                  }`}
+                >
+                  {p.label}
+                </button>
+              );
+            })}
+          </div>
+
           <button
             type="button"
             onClick={() => setRevision(x => x + 1)}
@@ -290,7 +317,13 @@ export function ManagerDashboard() {
               <div>
                 <div className="flex items-center gap-1.5 mb-1">
                   <span className="text-[11px] font-bold uppercase tracking-wider text-slate-400 dark:text-slate-500">
-                    {isEn ? "Today's Money" : 'Doanh thu tháng'}
+                    {period === '30D'
+                      ? (isEn ? 'Last 30 Days' : 'Doanh thu 30 ngày')
+                      : period === 'LAST_MONTH'
+                      ? (isEn ? 'Last Month' : 'Doanh thu Tháng 10')
+                      : period === 'MONTH'
+                      ? (isEn ? 'This Month' : 'Doanh thu Tháng 11')
+                      : (isEn ? 'Quarter Revenue' : 'Doanh thu Quý 4')}
                   </span>
                   <span className="text-[10px] font-black text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-1.5 py-0.2 rounded border border-emerald-200 dark:border-emerald-800">
                     +55%
@@ -508,7 +541,7 @@ export function ManagerDashboard() {
                   </p>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 text-[11px] font-bold border border-slate-200 dark:border-slate-700">
-                  Daily Wave
+                  {period === '30D' ? (isEn ? '30 Days Rolling' : '30 ngày qua') : period === 'LAST_MONTH' ? (isEn ? 'October Wave' : 'Tháng 10') : period === 'MONTH' ? (isEn ? 'November Wave' : 'Tháng 11') : (isEn ? 'Q4 Overview' : 'Quý 4')}
                 </span>
               </div>
               <VisionSalesOverviewChart data={revenue} groupBy="day" />

@@ -881,26 +881,55 @@ export const memberApi = {
 };
 
 export const reportApi = {
-  async getOverview(period = 'MONTH') {
+  async getOverview(period = '30D') {
     const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
     const year = Number(today.slice(0, 4));
     const month = Number(today.slice(5, 7));
     let from = `${today.slice(0, 7)}-01`;
-    if (period === 'DAY') from = today;
-    if (period === 'WEEK') {
+    let to = today;
+    let groupBy = 'day';
+    if (period === '30D' || period === 'LAST_30_DAYS') {
+      const d = new Date(`${today}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - 29);
+      from = d.toISOString().slice(0, 10);
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'DAY') {
+      from = today;
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'WEEK') {
       const current = new Date(`${today}T00:00:00Z`);
       const mondayOffset = (current.getUTCDay() + 6) % 7;
       current.setUTCDate(current.getUTCDate() - mondayOffset);
       from = current.toISOString().slice(0, 10);
-    }
-    if (period === 'YEAR') from = `${year}-01-01`;
-    if (period === 'QUARTER') {
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'LAST_MONTH' || period === 'PREV_MONTH') {
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const prevYear = month === 1 ? year - 1 : year;
+      const lastDayOfPrevMonth = new Date(Date.UTC(prevYear, prevMonth, 0)).getUTCDate();
+      from = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`;
+      to = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(lastDayOfPrevMonth).padStart(2, '0')}`;
+      groupBy = 'day';
+    } else if (period === 'MONTH' || period === 'THIS_MONTH') {
+      from = `${today.slice(0, 7)}-01`;
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'QUARTER') {
       const firstQuarterMonth = Math.floor((month - 1) / 3) * 3 + 1;
       from = `${year}-${String(firstQuarterMonth).padStart(2, '0')}-01`;
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'YEAR') {
+      from = `${year}-01-01`;
+      to = today;
+      groupBy = 'month';
+    } else if (typeof period === 'object' && period !== null) {
+      from = period.from || from;
+      to = period.to || to;
+      groupBy = period.groupBy || 'day';
     }
-    const to = typeof period === 'object' ? period.to : today;
-    if (typeof period === 'object') from = period.from;
-    const groupBy = typeof period === 'object' ? period.groupBy || 'day' : 'day';
     const startDate = new Date(`${from}T00:00:00Z`), endDate = new Date(`${to}T00:00:00Z`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(to || '')
         || !Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime())
