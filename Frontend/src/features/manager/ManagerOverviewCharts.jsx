@@ -11,7 +11,7 @@ const formatShortVnd = (num) => {
 };
 
 /**
- * 1. MINI SPARKLINE WAVE (Used in Cards 5 & 6)
+ * 1. MINI SPARKLINE WAVE (Used in KPI Cards 5 & 6)
  */
 export function MiniSparkline({ color = '#F97316', data = [30, 45, 38, 55, 42, 60, 48, 65, 50, 40] }) {
   const width = 160;
@@ -58,15 +58,14 @@ export function MiniSparkline({ color = '#F97316', data = [30, 45, 38, 55, 42, 6
 }
 
 /**
- * 2. TRẠNG THÁI PHÒNG / SÂN BÃI (Donut Chart with 5 segments)
+ * 2. TRẠNG THÁI SÂN BÃI & PHÒNG TẬP (Donut Chart - Sports Facilities)
  */
 export function RoomStatusDonutChart({
-  total = 41,
+  total = 12,
   data = [
-    { label: 'Trống', value: 14, color: '#3B82F6' },
-    { label: 'Đang thuê', value: 20, color: '#10B981' },
-    { label: 'Sắp hết hạn', value: 4, color: '#F59E0B' },
-    { label: 'Quá hạn', value: 2, color: '#EF4444' },
+    { label: 'Đang có lớp', value: 6, color: '#10B981' },
+    { label: 'Sẵn sàng / Trống', value: 4, color: '#3B82F6' },
+    { label: 'Đã đặt ca tới', value: 1, color: '#F59E0B' },
     { label: 'Bảo trì', value: 1, color: '#64748B' }
   ]
 }) {
@@ -112,7 +111,7 @@ export function RoomStatusDonutChart({
         {/* Center Label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
           <span className="text-[11px] font-medium text-slate-400">
-            {hovered !== null ? data[hovered].label : 'Phòng'}
+            {hovered !== null ? data[hovered].label : 'Sân & Phòng'}
           </span>
           <strong className="text-2xl font-black font-chivo text-slate-900 dark:text-white leading-none mt-0.5">
             {hovered !== null ? data[hovered].value : total}
@@ -139,34 +138,35 @@ export function RoomStatusDonutChart({
 }
 
 /**
- * 3. LẤP ĐẦY THEO CƠ SỞ / BỘ MÔN (Horizontal Progress Bars)
+ * 3. LẤP ĐẦY THEO BỘ MÔN THỂ THAO (Horizontal Progress Bars)
  */
 export function FacilityOccupancyBars({
   items = [
-    { code: 'CG', name: 'Cơ sở Quận 1 (Bơi lội)', pct: 79, current: 11, max: 14 },
-    { code: 'TX', name: 'Thanh Xuân (Gym)', pct: 80, current: 4, max: 5 },
-    { code: 'HD', name: 'Hà Đông (Yoga & Pilates)', pct: 77, current: 10, max: 13 },
-    { code: 'LB', name: 'Long Biên (Cầu lông & Võ)', pct: 13, current: 1, max: 8 }
+    { code: 'BL', name: 'Bơi lội (Olympic 50m)', pct: 85, current: 17, max: 20 },
+    { code: 'GF', name: 'Gym & Fitness', pct: 92, current: 46, max: 50 },
+    { code: 'CL', name: 'Cầu lông tiêu chuẩn', pct: 75, current: 12, max: 16 },
+    { code: 'BX', name: 'Boxing & Kickfit', pct: 60, current: 9, max: 15 },
+    { code: 'YG', name: 'Yoga & Pilates', pct: 88, current: 22, max: 25 }
   ]
 }) {
   return (
-    <div className="flex flex-col justify-between h-full space-y-3.5">
-      <div className="space-y-3 my-auto">
+    <div className="flex flex-col justify-between h-full space-y-3">
+      <div className="space-y-2.5 my-auto">
         {items.map((item) => (
-          <div key={item.code} className="flex items-center gap-3">
+          <div key={item.code} className="flex items-center gap-2.5">
             {/* Acronym Badge */}
-            <span className="w-7 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono">
+            <span className="w-7 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono" title={item.name}>
               {item.code}
             </span>
 
             {/* Progress track */}
-            <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-7 p-0.5 overflow-hidden relative">
+            <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-6 p-0.5 overflow-hidden relative">
               <div
-                className="h-full rounded-md bg-[#0D9488] transition-all duration-700 flex items-center justify-end pr-2.5"
-                style={{ width: `${Math.min(100, Math.max(10, item.pct))}%` }}
+                className="h-full rounded-md bg-[#0D9488] transition-all duration-700 flex items-center justify-end pr-2"
+                style={{ width: `${Math.min(100, Math.max(12, item.pct))}%` }}
               >
-                <span className="text-[11px] font-bold text-white whitespace-nowrap">
-                  {item.pct}% {item.current ? `${item.current}/${item.max}` : ''}
+                <span className="text-[10px] font-bold text-white whitespace-nowrap">
+                  {item.pct}% {item.current ? `(${item.current}/${item.max})` : ''}
                 </span>
               </div>
             </div>
@@ -175,7 +175,7 @@ export function FacilityOccupancyBars({
       </div>
 
       {/* 0% - 100% Axis */}
-      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 px-7 pt-2 border-t border-slate-100 dark:border-slate-800/80">
+      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 px-7 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
         <span>0%</span>
         <span>25%</span>
         <span>50%</span>
@@ -187,21 +187,21 @@ export function FacilityOccupancyBars({
 }
 
 /**
- * 4. THU TIỀN KỲ (Radial Open Arc Gauge 69%)
+ * 4. TIẾN ĐỘ CHỈ TIÊU DOANH THU THÁNG (Radial Open Arc Gauge)
  */
 export function PeriodCollectionRadialGauge({
-  percent = 69,
-  subtitle = 'Đã thu 18/26 phòng',
+  percentage = 73,
+  collectedText = 'Đã thu 58.7 tr / 80 tr',
+  remainingText = 'Còn 21.3 tr',
   color = '#F59E0B'
 }) {
   const size = 170;
   const strokeWidth = 20;
   const radius = (size - strokeWidth) / 2;
-  // An open arc of 280 degrees
   const arcDegree = 280;
   const arcLength = (arcDegree / 360) * (2 * Math.PI * radius);
   const totalCircumference = 2 * Math.PI * radius;
-  const progressLength = (percent / 100) * arcLength;
+  const progressLength = (percentage / 100) * arcLength;
   const dashOffset = arcLength - progressLength;
 
   return (
@@ -243,10 +243,10 @@ export function PeriodCollectionRadialGauge({
         {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
           <strong className="text-3xl font-black font-chivo text-slate-900 dark:text-white leading-none">
-            {percent}%
+            {percentage}%
           </strong>
           <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
-            {subtitle}
+            {collectedText}
           </span>
         </div>
       </div>
@@ -255,12 +255,12 @@ export function PeriodCollectionRadialGauge({
 }
 
 /**
- * 5. HỒ SƠ KHÁCH ĐANG Ở (Comparative Stacked Bars)
+ * 5. HỒ SƠ & THẺ HỘI VIÊN THỂ THAO (Stacked Bars)
  */
 export function MemberDocumentsStackedBars({
   items = [
-    { label: 'CCCD 2 mặt', greenVal: 2, redVal: 46 },
-    { label: 'Tạm trú', greenVal: 38, redVal: 10 }
+    { label: 'Thẻ & FaceID', greenVal: 842, redVal: 48 },
+    { label: 'Y tế / BMI', greenVal: 760, redVal: 130 }
   ]
 }) {
   return (
@@ -272,24 +272,26 @@ export function MemberDocumentsStackedBars({
           const redPct = (row.redVal / total) * 100;
 
           return (
-            <div key={row.label} className="flex items-center gap-3">
-              <span className="w-20 text-xs font-semibold text-slate-600 dark:text-slate-400 truncate text-right">
+            <div key={row.label} className="flex items-center gap-2.5">
+              <span className="w-24 text-xs font-semibold text-slate-600 dark:text-slate-400 truncate text-right">
                 {row.label}
               </span>
 
               <div className="flex-1 flex rounded-lg h-7 overflow-hidden gap-1">
                 {row.greenVal > 0 && (
                   <div
-                    className="h-full bg-[#10B981] rounded-md flex items-center justify-center text-white text-[11px] font-black min-w-[24px] transition-all duration-500"
+                    className="h-full bg-[#10B981] rounded-md flex items-center justify-center text-white text-[11px] font-black min-w-[32px] transition-all duration-500"
                     style={{ width: `${greenPct}%` }}
+                    title={`Đã hoàn tất: ${row.greenVal}`}
                   >
                     {row.greenVal}
                   </div>
                 )}
                 {row.redVal > 0 && (
                   <div
-                    className="h-full bg-[#EF4444] rounded-md flex items-center justify-center text-white text-[11px] font-black min-w-[24px] transition-all duration-500"
+                    className="h-full bg-[#EF4444] rounded-md flex items-center justify-center text-white text-[11px] font-black min-w-[28px] transition-all duration-500"
                     style={{ width: `${redPct}%` }}
+                    title={`Cần xử lý: ${row.redVal}`}
                   >
                     {row.redVal}
                   </div>
@@ -302,20 +304,17 @@ export function MemberDocumentsStackedBars({
 
       {/* Axis & Legend */}
       <div className="space-y-2 pt-2 border-t border-slate-100 dark:border-slate-800/80">
-        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 px-24">
+        <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 px-6">
           <span>0%</span>
           <span>50%</span>
           <span>100%</span>
         </div>
-        <div className="flex items-center justify-center gap-3 text-[10px] text-slate-500 font-medium">
+        <div className="flex items-center justify-center gap-4 text-[10px] text-slate-500">
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 bg-[#10B981] rounded-xs" /> Đầy đủ
+            <span className="w-2.5 h-2.5 rounded-sm bg-[#10B981]" /> Đã kích hoạt / Hoàn tất
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 bg-[#F59E0B] rounded-xs" /> Thiếu 1 mặt
-          </span>
-          <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 bg-[#EF4444] rounded-xs" /> Chưa có
+            <span className="w-2.5 h-2.5 rounded-sm bg-[#EF4444]" /> Chưa cập nhật
           </span>
         </div>
       </div>
@@ -324,58 +323,57 @@ export function MemberDocumentsStackedBars({
 }
 
 /**
- * 6. THU – CHI – LỢI NHUẬN 12 THÁNG (Dual Grouped Bar + Spline Curve)
+ * 6. THU – CHI – LỢI NHUẬN 12 THÁNG (Dual Grouped Bars + Spline Curve)
  */
 export function TwelveMonthRevenueExpensesProfitChart() {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   const months = [
-    { m: '12/2025', rev: 40, exp: 12, profit: 28 },
-    { m: '01/2026', rev: 48, exp: 14, profit: 34 },
-    { m: '02/2026', rev: 52, exp: 16, profit: 36 },
-    { m: '03/2026', rev: 60, exp: 18, profit: 42 },
-    { m: '04/2026', rev: 68, exp: 19, profit: 49 },
-    { m: '05/2026', rev: 78, exp: 21, profit: 57 },
-    { m: '06/2026', rev: 85, exp: 23, profit: 62 },
-    { m: '07/2026', rev: 95, exp: 25, profit: 70 },
-    { m: '08/2026', rev: 110, exp: 28, profit: 82 },
-    { m: '09/2026', rev: 108, exp: 27, profit: 81 },
-    { m: '10/2026', rev: 105, exp: 26, profit: 79 },
-    { m: '11/2026*', rev: 60, exp: 16, profit: 44, active: true }
+    { m: '12/2025', rev: 40, exp: 16, profit: 24 },
+    { m: '01/2026', rev: 48, exp: 17, profit: 31 },
+    { m: '02/2026', rev: 55, exp: 18, profit: 37 },
+    { m: '03/2026', rev: 68, exp: 20, profit: 48 },
+    { m: '04/2026', rev: 72, exp: 21, profit: 51 },
+    { m: '05/2026', rev: 78, exp: 22, profit: 56 },
+    { m: '06/2026', rev: 84, exp: 23, profit: 61 },
+    { m: '07/2026', rev: 92, exp: 24, profit: 68 },
+    { m: '08/2026', rev: 98, exp: 25, profit: 73 },
+    { m: '09/2026', rev: 95, exp: 24, profit: 71 },
+    { m: '10/2026', rev: 90, exp: 23, profit: 67 },
+    { m: '11/2026*', rev: 58.7, exp: 16.2, profit: 42.5, active: true }
   ];
 
+  const maxVal = 120;
   const chartHeight = 220;
   const chartWidth = 620;
-  const paddingLeft = 45;
-  const paddingRight = 15;
-  const paddingTop = 25;
-  const paddingBottom = 35;
+  const paddingLeft = 46;
+  const paddingRight = 20;
+  const paddingTop = 20;
+  const paddingBottom = 34;
 
   const innerWidth = chartWidth - paddingLeft - paddingRight;
   const innerHeight = chartHeight - paddingTop - paddingBottom;
-  const maxVal = 120; // 120 tr
-
   const stepX = innerWidth / months.length;
-  const barWidth = 10;
+  const barWidth = 7;
 
-  // Calculate coordinates for profit curve
-  const profitPoints = months.map((item, idx) => {
+  // Generate Spline Points for Profit Curve
+  const splinePoints = months.map((item, idx) => {
     const x = paddingLeft + idx * stepX + stepX / 2;
     const y = paddingTop + innerHeight - (item.profit / maxVal) * innerHeight;
-    return { x, y, ...item };
+    return { x, y };
   });
 
-  let lineD = `M ${profitPoints[0].x.toFixed(1)} ${profitPoints[0].y.toFixed(1)}`;
-  for (let i = 0; i < profitPoints.length - 1; i++) {
-    const p0 = profitPoints[i === 0 ? 0 : i - 1];
-    const p1 = profitPoints[i];
-    const p2 = profitPoints[i + 1];
-    const p3 = profitPoints[i + 2 >= profitPoints.length ? i + 1 : i + 2];
+  let splineD = `M ${splinePoints[0].x.toFixed(1)} ${splinePoints[0].y.toFixed(1)}`;
+  for (let i = 0; i < splinePoints.length - 1; i++) {
+    const p0 = splinePoints[i === 0 ? 0 : i - 1];
+    const p1 = splinePoints[i];
+    const p2 = splinePoints[i + 1];
+    const p3 = splinePoints[i + 2 >= splinePoints.length ? i + 1 : i + 2];
     const cp1x = p1.x + (p2.x - p0.x) / 6;
     const cp1y = p1.y + (p2.y - p0.y) / 6;
     const cp2x = p2.x - (p3.x - p1.x) / 6;
     const cp2y = p2.y - (p3.y - p1.y) / 6;
-    lineD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    splineD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
   }
 
   const yTicks = [0, 20, 40, 60, 80, 100, 120];
@@ -448,6 +446,7 @@ export function TwelveMonthRevenueExpensesProfitChart() {
                 height={revHeight}
                 fill={item.active ? '#14b8a6' : '#0D9488'}
                 rx="4"
+                className="transition-all duration-300"
               />
 
               {/* Expense Bar (Coral / Pink) */}
@@ -456,16 +455,19 @@ export function TwelveMonthRevenueExpensesProfitChart() {
                 y={expY}
                 width={barWidth}
                 height={expHeight}
-                fill="#F87171"
+                fill={item.active ? '#f87171' : '#F43F5E'}
                 rx="4"
+                className="transition-all duration-300"
               />
 
-              {/* Month Label on X Axis */}
+              {/* X Month Label */}
               <text
                 x={groupCenterX}
                 y={chartHeight - 12}
                 textAnchor="middle"
-                className={`text-[8.5px] font-medium ${hoveredIdx === idx ? 'fill-[#0D9488] font-bold' : 'fill-slate-400'}`}
+                className={`text-[8.5px] font-bold ${
+                  item.active ? 'fill-[#EA580C] font-black' : 'fill-slate-400'
+                }`}
               >
                 {item.m}
               </text>
@@ -473,18 +475,19 @@ export function TwelveMonthRevenueExpensesProfitChart() {
           );
         })}
 
-        {/* Profit Spline Curve (Yellow/Gold) */}
+        {/* Spline Profit Line (Gold) */}
         <path
-          d={lineD}
+          d={splineD}
           fill="none"
           stroke="#EAB308"
           strokeWidth="2.5"
           strokeLinecap="round"
           strokeLinejoin="round"
+          className="drop-shadow-xs"
         />
 
-        {/* Profit Curve Dots */}
-        {profitPoints.map((pt, i) => (
+        {/* Spline Dots */}
+        {splinePoints.map((pt, i) => (
           <circle
             key={i}
             cx={pt.x}
@@ -517,16 +520,16 @@ export function TwelveMonthRevenueExpensesProfitChart() {
 }
 
 /**
- * 7. CHI PHÍ 3 THÁNG (Horizontal Coral Bars)
+ * 7. CHI PHÍ VẬN HÀNH 3 THÁNG (Sports Center Operations Breakdown)
  */
 export function ThreeMonthExpensesBars({
   items = [
-    { label: 'Tiền điện (EVN)', value: '20.2 tr', pct: 100 },
-    { label: 'Lương, thưởng', value: '19.5 tr', pct: 96 },
-    { label: 'Tiền nước', value: '5.9 tr', pct: 30 },
-    { label: 'Internet / truyền...', value: '5.4 tr', pct: 26 },
-    { label: 'Sửa chữa, bảo...', value: '4.2 tr', pct: 21 },
-    { label: 'Vệ sinh, rác', value: '3.1 tr', pct: 15 }
+    { label: 'Lương HLV & Nhân sự', value: '24.5 tr', pct: 100 },
+    { label: 'Điện & Máy lạnh tập', value: '18.2 tr', pct: 74 },
+    { label: 'Nước & Bể bơi 50m', value: '8.6 tr', pct: 35 },
+    { label: 'Bảo trì máy tập, sân', value: '5.4 tr', pct: 22 },
+    { label: 'Marketing & Sự kiện', value: '4.1 tr', pct: 17 },
+    { label: 'Vệ sinh & Khăn tập', value: '3.2 tr', pct: 13 }
   ]
 }) {
   return (
@@ -534,14 +537,14 @@ export function ThreeMonthExpensesBars({
       {items.map((item) => (
         <div key={item.label} className="space-y-1">
           <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-600 dark:text-slate-400 font-medium truncate max-w-[120px]">
+            <span className="text-slate-600 dark:text-slate-400 font-medium truncate max-w-[130px]">
               {item.label}
             </span>
             <span className="text-slate-900 dark:text-white font-black font-chivo text-xs">
               {item.value}
             </span>
           </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-md h-4 p-0.5 overflow-hidden">
+          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-md h-3.5 p-0.5 overflow-hidden">
             <div
               className="h-full bg-[#EF4444] rounded-sm transition-all duration-700"
               style={{ width: `${item.pct}%` }}
@@ -554,29 +557,26 @@ export function ThreeMonthExpensesBars({
 }
 
 /**
- * 8. HĐ HẾT HẠN 6 THÁNG TỚI (Vertical Bar Chart)
+ * 8. GÓI TẬP HẾT HẠN 6 THÁNG TỚI (Vertical Bar Chart - Sports Memberships)
  */
 export function SixMonthContractExpiryBars({
   items = [
-    { month: '11/2026', val: 4, isCurrent: true },
-    { month: '12/2026', val: 2 },
-    { month: '01/2027', val: 3 },
-    { month: '02/2027', val: 1 },
-    { month: '03/2027', val: 2 },
-    { month: '04/2027', val: 3 }
+    { month: '11/2026', val: 18, isCurrent: true },
+    { month: '12/2026', val: 12 },
+    { month: '01/2027', val: 25 },
+    { month: '02/2027', val: 8 },
+    { month: '03/2027', val: 15 },
+    { month: '04/2027', val: 22 }
   ]
 }) {
   const chartHeight = 170;
-  const maxVal = 4;
-  const paddingTop = 25;
-  const paddingBottom = 30;
-  const innerHeight = chartHeight - paddingTop - paddingBottom;
+  const maxVal = Math.max(...items.map(i => i.val), 25);
 
   return (
     <div className="relative w-full h-[170px] select-none">
-      <div className="absolute inset-x-0 bottom-7 flex items-end justify-between px-2 h-[115px]">
+      <div className="absolute inset-x-0 bottom-6 flex items-end justify-between px-2 h-[120px]">
         {items.map((item) => {
-          const barHeight = (item.val / maxVal) * 105;
+          const barHeight = (item.val / maxVal) * 95;
           const barColor = item.isCurrent ? 'bg-[#EA580C]' : 'bg-[#3B82F6]';
 
           return (
@@ -589,7 +589,7 @@ export function SixMonthContractExpiryBars({
               {/* Vertical Bar */}
               <div
                 className={`w-6 sm:w-7 rounded-t-md ${barColor} transition-all duration-500 group-hover:brightness-110 flex items-center justify-center`}
-                style={{ height: `${barHeight}px` }}
+                style={{ height: `${Math.max(16, barHeight)}px` }}
               >
                 <span className="text-[10px] font-bold text-white/90">
                   {item.val}
