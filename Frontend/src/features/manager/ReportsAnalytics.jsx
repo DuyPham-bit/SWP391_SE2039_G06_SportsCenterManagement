@@ -55,10 +55,11 @@ export function ReportsAnalytics() {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { showError } = useToast();
-  const [period, setPeriod] = useState('MONTH');
+  const [period, setPeriod] = useState('30D');
   const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
-  const [range, setRange] = useState({ from: `${today.slice(0, 7)}-01`, to: today, groupBy: 'day' });
-  const [selection, setSelection] = useState('MONTH');
+  const thirtyDaysAgo = new Date(Date.now() + 7 * 3600000 - 29 * 86400000).toISOString().slice(0, 10);
+  const [range, setRange] = useState({ from: thirtyDaysAgo, to: today, groupBy: 'day' });
+  const [selection, setSelection] = useState('30D');
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -75,8 +76,8 @@ export function ReportsAnalytics() {
   const [roomSortBy, setRoomSortBy] = useState('booked'); // booked | sessions | occupancy
 
   const periodLabel = useMemo(() => {
-    const mapEn = { DAY: 'Today', WEEK: 'This Week', MONTH: 'This Month', QUARTER: 'This Quarter', YEAR: 'This Year', CUSTOM: 'Custom Range' };
-    const mapVi = { DAY: 'Hôm nay', WEEK: 'Tuần này', MONTH: 'Tháng này', QUARTER: 'Quý này', YEAR: 'Năm nay', CUSTOM: 'Khoảng tùy chọn' };
+    const mapEn = { '30D': 'Last 30 Days', LAST_MONTH: 'Last Month', DAY: 'Today', WEEK: 'This Week', MONTH: 'This Month', QUARTER: 'This Quarter', YEAR: 'This Year', CUSTOM: 'Custom Range' };
+    const mapVi = { '30D': '30 ngày qua', LAST_MONTH: 'Tháng trước', DAY: 'Hôm nay', WEEK: 'Tuần này', MONTH: 'Tháng này', QUARTER: 'Quý này', YEAR: 'Năm nay', CUSTOM: 'Khoảng tùy chọn' };
     return (isEn ? mapEn[period] : mapVi[period]) || period;
   }, [period, isEn]);
 
@@ -292,9 +293,9 @@ export function ReportsAnalytics() {
             {isEn ? 'Quick Period:' : 'Kỳ nhanh:'}
           </span>
           {[
-            ['DAY', isEn ? 'Today' : 'Hôm nay'],
-            ['WEEK', isEn ? 'This Week' : 'Tuần này'],
+            ['30D', isEn ? '30 Days' : '30 ngày qua'],
             ['MONTH', isEn ? 'This Month' : 'Tháng này'],
+            ['LAST_MONTH', isEn ? 'Last Month' : 'Tháng trước'],
             ['QUARTER', isEn ? 'This Quarter' : 'Quý này'],
             ['YEAR', isEn ? 'This Year' : 'Năm nay']
           ].map(([id, label]) => (
