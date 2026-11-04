@@ -229,29 +229,36 @@ export function FacilityOccupancyBars({ items = [] }) {
     <div className="flex flex-col justify-between h-full space-y-3">
       <div className="space-y-2.5 my-auto">
         {items.map((item) => (
-          <div key={item.name || item.code} className="flex items-center gap-2.5">
+          <div key={item.name || item.code} className="flex items-center gap-2">
             {/* Acronym Badge */}
-            <span className="w-7 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono" title={item.name}>
+            <span className="w-8 shrink-0 text-xs font-bold text-slate-600 dark:text-slate-400 font-mono tracking-wide" title={item.name}>
               {item.code}
             </span>
 
-            {/* Progress track */}
-            <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-lg h-6 p-0.5 overflow-hidden relative">
+            {/* Progress track with no-clip adaptive text positioning */}
+            <div className="flex-1 bg-slate-100 dark:bg-slate-800 rounded-md h-6 p-0.5 relative overflow-hidden flex items-center">
               <div
-                className="h-full rounded-md bg-[#0D9488] transition-all duration-700 flex items-center justify-end pr-2"
-                style={{ width: `${Math.min(100, Math.max(12, item.pct))}%` }}
+                className="h-full rounded-xs bg-[#0D9488] transition-all duration-500 flex items-center justify-end"
+                style={{ width: `${Math.min(100, Math.max(0, item.pct))}%` }}
               >
-                <span className="text-[10px] font-bold text-white whitespace-nowrap">
+                {item.pct >= 40 && (
+                  <span className="text-[10px] font-bold text-white whitespace-nowrap px-2">
+                    {item.pct}% {item.current != null ? `(${item.current}/${item.max})` : ''}
+                  </span>
+                )}
+              </div>
+              {item.pct < 40 && (
+                <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap pl-2">
                   {item.pct}% {item.current != null ? `(${item.current}/${item.max})` : ''}
                 </span>
-              </div>
+              )}
             </div>
           </div>
         ))}
       </div>
 
-      {/* 0% - 100% Axis */}
-      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 px-7 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
+      {/* 0% - 100% Axis aligned with track */}
+      <div className="flex items-center justify-between text-[10px] font-bold text-slate-400 pl-10 pr-1 pt-1.5 border-t border-slate-100 dark:border-slate-800/80">
         <span>0%</span>
         <span>25%</span>
         <span>50%</span>
@@ -687,20 +694,20 @@ export function ThreeMonthExpensesBars({ items = [], emptyText = 'Chưa có doan
     <div className="flex flex-col justify-center h-full space-y-4 py-2">
       {items.map((item) => {
         const visual = getSportVisual(item.label);
-        const displayName = item.label === 'Chưa phân bổ' ? 'Gói thẻ hội viên chung' : item.label;
+        const displayName = item.label === 'Chưa phân bổ' ? 'Gói thẻ hội viên' : item.label;
 
         return (
           <div key={item.label} className="space-y-1.5 p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
-            <div className="flex items-center justify-between text-xs">
-              <div className="flex items-center gap-2 min-w-0">
+            <div className="flex items-center justify-between text-xs gap-2">
+              <div className="flex items-center gap-2 min-w-0 flex-1">
                 <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border ${visual.bg}`}>
                   <span className="material-symbols-outlined text-[14px]">{visual.icon}</span>
                 </div>
-                <span className="text-slate-800 dark:text-slate-200 font-bold truncate max-w-[140px]" title={item.label}>
+                <span className="text-slate-800 dark:text-slate-200 font-bold truncate text-xs" title={item.label}>
                   {displayName}
                 </span>
               </div>
-              <div className="flex items-center gap-2 shrink-0">
+              <div className="flex items-center gap-1.5 shrink-0">
                 <span className="text-slate-900 dark:text-white font-black font-chivo text-xs">
                   {item.value}
                 </span>
@@ -740,46 +747,98 @@ export function SixMonthContractExpiryBars({ items = [], emptyText = 'Chưa có 
     );
   }
 
-  const chartHeight = 170;
+  const chartWidth = 320;
+  const chartHeight = 175;
+  const paddingLeft = 20;
+  const paddingRight = 16;
+  const paddingTop = 24;
+  const paddingBottom = 28;
+
+  const innerWidth = chartWidth - paddingLeft - paddingRight;
+  const innerHeight = chartHeight - paddingTop - paddingBottom;
+  const baselineY = paddingTop + innerHeight;
+
   const maxVal = Math.max(...items.map(i => Number(i.val || 0)), 1);
+  const stepX = innerWidth / items.length;
+  const barWidth = Math.min(24, Math.max(10, stepX * 0.48));
 
   return (
-    <div className="relative w-full h-[170px] select-none my-auto">
-      <div className="absolute inset-x-0 bottom-6 flex items-end justify-between px-2 h-[120px]">
+    <div className="relative w-full h-[175px] select-none flex items-center justify-center overflow-hidden">
+      <svg
+        viewBox={`0 0 ${chartWidth} ${chartHeight}`}
+        className="w-full h-auto max-h-[175px] overflow-visible"
+        preserveAspectRatio="xMidYMid meet"
+      >
+        {/* Baseline */}
+        <line
+          x1={paddingLeft - 4}
+          y1={baselineY}
+          x2={chartWidth - paddingRight + 4}
+          y2={baselineY}
+          stroke="#e2e8f0"
+          className="dark:stroke-slate-800"
+          strokeWidth="1"
+        />
+
         {items.map((item, idx) => {
           const valNum = Number(item.val || 0);
-          const barHeight = valNum > 0 ? Math.max(20, (valNum / maxVal) * 88) : 4;
+          const barHeight = valNum > 0 ? (valNum / maxVal) * (innerHeight - 10) : 3;
+          const barX = paddingLeft + idx * stepX + (stepX - barWidth) / 2;
+          const barY = baselineY - barHeight;
           const barColor = valNum > 0
-            ? (item.isCurrent ? 'bg-[#EA580C]' : 'bg-[#0D9488]')
-            : 'bg-slate-200 dark:bg-slate-700';
+            ? (item.isCurrent ? '#EA580C' : '#0D9488')
+            : '#cbd5e1';
 
           return (
-            <div key={item.month + idx} className="flex flex-col items-center gap-1.5 flex-1 group">
+            <g key={item.month + idx} className="cursor-pointer group">
               {/* Value on top */}
-              <span className={`text-xs font-black ${valNum > 0 ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
+              <text
+                x={barX + barWidth / 2}
+                y={valNum > 0 ? barY - 4 : baselineY - 6}
+                textAnchor="middle"
+                className={`text-[10px] font-black ${
+                  valNum > 0 ? 'fill-slate-800 dark:fill-slate-200' : 'fill-slate-400 dark:fill-slate-500'
+                }`}
+              >
                 {valNum}
-              </span>
+              </text>
 
               {/* Vertical Bar */}
-              <div
-                className={`w-6 sm:w-7 rounded-t-md ${barColor} transition-all duration-500 group-hover:brightness-110 flex items-center justify-center shadow-xs`}
-                style={{ height: `${barHeight}px` }}
-              >
-                {valNum > 0 && barHeight >= 22 && (
-                  <span className="text-[10px] font-bold text-white/90">
-                    {valNum}
-                  </span>
-                )}
-              </div>
+              <rect
+                x={barX}
+                y={barY}
+                width={barWidth}
+                height={barHeight}
+                fill={barColor}
+                rx={valNum > 0 ? 3 : 1.5}
+                className="transition-all duration-500 hover:brightness-110"
+              />
 
-              {/* Label */}
-              <span className="text-[10px] font-semibold text-slate-400 mt-1 truncate max-w-[56px] text-center" title={item.month}>
+              {/* Value inside bar if tall enough */}
+              {valNum > 0 && barHeight >= 22 && (
+                <text
+                  x={barX + barWidth / 2}
+                  y={barY + 13}
+                  textAnchor="middle"
+                  className="text-[9px] font-bold fill-white"
+                >
+                  {valNum}
+                </text>
+              )}
+
+              {/* Month/Class Label */}
+              <text
+                x={barX + barWidth / 2}
+                y={baselineY + 15}
+                textAnchor="middle"
+                className="text-[9px] font-semibold fill-slate-400 dark:fill-slate-500"
+              >
                 {item.month}
-              </span>
-            </div>
+              </text>
+            </g>
           );
         })}
-      </div>
+      </svg>
     </div>
   );
 }

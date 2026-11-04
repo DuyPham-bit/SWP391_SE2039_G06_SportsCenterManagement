@@ -258,11 +258,16 @@ export function ManagerDashboard() {
     return list;
   }, [activeRooms, vacantRooms, totalRooms]);
 
-  // Real sport occupancy items from DB
+  // Real sport occupancy items from DB with clean 2-letter codes
   const sportOccupancyItems = useMemo(() => {
     return topSports.map(sp => {
-      const words = (sp.name || '').trim().split(/\s+/);
-      const code = words.length >= 2 ? (words[0][0] + words[1][0]).toUpperCase() : (sp.name || 'BM').slice(0, 2).toUpperCase();
+      const meaningfulWords = (sp.name || '')
+        .trim()
+        .split(/\s+/)
+        .filter(w => !['&', 'và', 'and', '-', '/', '+'].includes(w.toLowerCase()));
+      const code = meaningfulWords.length >= 2
+        ? (meaningfulWords[0][0] + meaningfulWords[1][0]).toUpperCase()
+        : (sp.name || 'BM').slice(0, 2).toUpperCase();
       return {
         code,
         name: sp.name,
@@ -715,7 +720,7 @@ export function ManagerDashboard() {
             </section>
 
             {/* Card 2 (3 cols): Cơ cấu doanh thu theo bộ môn */}
-            <section className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col">
+            <section className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col overflow-hidden">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white font-chivo">
                   {isEn ? 'Revenue by Sport' : 'Doanh thu theo bộ môn'}
