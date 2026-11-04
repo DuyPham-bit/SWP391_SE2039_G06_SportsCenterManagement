@@ -700,7 +700,7 @@ export function ManagerDashboard() {
              ======================================================== */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
             {/* Card 1 (6 cols): Biến động doanh thu theo thời gian */}
-            <section className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 space-y-3 shadow-xs hover-lift transition-all">
+            <section className="lg:col-span-6 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white font-chivo">
                   {isEn ? 'Cashflow Trajectory (Gross – Refunds – Net)' : 'Biến động doanh thu theo thời gian'}
@@ -709,11 +709,13 @@ export function ManagerDashboard() {
                   {period === '30D' ? (isEn ? 'Last 30 Days' : '30 ngày qua') : period === 'MONTH' ? (isEn ? 'This Month' : 'Tháng này') : period === 'LAST_MONTH' ? (isEn ? 'Last Month' : 'Tháng trước') : (isEn ? 'This Quarter' : 'Quý này')}
                 </span>
               </div>
-              <TwelveMonthRevenueExpensesProfitChart revenuePeriods={revenue} />
+              <div className="flex-1 flex items-center justify-center pt-2">
+                <TwelveMonthRevenueExpensesProfitChart revenuePeriods={revenue} />
+              </div>
             </section>
 
             {/* Card 2 (3 cols): Cơ cấu doanh thu theo bộ môn */}
-            <section className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 space-y-3 shadow-xs hover-lift transition-all flex flex-col justify-between">
+            <section className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white font-chivo">
                   {isEn ? 'Revenue by Sport' : 'Doanh thu theo bộ môn'}
@@ -722,11 +724,13 @@ export function ManagerDashboard() {
                   {revenueBySport.length} {isEn ? 'sports' : 'bộ môn'}
                 </span>
               </div>
-              <ThreeMonthExpensesBars items={sportRevenueItems} emptyText={isEn ? 'No sport revenue in period.' : 'Chưa có doanh thu bộ môn trong kỳ.'} />
+              <div className="flex-1 flex flex-col justify-center py-1">
+                <ThreeMonthExpensesBars items={sportRevenueItems} emptyText={isEn ? 'No sport revenue in period.' : 'Chưa có doanh thu bộ môn trong kỳ.'} />
+              </div>
             </section>
 
             {/* Card 3 (3 cols): Lượt đặt theo lớp học */}
-            <section className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 space-y-3 shadow-xs hover-lift transition-all flex flex-col justify-between">
+            <section className="lg:col-span-3 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col">
               <div className="flex items-center justify-between border-b border-slate-100 dark:border-slate-800 pb-2.5">
                 <h4 className="text-xs font-bold text-slate-900 dark:text-white font-chivo">
                   {isEn ? 'Bookings by Class' : 'Lượt đặt theo lớp học'}
@@ -735,7 +739,9 @@ export function ManagerDashboard() {
                   {topClasses.length} {isEn ? 'classes' : 'lớp'}
                 </span>
               </div>
-              <SixMonthContractExpiryBars items={classBookingItems} emptyText={isEn ? 'No class sessions in period.' : 'Chưa có lớp học nào mở trong kỳ.'} />
+              <div className="flex-1 flex flex-col justify-center py-1">
+                <SixMonthContractExpiryBars items={classBookingItems} emptyText={isEn ? 'No class sessions in period.' : 'Chưa có lớp học nào mở trong kỳ.'} />
+              </div>
             </section>
           </div>
 

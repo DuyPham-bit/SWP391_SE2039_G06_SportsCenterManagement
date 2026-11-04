@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 // Utility formatters
-const formatShortVnd = (num) => {
+export const formatShortVnd = (num) => {
   const n = Number(num || 0);
   if (n >= 1000000000) return `${(n / 1000000000).toFixed(1)} tỷ`;
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)} tr`;
@@ -11,12 +11,87 @@ const formatShortVnd = (num) => {
 };
 
 /**
+ * Monotone Cubic Spline (Fritsch-Carlson) algorithm.
+ * Guarantees zero overshoot/undershoot, eliminates loops and negative values,
+ * and keeps zero-revenue days perfectly flat on the baseline.
+ */
+function getMonotoneSplinePath(points, baselineY, minY) {
+  if (!points || points.length < 2) return '';
+  const n = points.length;
+
+  // 1. Calculate secants (slopes between consecutive points)
+  const d = [];
+  const dx = [];
+  for (let i = 0; i < n - 1; i++) {
+    const deltaX = points[i + 1].x - points[i].x;
+    dx.push(deltaX);
+    d.push(deltaX === 0 ? 0 : (points[i + 1].y - points[i].y) / deltaX);
+  }
+
+  // 2. Initialize tangents
+  const m = new Array(n).fill(0);
+  m[0] = d[0];
+  m[n - 1] = d[n - 2];
+  for (let i = 1; i < n - 1; i++) {
+    if (d[i - 1] * d[i] <= 0) {
+      m[i] = 0;
+    } else {
+      m[i] = (d[i - 1] + d[i]) / 2;
+    }
+  }
+
+  // 3. Fritsch-Carlson bounds to prevent overshoot
+  for (let i = 0; i < n - 1; i++) {
+    if (d[i] === 0) {
+      m[i] = 0;
+      m[i + 1] = 0;
+    } else {
+      const a = m[i] / d[i];
+      const b = m[i + 1] / d[i];
+      const hyp = Math.sqrt(a * a + b * b);
+      if (hyp > 3) {
+        const tau = 3 / hyp;
+        m[i] = tau * a * d[i];
+        m[i + 1] = tau * b * d[i];
+      }
+    }
+  }
+
+  // 4. Construct Bezier curve path
+  let path = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+  for (let i = 0; i < n - 1; i++) {
+    const p1 = points[i];
+    const p2 = points[i + 1];
+    const segmentDx = dx[i];
+
+    let cp1x = p1.x + segmentDx / 3;
+    let cp1y = p1.y + (m[i] * segmentDx) / 3;
+    let cp2x = p2.x - segmentDx / 3;
+    let cp2y = p2.y - (m[i + 1] * segmentDx) / 3;
+
+    // Strict clamping to baseline (never dip below baseline or above top padding)
+    if (baselineY != null) {
+      cp1y = Math.min(baselineY, cp1y);
+      cp2y = Math.min(baselineY, cp2y);
+    }
+    if (minY != null) {
+      cp1y = Math.max(minY, cp1y);
+      cp2y = Math.max(minY, cp2y);
+    }
+
+    path += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+  }
+
+  return path;
+}
+
+/**
  * 1. MINI SPARKLINE WAVE (Used in KPI Cards 5 & 6)
  */
 export function MiniSparkline({ color = '#F97316', data = [] }) {
   const width = 160;
   const height = 36;
-  
+
   if (!Array.isArray(data) || data.length === 0) {
     return (
       <div className="w-full h-9 flex items-center justify-center">
@@ -33,7 +108,7 @@ export function MiniSparkline({ color = '#F97316', data = [] }) {
   if (values.length === 1) {
     return (
       <div className="w-full h-9 flex items-center">
-        <div className="w-full h-[2px]" style={{ backgroundColor: color }} />
+        <div className="w-full h-[2px] rounded-full" style={{ backgroundColor: color }} />
       </div>
     );
   }
@@ -44,19 +119,7 @@ export function MiniSparkline({ color = '#F97316', data = [] }) {
     return { x, y };
   });
 
-  let pathD = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
-  for (let i = 0; i < points.length - 1; i++) {
-    const p0 = points[i === 0 ? 0 : i - 1];
-    const p1 = points[i];
-    const p2 = points[i + 1];
-    const p3 = points[i + 2 >= points.length ? i + 1 : i + 2];
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    pathD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-  }
-
+  const pathD = getMonotoneSplinePath(points, height - 4, 4);
   const fillD = `${pathD} L ${width} ${height} L 0 ${height} Z`;
 
   return (
@@ -346,14 +409,16 @@ export function MemberDocumentsStackedBars({ items = [] }) {
 }
 
 /**
- * 6. BIẾN ĐỘNG DOANH THU THỰC TẾ (Dual Grouped Bars + Spline Curve - Real DB Data)
+ * 6. BIẾN ĐỘNG DOANH THU THỰC TẾ (Dual Grouped Bars + Monotone Spline Curve)
+ * Fixed: Monotone cubic spline to eliminate dips below zero, responsive 600x220 aspect ratio,
+ * clean non-overlapping date ticks.
  */
 export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
   if (!Array.isArray(revenuePeriods) || revenuePeriods.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-48 text-center text-xs text-slate-400">
+      <div className="flex flex-col items-center justify-center h-52 text-center text-xs text-slate-400">
         <span className="material-symbols-outlined text-[28px] mb-1.5 opacity-50">monitoring</span>
         <span>Chưa có dữ liệu dòng tiền trong khoảng thời gian đã chọn.</span>
       </div>
@@ -363,9 +428,9 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
   const months = revenuePeriods.map((item, idx) => {
     const rawPeriod = String(item.period || '');
     const mLabel = rawPeriod.length >= 7 ? rawPeriod.slice(5) : rawPeriod;
-    const rev = Number(((item.gross || item.net || 0) / 1000000).toFixed(1));
-    const exp = Number(((item.refunds || 0) / 1000000).toFixed(1));
-    const profit = Number(((item.net || 0) / 1000000).toFixed(1));
+    const rev = Number(((item.gross || item.net || 0) / 1000000).toFixed(2));
+    const exp = Number(((item.refunds || 0) / 1000000).toFixed(2));
+    const profit = Number(((item.net || 0) / 1000000).toFixed(2));
     return {
       m: mLabel,
       rev,
@@ -376,47 +441,69 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
     };
   });
 
-  const maxVal = Math.max(...months.map(m => Math.max(m.rev, m.exp, m.profit)), 1);
+  // Calculate clean max value
+  const rawMax = Math.max(...months.map(m => Math.max(m.rev, m.exp, m.profit)), 1);
+  // Round up to nice number: 5, 10, 15, 20, 25, 30...
+  const niceMax = rawMax <= 5 ? 5 : rawMax <= 10 ? 10 : rawMax <= 20 ? 20 : rawMax <= 25 ? 25 : Math.ceil(rawMax / 10) * 10;
+
   const chartHeight = 220;
-  const chartWidth = Math.max(540, months.length * 48);
-  const paddingLeft = 46;
-  const paddingRight = 20;
-  const paddingTop = 20;
-  const paddingBottom = 34;
+  const chartWidth = 600;
+  const paddingLeft = 52;
+  const paddingRight = 18;
+  const paddingTop = 24;
+  const paddingBottom = 32;
 
   const innerWidth = chartWidth - paddingLeft - paddingRight;
   const innerHeight = chartHeight - paddingTop - paddingBottom;
+  const baselineY = paddingTop + innerHeight;
   const stepX = innerWidth / months.length;
-  const barWidth = Math.min(10, Math.max(4, stepX * 0.25));
+  const effectiveBarWidth = Math.min(10, Math.max(4, stepX * 0.42));
 
-  // Generate Spline Points for Profit Curve
+  // Points for spline curve
   const splinePoints = months.map((item, idx) => {
     const x = paddingLeft + idx * stepX + stepX / 2;
-    const y = paddingTop + innerHeight - (item.profit / maxVal) * innerHeight;
-    return { x, y };
+    const y = baselineY - (Math.max(0, item.profit) / niceMax) * innerHeight;
+    return { x, y: Math.min(baselineY, Math.max(paddingTop, y)) };
   });
 
-  let splineD = `M ${splinePoints[0].x.toFixed(1)} ${splinePoints[0].y.toFixed(1)}`;
-  for (let i = 0; i < splinePoints.length - 1; i++) {
-    const p0 = splinePoints[i === 0 ? 0 : i - 1];
-    const p1 = splinePoints[i];
-    const p2 = splinePoints[i + 1];
-    const p3 = splinePoints[i + 2 >= splinePoints.length ? i + 1 : i + 2];
-    const cp1x = p1.x + (p2.x - p0.x) / 6;
-    const cp1y = p1.y + (p2.y - p0.y) / 6;
-    const cp2x = p2.x - (p3.x - p1.x) / 6;
-    const cp2y = p2.y - (p3.y - p1.y) / 6;
-    splineD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
-  }
+  // Safe Monotone Spline (no overshoot, zero stays at baseline)
+  const splineD = getMonotoneSplinePath(splinePoints, baselineY, paddingTop);
+  const fillD = splinePoints.length >= 2
+    ? `${splineD} L ${splinePoints[splinePoints.length - 1].x.toFixed(1)} ${baselineY} L ${splinePoints[0].x.toFixed(1)} ${baselineY} Z`
+    : '';
 
-  const yTicks = [0, maxVal * 0.25, maxVal * 0.5, maxVal * 0.75, maxVal];
+  // 4 Evenly spaced Y Ticks
+  const yTicks = [0, niceMax * 0.33, niceMax * 0.67, niceMax];
+
+  // Pick ~6 readable dates for X-axis
+  const labelInterval = Math.max(1, Math.ceil(months.length / 6));
 
   return (
-    <div className="relative overflow-x-auto select-none">
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px]">
-        {/* Y Grid lines */}
+    <div className="relative w-full select-none">
+      {/* Subtle Legend */}
+      <div className="flex items-center justify-end gap-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 mb-1 px-1">
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-xs bg-[#0D9488]" /> Doanh thu
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-2.5 h-2.5 rounded-xs bg-[#F43F5E]" /> Hoàn tiền
+        </span>
+        <span className="flex items-center gap-1.5">
+          <span className="w-3 h-0.5 rounded-full bg-[#EAB308]" /> Thực thu
+        </span>
+      </div>
+
+      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto max-h-[220px]" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="splineAreaGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#EAB308" stopOpacity="0.22" />
+            <stop offset="100%" stopColor="#EAB308" stopOpacity="0.0" />
+          </linearGradient>
+        </defs>
+
+        {/* Y Grid lines & Labels */}
         {yTicks.map((val, idx) => {
-          const y = paddingTop + innerHeight - (val / maxVal) * innerHeight;
+          const y = baselineY - (val / niceMax) * innerHeight;
           return (
             <g key={idx}>
               <line
@@ -425,14 +512,14 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                 x2={chartWidth - paddingRight}
                 y2={y}
                 stroke="#e2e8f0"
-                strokeDasharray="2 3"
+                strokeDasharray="3 3"
                 className="dark:stroke-slate-800"
               />
               <text
                 x={paddingLeft - 8}
                 y={y + 3}
                 textAnchor="end"
-                className="text-[9px] font-bold fill-slate-400"
+                className="text-[9.5px] font-bold fill-slate-400 dark:fill-slate-500"
               >
                 {val === 0 ? '0' : `${val.toFixed(1)} tr`}
               </text>
@@ -443,13 +530,16 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
         {/* Dual Bars for Each Period */}
         {months.map((item, idx) => {
           const groupCenterX = paddingLeft + idx * stepX + stepX / 2;
-          const revHeight = (item.rev / maxVal) * innerHeight;
-          const expHeight = (item.exp / maxVal) * innerHeight;
+          const revHeight = (Math.max(0, item.rev) / niceMax) * innerHeight;
+          const expHeight = (Math.max(0, item.exp) / niceMax) * innerHeight;
 
-          const revX = groupCenterX - barWidth - 1;
+          const hasExp = expHeight > 0;
+          const revX = hasExp ? groupCenterX - effectiveBarWidth - 1 : groupCenterX - effectiveBarWidth / 2;
           const expX = groupCenterX + 1;
-          const revY = paddingTop + innerHeight - revHeight;
-          const expY = paddingTop + innerHeight - expHeight;
+          const revY = baselineY - revHeight;
+          const expY = baselineY - expHeight;
+
+          const shouldShowLabel = idx % labelInterval === 0 || idx === months.length - 1;
 
           return (
             <g
@@ -466,85 +556,102 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                   width={stepX}
                   height={innerHeight}
                   fill="#0D9488"
-                  fillOpacity="0.06"
-                  rx="6"
+                  fillOpacity="0.08"
+                  rx="4"
                 />
               )}
 
               {/* Revenue Bar (Dark Teal) */}
-              <rect
-                x={revX}
-                y={revY}
-                width={barWidth}
-                height={revHeight}
-                fill={item.active ? '#14b8a6' : '#0D9488'}
-                rx="3"
-                className="transition-all duration-300"
-              />
+              {revHeight > 0 && (
+                <rect
+                  x={revX}
+                  y={revY}
+                  width={effectiveBarWidth}
+                  height={revHeight}
+                  fill="#0D9488"
+                  rx="2.5"
+                  className="transition-all duration-300"
+                />
+              )}
 
-              {/* Refund/Expense Bar (Coral / Pink) */}
-              <rect
-                x={expX}
-                y={expY}
-                width={barWidth}
-                height={expHeight}
-                fill={item.active ? '#f87171' : '#F43F5E'}
-                rx="3"
-                className="transition-all duration-300"
-              />
+              {/* Refund Bar (Rose) */}
+              {hasExp && (
+                <rect
+                  x={expX}
+                  y={expY}
+                  width={effectiveBarWidth}
+                  height={expHeight}
+                  fill="#F43F5E"
+                  rx="2.5"
+                  className="transition-all duration-300"
+                />
+              )}
 
-              {/* X Label */}
-              <text
-                x={groupCenterX}
-                y={chartHeight - 12}
-                textAnchor="middle"
-                className={`text-[8.5px] font-bold ${
-                  item.active ? 'fill-[#EA580C] font-black' : 'fill-slate-400'
-                }`}
-              >
-                {item.m}
-              </text>
+              {/* X Date Label (Spread evenly) */}
+              {shouldShowLabel && (
+                <text
+                  x={groupCenterX}
+                  y={chartHeight - 10}
+                  textAnchor="middle"
+                  className={`text-[9px] font-bold ${
+                    item.active ? 'fill-[#EA580C] font-black' : 'fill-slate-400 dark:fill-slate-500'
+                  }`}
+                >
+                  {item.m}
+                </text>
+              )}
             </g>
           );
         })}
 
-        {/* Spline Profit Line (Gold) */}
-        <path
-          d={splineD}
-          fill="none"
-          stroke="#EAB308"
-          strokeWidth="2.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          className="drop-shadow-xs"
-        />
+        {/* Spline Area Fill */}
+        {fillD && (
+          <path d={fillD} fill="url(#splineAreaGrad)" />
+        )}
 
-        {/* Spline Dots */}
-        {splinePoints.map((pt, i) => (
-          <circle
-            key={i}
-            cx={pt.x}
-            cy={pt.y}
-            r={hoveredIdx === i ? 5 : 3}
-            fill="#EAB308"
-            stroke="#ffffff"
-            strokeWidth="1.5"
-            className="transition-all duration-150"
+        {/* Spline Profit Line (Gold) */}
+        {splineD && (
+          <path
+            d={splineD}
+            fill="none"
+            stroke="#EAB308"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
           />
-        ))}
+        )}
+
+        {/* Dots on points with transactions */}
+        {splinePoints.map((pt, i) => {
+          if (months[i].profit <= 0 && hoveredIdx !== i) return null;
+          return (
+            <circle
+              key={i}
+              cx={pt.x}
+              cy={pt.y}
+              r={hoveredIdx === i ? 5 : 3}
+              fill="#EAB308"
+              stroke="#ffffff"
+              strokeWidth="1.5"
+              className="transition-all duration-150"
+            />
+          );
+        })}
       </svg>
 
       {/* Tooltip on hover */}
       {hoveredIdx !== null && (
         <div
-          className="absolute top-1 pointer-events-none bg-slate-900 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl border border-slate-700 flex items-center gap-3 transform -translate-x-1/2"
+          className="absolute -top-3 pointer-events-none bg-slate-900 text-white text-[11px] px-3 py-1.5 rounded-lg shadow-xl border border-slate-700 flex items-center gap-3 transform -translate-x-1/2 z-20"
           style={{
             left: `${((paddingLeft + hoveredIdx * stepX + stepX / 2) / chartWidth) * 100}%`
           }}
         >
           <span className="font-bold text-slate-300">{months[hoveredIdx].m}:</span>
           <span className="text-teal-300 font-bold">Thu: {months[hoveredIdx].rev} tr</span>
-          <span className="text-rose-300 font-bold">Hoàn: {months[hoveredIdx].exp} tr</span>
+          {months[hoveredIdx].exp > 0 && (
+            <span className="text-rose-300 font-bold">Hoàn: {months[hoveredIdx].exp} tr</span>
+          )}
           <span className="text-amber-300 font-black">Thực thu: {months[hoveredIdx].profit} tr</span>
         </div>
       )}
@@ -554,37 +661,68 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
 
 /**
  * 7. DOANH THU THEO BỘ MÔN (Horizontal Bars - Real DB Data)
+ * Fixed: Centered vertical layout, sport-specific icon badges, percentage pills, no bottom-pushing.
  */
 export function ThreeMonthExpensesBars({ items = [], emptyText = 'Chưa có doanh thu theo bộ môn trong kỳ.' }) {
   if (!Array.isArray(items) || items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full py-8 text-center text-xs text-slate-400">
-        <span className="material-symbols-outlined text-[24px] mb-1 opacity-50">pie_chart</span>
+      <div className="flex flex-col items-center justify-center h-52 text-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-[28px] mb-1.5 opacity-50">pie_chart</span>
         <span>{emptyText}</span>
       </div>
     );
   }
 
+  const getSportVisual = (name) => {
+    const n = String(name || '').toLowerCase();
+    if (n.includes('bơi')) return { icon: 'pool', bg: 'bg-sky-50 text-sky-700 dark:bg-sky-950/50 dark:text-sky-300 border-sky-200 dark:border-sky-800', bar: '#0284C7' };
+    if (n.includes('gym') || n.includes('fitness')) return { icon: 'fitness_center', bg: 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300 border-rose-200 dark:border-rose-800', bar: '#E11D48' };
+    if (n.includes('yoga') || n.includes('pilates')) return { icon: 'self_improvement', bg: 'bg-purple-50 text-purple-700 dark:bg-purple-950/50 dark:text-purple-300 border-purple-200 dark:border-purple-800', bar: '#9333EA' };
+    if (n.includes('cầu lông')) return { icon: 'sports_tennis', bg: 'bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border-amber-200 dark:border-amber-800', bar: '#D97706' };
+    if (n.includes('boxing') || n.includes('võ')) return { icon: 'sports_mma', bg: 'bg-red-50 text-red-700 dark:bg-red-950/50 dark:text-red-300 border-red-200 dark:border-red-800', bar: '#DC2626' };
+    return { icon: 'card_membership', bg: 'bg-teal-50 text-teal-700 dark:bg-teal-950/50 dark:text-teal-300 border-teal-200 dark:border-teal-800', bar: '#0D9488' };
+  };
+
   return (
-    <div className="space-y-2.5 py-1">
-      {items.map((item) => (
-        <div key={item.label} className="space-y-1">
-          <div className="flex items-center justify-between text-xs">
-            <span className="text-slate-600 dark:text-slate-400 font-medium truncate max-w-[130px]">
-              {item.label}
-            </span>
-            <span className="text-slate-900 dark:text-white font-black font-chivo text-xs">
-              {item.value} {item.pct ? `(${item.pct}%)` : ''}
-            </span>
+    <div className="flex flex-col justify-center h-full space-y-4 py-2">
+      {items.map((item) => {
+        const visual = getSportVisual(item.label);
+        const displayName = item.label === 'Chưa phân bổ' ? 'Gói thẻ hội viên chung' : item.label;
+
+        return (
+          <div key={item.label} className="space-y-1.5 p-2.5 rounded-xl bg-slate-50/70 dark:bg-slate-800/40 border border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2 min-w-0">
+                <div className={`w-6 h-6 rounded-lg flex items-center justify-center shrink-0 border ${visual.bg}`}>
+                  <span className="material-symbols-outlined text-[14px]">{visual.icon}</span>
+                </div>
+                <span className="text-slate-800 dark:text-slate-200 font-bold truncate max-w-[140px]" title={item.label}>
+                  {displayName}
+                </span>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <span className="text-slate-900 dark:text-white font-black font-chivo text-xs">
+                  {item.value}
+                </span>
+                <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
+                  {item.pct ? `${item.pct}%` : '0%'}
+                </span>
+              </div>
+            </div>
+
+            {/* Progress Bar with theme color */}
+            <div className="w-full bg-slate-200/80 dark:bg-slate-700/80 rounded-full h-2 overflow-hidden">
+              <div
+                className="h-full rounded-full transition-all duration-700"
+                style={{
+                  width: `${Math.min(100, Math.max(8, item.pct || 0))}%`,
+                  backgroundColor: visual.bar
+                }}
+              />
+            </div>
           </div>
-          <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-md h-3.5 p-0.5 overflow-hidden">
-            <div
-              className="h-full bg-[#0D9488] rounded-sm transition-all duration-700"
-              style={{ width: `${Math.min(100, Math.max(5, item.pct || 10))}%` }}
-            />
-          </div>
-        </div>
-      ))}
+        );
+      })}
     </div>
   );
 }
@@ -595,8 +733,8 @@ export function ThreeMonthExpensesBars({ items = [], emptyText = 'Chưa có doan
 export function SixMonthContractExpiryBars({ items = [], emptyText = 'Chưa có lớp học nào hoạt động trong kỳ.' }) {
   if (!Array.isArray(items) || items.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-[170px] text-center text-xs text-slate-400">
-        <span className="material-symbols-outlined text-[24px] mb-1 opacity-50">event_seat</span>
+      <div className="flex flex-col items-center justify-center h-52 text-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-[28px] mb-1.5 opacity-50">event_seat</span>
         <span>{emptyText}</span>
       </div>
     );
@@ -606,32 +744,36 @@ export function SixMonthContractExpiryBars({ items = [], emptyText = 'Chưa có 
   const maxVal = Math.max(...items.map(i => Number(i.val || 0)), 1);
 
   return (
-    <div className="relative w-full h-[170px] select-none">
+    <div className="relative w-full h-[170px] select-none my-auto">
       <div className="absolute inset-x-0 bottom-6 flex items-end justify-between px-2 h-[120px]">
         {items.map((item, idx) => {
           const valNum = Number(item.val || 0);
-          const barHeight = (valNum / maxVal) * 95;
-          const barColor = item.isCurrent ? 'bg-[#EA580C]' : 'bg-[#3B82F6]';
+          const barHeight = valNum > 0 ? Math.max(20, (valNum / maxVal) * 88) : 4;
+          const barColor = valNum > 0
+            ? (item.isCurrent ? 'bg-[#EA580C]' : 'bg-[#0D9488]')
+            : 'bg-slate-200 dark:bg-slate-700';
 
           return (
             <div key={item.month + idx} className="flex flex-col items-center gap-1.5 flex-1 group">
               {/* Value on top */}
-              <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+              <span className={`text-xs font-black ${valNum > 0 ? 'text-slate-800 dark:text-slate-200' : 'text-slate-400 dark:text-slate-500'}`}>
                 {valNum}
               </span>
 
               {/* Vertical Bar */}
               <div
-                className={`w-6 sm:w-7 rounded-t-md ${barColor} transition-all duration-500 group-hover:brightness-110 flex items-center justify-center`}
-                style={{ height: `${Math.max(16, barHeight)}px` }}
+                className={`w-6 sm:w-7 rounded-t-md ${barColor} transition-all duration-500 group-hover:brightness-110 flex items-center justify-center shadow-xs`}
+                style={{ height: `${barHeight}px` }}
               >
-                <span className="text-[10px] font-bold text-white/90">
-                  {valNum}
-                </span>
+                {valNum > 0 && barHeight >= 22 && (
+                  <span className="text-[10px] font-bold text-white/90">
+                    {valNum}
+                  </span>
+                )}
               </div>
 
               {/* Label */}
-              <span className="text-[10px] font-semibold text-slate-400 mt-1 truncate max-w-[48px] text-center" title={item.month}>
+              <span className="text-[10px] font-semibold text-slate-400 mt-1 truncate max-w-[56px] text-center" title={item.month}>
                 {item.month}
               </span>
             </div>
