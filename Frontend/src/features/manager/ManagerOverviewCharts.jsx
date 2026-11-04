@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useCountUp } from '../../utils/useCountUp.js';
+import { AnimatedNumber } from '../../utils/useCountUp.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 // Utility formatters
@@ -144,7 +144,6 @@ export function MiniSparkline({ color = '#F97316', data = [] }) {
  */
 export function RoomStatusDonutChart({ total = 0, data = [] }) {
   const [hovered, setHovered] = useState(null);
-  const animTotal = useCountUp(total, 1000);
   const size = 160;
   const strokeWidth = 24;
   const radius = (size - strokeWidth) / 2;
@@ -191,7 +190,7 @@ export function RoomStatusDonutChart({ total = 0, data = [] }) {
             {hovered !== null ? validData[hovered].label : 'Sân & Phòng'}
           </span>
           <strong className="text-2xl font-black font-chivo text-slate-900 dark:text-white leading-none mt-0.5">
-            {hovered !== null ? validData[hovered].value : animTotal}
+            {hovered !== null ? validData[hovered].value : <AnimatedNumber value={total} duration={1000} />}
           </strong>
         </div>
       </div>
@@ -280,16 +279,22 @@ export function PeriodCollectionRadialGauge({
   remainingText = '',
   color = '#F59E0B'
 }) {
-  const animPercentage = useCountUp(percentage, 1200, 2);
+  const [mounted, setMounted] = useState(false);
+  React.useEffect(() => {
+    const timer = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(timer);
+  }, []);
+
   const size = 170;
   const strokeWidth = 20;
   const radius = (size - strokeWidth) / 2;
   const arcDegree = 280;
   const arcLength = (arcDegree / 360) * (2 * Math.PI * radius);
   const totalCircumference = 2 * Math.PI * radius;
-  const clampedPercentage = Math.min(100, Math.max(0, animPercentage));
+  const clampedPercentage = Math.min(100, Math.max(0, percentage));
   const progressLength = (clampedPercentage / 100) * arcLength;
-  const dashOffset = arcLength - progressLength;
+  const targetOffset = arcLength - progressLength;
+  const currentOffset = mounted ? targetOffset : arcLength;
 
   return (
     <div className="flex flex-col items-center justify-center h-full my-auto py-2">
@@ -321,16 +326,16 @@ export function PeriodCollectionRadialGauge({
             stroke={color}
             strokeWidth={strokeWidth}
             strokeDasharray={`${arcLength} ${totalCircumference}`}
-            strokeDashoffset={dashOffset}
+            strokeDashoffset={currentOffset}
             strokeLinecap="round"
-            className="transition-all duration-1000 ease-out"
+            style={{ transition: 'stroke-dashoffset 1100ms cubic-bezier(0.16, 1, 0.3, 1)' }}
           />
         </svg>
 
         {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
           <strong className="text-3xl font-black font-chivo text-slate-900 dark:text-white leading-none">
-            {clampedPercentage}%
+            <AnimatedNumber value={percentage} duration={1100} decimals={percentage % 1 !== 0 ? 2 : 0} suffix="%" />
           </strong>
           <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium px-2 truncate">
             {collectedText}
