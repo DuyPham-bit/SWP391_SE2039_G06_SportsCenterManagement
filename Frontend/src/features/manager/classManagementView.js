@@ -58,12 +58,74 @@ export function effectiveScheduleRoom(schedule, classRow, rooms = []) {
   return rooms.find(room => Number(room.id) === Number(roomId))?.name || 'Chưa chọn phòng';
 }
 
+export function validateClassFields(form, isEn = false) {
+  const errors = {};
+  const name = String(form?.name || '').trim();
+  if (!name) {
+    errors.name = isEn ? 'Please enter a training class name.' : 'Vui lòng nhập tên lớp đào tạo.';
+  } else if (name.length > 100) {
+    errors.name = isEn ? 'Class name cannot exceed 100 characters.' : 'Tên lớp đào tạo không được vượt quá 100 ký tự.';
+  }
+
+  const sportId = Number(form?.sportId);
+  if (!(sportId > 0)) {
+    errors.sportId = isEn ? 'Please select a sport discipline.' : 'Vui lòng chọn bộ môn thể thao.';
+  }
+
+  const cap = Number(form?.capacity);
+  if (!Number.isInteger(cap) || cap < 1) {
+    errors.capacity = isEn ? 'Max capacity must be a positive integer.' : 'Sức chứa học viên phải là số nguyên dương.';
+  } else if (cap > 500) {
+    errors.capacity = isEn ? 'Max capacity cannot exceed 500 students.' : 'Sức chứa tối đa không được vượt quá 500 học viên.';
+  }
+
+  const dur = Number(form?.durationMinutes);
+  if (!Number.isInteger(dur) || dur < 1) {
+    errors.durationMinutes = isEn ? 'Duration must be a positive number of minutes.' : 'Thời lượng phải là số phút nguyên dương.';
+  } else if (dur < 15) {
+    errors.durationMinutes = isEn ? 'Session duration must be at least 15 minutes.' : 'Thời lượng ca học tối thiểu 15 phút.';
+  } else if (dur > 300) {
+    errors.durationMinutes = isEn ? 'Session duration cannot exceed 300 minutes.' : 'Thời lượng ca học tối đa không quá 300 phút.';
+  }
+
+  return errors;
+}
+
 export function validateClassForm(form) {
-  if (!String(form.name || '').trim()) return 'Vui lòng nhập tên lớp.';
-  if (!(Number(form.sportId) > 0)) return 'Vui lòng chọn bộ môn.';
-  if (!Number.isInteger(Number(form.capacity)) || Number(form.capacity) < 1) return 'Sức chứa phải là số nguyên dương.';
-  if (!Number.isInteger(Number(form.durationMinutes)) || Number(form.durationMinutes) < 1) return 'Thời lượng phải là số phút nguyên dương.';
-  return '';
+  const errors = validateClassFields(form, false);
+  const firstKey = Object.keys(errors)[0];
+  return firstKey ? errors[firstKey] : '';
+}
+
+export function validateRoomFields(form, isEn = false) {
+  const errors = {};
+  const name = String(form?.name || '').trim();
+  if (!name) {
+    errors.name = isEn ? 'Please enter a court / facility room name.' : 'Vui lòng nhập tên phòng / sân bãi.';
+  } else if (name.length > 100) {
+    errors.name = isEn ? 'Facility name cannot exceed 100 characters.' : 'Tên phòng / sân bãi không được vượt quá 100 ký tự.';
+  }
+
+  const cap = Number(form?.capacity);
+  if (!Number.isInteger(cap) || cap < 1) {
+    errors.capacity = isEn ? 'Capacity must be a positive integer.' : 'Sức chứa phải là số nguyên dương.';
+  } else if (cap > 1000) {
+    errors.capacity = isEn ? 'Capacity cannot exceed 1000.' : 'Sức chứa tối đa không vượt quá 1000.';
+  }
+
+  return errors;
+}
+
+export function validateSportFields(form, isEn = false) {
+  const errors = {};
+  const name = String(form?.name || '').trim();
+  if (!name) {
+    errors.name = isEn ? 'Please enter a sport discipline name.' : 'Vui lòng nhập tên bộ môn thể thao.';
+  } else if (name.length > 100) {
+    errors.name = isEn ? 'Discipline name cannot exceed 100 characters.' : 'Tên bộ môn thể thao không được vượt quá 100 ký tự.';
+  }
+
+  return errors;
 }
 
 export function validateScheduleForm(form, maxDurationMinutes = null) {

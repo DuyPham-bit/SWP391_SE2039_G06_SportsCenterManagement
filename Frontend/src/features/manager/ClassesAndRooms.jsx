@@ -13,6 +13,9 @@ import {
   scheduleEndTime,
   splitAndSortClasses,
   validateClassForm,
+  validateClassFields,
+  validateRoomFields,
+  validateSportFields,
   validateScheduleForm,
   filterRoomsForSport,
   filterCoachesForSport,
@@ -143,6 +146,7 @@ export function ClassesAndRooms() {
   const [modal, setModal] = useState(null);
   const [form, setForm] = useState({});
   const [formError, setFormError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
   const [schedules, setSchedules] = useState([]);
   const [loadingSchedules, setLoadingSchedules] = useState(false);
   const [editingScheduleId, setEditingScheduleId] = useState(null);
@@ -200,6 +204,13 @@ export function ClassesAndRooms() {
   const handleFormChange = (e) => {
     setFormError('');
     const { name, value, type, checked } = e.target;
+    if (fieldErrors[name]) {
+      setFieldErrors((prev) => {
+        const next = { ...prev };
+        delete next[name];
+        return next;
+      });
+    }
     setForm((prev) => {
       const next = {
         ...prev,
@@ -220,6 +231,45 @@ export function ClassesAndRooms() {
     });
   };
 
+  // Field Blur Handler for Inline Validation
+  const handleBlur = (e) => {
+    const { name, value } = e.target;
+    if (modal?.type === 'class') {
+      const errs = validateClassFields({ ...form, [name]: value }, isEn);
+      if (errs[name]) {
+        setFieldErrors((prev) => ({ ...prev, [name]: errs[name] }));
+      } else {
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    } else if (modal?.type === 'room') {
+      const errs = validateRoomFields({ ...form, [name]: value }, isEn);
+      if (errs[name]) {
+        setFieldErrors((prev) => ({ ...prev, [name]: errs[name] }));
+      } else {
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    } else if (modal?.type === 'sport') {
+      const errs = validateSportFields({ ...form, [name]: value }, isEn);
+      if (errs[name]) {
+        setFieldErrors((prev) => ({ ...prev, [name]: errs[name] }));
+      } else {
+        setFieldErrors((prev) => {
+          const next = { ...prev };
+          delete next[name];
+          return next;
+        });
+      }
+    }
+  };
+
   // Safe Action Wrapper
   const executeAction = async (fn, successMsg = isEn ? 'Operation successful!' : 'Thao tác thành công!') => {
     setBusy(true);
@@ -238,6 +288,7 @@ export function ClassesAndRooms() {
   // Open Modal Handlers
   const openClassModal = (row = null) => {
     setFormError('');
+    setFieldErrors({});
     if (row) {
       setForm({
         name: row.name || '',
@@ -268,6 +319,8 @@ export function ClassesAndRooms() {
   };
 
   const openRoomModal = (row = null) => {
+    setFormError('');
+    setFieldErrors({});
     if (row) {
       setForm({
         name: row.name || '',
@@ -287,6 +340,8 @@ export function ClassesAndRooms() {
   };
 
   const openSportModal = (row = null) => {
+    setFormError('');
+    setFieldErrors({});
     if (row) {
       setForm({
         name: row.name || '',
@@ -307,6 +362,7 @@ export function ClassesAndRooms() {
     try {
       setLoadingSchedules(true);
       setFormError('');
+      setFieldErrors({});
       setSchedules([]);
       setEditingScheduleId(null);
       setModal({ type: 'schedule', row: classRow });
@@ -336,17 +392,32 @@ export function ClassesAndRooms() {
   // Submit Modal Form
   const handleSaveModal = async (e) => {
     e.preventDefault();
-    const validation =
-      modal.type === 'class'
-        ? validateClassForm(form)
-        : modal.type === 'schedule'
-        ? validateScheduleForm(form, modal.row?.durationMinutes)
-        : '';
-    if (validation) {
-      setFormError(validation);
+    let errors = {};
+    if (modal?.type === 'class') {
+      errors = validateClassFields(form, isEn);
+    } else if (modal?.type === 'room') {
+      errors = validateRoomFields(form, isEn);
+    } else if (modal?.type === 'sport') {
+      errors = validateSportFields(form, isEn);
+    } else if (modal?.type === 'schedule') {
+      const scheduleErr = validateScheduleForm(form, modal.row?.durationMinutes);
+      if (scheduleErr) {
+        setFormError(scheduleErr);
+        return;
+      }
+    }
+
+    if (Object.keys(errors).length > 0) {
+      setFieldErrors(errors);
+      const firstField = Object.keys(errors)[0];
+      setFormError(errors[firstField]);
+      const firstEl = document.querySelector(`[name="${firstField}"]`);
+      if (firstEl) firstEl.focus();
       return;
     }
+
     setFormError('');
+    setFieldErrors({});
     await executeAction(
       async () => {
         if (modal.type === 'class') {
@@ -1627,7 +1698,7 @@ export function ClassesAndRooms() {
           (loadingSchedules ? (
             <LoadingSpinner text={isEn ? 'Loading class timetable...' : 'Đang tải lịch học...'} />
           ) : (
-            <form onSubmit={handleSaveModal} className="space-y-4">
+            <form noValidate onSubmit={handleSaveModal} className="space-y-4">
               {formError && <p role="alert" className="rounded-xl bg-rose-50 dark:bg-rose-950/40 p-3 text-sm text-rose-700 dark:text-rose-300">{formError}</p>}
               <ScheduleManager
                 row={modal.row}
@@ -1680,35 +1751,59 @@ export function ClassesAndRooms() {
             : 'Mở Lớp Đào Tạo Mới'
         }
       >
-        <form onSubmit={handleSaveModal} className="space-y-4">
+        <form noValidate onSubmit={handleSaveModal} className="space-y-4">
           {formError && <p role="alert" className="rounded-xl bg-rose-50 dark:bg-rose-950/40 p-3 text-sm text-rose-700 dark:text-rose-300">{formError}</p>}
           <div className="space-y-1">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-              {isEn ? 'Class Name *' : 'Tên lớp đào tạo'} <span className="text-rose-500">*</span>
+            <label htmlFor="class-name-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
+              {isEn ? 'Class Name' : 'Tên lớp đào tạo'} <span className="text-rose-500">*</span>
             </label>
             <input
+              id="class-name-input"
               type="text"
               name="name"
-              required
               maxLength={100}
               placeholder={isEn ? 'e.g. Olympic Freestyle Swimming K02' : 'VD: Bơi sải Kỹ thuật Olympic K02'}
               value={form.name || ''}
               onChange={handleFormChange}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
+              onBlur={handleBlur}
+              aria-invalid={!!fieldErrors.name}
+              aria-describedby={fieldErrors.name ? 'class-name-error' : undefined}
+              className={`w-full p-2.5 rounded-xl text-sm transition-all ${
+                fieldErrors.name
+                  ? 'bg-rose-50/25 dark:bg-rose-950/25 border-2 border-rose-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-500'
+                  : 'bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]'
+              }`}
             />
+            {fieldErrors.name && (
+              <p
+                id="class-name-error"
+                role="alert"
+                className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 animate-fadeIn"
+              >
+                <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">error</span>
+                <span>{fieldErrors.name}</span>
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                {isEn ? 'Sport Discipline *' : 'Bộ môn thể thao'} <span className="text-rose-500">*</span>
+              <label htmlFor="class-sport-select" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Sport Discipline' : 'Bộ môn thể thao'} <span className="text-rose-500">*</span>
               </label>
               <select
+                id="class-sport-select"
                 name="sportId"
-                required
                 value={form.sportId || ''}
                 onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
+                onBlur={handleBlur}
+                aria-invalid={!!fieldErrors.sportId}
+                aria-describedby={fieldErrors.sportId ? 'class-sport-error' : undefined}
+                className={`w-full p-2.5 rounded-xl text-sm transition-all ${
+                  fieldErrors.sportId
+                    ? 'bg-rose-50/25 dark:bg-rose-950/25 border-2 border-rose-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-500'
+                    : 'bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]'
+                }`}
               >
                 <option value="">{isEn ? 'Select sport discipline' : 'Chọn bộ môn thể thao'}</option>
                 {data.sports
@@ -1719,6 +1814,16 @@ export function ClassesAndRooms() {
                     </option>
                   ))}
               </select>
+              {fieldErrors.sportId && (
+                <p
+                  id="class-sport-error"
+                  role="alert"
+                  className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 animate-fadeIn"
+                >
+                  <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">error</span>
+                  <span>{fieldErrors.sportId}</span>
+                </p>
+              )}
             </div>
 
             <div>
@@ -1777,35 +1882,69 @@ export function ClassesAndRooms() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                {isEn ? 'Max Capacity (Students) *' : 'Sức chứa tối đa (Học viên)'} <span className="text-rose-500">*</span>
+              <label htmlFor="class-capacity-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Max Capacity (Students)' : 'Sức chứa tối đa (Học viên)'} <span className="text-rose-500">*</span>
               </label>
               <input
+                id="class-capacity-input"
                 type="number"
                 name="capacity"
                 min="1"
                 max="500"
-                required
                 value={form.capacity || 20}
                 onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
+                onBlur={handleBlur}
+                aria-invalid={!!fieldErrors.capacity}
+                aria-describedby={fieldErrors.capacity ? 'class-capacity-error' : undefined}
+                className={`w-full p-2.5 rounded-xl text-sm transition-all ${
+                  fieldErrors.capacity
+                    ? 'bg-rose-50/25 dark:bg-rose-950/25 border-2 border-rose-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-500'
+                    : 'bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]'
+                }`}
               />
+              {fieldErrors.capacity && (
+                <p
+                  id="class-capacity-error"
+                  role="alert"
+                  className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 animate-fadeIn"
+                >
+                  <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">error</span>
+                  <span>{fieldErrors.capacity}</span>
+                </p>
+              )}
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                {isEn ? 'Session Duration (Mins) *' : 'Thời lượng ca học (Phút)'} <span className="text-rose-500">*</span>
+              <label htmlFor="class-duration-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Session Duration (Mins)' : 'Thời lượng ca học (Phút)'} <span className="text-rose-500">*</span>
               </label>
               <input
+                id="class-duration-input"
                 type="number"
                 name="durationMinutes"
                 min="15"
                 max="300"
-                required
                 value={form.durationMinutes || 60}
                 onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
+                onBlur={handleBlur}
+                aria-invalid={!!fieldErrors.durationMinutes}
+                aria-describedby={fieldErrors.durationMinutes ? 'class-duration-error' : undefined}
+                className={`w-full p-2.5 rounded-xl text-sm transition-all ${
+                  fieldErrors.durationMinutes
+                    ? 'bg-rose-50/25 dark:bg-rose-950/25 border-2 border-rose-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-500'
+                    : 'bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]'
+                }`}
               />
+              {fieldErrors.durationMinutes && (
+                <p
+                  id="class-duration-error"
+                  role="alert"
+                  className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 animate-fadeIn"
+                >
+                  <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">error</span>
+                  <span>{fieldErrors.durationMinutes}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -1884,21 +2023,38 @@ export function ClassesAndRooms() {
             : 'Thêm Phòng Tập / Sân Bãi'
         }
       >
-        <form onSubmit={handleSaveModal} className="space-y-4">
+        <form noValidate onSubmit={handleSaveModal} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              {isEn ? 'Court / Room Name *' : 'Tên phòng / Khu vực'} <span className="text-rose-500">*</span>
+            <label htmlFor="room-name-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              {isEn ? 'Court / Room Name' : 'Tên phòng / Khu vực'} <span className="text-rose-500">*</span>
             </label>
             <input
+              id="room-name-input"
               type="text"
               name="name"
-              required
               maxLength={100}
               placeholder={isEn ? 'e.g. Olympic Pool 50m, Badminton Court #01' : 'VD: Bể bơi Olympic 50m, Sân Cầu lông #01'}
               value={form.name || ''}
               onChange={handleFormChange}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
+              onBlur={handleBlur}
+              aria-invalid={!!fieldErrors.name}
+              aria-describedby={fieldErrors.name ? 'room-name-error' : undefined}
+              className={`w-full p-2.5 rounded-xl text-sm transition-all ${
+                fieldErrors.name
+                  ? 'bg-rose-50/25 dark:bg-rose-950/25 border-2 border-rose-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-500'
+                  : 'bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]'
+              }`}
             />
+            {fieldErrors.name && (
+              <p
+                id="room-name-error"
+                role="alert"
+                className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 animate-fadeIn"
+              >
+                <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">error</span>
+                <span>{fieldErrors.name}</span>
+              </p>
+            )}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -1918,18 +2074,36 @@ export function ClassesAndRooms() {
             </div>
 
             <div>
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                {isEn ? 'Max Capacity (Persons) *' : 'Sức chứa tối đa (Người)'} <span className="text-rose-500">*</span>
+              <label htmlFor="room-capacity-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+                {isEn ? 'Max Capacity (Persons)' : 'Sức chứa tối đa (Người)'} <span className="text-rose-500">*</span>
               </label>
               <input
+                id="room-capacity-input"
                 type="number"
                 name="capacity"
                 min="1"
-                required
+                max="1000"
                 value={form.capacity || 30}
                 onChange={handleFormChange}
-                className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
+                onBlur={handleBlur}
+                aria-invalid={!!fieldErrors.capacity}
+                aria-describedby={fieldErrors.capacity ? 'room-capacity-error' : undefined}
+                className={`w-full p-2.5 rounded-xl text-sm transition-all ${
+                  fieldErrors.capacity
+                    ? 'bg-rose-50/25 dark:bg-rose-950/25 border-2 border-rose-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-500'
+                    : 'bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]'
+                }`}
               />
+              {fieldErrors.capacity && (
+                <p
+                  id="room-capacity-error"
+                  role="alert"
+                  className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 animate-fadeIn"
+                >
+                  <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">error</span>
+                  <span>{fieldErrors.capacity}</span>
+                </p>
+              )}
             </div>
           </div>
 
@@ -1983,21 +2157,38 @@ export function ClassesAndRooms() {
             : 'Thêm Bộ Môn Thể Thao Mới'
         }
       >
-        <form onSubmit={handleSaveModal} className="space-y-4">
+        <form noValidate onSubmit={handleSaveModal} className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              {isEn ? 'Discipline Name *' : 'Tên bộ môn thể thao'} <span className="text-rose-500">*</span>
+            <label htmlFor="sport-name-input" className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
+              {isEn ? 'Discipline Name' : 'Tên bộ môn thể thao'} <span className="text-rose-500">*</span>
             </label>
             <input
+              id="sport-name-input"
               type="text"
               name="name"
-              required
               maxLength={100}
               placeholder={isEn ? 'e.g. Pickleball Pro, Sport Archery' : 'VD: Pickleball Đỉnh Cao, Bắn Cung Thể Thao'}
               value={form.name || ''}
               onChange={handleFormChange}
-              className="w-full p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]"
+              onBlur={handleBlur}
+              aria-invalid={!!fieldErrors.name}
+              aria-describedby={fieldErrors.name ? 'sport-name-error' : undefined}
+              className={`w-full p-2.5 rounded-xl text-sm transition-all ${
+                fieldErrors.name
+                  ? 'bg-rose-50/25 dark:bg-rose-950/25 border-2 border-rose-500 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-rose-400/30 focus:border-rose-500'
+                  : 'bg-slate-50 dark:bg-slate-800 border border-slate-300 dark:border-slate-700 text-slate-900 dark:text-slate-100 focus:ring-2 focus:ring-[#81B29A]/40 focus:border-[#81B29A]'
+              }`}
             />
+            {fieldErrors.name && (
+              <p
+                id="sport-name-error"
+                role="alert"
+                className="mt-1 text-xs text-rose-600 dark:text-rose-400 font-semibold flex items-center gap-1.5 animate-fadeIn"
+              >
+                <span className="material-symbols-outlined text-[15px] shrink-0 text-rose-500">error</span>
+                <span>{fieldErrors.name}</span>
+              </p>
+            )}
           </div>
 
           <div>
