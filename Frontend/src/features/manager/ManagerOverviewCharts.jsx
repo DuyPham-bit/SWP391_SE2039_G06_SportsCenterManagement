@@ -7,21 +7,39 @@ const formatShortVnd = (num) => {
   if (n >= 1000000000) return `${(n / 1000000000).toFixed(1)} tỷ`;
   if (n >= 1000000) return `${(n / 1000000).toFixed(1)} tr`;
   if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
-  return `${n}đ`;
+  return `${n.toLocaleString('vi-VN')}đ`;
 };
 
 /**
  * 1. MINI SPARKLINE WAVE (Used in KPI Cards 5 & 6)
  */
-export function MiniSparkline({ color = '#F97316', data = [30, 45, 38, 55, 42, 60, 48, 65, 50, 40] }) {
+export function MiniSparkline({ color = '#F97316', data = [] }) {
   const width = 160;
   const height = 36;
-  const max = Math.max(...data, 1);
-  const min = Math.min(...data, 0);
+  
+  if (!Array.isArray(data) || data.length === 0) {
+    return (
+      <div className="w-full h-9 flex items-center justify-center">
+        <div className="w-full h-[1px] bg-slate-200 dark:bg-slate-800" />
+      </div>
+    );
+  }
+
+  const values = data.map(Number);
+  const max = Math.max(...values, 1);
+  const min = Math.min(...values, 0);
   const range = max - min || 1;
 
-  const points = data.map((val, idx) => {
-    const x = (idx / (data.length - 1)) * width;
+  if (values.length === 1) {
+    return (
+      <div className="w-full h-9 flex items-center">
+        <div className="w-full h-[2px]" style={{ backgroundColor: color }} />
+      </div>
+    );
+  }
+
+  const points = values.map((val, idx) => {
+    const x = (idx / (values.length - 1)) * width;
     const y = height - ((val - min) / range) * (height - 8) - 4;
     return { x, y };
   });
@@ -58,27 +76,21 @@ export function MiniSparkline({ color = '#F97316', data = [30, 45, 38, 55, 42, 6
 }
 
 /**
- * 2. TRẠNG THÁI SÂN BÃI & PHÒNG TẬP (Donut Chart - Sports Facilities)
+ * 2. TRẠNG THÁI SÂN BÃI & PHÒNG TẬP (Donut Chart - Real DB Data)
  */
-export function RoomStatusDonutChart({
-  total = 12,
-  data = [
-    { label: 'Đang có lớp', value: 6, color: '#10B981' },
-    { label: 'Sẵn sàng / Trống', value: 4, color: '#3B82F6' },
-    { label: 'Đã đặt ca tới', value: 1, color: '#F59E0B' },
-    { label: 'Bảo trì', value: 1, color: '#64748B' }
-  ]
-}) {
+export function RoomStatusDonutChart({ total = 0, data = [] }) {
   const [hovered, setHovered] = useState(null);
   const size = 160;
   const strokeWidth = 24;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  const sum = data.reduce((acc, cur) => acc + cur.value, 0) || 1;
+
+  const validData = Array.isArray(data) && data.length > 0 ? data : [{ label: 'Trống', value: 1, color: '#64748B' }];
+  const sum = validData.reduce((acc, cur) => acc + (cur.value || 0), 0) || 1;
 
   let cumulativeAngle = 0;
-  const segments = data.map((item, idx) => {
-    const fraction = item.value / sum;
+  const segments = validData.map((item, idx) => {
+    const fraction = (item.value || 0) / sum;
     const strokeDasharray = `${fraction * circumference} ${circumference}`;
     const strokeDashoffset = -cumulativeAngle * circumference;
     cumulativeAngle += fraction;
@@ -111,17 +123,17 @@ export function RoomStatusDonutChart({
         {/* Center Label */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
           <span className="text-[11px] font-medium text-slate-400">
-            {hovered !== null ? data[hovered].label : 'Sân & Phòng'}
+            {hovered !== null ? validData[hovered].label : 'Sân & Phòng'}
           </span>
           <strong className="text-2xl font-black font-chivo text-slate-900 dark:text-white leading-none mt-0.5">
-            {hovered !== null ? data[hovered].value : total}
+            {hovered !== null ? validData[hovered].value : total}
           </strong>
         </div>
       </div>
 
       {/* Legend below */}
       <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 text-[11px] text-slate-600 dark:text-slate-400 pt-2 border-t border-slate-100 dark:border-slate-800/80 w-full">
-        {data.map((item, i) => (
+        {validData.map((item, i) => (
           <div
             key={item.label}
             className={`flex items-center gap-1.5 cursor-pointer transition-opacity ${hovered !== null && hovered !== i ? 'opacity-40' : 'opacity-100'}`}
@@ -129,7 +141,7 @@ export function RoomStatusDonutChart({
             onMouseLeave={() => setHovered(null)}
           >
             <span className="w-2.5 h-2.5 rounded-full shrink-0" style={{ backgroundColor: item.color }} />
-            <span className="font-medium">{item.label}</span>
+            <span className="font-medium">{item.label} ({item.value})</span>
           </div>
         ))}
       </div>
@@ -138,22 +150,23 @@ export function RoomStatusDonutChart({
 }
 
 /**
- * 3. LẤP ĐẦY THEO BỘ MÔN THỂ THAO (Horizontal Progress Bars)
+ * 3. LẤP ĐẦY THEO BỘ MÔN THỂ THAO (Horizontal Progress Bars - Real DB Data)
  */
-export function FacilityOccupancyBars({
-  items = [
-    { code: 'BL', name: 'Bơi lội (Olympic 50m)', pct: 85, current: 17, max: 20 },
-    { code: 'GF', name: 'Gym & Fitness', pct: 92, current: 46, max: 50 },
-    { code: 'CL', name: 'Cầu lông tiêu chuẩn', pct: 75, current: 12, max: 16 },
-    { code: 'BX', name: 'Boxing & Kickfit', pct: 60, current: 9, max: 15 },
-    { code: 'YG', name: 'Yoga & Pilates', pct: 88, current: 22, max: 25 }
-  ]
-}) {
+export function FacilityOccupancyBars({ items = [] }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-8 text-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-[24px] mb-1 opacity-50">sports</span>
+        <span>Chưa có dữ liệu đặt chỗ theo bộ môn trong kỳ.</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col justify-between h-full space-y-3">
       <div className="space-y-2.5 my-auto">
         {items.map((item) => (
-          <div key={item.code} className="flex items-center gap-2.5">
+          <div key={item.name || item.code} className="flex items-center gap-2.5">
             {/* Acronym Badge */}
             <span className="w-7 text-xs font-bold text-slate-500 dark:text-slate-400 font-mono" title={item.name}>
               {item.code}
@@ -166,7 +179,7 @@ export function FacilityOccupancyBars({
                 style={{ width: `${Math.min(100, Math.max(12, item.pct))}%` }}
               >
                 <span className="text-[10px] font-bold text-white whitespace-nowrap">
-                  {item.pct}% {item.current ? `(${item.current}/${item.max})` : ''}
+                  {item.pct}% {item.current != null ? `(${item.current}/${item.max})` : ''}
                 </span>
               </div>
             </div>
@@ -187,12 +200,12 @@ export function FacilityOccupancyBars({
 }
 
 /**
- * 4. TIẾN ĐỘ CHỈ TIÊU DOANH THU THÁNG (Radial Open Arc Gauge)
+ * 4. TIẾN ĐỘ CHỈ TIÊU / CÔNG SUẤT VẬN HÀNH (Radial Open Arc Gauge - Real DB Data)
  */
 export function PeriodCollectionRadialGauge({
-  percentage = 73,
-  collectedText = 'Đã thu 58.7 tr / 80 tr',
-  remainingText = 'Còn 21.3 tr',
+  percentage = 0,
+  collectedText = 'Đang đồng bộ dữ liệu...',
+  remainingText = '',
   color = '#F59E0B'
 }) {
   const size = 170;
@@ -201,7 +214,8 @@ export function PeriodCollectionRadialGauge({
   const arcDegree = 280;
   const arcLength = (arcDegree / 360) * (2 * Math.PI * radius);
   const totalCircumference = 2 * Math.PI * radius;
-  const progressLength = (percentage / 100) * arcLength;
+  const clampedPercentage = Math.min(100, Math.max(0, percentage));
+  const progressLength = (clampedPercentage / 100) * arcLength;
   const dashOffset = arcLength - progressLength;
 
   return (
@@ -243,9 +257,9 @@ export function PeriodCollectionRadialGauge({
         {/* Center Text */}
         <div className="absolute inset-0 flex flex-col items-center justify-center text-center pointer-events-none">
           <strong className="text-3xl font-black font-chivo text-slate-900 dark:text-white leading-none">
-            {percentage}%
+            {clampedPercentage}%
           </strong>
-          <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium">
+          <span className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 font-medium px-2 truncate">
             {collectedText}
           </span>
         </div>
@@ -255,21 +269,25 @@ export function PeriodCollectionRadialGauge({
 }
 
 /**
- * 5. HỒ SƠ & THẺ HỘI VIÊN THỂ THAO (Stacked Bars)
+ * 5. HỒ SƠ & THẺ HỘI VIÊN THỂ THAO (Stacked Bars - Real DB Data)
  */
-export function MemberDocumentsStackedBars({
-  items = [
-    { label: 'Thẻ & FaceID', greenVal: 842, redVal: 48 },
-    { label: 'Y tế / BMI', greenVal: 760, redVal: 130 }
-  ]
-}) {
+export function MemberDocumentsStackedBars({ items = [] }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-8 text-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-[24px] mb-1 opacity-50">group</span>
+        <span>Chưa có dữ liệu hội viên trong hệ thống.</span>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col justify-between h-full space-y-3.5">
       <div className="space-y-4 my-auto">
         {items.map((row) => {
-          const total = row.greenVal + row.redVal || 1;
-          const greenPct = (row.greenVal / total) * 100;
-          const redPct = (row.redVal / total) * 100;
+          const total = (row.greenVal || 0) + (row.redVal || 0) || 1;
+          const greenPct = ((row.greenVal || 0) / total) * 100;
+          const redPct = ((row.redVal || 0) / total) * 100;
 
           return (
             <div key={row.label} className="flex items-center gap-2.5">
@@ -282,7 +300,7 @@ export function MemberDocumentsStackedBars({
                   <div
                     className="h-full bg-[#10B981] rounded-md flex items-center justify-center text-white text-[11px] font-black min-w-[32px] transition-all duration-500"
                     style={{ width: `${greenPct}%` }}
-                    title={`Đã hoàn tất: ${row.greenVal}`}
+                    title={`${row.greenLabel || 'Có gói'}: ${row.greenVal}`}
                   >
                     {row.greenVal}
                   </div>
@@ -291,9 +309,14 @@ export function MemberDocumentsStackedBars({
                   <div
                     className="h-full bg-[#EF4444] rounded-md flex items-center justify-center text-white text-[11px] font-black min-w-[28px] transition-all duration-500"
                     style={{ width: `${redPct}%` }}
-                    title={`Cần xử lý: ${row.redVal}`}
+                    title={`${row.redLabel || 'Chưa có'}: ${row.redVal}`}
                   >
                     {row.redVal}
+                  </div>
+                )}
+                {row.greenVal === 0 && row.redVal === 0 && (
+                  <div className="h-full w-full bg-slate-100 dark:bg-slate-800 rounded-md flex items-center justify-center text-slate-400 text-[10px]">
+                    0
                   </div>
                 )}
               </div>
@@ -311,10 +334,10 @@ export function MemberDocumentsStackedBars({
         </div>
         <div className="flex items-center justify-center gap-4 text-[10px] text-slate-500">
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm bg-[#10B981]" /> Đã kích hoạt / Hoàn tất
+            <span className="w-2.5 h-2.5 rounded-sm bg-[#10B981]" /> Có gói / Hiệu lực
           </span>
           <span className="flex items-center gap-1">
-            <span className="w-2.5 h-2.5 rounded-sm bg-[#EF4444]" /> Chưa cập nhật
+            <span className="w-2.5 h-2.5 rounded-sm bg-[#EF4444]" /> Chưa có / Hết hạn
           </span>
         </div>
       </div>
@@ -323,29 +346,39 @@ export function MemberDocumentsStackedBars({
 }
 
 /**
- * 6. THU – CHI – LỢI NHUẬN 12 THÁNG (Dual Grouped Bars + Spline Curve)
+ * 6. BIẾN ĐỘNG DOANH THU THỰC TẾ (Dual Grouped Bars + Spline Curve - Real DB Data)
  */
-export function TwelveMonthRevenueExpensesProfitChart() {
+export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
   const [hoveredIdx, setHoveredIdx] = useState(null);
 
-  const months = [
-    { m: '12/2025', rev: 40, exp: 16, profit: 24 },
-    { m: '01/2026', rev: 48, exp: 17, profit: 31 },
-    { m: '02/2026', rev: 55, exp: 18, profit: 37 },
-    { m: '03/2026', rev: 68, exp: 20, profit: 48 },
-    { m: '04/2026', rev: 72, exp: 21, profit: 51 },
-    { m: '05/2026', rev: 78, exp: 22, profit: 56 },
-    { m: '06/2026', rev: 84, exp: 23, profit: 61 },
-    { m: '07/2026', rev: 92, exp: 24, profit: 68 },
-    { m: '08/2026', rev: 98, exp: 25, profit: 73 },
-    { m: '09/2026', rev: 95, exp: 24, profit: 71 },
-    { m: '10/2026', rev: 90, exp: 23, profit: 67 },
-    { m: '11/2026*', rev: 58.7, exp: 16.2, profit: 42.5, active: true }
-  ];
+  if (!Array.isArray(revenuePeriods) || revenuePeriods.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-48 text-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-[28px] mb-1.5 opacity-50">monitoring</span>
+        <span>Chưa có dữ liệu dòng tiền trong khoảng thời gian đã chọn.</span>
+      </div>
+    );
+  }
 
-  const maxVal = 120;
+  const months = revenuePeriods.map((item, idx) => {
+    const rawPeriod = String(item.period || '');
+    const mLabel = rawPeriod.length >= 7 ? rawPeriod.slice(5) : rawPeriod;
+    const rev = Number(((item.gross || item.net || 0) / 1000000).toFixed(1));
+    const exp = Number(((item.refunds || 0) / 1000000).toFixed(1));
+    const profit = Number(((item.net || 0) / 1000000).toFixed(1));
+    return {
+      m: mLabel,
+      rev,
+      exp,
+      profit,
+      orders: item.ordersCount || 0,
+      active: idx === revenuePeriods.length - 1
+    };
+  });
+
+  const maxVal = Math.max(...months.map(m => Math.max(m.rev, m.exp, m.profit)), 1);
   const chartHeight = 220;
-  const chartWidth = 620;
+  const chartWidth = Math.max(540, months.length * 48);
   const paddingLeft = 46;
   const paddingRight = 20;
   const paddingTop = 20;
@@ -354,7 +387,7 @@ export function TwelveMonthRevenueExpensesProfitChart() {
   const innerWidth = chartWidth - paddingLeft - paddingRight;
   const innerHeight = chartHeight - paddingTop - paddingBottom;
   const stepX = innerWidth / months.length;
-  const barWidth = 7;
+  const barWidth = Math.min(10, Math.max(4, stepX * 0.25));
 
   // Generate Spline Points for Profit Curve
   const splinePoints = months.map((item, idx) => {
@@ -376,16 +409,16 @@ export function TwelveMonthRevenueExpensesProfitChart() {
     splineD += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
   }
 
-  const yTicks = [0, 20, 40, 60, 80, 100, 120];
+  const yTicks = [0, maxVal * 0.25, maxVal * 0.5, maxVal * 0.75, maxVal];
 
   return (
     <div className="relative overflow-x-auto select-none">
-      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[540px]">
+      <svg viewBox={`0 0 ${chartWidth} ${chartHeight}`} className="w-full h-auto min-w-[500px]">
         {/* Y Grid lines */}
-        {yTicks.map((val) => {
+        {yTicks.map((val, idx) => {
           const y = paddingTop + innerHeight - (val / maxVal) * innerHeight;
           return (
-            <g key={val}>
+            <g key={idx}>
               <line
                 x1={paddingLeft}
                 y1={y}
@@ -401,13 +434,13 @@ export function TwelveMonthRevenueExpensesProfitChart() {
                 textAnchor="end"
                 className="text-[9px] font-bold fill-slate-400"
               >
-                {val === 0 ? '0' : `${val} tr`}
+                {val === 0 ? '0' : `${val.toFixed(1)} tr`}
               </text>
             </g>
           );
         })}
 
-        {/* Dual Bars for Each Month */}
+        {/* Dual Bars for Each Period */}
         {months.map((item, idx) => {
           const groupCenterX = paddingLeft + idx * stepX + stepX / 2;
           const revHeight = (item.rev / maxVal) * innerHeight;
@@ -420,7 +453,7 @@ export function TwelveMonthRevenueExpensesProfitChart() {
 
           return (
             <g
-              key={item.m}
+              key={item.m + idx}
               className="cursor-pointer"
               onMouseEnter={() => setHoveredIdx(idx)}
               onMouseLeave={() => setHoveredIdx(null)}
@@ -445,22 +478,22 @@ export function TwelveMonthRevenueExpensesProfitChart() {
                 width={barWidth}
                 height={revHeight}
                 fill={item.active ? '#14b8a6' : '#0D9488'}
-                rx="4"
+                rx="3"
                 className="transition-all duration-300"
               />
 
-              {/* Expense Bar (Coral / Pink) */}
+              {/* Refund/Expense Bar (Coral / Pink) */}
               <rect
                 x={expX}
                 y={expY}
                 width={barWidth}
                 height={expHeight}
                 fill={item.active ? '#f87171' : '#F43F5E'}
-                rx="4"
+                rx="3"
                 className="transition-all duration-300"
               />
 
-              {/* X Month Label */}
+              {/* X Label */}
               <text
                 x={groupCenterX}
                 y={chartHeight - 12}
@@ -511,8 +544,8 @@ export function TwelveMonthRevenueExpensesProfitChart() {
         >
           <span className="font-bold text-slate-300">{months[hoveredIdx].m}:</span>
           <span className="text-teal-300 font-bold">Thu: {months[hoveredIdx].rev} tr</span>
-          <span className="text-rose-300 font-bold">Chi: {months[hoveredIdx].exp} tr</span>
-          <span className="text-amber-300 font-black">LN: {months[hoveredIdx].profit} tr</span>
+          <span className="text-rose-300 font-bold">Hoàn: {months[hoveredIdx].exp} tr</span>
+          <span className="text-amber-300 font-black">Thực thu: {months[hoveredIdx].profit} tr</span>
         </div>
       )}
     </div>
@@ -520,18 +553,18 @@ export function TwelveMonthRevenueExpensesProfitChart() {
 }
 
 /**
- * 7. CHI PHÍ VẬN HÀNH 3 THÁNG (Sports Center Operations Breakdown)
+ * 7. DOANH THU THEO BỘ MÔN (Horizontal Bars - Real DB Data)
  */
-export function ThreeMonthExpensesBars({
-  items = [
-    { label: 'Lương HLV & Nhân sự', value: '24.5 tr', pct: 100 },
-    { label: 'Điện & Máy lạnh tập', value: '18.2 tr', pct: 74 },
-    { label: 'Nước & Bể bơi 50m', value: '8.6 tr', pct: 35 },
-    { label: 'Bảo trì máy tập, sân', value: '5.4 tr', pct: 22 },
-    { label: 'Marketing & Sự kiện', value: '4.1 tr', pct: 17 },
-    { label: 'Vệ sinh & Khăn tập', value: '3.2 tr', pct: 13 }
-  ]
-}) {
+export function ThreeMonthExpensesBars({ items = [], emptyText = 'Chưa có doanh thu theo bộ môn trong kỳ.' }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-full py-8 text-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-[24px] mb-1 opacity-50">pie_chart</span>
+        <span>{emptyText}</span>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-2.5 py-1">
       {items.map((item) => (
@@ -541,13 +574,13 @@ export function ThreeMonthExpensesBars({
               {item.label}
             </span>
             <span className="text-slate-900 dark:text-white font-black font-chivo text-xs">
-              {item.value}
+              {item.value} {item.pct ? `(${item.pct}%)` : ''}
             </span>
           </div>
           <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-md h-3.5 p-0.5 overflow-hidden">
             <div
-              className="h-full bg-[#EF4444] rounded-sm transition-all duration-700"
-              style={{ width: `${item.pct}%` }}
+              className="h-full bg-[#0D9488] rounded-sm transition-all duration-700"
+              style={{ width: `${Math.min(100, Math.max(5, item.pct || 10))}%` }}
             />
           </div>
         </div>
@@ -557,33 +590,34 @@ export function ThreeMonthExpensesBars({
 }
 
 /**
- * 8. GÓI TẬP HẾT HẠN 6 THÁNG TỚI (Vertical Bar Chart - Sports Memberships)
+ * 8. LƯỢT ĐẶT THEO LỚP HỌC (Vertical Bar Chart - Real DB Data)
  */
-export function SixMonthContractExpiryBars({
-  items = [
-    { month: '11/2026', val: 18, isCurrent: true },
-    { month: '12/2026', val: 12 },
-    { month: '01/2027', val: 25 },
-    { month: '02/2027', val: 8 },
-    { month: '03/2027', val: 15 },
-    { month: '04/2027', val: 22 }
-  ]
-}) {
+export function SixMonthContractExpiryBars({ items = [], emptyText = 'Chưa có lớp học nào hoạt động trong kỳ.' }) {
+  if (!Array.isArray(items) || items.length === 0) {
+    return (
+      <div className="flex flex-col items-center justify-center h-[170px] text-center text-xs text-slate-400">
+        <span className="material-symbols-outlined text-[24px] mb-1 opacity-50">event_seat</span>
+        <span>{emptyText}</span>
+      </div>
+    );
+  }
+
   const chartHeight = 170;
-  const maxVal = Math.max(...items.map(i => i.val), 25);
+  const maxVal = Math.max(...items.map(i => Number(i.val || 0)), 1);
 
   return (
     <div className="relative w-full h-[170px] select-none">
       <div className="absolute inset-x-0 bottom-6 flex items-end justify-between px-2 h-[120px]">
-        {items.map((item) => {
-          const barHeight = (item.val / maxVal) * 95;
+        {items.map((item, idx) => {
+          const valNum = Number(item.val || 0);
+          const barHeight = (valNum / maxVal) * 95;
           const barColor = item.isCurrent ? 'bg-[#EA580C]' : 'bg-[#3B82F6]';
 
           return (
-            <div key={item.month} className="flex flex-col items-center gap-1.5 flex-1 group">
+            <div key={item.month + idx} className="flex flex-col items-center gap-1.5 flex-1 group">
               {/* Value on top */}
               <span className="text-xs font-black text-slate-800 dark:text-slate-200">
-                {item.val}
+                {valNum}
               </span>
 
               {/* Vertical Bar */}
@@ -592,12 +626,12 @@ export function SixMonthContractExpiryBars({
                 style={{ height: `${Math.max(16, barHeight)}px` }}
               >
                 <span className="text-[10px] font-bold text-white/90">
-                  {item.val}
+                  {valNum}
                 </span>
               </div>
 
-              {/* Month label */}
-              <span className="text-[10px] font-semibold text-slate-400 mt-1 whitespace-nowrap">
+              {/* Label */}
+              <span className="text-[10px] font-semibold text-slate-400 mt-1 truncate max-w-[48px] text-center" title={item.month}>
                 {item.month}
               </span>
             </div>
