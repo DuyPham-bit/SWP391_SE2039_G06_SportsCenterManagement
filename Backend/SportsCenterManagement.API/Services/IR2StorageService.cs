@@ -1,0 +1,13 @@
+namespace SportsCenterManagement.API.Services;
+
+public interface IR2StorageService : SportsCenterManagement.BLL.Interfaces.IObjectStorageClient
+{
+    Task<(string ContentType, long Size)> GetMetadataAsync(string key, CancellationToken cancellationToken = default);
+    Task<string> UploadImageAsync(IFormFile file, string folder, long maxFileSize, CancellationToken cancellationToken = default);
+    Task<string> UploadRefundBillAsync(IFormFile file, CancellationToken cancellationToken = default);
+    Task<string> UploadMediaAsync(IFormFile file, CancellationToken cancellationToken = default);
+    Task<LegacyMediaMigrationResult> MigrateLegacyMediaAsync(CancellationToken cancellationToken = default);
+    string GetPresignedUrl(string key, TimeSpan expiresIn);
+}
+
+public sealed record LegacyMediaMigrationResult(int Migrated, int Skipped, IReadOnlyList<long> FailedMediaIds);

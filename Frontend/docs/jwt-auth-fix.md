@@ -1,15 +1,17 @@
-# JWT và đăng nhập nhiều tab — cập nhật 16/10/2026
+# JWT và đăng nhập nhiều tab
+
+Thiết kế lưu trữ đã được cập nhật sang cookie HttpOnly theo [cơ chế phiên riêng từng tab](tab-session-fix.md). Các báo cáo kiểm chứng cũ bên dưới mô tả thời điểm chạy, không thay thế thiết kế hiện tại.
 
 Yêu cầu: dùng JWT thay Session cho toàn bộ xác thực của project, đồng thời đăng nhập nhiều tài khoản ở các tab cùng trình duyệt mà không ghi đè nhau.
 
 ## Thiết kế hiện tại
 
-- API ASP.NET Core đã dùng JWT Bearer, không có `AddSession`, `UseSession`, `HttpContext.Session` hoặc cookie đăng nhập. Giữ cấu hình JWT/RBAC hiện có; xác thực chữ ký, issuer, audience, thuật toán và thời hạn, sau đó kiểm tra tài khoản/quyền/trung tâm trong SQL Server.
-- `http.js` giữ JWT trong biến riêng của document, đồng thời lưu vào sessionStorage của tab bằng khóa `scms.auth.token.v1`, và gửi `Authorization: Bearer <JWT>`. Không lưu JWT vào localStorage, cookie hoặc URL. Token hết hạn/sai định dạng không được khôi phục.
+- API ASP.NET Core dùng JWT Bearer và cookie HttpOnly chứa JWT riêng từng tab; không dùng `AddSession`, `UseSession` hoặc `HttpContext.Session`. Giữ cấu hình JWT/RBAC hiện có; xác thực chữ ký, issuer, audience, thuật toán và thời hạn, sau đó kiểm tra tài khoản/quyền/trung tâm trong SQL Server.
+- `http.js` chỉ lưu mã chọn phiên tại `sessionStorage['scms.auth.tab.v1']`, gửi header `X-SCMS-Session` và cookie HttpOnly qua `credentials: include`. JWT không được trả về JSON cho frontend hoặc lưu trong Web Storage. Bearer JWT vẫn được hỗ trợ cho API client không dùng cơ chế cookie.
 - `AuthContext.jsx` không còn đọc/ghi `SCMS_AUTH_SESSION`. `backendApi.js` lấy hồ sơ và capability từ API xác thực, cập nhật `authState.js` trong bộ nhớ. Các adapter chọn trung tâm/endpoint và `permissions.js` dùng thông tin này.
-- Login mật khẩu, Google login, đăng ký rồi login và đổi mật khẩu dùng chung helper JWT; logout và HTTP 401 của token hiện tại xóa JWT/hồ sơ/quyền trong tab đó. HTTP 401 của request dùng JWT cũ không được xóa JWT mới.
+- Login mật khẩu, Google login, đăng ký rồi login và đổi mật khẩu dùng chung helper cookie JWT; logout yêu cầu xóa đúng cookie của tab và xóa mã chọn phiên/hồ sơ/quyền. HTTP 401 của phiên cũ không được xóa phiên mới.
 - Mỗi tab giữ số phiên bản xác thực trong bộ nhớ. Bắt đầu đăng nhập/đăng ký/đổi mật khẩu, thay JWT hoặc logout làm mất hiệu lực thao tác cũ. Phản hồi cũ không được cài JWT, khôi phục hồ sơ, cập nhật React hoặc xóa JWT mới; HTTP 401 cũ cũng không được hủy lần đăng nhập mới đang chờ. Hồ sơ API chỉ được áp dụng vào giao diện khi còn đúng phiên bản và đúng đối tượng đã xác thực.
-- F5 khôi phục JWT còn hạn rồi tải lại hồ sơ/quyền từ backend trước khi hiển thị route được bảo vệ. Mỗi tab quản lý đăng nhập riêng; tab mở qua opener hoặc Duplicate Tab có thể nhận bản sao sessionStorage ban đầu theo hành vi trình duyệt. Ghi nhớ email vẫn là tùy chọn riêng.
+- F5 khôi phục mã chọn phiên rồi tải lại hồ sơ/quyền từ backend bằng cookie trước khi hiển thị route được bảo vệ. Mỗi lần đăng nhập tạo mã mới nên các tab, kể cả Duplicate Tab, có thể dùng tài khoản khác nhau. Ghi nhớ email vẫn là tùy chọn riêng.
 - Các đối tượng `ClassSession`, `SessionBookingService`, endpoint `class-sessions`/`session-bookings` là buổi tập và đặt chỗ; không thuộc Session đăng nhập.
 
 Không đổi stack React/Vite + .NET/EF Core/SQL Server, schema, migration, connection string hoặc `.env.local`. Giữ các thay đổi thông báo đã có.
@@ -21,7 +23,7 @@ Không đổi stack React/Vite + .NET/EF Core/SQL Server, schema, migration, con
 | API `Program.cs` | JWT Bearer là authentication scheme; các endpoint không cho phép anonymous yêu cầu tài khoản đã xác thực |
 | `AuthController`, `GoogleAuthController`, `JwtTokenIssuer` | Kiểm tra thông tin đăng nhập/Google credential và phát JWT có chữ ký, thời hạn, user/role/center |
 | `JwtAccountValidator`, authorization policies, `FlowControllerBase` | Kiểm chứng JWT, trạng thái tài khoản, quyền và phạm vi; lấy danh tính từ claims đã xác thực |
-| `http.js`, `backendApi.js` | JWT trong bộ nhớ/sessionStorage từng tab, gắn Bearer header, tải lại hồ sơ/quyền từ API, xóa JWT khi logout/401 |
+| `http.js`, `backendApi.js`, `BrowserSessionCookie.cs` | Cookie HttpOnly chứa JWT; mỗi tab gửi mã chọn phiên, tải lại hồ sơ/quyền từ API, xóa phiên khi logout/401 |
 | `AuthContext.jsx`, `authState.js`, `permissions.js` | Trạng thái và điều hướng của giao diện dựa trên hồ sơ API; không khôi phục Session từ browser storage |
 | `Frontend/dist`, API `wwwroot` | Cùng build từ source JWT hiện tại; frontend nhúng không tiếp tục chạy bundle Session cũ |
 
@@ -57,9 +59,9 @@ git diff --check
 Build và chạy API regression từ workspace root:
 
 ```powershell
-dotnet build --no-restore Backend/Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj
-$env:SCMS_TEST_WEB_ROOT = 'C:\Users\LENOVO\Downloads\New folder\Backend\Backend\SportsCenterManagement.API\wwwroot'
-dotnet run --no-build --no-restore --project Backend/Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj -- --sql --browser
+dotnet build --no-restore Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj
+$env:SCMS_TEST_WEB_ROOT = 'C:\Users\LENOVO\Downloads\New folder\Backend\SportsCenterManagement.API\wwwroot'
+dotnet run --no-build --no-restore --project Backend/tests/ApiIntegration.Regression/ApiIntegration.Regression.csproj -- --sql --browser
 ```
 
 Bản frontend nhúng cho browser test ở API `wwwroot`, build với `VITE_GOOGLE_CLIENT_ID` rỗng và `VITE_API_BASE_URL=/api` trong môi trường tiến trình build. Report/ảnh ở `.validation/browser/`; log API ở `.validation/api-integration-runtime.log`.

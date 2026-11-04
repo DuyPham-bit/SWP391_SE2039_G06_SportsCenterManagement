@@ -1,13 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { packageApi, memberApi, receptionApi } from '../../services/api.js';
-import { useAuth } from '../../context/AuthContext.js';
-import { useLanguage } from '../../context/LanguageContext.jsx';
-import { useToast } from '../../context/ToastContext.js';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useLanguage } from '../../app/providers/LanguageContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
 import { Modal } from '../../components/common/Modal.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
-import { openPaymentCheckout } from '../../services/paymentCheckout.js';
 import { formatMemberDate } from './memberOverview.js';
 import { translatePackageName } from '../../services/i18nHelper.js';
+import { safeHref, safePaymentHref } from '../../services/safeUrl.js';
 
 const PACKAGE_PERKS = {
   basic: {
@@ -113,7 +113,6 @@ export function MemberPackages() {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { showSuccess, showError, showInfo, showWarning } = useToast();
-  const checkoutRef = useRef(null);
 
   const [packages, setPackages] = useState([]);
   const [pendingInvoices, setPendingInvoices] = useState([]);
@@ -149,10 +148,6 @@ export function MemberPackages() {
 
   useEffect(() => {
     loadData();
-    return () => {
-      checkoutRef.current?.dispose();
-      checkoutRef.current = null;
-    };
   }, []);
 
   const handleOpenCheckout = (pkg, existingInvoiceNumber = null) => {
@@ -188,21 +183,6 @@ export function MemberPackages() {
         return;
       }
 
-      const payOsPayment = (invDetails?.payments || []).find(p => p.paymentMethod === 'PAYOS' || p.paymentMethod === 'VIETQR');
-      if (payOsPayment) {
-        try {
-          const syncRes = await memberApi.syncVietQr(payOsPayment.id);
-          if (syncRes?.success) {
-            showSuccess(syncRes.message || (isEn ? 'VietQR synced successfully! Package active.' : 'Đã đồng bộ giao dịch VietQR thành công! Gói tập đã kích hoạt.'));
-            await loadData();
-            await refreshUser();
-            return;
-          }
-        } catch {
-          // Fallback to general advice
-        }
-      }
-
       await loadData();
       await refreshUser();
       showInfo(
@@ -218,35 +198,25 @@ export function MemberPackages() {
   };
 
   const handleConfirmSubscribe = async () => {
-    if (!selectedPkg || !currentUser || processing || checkoutRef.current) return;
+    if (!selectedPkg || !currentUser || processing) return;
 
     setProcessing(true);
-    let checkout = null;
     try {
-      checkout = openPaymentCheckout(({ cancelled, failed, closed }) => {
-        checkoutRef.current = null;
-        setProcessing(false);
-        if (cancelled) showWarning(isEn ? 'Payment cancelled. You can continue selecting a package or pay pending invoice.' : 'Đã hủy thanh toán. Bạn có thể tiếp tục chọn gói tập hoặc thanh toán hóa đơn chờ.');
-        else if (failed) showWarning(isEn ? 'Cannot confirm payment yet. Please verify your invoice status before retrying.' : 'Chưa thể xác nhận thanh toán. Vui lòng kiểm tra trạng thái hóa đơn trước khi thử lại.');
-        else if (closed) showInfo(isEn ? 'Payment window closed. Updating invoice status...' : 'Đã đóng cửa sổ thanh toán. Đang cập nhật trạng thái hóa đơn.');
-        else showInfo(isEn ? 'Returned to packages page. Payment status is updated from the system.' : 'Đã quay lại trang gói tập. Trạng thái thanh toán được cập nhật từ hệ thống.');
-        loadData();
-        refreshUser().catch(error => showError(error.message || (isEn ? 'Cannot update package information.' : 'Không thể cập nhật thông tin gói tập.')));
-      });
-      checkoutRef.current = checkout;
       const res = await memberApi.subscribeOnline({
         memberId: currentUser.id,
         packageId: selectedPkg.id,
         paymentMethod,
         invoiceNumber: activeInvoiceNumber || undefined
       });
-      if (checkoutRef.current !== checkout) return;
-      if (!res.paymentUrl) throw new Error(isEn ? 'Could not generate payment link.' : 'Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.');
-      if (checkout.navigate(res.paymentUrl)) setModalOpen(false);
+      const paymentUrl = safePaymentHref(res.paymentUrl) || safeHref(res.paymentUrl);
+      if (!paymentUrl) {
+        throw new Error(isEn ? 'Could not generate payment link.' : 'Không thể tạo liên kết thanh toán. Vui lòng thử lại sau.');
+      }
+      setModalOpen(false);
+      // Chuyển hướng trực tiếp trên trang hiện tại, không mở popup
+      window.location.href = paymentUrl;
     } catch (err) {
-      if (checkout && checkoutRef.current !== checkout) return;
-      checkoutRef.current?.dispose();
-      checkoutRef.current = null;
+      setProcessing(false);
       const errMsg = err.message || (isEn ? 'Payment error' : 'Lỗi thanh toán');
       const match = errMsg.match(/\((SC-[^\)]+)\)/);
       if (match || errMsg.includes('hóa đơn chờ thanh toán') || errMsg.includes('pending invoice')) {
@@ -260,8 +230,6 @@ export function MemberPackages() {
       } else {
         showError(errMsg);
       }
-    } finally {
-      if (!checkoutRef.current) setProcessing(false);
     }
   };
 
@@ -742,7 +710,7 @@ export function MemberPackages() {
                 ) : (
                   <>
                     <span className="material-symbols-outlined text-[16px]">lock</span>
-                    <span>{isEn ? 'Confirm & Pay' : 'Xác Nhận & Thanh Toán'}</span>
+                    <span>{isEn ? 'Confirm Payment' : 'Xác Nhận Thanh Toán'}</span>
                   </>
                 )}
               </button>

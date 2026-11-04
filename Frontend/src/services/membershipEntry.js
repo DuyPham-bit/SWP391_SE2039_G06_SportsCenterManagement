@@ -13,7 +13,7 @@ export function getPostLoginRoute(role, intent = null) {
   // Only known member destinations may override the role dashboard after login.
   if (normalized === 'MEMBER' && Object.hasOwn(MEMBER_ROUTES, intent)) return MEMBER_ROUTES[intent];
   return ({
-    SYSTEMADMIN: '#/manager/dashboard', ADMIN: '#/manager/dashboard', MANAGER: '#/manager/dashboard',
+    SYSTEMADMIN: '#/admin/dashboard', ADMIN: '#/admin/dashboard', MANAGER: '#/manager/dashboard',
     RECEPTIONIST: '#/receptionist/dashboard', COACH: '#/coach/dashboard', MEMBER: '#/member/dashboard'
   })[normalized] || '#/';
 }

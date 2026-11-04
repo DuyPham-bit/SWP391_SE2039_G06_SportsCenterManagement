@@ -2,12 +2,15 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { FacilitiesSection } from './FacilitiesSection.js';
+import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
+import { IntroSplashScreen } from './IntroSplashScreen.jsx';
 import { usePublicCatalog } from '../../hooks/usePublicCatalog.js';
 import { getLandingPresentation } from '../../services/landingPresentation.js';
 import { useLandingContent } from '../../hooks/useLandingContent.js';
 import { getExternalContactUrl, normalizeZaloPhone } from '../../services/landingContentService.js';
 import { Logo } from '../../components/common/Logo.jsx';
 import { getMembershipAction } from '../../services/membershipEntry.js';
+import { safeHref } from '../../services/safeUrl.js';
 import {
   translateLandingContent,
   translateSportName,
@@ -202,6 +205,7 @@ export function LandingPage() {
   const manualScrollTimerRef = useRef(null);
 
   // Tiya cd-headline rotate-1 3D perspective flip effect
+  const [showIntro, setShowIntro] = useState(true);
   const [headlineVisible, setHeadlineVisible] = useState(true);
   useEffect(() => {
     const interval = setInterval(() => {
@@ -525,7 +529,7 @@ export function LandingPage() {
     const normalized = String(role || '').toUpperCase();
     switch (normalized) {
       case 'SYSTEMADMIN':
-      case 'ADMIN':
+      case 'ADMIN': return '#/admin/dashboard';
       case 'MANAGER': return '#/manager/dashboard';
       case 'RECEPTIONIST': return '#/receptionist/dashboard';
       case 'COACH': return '#/coach/dashboard';
@@ -536,6 +540,7 @@ export function LandingPage() {
 
   return (
     <div className="landing-page-root tiya-page w-full min-h-screen">
+      {showIntro && <IntroSplashScreen onFinish={() => setShowIntro(false)} />}
       {/* LANDING HEADER (TIYA NAVBAR) */}
       <header
         id="site-header"
@@ -543,7 +548,7 @@ export function LandingPage() {
       >
         <div className="tiya-navbar__container">
           {/* Brand Logo - SCMS Olympic Sports Arena */}
-          <Logo variant="dark" size="md" onClick={(e) => handleNavClick(navItems[0], e)} />
+          <Logo variant="dark" size="lg" onClick={(e) => handleNavClick(navItems[0], e)} />
 
           {/* Navigation Links */}
           <nav className="tiya-nav-menu">
@@ -809,32 +814,26 @@ export function LandingPage() {
         {/* Hero Container */}
         <div className="hero-container">
           <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',maxWidth:'900px',margin:'0 auto'}}>
-            {/* Badge */}
-            <div className="hero-badge">
-              <span className="hero-badge-dot" />
-              {isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
-            </div>
-
-            {/* Headline */}
-            <h1 className="hero-title">
-              {landingContent.heroBanner?.title || 'SHAPING RESILIENCE THROUGH SPORTS'}
-            </h1>
+            {/* Animated Headline with Slide-up & Typewriter */}
+            <TypewriterHeroHeading
+              heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
+            />
 
             {/* Subtext */}
-            <p className="hero-desc">
+            <p className="hero-desc scms-hero-desc mt-5">
               {isEn
                 ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList.length} sports facilities and ${visibleSports.length} disciplines.`
                 : (landingContent.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList.length} cụm sân, phòng tập phục vụ ${visibleSports.length} bộ môn thể thao.`)}
             </p>
 
             {/* CTA Buttons */}
-            <div className="custom-btn-group" style={{justifyContent:'center'}}>
-              <a href={landingContent.heroBanner?.primaryCtaLink || '#/register'}
+            <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center'}}>
+              <a href={safeHref(landingContent.heroBanner?.primaryCtaLink) || '#/register'}
                 className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
                 {isEn ? 'REGISTER NEW MEMBER' : (landingContent.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>arrow_forward</span>
               </a>
-              <a href={landingContent.heroBanner?.secondaryCtaLink || '#khoa-hoc'}
+              <a href={safeHref(landingContent.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
                 className="link">
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
                 {isEn ? `EXPLORE ${visibleSports.length} DISCIPLINES` : (landingContent.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports.length} MÔN HỌC`)}
@@ -902,7 +901,7 @@ export function LandingPage() {
               )}
               <div className="about-badge">
                 <span className="material-symbols-outlined" style={{fontSize:'16px'}}>verified</span>
-                {isEn ? 'WHY CHOOSE SCMS' : (landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN SCMS')}
+                {isEn ? 'WHY CHOOSE OLYMPIC SPORTS ARENA' : (landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN OLYMPIC SPORTS ARENA')}
               </div>
               <h2 className="about-title">
                 {isEn
@@ -1311,12 +1310,12 @@ export function LandingPage() {
             {/* Col 1: Brand */}
             <div>
               <div className="mb-4">
-                <Logo variant="dark" size="md" onClick={e => handleNavClick(navItems[0], e)} />
+                <Logo variant="dark" size="lg" onClick={e => handleNavClick(navItems[0], e)} />
               </div>
               <p style={{fontSize:'13.5px',lineHeight:1.7,color:'#CBD5E1',maxWidth:'320px'}}>
                 {isEn
-                  ? 'Premier sports learning and training ground for all ages. Join SCMS to pursue your passion, enhance physical health, and connect with fellow athletes.'
-                  : 'Không gian học tập và rèn luyện thể thao dành cho mọi lứa tuổi. Cùng SCMS chọn bộ môn yêu thích, nâng cao thể lực và kết nối cộng đồng.'}
+                  ? 'Premier sports learning and training ground for all ages. Join Olympic Sports Arena to pursue your passion, enhance physical health, and connect with fellow athletes.'
+                  : 'Không gian học tập và rèn luyện thể thao dành cho mọi lứa tuổi. Cùng Olympic Sports Arena chọn bộ môn yêu thích, nâng cao thể lực và kết nối cộng đồng.'}
               </p>
               <div style={{display:'inline-flex',alignItems:'center',gap:'8px',marginTop:'16px',padding:'7px 16px',background:'rgba(129,178,154,0.12)',border:'1px solid rgba(129,178,154,0.3)',borderRadius:'100px',fontSize:'12px',fontWeight:600,color:'#A7F3D0'}}>
                 <span className="material-symbols-outlined" style={{fontSize:'16px',color:'#81B29A'}}>sports_score</span>
@@ -1395,7 +1394,7 @@ export function LandingPage() {
           {/* Bottom Copyright & Navigation */}
           <div className="footer-bottom-bar">
             <p className="footer-copyright">
-              {isEn ? '© 2026 SCMS Sports Center. All rights reserved.' : (landingContent.ctaAndFooter?.copyright || '© 2026 SCMS Sports Center. Bảo lưu mọi quyền.')}
+              {isEn ? '© 2026 Olympic Sports Arena. All rights reserved.' : (landingContent.ctaAndFooter?.copyright || '© 2026 Olympic Sports Arena. Bảo lưu mọi quyền.')}
             </p>
             <nav aria-label={isEn ? "Footer navigation" : "Liên kết cuối trang"} className="footer-bottom-nav">
               {navItems.filter(item => item.id !== 'trang-chu').map(item => (

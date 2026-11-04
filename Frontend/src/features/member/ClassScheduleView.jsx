@@ -1,3 +1,4 @@
+import { parseCalendarDate } from '../../utils/dateTime.js';
 import React, { useState, useEffect, useMemo } from 'react';
 import { classApi, bookingApi } from '../../services/api.js';
 import { useAuth } from '../../context/AuthContext.js';
@@ -12,23 +13,23 @@ import { translateClassName, translateSportName, translateCoachName, translateRo
 // --- HÀM TIỆN ÍCH NGÀY THÁNG VÀ LỊCH TRÌNH CHUẨN OLYMPIC ---
 
 function parseIsoDate(dateStr) {
-  if (!dateStr) return new Date();
+  if (!dateStr) return parseCalendarDate();
   const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d, 12, 0, 0);
+  return new Date(Date.UTC(y, m - 1, d, 12));
 }
 
 function formatIsoDate(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
+  const y = date.getUTCFullYear();
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(date.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 
 function getMonday(date) {
   const d = new Date(date);
-  const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.getFullYear(), d.getMonth(), diff, 12, 0, 0);
+  const day = d.getUTCDay();
+  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
+  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 12));
 }
 
 function getWeekDays(startDate) {
@@ -36,19 +37,19 @@ function getWeekDays(startDate) {
   const days = [];
   for (let i = 0; i < 7; i++) {
     const nextDay = new Date(monday);
-    nextDay.setDate(monday.getDate() + i);
+    nextDay.setUTCDate(monday.getUTCDate() + i);
     days.push(nextDay);
   }
   return days;
 }
 
 function getMonthCalendarGrid(year, month) {
-  const firstDay = new Date(year, month, 1, 12, 0, 0);
+  const firstDay = new Date(Date.UTC(year, month, 1, 12));
   const monday = getMonday(firstDay);
   const grid = [];
   for (let i = 0; i < 42; i++) {
     const d = new Date(monday);
-    d.setDate(monday.getDate() + i);
+    d.setUTCDate(monday.getUTCDate() + i);
     grid.push(d);
   }
   return grid;
@@ -159,8 +160,8 @@ export function ClassScheduleView() {
   // --- QUẢN LÝ LỊCH VÀ CHẾ ĐỘ XEM (CALENDAR MODES) ---
   // viewMode: 'week' (Mặc định - Lịch tuần) | 'month' (Lịch tháng) | 'agenda' (Lịch biểu)
   const [viewMode, setViewMode] = useState('week');
-  const [currentDate, setCurrentDate] = useState(() => new Date());
-  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(new Date()));
+  const [currentDate, setCurrentDate] = useState(() => parseCalendarDate());
+  const [selectedCalendarDate, setSelectedCalendarDate] = useState(() => formatIsoDate(parseCalendarDate()));
 
   // --- BỘ LỌC ĐA NĂNG ---
   const [selectedSport, setSelectedSport] = useState('ALL');
@@ -190,13 +191,16 @@ export function ClassScheduleView() {
       );
       setBookedSessionIds(confirmedIds);
 
-      // Tự động căn chỉnh lịch vào tuần có lớp học nếu ngày hiện tại chưa có dữ liệu
-      if (classList && classList.length > 0) {
-        const todayStr = formatIsoDate(new Date());
-        const hasToday = classList.some(c => c.sessionDate === todayStr);
-        if (!hasToday && classList[0]?.sessionDate) {
-          setCurrentDate(parseIsoDate(classList[0].sessionDate));
-          setSelectedCalendarDate(classList[0].sessionDate);
+      // Tự động căn chỉnh lịch vào tuần có lớp học nếu ngày hiện tại chưa có dữ liệu (khi không có ?date=)
+      const currentHash = window.location.hash || '';
+      if (!currentHash.includes('?date=') && !currentHash.includes('&date=')) {
+        if (classList && classList.length > 0) {
+          const todayStr = formatIsoDate(parseCalendarDate());
+          const hasToday = classList.some(c => c.sessionDate === todayStr);
+          if (!hasToday && classList[0]?.sessionDate) {
+            setCurrentDate(parseIsoDate(classList[0].sessionDate));
+            setSelectedCalendarDate(classList[0].sessionDate);
+          }
         }
       }
     } catch (error) {
@@ -214,9 +218,9 @@ export function ClassScheduleView() {
   const handlePrev = () => {
     const d = new Date(currentDate);
     if (viewMode === 'month') {
-      d.setMonth(d.getMonth() - 1);
+      d.setUTCMonth(d.getUTCMonth() - 1);
     } else {
-      d.setDate(d.getDate() - 7);
+      d.setUTCDate(d.getUTCDate() - 7);
     }
     setCurrentDate(d);
   };
@@ -224,15 +228,15 @@ export function ClassScheduleView() {
   const handleNext = () => {
     const d = new Date(currentDate);
     if (viewMode === 'month') {
-      d.setMonth(d.getMonth() + 1);
+      d.setUTCMonth(d.getUTCMonth() + 1);
     } else {
-      d.setDate(d.getDate() + 7);
+      d.setUTCDate(d.getUTCDate() + 7);
     }
     setCurrentDate(d);
   };
 
   const handleToday = () => {
-    const now = new Date();
+    const now = parseCalendarDate();
     setCurrentDate(now);
     setSelectedCalendarDate(formatIsoDate(now));
   };
@@ -249,11 +253,11 @@ export function ClassScheduleView() {
     const target = sessionToBook || activeSession;
     if (!target || !currentUser) return;
 
-    if (target.enrolledCount >= target.capacity) {
+    if (target.enrolledCount >= target.capacity && !target.allowWaitlist) {
       setBookingError({
         message: isEn ? 'This class has reached maximum capacity (no spots left).' : 'Lớp học đã đủ sĩ số tối đa (hết chỗ trống).',
         code: 'BOOK-SLOT-FULL',
-        proposedHandling: isEn ? 'Please choose another session or contact the front desk to join the waitlist.' : 'Vui lòng chọn ca tập khác hoặc liên hệ nhân viên lễ tân quầy để vào danh sách chờ.'
+        proposedHandling: isEn ? 'Please choose another session.' : 'Vui lòng chọn ca tập khác.'
       });
       return;
     }
@@ -342,14 +346,14 @@ export function ClassScheduleView() {
   const periodTitle = useMemo(() => {
     if (viewMode === 'month') {
       return isEn
-        ? `Month ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`
-        : `Tháng ${currentDate.getMonth() + 1}, ${currentDate.getFullYear()}`;
+        ? `Month ${currentDate.getUTCMonth() + 1}, ${currentDate.getUTCFullYear()}`
+        : `Tháng ${currentDate.getUTCMonth() + 1}, ${currentDate.getUTCFullYear()}`;
     }
     const start = weekDays[0];
     const end = weekDays[6];
     return isEn
-      ? `Week: ${start.getDate()} M${start.getMonth() + 1} - ${end.getDate()} M${end.getMonth() + 1}, ${end.getFullYear()}`
-      : `Tuần: ${start.getDate()} Th${start.getMonth() + 1} - ${end.getDate()} Th${end.getMonth() + 1}, ${end.getFullYear()}`;
+      ? `Week: ${start.getUTCDate()} M${start.getUTCMonth() + 1} - ${end.getUTCDate()} M${end.getUTCMonth() + 1}, ${end.getUTCFullYear()}`
+      : `Tuần: ${start.getUTCDate()} Th${start.getUTCMonth() + 1} - ${end.getUTCDate()} Th${end.getUTCMonth() + 1}, ${end.getUTCFullYear()}`;
   }, [viewMode, currentDate, weekDays, isEn]);
 
   // Thống kê nhanh KPI
@@ -372,7 +376,7 @@ export function ClassScheduleView() {
 
   if (loading) return <LoadingSpinner text={isEn ? 'Syncing class schedule & spot availability...' : 'Đang đồng bộ lịch mở lớp & trạng thái vé tập...'} />;
 
-  const todayStr = formatIsoDate(new Date());
+  const todayStr = formatIsoDate(parseCalendarDate());
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
@@ -667,7 +671,7 @@ export function ClassScheduleView() {
                   }`}
                 >
                   <span className="text-[11px] font-bold uppercase text-slate-500 block">
-                    {DAY_LABELS[day.getDay()]}
+                    {DAY_LABELS[day.getUTCDay()]}
                   </span>
                   <div className="mt-1 flex items-center justify-center gap-1">
                     <span
@@ -677,7 +681,7 @@ export function ClassScheduleView() {
                           : 'text-slate-900'
                       }`}
                     >
-                      {day.getDate()}
+                      {day.getUTCDate()}
                     </span>
                   </div>
                   {dayClassesCount > 0 ? (
@@ -708,7 +712,7 @@ export function ClassScheduleView() {
                 >
                   {/* Tiêu đề ngày trên màn hình mobile nhỏ */}
                   <div className="md:hidden pb-1 border-b border-slate-200 flex justify-between items-center text-xs font-bold">
-                    <span>{DAY_LABELS[day.getDay()]} ({dayStr})</span>
+                    <span>{DAY_LABELS[day.getUTCDay()]} ({dayStr})</span>
                     <span className="text-slate-500">{dayClasses.length} {isEn ? 'sessions' : 'ca học'}</span>
                   </div>
 
@@ -809,9 +813,9 @@ export function ClassScheduleView() {
 
             {/* 42 Ngày của Tháng */}
             <div className="grid grid-cols-7 divide-x divide-y divide-slate-200 bg-slate-100/40">
-              {getMonthCalendarGrid(currentDate.getFullYear(), currentDate.getMonth()).map(d => {
+              {getMonthCalendarGrid(currentDate.getUTCFullYear(), currentDate.getUTCMonth()).map(d => {
                 const dayStr = formatIsoDate(d);
-                const isCurrentMonth = d.getMonth() === currentDate.getMonth();
+                const isCurrentMonth = d.getUTCMonth() === currentDate.getUTCMonth();
                 const isToday = dayStr === todayStr;
                 const isSelected = dayStr === selectedCalendarDate;
                 const dayClasses = classesByDate.get(dayStr) || [];
@@ -836,7 +840,7 @@ export function ClassScheduleView() {
                             : 'text-slate-400'
                         }`}
                       >
-                        {d.getDate()}
+                        {d.getUTCDate()}
                       </span>
                       <div className="flex items-center gap-1">
                         {hasBooked && (
@@ -978,7 +982,7 @@ export function ClassScheduleView() {
                           : 'bg-slate-900 text-white'
                       }`}
                     >
-                      {DAY_LABELS[d.getDay()]} · {dateStr}
+                      {DAY_LABELS[d.getUTCDay()]} · {dateStr}
                     </span>
                     <span className="text-xs text-slate-500 font-bold">
                       {dayClasses.length} {isEn ? 'training sessions' : 'ca tập rèn luyện'}
@@ -1158,9 +1162,13 @@ export function ClassScheduleView() {
                   message={isEn
                     ? 'All workout spots in this session have been reserved by members.'
                     : 'Tất cả các vị trí tập luyện trong ca học này đã có hội viên đăng ký giữ chỗ.'}
-                  proposedHandling={isEn
-                    ? 'Please choose another session or contact the front desk to join the waitlist.'
-                    : 'Vui lòng chọn ca tập khác hoặc liên hệ quầy lễ tân để ghi danh vào danh sách chờ.'}
+                  proposedHandling={activeSession.allowWaitlist
+                    ? (isEn
+                      ? 'Use the confirmation button below to join the waitlist. You will be notified when a spot becomes available.'
+                      : 'Nhấn nút xác nhận bên dưới để vào danh sách chờ. Hệ thống sẽ thông báo khi có chỗ trống.')
+                    : (isEn
+                      ? 'Please choose another session.'
+                      : 'Vui lòng chọn ca tập khác.')}
                 />
               ) : remainingSlots <= 3 ? (
                 <BusinessAlert
@@ -1215,7 +1223,7 @@ export function ClassScheduleView() {
                   <button
                     type="button"
                     onClick={() => handleExecuteBooking()}
-                    disabled={bookingLoading || isFull || !activeSession.isBookable}
+                    disabled={bookingLoading || (isFull && !activeSession.allowWaitlist) || !activeSession.isBookable}
                     className="px-6 py-2 text-xs font-bold font-chivo uppercase tracking-wider rounded-lg bg-red-600 hover:bg-red-700 text-white shadow-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                   >
                     {bookingLoading ? (
@@ -1224,7 +1232,9 @@ export function ClassScheduleView() {
                         <span>{isEn ? 'Booking...' : 'Đang giữ chỗ...'}</span>
                       </>
                     ) : (
-                      <span>{isEn ? 'Confirm Booking' : 'Xác Nhận Giữ Chỗ'}</span>
+                      <span>{isFull && activeSession.allowWaitlist
+                        ? (isEn ? 'Join Waitlist' : 'Vào Danh Sách Chờ')
+                        : (isEn ? 'Confirm Booking' : 'Xác Nhận Giữ Chỗ')}</span>
                     )}
                   </button>
                 )}

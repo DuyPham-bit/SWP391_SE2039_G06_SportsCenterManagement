@@ -1,11 +1,14 @@
+import { addCalendarDays, vietnamDate, vietnamDateTimeInput, parseVietnamDateTime, formatVietnamDate } from '../../utils/dateTime.js';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { coachApi, coachProfessionalApi } from '../../services/api.js';
+import { safeHref } from '../../services/safeUrl.js';
+import { uploadMediaFileToCloud } from '../media/api/mediaApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { CoachError } from './CoachShared.jsx';
 import { PerformanceDashboard } from './PerformanceDashboard.jsx';
-import { calendarWindow, classSessionWindow, currency, formatVietnamDateTime, localDateKey, mergeCoachCalendar, tdeeEstimate } from './coachProfessionalView.js';
+import { calendarWindow, classSessionWindow, currency, formatVietnamDateTime, mergeCoachCalendar, tdeeEstimate } from './coachProfessionalView.js';
 
 // Unified input and button styles in SCMS Olympic Arena design system
 const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#81B29A] dark:focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 dark:focus:ring-[#81B29A]/30 outline-none transition-all shadow-2xs';
@@ -97,14 +100,11 @@ function issueStatusMeta(st, isEn = false) {
 }
 
 function dateInput(offset = 0) {
-  const d = new Date();
-  d.setDate(d.getDate() + offset);
-  return localDateKey(d);
+  return addCalendarDays(vietnamDate(), offset);
 }
 
 function dateTimeInput(value = new Date()) {
-  const local = new Date(value.getTime() - value.getTimezoneOffset() * 60000);
-  return local.toISOString().slice(0, 16);
+  return vietnamDateTimeInput(value);
 }
 
 export function CoachProfessionalHub() {
@@ -327,7 +327,7 @@ function ScheduleTab({ data, act, working, isEn }) {
     setCoverageError('');
     setCoverageLoading(false);
     if (leaveType !== 'ShiftSwap' || !leaveWindow.startAt || !leaveWindow.endAt) return undefined;
-    if (new Date(leaveWindow.endAt) <= new Date(leaveWindow.startAt)) {
+    if (parseVietnamDateTime(leaveWindow.endAt) <= parseVietnamDateTime(leaveWindow.startAt)) {
       setCoverageError(isEn ? 'End time must be after start time.' : 'Thời gian kết thúc phải sau thời gian bắt đầu.');
       return undefined;
     }
@@ -446,7 +446,7 @@ function ScheduleTab({ data, act, working, isEn }) {
                 <article key={date} className="rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/40 dark:bg-slate-750/40 p-3.5 space-y-2.5">
                   <h3 className="text-xs font-bold text-[#2D6A4F] dark:text-[#81B29A] uppercase tracking-wider pb-1 border-b border-slate-200/60 dark:border-slate-700 flex items-center justify-between">
                     <span>
-                      {new Date(`${date}T00:00:00`).toLocaleDateString(isEn ? 'en-US' : 'vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit' })}
+                      {formatVietnamDate(date, isEn, { weekday: 'long', day: '2-digit', month: '2-digit' })}
                     </span>
                     <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#81B29A]/15 text-[#2D6A4F] dark:text-[#81B29A] font-bold">
                       {items.length} {isEn ? 'events' : 'ca'}
@@ -1047,7 +1047,7 @@ function ProgramsTab({ data, act, working, isEn }) {
           description: f.get('description'),
           dueDate: f.get('dueDate') || null
         }),
-      isEn ? 'Homework assigned and push notification sent.' : 'Đã giao bài tập về nhà và kích hoạt thông báo Push.'
+      isEn ? 'Homework assigned and notification sent.' : 'Đã giao bài tập về nhà và kích hoạt thông báo.'
     ).then((ok) => ok && e.target.reset());
   };
 
@@ -1185,7 +1185,7 @@ function ProgramsTab({ data, act, working, isEn }) {
               <input name="dueDate" type="datetime-local" className={inputClass} />
             </FormField>
             <button disabled={working} className={`${buttonPrimary} w-full`}>
-              <span>{isEn ? 'Assign Homework & Send Push' : 'Giao bài tập & Gửi thông báo Push'}</span>
+              <span>{isEn ? 'Assign Homework & Send Notice' : 'Giao bài tập & Gửi thông báo'}</span>
             </button>
           </form>
         </SectionCard>
@@ -1476,7 +1476,7 @@ function CommunicationTab({ data, act, working, isEn }) {
   const broadcast = (e) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
-    const channels = ['InApp', 'Email', 'SMS', 'Push'].filter(x => f.get(x));
+    const channels = ['InApp', 'Email'].filter(x => f.get(x));
     return act(
       () =>
         coachProfessionalApi.broadcast({
@@ -1606,16 +1606,16 @@ function CommunicationTab({ data, act, working, isEn }) {
           <fieldset>
             <legend className="text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5 block">{isEn ? 'Delivery Channels' : 'Kênh gửi tin'}</legend>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              {['InApp', 'Email', 'SMS', 'Push'].map((ch, idx) => (
+              {['InApp', 'Email'].map((ch) => (
                 <label key={ch} className="flex items-center gap-2 p-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-750 cursor-pointer">
-                  <input name={ch} type="checkbox" defaultChecked={idx === 0} className="rounded text-[#81B29A] focus:ring-[#81B29A]" />
+                  <input name={ch} type="checkbox" defaultChecked className="rounded text-[#81B29A] focus:ring-[#81B29A]" />
                   <span>{ch}</span>
                 </label>
               ))}
             </div>
           </fieldset>
           <p className="text-[11px] text-slate-400">
-            {isEn ? 'In-App messages are delivered instantly; Email/SMS/Push queued and supervised by the center.' : 'Tin nhắn In-App gửi tức thì; Email/SMS/Push vào hàng đợi được giám sát bởi trung tâm.'}
+            {isEn ? 'In-App messages are delivered instantly; Email queued and supervised by the center.' : 'Tin nhắn In-App gửi tức thì; Email vào hàng đợi được giám sát bởi trung tâm.'}
           </p>
           <button disabled={working} className={`${buttonPrimary} w-full`}>
             <span>{isEn ? 'Broadcast Notice' : 'Phát thông báo'}</span>
@@ -1646,8 +1646,8 @@ function FacilitiesTab({ data, act, working, isEn }) {
     const f = new FormData(e.currentTarget);
     const startStr = f.get('startAt');
     const endStr = f.get('endAt');
-    const start = new Date(startStr);
-    const end = new Date(endStr);
+    const start = parseVietnamDateTime(startStr);
+    const end = parseVietnamDateTime(endStr);
     const now = new Date();
 
     if (start < new Date(now.getTime() - 5 * 60 * 1000)) {
@@ -1839,9 +1839,9 @@ function FacilitiesTab({ data, act, working, isEn }) {
                   <span className="text-[11px] text-slate-400 block">
                     {x.resourceName || (isEn ? 'Other Equipment' : 'Thiết bị khác')} · {formatDate(x.reportedAt, isEn)}
                   </span>
-                  {x.photoUrl && (
+                  {safeHref(x.photoUrl) && (
                     <a
-                      href={x.photoUrl}
+                      href={safeHref(x.photoUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-[11px] font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1 pt-0.5"

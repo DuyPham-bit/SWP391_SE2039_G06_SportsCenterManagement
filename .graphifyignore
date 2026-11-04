@@ -1,0 +1,8 @@
+# Keep local configuration, credentials, and duplicate workspaces out of the index.
+**/.env
+**/.env.*
+**/*.env
+**/credentials*.json
+**/secrets*.json
+SWP391_SE2039_G06_SportsCenterManagement12/
+graphify-out/

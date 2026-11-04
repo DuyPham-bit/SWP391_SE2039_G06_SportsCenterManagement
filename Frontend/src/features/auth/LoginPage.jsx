@@ -1,13 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { useAuth } from '../../context/AuthContext.js';
-import { useToast } from '../../context/ToastContext.js';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 import { loadGoogleIdentity, googleClientId } from '../../services/googleIdentity.js';
 import { AuthField } from './AuthField.js';
 import { ForgotPasswordModal } from './ForgotPasswordModal.js';
 import { GoogleLoginModal } from './GoogleLoginModal.js';
-import { Logo } from '../../components/common/Logo.jsx';
+import { Logo } from '../../shared/ui/Logo.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../services/membershipEntry.js';
 import { authApi } from '../../services/api.js';
 import { useLandingContent } from '../../hooks/useLandingContent.js';
@@ -90,6 +90,8 @@ export function LoginPage() {
   const [fieldErrors, setFieldErrors] = useState({});
   const [formError, setFormError] = useState('');
   const isRegister = activeTab === 'register';
+  const lastFocusedElementRef = useRef(null);
+  const otpModalRef = useRef(null);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -99,21 +101,76 @@ export function LoginPage() {
 
   useEffect(() => {
     if (needsEmailCode) {
-      const focusOtp = () => document.getElementById('register-otp')?.focus();
+      lastFocusedElementRef.current = document.activeElement;
+      const previousOverflow = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+
+      const focusOtp = () => {
+        const otpInput = document.getElementById('register-otp');
+        if (otpInput) {
+          otpInput.focus();
+        } else {
+          otpModalRef.current?.focus();
+        }
+      };
       focusOtp();
       const frame = requestAnimationFrame(focusOtp);
       const timer = setTimeout(focusOtp, 60);
+
       const handleKeyDown = (e) => {
         if (e.key === 'Escape') {
+          e.preventDefault();
           setVerificationEmail('');
           setRegOtp('');
+          return;
+        }
+
+        if (e.key === 'Tab') {
+          const modal = otpModalRef.current;
+          if (!modal) return;
+          const focusable = [
+            ...modal.querySelectorAll(
+              'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+            )
+          ].filter(el => el.getClientRects().length > 0);
+
+          if (focusable.length === 0) {
+            e.preventDefault();
+            modal.focus();
+            return;
+          }
+
+          const first = focusable[0];
+          const last = focusable[focusable.length - 1];
+          const active = document.activeElement;
+
+          if (e.shiftKey) {
+            if (active === first || !modal.contains(active)) {
+              e.preventDefault();
+              last.focus();
+            }
+          } else {
+            if (active === last || !modal.contains(active)) {
+              e.preventDefault();
+              first.focus();
+            }
+          }
         }
       };
+
       window.addEventListener('keydown', handleKeyDown);
       return () => {
         cancelAnimationFrame(frame);
         clearTimeout(timer);
         window.removeEventListener('keydown', handleKeyDown);
+        document.body.style.overflow = previousOverflow;
+        if (lastFocusedElementRef.current && typeof lastFocusedElementRef.current.focus === 'function') {
+          try {
+            lastFocusedElementRef.current.focus();
+          } catch {
+            // ignore
+          }
+        }
       };
     }
   }, [needsEmailCode]);
@@ -325,7 +382,7 @@ export function LoginPage() {
       className="w-full min-h-11 sm:min-h-12 py-3 px-6 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--custom-btn-bg-color)] hover:bg-[var(--custom-btn-bg-hover-color)] text-[var(--secondary-color)] hover:text-white font-dm-sans text-sm font-bold shadow-md shadow-[#F2CC8F]/25 hover:shadow-lg hover:shadow-[#E07A5F]/30 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-wait transition-all duration-200 group"
     >
       {isSubmitting && <span className="w-4 h-4 border-2 border-[var(--secondary-color)]/40 border-t-[var(--secondary-color)] rounded-full animate-spin" aria-hidden="true" />}
-      <span>{isSubmitting ? (isRegister ? 'Đang xử lý...' : 'Đang đăng nhập...') : (isRegister ? (needsEmailCode ? 'Xác thực và tạo tài khoản' : 'Tiếp tục xác thực email') : 'Đăng nhập vào SCMS')}</span>
+      <span>{isSubmitting ? (isRegister ? 'Đang xử lý...' : 'Đang đăng nhập...') : (isRegister ? (needsEmailCode ? 'Xác thực và tạo tài khoản' : 'Tiếp tục xác thực email') : 'Đăng nhập vào Olympic Sports Arena')}</span>
       {!isSubmitting && (
         <span className="material-symbols-outlined text-[19px] group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">
           arrow_forward
@@ -502,7 +559,7 @@ export function LoginPage() {
             {/* Tiêu đề & Lời chào thân thiện */}
             <div className="mb-3.5 sm:mb-4">
               <h1 id="auth-heading" className="font-dm-sans text-xl sm:text-2xl font-bold text-[var(--secondary-color)] tracking-tight leading-tight">
-                <span>{isRegister ? 'Gia nhập SCMS' : 'Chào mừng trở lại!'}</span>
+                <span>{isRegister ? 'Gia nhập Olympic Sports Arena' : 'Chào mừng trở lại!'}</span>
               </h1>
               <p className="text-xs text-slate-500 mt-1 leading-snug line-clamp-2">
                 {isRegister
@@ -594,7 +651,7 @@ export function LoginPage() {
                   <div>
                     <label htmlFor="register-agree" className="flex items-start gap-2 text-[11px] leading-4 text-slate-600 cursor-pointer select-none">
                       <input id="register-agree" type="checkbox" required checked={regAgree} aria-invalid={Boolean(fieldErrors['register-agree'])} aria-describedby={fieldErrors['register-agree'] ? 'register-agree-error' : undefined} onChange={event => updateField('register-agree', event.target.checked, setRegAgree)} className="w-3.5 h-3.5 shrink-0 mt-0.5 accent-[var(--primary-color)] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]" />
-                      <span>Tôi xác nhận thông tin là chính xác và đồng ý tạo tài khoản hội viên SCMS.</span>
+                      <span>Tôi xác nhận thông tin là chính xác và đồng ý tạo tài khoản hội viên Olympic Sports Arena.</span>
                     </label>
                     {fieldErrors['register-agree'] && <p id="register-agree-error" className="text-[11px] text-red-600 leading-4 mt-0.5">{fieldErrors['register-agree']}</p>}
                   </div>
@@ -613,7 +670,9 @@ export function LoginPage() {
                     >
                       {/* Modal Card - Thiết kế chuẩn ảnh 2, 3, 4 */}
                       <div
-                        className="relative w-full max-w-[420px] bg-white rounded-[36px] shadow-[0_25px_70px_-15px_rgba(99,102,241,0.2),0_0_0_1px_rgba(238,242,255,0.8)] border border-slate-100/90 p-7 sm:p-9 text-center transition-all duration-300 overflow-hidden animate-scaleUp"
+                        ref={otpModalRef}
+                        tabIndex={-1}
+                        className="relative w-full max-w-[420px] bg-white rounded-[36px] shadow-[0_25px_70px_-15px_rgba(99,102,241,0.2),0_0_0_1px_rgba(238,242,255,0.8)] border border-slate-100/90 p-7 sm:p-9 text-center transition-all duration-300 overflow-hidden animate-scaleUp focus:outline-none"
                         onClick={(e) => e.stopPropagation()}
                       >
                         {/* Nút đóng góc phải */}
@@ -728,7 +787,7 @@ export function LoginPage() {
 
                         {/* Thông báo lỗi dạng pill đỏ (Ảnh 4: "! That code didn't match. Try again.") */}
                         {(formError || fieldErrors['register-otp']) && (
-                          <div role="alert" className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-semibold text-rose-600 mt-2 mb-3">
+                          <div role="alert" aria-live="assertive" className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-semibold text-rose-600 mt-2 mb-3">
                             <svg className="w-4 h-4 text-rose-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
                               <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z" clipRule="evenodd" />
                             </svg>
@@ -760,7 +819,7 @@ export function LoginPage() {
                         </div>
 
                         {/* Dòng gửi lại mã ở chân modal (Ảnh 2 & 4: "Didn't get a code? ⭮ Resend in 0:xx") */}
-                        <div className="mt-3 text-xs sm:text-[13px] text-gray-500 flex items-center justify-center gap-1.5">
+                        <div className="mt-3 text-xs sm:text-[13px] text-gray-500 flex items-center justify-center gap-1.5" aria-live="polite">
                           <span>Didn't get a code?</span>
                           {resendSeconds > 0 ? (
                             <span className="inline-flex items-center gap-1 font-medium text-gray-700">
@@ -828,3 +887,5 @@ export function LoginPage() {
     </div>
   );
 }
+
+export default LoginPage;

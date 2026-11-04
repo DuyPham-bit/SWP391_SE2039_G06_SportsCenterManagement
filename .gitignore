@@ -14,6 +14,7 @@ Frontend/.env.*.local
 .env.local
 **/.env.local
 .env
+.env.*
 *.env
 !.env.example
 
@@ -73,3 +74,5 @@ docker/nginx.conf
 **/credentials.json
 **/credentials.*.json
 **/appsettings.Development.json
+# Local Graphify index and extraction cache
+graphify-out/

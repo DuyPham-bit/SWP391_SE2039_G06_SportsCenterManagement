@@ -321,6 +321,7 @@ export function getDynamicNavItems(role) {
   const perms = getPermissionsForRole(role);
 
   switch (normalized) {
+    case 'SYSTEMADMIN':
     case 'ADMIN': {
       return [
         { label: 'TỔNG QUAN HỆ THỐNG', isHeader: true },

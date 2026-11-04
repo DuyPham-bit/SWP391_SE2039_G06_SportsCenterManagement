@@ -2,70 +2,101 @@ const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
 const vm = require('node:vm');
+const { webcrypto } = require('node:crypto');
 const { test } = require('node:test');
 
-const key = 'scms.auth.token.v1';
-const jwt = (seconds, subject = 1) => `eyJhbGciOiJIUzI1NiJ9.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + seconds, sub: String(subject) })).toString('base64url')}.test-signature`;
+const key = 'scms.auth.tab.v1';
+const firstId = '11111111111111111111111111111111';
+const secondId = '22222222222222222222222222222222';
 function tab(store = new Map(), fetch = async () => new Response('{}')) {
   const context = vm.createContext({
-    Headers, Response, Event, Date, JSON, Number, Math,
-    atob: value => Buffer.from(value, 'base64').toString(), fetch,
+    Headers, Response, Event, Date, JSON, Number, Math, Uint8Array, crypto: webcrypto, fetch,
     sessionStorage: { getItem: name => store.get(name), setItem: (name, value) => store.set(name, value), removeItem: name => store.delete(name) },
     window: { dispatchEvent: () => {} }
   });
   const auth = fs.readFileSync(path.join(__dirname, '../src/services/authState.js'), 'utf8').replace(/export /g, '');
   const http = fs.readFileSync(path.join(__dirname, '../src/services/http.js'), 'utf8').replace(/^import .*;\r?\n/gm, '')
     .replace(/export /g, '').replaceAll('import.meta.env', '({})');
-  vm.runInContext(`${auth}\n${http}\nglobalThis.api = { getApiToken, setApiToken, clearApiToken, apiRequest };`, context);
+  const backend = fs.readFileSync(path.join(__dirname, '../src/services/backendApi.js'), 'utf8').replace(/^import .*;\r?\n/gm, '')
+    .replaceAll('export const ', 'const ').replaceAll('import.meta.env', '({})');
+  vm.runInContext(`${auth}\n${http}\n${backend}\nglobalThis.api = { getApiSession, setApiSession, clearApiSession, createApiSession, apiRequest, authApi };`, context);
   return context.api;
 }
 
-test('F5 restores an unexpired token in the same tab while another tab keeps its own login', () => {
+test('F5 restores only a tab selector and logout leaves another tab independently authenticated', () => {
   const firstStore = new Map(), secondStore = new Map();
-  const firstToken = jwt(3600, 1), secondToken = jwt(3600, 2);
-  tab(firstStore).setApiToken(firstToken);
-  tab(secondStore).setApiToken(secondToken);
-  assert.equal(tab(firstStore).getApiToken(), firstToken);
-  assert.equal(tab(secondStore).getApiToken(), secondToken);
-  tab(firstStore).clearApiToken();
-  assert.equal(tab(firstStore).getApiToken(), null);
-  assert.equal(tab(secondStore).getApiToken(), secondToken);
+  tab(firstStore).setApiSession(firstId);
+  tab(secondStore).setApiSession(secondId);
+  assert.equal(tab(firstStore).getApiSession(), firstId);
+  assert.equal(tab(secondStore).getApiSession(), secondId);
+  tab(firstStore).clearApiSession();
+  assert.equal(tab(firstStore).getApiSession(), null);
+  assert.equal(tab(secondStore).getApiSession(), secondId);
+  assert.deepEqual([...secondStore.entries()], [[key, secondId]]);
 });
 
-test('expired and malformed persisted tokens are removed before restoring authentication', () => {
-  for (const token of [jwt(-1), 'invalid-token', 'a.bad-json.c']) {
-    const store = new Map([[key, token]]);
-    assert.equal(tab(store).getApiToken(), null);
-    assert.equal(store.has(key), false);
+test('legacy JWTs and malformed selectors are removed instead of restored', () => {
+  for (const selector of ['invalid-id', 'a.b.c', 'A'.repeat(32)]) {
+    const store = new Map([[key, selector], ['scms.auth.token.v1', 'legacy.jwt.token']]);
+    assert.equal(tab(store).getApiSession(), null);
+    assert.equal(store.size, 0);
   }
 });
 
-test('an authenticated 401 removes both the in-memory and persisted login', async () => {
-  const token = jwt(3600), store = new Map([[key, token]]);
+test('authenticated fetch uses cookies and a selector header without exposing a Bearer token', async () => {
+  const api = tab(new Map([[key, firstId]]), async (_url, options) => {
+    assert.equal(options.credentials, 'include');
+    assert.equal(options.headers.get('X-SCMS-Session'), firstId);
+    assert.equal(options.headers.has('Authorization'), false);
+    return new Response('{}');
+  });
+  await api.apiRequest('profile/me');
+});
+
+test('a duplicated tab gets a new selector on login and never stores a JWT from the response', async () => {
+  const store = new Map([[key, firstId]]);
+  let issued;
+  const api = tab(store, async (url, options) => {
+    const session = options.headers.get('X-SCMS-Session');
+    if (url.endsWith('/auth/login')) {
+      issued = session;
+      assert.match(session, /^[a-f0-9]{32}$/);
+      assert.notEqual(session, firstId);
+      return new Response('{"accessToken":null}', { headers: { 'Content-Type': 'application/json' } });
+    }
+    assert.equal(session, issued);
+    return new Response(JSON.stringify(url.endsWith('/profile/me') ? { userId: 2, role: 'Manager' } : []),
+      { headers: { 'Content-Type': 'application/json' } });
+  });
+  assert.equal((await api.authApi.login('second@example.test', 'Chosen_Password42!')).user.id, 2);
+  assert.deepEqual([...store.entries()], [[key, issued]]);
+});
+
+test('an authenticated 401 removes the current tab selector', async () => {
+  const store = new Map([[key, firstId]]);
   const api = tab(store, async () => new Response('{}', { status: 401, headers: { 'Content-Type': 'application/json' } }));
   await assert.rejects(api.apiRequest('profile/me'), error => error.status === 401);
-  assert.equal(api.getApiToken(), null);
-  assert.equal(store.has(key), false);
+  assert.equal(api.getApiSession(), null);
+  assert.equal(store.size, 0);
 });
 
 test('a late 401 from a previous account does not clear a newer login', async () => {
   let finish;
-  const store = new Map([[key, jwt(3600, 1)]]);
+  const store = new Map([[key, firstId]]);
   const api = tab(store, () => new Promise(resolve => { finish = resolve; }));
   const pending = api.apiRequest('profile/me');
-  const secondToken = jwt(3600, 2);
-  api.setApiToken(secondToken);
+  api.setApiSession(secondId);
   finish(new Response('{}', { status: 401, headers: { 'Content-Type': 'application/json' } }));
   await assert.rejects(pending);
-  assert.equal(api.getApiToken(), secondToken);
-  assert.equal(tab(store).getApiToken(), secondToken);
+  assert.equal(api.getApiSession(), secondId);
+  assert.equal(tab(store).getApiSession(), secondId);
 });
 
 test('a late successful response cannot populate the UI after switching accounts', async () => {
   let finish;
-  const api = tab(new Map([[key, jwt(3600, 1)]]), () => new Promise(resolve => { finish = resolve; }));
+  const api = tab(new Map([[key, firstId]]), () => new Promise(resolve => { finish = resolve; }));
   const pending = api.apiRequest('members/me/progress');
-  api.setApiToken(jwt(3600, 2));
+  api.setApiSession(secondId);
   finish(new Response('{"private":"previous account"}', { headers: { 'Content-Type': 'application/json' } }));
   await assert.rejects(pending, error => error.code === 'AUTH_SUPERSEDED');
 });
@@ -78,23 +109,23 @@ test('cancellation retains AbortError instead of reporting an uncertain transact
 
 test('a late 204 cannot report success after logout', async () => {
   let finish;
-  const api = tab(new Map([[key, jwt(3600)]]), () => new Promise(resolve => { finish = resolve; }));
+  const api = tab(new Map([[key, firstId]]), () => new Promise(resolve => { finish = resolve; }));
   const pending = api.apiRequest('auth/google/link', { method: 'POST' });
-  api.clearApiToken();
+  api.clearApiSession();
   finish(new Response(null, { status: 204 }));
   await assert.rejects(pending, error => error.code === 'AUTH_SUPERSEDED');
-  assert.equal(api.getApiToken(), null);
+  assert.equal(api.getApiSession(), null);
 });
 
-test('switching accounts while the response body is loading discards the old private data', async () => {
+test('switching accounts while the response body is loading discards old private data', async () => {
   let finishBody;
   const body = new Promise(resolve => { finishBody = resolve; });
   const response = new Response('{}', { headers: { 'Content-Type': 'application/json' } });
   response.json = () => body;
-  const api = tab(new Map([[key, jwt(3600, 1)]]), async () => response);
+  const api = tab(new Map([[key, firstId]]), async () => response);
   const pending = api.apiRequest('members/me');
   await Promise.resolve();
-  api.setApiToken(jwt(3600, 2));
+  api.setApiSession(secondId);
   finishBody({ private: 'previous account' });
   await assert.rejects(pending, error => error.code === 'AUTH_SUPERSEDED');
 });

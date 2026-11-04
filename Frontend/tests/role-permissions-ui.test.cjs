@@ -7,9 +7,9 @@ const source = fs.readFileSync(
   path.join(__dirname, '../src/features/manager/RolesPermissions.jsx'),
   'utf8'
 );
-const controllerSource = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.API/Controllers/CenterPermissionsController.cs'), 'utf8');
-const capabilityGuardSource = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.API/Authorization/CenterCapabilityAttribute.cs'), 'utf8');
-const permissionGuardSource = fs.readFileSync(path.join(__dirname, '../../Backend/Backend/SportsCenterManagement.API/Authorization/PermissionAuthorizationHandler.cs'), 'utf8');
+const controllerSource = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Controllers/CenterPermissionsController.cs'), 'utf8');
+const capabilityGuardSource = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Authorization/CenterCapabilityAttribute.cs'), 'utf8');
+const permissionGuardSource = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Authorization/PermissionAuthorizationHandler.cs'), 'utf8');
 const apiSource = fs.readFileSync(path.join(__dirname, '../src/services/backendApi.js'), 'utf8');
 
 test('Admin can configure Manager permissions while Manager delegation remains restricted', () => {

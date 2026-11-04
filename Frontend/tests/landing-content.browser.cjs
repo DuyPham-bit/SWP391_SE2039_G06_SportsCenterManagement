@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
+const { issueBrowserSession, browserCredential } = require('./browser-auth-fixture.cjs');
 
 const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, 'tmp/landing-content');
@@ -28,8 +29,8 @@ const server = http.createServer(async (req, res) => {
     const body = raw ? JSON.parse(raw) : null;
     if (route === '/api/landing-content' && req.method === 'GET') return json(res, { content: published });
     if (/^\/api\/public\/centers\/\d+\/catalog$/.test(route)) return json(res, publicCatalog);
-    if (route === '/api/auth/login') return json(res, { accessToken: 'manager-test-token' });
-    if (req.headers.authorization !== 'Bearer manager-test-token') return json(res, { message: 'Unauthorized' }, 401);
+    if (route === '/api/auth/login') return json(res, issueBrowserSession(req, res, 'manager-test-token'));
+    if (browserCredential(req) !== 'manager-test-token') return json(res, { message: 'Unauthorized' }, 401);
     if (route === '/api/profile/me') return json(res, { userId: 99, role: 'Manager', status: 'Active', centerId: 1, fullName: 'Manager test', email: 'manager@example.test' });
     if (route === '/api/access/me/capabilities') return json(res, ['manage_landing_content']);
     if (route === '/api/notifications/me') return json(res, []);
@@ -40,7 +41,7 @@ const server = http.createServer(async (req, res) => {
       return json(res, { content: published });
     }
     if (route === '/api/media/status') return json(res, { isConnected: true, totalImages: galleryFiles.length, folderId: 'fixture-folder' });
-    if (route === '/api/media/drive-files') return json(res, galleryFiles);
+    if (route === '/api/media/files') return json(res, galleryFiles);
     if (route.endsWith('/audit-logs')) return json(res, { items: [], totalCount: 0 });
     if (route.includes('/reports/')) return json(res, { periods: [], currentStatusCounts: {} });
     return json(res, { items: [], totalCount: 0 });

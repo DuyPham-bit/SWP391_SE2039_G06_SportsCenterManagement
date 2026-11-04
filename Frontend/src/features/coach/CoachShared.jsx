@@ -30,7 +30,7 @@ export function CoachError({ message, retry }) {
   );
 }
 
-export function useTeachingSessions(endOffset = 30, anchorDate = null) {
+export function useTeachingSessions(endOffset = 30, anchorDate = null, includeHistory = true) {
   const [from, setFrom] = useState(anchorDate || coachDate(-30));
   const [to, setTo] = useState(anchorDate || coachDate(endOffset));
   const [range, setRange] = useState({ from, to, version: 0 });
@@ -46,12 +46,12 @@ export function useTeachingSessions(endOffset = 30, anchorDate = null) {
   useEffect(() => {
     let active = true;
     setLoading(true); setError(''); setSessions([]);
-    classApi.getTeachingSchedule(range.from, range.to).then(data => {
+    classApi.getTeachingSchedule(range.from, range.to, includeHistory).then(data => {
       if (active) setSessions(data);
     }).catch(e => { if (active) setError(e.message); })
       .finally(() => { if (active) setLoading(false); });
     return () => { active = false; };
-  }, [range]);
+  }, [range, includeHistory]);
   return { from, to, setFrom, setTo, sessions, loading, error, reload };
 }
 

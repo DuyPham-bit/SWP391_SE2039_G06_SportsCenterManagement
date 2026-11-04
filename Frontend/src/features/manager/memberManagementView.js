@@ -94,7 +94,8 @@ export function formatMembershipDateTime(value, fallback = 'Chưa xác định')
 export function normalizeSubscriptionHistory(value) {
   if (!Array.isArray(value)) return [];
   const timestamp = item => {
-    const parsed = Date.parse(item?.createdAt || '');
+    const raw = String(item?.createdAt || '');
+    const parsed = Date.parse(/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw) ? raw : `${raw}Z`);
     return Number.isNaN(parsed) ? 0 : parsed;
   };
   return [...value].sort((left, right) =>

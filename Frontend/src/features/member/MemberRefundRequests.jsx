@@ -1,8 +1,10 @@
+import { formatVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { refundApi } from '../../services/api.js';
+import { safeHref } from '../../services/safeUrl.js';
 import { createIdempotencyKey } from '../../services/http.js';
-import { useLanguage } from '../../context/LanguageContext.jsx';
-import { useToast } from '../../context/ToastContext.jsx';
+import { useLanguage } from '../../app/providers/LanguageContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 
 const money = value => `${Number(value || 0).toLocaleString('vi-VN')} ₫`;
@@ -101,12 +103,12 @@ export function MemberRefundRequests() {
         <div className="mt-4 space-y-3">
           {!requests.length && <p className="rounded-xl border border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">{isEn ? 'No refund request yet.' : 'Bạn chưa gửi yêu cầu hoàn tiền.'}</p>}
           {requests.map(item => <article key={item.id} className="rounded-xl border border-slate-200 p-4">
-            <div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{item.invoiceNumber}</strong><p className="text-xs text-slate-500">{new Date(item.requestedAtUtc).toLocaleString(isEn ? 'en-US' : 'vi-VN')}</p></div><span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${statusStyle[item.status] || statusStyle.Pending}`}>{item.status}</span></div>
+            <div className="flex flex-wrap items-start justify-between gap-2"><div><strong>{item.invoiceNumber}</strong><p className="text-xs text-slate-500">{formatVietnamDateTime(item.requestedAtUtc, isEn)}</p></div><span className={`rounded-full border px-2.5 py-1 text-xs font-bold ${statusStyle[item.status] || statusStyle.Pending}`}>{item.status}</span></div>
             <p className="mt-3 text-xl font-black text-[#2D6A4F]">{money(item.amount)}</p>
             <p className="mt-1 text-sm text-slate-600">{item.bankName} · {item.bankAccountNumber} · {item.bankAccountName}</p>
             <p className="mt-2 text-sm">{item.reason}</p>
             {item.reviewNote && <p className="mt-2 rounded-lg bg-slate-50 p-2 text-xs text-slate-600"><strong>{isEn ? 'Manager note:' : 'Ghi chú quản lý:'}</strong> {item.reviewNote}</p>}
-            {item.transferProofUrl && <a href={item.transferProofUrl} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 underline"><span className="material-symbols-outlined text-[16px]">receipt_long</span>{isEn ? 'View transfer proof' : 'Xem ảnh chuyển khoản'}</a>}
+            {safeHref(item.transferProofUrl) && <a href={safeHref(item.transferProofUrl)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-emerald-700 underline"><span className="material-symbols-outlined text-[16px]">receipt_long</span>{isEn ? 'View transfer proof' : 'Xem ảnh chuyển khoản'}</a>}
           </article>)}
         </div>
       </section>

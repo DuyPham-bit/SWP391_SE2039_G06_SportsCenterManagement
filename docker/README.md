@@ -35,3 +35,8 @@ docker compose --env-file docker/.env -f docker/compose.yml down
 ```
 
 Mỗi máy có database local riêng trong Docker volume.
+
+Backend hiện dùng PostgreSQL (Npgsql), không chạy SQL Server. Source backend ở
+`Backend/`; các migration SQL Server cũ chỉ là bản lưu trữ ngoài project.
+Deploy Render theo [docs/Deploy.md](../docs/Deploy.md); giữ giá trị bí mật trong
+Environment của từng service, không đưa `docker/.env` lên GitHub.

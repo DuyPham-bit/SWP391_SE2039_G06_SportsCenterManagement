@@ -1,4 +1,4 @@
-import { apiRequest, getApiToken, getApiUrl } from './http.js';
+import { apiRequest } from './http.js';
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 const MAX_FILE_SIZE = 5 * 1024 * 1024;
@@ -16,19 +16,10 @@ export async function uploadRefundBill(file) {
 
   const formData = new FormData();
   formData.append('file', file);
-  const token = getApiToken();
-  const response = await fetch(getApiUrl('refund-bills'), {
+  const payload = await apiRequest('refund-bills', {
     method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
     body: formData
   });
-
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) {
-    const validationErrors = payload?.errors && Object.values(payload.errors).flat().join(' ');
-    throw new Error(payload?.detail || payload?.message || validationErrors ||
-      `Không thể tải ảnh xác nhận lên Cloudflare R2 (HTTP ${response.status}).`);
-  }
   if (!payload?.key) {
     throw new Error('Cloudflare R2 không trả về đường dẫn ảnh hợp lệ.');
   }

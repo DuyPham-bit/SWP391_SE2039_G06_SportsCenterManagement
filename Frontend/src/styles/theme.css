@@ -715,3 +715,492 @@ body.scms-simulated-fullscreen #root {
   animation: backdrop-fade-in 0.25s ease-out forwards;
 }
 
+
+@keyframes otpShake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-8px); }
+  40%, 80% { transform: translateX(8px); }
+}
+
+.animate-otp-shake {
+  animation: otpShake 0.4s cubic-bezier(0.36, 0.07, 0.19, 0.97) both;
+}
+
+/* Hero Section Slide-up & Typewriter Animations */
+@keyframes scmsHeroFadeUp {
+  from {
+    opacity: 0;
+    transform: translateY(28px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes scmsCursorBlink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.scms-hero-sub {
+  opacity: 0;
+  animation: scmsHeroFadeUp 0.8s ease forwards 0.2s;
+}
+
+.scms-hero-line-1 {
+  opacity: 0;
+  animation: scmsHeroFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.5s;
+}
+
+.scms-hero-line-2 {
+  opacity: 0;
+  animation: scmsHeroFadeUp 0.8s cubic-bezier(0.16, 1, 0.3, 1) forwards 0.8s;
+}
+
+.scms-hero-typewriter {
+  opacity: 0;
+  animation: scmsHeroFadeUp 0.8s ease forwards 1.1s;
+}
+
+.scms-hero-desc {
+  opacity: 0;
+  animation: scmsHeroFadeUp 0.8s ease forwards 1.4s;
+}
+
+.scms-hero-cta {
+  opacity: 0;
+  animation: scmsHeroFadeUp 0.8s ease forwards 1.6s;
+}
+
+.scms-hero-cursor {
+  display: inline-block;
+  color: #F2CC8F;
+  font-weight: 900;
+  animation: scmsCursorBlink 0.7s infinite;
+}
+
+/* SCMS Theme Highlights for Hero (Tiya Palette: Sage Green #81B29A & Warm Gold #F2CC8F) */
+.scms-highlight-primary,
+.scms-highlight-red {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #81B29A 0%, #5f997f 100%);
+  color: #ffffff !important;
+  padding: 4px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(129, 178, 154, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+  text-shadow: none;
+  font-family: 'Montserrat', 'Lexend', system-ui, sans-serif !important;
+  font-weight: 800;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+.scms-highlight-accent,
+.scms-highlight-white {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #F2CC8F 0%, #e2b36a 100%);
+  color: #1E293B !important;
+  padding: 4px 18px;
+  border-radius: 10px;
+  box-shadow: 0 6px 20px rgba(242, 204, 143, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+  text-shadow: none;
+  font-family: 'Montserrat', 'Lexend', system-ui, sans-serif !important;
+  font-weight: 800;
+  vertical-align: middle;
+  line-height: 1.2;
+}
+
+/* Cross-Browser & Mobile Optimized 3D Stage & Backdrop (Microsoft Edge, Safari, Chrome) */
+.scms-intro-backdrop {
+  background-color: #0b131a;
+  background-color: rgba(9, 15, 22, 0.88);
+  -webkit-backdrop-filter: blur(20px);
+  backdrop-filter: blur(20px);
+}
+
+@supports not ((-webkit-backdrop-filter: blur(20px)) or (backdrop-filter: blur(20px))) {
+  .scms-intro-backdrop {
+    background-color: #090e16 !important;
+  }
+}
+
+.scms-3d-stage {
+  -webkit-perspective: 1200px;
+  perspective: 1200px;
+  -webkit-perspective-origin: 50% 50%;
+  perspective-origin: 50% 50%;
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+}
+
+/* 1-Round 3D Orbit Spin (Xoay đúng 1 vòng tròn 360 độ cho cụm chữ SCMS, siêu mượt trên Edge & Mobile) */
+@-webkit-keyframes scms1RoundSpin {
+  0% {
+    -webkit-transform: rotateX(-12deg) rotateY(0deg);
+    transform: rotateX(-12deg) rotateY(0deg);
+  }
+  100% {
+    -webkit-transform: rotateX(0deg) rotateY(360deg);
+    transform: rotateX(0deg) rotateY(360deg);
+  }
+}
+
+@keyframes scms1RoundSpin {
+  0% {
+    -webkit-transform: rotateX(-12deg) rotateY(0deg);
+    transform: rotateX(-12deg) rotateY(0deg);
+  }
+  100% {
+    -webkit-transform: rotateX(0deg) rotateY(360deg);
+    transform: rotateX(0deg) rotateY(360deg);
+  }
+}
+
+/* Hiệu ứng thể thao: Sàn đấu & Đường chạy Olympic 3D (Olympic Stadium Court & Track 3D) */
+@keyframes scmsArenaTrackSpin {
+  from {
+    transform: perspective(1000px) translateY(90px) rotateX(64deg) rotateZ(0deg);
+  }
+  to {
+    transform: perspective(1000px) translateY(90px) rotateX(64deg) rotateZ(360deg);
+  }
+}
+
+/* Vệt sáng tốc độ chạy vòng quanh làn đua thể thao */
+@keyframes scmsCometLap {
+  0% {
+    stroke-dashoffset: 0;
+  }
+  100% {
+    stroke-dashoffset: -1760;
+  }
+}
+
+/* Sóng xung kích thể thao lan tỏa khi khóa mục tiêu (Athletic Shockwave) */
+@keyframes scmsShockwave {
+  0% {
+    transform: scale(0.4);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(2.4);
+    opacity: 0;
+  }
+}
+
+.scms-spinner-1turn {
+  position: relative;
+  -webkit-transform-style: preserve-3d;
+  transform-style: preserve-3d;
+  -webkit-animation: scms1RoundSpin 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  animation: scms1RoundSpin 1.4s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  will-change: transform;
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+}
+
+.scms-letter-cell {
+  -webkit-backface-visibility: hidden;
+  backface-visibility: hidden;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scms-spinner-1turn {
+    -webkit-animation: none !important;
+    animation: none !important;
+    -webkit-transform: rotateX(0deg) rotateY(0deg) !important;
+    transform: rotateX(0deg) rotateY(0deg) !important;
+  }
+}
+
+/* Sàn đấu & Đường chạy Olympic 3D: Cố định góc nhìn chuẩn không gian 3D, không bị xoay lệch */
+.scms-arena-track {
+  position: absolute;
+  transform-style: preserve-3d;
+  transform: perspective(1000px) translateY(90px) rotateX(64deg);
+  animation: scmsArenaTrackIntro 1.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  will-change: transform, opacity;
+  backface-visibility: hidden;
+}
+
+@keyframes scmsArenaTrackIntro {
+  0% {
+    transform: perspective(1000px) translateY(90px) rotateX(64deg) scale(0.92);
+    opacity: 0;
+  }
+  100% {
+    transform: perspective(1000px) translateY(90px) rotateX(64deg) scale(1);
+    opacity: 1;
+  }
+}
+
+.scms-comet-beam {
+  animation: scmsCometLap 1.8s linear infinite;
+  will-change: stroke-dashoffset;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SCMS 3D OLYMPIC ARENA ATHLETICS STAGE (CHÍNH XÁC 100% THEO ĐƯỜNG CHẠY)
+   Đứng thẳng trong không gian 3D (Billboard rotateX(-64deg)), bàn chân chạm đúng đường chạy:
+   - Làn 2 (VĐV 1, Xanh Ngọc #10B981, Bib 01): Bám sát vạch đứt xanh R = 255px
+   - Làn 3 (VĐV 2, Vàng Kim #F59E0B, Bib 02): Bám sát vạch trong vàng R = 225px
+   - Cầu thủ bóng đá (#10): Đứng thẳng giữa sân cỏ, vung chân sút thẳng
+   - Quả bóng đá 3D: Bay thẳng một mạch từ chân cầu thủ vào giữa lưới khung thành 3D
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* VẬN ĐỘNG VIÊN 1 (Làn 2, R = 255px) */
+@keyframes scms3dRunner1 {
+  0.00% { top: 45.0px; left: 300.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  2.78% { top: 48.9px; left: 255.7px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  5.56% { top: 60.4px; left: 212.8px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  8.33% { top: 79.2px; left: 172.5px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  11.11% { top: 104.7px; left: 136.1px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  13.89% { top: 136.1px; left: 104.7px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  16.67% { top: 172.5px; left: 79.2px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  19.44% { top: 212.8px; left: 60.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  22.22% { top: 255.7px; left: 48.9px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  25.00% { top: 300.0px; left: 45.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  27.78% { top: 344.3px; left: 48.9px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  30.56% { top: 387.2px; left: 60.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  33.33% { top: 427.5px; left: 79.2px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  36.11% { top: 463.9px; left: 104.7px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  38.89% { top: 495.3px; left: 136.1px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  41.67% { top: 520.8px; left: 172.5px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  44.44% { top: 539.6px; left: 212.8px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  47.22% { top: 551.1px; left: 255.7px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  50.00% { top: 555.0px; left: 300.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  52.78% { top: 551.1px; left: 344.3px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  55.56% { top: 539.6px; left: 387.2px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  58.33% { top: 520.8px; left: 427.5px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  61.11% { top: 495.3px; left: 463.9px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  63.89% { top: 463.9px; left: 495.3px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  66.67% { top: 427.5px; left: 520.8px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  69.44% { top: 387.2px; left: 539.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  72.22% { top: 344.3px; left: 551.1px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  75.00% { top: 300.0px; left: 555.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  77.78% { top: 255.7px; left: 551.1px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  80.56% { top: 212.8px; left: 539.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  83.33% { top: 172.5px; left: 520.8px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  86.11% { top: 136.1px; left: 495.3px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  88.89% { top: 104.7px; left: 463.9px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  91.67% { top: 79.2px; left: 427.5px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  94.44% { top: 60.4px; left: 387.2px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  97.22% { top: 48.9px; left: 344.3px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  100.00% { top: 45.0px; left: 300.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+}
+
+.scms-runner-standing-1 {
+  position: absolute;
+  width: 64px;
+  height: 84px;
+  transform-origin: 50% 100%;
+  animation: scms3dRunner1 4.8s linear infinite;
+  pointer-events: none;
+  will-change: top, left, transform;
+}
+
+/* VẬN ĐỘNG VIÊN 2 (Làn 3, R = 225px) */
+@keyframes scms3dRunner2 {
+  0.00% { top: 75.0px; left: 300.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  2.78% { top: 78.4px; left: 260.9px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  5.56% { top: 88.6px; left: 223.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  8.33% { top: 105.1px; left: 187.5px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  11.11% { top: 127.6px; left: 155.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  13.89% { top: 155.4px; left: 127.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  16.67% { top: 187.5px; left: 105.1px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  19.44% { top: 223.0px; left: 88.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  22.22% { top: 260.9px; left: 78.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  25.00% { top: 300.0px; left: 75.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  27.78% { top: 339.1px; left: 78.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  30.56% { top: 377.0px; left: 88.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  33.33% { top: 412.5px; left: 105.1px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  36.11% { top: 444.6px; left: 127.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  38.89% { top: 472.4px; left: 155.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  41.67% { top: 494.9px; left: 187.5px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  44.44% { top: 511.4px; left: 223.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  47.22% { top: 521.6px; left: 260.9px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  50.00% { top: 525.0px; left: 300.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  52.78% { top: 521.6px; left: 339.1px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  55.56% { top: 511.4px; left: 377.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  58.33% { top: 494.9px; left: 412.5px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  61.11% { top: 472.4px; left: 444.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  63.89% { top: 444.6px; left: 472.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  66.67% { top: 412.5px; left: 494.9px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  69.44% { top: 377.0px; left: 511.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  72.22% { top: 339.1px; left: 521.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(1); }
+  75.00% { top: 300.0px; left: 525.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  77.78% { top: 260.9px; left: 521.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  80.56% { top: 223.0px; left: 511.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  83.33% { top: 187.5px; left: 494.9px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  86.11% { top: 155.4px; left: 472.4px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  88.89% { top: 127.6px; left: 444.6px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  91.67% { top: 105.1px; left: 412.5px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  94.44% { top: 88.6px; left: 377.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  97.22% { top: 78.4px; left: 339.1px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+  100.00% { top: 75.0px; left: 300.0px; transform: translate(-50%, -100%) rotateX(-64deg) scaleX(-1); }
+}
+
+.scms-runner-standing-2 {
+  position: absolute;
+  width: 64px;
+  height: 84px;
+  transform-origin: 50% 100%;
+  animation: scms3dRunner2 4.8s linear infinite;
+  animation-delay: -1.2s;
+  pointer-events: none;
+  will-change: top, left, transform;
+}
+
+/* 4 TƯ THẾ GIẢI PHẪU CHẠY BỘ TỰ NHIÊN (0.44s/bước) */
+@keyframes scmsRunPoseCycle1 { 0%, 24.99% { opacity: 1; visibility: visible; } 25%, 100% { opacity: 0; visibility: hidden; } }
+@keyframes scmsRunPoseCycle2 { 0%, 24.99% { opacity: 0; visibility: hidden; } 25%, 49.99% { opacity: 1; visibility: visible; } 50%, 100% { opacity: 0; visibility: hidden; } }
+@keyframes scmsRunPoseCycle3 { 0%, 49.99% { opacity: 0; visibility: hidden; } 50%, 74.99% { opacity: 1; visibility: visible; } 75%, 100% { opacity: 0; visibility: hidden; } }
+@keyframes scmsRunPoseCycle4 { 0%, 74.99% { opacity: 0; visibility: hidden; } 75%, 100% { opacity: 1; visibility: visible; } }
+
+.scms-run-pose-1 { animation: scmsRunPoseCycle1 0.44s step-end infinite; }
+.scms-run-pose-2 { animation: scmsRunPoseCycle2 0.44s step-end infinite; }
+.scms-run-pose-3 { animation: scmsRunPoseCycle3 0.44s step-end infinite; }
+.scms-run-pose-4 { animation: scmsRunPoseCycle4 0.44s step-end infinite; }
+
+/* CẦU THỦ BÓNG ĐÁ ĐỨNG THẲNG TRÊN SÂN CỎ (3D) */
+.scms-striker-standing {
+  position: absolute;
+  top: 285px;
+  left: 195px;
+  width: 74px;
+  height: 94px;
+  transform-origin: 50% 100%;
+  transform: translate(-50%, -100%) rotateX(-64deg);
+  pointer-events: none;
+}
+
+@keyframes scmsStrikerLegSwing {
+  0%, 4% { transform: rotate(-24deg); }
+  10% { transform: rotate(18deg); }
+  20% { transform: rotate(34deg); }
+  40% { transform: rotate(10deg); }
+  55%, 100% { transform: rotate(0deg); }
+}
+
+.scms-striker-kicking-leg {
+  transform-origin: 0px -19px;
+  animation: scmsStrikerLegSwing 3.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  will-change: transform;
+}
+
+/* KHUNG THÀNH 3D ĐỨNG THẲNG TRÊN SÂN CỎ (3D) */
+.scms-goal-standing {
+  position: absolute;
+  top: 285px;
+  left: 360px;
+  width: 80px;
+  height: 90px;
+  transform-origin: 50% 100%;
+  transform: translate(-50%, -100%) rotateX(-64deg);
+  pointer-events: none;
+}
+
+@keyframes scmsGoalNetRipple {
+  0%, 55% { transform: scaleX(1); }
+  58% { transform: scaleX(1.15) skewY(2deg); }
+  66% { transform: scaleX(0.96) skewY(-1deg); }
+  75% { transform: scaleX(1.02); }
+  85%, 100% { transform: scaleX(1); }
+}
+
+.scms-goal-net-animated {
+  transform-origin: 0px 0px;
+  animation: scmsGoalNetRipple 3.2s ease-out infinite;
+  will-change: transform;
+}
+
+/* QUẢ BÓNG ĐÁ 3D: SÚT THẲNG MỘT MẠCH VÀO GIỮA LƯỚI KHUNG THÀNH */
+@keyframes scmsBallFlightStraight3D {
+  0%, 9.99% {
+    top: 282px; left: 225px;
+    transform: translate(-50%, -50%) rotateX(-64deg) translateZ(0px) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+  18% {
+    top: 282px; left: 260px;
+    transform: translate(-50%, -50%) rotateX(-64deg) translateZ(22px) scale(1.1) rotate(140deg);
+    opacity: 1;
+  }
+  32% {
+    top: 282px; left: 305px;
+    transform: translate(-50%, -50%) rotateX(-64deg) translateZ(30px) scale(1.15) rotate(320deg);
+    opacity: 1;
+  }
+  48% {
+    top: 282px; left: 348px;
+    transform: translate(-50%, -50%) rotateX(-64deg) translateZ(16px) scale(1.0) rotate(500deg);
+    opacity: 1;
+  }
+  56% {
+    /* Sút thẳng vào giữa lưới khung thành */
+    top: 282px; left: 375px;
+    transform: translate(-50%, -50%) rotateX(-64deg) translateZ(4px) scale(0.85) rotate(640deg);
+    opacity: 1;
+  }
+  68%, 85% {
+    /* Nằm gọn trong lưới khung thành */
+    top: 285px; left: 380px;
+    transform: translate(-50%, -50%) rotateX(-64deg) translateZ(0px) scale(0.8) rotate(660deg);
+    opacity: 0.95;
+  }
+  92%, 96% {
+    opacity: 0;
+  }
+  100% {
+    top: 282px; left: 225px;
+    transform: translate(-50%, -50%) rotateX(-64deg) translateZ(0px) scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+
+.scms-ball-standing {
+  position: absolute;
+  width: 22px;
+  height: 22px;
+  transform-origin: 50% 50%;
+  animation: scmsBallFlightStraight3D 3.2s cubic-bezier(0.25, 0.46, 0.45, 0.94) infinite;
+  pointer-events: none;
+  will-change: top, left, transform, opacity;
+}
+
+/* Vòng nổ năng lượng GOAL! nổ bừng ở chính giữa khung thành */
+@keyframes scmsGoalBurstWave {
+  0%, 55% { transform: scale(0); opacity: 0; stroke: #F2CC8F; stroke-width: 2.5; }
+  56%     { transform: scale(0.5); opacity: 1; stroke: #F2CC8F; stroke-width: 3.5; }
+  72%     { transform: scale(16); opacity: 0; stroke: #10B981; stroke-width: 1.2; }
+  100%    { transform: scale(0); opacity: 0; }
+}
+
+.scms-goal-burst {
+  position: absolute;
+  top: 282px;
+  left: 375px;
+  width: 10px;
+  height: 10px;
+  transform: translate(-50%, -50%) rotateX(-64deg);
+  animation: scmsGoalBurstWave 3.2s ease-out infinite;
+  fill: none;
+  pointer-events: none;
+  will-change: transform, opacity;
+}
+
+.scms-shockwave-active {
+  animation: scmsShockwave 0.85s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+  animation: scmsShockwave 0.85s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
+  will-change: transform, opacity;
+}

@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { apiRequest } from '../../services/http.js';
-import { useAuth } from '../../context/AuthContext.js';
-import { useLanguage } from '../../context/LanguageContext.jsx';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useLanguage } from '../../app/providers/LanguageContext.jsx';
 import { notifyPaymentReturn } from '../../services/paymentCheckout.js';
 
 export function PaymentResult() {
@@ -22,13 +22,12 @@ export function PaymentResult() {
     }
 
     const endpoint = hasVnPayResponse ? 'payments/vnpay-callback' : 'payments/momo-callback';
-    apiRequest(`${endpoint}${search}`, { token: null })
+    apiRequest(`${endpoint}${search}`, { session: null })
       .then(result => setState({ loading: false, result, error: '' }))
       .catch(error => setState({ loading: false, result: null, error: error.message || (isEn ? 'Cannot confirm transaction.' : 'Không thể xác nhận giao dịch.') }));
   }, [isEn]);
 
   const query = new URLSearchParams(window.location.search);
-  const isPayOsReturn = query.has('orderCode');
   const cancelled = query.get('cancel') === 'true' || query.get('status') === 'CANCELLED' ||
     query.get('vnp_ResponseCode') === '24' || query.get('resultCode') === '1006';
 
@@ -43,30 +42,7 @@ export function PaymentResult() {
       window.close();
       return;
     }
-    if (isAuthenticated) window.location.hash = '#/member/packages';
-    else window.close();
-  };
-
-  const orderCode = query.get('orderCode');
-  const [syncing, setSyncing] = useState(false);
-  const [syncMessage, setSyncMessage] = useState('');
-
-  const handleManualSync = async () => {
-    if (!orderCode) return;
-    setSyncing(true);
-    setSyncMessage('');
-    try {
-      const syncRes = await apiRequest(`payments/vietqr/${orderCode}/sync`, { method: 'POST' });
-      if (syncRes?.success) {
-        setState({ loading: false, result: syncRes, error: '' });
-      } else {
-        setSyncMessage(syncRes?.message || (isEn ? 'Sync failed or payment not yet completed.' : 'Đồng bộ thất bại hoặc giao dịch chưa hoàn tất.'));
-      }
-    } catch (err) {
-      setSyncMessage(err.message || (isEn ? 'Cannot sync transaction with bank gateway.' : 'Không thể đồng bộ giao dịch với cổng ngân hàng.'));
-    } finally {
-      setSyncing(false);
-    }
+    window.location.href = `${window.location.origin}/#/${isAuthenticated ? 'member/packages' : 'login'}`;
   };
 
   return (
@@ -86,21 +62,12 @@ export function PaymentResult() {
           <p className="mt-3 text-sm text-slate-600">
             {cancelled
               ? (isEn ? 'Transaction was cancelled.' : 'Giao dịch đã bị hủy.')
-              : isPayOsReturn
-                ? (isEn ? 'Waiting for backend confirmation via webhook. Please check back in a few moments.' : 'Đang chờ backend xác nhận giao dịch qua webhook. Bạn có thể bấm nút đồng bộ bên dưới để kiểm tra.')
-                : (isEn ? 'No payment response data to verify.' : 'Không có dữ liệu phản hồi thanh toán để xác nhận.')}
+              : (isEn ? 'No payment response data to verify.' : 'Không có dữ liệu phản hồi thanh toán để xác nhận.')}
           </p>
         )}
 
-        {/* Sync message if any */}
-        {syncMessage && (
-          <div className="mt-3 p-3 rounded-xl bg-amber-50 text-amber-900 text-xs border border-amber-200">
-            {syncMessage}
-          </div>
-        )}
-
         {/* Reassurance banner for pending payments */}
-        {(!state.result?.success || isPayOsReturn) && !cancelled && (
+        {!state.result?.success && !cancelled && (
           <div className="mt-4 p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs text-slate-600 text-left space-y-1">
             <p className="font-bold text-slate-800 flex items-center gap-1.5">
               <span className="material-symbols-outlined text-[16px] text-amber-600">verified_user</span>
@@ -115,18 +82,6 @@ export function PaymentResult() {
         )}
 
         <div className="mt-6 flex flex-wrap justify-center gap-3">
-          {isPayOsReturn && orderCode && (!state.result || !state.result.success) && (
-            <button
-              type="button"
-              onClick={handleManualSync}
-              disabled={syncing}
-              className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-300 bg-indigo-50 px-5 py-2.5 text-xs font-bold uppercase tracking-wider text-indigo-700 hover:bg-indigo-100 transition-all cursor-pointer"
-            >
-              <span className={`material-symbols-outlined text-[16px] ${syncing ? 'animate-spin' : ''}`}>sync</span>
-              <span>{syncing ? (isEn ? 'Syncing...' : 'Đang đồng bộ...') : (isEn ? 'Sync VietQR' : 'Đồng bộ VietQR')}</span>
-            </button>
-          )}
-
           <button
             type="button"
             onClick={handleBackToPackages}

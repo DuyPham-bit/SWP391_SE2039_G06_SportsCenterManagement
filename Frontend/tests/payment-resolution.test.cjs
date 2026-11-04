@@ -19,9 +19,9 @@ function loadReceptionApi() {
     getAuthVersion: () => 1,
     beginAuthOperation: () => 1,
     assertAuthVersion: () => {},
-    getApiToken: () => 'fixture-token',
-    setApiToken: () => {},
-    clearApiToken: () => {},
+    getApiSession: () => 'fixture-token',
+    setApiSession: () => {},
+    clearApiSession: () => {},
     setAuthUser: () => {},
     createIdempotencyKey: () => { throw new Error('refund must use the caller-stable key'); },
     apiRequest: async (route, options = {}) => {
@@ -43,9 +43,9 @@ test('invoice UI uses reviewed manual requests and exposes no direct gateway ref
 });
 
 test('manager refund navigation is integrated into invoice management', () => {
-  const app = read('src/App.jsx');
-  const sidebar = read('src/components/layout/Sidebar.jsx');
-  const notifications = read('src/components/common/notificationNavigation.js');
+  const app = read('src/app/router/AppRouter.jsx');
+  const sidebar = read('src/layouts/Sidebar.jsx');
+  const notifications = read('src/shared/components/common/notificationNavigation.js');
   assert.doesNotMatch(app, /#\/manager\/refunds|const RefundManagement = lazy/);
   assert.doesNotMatch(sidebar, /#\/manager\/refunds/);
   assert.match(notifications, /#\/manager\/invoices\?tab=refunds/);
@@ -61,8 +61,8 @@ test('member refund submission keeps a stable form reference and refreshes payme
 });
 
 test('center-scoped invoice management excludes SystemAdmin navigation and route access', () => {
-  const app = read('src/App.jsx');
-  const sidebar = read('src/components/layout/Sidebar.jsx');
+  const app = read('src/app/router/AppRouter.jsx');
+  const sidebar = read('src/layouts/Sidebar.jsx');
   assert.match(app, /renderManagerRoute\(CounterInvoices, undefined, \['MANAGER', 'ADMIN'\]\)/);
   assert.match(sidebar, /normalizedRole === 'SYSTEMADMIN' \? \[\] : \[\{/);
 });

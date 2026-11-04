@@ -1,6 +1,6 @@
 import { authApi } from '../../services/api.js';
-import { useToast } from '../../context/ToastContext.js';
-import { Modal } from '../../components/common/Modal.js';
+import { useToast } from '../../app/providers/ToastContext.jsx';
+import { Modal } from '../../shared/ui/Modal.jsx';
 import { PasswordInput } from './PasswordInput.js';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../services/passwordPolicy.js';
 

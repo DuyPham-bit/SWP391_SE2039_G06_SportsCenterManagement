@@ -1,3 +1,8 @@
+map $http_x_forwarded_proto $scms_forwarded_proto {
+    default $scheme;
+    https https;
+}
+
 server {
     listen ${PORT};
     server_name _;
@@ -9,15 +14,17 @@ server {
     # backend URL when this image is deployed as a separate Render web service.
     location /api/ {
         proxy_pass ${API_UPSTREAM};
-        proxy_set_header Host $host;
+        proxy_set_header Host $proxy_host;
+        proxy_ssl_server_name on;
         proxy_set_header X-Real-IP $remote_addr;
         proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_set_header X-Forwarded-Proto $scms_forwarded_proto;
     }
 
     location /uploads/ {
         proxy_pass ${API_UPSTREAM};
-        proxy_set_header Host $host;
+        proxy_set_header Host $proxy_host;
+        proxy_ssl_server_name on;
     }
 
     location / {

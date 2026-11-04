@@ -1,6 +1,8 @@
+import { formatVietnamDateTime, parseVietnamDateTime } from '../../utils/dateTime.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { coachProfessionalApi } from '../../services/api.js';
-import { uploadMediaFileToCloud } from '../../services/cloudMediaStorage.js';
+import { safeHref } from '../../services/safeUrl.js';
+import { uploadMediaFileToCloud } from '../media/api/mediaApi.js';
 import { useToast } from '../../context/ToastContext.jsx';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
@@ -70,7 +72,7 @@ function toLocalDate(value) {
 
 function formatDate(value, isEn = false) {
   const d = toLocalDate(value);
-  return d ? d.toLocaleString(isEn ? 'en-US' : 'vi-VN') : '—';
+  return d ? formatVietnamDateTime(d, isEn) : '—';
 }
 
 function issueStatusMeta(st, isEn = false) {
@@ -192,8 +194,8 @@ export function CoachResources() {
   // Kiểm tra xung đột thời gian thực
   const conflictInfo = useMemo(() => {
     if (!selectedResourceId || !bookingStart || !bookingEnd) return null;
-    const start = new Date(bookingStart);
-    const end = new Date(bookingEnd);
+    const start = parseVietnamDateTime(bookingStart);
+    const end = parseVietnamDateTime(bookingEnd);
     if (isNaN(start) || isNaN(end) || end <= start) return null;
 
     return activeScheduleForSelected.find(b => {
@@ -209,8 +211,8 @@ export function CoachResources() {
     const f = new FormData(e.currentTarget);
     const startStr = bookingStart || f.get('startAt');
     const endStr = bookingEnd || f.get('endAt');
-    const start = new Date(startStr);
-    const end = new Date(endStr);
+    const start = parseVietnamDateTime(startStr);
+    const end = parseVietnamDateTime(endStr);
     const now = new Date();
 
     if (start < new Date(now.getTime() - 5 * 60 * 1000)) {
@@ -725,9 +727,9 @@ export function CoachResources() {
                   <span className="text-[11px] text-slate-400 block">
                     {x.resourceName || (isEn ? 'Other Equipment' : 'Thiết bị khác')} · {formatDate(x.reportedAt, isEn)}
                   </span>
-                  {x.photoUrl && (
+                  {safeHref(x.photoUrl) && (
                     <a
-                      href={x.photoUrl}
+                      href={safeHref(x.photoUrl)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-[11px] font-bold text-rose-500 hover:text-rose-600 dark:text-rose-400 hover:underline inline-flex items-center gap-1 pt-0.5"

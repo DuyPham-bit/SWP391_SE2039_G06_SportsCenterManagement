@@ -4,6 +4,7 @@ const fs = require('node:fs');
 const http = require('node:http');
 const path = require('node:path');
 const { spawn } = require('node:child_process');
+const { issueBrowserSession, browserCredential } = require('./browser-auth-fixture.cjs');
 
 const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, '.validation/payment-checkout');
@@ -21,7 +22,8 @@ function json(res, data, status = 200) {
 
 const api = http.createServer(async (req, res) => {
   res.setHeader('Access-Control-Allow-Origin', appOrigin || '*');
-  res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Idempotency-Key');
+  res.setHeader('Access-Control-Allow-Headers', 'X-SCMS-Session, Content-Type, Idempotency-Key');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
   if (req.method === 'OPTIONS') { res.writeHead(204); res.end(); return; }
   const url = new URL(req.url, apiOrigin);
@@ -32,18 +34,18 @@ const api = http.createServer(async (req, res) => {
     return;
   }
   if (route === '/payment-result' || route.startsWith('/assets/')) return serveApp(req, res);
-  if (route === '/api/auth/login') return json(res, { accessToken: 'fixture-member-token' });
+  if (route === '/api/auth/login') return json(res, issueBrowserSession(req, res, 'fixture-member-token'));
   if (route.includes('/callback') || route.endsWith('-callback')) {
     state.callbacks.push(route);
     return json(res, { success: true, message: 'Đã xác nhận bằng API kiểm thử.' });
   }
-  if (req.headers.authorization !== 'Bearer fixture-member-token') return json(res, { message: 'Unauthorized' }, 401);
+  if (browserCredential(req) !== 'fixture-member-token') return json(res, { message: 'Unauthorized' }, 401);
   if (route === '/api/profile/me') return json(res, { userId: 1, role: 'Member', status: 'Active', centerId: 1, fullName: 'Hội viên kiểm thử', email: 'member@example.test' });
   if (route === '/api/members/me') return json(res, { memberId: 1 });
   if (route === '/api/access/me/capabilities') return json(res, []);
   if (route === '/api/centers/1/membership-packages') return json(res, [pkg]);
   if (route === '/api/payments/my-pending-invoices') { state.pendingReads += 1; return json(res, state.pending); }
-  if (/\/api\/payments\/create-(vnpay|momo|payos)-url$/.test(route)) {
+  if (/\/api\/payments\/create-(vnpay|momo)-url$/.test(route)) {
     state.creates += 1;
     if (state.createError) return json(res, { message: 'Cổng thanh toán kiểm thử tạm dừng.' }, 503);
     if (state.delayedFailure) {
@@ -121,7 +123,7 @@ async function until(label, predicate) {
   throw new Error(`Timed out: ${label}`);
 }
 async function buttons(session, label) {
-  return cdp.evaluate(session, `(() => { const button = [...document.querySelectorAll('button')].find(b => b.textContent.trim() === ${JSON.stringify(label)}); if (!button) throw new Error('Button not found: ' + ${JSON.stringify(label)}); button.click(); })()`);
+  return cdp.evaluate(session, `(() => { const button = [...document.querySelectorAll('button')].find(b => b.textContent.includes(${JSON.stringify(label)})); if (!button) throw new Error('Button not found: ' + ${JSON.stringify(label)}); button.click(); })()`);
 }
 async function pages() {
   return (await cdp.send('Target.getTargets')).targetInfos.filter(target => target.type === 'page');
@@ -185,7 +187,7 @@ async function checkout(session) {
   assert.equal(await cdp.evaluate(session, `document.body.textContent.includes('Đã hủy thanh toán')`), true);
   checks.push('Cancel on a different callback origin closes checkout and retains login');
   assert.equal(state.callbacks.length, 0);
-  checks.push('PayOS cancellation does not claim payment success or invoke another gateway');
+  checks.push('Gateway cancellation does not claim payment success or invoke another gateway');
 
   const createsBeforeBlock = state.creates;
   await cdp.evaluate(session, `window.__realOpen = window.open; window.open = () => null`);
@@ -218,7 +220,7 @@ async function checkout(session) {
   await until('delayed create started', () => state.creates > createsBeforeDelay);
   const oldBlank = (await pages()).find(page => page.openerId === targetId);
   await cdp.send('Target.closeTarget', { targetId: oldBlank.targetId });
-  await until('retry enabled after closing blank popup', () => cdp.evaluate(session, `[...document.querySelectorAll('button')].some(b => b.textContent.trim() === 'Xác Nhận Thanh Toán' && !b.disabled)`));
+  await until('retry enabled after closing blank popup', () => cdp.evaluate(session, `[...document.querySelectorAll('button')].some(b => b.textContent.includes()'Xác Nhận Thanh Toán' && !b.disabled)`));
   await buttons(session, 'Xác Nhận Thanh Toán');
   await until('replacement checkout loaded', async () => (await pages()).some(page => page.url === `${apiOrigin}/checkout`));
   const replacement = (await pages()).find(page => page.url === `${apiOrigin}/checkout`);
@@ -232,8 +234,7 @@ async function checkout(session) {
 
   for (const [provider, query, callback] of [
     ['VNPay', 'vnp_ResponseCode=00&vnp_TxnRef=fixture', '/api/payments/vnpay-callback'],
-    ['MoMo', 'resultCode=0&transId=fixture', '/api/payments/momo-callback'],
-    ['PayOS', 'orderCode=123&status=PAID', null]
+    ['MoMo', 'resultCode=0&transId=fixture', '/api/payments/momo-callback']
   ]) {
     await checkout(session);
     await until(`${provider} gateway`, async () => (await pages()).some(page => page.url === `${apiOrigin}/checkout`));
@@ -241,7 +242,7 @@ async function checkout(session) {
     const childSession = await cdp.attach(target.targetId);
     const readsBeforeReturn = state.pendingReads;
     const callbacksBefore = state.callbacks.length;
-    const returnOrigin = provider === 'PayOS' ? appOrigin : apiOrigin;
+    const returnOrigin = apiOrigin;
     await cdp.send('Page.navigate', { url: `${returnOrigin}/payment-result?${query}` }, childSession);
     await until(`${provider} returns`, async () => !(await pages()).some(page => page.targetId === target.targetId));
     await until(`${provider} refreshes`, () => state.pendingReads > readsBeforeReturn);

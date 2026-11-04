@@ -29,7 +29,7 @@ Từ workspace, chạy backend; lệnh sử dụng cấu hình Development và g
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
 $env:Database__SeedDemoData = 'false'
-dotnet run --project Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj --no-launch-profile --urls http://localhost:54162
+dotnet run --project Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj --no-launch-profile --urls http://localhost:54162
 ```
 
 Trong terminal khác:
@@ -53,7 +53,7 @@ Chạy hai test SQL từ workspace; chúng tự tạo và dọn database tên `S
 
 ```powershell
 $env:SCMS_TEST_SQL_CONNECTION = 'Server=.;Database=master;Integrated Security=True;TrustServerCertificate=True'
-dotnet test Backend/Backend/SportsCenterManagement.Tests/SportsCenterManagement.Tests.csproj --filter FullyQualifiedName~SqlServerPersistenceTests
+dotnet test Backend/SportsCenterManagement.Tests/SportsCenterManagement.Tests.csproj --filter FullyQualifiedName~SqlServerPersistenceTests
 ```
 
 Nhánh Manager đã có trong merge commit `7c801e9` của `feature/fe-be-integration`. Các thay đổi proxy/test trong lượt này chưa commit hoặc push.

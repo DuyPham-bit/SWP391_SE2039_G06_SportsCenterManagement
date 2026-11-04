@@ -1,7 +1,7 @@
 FROM mcr.microsoft.com/dotnet/sdk:10.0 AS build
 WORKDIR /src
 
-COPY Backend/Backend/ ./
+COPY Backend/ ./
 
 RUN dotnet publish SportsCenterManagement.API/SportsCenterManagement.API.csproj \
     -c Release \

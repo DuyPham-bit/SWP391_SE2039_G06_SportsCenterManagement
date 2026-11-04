@@ -9,7 +9,7 @@ function loadHelpers() {
     .replaceAll('export const ', 'const ')
     .replaceAll('export function ', 'function ');
   const context = vm.createContext({ Intl });
-  vm.runInContext(`${source}\nglobalThis.helpers = { CLASS_STATUS, WEEK_DAYS, splitAndSortClasses, filterClasses, groupSchedulesByDay, effectiveScheduleRoom, scheduleEndTime, validateClassForm, validateScheduleForm };`, context);
+  vm.runInContext(`${source}\nglobalThis.helpers = { CLASS_STATUS, WEEK_DAYS, splitAndSortClasses, filterClasses, groupSchedulesByDay, effectiveScheduleRoom, scheduleEndTime, validateClassForm, validateScheduleForm, isRoomMatchingSport, filterRoomsForSport, isCoachMatchingSport, filterCoachesForSport };`, context);
   return context.helpers;
 }
 
@@ -73,4 +73,30 @@ test('new schedule end time follows the configured class duration', () => {
   assert.equal(scheduleEndTime('08:00', 60), '09:00');
   assert.equal(scheduleEndTime('08:00', 90), '09:30');
   assert.equal(scheduleEndTime('21:30', 60), '22:30');
+});
+
+test('room and coach filters isolate facilities and coaches matching the selected sport', () => {
+  const { filterRoomsForSport, filterCoachesForSport } = loadHelpers();
+  const rooms = [
+    { id: 1, name: 'Bể bơi Olympic 50m', type: 'Swimming Pool', status: 'Active' },
+    { id: 2, name: 'Phòng Gym High-Performance', type: 'Gym', status: 'Active' },
+    { id: 3, name: 'Sân Cầu lông #1', type: 'Badminton Court', status: 'Active' },
+    { id: 4, name: 'Phòng đã đóng', type: 'Swimming Pool', status: 'Inactive' }
+  ];
+  const coaches = [
+    { id: 10, fullName: 'Trần Hải Đăng', specialization: 'Bơi lội, Kỹ thuật đường bơi tốc độ' },
+    { id: 11, fullName: 'Bùi Phương Nam', specialization: 'Gym & Fitness, HIIT' },
+    { id: 12, fullName: 'Phạm Thế Anh', specialization: 'Cầu lông' }
+  ];
+
+  const swimSport = { id: 101, name: 'Bơi lội' };
+  const filteredRooms = filterRoomsForSport(rooms, swimSport);
+  assert.deepEqual(filteredRooms.map(r => r.id), [1]);
+
+  const filteredCoaches = filterCoachesForSport(coaches, swimSport);
+  assert.deepEqual(filteredCoaches.map(c => c.id), [10]);
+
+  // Selected room and coach retention
+  const retainedRooms = filterRoomsForSport(rooms, swimSport, 2);
+  assert.equal(retainedRooms.some(r => r.id === 2), true);
 });

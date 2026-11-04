@@ -84,8 +84,8 @@ const details = row => ({
     await send('Page.enable'); await send('Runtime.enable');
     await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
     await send('Fetch.enable', { patterns: [{ urlPattern: `${origin}/api/*`, requestStage: 'Request' }] });
-    const token = `e30.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600, sub: '99999' })).toString('base64url')}.fixture`;
-    await send('Page.addScriptToEvaluateOnNewDocument', { source: `sessionStorage.setItem('scms.auth.token.v1', ${JSON.stringify(token)}); localStorage.setItem('SCMS_LANGUAGE','en');` });
+    const session = '9'.repeat(32);
+    await send('Page.addScriptToEvaluateOnNewDocument', { source: `sessionStorage.setItem('scms.auth.tab.v1', ${JSON.stringify(session)}); localStorage.setItem('SCMS_LANGUAGE','en');` });
     await send('Page.navigate', { url: `${origin}/#/receptionist/invoices` });
     await until(() => evaluate(`document.querySelectorAll('main tbody tr').length === 20`), '20-row invoice list');
     await evaluate(`document.querySelector('main tbody tr button').focus(); document.querySelector('main tbody tr button').click()`);

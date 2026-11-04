@@ -8,8 +8,8 @@ const root = path.join(__dirname, '../..');
 const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
 test('audit API and manager UI do not expose before/after values', () => {
-  const response = read('Backend/Backend/SportsCenterManagement.BLL/DTOs/Audit/Responses.cs');
-  const query = read('Backend/Backend/SportsCenterManagement.BLL/Services/AuditLogService.cs');
+  const response = read('Backend/SportsCenterManagement.BLL/DTOs/Audit/Responses.cs');
+  const query = read('Backend/SportsCenterManagement.BLL/Services/AuditLogService.cs');
   const ui = read('Frontend/src/features/manager/AuditLogs.jsx');
   const api = read('Frontend/src/services/backendApi.js');
 
@@ -21,7 +21,7 @@ test('audit API and manager UI do not expose before/after values', () => {
 });
 
 test('manager can process support tickets but cannot create a ticket for a requester', () => {
-  const controller = read('Backend/Backend/SportsCenterManagement.API/Controllers/SupportRequestsController.cs');
+  const controller = read('Backend/SportsCenterManagement.API/Controllers/SupportRequestsController.cs');
   const supportUi = read('Frontend/src/features/receptionist/SupportRequests.jsx');
   const managerUi = read('Frontend/src/features/manager/ManagerSupportCommunications.jsx');
 
@@ -33,20 +33,22 @@ test('manager can process support tickets but cannot create a ticket for a reque
 });
 
 test('center notification backend rebuilds a safe recipient list and records audit', () => {
-  const service = read('Backend/Backend/SportsCenterManagement.BLL/Services/CenterNotificationService.cs');
-  const controller = read('Backend/Backend/SportsCenterManagement.API/Controllers/NotificationsController.cs');
+  const service = read('Backend/SportsCenterManagement.BLL/Services/CenterNotificationService.cs');
+  const repository = read('Backend/SportsCenterManagement.DAL/Repositories/Implementations/NotificationRepository.cs');
+  const controller = read('Backend/SportsCenterManagement.API/Controllers/NotificationsController.cs');
+  const code = service + '\n' + repository;
 
   assert.match(controller, /\[Authorize\(Roles = "MANAGER"\)\]/);
   assert.match(controller, /centerNotificationService\.SendAsync\(CurrentUserId, centerId/);
-  assert.match(service, /role\.Name == RoleNames\.Manager/);
-  assert.match(service, /staff\.CenterId == centerId/);
-  assert.match(service, /user\.Id != actorUserId/);
-  assert.match(service, /user\.Status == "Active"/);
-  assert.match(service, /user\.LockedUntil/);
-  assert.match(service, /profile\.CenterId == centerId/);
-  assert.match(service, /CENTER_NOTIFICATION_SENT/);
-  assert.match(service, /throw new FlowException\(409/);
-  assert.doesNotMatch(read('Backend/Backend/SportsCenterManagement.BLL/DTOs/Notifications/CenterNotificationDtos.cs'), /UserIds|RecipientIds/);
+  assert.match(code, /role\.Name == RoleNames\.Manager/);
+  assert.match(code, /staff\.CenterId == centerId/);
+  assert.match(code, /user\.Id != actorUserId/);
+  assert.match(code, /user\.Status == "Active"/);
+  assert.match(code, /user\.LockedUntil/);
+  assert.match(code, /profile\.CenterId == centerId/);
+  assert.match(code, /CENTER_NOTIFICATION_SENT/);
+  assert.match(code, /throw new FlowException\(409/);
+  assert.doesNotMatch(read('Backend/SportsCenterManagement.BLL/DTOs/Notifications/CenterNotificationDtos.cs'), /UserIds|RecipientIds/);
 });
 
 test('frontend sends either all-center or selected-role notification contract', async () => {
@@ -60,9 +62,9 @@ test('frontend sends either all-center or selected-role notification contract', 
     getAuthUser: () => ({ id: 7, role: 'MANAGER', centerId: 15 }),
     getAuthVersion: () => 1,
     assertAuthVersion: () => {},
-    getApiToken: () => 'token',
+    getApiSession: () => 'token',
     setAuthUser: () => {},
-    clearApiToken: () => {},
+    clearApiSession: () => {},
     apiRequest: async (route, options) => { calls.push({ route, options }); return { recipientCount: 2 }; }
   });
   vm.runInContext(`${source}\nglobalThis.systemApiForTest = systemApi;`, context);

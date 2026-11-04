@@ -1,4 +1,4 @@
-import { apiRequest, clearApiToken, createIdempotencyKey, getApiToken, setApiToken } from './http.js';
+import { apiRequest, clearApiSession, createApiSession, createIdempotencyKey, getApiSession, setApiSession } from './http.js';
 import { assertAuthVersion, beginAuthOperation, getAuthUser, getAuthVersion, setAuthUser } from './authState.js';
 
 function safeGetAvatar(userId) {
@@ -100,27 +100,27 @@ function mapMember(member) {
   };
 }
 
-async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()) {
-  if (!token) return null;
-  const profile = await apiRequest('profile/me', { token });
+async function loadCurrentUser(session = getApiSession(), version = getAuthVersion()) {
+  if (!session) return null;
+  const profile = await apiRequest('profile/me', { session });
   assertAuthVersion(version);
   let memberId = null;
   let memberProfile = null;
   let scheduledSubscriptions = [];
 
   if (String(profile.role).toUpperCase() === 'MEMBER') {
-    const member = await apiRequest('members/me', { token });
+    const member = await apiRequest('members/me', { session });
     assertAuthVersion(version);
     memberId = member.memberId;
     memberProfile = member;
-    const subscriptions = await apiRequest(`members/${memberId}/subscriptions`, { token });
+    const subscriptions = await apiRequest(`members/${memberId}/subscriptions`, { session });
     assertAuthVersion(version);
     scheduledSubscriptions = asArray(subscriptions)
       .filter(item => item.effectiveStatus === 'SCHEDULED')
       .sort((a, b) => a.startDate.localeCompare(b.startDate) || Number(a.subscriptionId) - Number(b.subscriptionId));
   }
 
-  const capabilities = await apiRequest('access/me/capabilities', { token });
+  const capabilities = await apiRequest('access/me/capabilities', { session });
   assertAuthVersion(version);
   const user = {
     capabilities,
@@ -148,15 +148,17 @@ async function loadCurrentUser(token = getApiToken(), version = getAuthVersion()
 }
 
 async function loginAndLoad(path, body) {
+  // Rotate on every login so even a duplicated tab can sign in independently.
+  const session = createApiSession();
   let version = beginAuthOperation();
-  const result = await apiRequest(path, { method: 'POST', token: null, body });
+  await apiRequest(path, { method: 'POST', session, body });
   assertAuthVersion(version);
-  setApiToken(result.accessToken);
+  setApiSession(session);
   version = getAuthVersion();
   try {
-    return { token: result.accessToken, user: await loadCurrentUser(result.accessToken, version) };
+    return { user: await loadCurrentUser(session, version) };
   } catch (error) {
-    if (version === getAuthVersion()) clearApiToken();
+    if (version === getAuthVersion()) clearApiSession();
     throw error;
   }
 }
@@ -179,9 +181,9 @@ function mapPackage(item) {
 
 function mapSession(item) {
   const date = String(item.sessionDate || '');
-  const parsedDate = date ? new Date(`${date}T12:00:00`) : null;
+  const parsedDate = date ? new Date(`${date}T12:00:00Z`) : null;
   const dayLabels = ['Chủ Nhật', 'Thứ 2', 'Thứ 3', 'Thứ 4', 'Thứ 5', 'Thứ 6', 'Thứ 7'];
-  const dayOfWeek = parsedDate && !Number.isNaN(parsedDate.valueOf()) ? dayLabels[parsedDate.getDay()] : '';
+  const dayOfWeek = parsedDate && !Number.isNaN(parsedDate.valueOf()) ? dayLabels[parsedDate.getUTCDay()] : '';
   return {
     id: item.sessionId,
     sessionId: item.sessionId,
@@ -239,7 +241,7 @@ export const authApi = {
       ? phoneOrOptions.signal
       : options.signal;
     return apiRequest('auth/request-email-verification', {
-      method: 'POST', token: null, signal,
+      method: 'POST', session: null, signal,
       body: { email: email.trim().toLowerCase(), phone: phone?.trim() || null }
     });
   },
@@ -254,7 +256,7 @@ export const authApi = {
     const username = localPart.length >= 3 ? localPart : `user-${localPart}`;
     const version = beginAuthOperation();
     await apiRequest('auth/register', {
-      method: 'POST', token: null,
+      method: 'POST', session: null,
       body: {
         username,
         email: cleanEmail,
@@ -280,30 +282,40 @@ export const authApi = {
   },
 
   async requestPasswordReset(email, { signal } = {}) {
-    return apiRequest('auth/request-password-reset', { method: 'POST', token: null, signal, body: { email: email.trim() } });
+    return apiRequest('auth/request-password-reset', { method: 'POST', session: null, signal, body: { email: email.trim() } });
   },
 
   async resetPassword(email, otp, newPassword, { signal } = {}) {
-    await apiRequest('auth/reset-password', { method: 'POST', token: null, signal, body: { email: email.trim(), otp: otp.trim(), newPassword } });
+    await apiRequest('auth/reset-password', { method: 'POST', session: null, signal, body: { email: email.trim(), otp: otp.trim(), newPassword } });
     return true;
   },
 
-  async changePassword(_userId, currentPassword, newPassword) {
-    const version = beginAuthOperation();
-    const result = await apiRequest('auth/change-password', {
+  async requestChangePasswordOtp(currentPassword, newPassword = null, { signal } = {}) {
+    return apiRequest('auth/request-change-password-otp', {
       method: 'POST',
-      body: { currentPassword, newPassword }
+      signal,
+      body: {
+        currentPassword,
+        newPassword
+      }
+    });
+  },
+
+  async changePassword(_userId, currentPassword, newPassword, emailOtp = null) {
+    const version = beginAuthOperation();
+    await apiRequest('auth/change-password', {
+      method: 'POST',
+      body: { currentPassword, newPassword, emailOtp: emailOtp ? emailOtp.trim() : null }
     });
     assertAuthVersion(version);
-    setApiToken(result.accessToken);
-    return loadCurrentUser(result.accessToken);
+    return loadCurrentUser();
   },
 
   async updateProfile(_userId, profileData) {
     const version = getAuthVersion();
-    const token = getApiToken();
+    const session = getApiSession();
     await apiRequest('profile/me', {
-      method: 'PATCH', token,
+      method: 'PATCH', session,
       body: {
         fullName: profileData.fullName,
         phone: profileData.phone || null,
@@ -311,12 +323,12 @@ export const authApi = {
       }
     });
     assertAuthVersion(version);
-    return loadCurrentUser(token, version);
+    return loadCurrentUser(session, version);
   },
 
   async updateAvatar(userId, avatarUrl) {
     const version = getAuthVersion();
-    const token = getApiToken();
+    const session = getApiSession();
     safeSetAvatar(userId, avatarUrl || null);
     const current = getAuthUser();
     if (current && Number(current.id) === Number(userId)) {
@@ -324,11 +336,15 @@ export const authApi = {
       setAuthUser(updated);
       return updated;
     }
-    return loadCurrentUser(token, version);
+    return loadCurrentUser(session, version);
   },
 
   getCurrentUser: loadCurrentUser,
-  logout: clearApiToken
+  logout() {
+    const session = getApiSession();
+    clearApiSession();
+    if (session) void apiRequest('auth/logout', { method: 'POST', session }).catch(() => {});
+  }
 };
 
 export const packageApi = {
@@ -446,7 +462,7 @@ export const staffApi = {
         method: 'POST', body: {
           memberId: Number(staffData.memberId),
           roleName: String(staffData.role).toUpperCase() === 'COACH' ? 'Coach' : 'Receptionist',
-          hireDate: staffData.hireDate || new Date().toISOString().slice(0, 10),
+          hireDate: staffData.hireDate || new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10),
           specialization: staffData.specialty?.trim() || null,
           certification: staffData.certification?.trim() || null,
           experienceYears: staffData.experienceYears != null && staffData.experienceYears !== '' ? Number(staffData.experienceYears) : null,
@@ -454,6 +470,9 @@ export const staffApi = {
           sportIds: staffData.sportIds || []
         }
       }));
+    }
+    if (typeof staffData.password !== 'string' || !staffData.password.trim()) {
+      throw new Error('Vui lòng nhập mật khẩu khởi tạo cho nhân viên.');
     }
     const roleCapitalized = String(staffData.role || '').toUpperCase() === 'COACH'
       ? 'Coach'
@@ -467,11 +486,11 @@ export const staffApi = {
       body: {
         username,
         email: staffData.email.trim(),
-        password: staffData.password || 'Staff@123456',
+        password: staffData.password,
         fullName: staffData.fullName.trim(),
         roleName: roleCapitalized,
         phone: staffData.phone?.trim() || null,
-        hireDate: staffData.hireDate || new Date().toISOString().slice(0, 10),
+        hireDate: staffData.hireDate || new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10),
         specialization: staffData.specialty?.trim() || null,
         certification: staffData.certification?.trim() || null,
         experienceYears: staffData.experienceYears ? Number(staffData.experienceYears) : (roleCapitalized === 'Coach' ? 1 : null),
@@ -518,8 +537,8 @@ export const roomApi = {
  async update(id, body) { return apiRequest('centers/'+centerId()+'/rooms/'+id, { method: 'PUT', body }); }
 };
 export const classApi = {
- async getTeachingSchedule(from, to) {
-   const query = new URLSearchParams({ from, to, includeHistory: 'true' });
+ async getTeachingSchedule(from, to, includeHistory = true) {
+   const query = new URLSearchParams({ from, to, includeHistory: String(Boolean(includeHistory)) });
    return asArray(await apiRequest('coaches/me/teaching-schedule?'+query)).map(mapSession);
  },
  async getManagementClasses() { return asArray(await apiRequest('centers/'+centerId()+'/classes/all')); },
@@ -630,6 +649,9 @@ export const receptionApi = {
   },
 
   async createMember({ username, email, password, fullName, phone, dateOfBirth }) {
+    if (typeof password !== 'string' || !password.trim()) {
+      throw new Error('Vui lòng nhập mật khẩu khởi tạo cho hội viên.');
+    }
     const cid = centerId();
     const emailPrefix = (email || '').split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
     const finalUsername = (username || `${emailPrefix}${Math.floor(100 + Math.random() * 900)}`).toLowerCase();
@@ -638,7 +660,7 @@ export const receptionApi = {
       body: {
         username: finalUsername,
         email: email.trim(),
-        password: password || 'Member@123456',
+        password,
         fullName: fullName.trim(),
         phone: phone?.trim() || null,
         dateOfBirth: dateOfBirth || null,
@@ -871,26 +893,55 @@ function reportGrowthRate(currentValue, previousValue) {
 }
 
 export const reportApi = {
-  async getOverview(period = 'MONTH', { centerId: explicitCenterId } = {}) {
+  async getOverview(period = '30D', { centerId: explicitCenterId } = {}) {
     const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
     const year = Number(today.slice(0, 4));
     const month = Number(today.slice(5, 7));
     let from = `${today.slice(0, 7)}-01`;
-    if (period === 'DAY') from = today;
-    if (period === 'WEEK') {
+    let to = today;
+    let groupBy = 'day';
+    if (period === '30D' || period === 'LAST_30_DAYS') {
+      const d = new Date(`${today}T00:00:00Z`);
+      d.setUTCDate(d.getUTCDate() - 29);
+      from = d.toISOString().slice(0, 10);
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'DAY') {
+      from = today;
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'WEEK') {
       const current = new Date(`${today}T00:00:00Z`);
       const mondayOffset = (current.getUTCDay() + 6) % 7;
       current.setUTCDate(current.getUTCDate() - mondayOffset);
       from = current.toISOString().slice(0, 10);
-    }
-    if (period === 'YEAR') from = `${year}-01-01`;
-    if (period === 'QUARTER') {
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'LAST_MONTH' || period === 'PREV_MONTH') {
+      const prevMonth = month === 1 ? 12 : month - 1;
+      const prevYear = month === 1 ? year - 1 : year;
+      const lastDayOfPrevMonth = new Date(Date.UTC(prevYear, prevMonth, 0)).getUTCDate();
+      from = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`;
+      to = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(lastDayOfPrevMonth).padStart(2, '0')}`;
+      groupBy = 'day';
+    } else if (period === 'MONTH' || period === 'THIS_MONTH') {
+      from = `${today.slice(0, 7)}-01`;
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'QUARTER') {
       const firstQuarterMonth = Math.floor((month - 1) / 3) * 3 + 1;
       from = `${year}-${String(firstQuarterMonth).padStart(2, '0')}-01`;
+      to = today;
+      groupBy = 'day';
+    } else if (period === 'YEAR') {
+      from = `${year}-01-01`;
+      to = today;
+      groupBy = 'month';
+    } else if (typeof period === 'object' && period !== null) {
+      from = period.from || from;
+      to = period.to || to;
+      groupBy = period.groupBy || 'day';
     }
-    const to = typeof period === 'object' ? period.to : today;
-    if (typeof period === 'object') from = period.from;
-    const groupBy = typeof period === 'object' ? period.groupBy || 'day' : 'day';
     const startDate = new Date(`${from}T00:00:00Z`), endDate = new Date(`${to}T00:00:00Z`);
     if (!/^\d{4}-\d{2}-\d{2}$/.test(from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(to || '')
         || !Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime())
@@ -1286,13 +1337,17 @@ export const systemApi = {
       : `centers/${centerId()}/audit-logs?${params}`;
     const result = await apiRequest(path);
     const items = asArray(result).map(item => {
-      const role = item.actorUserId ? null : 'SYSTEM';
-      let userName = item.actorUserId ? `User #${item.actorUserId}` : 'Hệ thống';
+      const isCurrentUser = user && Number(item.actorUserId) === Number(user.id);
+      const role = item.actorRole || (isCurrentUser ? user.role : (item.actorUserId ? null : 'SYSTEM'));
+      let userName = item.actorUserName
+        || (isCurrentUser ? (user.fullName || user.username || 'Quản lý trung tâm') : '')
+        || (item.actorUserId ? `User #${item.actorUserId}` : 'Hệ thống');
 
       const searchContent = [
         item.action,
-        item.actorUserId ? `User #${item.actorUserId}` : 'Hệ thống',
+        userName,
         item.entityType,
+        item.entityName,
         item.entityId
       ].filter(Boolean).join(' ').toLowerCase();
 
@@ -1301,6 +1356,7 @@ export const systemApi = {
         userId: item.actorUserId,
         userName,
         role,
+        entityName: item.entityName,
         status: 'SUCCESS',
         timestamp: item.createdAt,
         searchIndex: searchContent

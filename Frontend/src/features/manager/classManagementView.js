@@ -58,12 +58,74 @@ export function effectiveScheduleRoom(schedule, classRow, rooms = []) {
   return rooms.find(room => Number(room.id) === Number(roomId))?.name || 'Chưa chọn phòng';
 }
 
+export function validateClassFields(form, isEn = false) {
+  const errors = {};
+  const name = String(form?.name || '').trim();
+  if (!name) {
+    errors.name = isEn ? 'Please enter a training class name.' : 'Vui lòng nhập tên lớp đào tạo.';
+  } else if (name.length > 100) {
+    errors.name = isEn ? 'Class name cannot exceed 100 characters.' : 'Tên lớp đào tạo không được vượt quá 100 ký tự.';
+  }
+
+  const sportId = Number(form?.sportId);
+  if (!(sportId > 0)) {
+    errors.sportId = isEn ? 'Please select a sport discipline.' : 'Vui lòng chọn bộ môn thể thao.';
+  }
+
+  const cap = Number(form?.capacity);
+  if (!Number.isInteger(cap) || cap < 1) {
+    errors.capacity = isEn ? 'Max capacity must be a positive integer.' : 'Sức chứa học viên phải là số nguyên dương.';
+  } else if (cap > 500) {
+    errors.capacity = isEn ? 'Max capacity cannot exceed 500 students.' : 'Sức chứa tối đa không được vượt quá 500 học viên.';
+  }
+
+  const dur = Number(form?.durationMinutes);
+  if (!Number.isInteger(dur) || dur < 1) {
+    errors.durationMinutes = isEn ? 'Duration must be a positive number of minutes.' : 'Thời lượng phải là số phút nguyên dương.';
+  } else if (dur < 15) {
+    errors.durationMinutes = isEn ? 'Session duration must be at least 15 minutes.' : 'Thời lượng ca học tối thiểu 15 phút.';
+  } else if (dur > 300) {
+    errors.durationMinutes = isEn ? 'Session duration cannot exceed 300 minutes.' : 'Thời lượng ca học tối đa không quá 300 phút.';
+  }
+
+  return errors;
+}
+
 export function validateClassForm(form) {
-  if (!String(form.name || '').trim()) return 'Vui lòng nhập tên lớp.';
-  if (!(Number(form.sportId) > 0)) return 'Vui lòng chọn bộ môn.';
-  if (!Number.isInteger(Number(form.capacity)) || Number(form.capacity) < 1) return 'Sức chứa phải là số nguyên dương.';
-  if (!Number.isInteger(Number(form.durationMinutes)) || Number(form.durationMinutes) < 1) return 'Thời lượng phải là số phút nguyên dương.';
-  return '';
+  const errors = validateClassFields(form, false);
+  const firstKey = Object.keys(errors)[0];
+  return firstKey ? errors[firstKey] : '';
+}
+
+export function validateRoomFields(form, isEn = false) {
+  const errors = {};
+  const name = String(form?.name || '').trim();
+  if (!name) {
+    errors.name = isEn ? 'Please enter a court / facility room name.' : 'Vui lòng nhập tên phòng / sân bãi.';
+  } else if (name.length > 100) {
+    errors.name = isEn ? 'Facility name cannot exceed 100 characters.' : 'Tên phòng / sân bãi không được vượt quá 100 ký tự.';
+  }
+
+  const cap = Number(form?.capacity);
+  if (!Number.isInteger(cap) || cap < 1) {
+    errors.capacity = isEn ? 'Capacity must be a positive integer.' : 'Sức chứa phải là số nguyên dương.';
+  } else if (cap > 1000) {
+    errors.capacity = isEn ? 'Capacity cannot exceed 1000.' : 'Sức chứa tối đa không vượt quá 1000.';
+  }
+
+  return errors;
+}
+
+export function validateSportFields(form, isEn = false) {
+  const errors = {};
+  const name = String(form?.name || '').trim();
+  if (!name) {
+    errors.name = isEn ? 'Please enter a sport discipline name.' : 'Vui lòng nhập tên bộ môn thể thao.';
+  } else if (name.length > 100) {
+    errors.name = isEn ? 'Discipline name cannot exceed 100 characters.' : 'Tên bộ môn thể thao không được vượt quá 100 ký tự.';
+  }
+
+  return errors;
 }
 
 export function validateScheduleForm(form, maxDurationMinutes = null) {
@@ -79,4 +141,172 @@ export function validateScheduleForm(form, maxDurationMinutes = null) {
     return `Một buổi học không được vượt quá thời lượng ${maximum} phút đã thiết lập cho lớp.`;
   }
   return '';
+}
+
+
+const SPORT_ROOM_KEYWORDS = [
+  {
+    sport: ['bơi', 'swim', 'pool'],
+    room: ['bơi', 'swim', 'pool', 'bể bơi', 'hồ bơi']
+  },
+  {
+    sport: ['gym', 'fitness', 'thể hình'],
+    room: ['gym', 'fitness', 'thể hình', 'tạ', 'cardio']
+  },
+  {
+    sport: ['yoga', 'pilates', 'thiền'],
+    room: ['yoga', 'pilates', 'studio', 'reformer', 'thiền']
+  },
+  {
+    sport: ['cầu lông', 'badminton'],
+    room: ['cầu lông', 'badminton']
+  },
+  {
+    sport: ['boxing', 'võ', 'kickfit', 'mma', 'quyền anh'],
+    room: ['boxing', 'võ', 'kickfit', 'mma', 'combat', 'ring', 'quyền anh']
+  },
+  {
+    sport: ['golf'],
+    room: ['golf', 'driving range', 'simulator', 'trackman']
+  },
+  {
+    sport: ['bóng đá', 'football', 'soccer'],
+    room: ['bóng đá', 'football', 'soccer', 'sân cỏ', 'sân 5', 'sân 7', 'sân 11', 'outdoor field']
+  },
+  {
+    sport: ['bóng rổ', 'basketball'],
+    room: ['bóng rổ', 'basketball']
+  },
+  {
+    sport: ['bóng bàn', 'table tennis', 'ping pong'],
+    room: ['bóng bàn', 'table tennis', 'ping pong']
+  },
+  {
+    sport: ['pickleball'],
+    room: ['pickleball']
+  },
+  {
+    sport: ['tennis', 'quần vợt'],
+    room: ['tennis', 'quần vợt']
+  }
+];
+
+const SPORT_COACH_KEYWORDS = [
+  {
+    sport: ['bơi', 'swim'],
+    coach: ['bơi', 'swim']
+  },
+  {
+    sport: ['gym', 'fitness', 'thể hình'],
+    coach: ['gym', 'fitness', 'thể hình', 'cardio', 'tạ', 'hiit', 'tabata', 'conditioning']
+  },
+  {
+    sport: ['yoga', 'pilates', 'thiền'],
+    coach: ['yoga', 'pilates', 'thiền', 'reformer']
+  },
+  {
+    sport: ['cầu lông', 'badminton'],
+    coach: ['cầu lông', 'badminton']
+  },
+  {
+    sport: ['boxing', 'võ', 'kickfit', 'mma', 'quyền anh'],
+    coach: ['boxing', 'võ', 'kickfit', 'mma', 'quyền anh', 'đối kháng', 'tự vệ']
+  },
+  {
+    sport: ['golf'],
+    coach: ['golf', 'pga', 'swing', 'trackman']
+  },
+  {
+    sport: ['bóng đá', 'football', 'soccer'],
+    coach: ['bóng đá', 'football', 'soccer']
+  },
+  {
+    sport: ['bóng rổ', 'basketball'],
+    coach: ['bóng rổ', 'basketball']
+  },
+  {
+    sport: ['bóng bàn', 'table tennis', 'ping pong'],
+    coach: ['bóng bàn', 'table tennis', 'ping pong']
+  },
+  {
+    sport: ['pickleball'],
+    coach: ['pickleball']
+  },
+  {
+    sport: ['tennis', 'quần vợt'],
+    coach: ['tennis', 'quần vợt']
+  }
+];
+
+export function isRoomMatchingSport(room, sport) {
+  if (!sport) return true;
+  if (!room) return false;
+
+  const sName = normalize(sport.name);
+  const rCombined = `${normalize(room.name)} ${normalize(room.type)} ${normalize(room.location)}`;
+
+  if (sName && rCombined.includes(sName)) return true;
+
+  for (const group of SPORT_ROOM_KEYWORDS) {
+    if (group.sport.some(keyword => sName.includes(keyword))) {
+      if (group.room.some(keyword => rCombined.includes(keyword))) {
+        return true;
+      }
+    }
+  }
+
+  if (rCombined.includes('đa năng') || rCombined.includes('multi-purpose')) {
+    return true;
+  }
+
+  return false;
+}
+
+export function filterRoomsForSport(rooms = [], sport = null, selectedRoomId = null) {
+  const activeRooms = rooms.filter(r => r.status === 'Active');
+  if (!sport) return activeRooms;
+
+  const matched = activeRooms.filter(r =>
+    (selectedRoomId && String(r.id) === String(selectedRoomId)) || isRoomMatchingSport(r, sport)
+  );
+
+  return matched.length > 0 ? matched : activeRooms;
+}
+
+export function isCoachMatchingSport(coach, sport) {
+  if (!sport) return true;
+  if (!coach) return false;
+
+  const sportIds = coach.sportIds || coach.SportIds;
+  if (Array.isArray(sportIds) && sportIds.length > 0 && sport.id) {
+    if (sportIds.map(Number).includes(Number(sport.id))) {
+      return true;
+    }
+  }
+
+  const sName = normalize(sport.name);
+  const spec = normalize(coach.specialization);
+  if (!spec || !sName) return false;
+
+  if (spec.includes(sName)) return true;
+
+  for (const group of SPORT_COACH_KEYWORDS) {
+    if (group.sport.some(keyword => sName.includes(keyword))) {
+      if (group.coach.some(keyword => spec.includes(keyword))) {
+        return true;
+      }
+    }
+  }
+
+  return false;
+}
+
+export function filterCoachesForSport(coaches = [], sport = null, selectedCoachId = null) {
+  if (!sport) return coaches;
+
+  const matched = coaches.filter(c =>
+    (selectedCoachId && String(c.id) === String(selectedCoachId)) || isCoachMatchingSport(c, sport)
+  );
+
+  return matched;
 }

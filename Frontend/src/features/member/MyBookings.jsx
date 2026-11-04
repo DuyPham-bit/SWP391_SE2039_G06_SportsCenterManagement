@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { bookingApi } from '../../services/api.js';
-import { useAuth } from '../../context/AuthContext.js';
-import { useToast } from '../../context/ToastContext.js';
-import { useLanguage } from '../../context/LanguageContext.jsx';
-import { Badge } from '../../components/common/StatCard.js';
-import { LoadingSpinner } from '../../components/common/Table.js';
-import { Modal } from '../../components/common/Modal.js';
-import { BusinessAlert } from '../../components/common/BusinessAlert.jsx';
+import { useAuth } from '../../app/providers/AuthContext.jsx';
+import { useToast } from '../../app/providers/ToastContext.jsx';
+import { useLanguage } from '../../app/providers/LanguageContext.jsx';
+import { Badge } from '../../shared/ui/StatCard.jsx';
+import { LoadingSpinner } from '../../shared/ui/Table.jsx';
+import { Modal } from '../../shared/ui/Modal.jsx';
+import { BusinessAlert } from '../../shared/ui/BusinessAlert.jsx';
 import {
   BOOKING_LABELS,
   BOOKING_LABELS_EN,
@@ -282,8 +282,8 @@ export function MyBookings() {
             </h1>
             <p className="text-xs sm:text-sm text-white/90 mt-1 max-w-2xl font-medium leading-relaxed drop-shadow-xs">
               {isEn
-                ? 'Track all booked workout sessions, waitlist status, and manage your training schedule flexibly. Proactively cancel spots at least 2 hours prior to retain your workout credits and open spots for others.'
-                : 'Theo dõi tất cả ca rèn luyện đã đặt chỗ, danh sách chờ (Waitlist) và quản lý lịch học linh hoạt. Chủ động hủy chỗ trước 2 giờ để bảo lưu lượt tập và nhường chỗ cho hội viên khác.'}
+                ? 'Track booked sessions and waitlist status in one place. Cancel at least 2 hours before class to retain your session credit; every released seat is offered to the eligible waitlist in FIFO order.'
+                : 'Theo dõi ca đã đặt và danh sách chờ tại một nơi. Hủy trước giờ học ít nhất 2 giờ để bảo lưu lượt tập; mọi chỗ được giải phóng sẽ được chuyển cho hội viên đủ điều kiện theo thứ tự vào hàng chờ.'}
             </p>
           </div>
 
@@ -828,8 +828,8 @@ export function MyBookings() {
                     </span>
                     <p className="text-[11.5px] text-emerald-700 dark:text-emerald-300/90 leading-relaxed">
                       {isEn
-                        ? 'Because you are cancelling more than 2 hours before start time, your session credit will be returned automatically.'
-                        : 'Do bạn hủy trước giờ học hơn 2 tiếng, 1 lượt tập sẽ được tự động hoàn lại vào gói của bạn ngay sau khi xác nhận hủy.'}
+                        ? 'Because you are cancelling more than 2 hours before start time, your session credit will be returned automatically and the released seat will be offered to the waitlist.'
+                        : 'Do bạn hủy trước giờ học hơn 2 tiếng, 1 lượt tập sẽ được tự động hoàn lại vào gói và chỗ trống sẽ được chuyển cho danh sách chờ.'}
                     </p>
                   </div>
                 </div>
@@ -842,8 +842,8 @@ export function MyBookings() {
                     </span>
                     <p className="text-[11.5px] text-amber-700 dark:text-amber-300/90 leading-relaxed">
                       {isEn
-                        ? 'According to center policy, late cancellations will not refund session credit. For medical emergencies, please visit the front desk.'
-                        : 'Theo quy định trung tâm, việc hủy sát giờ sẽ không được hoàn lại lượt tập. Nếu có sự cố sức khỏe khẩn cấp, vui lòng liên hệ trực tiếp quầy lễ tân.'}
+                        ? 'Late cancellation does not refund the session credit. The released seat is still offered to the first eligible waitlisted member. For medical emergencies, please visit the front desk.'
+                        : 'Hủy sát giờ sẽ không được hoàn lại lượt tập, nhưng chỗ trống vẫn được chuyển cho hội viên đủ điều kiện đầu tiên trong danh sách chờ. Nếu có sự cố sức khỏe khẩn cấp, vui lòng liên hệ quầy lễ tân.'}
                     </p>
                   </div>
                 </div>

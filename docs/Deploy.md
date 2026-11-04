@@ -8,7 +8,7 @@ local development only; Render does not provide its Compose service DNS names.
 - Runtime: Docker
 - Dockerfile path: `docker/backend.Dockerfile`
 - Docker build context: repository root (`.`)
-- Health check path: `/health`
+- Health check path: `/health/ready`
 
 The container listens on Render's `PORT` variable automatically. Configure
 these environment variables in Render (do not commit their values):
@@ -30,17 +30,31 @@ R2Storage__PublicDomain=...
 ```
 
 Also configure only the optional integration variables you use (mail, Google,
-AI, VNPay, MoMo, and PayOS). Payment return/IPN URLs must use the public Render
+AI, VNPay, and MoMo). Payment return/IPN URLs must use the public frontend/API
 URLs, not `localhost`. Database migrations run during API startup and a failed
 migration stops deployment rather than attempting to create a replacement
 schema.
 
-If Google Drive OAuth is enabled, upload the service-account JSON as a Render
-Secret File and set `GoogleDrive__CredentialsPath` to its mounted path (for
-example `/etc/secrets/google-drive.json`). Do not place it in the repository or
-the Docker build context.
+Media is stored exclusively in Cloudflare R2. Existing media IDs and relative
+keys remain valid; PostgreSQL migrations add the new fields/indexes without
+resetting the database. SQL Server migration files are historical backups,
+outside the active project. Do not run them against PostgreSQL.
 
-## Frontend (recommended: Static Site)
+## Frontend (recommended: Docker web service)
+
+- Runtime: Docker
+- Dockerfile: `docker/frontend.Dockerfile`
+- Build context: repository root (`.`)
+- `API_UPSTREAM=https://<your-backend>.onrender.com` (no `/api` suffix)
+- `VITE_SPORTS_CENTER_ID=<existing-center-id>`
+- `VITE_GOOGLE_CLIENT_ID=<public Google web client id, if used>`
+
+Use the same-origin `/api` proxy: the browser authenticates with HttpOnly cookies
+and an `X-SCMS-Session` selector. Keep `VITE_API_BASE_URL=/api` (the Dockerfile
+already sets it). The proxy preserves HTTPS information for secure cookies.
+The image listens on Render's `PORT` automatically.
+
+## Static Site alternative (requires same-site custom domains)
 
 - Root directory: `Frontend`
 - Build command: `npm ci && npm run build`
@@ -53,14 +67,23 @@ VITE_SPORTS_CENTER_ID=<existing-center-id>
 VITE_GOOGLE_CLIENT_ID=<Google web client id, if used>
 ```
 
-Set the backend CORS origin to the exact frontend URL shown by Render.
+Set backend CORS to the exact frontend origin. Cookies use `SameSite=Strict`;
+separate unrelated frontend/API domains cannot use this authentication flow.
+Use same-site HTTPS custom domains or the recommended Docker proxy above.
 
-## Frontend as a Docker web service (optional)
+## Existing Render service and environment variables
 
-Use `docker/frontend.Dockerfile` with repository root as the build context and
-set `API_UPSTREAM=https://<your-backend>.onrender.com`. The image uses Render's
-`PORT`; do not set it manually. This option is useful only when same-origin
-`/api` proxying is required. The Static Site option is simpler and preferred.
+Connect the service to the DuyPham-bit repository and branch `deploy/scms-v1.1`.
+Keep the existing Environment settings; Git commits do not contain or replace
+their values. A newly created service needs its own Environment configuration.
+Use the exact .NET variable names listed above on Render. The short names such
+as `POSTGRES_PASSWORD` and `R2_SECRET_KEY` in `docker/.env` are local Compose
+inputs; Compose translates them to the .NET names and Render does not.
+
+Render's PostgreSQL URL is not an ADO.NET connection string. Set
+`ConnectionStrings__SportsCenter` using Host/Port/Database/Username/Password
+as shown above, with TLS for the hosted database. Never point a Render service
+at Docker's local hostname `postgres` or your local port 5433.
 
 ## Secrets cleanup
 

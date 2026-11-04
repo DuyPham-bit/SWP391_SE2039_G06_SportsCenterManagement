@@ -18,6 +18,7 @@ export function ManagerSupportCommunications() {
   const [activeTab, setActiveTab] = useState('SUPPORT');
   const [sendToAll, setSendToAll] = useState(true);
   const [targetRoles, setTargetRoles] = useState([]);
+  const [selectedChannels, setSelectedChannels] = useState(['InApp', 'Email']);
   const [title, setTitle] = useState('');
   const [message, setMessage] = useState('');
   const [busy, setBusy] = useState(false);
@@ -40,11 +41,15 @@ export function ManagerSupportCommunications() {
       setFormError(isEn ? 'Select at least one recipient role.' : 'Chọn ít nhất một vai trò nhận thông báo.');
       return;
     }
+    if (selectedChannels.length === 0) {
+      setFormError(isEn ? 'Select at least one delivery channel.' : 'Chọn ít nhất một kênh gửi tin.');
+      return;
+    }
     setBusy(true);
     setFormError('');
     try {
       const result = await systemApi.sendCenterNotification({
-        title: trimmedTitle, message: trimmedMessage, sendToAll, targetRoles
+        title: trimmedTitle, message: trimmedMessage, sendToAll, targetRoles, channels: selectedChannels
       });
       setLastResult(result);
       setTitle('');
@@ -129,6 +134,43 @@ export function ManagerSupportCommunications() {
                   </label>;
                 })}
               </div>}
+            </fieldset>
+
+            <fieldset disabled={busy} className="space-y-2">
+              <legend className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-2">
+                {isEn ? 'Delivery Channels' : 'Kênh gửi tin'}
+              </legend>
+              <div className="grid grid-cols-2 gap-2 text-xs">
+                {['InApp', 'Email'].map((ch) => {
+                  const checked = selectedChannels.includes(ch);
+                  return (
+                    <label
+                      key={ch}
+                      className={`flex items-center gap-2.5 p-3 rounded-xl border cursor-pointer transition-colors ${
+                        checked ? 'border-[#81B29A] bg-[#81B29A]/10' : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={() => {
+                          setSelectedChannels(values =>
+                            values.includes(ch) ? (values.length > 1 ? values.filter(v => v !== ch) : values) : [...values, ch]
+                          );
+                        }}
+                        className="accent-[#2D6A4F]"
+                      />
+                      <span className="material-symbols-outlined text-[18px] text-slate-500">
+                        {ch === 'InApp' ? 'notifications_active' : 'mail'}
+                      </span>
+                      <span className="text-xs font-bold text-slate-800 dark:text-slate-200">{ch}</span>
+                    </label>
+                  );
+                })}
+              </div>
+              <p className="text-[11px] text-slate-400">
+                {isEn ? 'In-App messages are delivered instantly; Email queued and supervised by the center.' : 'Tin nhắn In-App gửi tức thì; Email vào hàng đợi được giám sát bởi trung tâm.'}
+              </p>
             </fieldset>
 
             <div className="space-y-2">

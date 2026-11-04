@@ -4,6 +4,8 @@
 **/node_modules
 **/dist
 **/.vs
+**/.validation
+**/tmp
 
 **/.env
 **/.env.*
@@ -15,3 +17,4 @@
 **/credentials.json
 **/credentials.*.json
 **/appsettings.Development.json
+**/credentials.local.json

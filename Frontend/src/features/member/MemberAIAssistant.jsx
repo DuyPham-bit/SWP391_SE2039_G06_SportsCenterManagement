@@ -159,7 +159,7 @@ What information would you like to explore today?`
 * **Quy định sử dụng phòng tập, check-in và đổi lịch**.
 
 Bạn muốn tìm hiểu thông tin nào hôm nay?`,
-    time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
+    time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
   });
 
   const [messages, setMessages] = useState([getInitialMessage()]);
@@ -197,7 +197,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       id: `usr-${Date.now()}`,
       sender: 'user',
       text,
-      time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -215,13 +215,11 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           id: `ai-${Date.now()}`,
           sender: 'ai',
           text: reply,
-          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
         }
       ]);
     } catch (err) {
-      const errorText = err.proposedHandling
-        ? `${err.message || (isEn ? 'AI Assistant connection error' : 'Lỗi kết nối Trợ lý AI')}\n\n💡 ${isEn ? 'Handling suggestion:' : 'Hướng dẫn xử lý:'} ${err.proposedHandling}`
-        : `${err.message || (isEn ? 'Connection error to the center AI service. Please try again later.' : 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.')}`;
+      const errorText = err.message || (isEn ? 'Connection error to the center AI service. Please try again later.' : 'Lỗi kết nối tới dịch vụ AI của trung tâm. Vui lòng thử lại sau.');
 
       setMessages((prev) => [
         ...prev,
@@ -232,7 +230,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           code: err.code || (err.status === 429 ? 'AI-RATE-LIMIT' : 'AI-ERROR'),
           text: errorText,
           failedQuestion: text,
-          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { hour: '2-digit', minute: '2-digit' })
+          time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
         }
       ]);
       showError(err.message || (isEn ? 'Cannot receive AI response' : 'Không thể nhận phản hồi từ AI'));

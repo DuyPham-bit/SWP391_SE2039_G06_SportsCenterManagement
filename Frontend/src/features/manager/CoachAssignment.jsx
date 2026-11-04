@@ -991,8 +991,8 @@ export function CoachAssignment() {
               >
                 {coaches.map((c) => (
                   <option key={c.id} value={c.id} disabled={!isCoachCompatible(c, selectedClass)}>
-                    {c.fullName} ({c.specialization || (isEn ? 'Specialty pending' : 'Chưa cập nhật chuyên môn')}
-                    {c.certification ? ` · ${c.certification}` : ''})
+                    {c.fullName}
+
                   </option>
                 ))}
               </select>

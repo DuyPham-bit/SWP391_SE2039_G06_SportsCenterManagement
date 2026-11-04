@@ -32,7 +32,7 @@ export function MemberLookup() {
   const [regEmail, setRegEmail] = useState('');
   const [regUsername, setRegUsername] = useState('');
   const [regDob, setRegDob] = useState('');
-  const [regPassword, setRegPassword] = useState('Member@123456');
+  const [regPassword, setRegPassword] = useState('');
   const [regSaving, setRegSaving] = useState(false);
   const [regError, setRegError] = useState('');
 
@@ -112,6 +112,10 @@ export function MemberLookup() {
       setRegError(isEn ? 'Please provide Full Name, Phone number and Email!' : 'Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Email!');
       return;
     }
+    if (!regPassword.trim()) {
+      setRegError(isEn ? 'Please enter an initial password.' : 'Vui lòng nhập mật khẩu khởi tạo.');
+      return;
+    }
     setRegSaving(true);
     setRegError('');
     try {
@@ -120,7 +124,7 @@ export function MemberLookup() {
         phone: regPhone.trim(),
         email: regEmail.trim(),
         username: regUsername.trim() || undefined,
-        password: regPassword || 'Member@123456',
+        password: regPassword,
         dateOfBirth: regDob || undefined
       });
       showSuccess(isEn ? `Member created successfully! Code: ${newMember.memberCode}` : `Đăng ký hội viên thành công! Mã: ${newMember.memberCode}`);
@@ -130,7 +134,7 @@ export function MemberLookup() {
       setRegEmail('');
       setRegUsername('');
       setRegDob('');
-      setRegPassword('Member@123456');
+      setRegPassword('');
       setSelectedMember(newMember);
       setResults([newMember]);
       setHasSearched(true);
@@ -499,7 +503,7 @@ export function MemberLookup() {
         onClose={() => setRegisterModalOpen(false)}
         title={isEn ? 'Register New Member at Counter' : 'Đăng Ký Thành Viên Mới Tại Quầy'}
       >
-        <form onSubmit={handleRegisterMember} className="space-y-4">
+        <form onSubmit={handleRegisterMember} noValidate className="space-y-4">
           {regError && (
             <div className="p-3 bg-red-50 dark:bg-red-950/30 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-300 text-xs rounded-xl flex items-center gap-2">
               <span className="material-symbols-outlined text-[18px]">error</span>
@@ -513,7 +517,6 @@ export function MemberLookup() {
             </label>
             <input
               type="text"
-              required
               placeholder={isEn ? 'John Doe' : 'Nguyễn Văn A'}
               value={regFullName}
               onChange={e => setRegFullName(e.target.value)}
@@ -528,7 +531,6 @@ export function MemberLookup() {
               </label>
               <input
                 type="tel"
-                required
                 placeholder="0912345678"
                 value={regPhone}
                 onChange={e => setRegPhone(e.target.value)}
@@ -541,7 +543,6 @@ export function MemberLookup() {
               </label>
               <input
                 type="email"
-                required
                 placeholder="member@example.com"
                 value={regEmail}
                 onChange={e => setRegEmail(e.target.value)}
@@ -581,13 +582,17 @@ export function MemberLookup() {
               {isEn ? 'Initial Temporary Password' : 'Mật khẩu khởi tạo'}
             </label>
             <input
-              type="text"
+              type="password"
+              autoComplete="new-password"
+              required
+              minLength={6}
+              maxLength={128}
               value={regPassword}
               onChange={e => setRegPassword(e.target.value)}
               className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#81B29A]"
             />
             <p className="text-[11px] text-slate-400 mt-1">
-              {isEn ? 'Default: Member@123456 (Member can change after logging in)' : 'Mặc định: Member@123456 (Hội viên có thể đổi sau khi đăng nhập)'}
+              {isEn ? 'Required: use uppercase, lowercase, a number and a special character.' : 'Bắt buộc nhập, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.'}
             </p>
           </div>
 

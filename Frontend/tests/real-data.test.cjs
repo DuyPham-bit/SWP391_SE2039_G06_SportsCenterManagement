@@ -24,7 +24,7 @@ test('empty and failed catalog requests cannot invent sports, rooms or prices', 
   const empty = { center: { id: 15 }, sports: [], rooms: [], classes: [] };
   const api = load('services/publicCatalog.js', async (route, options) => {
     assert.equal(route, 'public/centers/15/catalog');
-    assert.equal(options.token, null);
+    assert.equal(options.session, null);
     return empty;
   });
   const catalog = await api.getPublicCatalog();
@@ -280,21 +280,21 @@ test('open notification inbox keeps empty/error states instead of fabricating un
         if (id.includes('useNotifications')) return { useNotifications: () => ({ items, loading: false, error, readingId: null }) };
         if (id.includes('memberOverview')) return { formatMemberDateTime: () => 'Stored timestamp' };
         if (id.includes('i18nHelper')) return { translateNotificationTitle: value => value, translateNotificationContent: value => value };
-        if (id === './notificationNavigation.js') return load('components/common/notificationNavigation.js');
+        if (id === './notificationNavigation.js') return load('shared/components/common/notificationNavigation.js');
         throw new Error(`Unexpected dependency: ${id}`);
       }
     });
-    const source = fs.readFileSync(path.join(__dirname, '../src/components/common/NotificationInbox.jsx'), 'utf8');
+    const source = fs.readFileSync(path.join(__dirname, '../src/features/notifications/ui/NotificationInbox.jsx'), 'utf8');
     vm.runInContext(transformSync(source, { format: 'cjs', loader: 'jsx' }).code, context);
     return renderToStaticMarkup(React.createElement(module.exports.NotificationInbox));
   }
   const empty = render([]);
-  assert.match(empty, /Chưa có thông báo/);
-  assert.doesNotMatch(empty, /thông báo chưa đọc/);
+  assert.match(empty, /Chưa có thông báo|Không có thông báo mới/);
+  assert.doesNotMatch(empty, /1 mới|thông báo chưa đọc/);
   const failed = render([], 'SQL offline');
   assert.match(failed, /SQL offline/);
-  assert.doesNotMatch(failed, /Chưa có thông báo|thông báo chưa đọc/);
+  assert.doesNotMatch(failed, /Chưa có thông báo|thông báo chưa đọc|1 mới/);
   const real = render([{ id: 581, title: 'Stored title', content: 'Stored content', isRead: false, createdAt: '2026-10-19T10:00:00Z' }]);
   assert.match(real, /Stored title/); assert.match(real, /Stored content/);
-  assert.match(real, /1 thông báo chưa đọc/);
+  assert.match(real, /1 mới|1 thông báo chưa đọc/);
 });

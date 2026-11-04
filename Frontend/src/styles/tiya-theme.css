@@ -7,7 +7,7 @@
 /* ─────────────────────────────────────────────────────────────
    GOOGLE FONTS — DM Sans (Tiya Original) + Bebas Neue
 ───────────────────────────────────────────────────────────── */
-@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Bebas+Neue&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
+@import url("https://fonts.googleapis.com/css2?family=DM+Sans:ital,wght@0,400;0,500;0,700;1,400&family=Montserrat:ital,wght@0,400..900;1,400..900&family=Source+Sans+3:wght@300;400;500;600;700&display=swap");
 
 /* ─────────────────────────────────────────────────────────────
    TIYA DESIGN TOKENS (100% Tiya Golf Club Variables)
@@ -25,7 +25,7 @@
   --scms-red:                  #DC2626;
 
   --body-font-family:          'DM Sans', sans-serif;
-  --headline-font-family:      'Bebas Neue', 'DM Sans', sans-serif;
+  --headline-font-family:      'Montserrat', 'Lexend', system-ui, -apple-system, sans-serif;
 
   --h1-font-size:              42px;
   --h2-font-size:              36px;

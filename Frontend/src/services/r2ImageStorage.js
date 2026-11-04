@@ -1,4 +1,4 @@
-import { apiRequest, getApiToken, getApiUrl } from './http.js';
+import { apiRequest } from './http.js';
 
 const ALLOWED_TYPES = new Set(['image/jpeg', 'image/png', 'image/webp']);
 
@@ -15,14 +15,7 @@ export async function uploadR2Image(file, category, maxMb) {
 
   const body = new FormData();
   body.append('file', file);
-  const token = getApiToken();
-  const response = await fetch(getApiUrl(`r2-images/${category}`), {
-    method: 'POST',
-    headers: token ? { Authorization: `Bearer ${token}` } : {},
-    body
-  });
-  const payload = await response.json().catch(() => null);
-  if (!response.ok) throw new Error(payload?.detail || payload?.message || `Không thể upload ảnh (HTTP ${response.status}).`);
+  const payload = await apiRequest(`r2-images/${category}`, { method: 'POST', body });
   if (!payload?.key || !payload?.publicUrl) throw new Error('R2 không trả về thông tin ảnh hợp lệ.');
   return payload;
 }
@@ -31,7 +24,7 @@ export const uploadDashboardImage = file => uploadR2Image(file, 'dashboard', 5);
 export const uploadAvatar = file => uploadR2Image(file, 'avatar', 5);
 
 export async function listDashboardImages() {
-  const files = await apiRequest('media/files?limit=200');
+  const files = await apiRequest('media/files?folder=dashboard&limit=200');
   return files.map(file => ({ id: file.id, key: file.fileId, publicUrl: file.url, fileName: file.fileName }));
 }
 
