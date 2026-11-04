@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useCountUp } from '../../utils/useCountUp.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
 // Utility formatters
@@ -143,6 +144,7 @@ export function MiniSparkline({ color = '#F97316', data = [] }) {
  */
 export function RoomStatusDonutChart({ total = 0, data = [] }) {
   const [hovered, setHovered] = useState(null);
+  const animTotal = useCountUp(total, 1000);
   const size = 160;
   const strokeWidth = 24;
   const radius = (size - strokeWidth) / 2;
@@ -189,7 +191,7 @@ export function RoomStatusDonutChart({ total = 0, data = [] }) {
             {hovered !== null ? validData[hovered].label : 'Sân & Phòng'}
           </span>
           <strong className="text-2xl font-black font-chivo text-slate-900 dark:text-white leading-none mt-0.5">
-            {hovered !== null ? validData[hovered].value : total}
+            {hovered !== null ? validData[hovered].value : animTotal}
           </strong>
         </div>
       </div>
@@ -278,13 +280,14 @@ export function PeriodCollectionRadialGauge({
   remainingText = '',
   color = '#F59E0B'
 }) {
+  const animPercentage = useCountUp(percentage, 1200, 2);
   const size = 170;
   const strokeWidth = 20;
   const radius = (size - strokeWidth) / 2;
   const arcDegree = 280;
   const arcLength = (arcDegree / 360) * (2 * Math.PI * radius);
   const totalCircumference = 2 * Math.PI * radius;
-  const clampedPercentage = Math.min(100, Math.max(0, percentage));
+  const clampedPercentage = Math.min(100, Math.max(0, animPercentage));
   const progressLength = (clampedPercentage / 100) * arcLength;
   const dashOffset = arcLength - progressLength;
 

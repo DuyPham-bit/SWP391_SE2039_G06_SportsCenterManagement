@@ -1,4 +1,5 @@
 import { parseApiDate } from '../../utils/dateTime.js';
+import { useCountUp } from '../../utils/useCountUp.js';
 import React, { useEffect, useState, useMemo } from 'react';
 import { reportApi, systemApi } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
@@ -249,6 +250,16 @@ export function ManagerDashboard() {
   const totalClasses = metrics?.totalClasses ?? 0;
   const totalBookings = metrics?.totalBookings ?? 0;
 
+  // Animated counters for smooth count-up on load / refresh
+  const animTotalMembers = useCountUp(totalMembers, 1000);
+  const animTodayCheckins = useCountUp(todayCheckins, 1000);
+  const animVacantRooms = useCountUp(vacantRooms, 1000);
+  const animExpiredMembers = useCountUp(expiredMembers, 1000);
+  const animNetRevenue = useCountUp(netRevenue, 1200);
+  const animTopRevenueSport = useCountUp(topRevenueSport?.net || 0, 1200);
+  const animTotalRooms = useCountUp(totalRooms, 1000);
+  const animOccupancyRate = useCountUp(occupancyRate, 1200, 2);
+
   // Real room donut segments computed from DB
   const roomDonutData = useMemo(() => {
     const list = [];
@@ -497,7 +508,7 @@ export function ManagerDashboard() {
                     {isEn ? 'TOTAL MEMBERS' : 'TỔNG HỘI VIÊN'}
                   </span>
                   <h3 className="text-2xl font-black font-chivo text-slate-900 dark:text-white mt-1">
-                    {totalMembers.toLocaleString('vi-VN')}
+                    {animTotalMembers.toLocaleString('vi-VN')}
                   </h3>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-[#165B53] text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -517,7 +528,7 @@ export function ManagerDashboard() {
                     {isEn ? 'TODAY CHECK-IN' : 'LƯỢT CHECK-IN'}
                   </span>
                   <h3 className="text-2xl font-black font-chivo text-slate-900 dark:text-white mt-1">
-                    {todayCheckins}
+                    {animTodayCheckins.toLocaleString('vi-VN')}
                   </h3>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-[#10B981] text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -526,7 +537,7 @@ export function ManagerDashboard() {
               </div>
               <div className="mt-2 space-y-1">
                 <p className="text-[11px] text-slate-500 dark:text-slate-400 truncate">
-                  {isEn ? `Occupancy ${occupancyRate}% · ${totalBookings} booked` : `Lấp đầy ${occupancyRate}% · ${totalBookings} lượt đặt`}
+                  {isEn ? `Occupancy ${animOccupancyRate}% · ${totalBookings} booked` : `Lấp đầy ${animOccupancyRate}% · ${totalBookings} lượt đặt`}
                 </p>
                 <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1 overflow-hidden">
                   <div
@@ -546,7 +557,7 @@ export function ManagerDashboard() {
                     {isEn ? 'AVAILABLE COURTS' : 'SÂN & PHÒNG KHẢ DỤNG'}
                   </span>
                   <h3 className="text-2xl font-black font-chivo text-slate-900 dark:text-white mt-1">
-                    {vacantRooms}
+                    {animVacantRooms.toLocaleString('vi-VN')}
                   </h3>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-[#3B82F6] text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -566,7 +577,7 @@ export function ManagerDashboard() {
                     {isEn ? 'EXPIRED PACKAGES' : 'GÓI HẾT HẠN'}
                   </span>
                   <h3 className="text-2xl font-black font-chivo text-slate-900 dark:text-white mt-1">
-                    {expiredMembers}
+                    {animExpiredMembers.toLocaleString('vi-VN')}
                   </h3>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-[#EA580C] text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -587,7 +598,7 @@ export function ManagerDashboard() {
                       {isEn ? 'NET REVENUE' : 'DOANH THU THỰC NHẬN'}
                     </span>
                     <h3 className="text-2xl font-black font-chivo text-slate-900 dark:text-white mt-1">
-                      {`${netRevenue.toLocaleString('vi-VN')}đ`}
+                      {`${animNetRevenue.toLocaleString('vi-VN')}đ`}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-[#D97706] text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -614,7 +625,7 @@ export function ManagerDashboard() {
                       {isEn ? 'TOP SPORT' : 'BỘ MÔN DOANH THU #1'}
                     </span>
                     <h3 className="text-xl font-black font-chivo text-slate-900 dark:text-white mt-1 truncate max-w-[120px]" title={topRevenueSport?.sportName || 'Chưa có'}>
-                      {topRevenueSport ? `${Number(topRevenueSport.net || 0).toLocaleString('vi-VN')}đ` : '0đ'}
+                      {topRevenueSport ? `${animTopRevenueSport.toLocaleString('vi-VN')}đ` : '0đ'}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-[#10B981] text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -642,7 +653,7 @@ export function ManagerDashboard() {
                   {isEn ? 'Courts & Facilities Status' : 'Trạng thái sân & phòng tập'}
                 </h4>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  {totalRooms} {isEn ? 'facilities' : 'sân/phòng'}
+                  {animTotalRooms} {isEn ? 'facilities' : 'sân/phòng'}
                 </span>
               </div>
               <div className="py-2 flex-1 flex items-center justify-center">
@@ -672,7 +683,7 @@ export function ManagerDashboard() {
                   {isEn ? 'Center Capacity Occupancy' : 'Tỷ lệ lấp đầy trung tâm'}
                 </h4>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  {occupancyRate}%
+                  {animOccupancyRate}%
                 </span>
               </div>
               <div className="py-2 flex-1 flex items-center justify-center">
@@ -691,7 +702,7 @@ export function ManagerDashboard() {
                   {isEn ? 'Member Packages Status' : 'Tình trạng gói tập hội viên'}
                 </h4>
                 <span className="text-[11px] text-slate-400 font-medium">
-                  {totalMembers} {isEn ? 'members' : 'hội viên'}
+                  {animTotalMembers} {isEn ? 'members' : 'hội viên'}
                 </span>
               </div>
               <div className="py-2 flex-1">
