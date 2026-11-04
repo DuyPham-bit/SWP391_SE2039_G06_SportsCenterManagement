@@ -1,3 +1,4 @@
+import { AnimatedNumber } from '../../utils/useCountUp.js';
 import React, { useState } from 'react';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 
@@ -1196,7 +1197,7 @@ export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
             {isEn ? 'Total:' : 'Tổng:'}
           </span>
           <strong className="text-base font-black font-chivo text-[#2D6A4F] dark:text-[#81B29A]">
-            {formatVnd(totalRevenue)}
+            <AnimatedNumber value={totalRevenue} suffix="đ" duration={1200} />
           </strong>
         </div>
       </div>
@@ -1465,7 +1466,7 @@ export function VisionActiveUsersChart({
             <span>{isEn ? 'Users' : 'Hội viên'}</span>
           </div>
           <p className="text-sm font-chivo font-black text-slate-900 dark:text-white">
-            {totalUsers}
+            <AnimatedNumber value={totalUsers} duration={1000} />
           </p>
         </div>
 
@@ -1478,7 +1479,7 @@ export function VisionActiveUsersChart({
             <span>{isEn ? 'Bookings' : 'Lượt đặt'}</span>
           </div>
           <p className="text-sm font-chivo font-black text-slate-900 dark:text-white">
-            {totalBookings}
+            <AnimatedNumber value={totalBookings} duration={1000} />
           </p>
         </div>
 
@@ -1491,7 +1492,7 @@ export function VisionActiveUsersChart({
             <span>{isEn ? 'Revenue' : 'Doanh thu'}</span>
           </div>
           <p className="text-sm font-chivo font-black text-[#2D6A4F] dark:text-[#81B29A]">
-            {formatShortVnd(netSales)}
+            <AnimatedNumber value={netSales} suffix="đ" duration={1200} />
           </p>
         </div>
 
@@ -1504,7 +1505,7 @@ export function VisionActiveUsersChart({
             <span>{isEn ? 'Sessions' : 'Ca học'}</span>
           </div>
           <p className="text-sm font-chivo font-black text-slate-900 dark:text-white">
-            {totalSessions}
+            <AnimatedNumber value={totalSessions} duration={1000} />
           </p>
         </div>
       </div>

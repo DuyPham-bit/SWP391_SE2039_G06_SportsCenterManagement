@@ -1,3 +1,4 @@
+import { AnimatedNumber } from '../../utils/useCountUp.js';
 import React, { useEffect, useState, useMemo } from 'react';
 import { reportApi } from '../../services/api.js';
 import { createReportCsv } from '../../services/reportExport.js';
@@ -397,7 +398,7 @@ export function ReportsAnalytics() {
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
-                  {`${Number(metrics.netRevenue || 0).toLocaleString('vi-VN')}đ`}
+                  <AnimatedNumber value={metrics.netRevenue || 0} suffix="đ" duration={1200} />
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 truncate max-w-[200px]">
                   {isEn
@@ -422,7 +423,7 @@ export function ReportsAnalytics() {
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
-                  {metrics.totalMembers}
+                  <AnimatedNumber value={metrics.totalMembers} duration={1000} />
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 truncate max-w-[200px]">
                   {isEn ? `Active packages: ${metrics.activeMembers}` : `Gói hiệu lực: ${metrics.activeMembers}`}
@@ -445,7 +446,7 @@ export function ReportsAnalytics() {
                   </span>
                 </div>
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
-                  +{metrics.newMembers}
+                  +<AnimatedNumber value={metrics.newMembers} duration={1000} />
                 </h3>
                 <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 truncate max-w-[200px]">
                   {isEn ? 'Registered in period' : 'Đăng ký tài khoản trong kỳ'}

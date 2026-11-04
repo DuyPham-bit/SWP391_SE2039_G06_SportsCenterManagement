@@ -305,6 +305,7 @@ export function ManagerDashboard() {
   const sportRevenueItems = useMemo(() => {
     return revenueBySport.map(sp => ({
       label: sp.sportName,
+      rawNet: Number(sp.net || 0),
       value: `${Number(sp.net || 0).toLocaleString('vi-VN')}đ`,
       pct: sp.share || 0
     }));
@@ -834,7 +835,7 @@ export function ManagerDashboard() {
                           {/* Booked / Capacity */}
                           <td className="py-3 px-3 text-center">
                             <span className="font-black text-slate-900 dark:text-white">
-                              {cls.booked}
+                              <AnimatedNumber value={cls.booked} duration={1000} />
                             </span>
                             <span className="text-slate-400"> / {cls.capacity}</span>
                           </td>
@@ -843,7 +844,7 @@ export function ManagerDashboard() {
                           <td className="py-3 px-4">
                             <div className="space-y-1">
                               <span className="font-black text-xs text-[#2D6A4F] dark:text-[#81B29A] block">
-                                {cls.occupancyRate}%
+                                <AnimatedNumber value={cls.occupancyRate} suffix="%" duration={1000} />
                               </span>
                               <div className="w-full bg-slate-100 dark:bg-slate-800 rounded-full h-1.5 overflow-hidden">
                                 <div

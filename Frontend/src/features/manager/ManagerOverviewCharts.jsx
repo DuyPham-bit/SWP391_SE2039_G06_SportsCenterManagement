@@ -244,13 +244,13 @@ export function FacilityOccupancyBars({ items = [] }) {
               >
                 {item.pct >= 40 && (
                   <span className="text-[10px] font-bold text-white whitespace-nowrap px-2">
-                    {item.pct}% {item.current != null ? `(${item.current}/${item.max})` : ''}
+                    <AnimatedNumber value={item.pct} decimals={item.pct % 1 !== 0 ? 2 : 0} suffix="%" duration={1100} /> {item.current != null ? `(${item.current}/${item.max})` : ''}
                   </span>
                 )}
               </div>
               {item.pct < 40 && (
                 <span className="text-[10px] font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap pl-2">
-                  {item.pct}% {item.current != null ? `(${item.current}/${item.max})` : ''}
+                  <AnimatedNumber value={item.pct} decimals={item.pct % 1 !== 0 ? 2 : 0} suffix="%" duration={1100} /> {item.current != null ? `(${item.current}/${item.max})` : ''}
                 </span>
               )}
             </div>
@@ -380,7 +380,7 @@ export function MemberDocumentsStackedBars({ items = [] }) {
                     style={{ width: `${greenPct}%` }}
                     title={`${row.greenLabel || 'Có gói'}: ${row.greenVal}`}
                   >
-                    {row.greenVal}
+                    <AnimatedNumber value={row.greenVal} duration={1000} />
                   </div>
                 )}
                 {row.redVal > 0 && (
@@ -389,7 +389,7 @@ export function MemberDocumentsStackedBars({ items = [] }) {
                     style={{ width: `${redPct}%` }}
                     title={`${row.redLabel || 'Chưa có'}: ${row.redVal}`}
                   >
-                    {row.redVal}
+                    <AnimatedNumber value={row.redVal} duration={1000} />
                   </div>
                 )}
                 {row.greenVal === 0 && row.redVal === 0 && (
@@ -717,10 +717,10 @@ export function ThreeMonthExpensesBars({ items = [], emptyText = 'Chưa có doan
               </div>
               <div className="flex items-center gap-1.5 shrink-0">
                 <span className="text-slate-900 dark:text-white font-black font-chivo text-xs">
-                  {item.value}
+                  {item.rawNet != null ? <AnimatedNumber value={item.rawNet} duration={1200} suffix="đ" /> : item.value}
                 </span>
                 <span className="px-1.5 py-0.5 rounded text-[10px] font-bold bg-white dark:bg-slate-700 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-600">
-                  {item.pct ? `${item.pct}%` : '0%'}
+                  <AnimatedNumber value={item.pct || 0} decimals={item.pct % 1 !== 0 ? 2 : 0} suffix="%" duration={1100} />
                 </span>
               </div>
             </div>
