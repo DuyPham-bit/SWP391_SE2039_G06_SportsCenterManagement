@@ -1,0 +1,101 @@
+services:
+  postgres:
+    image: postgres:16
+    ports:
+      - "127.0.0.1:5433:5432"
+    environment:
+      POSTGRES_DB: SportsCenterManagement
+      POSTGRES_USER: scms
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Missing POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U scms -d SportsCenterManagement"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    image: scms-backend:learning
+    build:
+      context: ..
+      dockerfile: docker/backend.Dockerfile
+    ports:
+      - "127.0.0.1:5000:8080"
+    environment:
+      ASPNETCORE_ENVIRONMENT: Production
+      ASPNETCORE_URLS: http://+:8080
+      ConnectionStrings__SportsCenter: "Host=postgres;Port=5432;Database=SportsCenterManagement;Username=scms;Password=${POSTGRES_PASSWORD}"
+      Jwt__Key: ${JWT_KEY:?Missing JWT_KEY}
+      Jwt__Issuer: SportsCenterManagement.API
+      Jwt__Audience: SportsCenterManagement.FE
+      Bootstrap__SystemAdmin__Username: ${ADMIN_USERNAME}
+      Bootstrap__SystemAdmin__Email: ${ADMIN_EMAIL}
+      Bootstrap__SystemAdmin__Password: ${ADMIN_PASSWORD:?Missing ADMIN_PASSWORD}
+      R2Storage__ServiceUrl: ${R2_SERVICE_URL}
+      R2Storage__AccessKey: ${R2_ACCESS_KEY}
+      R2Storage__SecretKey: ${R2_SECRET_KEY}
+      R2Storage__BucketName: ${R2_BUCKET_NAME}
+      R2Storage__PublicDomain: ${R2_PUBLIC_DOMAIN}
+      Cors__AllowedOrigins__0: http://localhost:3004
+
+      # Email xác thực, quên mật khẩu và thông báo
+      ExternalCommunications__Email__Smtp__Host: ${EMAIL_SMTP_HOST:-smtp.gmail.com}
+      ExternalCommunications__Email__Smtp__Port: ${EMAIL_SMTP_PORT:-587}
+      ExternalCommunications__Email__Smtp__EnableSsl: ${EMAIL_SMTP_ENABLE_SSL:-true}
+      ExternalCommunications__Email__Smtp__From: ${EMAIL_SMTP_FROM}
+      ExternalCommunications__Email__Smtp__Username: ${EMAIL_SMTP_USERNAME}
+      ExternalCommunications__Email__Smtp__Password: ${EMAIL_SMTP_PASSWORD}
+      Google__ClientId: ${GOOGLE_CLIENT_ID}
+
+      # Dịch vụ gửi mail sử dụng MailSettings
+      MailSettings__Mail: ${EMAIL_SMTP_USERNAME}
+      MailSettings__Password: ${EMAIL_SMTP_PASSWORD}
+      MailSettings__Host: ${EMAIL_SMTP_HOST:-smtp.gmail.com}
+      MailSettings__Port: ${EMAIL_SMTP_PORT:-587}
+
+      # AI
+      AI__ApiKey: ${AI_API_KEY}
+
+      # VNPay
+      VnPay__TmnCode: ${VNPAY_TMN_CODE}
+      VnPay__HashSecret: ${VNPAY_HASH_SECRET}
+      VnPay__BaseUrl: ${VNPAY_BASE_URL}
+      VnPay__ReturnUrl: ${VNPAY_RETURN_URL}
+      VnPay__Version: "2.1.0"
+      VnPay__Command: pay
+      VnPay__CurrCode: VND
+      VnPay__Locale: vn
+
+      # MoMo
+      Momo__PartnerCode: ${MOMO_PARTNER_CODE}
+      Momo__PaymentUrl: ${MOMO_PAYMENT_URL}
+      Momo__ReturnUrl: ${MOMO_RETURN_URL}
+      Momo__NotifyUrl: ${MOMO_NOTIFY_URL}
+      Momo__AccessKey: ${MOMO_ACCESS_KEY}
+      Momo__SecretKey: ${MOMO_SECRET_KEY}
+      Momo__RequestType: captureWallet
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  frontend:
+    image: scms-frontend:learning
+    build:
+      context: ..
+      dockerfile: docker/frontend.Dockerfile
+      args:
+        VITE_SPORTS_CENTER_ID: ${VITE_SPORTS_CENTER_ID}
+        VITE_GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+    ports:
+      - "127.0.0.1:3004:80"
+    environment:
+      # Defaults used by the Nginx runtime template. Render overrides both.
+      PORT: 80
+      API_UPSTREAM: http://backend:8080
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:

@@ -5,41 +5,38 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 const { transformSync } = require('esbuild');
 
-function loadService(apiRequest, fetchImpl) {
+function loadService(fetchImpl) {
   const context = vm.createContext({
-    module: { exports: {} }, FormData, console,
-    fetch: fetchImpl,
-    require: () => ({ apiRequest, getApiToken: () => 'manager-token', getApiUrl: route => `/api/${route}` })
+    module: { exports: {} }, FormData, File, console, fetch: fetchImpl,
+    require: () => ({ apiRequest: async () => {}, getApiToken: () => 'manager-token', getApiUrl: route => '/api/' + route })
   });
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/cloudMediaStorage.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../src/services/r2ImageStorage.js'), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs' }).code, context);
   return context.module.exports;
 }
-
-test('the cloud gallery keeps every API item including AVIF rather than limiting the list to four', async () => {
-  const files = Array.from({ length: 7 }, (_, index) => ({ fileId: `image-${index}`, fileName: `photo-${index}.${index < 4 ? 'jpg' : 'avif'}` }));
-  const api = loadService(async () => files);
-  const results = await api.fetchDriveFiles();
-  assert.equal(results.length, 7);
-  assert.equal(results.filter(file => file.fileName.endsWith('.avif')).length, 3);
-});
-
-test('AVIF upload reaches the API while SVG and fake AVIF extensions remain rejected', async () => {
-  let requests = 0;
-  const api = loadService(async () => [], async (url, options) => {
-    requests++;
-    assert.equal(url, '/api/media/upload');
+test('R2 upload keeps relative key distinct from derived rendering URL', async () => {
+  const api = loadService(async (url, options) => {
+    assert.equal(url, '/api/r2-images/dashboard');
     assert.equal(options.headers.Authorization, 'Bearer manager-token');
-    return { ok: true, json: async () => ({ url: '/uploads/photo.avif', fileId: 'local_avif', mimeType: 'image/avif' }) };
+    assert.equal(options.body.get('file').name, 'photo.jpg');
+    return { ok: true, json: async () => ({ key: 'dashboard/example.jpg', publicUrl: 'https://cdn.example/dashboard/example.jpg' }) };
   });
-  const result = await api.uploadMediaFileToCloud(new File(['avif fixture'], 'photo.avif', { type: 'image/avif' }));
-  assert.equal(result.type, 'image/avif');
-  await assert.rejects(api.uploadMediaFileToCloud(new File(['svg'], 'photo.svg', { type: 'image/svg+xml' })));
-  await assert.rejects(api.uploadMediaFileToCloud(new File(['html'], 'payload.html', { type: 'image/avif' })));
-  assert.equal(requests, 1);
+  const result = await api.uploadDashboardImage(new File(['image'], 'photo.jpg', { type: 'image/jpeg' }));
+  assert.equal(result.key, 'dashboard/example.jpg');
+  assert.equal(result.publicUrl, 'https://cdn.example/dashboard/example.jpg');
 });
-
-test('failed upload cannot become a successful browser-only image record', async () => {
-  const api = loadService(async () => [], async () => { throw new Error('API offline'); });
-  await assert.rejects(api.uploadMediaFileToCloud(new File(['image'], 'photo.webp', { type: 'image/webp' }), true), /API offline/);
+test('reject unsupported extensions, MIME mismatch, empty and oversized files before network upload', async () => {
+  let calls = 0;
+  const api = loadService(async () => { calls++; throw new Error('unexpected upload'); });
+  for (const file of [
+    new File(['image'], 'photo.avif', { type: 'image/avif' }),
+    new File(['html'], 'photo.html', { type: 'image/jpeg' }),
+    new File([], 'photo.jpg', { type: 'image/jpeg' }),
+    new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'photo.jpg', { type: 'image/jpeg' })
+  ]) await assert.rejects(api.uploadDashboardImage(file));
+  assert.equal(calls, 0);
+});
+test('network failure remains a failed upload', async () => {
+  const api = loadService(async () => { throw new Error('API offline'); });
+  await assert.rejects(api.uploadDashboardImage(new File(['image'], 'photo.webp', { type: 'image/webp' })), /API offline/);
 });

@@ -20,17 +20,50 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
     private static readonly HashSet<string> TextArrays = ["tags", "badges", "amenities", "items"];
     private static readonly HashSet<string> Booleans = ["isVisible", "isAutoCount", "formatThousands"];
 
+    public static readonly IReadOnlyDictionary<string, string> ImageFields = new Dictionary<string, string>
+    {
+        ["image"] = "mediaId", ["secondaryImage"] = "secondaryMediaId",
+        ["posterUrl"] = "posterMediaId", ["imageUrl"] = "imageMediaId"
+    };
+
+    public static HashSet<long> ReferencedMediaIds(string? json)
+    {
+        var result = new HashSet<long>();
+        if (string.IsNullOrWhiteSpace(json)) return result;
+        using var doc = JsonDocument.Parse(json);
+        Visit(doc.RootElement);
+        return result;
+        void Visit(JsonElement node)
+        {
+            if (node.ValueKind == JsonValueKind.Object)
+                foreach (var property in node.EnumerateObject())
+                {
+                    if (ImageFields.Values.Contains(property.Name) && property.Value.ValueKind == JsonValueKind.Number && property.Value.TryGetInt64(out var id))
+                        result.Add(id);
+                    else if (property.Value.ValueKind is JsonValueKind.Object or JsonValueKind.Array) Visit(property.Value);
+                }
+            else if (node.ValueKind == JsonValueKind.Array)
+                foreach (var child in node.EnumerateArray()) Visit(child);
+        }
+    }
+
     public async Task<LandingContentResponse> GetAsync(CancellationToken ct)
     {
         var setting = await db.SystemSettings.AsNoTracking().SingleOrDefaultAsync(s => s.SettingKey == SettingKey, ct);
         if (setting?.SettingValue is null) return new(null, null);
-        using var document = JsonDocument.Parse(setting.SettingValue);
-        return new(TransformR2Urls(document.RootElement, toPublicUrl: true), setting.UpdatedAt);
+        var ids = ReferencedMediaIds(setting.SettingValue);
+        var media = await db.UploadedMedias.AsNoTracking().Where(m => ids.Contains(m.Id)).ToDictionaryAsync(m => m.Id, ct);
+        var node = JsonNode.Parse(setting.SettingValue)!;
+        Hydrate(node, media);
+        return new(JsonSerializer.SerializeToElement(node), setting.UpdatedAt);
     }
 
     public async Task<LandingContentResponse> SaveAsync(JsonElement content, long userId, CancellationToken ct)
     {
-        var storedContent = TransformR2Urls(content, toPublicUrl: false);
+        var node = JsonNode.Parse(content.GetRawText())!;
+        var media = await db.UploadedMedias.AsNoTracking().Where(m => m.StorageKey.StartsWith("dashboard/")).ToListAsync(ct);
+        StoreReferences(node, media.ToDictionary(m => m.StorageKey), media.ToDictionary(m => m.Id));
+        var storedContent = JsonSerializer.SerializeToElement(node);
         Validate(storedContent);
         var setting = await db.SystemSettings.SingleOrDefaultAsync(s => s.SettingKey == SettingKey, ct);
         if (setting is null)
@@ -42,39 +75,56 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
         setting.UpdatedBy = userId;
         setting.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
-        return new(TransformR2Urls(storedContent, toPublicUrl: true), setting.UpdatedAt);
+        return await GetAsync(ct);
     }
 
-    private JsonElement TransformR2Urls(JsonElement content, bool toPublicUrl)
-    {
-        var node = JsonNode.Parse(content.GetRawText())!;
-        var publicDomain = configuration["R2Storage:PublicDomain"]?.Trim().TrimEnd('/')
-            ?? throw new InvalidOperationException("R2Storage:PublicDomain is not configured.");
-        TransformNode(node, publicDomain, toPublicUrl);
-        return JsonSerializer.SerializeToElement(node);
-    }
+    private string PublicDomain => configuration["R2Storage:PublicDomain"]?.Trim().TrimEnd('/')
+        ?? throw new InvalidOperationException("R2Storage:PublicDomain is not configured.");
 
-    private static void TransformNode(JsonNode node, string publicDomain, bool toPublicUrl)
+    private void Hydrate(JsonNode node, Dictionary<long, UploadedMedia> media)
     {
         if (node is JsonObject obj)
         {
-            foreach (var property in obj.ToArray())
+            foreach (var field in ImageFields)
             {
-                if (property.Value is JsonValue value && value.TryGetValue<string>(out var text))
-                {
-                    if (toPublicUrl && text.StartsWith("dashboard/", StringComparison.Ordinal))
-                        obj[property.Key] = $"{publicDomain}/{text}";
-                    else if (!toPublicUrl && text.StartsWith($"{publicDomain}/dashboard/", StringComparison.Ordinal))
-                        obj[property.Key] = text[(publicDomain.Length + 1)..];
-                }
-                else if (property.Value is not null) TransformNode(property.Value, publicDomain, toPublicUrl);
+                if (obj[field.Value] is JsonValue idValue && idValue.TryGetValue<long>(out var id))
+                    obj[field.Key] = media.TryGetValue(id, out var image) ? $"{PublicDomain}/{image.StorageKey}" : "";
             }
+            foreach (var property in obj.ToArray())
+                if (property.Value is JsonObject or JsonArray) Hydrate(property.Value, media);
         }
         else if (node is JsonArray array)
+            foreach (var child in array) if (child is not null) Hydrate(child, media);
+    }
+
+    private void StoreReferences(JsonNode node, Dictionary<string, UploadedMedia> byKey, Dictionary<long, UploadedMedia> byId)
+    {
+        if (node is JsonObject obj)
         {
-            foreach (var child in array)
-                if (child is not null) TransformNode(child, publicDomain, toPublicUrl);
+            foreach (var field in ImageFields)
+            {
+                if (obj.TryGetPropertyValue(field.Key, out var value))
+                {
+                    if (value is not JsonValue textValue || !textValue.TryGetValue<string>(out var text)) throw InvalidContent();
+                    obj.Remove(field.Key);
+                    if (text.Length == 0) { obj.Remove(field.Value); continue; }
+                    var key = text.StartsWith(PublicDomain + "/", StringComparison.Ordinal)
+                        ? text[(PublicDomain.Length + 1)..] : text;
+                    if (!byKey.TryGetValue(key, out var image))
+                        throw new FlowException(400, "Ảnh chưa có trong thư viện. Vui lòng tải lên hoặc chọn ảnh đã lưu.");
+                    obj[field.Value] = image.Id;
+                }
+                else if (obj.TryGetPropertyValue(field.Value, out var idNode))
+                {
+                    if (idNode is not JsonValue idValue || !idValue.TryGetValue<long>(out var id) || !byId.ContainsKey(id))
+                        throw new FlowException(400, "ID ảnh không tồn tại trong thư viện.");
+                }
+            }
+            foreach (var property in obj.ToArray())
+                if (property.Value is JsonObject or JsonArray) StoreReferences(property.Value, byKey, byId);
         }
+        else if (node is JsonArray array)
+            foreach (var child in array) if (child is not null) StoreReferences(child, byKey, byId);
     }
 
     private static void Validate(JsonElement content)
@@ -121,6 +171,10 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
             {
                 if (item.ValueKind is not (JsonValueKind.True or JsonValueKind.False)) throw InvalidContent();
             }
+            else if (ImageFields.Values.Contains(property.Name))
+            {
+                if (item.ValueKind != JsonValueKind.Number || !item.TryGetInt64(out var mediaId) || mediaId <= 0) throw InvalidContent();
+            }
             else if (property.Name == "number")
             {
                 if (item.ValueKind != JsonValueKind.Number || !item.TryGetDouble(out var number) || !double.IsFinite(number) || number < 0 || number > 1_000_000_000) throw InvalidContent();
@@ -132,6 +186,15 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
     private static void ValidateText(JsonElement value, string name)
     {
         if (value.ValueKind != JsonValueKind.String || value.GetString()!.Length > 10000) throw InvalidContent();
+        if (name is "image" or "secondaryImage" or "posterUrl" or "videoUrl" or "imageUrl")
+        {
+            var key = value.GetString()!;
+            if (key.Length == 0) return;
+            if (!System.Text.RegularExpressions.Regex.IsMatch(key,
+                @"^dashboard/[0-9]{4}/[0-9]{2}/[0-9]{17}-[a-f0-9]{32}\.(jpg|jpeg|png|webp)$"))
+                throw new FlowException(400, "Ảnh trang chủ phải là relative key R2 hợp lệ.");
+            return;
+        }
         if (name.EndsWith("Url", StringComparison.Ordinal) || name.EndsWith("Link", StringComparison.Ordinal) || name is "image" or "secondaryImage")
         {
             var url = value.GetString()!.Trim();

@@ -587,18 +587,6 @@ export function HomeContentManagement() {
                 </div>
               </div>
 
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 uppercase mb-1">
-                  {isEn ? 'Background Video URL (MP4):' : 'Đường dẫn Video Nền (MP4):'}
-                </label>
-                <input
-                  type="text"
-                  value={content.heroBanner.videoUrl}
-                  onChange={(e) => updateContentField('heroBanner', 'videoUrl', e.target.value)}
-                  placeholder="./hero-video.mp4"
-                  className="w-full px-3 py-2 rounded-xl border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white text-xs focus:ring-2 focus:ring-[#2D6A4F] focus:outline-none"
-                />
-              </div>
             </div>
           </div>
 
@@ -691,6 +679,19 @@ export function HomeContentManagement() {
               </div>
 
               {/* 3 Advantages */}
+              <div className="space-y-2">
+                <button type="button" className="rounded-xl bg-[#2D6A4F] px-4 py-2 text-xs font-bold text-white"
+                  onClick={() => openMediaPicker(isEn ? 'About image' : 'Ảnh giới thiệu',
+                    content.whyUs.imageUrl || '', url => updateContentField('whyUs', 'imageUrl', url))}>
+                  {isEn ? 'Upload / change about image' : 'Tải / đổi ảnh giới thiệu'}
+                </button>
+                {content.whyUs.imageUrl && <img src={content.whyUs.imageUrl} alt=""
+                  className="h-36 w-full rounded-xl object-contain" />}
+                <input type="text" value={content.whyUs.imageAlt || ''}
+                  aria-label={isEn ? 'Image description' : 'Mô tả ảnh'}
+                  onChange={e => updateContentField('whyUs', 'imageAlt', e.target.value)}
+                  className="w-full rounded-xl border px-3 py-2 text-xs" />
+              </div>
               <div className="space-y-3 pt-2">
                 <span className="block text-xs font-bold text-slate-800 dark:text-slate-200 uppercase">
                   {isEn ? '3 Competitive Highlights:' : '3 Điểm Nổi Bật Vượt Trội:'}
@@ -1628,7 +1629,7 @@ export function HomeContentManagement() {
           setMediaPickerConfig(prev => ({ ...prev, isOpen: false }));
           mediaPickerConfig.onClose?.();
         }}
-        onSelectImage={({ key, publicUrl }) => {
+        onSelectImage={({ key, publicUrl, isNew = true }) => {
           const marker = '/dashboard/';
           const currentUrl = mediaPickerConfig.currentUrl || '';
           const markerIndex = currentUrl.indexOf(marker);
@@ -1639,7 +1640,7 @@ export function HomeContentManagement() {
             if (pendingDashboardKeysRef.current.delete(oldKey)) deleteDashboardImage(oldKey).catch(() => {});
             else retiredDashboardKeysRef.current.add(oldKey);
           }
-          pendingDashboardKeysRef.current.add(key);
+          if (isNew) pendingDashboardKeysRef.current.add(key);
           if (mediaPickerConfig.callback) {
             mediaPickerConfig.callback(publicUrl);
           }

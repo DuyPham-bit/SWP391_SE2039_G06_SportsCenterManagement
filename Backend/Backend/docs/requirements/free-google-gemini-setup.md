@@ -51,23 +51,9 @@ env:
 
 Nếu triển khai trực tiếp lên Render, Railway, Azure, VPS hoặc dịch vụ tương tự, đặt biến môi trường `AI__ApiKey` trong phần cấu hình của dịch vụ. Không tạo key trong file `appsettings.json`, không ghi key thật vào `.env.example`, và không đưa key vào image Docker hoặc biến `VITE_*` vì các biến frontend sẽ bị công khai trong bundle trình duyệt.
 
-### Credential Google Drive cho thư viện media
+### Ảnh và thư viện media
 
-`GoogleDrive:ClientSecret` và `GoogleDrive:RefreshToken` cũng không được lưu trong Git. Máy cần dùng upload Google Drive phải cấu hình riêng:
-
-```powershell
-dotnet user-secrets set "GoogleDrive:ClientSecret" "CLIENT_SECRET_CUA_BAN" --project Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj
-dotnet user-secrets set "GoogleDrive:RefreshToken" "REFRESH_TOKEN_CUA_BAN" --project Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj
-```
-
-Với Docker, đặt hai giá trị tương ứng trong `docker/.env`:
-
-```dotenv
-GOOGLE_DRIVE_CLIENT_SECRET=CLIENT_SECRET_CUA_BAN
-GOOGLE_DRIVE_REFRESH_TOKEN=REFRESH_TOKEN_CUA_BAN
-```
-
-Trên máy chủ có thể đặt trực tiếp `GoogleDrive__ClientSecret` và `GoogleDrive__RefreshToken`. Nếu credential từng xuất hiện trong commit hoặc nơi công khai, phải thu hồi/tạo lại tại Google Cloud trước khi sử dụng.
+Ảnh hiện chỉ dùng Cloudflare R2. Cấu hình R2Storage__ServiceUrl, AccessKey, SecretKey, BucketName và PublicDomain qua biến môi trường; xem docs/HOME_CONTENT_MEDIA.md.
 
 Nguồn: [bảng giá Gemini](https://ai.google.dev/gemini-api/docs/pricing), [quản lý API key](https://ai.google.dev/gemini-api/docs/api-key). Giá/quota có thể thay đổi.
 

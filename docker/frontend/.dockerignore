@@ -1,9 +1,0 @@
-node_modules
-dist
-.git
-.idea
-.vscode
-tmp
-.validation
-tests
-*.log

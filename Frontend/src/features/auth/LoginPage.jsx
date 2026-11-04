@@ -43,7 +43,7 @@ export function LoginPage() {
   const showcaseLoginTitle = authShowcase.loginTitle || 'Tập luyện hôm nay, \nbứt phá mỗi ngày.';
   const showcaseRegisterTitle = authShowcase.registerTitle || 'Hành trình mới, \nphiên bản khỏe hơn.';
   const showcaseDescription = authShowcase.description || 'Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.';
-  const showcasePosterUrl = authShowcase.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=800&auto=format&fit=crop';
+  const showcasePosterUrl = authShowcase.posterUrl || '';
   
   const feature1Title = authShowcase.feature1Title || 'Đặt chỗ trong 30s';
   const feature1Desc = authShowcase.feature1Desc || 'Giữ sân & lớp học 7 ngày';

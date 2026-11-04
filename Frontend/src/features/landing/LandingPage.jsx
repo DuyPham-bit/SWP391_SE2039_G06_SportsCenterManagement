@@ -795,14 +795,15 @@ export function LandingPage() {
         </svg>
 
         {/* Video Background */}
-        <video
+        {landingContent.heroBanner?.videoUrl ? <video
           ref={videoRef}
           autoPlay loop muted playsInline
           className="hero-video-bg"
           poster={landingContent.heroBanner?.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
         >
-          <source src={landingContent.heroBanner?.videoUrl || './hero-video.mp4'} type="video/mp4" />
-        </video>
+          <source src={landingContent.heroBanner.videoUrl} type="video/mp4" />
+        </video> : <img src={landingContent.heroBanner?.posterUrl || undefined}
+          alt="" className="hero-video-bg" fetchPriority="high" />}
         <div className="section-overlay" />
 
         {/* Hero Container */}
@@ -860,7 +861,7 @@ export function LandingPage() {
         </div>
 
         {/* Sound Toggle Button */}
-        <button
+        {landingContent.heroBanner?.videoUrl && <button
           type="button"
           onClick={() => {
             if (videoRef.current) {
@@ -876,7 +877,7 @@ export function LandingPage() {
             {isVideoMuted ? 'volume_off' : 'volume_up'}
           </span>
           {isVideoMuted ? (isEn ? 'Unmute' : 'Bật âm thanh') : (isEn ? 'Mute' : 'Tắt âm thanh')}
-        </button>
+        </button>}
 
         {/* Bottom Wave: Pure White #ffffff (Tiya Wave styled with compact height) */}
         <svg className="hero-bottom-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
@@ -892,6 +893,13 @@ export function LandingPage() {
           <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))',gap:'60px',alignItems:'start'}}>
             {/* Left Column */}
             <div className="tiya-reveal" style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
+              {landingContent.whyUs?.imageUrl && (
+                <figure className="mb-5 w-full overflow-hidden rounded-2xl bg-slate-50">
+                  <img src={landingContent.whyUs.imageUrl} alt={landingContent.whyUs.imageAlt || ''}
+                    loading="lazy" className="h-56 w-full object-contain" />
+                  <figcaption className="p-3 text-sm text-slate-600">{landingContent.whyUs.imageAlt}</figcaption>
+                </figure>
+              )}
               <div className="about-badge">
                 <span className="material-symbols-outlined" style={{fontSize:'16px'}}>verified</span>
                 {isEn ? 'WHY CHOOSE SCMS' : (landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN SCMS')}

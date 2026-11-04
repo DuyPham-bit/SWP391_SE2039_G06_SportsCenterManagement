@@ -2,8 +2,8 @@
 using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
+using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 using SportsCenterManagement.DAL.Context;
 
 #nullable disable
@@ -17,11 +17,10 @@ namespace SportsCenterManagement.DAL.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("dbo")
                 .HasAnnotation("ProductVersion", "10.0.12")
-                .HasAnnotation("Relational:MaxIdentifierLength", 128);
+                .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
-            SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
+            NpgsqlModelBuilderExtensions.UseIdentityByDefaultColumns(modelBuilder);
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AiConversation", b =>
                 {
@@ -29,16 +28,16 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("ConversationType")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("conversation_type");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long?>("MemberId")
@@ -48,11 +47,11 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long>("UserId")
@@ -65,7 +64,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("ai_conversations", "dbo");
+                    b.ToTable("ai_conversations");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AiExerciseRecommendation", b =>
@@ -74,20 +73,20 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<bool?>("Accepted")
-                        .HasColumnType("bit")
+                        .HasColumnType("boolean")
                         .HasColumnName("accepted");
 
                     b.Property<string>("AiModel")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("ai_model");
 
                     b.Property<decimal?>("ConfidenceScore")
                         .HasPrecision(5, 4)
-                        .HasColumnType("decimal(5,4)")
+                        .HasColumnType("numeric(5,4)")
                         .HasColumnName("confidence_score");
 
                     b.Property<long?>("ConversationId")
@@ -95,12 +94,12 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("conversation_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("DifficultyLevel")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("difficulty_level");
 
                     b.Property<long?>("ExerciseId")
@@ -112,7 +111,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("member_id");
 
                     b.Property<string>("RecommendationReason")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("recommendation_reason");
 
                     b.Property<long?>("RequestedBy")
@@ -121,7 +120,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("TargetGoal")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("target_goal");
 
                     b.Property<long?>("TrainingPlanId")
@@ -140,7 +139,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("ai_exercise_recommendations", "dbo");
+                    b.ToTable("ai_exercise_recommendations");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AiMessage", b =>
@@ -149,32 +148,32 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("ConversationId")
                         .HasColumnType("bigint")
                         .HasColumnName("conversation_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("message");
 
                     b.Property<string>("SenderType")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("sender_type");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ConversationId");
 
-                    b.ToTable("ai_messages", "dbo");
+                    b.ToTable("ai_messages");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Assignment", b =>
@@ -183,7 +182,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("ClassId")
                         .HasColumnType("bigint")
@@ -194,15 +193,15 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("description");
 
                     b.Property<DateTime?>("DueDate")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("due_date");
 
                     b.Property<long?>("MemberId")
@@ -212,13 +211,13 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
                     b.HasKey("Id");
@@ -229,7 +228,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("MemberId");
 
-                    b.ToTable("assignments", "dbo");
+                    b.ToTable("assignments");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AssignmentSubmission", b =>
@@ -238,7 +237,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("AssignmentId")
                         .HasColumnType("bigint")
@@ -246,11 +245,11 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("CoachFeedback")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("coach_feedback");
 
                     b.Property<string>("Content")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("content");
 
                     b.Property<long>("MemberId")
@@ -259,17 +258,17 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal?>("Score")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("score");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("SubmittedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("submitted_at");
 
                     b.HasKey("Id");
@@ -278,7 +277,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("MemberId");
 
-                    b.ToTable("assignment_submissions", "dbo");
+                    b.ToTable("assignment_submissions");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Attendance", b =>
@@ -287,20 +286,20 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("AttendanceStatus")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("attendance_status");
 
                     b.Property<DateTime?>("CheckInTime")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("check_in_time");
 
                     b.Property<DateTime?>("CheckOutTime")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("check_out_time");
 
                     b.Property<long?>("CheckedInBy")
@@ -308,7 +307,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("checked_in_by");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long>("MemberId")
@@ -317,7 +316,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Note")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("note");
 
                     b.Property<long>("SessionId")
@@ -332,7 +331,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SessionId");
 
-                    b.ToTable("attendance", "dbo");
+                    b.ToTable("attendance");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AuditLog", b =>
@@ -341,12 +340,12 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Action")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("action");
 
                     b.Property<long?>("CenterId")
@@ -354,7 +353,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long?>("EntityId")
@@ -364,25 +363,25 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("EntityType")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("entity_type");
 
                     b.Property<string>("IpAddress")
                         .HasMaxLength(45)
-                        .HasColumnType("nvarchar(45)")
+                        .HasColumnType("character varying(45)")
                         .HasColumnName("ip_address");
 
                     b.Property<string>("NewValues")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("new_values");
 
                     b.Property<string>("OldValues")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("old_values");
 
                     b.Property<string>("UserAgent")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("user_agent");
 
                     b.Property<long?>("UserId")
@@ -395,7 +394,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("CenterId", "CreatedAt");
 
-                    b.ToTable("audit_logs", "dbo");
+                    b.ToTable("audit_logs");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Center", b =>
@@ -404,56 +403,56 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Address")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("address");
 
                     b.Property<TimeOnly?>("ClosingTime")
-                        .HasColumnType("time")
+                        .HasColumnType("time without time zone")
                         .HasColumnName("closing_time");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("description");
 
                     b.Property<string>("Email")
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("email");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("name");
 
                     b.Property<TimeOnly?>("OpeningTime")
-                        .HasColumnType("time")
+                        .HasColumnType("time without time zone")
                         .HasColumnName("opening_time");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("phone");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.HasKey("Id");
 
-                    b.ToTable("centers", "dbo");
+                    b.ToTable("centers");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CenterCheckin", b =>
@@ -462,18 +461,18 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CenterId")
                         .HasColumnType("bigint")
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CheckInTime")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("check_in_time");
 
                     b.Property<DateTime?>("CheckOutTime")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("check_out_time");
 
                     b.Property<long?>("CheckedInBy")
@@ -481,7 +480,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("checked_in_by");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long>("MemberId")
@@ -496,7 +495,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("MemberId");
 
-                    b.ToTable("center_checkins", "dbo");
+                    b.ToTable("center_checkins");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ClassCoach", b =>
@@ -514,14 +513,14 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("assigned_date");
 
                     b.Property<bool>("IsPrimary")
-                        .HasColumnType("bit")
+                        .HasColumnType("boolean")
                         .HasColumnName("is_primary");
 
                     b.HasKey("ClassId", "CoachId");
 
                     b.HasIndex("CoachId");
 
-                    b.ToTable("class_coaches", "dbo");
+                    b.ToTable("class_coaches");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ClassEnrollment", b =>
@@ -530,15 +529,15 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("CancellationReason")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("cancellation_reason");
 
                     b.Property<DateTime?>("CancelledAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("cancelled_at");
 
                     b.Property<long>("ClassId")
@@ -550,7 +549,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("member_id");
 
                     b.Property<DateTime>("RegisteredAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("registered_at");
 
                     b.Property<long?>("RegisteredBy")
@@ -560,7 +559,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<long?>("SubscriptionId")
@@ -578,7 +577,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("ClassId", "MemberId")
                         .IsUnique();
 
-                    b.ToTable("class_enrollments", "dbo");
+                    b.ToTable("class_enrollments");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ClassEntity", b =>
@@ -587,16 +586,16 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<bool>("AllowWaitlist")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("bit")
+                        .HasColumnType("boolean")
                         .HasDefaultValue(true)
                         .HasColumnName("allow_waitlist");
 
                     b.Property<int>("Capacity")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("capacity");
 
                     b.Property<long>("CenterId")
@@ -604,27 +603,27 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("description");
 
                     b.Property<int>("DurationMinutes")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("duration_minutes");
 
                     b.Property<string>("Level")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("level");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("name");
 
                     b.Property<long?>("RoomId")
@@ -638,11 +637,11 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
@@ -653,7 +652,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SportId");
 
-                    b.ToTable("classes", "dbo");
+                    b.ToTable("classes");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ClassSchedule", b =>
@@ -662,14 +661,14 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("ClassId")
                         .HasColumnType("bigint")
                         .HasColumnName("class_id");
 
                     b.Property<int>("DayOfWeek")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("day_of_week");
 
                     b.Property<DateOnly?>("EndDate")
@@ -677,7 +676,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("end_date");
 
                     b.Property<TimeOnly>("EndTime")
-                        .HasColumnType("time")
+                        .HasColumnType("time without time zone")
                         .HasColumnName("end_time");
 
                     b.Property<long?>("RoomId")
@@ -689,13 +688,13 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("start_date");
 
                     b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("time")
+                        .HasColumnType("time without time zone")
                         .HasColumnName("start_time");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.HasKey("Id");
@@ -704,7 +703,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("RoomId");
 
-                    b.ToTable("class_schedules", "dbo");
+                    b.ToTable("class_schedules");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ClassSession", b =>
@@ -713,7 +712,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("ClassId")
                         .HasColumnType("bigint")
@@ -724,16 +723,16 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<TimeOnly>("EndTime")
-                        .HasColumnType("time")
+                        .HasColumnType("time without time zone")
                         .HasColumnName("end_time");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("notes");
 
                     b.Property<long?>("RoomId")
@@ -751,11 +750,11 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("SessionStatus")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("session_status");
 
                     b.Property<TimeOnly>("StartTime")
-                        .HasColumnType("time")
+                        .HasColumnType("time without time zone")
                         .HasColumnName("start_time");
 
                     b.HasKey("Id");
@@ -768,7 +767,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("ScheduleId");
 
-                    b.ToTable("class_sessions", "dbo");
+                    b.ToTable("class_sessions");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ClassWaitlist", b =>
@@ -777,14 +776,14 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("ClassId")
                         .HasColumnType("bigint")
                         .HasColumnName("class_id");
 
                     b.Property<DateTime>("JoinedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("joined_at");
 
                     b.Property<long>("MemberId")
@@ -802,7 +801,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<long?>("SubscriptionId")
@@ -821,9 +820,9 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SessionId", "MemberId")
                         .IsUnique()
-                        .HasFilter("[session_id] IS NOT NULL AND [status] = N'Waiting'");
+                        .HasFilter("session_id IS NOT NULL AND status = 'Waiting'");
 
-                    b.ToTable("class_waitlist", "dbo");
+                    b.ToTable("class_waitlist");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachCompensationPolicy", b =>
@@ -832,7 +831,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CoachId")
                         .HasColumnType("bigint")
@@ -840,7 +839,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal>("CommissionPerSession")
                         .HasPrecision(14, 2)
-                        .HasColumnType("decimal(14,2)")
+                        .HasColumnType("numeric(14,2)")
                         .HasColumnName("commission_per_session");
 
                     b.Property<DateOnly>("EffectiveFrom")
@@ -853,31 +852,31 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal>("MonthlyBaseSalary")
                         .HasPrecision(14, 2)
-                        .HasColumnType("decimal(14,2)")
+                        .HasColumnType("numeric(14,2)")
                         .HasColumnName("monthly_base_salary");
 
                     b.Property<decimal>("SalesCommissionPercent")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("sales_commission_percent");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<decimal>("TargetSales")
                         .HasPrecision(14, 2)
-                        .HasColumnType("decimal(14,2)")
+                        .HasColumnType("numeric(14,2)")
                         .HasColumnName("target_sales");
 
                     b.Property<int>("TargetSessions")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("target_sessions");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long>("UpdatedBy")
@@ -890,7 +889,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("CoachId", "EffectiveFrom");
 
-                    b.ToTable("coach_compensation_policies", "dbo");
+                    b.ToTable("coach_compensation_policies");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachLeave", b =>
@@ -899,38 +898,38 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CoachId")
                         .HasColumnType("bigint")
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("EndAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_at");
 
                     b.Property<string>("LeaveType")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("leave_type");
 
                     b.Property<string>("ManagerNote")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("manager_note");
 
                     b.Property<string>("Reason")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("reason");
 
                     b.Property<DateTime>("RequestedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("requested_at");
 
                     b.Property<DateTime?>("ReviewedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("reviewed_at");
 
                     b.Property<long?>("ReviewedBy")
@@ -938,13 +937,13 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("reviewed_by");
 
                     b.Property<DateTime>("StartAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<long?>("SwapCoachId")
@@ -959,7 +958,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SwapCoachId");
 
-                    b.ToTable("coach_leaves", "dbo");
+                    b.ToTable("coach_leaves");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachMessage", b =>
@@ -968,7 +967,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CoachId")
                         .HasColumnType("bigint")
@@ -977,11 +976,11 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasMaxLength(4000)
-                        .HasColumnType("nvarchar(4000)")
+                        .HasColumnType("character varying(4000)")
                         .HasColumnName("content");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long>("MemberId")
@@ -989,7 +988,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("member_id");
 
                     b.Property<DateTime?>("ReadAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("read_at");
 
                     b.Property<long>("SenderUserId")
@@ -1004,7 +1003,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("CoachId", "MemberId", "CreatedAt");
 
-                    b.ToTable("coach_messages", "dbo");
+                    b.ToTable("coach_messages");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachProfile", b =>
@@ -1013,10 +1012,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Bio")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("bio");
 
                     b.Property<long>("CenterId")
@@ -1025,27 +1024,27 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Certification")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("certification");
 
                     b.Property<string>("CoachCode")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("coach_code");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<int?>("ExperienceYears")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("experience_years");
 
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("full_name");
 
                     b.Property<DateOnly?>("HireDate")
@@ -1054,17 +1053,17 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Specialization")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("specialization");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long>("UserId")
@@ -1081,7 +1080,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("coach_profiles", "dbo");
+                    b.ToTable("coach_profiles");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachReview", b =>
@@ -1090,7 +1089,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CoachId")
                         .HasColumnType("bigint")
@@ -1098,11 +1097,11 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Comment")
                         .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)")
+                        .HasColumnType("character varying(2000)")
                         .HasColumnName("comment");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long>("MemberId")
@@ -1110,11 +1109,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("member_id");
 
                     b.Property<int>("Rating")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("rating");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long?>("WorkEventId")
@@ -1129,9 +1128,9 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("CoachId", "MemberId", "WorkEventId")
                         .IsUnique()
-                        .HasFilter("[work_event_id] IS NOT NULL");
+                        .HasFilter("work_event_id IS NOT NULL");
 
-                    b.ToTable("coach_reviews", "dbo");
+                    b.ToTable("coach_reviews");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachSalesCredit", b =>
@@ -1140,11 +1139,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(14, 2)
-                        .HasColumnType("decimal(14,2)")
+                        .HasColumnType("numeric(14,2)")
                         .HasColumnName("amount");
 
                     b.Property<long>("CoachId")
@@ -1156,7 +1155,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("created_by");
 
                     b.Property<DateTime>("CreditedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("credited_at");
 
                     b.Property<long?>("MemberId")
@@ -1165,7 +1164,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Note")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("note");
 
                     b.Property<long?>("SubscriptionId")
@@ -1182,7 +1181,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SubscriptionId");
 
-                    b.ToTable("coach_sales_credits", "dbo");
+                    b.ToTable("coach_sales_credits");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachSport", b =>
@@ -1199,7 +1198,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SportId");
 
-                    b.ToTable("coach_sports", "dbo");
+                    b.ToTable("coach_sports");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CoachWorkEvent", b =>
@@ -1208,7 +1207,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CenterId")
                         .HasColumnType("bigint")
@@ -1219,7 +1218,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long>("CreatedBy")
@@ -1227,13 +1226,13 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("created_by");
 
                     b.Property<DateTime>("EndAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_at");
 
                     b.Property<string>("EventType")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("event_type");
 
                     b.Property<long?>("MemberId")
@@ -1242,7 +1241,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("notes");
 
                     b.Property<long?>("RoomId")
@@ -1250,23 +1249,23 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("room_id");
 
                     b.Property<DateTime>("StartAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
@@ -1281,7 +1280,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("CoachId", "StartAt", "EndAt");
 
-                    b.ToTable("coach_work_events", "dbo");
+                    b.ToTable("coach_work_events");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.CommunicationDelivery", b =>
@@ -1290,16 +1289,16 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Channel")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("channel");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long?>("NotificationId")
@@ -1308,7 +1307,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("ProviderMessage")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("provider_message");
 
                     b.Property<long>("RecipientUserId")
@@ -1316,13 +1315,13 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("recipient_user_id");
 
                     b.Property<DateTime?>("SentAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("sent_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.HasKey("Id");
@@ -1333,7 +1332,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("Status", "CreatedAt");
 
-                    b.ToTable("communication_deliveries", "dbo");
+                    b.ToTable("communication_deliveries");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.EmailVerificationToken", b =>
@@ -1342,41 +1341,41 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("email");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
                     b.Property<int>("FailedAttempts")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("failed_attempts");
 
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("token");
 
                     b.Property<DateTime?>("UsedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("used_at");
 
                     b.HasKey("Id");
 
                     b.HasIndex("Email", "CreatedAt");
 
-                    b.ToTable("email_verification_tokens", "dbo");
+                    b.ToTable("email_verification_tokens");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.EquipmentIssue", b =>
@@ -1385,7 +1384,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CenterId")
                         .HasColumnType("bigint")
@@ -1393,16 +1392,16 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("description");
 
                     b.Property<string>("PhotoUrl")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("photo_url");
 
                     b.Property<DateTime>("ReportedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("reported_at");
 
                     b.Property<long>("ReportedByUserId")
@@ -1411,11 +1410,11 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("ResolutionNote")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("resolution_note");
 
                     b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("resolved_at");
 
                     b.Property<long?>("ResolvedBy")
@@ -1429,19 +1428,19 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Severity")
                         .IsRequired()
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("severity");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
                     b.HasKey("Id");
@@ -1454,7 +1453,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("CenterId", "Status", "ReportedAt");
 
-                    b.ToTable("equipment_issues", "dbo");
+                    b.ToTable("equipment_issues");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Exercise", b =>
@@ -1463,14 +1462,14 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("CenterId")
                         .HasColumnType("bigint")
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long?>("CreatedByCoachId")
@@ -1479,32 +1478,32 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("description");
 
                     b.Property<string>("DifficultyLevel")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("difficulty_level");
 
                     b.Property<string>("ImageUrl")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("image_url");
 
                     b.Property<string>("Instructions")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("instructions");
 
                     b.Property<string>("MuscleGroup")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("muscle_group");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("name");
 
                     b.Property<long?>("SportId")
@@ -1514,12 +1513,12 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<string>("VideoUrl")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("video_url");
 
                     b.HasKey("Id");
@@ -1530,7 +1529,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SportId");
 
-                    b.ToTable("exercises", "dbo");
+                    b.ToTable("exercises");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.FacilityResource", b =>
@@ -1539,10 +1538,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int?>("Capacity")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("capacity");
 
                     b.Property<long>("CenterId")
@@ -1550,30 +1549,30 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Location")
                         .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)")
+                        .HasColumnType("character varying(300)")
                         .HasColumnName("location");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("name");
 
                     b.Property<string>("ResourceType")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("resource_type");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.HasKey("Id");
@@ -1581,7 +1580,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("CenterId", "Name")
                         .IsUnique();
 
-                    b.ToTable("facility_resources", "dbo");
+                    b.ToTable("facility_resources");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.FoodDiaryEntry", b =>
@@ -1590,19 +1589,19 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int?>("Calories")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("calories");
 
                     b.Property<decimal?>("CarbGrams")
                         .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)")
+                        .HasColumnType("numeric(8,2)")
                         .HasColumnName("carb_grams");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateOnly>("EntryDate")
@@ -1611,19 +1610,19 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal?>("FatGrams")
                         .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)")
+                        .HasColumnType("numeric(8,2)")
                         .HasColumnName("fat_grams");
 
                     b.Property<string>("FoodName")
                         .IsRequired()
                         .HasMaxLength(300)
-                        .HasColumnType("nvarchar(300)")
+                        .HasColumnType("character varying(300)")
                         .HasColumnName("food_name");
 
                     b.Property<string>("MealType")
                         .IsRequired()
                         .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)")
+                        .HasColumnType("character varying(40)")
                         .HasColumnName("meal_type");
 
                     b.Property<long>("MemberId")
@@ -1632,19 +1631,19 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("notes");
 
                     b.Property<decimal?>("ProteinGrams")
                         .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)")
+                        .HasColumnType("numeric(8,2)")
                         .HasColumnName("protein_grams");
 
                     b.HasKey("Id");
 
                     b.HasIndex("MemberId", "EntryDate");
 
-                    b.ToTable("food_diary_entries", "dbo");
+                    b.ToTable("food_diary_entries");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Invoice", b =>
@@ -1653,7 +1652,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CenterId")
                         .HasColumnType("bigint")
@@ -1665,22 +1664,22 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal>("Discount")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("discount");
 
                     b.Property<string>("IdempotencyKey")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("idempotency_key");
 
                     b.Property<string>("InvoiceNumber")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("invoice_number");
 
                     b.Property<DateTime>("IssuedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("issued_at");
 
                     b.Property<long>("MemberId")
@@ -1688,28 +1687,28 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("member_id");
 
                     b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("paid_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<decimal>("Subtotal")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("subtotal");
 
                     b.Property<decimal>("Tax")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("tax");
 
                     b.Property<decimal>("TotalAmount")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("total_amount");
 
                     b.HasKey("Id");
@@ -1720,14 +1719,14 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("IdempotencyKey")
                         .IsUnique()
-                        .HasFilter("[idempotency_key] IS NOT NULL");
+                        .HasFilter("idempotency_key IS NOT NULL");
 
                     b.HasIndex("InvoiceNumber")
                         .IsUnique();
 
                     b.HasIndex("MemberId");
 
-                    b.ToTable("invoices", "dbo");
+                    b.ToTable("invoices");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.InvoiceItem", b =>
@@ -1736,17 +1735,17 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("amount");
 
                     b.Property<string>("Description")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("description");
 
                     b.Property<long?>("EnrollmentId")
@@ -1762,7 +1761,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("package_id");
 
                     b.Property<int>("Quantity")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("quantity");
 
                     b.Property<long?>("SubscriptionId")
@@ -1771,7 +1770,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal>("UnitPrice")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("unit_price");
 
                     b.HasKey("Id");
@@ -1784,7 +1783,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SubscriptionId");
 
-                    b.ToTable("invoice_items", "dbo");
+                    b.ToTable("invoice_items");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.MemberHealthRecord", b =>
@@ -1793,19 +1792,19 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CoachId")
                         .HasColumnType("bigint")
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Details")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("details");
 
                     b.Property<long>("MemberId")
@@ -1819,19 +1818,19 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("RecordType")
                         .IsRequired()
                         .HasMaxLength(40)
-                        .HasColumnType("nvarchar(40)")
+                        .HasColumnType("character varying(40)")
                         .HasColumnName("record_type");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
                     b.HasKey("Id");
@@ -1840,7 +1839,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("MemberId", "OccurredOn");
 
-                    b.ToTable("member_health_records", "dbo");
+                    b.ToTable("member_health_records");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.MemberProfile", b =>
@@ -1849,15 +1848,15 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Address")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("address");
 
                     b.Property<DateTime?>("BookingSuspendedUntil")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("booking_suspended_until");
 
                     b.Property<long?>("CenterId")
@@ -1865,7 +1864,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateOnly?>("DateOfBirth")
@@ -1874,53 +1873,53 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("EmergencyContactName")
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("emergency_contact_name");
 
                     b.Property<string>("EmergencyContactPhone")
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("emergency_contact_phone");
 
                     b.Property<string>("FitnessGoal")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("fitness_goal");
 
                     b.Property<string>("FitnessLevel")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("fitness_level");
 
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("full_name");
 
                     b.Property<string>("Gender")
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("gender");
 
                     b.Property<decimal?>("HeightCm")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("height_cm");
 
                     b.Property<string>("MedicalNote")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("medical_note");
 
                     b.Property<string>("MemberCode")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("member_code");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long>("UserId")
@@ -1929,7 +1928,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal?>("WeightKg")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("weight_kg");
 
                     b.HasKey("Id");
@@ -1942,7 +1941,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("member_profiles", "dbo");
+                    b.ToTable("member_profiles");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.MemberProgressReview", b =>
@@ -1951,11 +1950,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal?>("BodyFatPercentage")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("body_fat_percentage");
 
                     b.Property<long>("CoachId")
@@ -1963,7 +1962,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<long>("MemberId")
@@ -1972,12 +1971,12 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("NextGoal")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("next_goal");
 
                     b.Property<decimal?>("ProgressScore")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("progress_score");
 
                     b.Property<DateOnly>("ReviewDate")
@@ -1986,7 +1985,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("ReviewNote")
                         .HasMaxLength(2000)
-                        .HasColumnType("nvarchar(2000)")
+                        .HasColumnType("character varying(2000)")
                         .HasColumnName("review_note");
 
                     b.Property<long?>("TrainingPlanId")
@@ -1995,7 +1994,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal?>("Weight")
                         .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)")
+                        .HasColumnType("numeric(8,2)")
                         .HasColumnName("weight");
 
                     b.HasKey("Id");
@@ -2006,7 +2005,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("member_progress_reviews", "dbo");
+                    b.ToTable("member_progress_reviews");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.MemberSubscription", b =>
@@ -2015,18 +2014,18 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<bool>("AutoRenew")
-                        .HasColumnType("bit")
+                        .HasColumnType("boolean")
                         .HasColumnName("auto_renew");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<int>("DurationDays")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("duration_days");
 
                     b.Property<DateOnly?>("EndDate")
@@ -2043,7 +2042,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal>("Price")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("price");
 
                     b.Property<DateOnly?>("StartDate")
@@ -2053,11 +2052,11 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
@@ -2066,7 +2065,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("PackageId");
 
-                    b.ToTable("member_subscriptions", "dbo");
+                    b.ToTable("member_subscriptions");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.MembershipPackage", b =>
@@ -2075,20 +2074,20 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("AccessType")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("access_type");
 
                     b.Property<int>("AllowedSports")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("allowed_sports");
 
                     b.Property<string>("Badge")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("badge");
 
                     b.Property<long>("CenterId")
@@ -2096,45 +2095,45 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("description");
 
                     b.Property<int>("DurationDays")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("duration_days");
 
                     b.Property<string>("Features")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("features");
 
                     b.Property<int?>("MaxClasses")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("max_classes");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("name");
 
                     b.Property<decimal>("Price")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("price");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
@@ -2142,7 +2141,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("CenterId", "Name")
                         .IsUnique();
 
-                    b.ToTable("membership_packages", "dbo");
+                    b.ToTable("membership_packages");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Notification", b =>
@@ -2151,30 +2150,30 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("message");
 
                     b.Property<string>("NotificationType")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("notification_type");
 
                     b.Property<string>("ReminderKey")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("reminder_key");
 
                     b.Property<DateTime?>("ScheduledAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("scheduled_at");
 
                     b.Property<long>("SenderId")
@@ -2183,24 +2182,24 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("TargetClassIds")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("target_class_ids");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ReminderKey")
                         .IsUnique()
-                        .HasFilter("[reminder_key] IS NOT NULL");
+                        .HasFilter("reminder_key IS NOT NULL");
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("notifications", "dbo");
+                    b.ToTable("notifications");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.NutritionPlan", b =>
@@ -2209,10 +2208,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int>("CarbGrams")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("carb_grams");
 
                     b.Property<long>("CoachId")
@@ -2220,11 +2219,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<int>("DailyCalories")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("daily_calories");
 
                     b.Property<DateOnly?>("EndDate")
@@ -2232,11 +2231,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("end_date");
 
                     b.Property<int>("FatGrams")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("fat_grams");
 
                     b.Property<string>("MealPlanJson")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("meal_plan_json");
 
                     b.Property<long>("MemberId")
@@ -2245,11 +2244,11 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("notes");
 
                     b.Property<int>("ProteinGrams")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("protein_grams");
 
                     b.Property<DateOnly>("StartDate")
@@ -2259,17 +2258,17 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("title");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
@@ -2278,7 +2277,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("MemberId", "Status");
 
-                    b.ToTable("nutrition_plans", "dbo");
+                    b.ToTable("nutrition_plans");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.PasswordResetToken", b =>
@@ -2287,28 +2286,28 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime>("ExpiresAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("expires_at");
 
                     b.Property<int>("FailedAttempts")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("failed_attempts");
 
                     b.Property<string>("Token")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("token");
 
                     b.Property<DateTime?>("UsedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("used_at");
 
                     b.Property<long>("UserId")
@@ -2322,7 +2321,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("password_reset_tokens", "dbo");
+                    b.ToTable("password_reset_tokens");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Payment", b =>
@@ -2331,39 +2330,39 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("amount");
 
                     b.Property<decimal?>("AmountReceived")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("amount_received");
 
                     b.Property<DateTime>("AttemptedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("attempted_at");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("GatewayPaymentUrl")
                         .HasMaxLength(2048)
-                        .HasColumnType("nvarchar(2048)")
+                        .HasColumnType("character varying(2048)")
                         .HasColumnName("gateway_payment_url");
 
                     b.Property<string>("GatewayReference")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("gateway_reference");
 
                     b.Property<string>("IdempotencyKey")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("idempotency_key");
 
                     b.Property<long>("InvoiceId")
@@ -2376,23 +2375,23 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Note")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("note");
 
                     b.Property<DateTime?>("PaidAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("paid_at");
 
                     b.Property<string>("PaymentMethod")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("payment_method");
 
                     b.Property<string>("PaymentStatus")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("payment_status");
 
                     b.Property<long?>("ProcessedBy")
@@ -2401,7 +2400,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("ProviderTransactionId")
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("provider_transaction_id");
 
                     b.Property<long?>("RefundApprovedBy")
@@ -2410,18 +2409,18 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("TransactionCode")
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("transaction_code");
 
                     b.HasKey("Id");
 
                     b.HasIndex("GatewayReference")
                         .IsUnique()
-                        .HasFilter("[gateway_reference] IS NOT NULL");
+                        .HasFilter("gateway_reference IS NOT NULL");
 
                     b.HasIndex("IdempotencyKey")
                         .IsUnique()
-                        .HasFilter("[idempotency_key] IS NOT NULL");
+                        .HasFilter("idempotency_key IS NOT NULL");
 
                     b.HasIndex("InvoiceId");
 
@@ -2431,15 +2430,15 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("ProviderTransactionId")
                         .IsUnique()
-                        .HasFilter("[provider_transaction_id] IS NOT NULL");
+                        .HasFilter("provider_transaction_id IS NOT NULL");
 
                     b.HasIndex("RefundApprovedBy");
 
                     b.HasIndex("TransactionCode")
                         .IsUnique()
-                        .HasFilter("[transaction_code] IS NOT NULL");
+                        .HasFilter("transaction_code IS NOT NULL");
 
-                    b.ToTable("payments", "dbo");
+                    b.ToTable("payments");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.PaymentRefund", b =>
@@ -2448,41 +2447,41 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal>("Amount")
                         .HasPrecision(12, 2)
-                        .HasColumnType("decimal(12,2)")
+                        .HasColumnType("numeric(12,2)")
                         .HasColumnName("amount");
 
                     b.Property<string>("BankAccountName")
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("bank_account_name");
 
                     b.Property<string>("BankAccountNumber")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("bank_account_number");
 
                     b.Property<string>("BankName")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("bank_name");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("ExternalReference")
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("external_reference");
 
                     b.Property<string>("IdempotencyKey")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("idempotency_key");
 
                     b.Property<long>("PaymentId")
@@ -2490,18 +2489,18 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("payment_id");
 
                     b.Property<DateTime?>("ProcessedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("processed_at");
 
                     b.Property<string>("ProviderRefundId")
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("provider_refund_id");
 
                     b.Property<string>("Reason")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("reason");
 
                     b.Property<long>("RequestedBy")
@@ -2510,7 +2509,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("ReviewNote")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("review_note");
 
                     b.Property<long?>("ReviewedBy")
@@ -2520,12 +2519,12 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<string>("TransferProofUrl")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("transfer_proof_url");
 
                     b.HasKey("Id");
@@ -2537,13 +2536,13 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("ProviderRefundId")
                         .IsUnique()
-                        .HasFilter("[provider_refund_id] IS NOT NULL");
+                        .HasFilter("provider_refund_id IS NOT NULL");
 
                     b.HasIndex("RequestedBy");
 
                     b.HasIndex("ReviewedBy");
 
-                    b.ToTable("payment_refunds", "dbo");
+                    b.ToTable("payment_refunds");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Permission", b =>
@@ -2552,28 +2551,28 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Code")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("code");
 
                     b.Property<string>("Description")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("description");
 
                     b.Property<string>("Module")
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("module");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
                     b.HasKey("Id");
@@ -2581,7 +2580,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("Code")
                         .IsUnique();
 
-                    b.ToTable("permissions", "dbo");
+                    b.ToTable("permissions");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.ResourceBooking", b =>
@@ -2590,24 +2589,24 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CoachId")
                         .HasColumnType("bigint")
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<DateTime>("EndAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("end_at");
 
                     b.Property<string>("Purpose")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("purpose");
 
                     b.Property<long>("ResourceId")
@@ -2615,13 +2614,13 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("resource_id");
 
                     b.Property<DateTime>("StartAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("start_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<long?>("WorkEventId")
@@ -2636,7 +2635,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("ResourceId", "StartAt", "EndAt");
 
-                    b.ToTable("resource_bookings", "dbo");
+                    b.ToTable("resource_bookings");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Role", b =>
@@ -2645,21 +2644,21 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("description");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("name");
 
                     b.HasKey("Id");
@@ -2667,7 +2666,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("roles", "dbo");
+                    b.ToTable("roles");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.RolePermission", b =>
@@ -2684,7 +2683,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("PermissionId");
 
-                    b.ToTable("role_permissions", "dbo");
+                    b.ToTable("role_permissions");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Room", b =>
@@ -2693,10 +2692,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int>("Capacity")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("capacity");
 
                     b.Property<long>("CenterId")
@@ -2704,36 +2703,36 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("LocationDescription")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("location_description");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
                     b.Property<string>("RoomType")
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("room_type");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CenterId");
 
-                    b.ToTable("rooms", "dbo");
+                    b.ToTable("rooms");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.SessionBooking", b =>
@@ -2742,10 +2741,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("BookedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("booked_at");
 
                     b.Property<long?>("EnrollmentId")
@@ -2767,7 +2766,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<long?>("SubscriptionId")
@@ -2787,7 +2786,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SubscriptionId", "Status", "SessionId");
 
-                    b.ToTable("session_bookings", "dbo");
+                    b.ToTable("session_bookings");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.Sport", b =>
@@ -2796,7 +2795,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("CenterId")
                         .HasColumnType("bigint")
@@ -2804,26 +2803,26 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("description");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("name");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.HasKey("Id");
 
                     b.HasIndex("CenterId");
 
-                    b.ToTable("sports", "dbo");
+                    b.ToTable("sports");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.StaffCompensationPolicy", b =>
@@ -2832,7 +2831,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("CenterId")
                         .HasColumnType("bigint")
@@ -2848,22 +2847,22 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal>("MonthlyAllowance")
                         .HasPrecision(14, 2)
-                        .HasColumnType("decimal(14,2)")
+                        .HasColumnType("numeric(14,2)")
                         .HasColumnName("monthly_allowance");
 
                     b.Property<decimal>("MonthlyBaseSalary")
                         .HasPrecision(14, 2)
-                        .HasColumnType("decimal(14,2)")
+                        .HasColumnType("numeric(14,2)")
                         .HasColumnName("monthly_base_salary");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long>("UpdatedBy")
@@ -2882,7 +2881,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("UserId", "Status");
 
-                    b.ToTable("staff_compensation_policies", "dbo");
+                    b.ToTable("staff_compensation_policies");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.StaffProfile", b =>
@@ -2891,20 +2890,20 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CenterId")
                         .HasColumnType("bigint")
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("FullName")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("full_name");
 
                     b.Property<DateOnly?>("HireDate")
@@ -2914,23 +2913,23 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Position")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("position");
 
                     b.Property<string>("StaffCode")
                         .IsRequired()
                         .HasMaxLength(50)
-                        .HasColumnType("nvarchar(50)")
+                        .HasColumnType("character varying(50)")
                         .HasColumnName("staff_code");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long>("UserId")
@@ -2947,7 +2946,7 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("UserId")
                         .IsUnique();
 
-                    b.ToTable("staff_profiles", "dbo");
+                    b.ToTable("staff_profiles");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.SupportRequest", b =>
@@ -2956,19 +2955,19 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long>("CenterId")
                         .HasColumnType("bigint")
                         .HasColumnName("center_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("description");
 
                     b.Property<long?>("HandledBy")
@@ -2984,19 +2983,19 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("requester_id");
 
                     b.Property<DateTime?>("ResolvedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("resolved_at");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<string>("Subject")
                         .IsRequired()
                         .HasMaxLength(200)
-                        .HasColumnType("nvarchar(200)")
+                        .HasColumnType("character varying(200)")
                         .HasColumnName("subject");
 
                     b.HasKey("Id");
@@ -3009,7 +3008,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("CenterId", "Status", "CreatedAt");
 
-                    b.ToTable("support_requests", "dbo");
+                    b.ToTable("support_requests");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.SupportRequestMessage", b =>
@@ -3018,15 +3017,15 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Message")
                         .IsRequired()
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("message");
 
                     b.Property<long>("RequestId")
@@ -3043,7 +3042,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("SenderId");
 
-                    b.ToTable("support_request_messages", "dbo");
+                    b.ToTable("support_request_messages");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.SystemSetting", b =>
@@ -3052,25 +3051,25 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<string>("Description")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("description");
 
                     b.Property<string>("SettingKey")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("setting_key");
 
                     b.Property<string>("SettingValue")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("setting_value");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<long?>("UpdatedBy")
@@ -3084,7 +3083,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("UpdatedBy");
 
-                    b.ToTable("system_settings", "dbo");
+                    b.ToTable("system_settings");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.TrainingPlan", b =>
@@ -3093,7 +3092,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<long?>("ClassId")
                         .HasColumnType("bigint")
@@ -3104,12 +3103,12 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Description")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("description");
 
                     b.Property<DateOnly?>("EndDate")
@@ -3117,17 +3116,17 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("end_date");
 
                     b.Property<string>("ExercisesJson")
-                        .HasColumnType("nvarchar(max)")
+                        .HasColumnType("text")
                         .HasColumnName("exercises_json");
 
                     b.Property<string>("FitnessCondition")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("fitness_condition");
 
                     b.Property<string>("Goal")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("goal");
 
                     b.Property<long?>("MemberId")
@@ -3137,13 +3136,13 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("name");
 
                     b.Property<string>("PlanType")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("plan_type");
 
                     b.Property<DateOnly>("StartDate")
@@ -3153,11 +3152,11 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.HasKey("Id");
@@ -3168,7 +3167,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("MemberId");
 
-                    b.ToTable("training_plans", "dbo");
+                    b.ToTable("training_plans");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.TrainingPlanExercise", b =>
@@ -3177,14 +3176,14 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int?>("DayNumber")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("day_number");
 
                     b.Property<int?>("DurationSeconds")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("duration_seconds");
 
                     b.Property<long>("ExerciseId")
@@ -3193,28 +3192,28 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("notes");
 
                     b.Property<int?>("Repetitions")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("repetitions");
 
                     b.Property<int?>("RestSeconds")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("rest_seconds");
 
                     b.Property<int?>("Sets")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("sets");
 
                     b.Property<int?>("SortOrder")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("sort_order");
 
                     b.Property<decimal?>("TargetWeight")
                         .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)")
+                        .HasColumnType("numeric(8,2)")
                         .HasColumnName("target_weight");
 
                     b.Property<long>("TrainingPlanId")
@@ -3227,7 +3226,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("training_plan_exercises", "dbo");
+                    b.ToTable("training_plan_exercises");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.TrainingResult", b =>
@@ -3236,16 +3235,16 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<decimal?>("BodyFatPercentage")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("body_fat_percentage");
 
                     b.Property<decimal?>("CaloriesBurned")
                         .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)")
+                        .HasColumnType("numeric(8,2)")
                         .HasColumnName("calories_burned");
 
                     b.Property<long?>("ClassId")
@@ -3254,7 +3253,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("CoachFeedback")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("coach_feedback");
 
                     b.Property<long>("CoachId")
@@ -3262,11 +3261,11 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("coach_id");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<int?>("DurationSeconds")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("duration_seconds");
 
                     b.Property<long?>("ExerciseId")
@@ -3279,21 +3278,21 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal?>("MuscleMass")
                         .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)")
+                        .HasColumnType("numeric(8,2)")
                         .HasColumnName("muscle_mass");
 
                     b.Property<string>("Notes")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("notes");
 
                     b.Property<decimal?>("PerformanceScore")
                         .HasPrecision(5, 2)
-                        .HasColumnType("decimal(5,2)")
+                        .HasColumnType("numeric(5,2)")
                         .HasColumnName("performance_score");
 
                     b.Property<int?>("RepetitionsCompleted")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("repetitions_completed");
 
                     b.Property<DateOnly>("ResultDate")
@@ -3305,7 +3304,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("session_id");
 
                     b.Property<int?>("SetsCompleted")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("sets_completed");
 
                     b.Property<long?>("TrainingPlanExerciseId")
@@ -3318,12 +3317,12 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<decimal?>("Weight")
                         .HasPrecision(8, 2)
-                        .HasColumnType("decimal(8,2)")
+                        .HasColumnType("numeric(8,2)")
                         .HasColumnName("weight");
 
                     b.Property<string>("WorkoutResult")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("workout_result");
 
                     b.HasKey("Id");
@@ -3342,7 +3341,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("TrainingPlanId");
 
-                    b.ToTable("training_results", "dbo");
+                    b.ToTable("training_results");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.UploadedMedia", b =>
@@ -3351,22 +3350,22 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("DriveFileId")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("drive_file_id");
 
                     b.Property<string>("FileName")
                         .IsRequired()
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("file_name");
 
                     b.Property<long?>("FileSize")
@@ -3376,14 +3375,20 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("FileUrl")
                         .IsRequired()
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("file_url");
 
                     b.Property<string>("MimeType")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("mime_type");
+
+                    b.Property<string>("StorageKey")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)")
+                        .HasColumnName("storage_key");
 
                     b.Property<long?>("UploadedByUserId")
                         .HasColumnType("bigint")
@@ -3391,12 +3396,16 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.Property<string>("WebViewLink")
                         .HasMaxLength(1000)
-                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnType("character varying(1000)")
                         .HasColumnName("web_view_link");
 
                     b.HasKey("Id");
 
-                    b.ToTable("uploaded_media", "dbo");
+                    b.HasIndex("StorageKey")
+                        .IsUnique()
+                        .HasFilter("storage_key <> ''");
+
+                    b.ToTable("uploaded_media");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.User", b =>
@@ -3405,53 +3414,53 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<int>("AuthVersion")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("auth_version");
 
                     b.Property<string>("AvatarKey")
                         .HasMaxLength(500)
-                        .HasColumnType("nvarchar(500)")
+                        .HasColumnType("character varying(500)")
                         .HasColumnName("avatar_key");
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<string>("Email")
                         .IsRequired()
                         .HasMaxLength(150)
-                        .HasColumnType("nvarchar(150)")
+                        .HasColumnType("character varying(150)")
                         .HasColumnName("email");
 
                     b.Property<int>("FailedLoginAttempts")
-                        .HasColumnType("int")
+                        .HasColumnType("integer")
                         .HasColumnName("failed_login_attempts");
 
                     b.Property<string>("GoogleSubject")
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("google_subject");
 
                     b.Property<DateTime?>("LastLoginAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("last_login_at");
 
                     b.Property<DateTime?>("LockedUntil")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("locked_until");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
                         .HasMaxLength(255)
-                        .HasColumnType("nvarchar(255)")
+                        .HasColumnType("character varying(255)")
                         .HasColumnName("password_hash");
 
                     b.Property<string>("Phone")
                         .HasMaxLength(20)
-                        .HasColumnType("nvarchar(20)")
+                        .HasColumnType("character varying(20)")
                         .HasColumnName("phone");
 
                     b.Property<long>("RoleId")
@@ -3461,17 +3470,17 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(30)
-                        .HasColumnType("nvarchar(30)")
+                        .HasColumnType("character varying(30)")
                         .HasColumnName("status");
 
                     b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("updated_at");
 
                     b.Property<string>("Username")
                         .IsRequired()
                         .HasMaxLength(100)
-                        .HasColumnType("nvarchar(100)")
+                        .HasColumnType("character varying(100)")
                         .HasColumnName("username");
 
                     b.HasKey("Id");
@@ -3481,18 +3490,18 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("GoogleSubject")
                         .IsUnique()
-                        .HasFilter("[google_subject] IS NOT NULL");
+                        .HasFilter("google_subject IS NOT NULL");
 
                     b.HasIndex("Phone")
                         .IsUnique()
-                        .HasFilter("[phone] IS NOT NULL");
+                        .HasFilter("phone IS NOT NULL");
 
                     b.HasIndex("RoleId");
 
                     b.HasIndex("Username")
                         .IsUnique();
 
-                    b.ToTable("users", "dbo");
+                    b.ToTable("users");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.UserNotification", b =>
@@ -3501,14 +3510,14 @@ namespace SportsCenterManagement.DAL.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("bigint");
 
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+                    NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<long>("Id"));
 
                     b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("created_at");
 
                     b.Property<bool>("IsRead")
-                        .HasColumnType("bit")
+                        .HasColumnType("boolean")
                         .HasColumnName("is_read");
 
                     b.Property<long>("NotificationId")
@@ -3516,7 +3525,7 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnName("notification_id");
 
                     b.Property<DateTime?>("ReadAt")
-                        .HasColumnType("datetime2")
+                        .HasColumnType("timestamp with time zone")
                         .HasColumnName("read_at");
 
                     b.Property<long>("UserId")
@@ -3529,7 +3538,7 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("user_notifications", "dbo");
+                    b.ToTable("user_notifications");
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AiConversation", b =>

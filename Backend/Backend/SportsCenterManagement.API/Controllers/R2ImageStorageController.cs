@@ -2,9 +2,11 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using SportsCenterManagement.API.Models;
 using SportsCenterManagement.API.Services;
+using SportsCenterManagement.DAL.Context;
 
 namespace SportsCenterManagement.API.Controllers;
 
@@ -13,49 +15,44 @@ namespace SportsCenterManagement.API.Controllers;
 [Route("api/r2-images")]
 public sealed class R2ImageStorageController(
     IR2StorageService storageService,
-    IOptions<R2StorageOptions> options) : ControllerBase
+    IOptions<R2StorageOptions> options,
+    MediaCatalogService mediaCatalog) : ControllerBase
 {
     [HttpPost("dashboard")]
     [Authorize(Roles = "MANAGER,ADMIN")]
     [Consumes("multipart/form-data")]
-    [RequestSizeLimit(11 * 1024 * 1024)]
-    public async Task<ActionResult<R2ImageUploadResponse>> UploadDashboardImage(
-        IFormFile? file,
-        CancellationToken cancellationToken)
+    [RequestSizeLimit(6 * 1024 * 1024)]
+    public async Task<ActionResult<R2ImageUploadResponse>> UploadDashboardImage(IFormFile? file, CancellationToken ct)
     {
-        if (file is null) return BadRequest(new ProblemDetails { Detail = "Vui lòng chọn ảnh." });
-        var key = await storageService.UploadImageAsync(file, "dashboard", 10 * 1024 * 1024, cancellationToken);
-        return StatusCode(StatusCodes.Status201Created, BuildResponse(key));
+        if (file is null) return BadRequest();
+        var media = await mediaCatalog.UploadAsync(file, CurrentUserId(), ct);
+        return StatusCode(201, new R2ImageUploadResponse(media.StorageKey, mediaCatalog.PublicUrl(media.StorageKey), media.Id));
     }
 
     [HttpPost("avatar")]
     [Consumes("multipart/form-data")]
     [RequestSizeLimit(6 * 1024 * 1024)]
-    public async Task<ActionResult<R2ImageUploadResponse>> UploadAvatar(
-        IFormFile? file,
-        CancellationToken cancellationToken)
+    public async Task<ActionResult<R2ImageUploadResponse>> UploadAvatar(IFormFile? file, CancellationToken ct)
     {
-        if (file is null) return BadRequest(new ProblemDetails { Detail = "Vui lòng chọn ảnh đại diện." });
-        var userId = CurrentUserId();
-        var key = await storageService.UploadImageAsync(file, $"avatars/{userId}", 5 * 1024 * 1024, cancellationToken);
-        return StatusCode(StatusCodes.Status201Created, BuildResponse(key));
+        if (file is null) return BadRequest();
+        var key = await storageService.UploadImageAsync(file, $"avatars/{CurrentUserId()}", 5 * 1024 * 1024, ct);
+        return StatusCode(201, BuildResponse(key));
     }
 
     [HttpDelete("dashboard")]
     [Authorize(Roles = "MANAGER,ADMIN")]
-    public async Task<IActionResult> DeleteDashboardImage([FromQuery] string key, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteDashboardImage([FromQuery] string key, CancellationToken ct)
     {
         if (!key.StartsWith("dashboard/", StringComparison.Ordinal)) return BadRequest();
-        await storageService.DeleteAsync(key, cancellationToken);
+        await mediaCatalog.DeleteAsync(key, ct);
         return NoContent();
     }
 
     [HttpDelete("avatar")]
-    public async Task<IActionResult> DeleteUploadedAvatar([FromQuery] string key, CancellationToken cancellationToken)
+    public async Task<IActionResult> DeleteUploadedAvatar([FromQuery] string key, CancellationToken ct)
     {
-        var prefix = $"avatars/{CurrentUserId()}/";
-        if (!key.StartsWith(prefix, StringComparison.Ordinal)) return BadRequest();
-        await storageService.DeleteAsync(key, cancellationToken);
+        if (!key.StartsWith($"avatars/{CurrentUserId()}/", StringComparison.Ordinal)) return BadRequest();
+        await storageService.DeleteAsync(key, ct);
         return NoContent();
     }
 
@@ -65,8 +62,9 @@ public sealed class R2ImageStorageController(
     private long CurrentUserId()
     {
         var claim = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirstValue(JwtRegisteredClaimNames.Sub);
-        return long.TryParse(claim, out var userId) ? userId : throw new UnauthorizedAccessException();
+        return long.TryParse(claim, out var id) ? id : throw new UnauthorizedAccessException();
     }
 }
 
-public sealed record R2ImageUploadResponse(string Key, string PublicUrl);
+// PublicUrl is derived for rendering only; persistence uses Key.
+public sealed record R2ImageUploadResponse(string Key, string PublicUrl, long? Id = null);

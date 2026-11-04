@@ -11,11 +11,11 @@ build/
 # Vite & Env
 credentials.local.json
 Frontend/.env.*.local
+.env.local
+**/.env.local
 .env
 *.env
 !.env.example
-!Frontend/.env.local
-!.env.local
 
 # .NET & Visual Studio build outputs
 bin/
@@ -44,6 +44,7 @@ tmp/
 temp/
 
 # Diagnostics & local tasks
+.validation/
 .payment-diagnostics/
 SWP391_SE2039_G06_SportsCenterManagement_BE-feature-payment-fix/
 register-task.ps1
@@ -63,3 +64,12 @@ migration-backups/
 # OS files
 .DS_Store
 Thumbs.db
+docker/.env
+# Superseded by docker/nginx.conf.template, which is rendered at container startup.
+docker/nginx.conf
+
+# Local credentials and development configuration belong in the deployment
+# platform or user-secrets, never in source control.
+**/credentials.json
+**/credentials.*.json
+**/appsettings.Development.json

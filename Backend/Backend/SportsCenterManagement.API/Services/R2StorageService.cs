@@ -25,6 +25,15 @@ public sealed class R2StorageService(
 
     private readonly R2StorageOptions _options = options.Value;
 
+    public async Task<(string ContentType, long Size)> GetMetadataAsync(string key, CancellationToken ct = default)
+    {
+        var result = await s3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
+        {
+            BucketName = Required(_options.BucketName, nameof(_options.BucketName)), Key = key
+        }, ct);
+        return (result.Headers.ContentType, result.Headers.ContentLength);
+    }
+
     public async Task<string> UploadRefundBillAsync(
         IFormFile file,
         CancellationToken cancellationToken = default) =>
@@ -40,6 +49,7 @@ public sealed class R2StorageService(
             throw new ArgumentException("R2 image folder is not allowed.", nameof(folder));
         if (file.Length <= 0)
             throw BusinessException.BadRequest("Vui lòng chọn ảnh để tải lên.");
+        maxFileSize = Math.Min(maxFileSize, MaxFileSize);
         if (file.Length > maxFileSize)
             throw BusinessException.BadRequest($"Ảnh không được vượt quá {maxFileSize / 1024 / 1024}MB.");
 
@@ -73,7 +83,10 @@ public sealed class R2StorageService(
 
     public async Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
-        var normalizedKey = (key ?? string.Empty).Trim().Replace('\\', '/').TrimStart('/');
+        var normalizedKey = key ?? string.Empty;
+        if (!System.Text.RegularExpressions.Regex.IsMatch(normalizedKey,
+            @"^(dashboard|refund-bills|avatars/[1-9][0-9]*)/[0-9]{4}/[0-9]{2}/[0-9]{17}-[a-f0-9]{32}\.(jpg|jpeg|png|webp)$"))
+            throw BusinessException.BadRequest("Relative key R2 không hợp lệ.");
         if (!(normalizedKey.StartsWith(RefundBillPrefix, StringComparison.Ordinal) ||
               normalizedKey.StartsWith("dashboard/", StringComparison.Ordinal) ||
               normalizedKey.StartsWith("avatars/", StringComparison.Ordinal)) ||

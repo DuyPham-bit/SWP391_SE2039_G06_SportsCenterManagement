@@ -1,40 +1,64 @@
-# Quản lý nội dung trang chủ và đa phương tiện
+# Nội dung trang chủ và ảnh R2
 
-Trang quản lý: `#/manager/home-content`. Manager, Admin và SystemAdmin có thể quản lý nội dung và thư viện ảnh. Đây là nội dung của website chung, không phải nội dung riêng theo từng trung tâm.
+Trang quản lý: `#/manager/home-content`. Manager/Admin quản lý nội dung chung của website.
 
-## Lưu và xem trước
+## Lưu trữ
 
-- `GET /api/landing-content`: công khai, trả `{ content, updatedAt }`. Khi chưa có dữ liệu, `content` là `null` và giao diện dùng mẫu mặc định.
-- `PUT /api/landing-content`: yêu cầu JWT có vai trò quản lý; body là `{ content: { heroBanner, whyUs, coursesSection, facilitiesSection, zonesLayout, ctaAndFooter } }`.
-- Nội dung lưu trong bảng `system_settings`, khóa `site.landing-content`, kèm người sửa và thời điểm sửa. Không cần thêm bảng hoặc migration.
-- Trang chủ đọc dữ liệu từ API, tự làm mới mỗi 15 giây khi đang hiển thị, khi lấy lại focus và khi tab khác báo có thay đổi.
-- Bản nháp trong trang quản lý không bị thay thế bởi cập nhật nền. Chỉ sau khi API xác nhận lưu thành công, giao diện mới bỏ trạng thái chưa lưu.
-- Xem trước mở tab riêng bằng SessionStorage của tab đó; không ghi nội dung vào API hoặc LocalStorage công khai. Tab xem trước không đồng bộ nội dung đã công bố đè lên bản nháp.
-- Khi database chưa có nội dung nhưng trình duyệt còn dữ liệu cũ trong `SCMS_DYNAMIC_LANDING_CONTENT_V1`, trang quản lý tải dữ liệu cũ thành bản nháp. Bấm **Lưu Toàn Bộ Thay Đổi** để công bố. Trang chủ công khai không dùng dữ liệu cũ này.
-- Tại mục **6. Banner Kêu Gọi & Footer**, nhập **Số điện thoại Zalo** và **Liên kết Facebook** rồi bấm **Lưu Toàn Bộ Thay Đổi**. Hai trường `ctaAndFooter.contactZaloPhone` và `ctaAndFooter.contactFacebookUrl` được lưu cùng nội dung trang chủ. Zalo nhận số điện thoại 10 chữ số hoặc đầu số `+84`, bỏ dấu cách và chuẩn hóa về đầu số `0`; trang chủ hiển thị **Zalo: số điện thoại** và tự tạo liên kết `https://zalo.me/{số điện thoại}`. Facebook nhận đường dẫn HTTP/HTTPS. Cả hai mở trong tab mới tại **Thông Tin Liên Hệ**. Mặc định để trống; xóa giá trị để ẩn liên hệ tương ứng. Nội dung đã lưu trước khi có các trường này vẫn tải bình thường.
+- File ảnh chỉ lưu tại Cloudflare R2; không còn SDK, service, cấu hình hay fallback Google Drive/local.
+- Mỗi ảnh là một dòng trong `uploaded_media`: `Id`, `storage_key`, `file_name`, `mime_type`, `file_size`, `uploaded_by_user_id`, `created_at`. Index duy nhất trên `storage_key` ngăn trùng object.
+- `system_settings`, khóa `site.landing-content`, chỉ giữ nội dung và các ID ảnh: `posterMediaId`, `mediaId`, `secondaryMediaId`, `imageMediaId`. Một ID có thể dùng ở nhiều vị trí.
+- Không lưu binary/domain trong các bản ghi mới. `GET /api/landing-content` tra metadata bằng ID rồi ghép domain từ `R2Storage:PublicDomain` để trả các trường URL hiển thị tương thích frontend. `PUT` chuyển URL/key thành ID của một ảnh có thật; từ chối ảnh chưa đăng ký hoặc ID không tồn tại.
+- Service `IR2StorageService.UploadImageAsync` chỉ trả relative key. API upload trả thêm `publicUrl` được tính tại runtime để xem trước.
+- File mới mang tên UTC timestamp + GUID + phần mở rộng gốc đã chuẩn hóa. Tên do người dùng cung cấp không được dùng làm object key.
+- Chỉ nhận JPG/JPEG/PNG/WEBP, tối đa 5 MiB; kiểm tra đuôi file, MIME và chữ ký nhị phân cả backend lẫn kiểm tra sơ bộ ở frontend.
+- Avatar và ảnh hóa đơn vẫn dùng R2. Đăng nhập Google và Gemini không liên quan tới Google Drive, tiếp tục hoạt động như trước.
 
-## Thư viện ảnh
+## API và cleanup
 
-Các endpoint `POST /api/media/upload`, `GET /api/media/drive-files`, `GET /api/media/status`, `GET /api/media/recent` đều yêu cầu JWT với vai trò Manager/Admin/SystemAdmin.
+- `POST /api/r2-images/dashboard`: Manager/Admin, multipart field `file`.
+- `DELETE /api/r2-images/dashboard?key=...`: chỉ nhận key hợp lệ trong prefix dashboard, trả 409 nếu ảnh còn được nội dung đã công bố tham chiếu.
+- Sau khi lưu nội dung thành công, backend so sánh tập ID cũ/mới; xóa object và dòng metadata khi ảnh không còn được sử dụng. Khi hai mục dùng chung ảnh, xóa một mục không xóa ảnh mục kia.
+- Khi hủy upload/bản nháp, frontend gọi cleanup cho ảnh tạm. Không xóa ảnh đang công bố trước khi lưu nội dung thay thế thành công.
+- Cleanup R2 là thao tác sau khi commit DB. Lỗi xóa được ghi log với key để xử lý lại; chưa có worker tự quét/xóa nền. Các upload bị bỏ dở khi đóng trình duyệt đột ngột cần đối soát thủ công.
+- `POST /api/media/upload`, `POST /api/r2-images/dashboard` đều tạo metadata qua cùng service. `GET /api/media/files` / `recent` trả thư viện để chọn lại ảnh. Các cột lịch sử `drive_file_id`, `file_url`, `web_view_link` được giữ để tương thích và không được dùng cho ảnh mới; key mới chỉ lưu trong `storage_key`.
 
-Upload hỗ trợ PNG, JPG/JPEG, WEBP, GIF, AVIF, tối đa 15 MiB. Backend đối chiếu phần mở rộng, MIME và chữ ký nhị phân; AVIF được nhận diện bằng các brand `avif`/`avis` trong ISO-BMFF FileTypeBox. Từ chối SVG, HTML và nội dung giả mạo. Đường dẫn `/uploads` chỉ phục vụ các phần mở rộng ảnh được hỗ trợ, kèm `X-Content-Type-Options: nosniff`.
+## Chuyển dữ liệu cũ
 
-Google Drive sử dụng cấu hình hiện có. Danh sách được đọc đủ các trang trước khi cập nhật database. Ảnh có phần mở rộng được hỗ trợ vẫn xuất hiện khi Drive ghi MIME chung `application/octet-stream` hoặc thiếu MIME; metadata trả về được chuẩn hóa theo phần mở rộng. Khi Drive lỗi hoặc trả kết quả chưa đầy đủ, hệ thống trả thư viện đã lưu và giữ nguyên metadata. Sau lần đọc thành công, ảnh không còn trên Drive được ẩn khỏi thư viện nhưng metadata vẫn được giữ để phục hồi/đối chiếu.
+Migration `AddMediaStorageKey` thêm cột/index, không xóa dữ liệu cũ. Khi backend khởi động, `LandingMediaBackfill` đọc các R2 key đang có trong landing, đọc metadata object R2, tạo một dòng cho mỗi key và đổi JSON sang ID trong cùng transaction. File R2 không bị upload lại hay thay đổi. Chạy lại không tạo trùng vì landing đã chuyển thành ID.
 
-Ảnh local mới được lưu mặc định tại `SportsCenterManagement.API/App_Data/media/uploads`, phục vụ qua `/uploads/...`. Có thể đặt `GoogleDrive:LocalStoragePath` thành đường dẫn tuyệt đối hoặc tương đối với thư mục API. Thư mục này nằm ngoài `wwwroot`, tránh bị lệnh `build:api` làm sạch. Khi triển khai, cần giữ thư mục dữ liệu này trên ổ lưu trữ bền vững.
+Xem ảnh trực tiếp trong DB:
 
-Ảnh local cũ trong `wwwroot/uploads` vẫn được phục vụ nếu thuộc định dạng được hỗ trợ. Các tệp cũ không được tự di chuyển hoặc xóa; sao lưu chúng trước khi chạy lệnh làm sạch `wwwroot`.
-
-## Kiểm thử
-
-```powershell
-# Từ Frontend/
-npm.cmd test
-npm.cmd run build
-npm.cmd run test:landing:browser
-
-# Từ workspace root
-dotnet test Backend/Backend/SportsCenterManagement.Tests/SportsCenterManagement.Tests.csproj --filter "FullyQualifiedName~HomeContentIntegrationTests|FullyQualifiedName~MediaStorageTests"
+```sql
+SELECT "Id", storage_key, file_name, mime_type, file_size, uploaded_by_user_id, created_at
+FROM uploaded_media
+WHERE storage_key <> ''
+ORDER BY "Id";
 ```
 
-Kiểm thử trình duyệt dùng Chrome headless và API fixture riêng. Kiểm thử backend dùng database SQLite/InMemory riêng và HTTP giả lập tại ranh giới Google Drive, không tải ảnh lên tài khoản Drive thật.
+## Nhập bộ ảnh landing
+
+23 ảnh nguồn được đối chiếu trực quan với 10 bộ môn/cơ sở vật chất. Hai cặp trùng là 4/19 (bóng đá) và 7/21 (yoga), dùng chung object; tổng cộng 21 object.
+
+- Bơi: 14 (bộ môn), 1 và 22 (bể bơi).
+- Cầu lông: 18 (bộ môn), 2 (sân).
+- Bóng đá: 4/19 (bộ môn), 3 (sân).
+- Yoga: 5 (bộ môn), 6 và 7/21 (không gian).
+- Gym: 8 (bộ môn), 23 (phòng tập và banner/auth).
+- Tennis: 9 (bộ môn), 11 (sân).
+- Bóng rổ: 10 (bộ môn), 17 (sân).
+- Bóng bàn: 15 (bộ môn), 16 (khu tập).
+- Boxing: 20. Chạy bộ: 13. Tư vấn sức khỏe trong phần giới thiệu: 12.
+
+Các thẻ là nội dung giới thiệu, không tự tạo lớp học, sân có thể đặt chỗ, giá, lịch hoặc sức chứa.
+
+Script `Frontend/scripts/import-landing-r2.mjs` đọc ảnh đã tải trong `.validation/landing-import`, xác thực bằng cấu hình local, upload qua API và công bố. Báo cáo `r2-import.json` lưu mapping/hash để chạy tiếp khi gián đoạn; không chứa mật khẩu/token. Không chạy lại để ghi đè tùy chỉnh danh sách của biên tập viên.
+
+## Kiểm chứng
+
+```powershell
+dotnet build Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj
+node --test Frontend/tests/cloud-media.test.cjs Frontend/tests/landing-content.test.cjs
+node Frontend/scripts/verify-landing-r2.mjs
+```
+
+Script verification đọc 21 object thật, so SHA256 với ảnh nguồn, kiểm tra định dạng/dung lượng, tên an toàn, bảo vệ ảnh dùng chung và xóa upload tạm do test tạo.

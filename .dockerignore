@@ -1,8 +1,17 @@
-**/.git
-**/.vs
+.git
 **/bin
 **/obj
 **/node_modules
 **/dist
-**/.validation
-**/tmp
+**/.vs
+
+**/.env
+**/.env.*
+!**/.env.example
+
+# Runtime credentials and development-only configuration must never be copied
+# into a production image. Configure them with platform environment variables
+# or a mounted secret file instead.
+**/credentials.json
+**/credentials.*.json
+**/appsettings.Development.json

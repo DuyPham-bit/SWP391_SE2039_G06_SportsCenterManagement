@@ -10,8 +10,17 @@ public static class DbInitializer
     public static async Task SeedAsync(SportsCenterDbContext context, bool baselineLegacySchema = false)
     {
         if (baselineLegacySchema) await BaselineLegacySchemaAsync(context);
-        if (context.Database.IsRelational()) await context.Database.MigrateAsync();
-        else await context.Database.EnsureCreatedAsync();
+        if (context.Database.IsRelational())
+        {
+            // A relational production database must have a complete EF migration
+            // history. Falling back to EnsureCreated after a migration error can
+            // hide a broken schema or leave an existing database inconsistent.
+            await context.Database.MigrateAsync();
+        }
+        else
+        {
+            await context.Database.EnsureCreatedAsync();
+        }
         await EnsureRolesAndPermissionsAsync(context);
         await EnsureAuthAndReceptionPermissionsAsync(context);
         await EnsureCompleteSportsCatalogAsync(context);
@@ -338,6 +347,11 @@ public static class DbInitializer
 
     private static async Task BaselineLegacySchemaAsync(SportsCenterDbContext context)
     {
+        if (!context.Database.IsSqlServer())
+        {
+            return;
+        }
+
         var connection = context.Database.GetDbConnection();
         await connection.OpenAsync();
         await using var command = connection.CreateCommand();

@@ -30,9 +30,18 @@ var jwtIssuer = new JwtTokenIssuer(builder.Configuration);
 builder.Services.AddHttpClient();
 
 // Layer 3: DAL (DbContext & Repository / Unit of Work Pattern)
+/*
 builder.Services.AddDbContext<SportsCenterDbContext>(options =>
     options.UseSqlServer(connectionString)
            .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
+
+*/
+
+
+// Thay bằng PostgreDB
+builder.Services.AddDbContext<SportsCenterDbContext>(options =>
+    options.UseNpgsql(builder.Configuration.GetConnectionString("SportsCenter")));
+
 
 builder.Services.AddSingleton(jwtIssuer);
 builder.Services.AddScoped<JwtAccountValidator>();
@@ -128,17 +137,8 @@ builder.Services.AddSingleton<IAmazonS3>(provider =>
         });
 });
 builder.Services.AddScoped<IR2StorageService, R2StorageService>();
+builder.Services.AddScoped<MediaCatalogService>();
 
-var localMediaRoot = Path.GetFullPath(
-    builder.Configuration["GoogleDrive:LocalStoragePath"] ?? Path.Combine("App_Data", "media"),
-    builder.Environment.ContentRootPath);
-var localUploadsPath = Path.Combine(localMediaRoot, "uploads");
-Directory.CreateDirectory(localUploadsPath);
-builder.Services.AddScoped(provider => new GoogleDriveService(
-    provider.GetRequiredService<SportsCenterDbContext>(),
-    provider.GetRequiredService<IConfiguration>(),
-    provider.GetRequiredService<ILogger<GoogleDriveService>>(),
-    localMediaRoot));
 builder.Services.AddSingleton<GoogleTokenValidator>();
 builder.Services.AddHttpClient<GeminiService>(client => client.Timeout = TimeSpan.FromSeconds(45));
 builder.Services.AddRateLimiter(options =>
@@ -160,7 +160,9 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",
+        Type = SecuritySchemeType.Http,
+        Scheme = "bearer",
+        BearerFormat = "JWT",
         Description = "Nhập accessToken trả về từ POST /api/auth/login hoặc /api/auth/google."
     });
     options.OperationFilter<SportsCenterManagement.API.Authentication.JwtSecurityOperationFilter>();
@@ -176,6 +178,9 @@ using (var scope = app.Services.CreateScope())
     await DbInitializer.SeedAsync(dbContext, baselineLegacySchema);
     await DevelopmentAccountBootstrapper.SeedAsync(dbContext, app.Configuration, app.Environment);
     await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
+    await LandingMediaBackfill.RunAsync(dbContext,
+        scope.ServiceProvider.GetRequiredService<IR2StorageService>(),
+        scope.ServiceProvider.GetRequiredService<LandingContentService>());
 }
 
 if (app.Environment.IsDevelopment())
@@ -299,13 +304,6 @@ app.Use(async (context, next) =>
 });
 var mediaContentTypes = new FileExtensionContentTypeProvider();
 mediaContentTypes.Mappings[".avif"] = "image/avif";
-app.UseStaticFiles(new StaticFileOptions
-{
-    FileProvider = new PhysicalFileProvider(localUploadsPath),
-    RequestPath = "/uploads",
-    ContentTypeProvider = mediaContentTypes,
-    OnPrepareResponse = context => context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff"
-});
 app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions
 {

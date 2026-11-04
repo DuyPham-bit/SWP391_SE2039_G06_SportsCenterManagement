@@ -1,0 +1,32 @@
+services:
+
+  backend:
+    image: mcr.microsoft.com/dotnet/sdk:10.0
+    build: !reset null
+    working_dir: /src
+    environment:
+      ASPNETCORE_ENVIRONMENT: Development
+      ASPNETCORE_URLS: http://+:8080
+      DOTNET_USE_POLLING_FILE_WATCHER: "1"
+    volumes:
+      - ../Backend/Backend:/src
+    command: dotnet watch --project SportsCenterManagement.API/SportsCenterManagement.API.csproj run --no-launch-profile
+  
+  frontend:
+    image: node:20-alpine
+    build: !reset null
+    working_dir: /app
+    ports: !override
+      - "127.0.0.1:3004:3004"
+    environment:
+      VITE_API_BASE_URL: /api
+      VITE_SPORTS_CENTER_ID: ${VITE_SPORTS_CENTER_ID:?Missing center ID}
+      SCMS_API_PROXY_TARGET: http://backend:8080
+      SCMS_USE_POLLING: "true"
+    volumes:
+      - ../Frontend:/app
+      - frontend_node_modules:/app/node_modules
+    command: sh -c "npm ci && npm run dev -- --host 0.0.0.0 --port 3004 --strictPort"
+
+volumes:
+  frontend_node_modules:
