@@ -11,10 +11,10 @@ Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai 
 2. Chạy API từ thư mục workspace:
 
    ```powershell
-   dotnet run --project .\Backend\SportsCenterManagement.API\SportsCenterManagement.API.csproj
+   powershell -ExecutionPolicy Bypass -File .\Backend\start-shared.ps1
    ```
 
-   API dùng `http://localhost:3003` trong cấu hình launch profile; Vite proxy `/api` đến địa chỉ này.
+   Script kiểm tra SQL Server `MSSQLSERVER` trước khi chạy; nếu dịch vụ đang dừng, hãy chạy `start-sql-server.bat` bằng quyền Administrator rồi chạy lại script. API dùng `http://localhost:5000`; Vite proxy `/api` đến địa chỉ này. Nếu dùng SQL Server từ xa hoặc LocalDB, chạy script với `-SkipSqlServerCheck`.
 3. Sao chép `Frontend/.env.example` thành `Frontend/.env.local` và đặt `VITE_SPORTS_CENTER_ID` thành ID trung tâm thực tế trong database; biến này bắt buộc khi đăng ký hội viên mới.
 4. Cài và chạy giao diện:
 

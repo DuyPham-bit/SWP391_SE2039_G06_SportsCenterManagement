@@ -306,10 +306,10 @@ export function MemberManagement() {
           <div>
             <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-[#1B4332] text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs mb-2">
               <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse shrink-0" />
-              <span>{isEn ? 'Member Operations' : 'Quản trị thành viên SCMS'}</span>
+              <span>{isEn ? 'Member Operations' : 'Quản trị hội viên SCMS'}</span>
             </div>
             <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-              {isEn ? 'Member Management' : 'Quản lý thành viên'}
+              {isEn ? 'Member Management' : 'Quản lý hội viên'}
             </h1>
             <p className="text-xs sm:text-sm text-white/95 mt-1.5 max-w-2xl leading-relaxed font-medium drop-shadow-xs">
               {isEn

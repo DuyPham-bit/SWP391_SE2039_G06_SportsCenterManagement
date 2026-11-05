@@ -300,7 +300,38 @@ app.UseDefaultFiles();
 app.UseStaticFiles(new StaticFileOptions
 {
     ContentTypeProvider = mediaContentTypes,
-    OnPrepareResponse = context => context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff"
+    OnPrepareResponse = context =>
+    {
+        context.Context.Response.Headers["X-Content-Type-Options"] = "nosniff";
+
+        // The HTML document is the manifest for Vite's content-hashed chunks. It
+        // must be revalidated after a deployment so it never points at deleted chunks.
+        if (string.Equals(context.File.Name, "index.html", StringComparison.OrdinalIgnoreCase))
+        {
+            context.Context.Response.Headers.CacheControl = "no-cache, no-store, max-age=0";
+        }
+    }
+});
+app.Use(async (context, next) =>
+{
+    await next();
+
+    // A browser can keep an old entry bundle while a new frontend build has removed
+    // its hashed lazy chunk. Return a one-shot ES module that reloads the current
+    // deployment instead of leaving the SPA broken on a permanent 404.
+    var isMissingJavaScriptChunk = context.Response.StatusCode == StatusCodes.Status404NotFound &&
+        !context.Response.HasStarted &&
+        HttpMethods.IsGet(context.Request.Method) &&
+        context.Request.Path.StartsWithSegments("/assets") &&
+        string.Equals(Path.GetExtension(context.Request.Path.Value), ".js", StringComparison.OrdinalIgnoreCase);
+
+    if (isMissingJavaScriptChunk)
+    {
+        context.Response.StatusCode = StatusCodes.Status200OK;
+        context.Response.ContentType = "application/javascript; charset=utf-8";
+        context.Response.Headers.CacheControl = "no-store";
+        await context.Response.WriteAsync("window.location.replace('/');");
+    }
 });
 app.UseRouting();
 app.UseCors();

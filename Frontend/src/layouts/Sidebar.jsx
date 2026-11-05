@@ -3,11 +3,26 @@ import { createPortal } from 'react-dom';
 import { useAuth } from '../app/providers/AuthContext.jsx';
 import { useLanguage } from '../app/providers/LanguageContext.jsx';
 import { translateCoachName } from '../services/i18nHelper.js';
+import { Logo } from '../shared/components/common/Logo.jsx';
 
 export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCollapse, onClose, currentPath }) {
   const { currentUser, role, logout } = useAuth();
   const { language } = useLanguage();
   const [expandedGroups, setExpandedGroups] = useState({});
+
+  const [isMobileScreen, setIsMobileScreen] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 1024 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileScreen(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const isEffectiveCollapsed = isDesktopCollapsed && !isMobileScreen;
 
   const isEn = language === 'en';
 
@@ -326,7 +341,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             label: isEn ? 'Operations Management' : 'Quản lý vận hành',
             icon: 'sports_score',
             subItems: [
-              { label: isEn ? 'Member Management' : 'Quản lý thành viên', path: '#/manager/members' },
+              { label: isEn ? 'Member Management' : 'Quản lý hội viên', path: '#/manager/members' },
               { label: isEn ? 'Classes, Sports & Courts' : 'Lớp, bộ môn & phòng', path: '#/manager/classes-rooms' },
               { label: isEn ? 'Membership Packages' : 'Gói tập hội viên', path: '#/manager/packages' },
               { label: isEn ? 'Coach Assignment' : 'Phân công HLV', path: '#/manager/coach-assignment' },
@@ -421,10 +436,10 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
   useEffect(() => {
     setFlyoutState(null);
     setTooltipState(null);
-  }, [currentPath, isDesktopCollapsed]);
+  }, [currentPath, isEffectiveCollapsed]);
 
   const handleItemMouseEnter = (item, event) => {
-    if (!isDesktopCollapsed) return;
+    if (!isEffectiveCollapsed) return;
     if (flyoutTimerRef.current) clearTimeout(flyoutTimerRef.current);
     const rect = event.currentTarget.getBoundingClientRect();
     const estimatedHeight = ((item.subItems?.length || 1) * 42) + 60;
@@ -440,14 +455,14 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
   };
 
   const handleItemMouseLeave = () => {
-    if (!isDesktopCollapsed) return;
+    if (!isEffectiveCollapsed) return;
     flyoutTimerRef.current = setTimeout(() => {
       setFlyoutState(prev => prev?.isPinned ? prev : null);
     }, 200);
   };
 
   const handleItemClick = (item, event) => {
-    if (!isDesktopCollapsed) return;
+    if (!isEffectiveCollapsed) return;
     const rect = event.currentTarget.getBoundingClientRect();
     const estimatedHeight = ((item.subItems?.length || 1) * 42) + 60;
     let top = rect.top;
@@ -464,7 +479,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
   };
 
   const handleTooltipEnter = (text, event) => {
-    if (!isDesktopCollapsed) return;
+    if (!isEffectiveCollapsed) return;
     const rect = event.currentTarget.getBoundingClientRect();
     setTooltipState({ text, top: rect.top + (rect.height / 2) - 14 });
   };
@@ -511,16 +526,31 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
 
       {/* Sidebar Container */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col transition-all duration-300 ease-in-out select-none ${
+        className={`fixed top-0 lg:top-16 left-0 bottom-0 bg-white dark:bg-slate-900 border-r border-slate-200 dark:border-slate-800 z-50 flex flex-col transition-all duration-300 ease-in-out select-none ${
           isOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full'
         } lg:transform-none ${
-          isDesktopCollapsed
+          isEffectiveCollapsed
             ? 'lg:w-20'
             : 'lg:w-64'
         }`}
       >
+        {/* Mobile Top Header: Logo & Circle Close Button (matching reference image) */}
+        <div className="lg:hidden flex items-center justify-between px-3.5 py-3 border-b border-slate-100 dark:border-slate-800 bg-white dark:bg-slate-900 shrink-0">
+          <Logo variant="auto" size="md" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-7 h-7 rounded-full border border-slate-200/90 dark:border-slate-700 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 hover:border-[#81B29A] flex items-center justify-center text-slate-500 dark:text-slate-400 hover:text-[#2D6A4F] dark:hover:text-emerald-400 transition-all cursor-pointer shadow-md hover:scale-110 active:scale-95"
+            title={language === 'vi' ? 'Đóng menu' : 'Close menu'}
+            aria-label="Close menu"
+          >
+            <span className="material-symbols-outlined text-[15px] select-none">
+              chevron_left
+            </span>
+          </button>
+        </div>
         {/* Seamless Top Bar: display only 'MENU' as requested */}
-        {isDesktopCollapsed ? (
+        {isEffectiveCollapsed ? (
           <div className="py-2.5 px-1 border-b border-slate-100 dark:border-slate-800/80 flex justify-center shrink-0">
             <span className="text-[9px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest">
               MENU
@@ -537,7 +567,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
         {/* Navigation Menu Body: fully scrollable container with sleek custom scrollbar */}
         <div
           className={`flex-1 overflow-y-auto sidebar-scroll-container ${
-            isDesktopCollapsed ? 'px-2 py-3 space-y-2' : 'px-3 py-4 space-y-5'
+            isEffectiveCollapsed ? 'px-2 py-3 space-y-2' : 'px-3 py-4 space-y-5'
           }`}
           onScroll={() => {
             if (flyoutState && !flyoutState.isPinned) setFlyoutState(null);
@@ -545,9 +575,9 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
           }}
         >
           {sections.map((section, idx) => (
-            <div key={idx} className={isDesktopCollapsed ? 'space-y-1.5' : 'space-y-1'}>
+            <div key={idx} className={isEffectiveCollapsed ? 'space-y-1.5' : 'space-y-1'}>
               {/* Category Divider / Header */}
-              {isDesktopCollapsed ? (
+              {isEffectiveCollapsed ? (
                 idx > 0 && <div className="w-8 h-[1px] bg-slate-200/80 dark:bg-slate-800 my-2 mx-auto" />
               ) : (
                 <div className="px-2.5 py-1.5 text-[11px] font-bold text-[#2D6A4F] dark:text-emerald-400 uppercase tracking-wider">
@@ -601,7 +631,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
                 /* ─────────────────────────────────────────────────────────────
                    MODE 1: COLLAPSED MINI-SIDEBAR (MATCHING USER REFERENCE)
                 ───────────────────────────────────────────────────────────── */
-                if (isDesktopCollapsed) {
+                if (isEffectiveCollapsed) {
                   const isFlyoutOpen = flyoutState?.id === item.id;
 
                   if (hasSubItems) {
@@ -763,7 +793,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
 
         {/* Sidebar Footer: SCMS Status & Logout */}
         <div className="p-2.5 border-t border-slate-100 dark:border-slate-800 bg-slate-50/70 dark:bg-slate-900/70 shrink-0">
-          {isDesktopCollapsed ? (
+          {isEffectiveCollapsed ? (
             <div className="flex flex-col items-center gap-2">
               <button
                 type="button"
@@ -835,7 +865,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
         </div>
 
         {/* Fixed Floating Flyout Menu: unclipped, locked on click, opens on hover */}
-        {isDesktopCollapsed && flyoutState && typeof document !== 'undefined' && createPortal(
+        {isEffectiveCollapsed && flyoutState && typeof document !== 'undefined' && createPortal(
           <div
             className="mini-flyout-fixed-card fixed w-64 bg-white dark:bg-slate-900 border border-slate-200/90 dark:border-slate-700/80 rounded-2xl shadow-2xl shadow-slate-400/20 dark:shadow-black/60 p-2.5 z-[9999] animate-in fade-in zoom-in-95 duration-150"
             style={{ left: '88px', top: `${flyoutState.top}px` }}
@@ -900,7 +930,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
         )}
 
         {/* Fixed Floating Tooltip on Hover */}
-        {isDesktopCollapsed && tooltipState && !flyoutState && typeof document !== 'undefined' && createPortal(
+        {isEffectiveCollapsed && tooltipState && !flyoutState && typeof document !== 'undefined' && createPortal(
           <div
             className="fixed px-3 py-1.5 bg-[#1E2235] text-white text-xs font-semibold rounded-xl shadow-lg border border-slate-700 whitespace-nowrap z-[9999] pointer-events-none animate-in fade-in duration-150"
             style={{ left: '88px', top: `${tooltipState.top}px` }}

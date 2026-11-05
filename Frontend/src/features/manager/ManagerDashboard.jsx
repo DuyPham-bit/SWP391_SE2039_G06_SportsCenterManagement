@@ -84,7 +84,7 @@ export function ManagerDashboard() {
     {
       path: 'members',
       icon: 'group',
-      title: isEn ? 'Member Management' : 'Quản lý thành viên',
+      title: isEn ? 'Member Management' : 'Quản lý hội viên',
       description: isEn ? 'Profiles, account status and package history.' : 'Hồ sơ, trạng thái tài khoản và lịch sử gói.',
       tag: isEn ? 'Members' : 'Hội viên',
       theme: {

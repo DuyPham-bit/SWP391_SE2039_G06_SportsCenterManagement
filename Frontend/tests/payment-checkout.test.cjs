@@ -44,9 +44,9 @@ test('checkout preserves the original document and rejects messages from other t
   receive({ source: f.popup, origin: 'https://gateway.example', data: { type: 'scms:payment-returned' } });
   assert.equal(f.returned.length, 0);
   assert.equal(f.popup.closed, false);
-  receive({ source: f.popup, origin: 'http://localhost:54162', data: { type: 'scms:payment-ready' } });
-  assert.equal(f.messages[0].origin, 'http://localhost:54162');
-  receive({ source: f.popup, origin: 'http://localhost:54162', data: { type: 'scms:payment-returned', cancelled: true } });
+  receive({ source: f.popup, origin: 'http://localhost:5000', data: { type: 'scms:payment-ready' } });
+  assert.equal(f.messages[0].origin, 'http://localhost:5000');
+  receive({ source: f.popup, origin: 'http://localhost:5000', data: { type: 'scms:payment-returned', cancelled: true } });
   assert.equal(f.returned[0].cancelled, true);
   assert.equal(f.popup.closed, true);
   assert.equal(f.window.focused, true);

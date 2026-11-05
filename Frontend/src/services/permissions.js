@@ -344,7 +344,7 @@ export function getDynamicNavItems(role) {
         { label: 'VẬN HÀNH & NHÂN SỰ', isHeader: true }
       ];
 
-      items.push({ path: '#/manager/members', icon: 'group', label: 'Quản Lý Thành Viên' });
+      items.push({ path: '#/manager/members', icon: 'group', label: 'Quản Lý Hội Viên' });
       items.push({ path: '#/manager/support-communications', icon: 'campaign', label: 'Hỗ Trợ & Thông Báo' });
       if (perms.includes('manage_staff')) items.push({ path: '#/manager/staff', icon: 'badge', label: 'Quản Lý Nhân Viên' });
       if (perms.includes('manage_packages')) items.push({ path: '#/manager/packages', icon: 'card_membership', label: 'Gói Tập Hội Viên' });
