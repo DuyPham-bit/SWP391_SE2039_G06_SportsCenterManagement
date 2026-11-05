@@ -10,11 +10,27 @@ build/
 
 # Vite & Env
 credentials.local.json
-Frontend/.env.*.local
+credentials.json
+*.local.json
 .env
 .env.*
+.env*.local
 *.env
+*.env.*
+Frontend/.env
+Frontend/.env.*
+Frontend/.env*.local
+Frontend/.env.local
+Backend/.env
+Backend/.env.*
+Backend/.env*.local
+Backend/.env.local
+docker/.env
+docker/.env.*
 !.env.example
+!Frontend/.env.example
+!Backend/.env.example
+!docker/.env.example
 
 # .NET & Visual Studio build outputs
 bin/
