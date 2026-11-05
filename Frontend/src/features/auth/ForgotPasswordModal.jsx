@@ -185,7 +185,7 @@ function PasswordResetForm({ onClose, onResetSuccess }) {
         <form onSubmit={handleResetPassword} className="space-y-4">
           <div className="p-3 rounded-lg bg-emerald-50 text-emerald-800 border border-emerald-200 text-xs">
             Nếu email tồn tại, mã OTP đã được gửi đến <strong className="break-all">{email}</strong>.
-            {' '}Kiểm tra cả thư rác. Mã có hạn 10 phút và chỉ dùng một lần.
+            {' '}Kiểm tra cả thư rác. Mã có hạn 5 phút và chỉ dùng một lần.
           </div>
 
           <div>
@@ -194,7 +194,7 @@ function PasswordResetForm({ onClose, onResetSuccess }) {
                 Mã xác thực OTP (6 chữ số) *
               </label>
               <span className="text-[10px] text-amber-700 font-semibold bg-amber-100/80 px-2 py-0.5 rounded-full">
-                Hạn 10 phút
+                Hạn 5 phút
               </span>
             </div>
 

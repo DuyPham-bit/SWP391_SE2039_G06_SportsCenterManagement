@@ -47,6 +47,7 @@ services:
       - Cors__AllowedOrigins__0=${FRONTEND_ORIGIN:-http://localhost:3004}
       - Cors__AllowedOrigins__1=http://localhost:3004
       - Cors__AllowedOrigins__2=http://localhost:5173
+      - Authentication__AllowCrossSiteCookies=${AUTHENTICATION_ALLOW_CROSS_SITE_COOKIES:-false}
       - ExternalCommunications__Email__WebhookUrl=
       - ExternalCommunications__Email__Smtp__Host=${EMAIL_SMTP_HOST:-}
       - ExternalCommunications__Email__Smtp__Port=${EMAIL_SMTP_PORT:-587}
