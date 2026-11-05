@@ -25,7 +25,13 @@ public sealed class PasswordResetEmailSender(
     private bool SmtpConfigured => !string.IsNullOrWhiteSpace(SmtpHost) && MailAddress.TryCreate(SmtpFrom, out _);
     public bool IsConfigured => Endpoint is not null || SmtpConfigured;
 
-    public async Task<bool> SendAsync(User recipient, PasswordResetToken reset, string otp, CancellationToken ct)
+    public async Task<bool> SendAsync(
+        User recipient,
+        PasswordResetToken reset,
+        string otp,
+        CancellationToken ct,
+        string actionEn = "reset password",
+        string actionVi = "đặt lại mật khẩu tài khoản")
     {
         if (!IsConfigured) return false;
         // OTPs never enter the notification inbox, database payloads, or provider response logs.
@@ -35,12 +41,12 @@ public sealed class PasswordResetEmailSender(
         };
         db.CommunicationDeliveries.Add(delivery);
         await db.SaveChangesAsync(ct);
-        var title = "[SCMS] Mã xác thực đặt lại mật khẩu";
-        var message = $"Mã xác thực đặt lại mật khẩu của bạn tại SCMS: {otp}. Mã hết hạn sau 10 phút. Tuyệt đối không chia sẻ mã này với người khác.";
+        var title = $"Your SCMS security code: {otp}";
+        var message = $"We received a request from Ho Chi Minh City, Vietnam to confirm the following action on your SCMS account: {actionEn}. Use this code:\n\n{otp}\n\nThis code expires in 10 minutes. If you did not request it, you can safely ignore this email.";
         var html = BuildOtpEmailHtml(
-            "Yêu Cầu Đặt Lại Mật Khẩu",
             recipient.Email,
-            "Chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn tại Hệ thống Quản lý Trung tâm Thể thao SCMS. Vui lòng sử dụng mã xác thực bên dưới để tiếp tục:",
+            actionEn,
+            actionVi,
             otp,
             10);
         var result = await SendCodeAsync(recipient.Email, title, message, html, $"password-reset-{reset.Id}", new
@@ -63,12 +69,12 @@ public sealed class PasswordResetEmailSender(
 
     public async Task<bool> SendVerificationAsync(EmailVerificationToken verification, string otp, CancellationToken ct)
     {
-        var title = "[SCMS] Mã xác thực đăng ký tài khoản";
-        var message = $"Mã xác thực đăng ký tài khoản của bạn tại SCMS: {otp}. Mã hết hạn sau 10 phút. Tuyệt đối không chia sẻ mã này với người khác.";
+        var title = $"Your SCMS security code: {otp}";
+        var message = $"We received a request from Ho Chi Minh City, Vietnam to confirm the following action on your SCMS account: confirm account registration. Use this code:\n\n{otp}\n\nThis code expires in 10 minutes. If you did not request it, you can safely ignore this email.";
         var html = BuildOtpEmailHtml(
-            "Xác Thực Email Đăng Ký Tài Khoản",
             verification.Email,
-            "Cảm ơn bạn đã đăng ký tài khoản tại Hệ thống Quản lý Trung tâm Thể thao SCMS. Vui lòng sử dụng mã xác thực bên dưới để hoàn tất việc kích hoạt tài khoản của bạn:",
+            "confirm account registration",
+            "kích hoạt đăng ký tài khoản",
             otp,
             10);
         var result = await SendCodeAsync(verification.Email, title, message, html, $"email-verification-{verification.Id}", new
@@ -150,87 +156,84 @@ public sealed class PasswordResetEmailSender(
     }
 
     private static string BuildOtpEmailHtml(
-        string headerTitle,
         string recipientEmail,
-        string introText,
+        string actionEn,
+        string actionVi,
         string otp,
         int expiryMinutes = 10)
     {
+        var digitCells = string.Concat(otp.Select(c => $@"
+                      <td align=""center"" valign=""middle"" style=""width: 44px; height: 50px; background-color: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px; font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; font-size: 24px; font-weight: 800; color: #0f172a; text-align: center; box-shadow: 0 1px 2px rgba(0,0,0,0.05);"">
+                        {c}
+                      </td>
+                      <td style=""width: 8px;""></td>"));
+
         return $@"<!DOCTYPE html>
 <html lang=""vi"">
 <head>
   <meta charset=""UTF-8"">
   <meta name=""viewport"" content=""width=device-width, initial-scale=1.0"">
-  <title>{headerTitle}</title>
+  <title>Your SCMS security code: {otp}</title>
+  <script type=""application/ld+json"">
+  {{
+    ""@context"": ""http://schema.org"",
+    ""@type"": ""EmailMessage"",
+    ""description"": ""Your SCMS security code: {otp}""
+  }}
+  </script>
 </head>
-<body style=""margin: 0; padding: 0; background-color: #f1f5f9; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;"">
-  <table role=""presentation"" width=""100%"" border=""0"" cellspacing=""0"" cellpadding=""0"" style=""background-color: #f1f5f9; padding: 32px 16px;"">
+<body style=""margin: 0; padding: 0; background-color: #f8fafc; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #1e293b;"">
+  <table role=""presentation"" width=""100%"" border=""0"" cellspacing=""0"" cellpadding=""0"" style=""background-color: #f8fafc; padding: 40px 16px;"">
     <tr>
       <td align=""center"">
-        <table role=""presentation"" width=""100%"" border=""0"" cellspacing=""0"" cellpadding=""0"" style=""max-width: 560px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04); border: 1px solid #e2e8f0;"">
+        <table role=""presentation"" width=""100%"" border=""0"" cellspacing=""0"" cellpadding=""0"" style=""max-width: 540px; background-color: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.03); border: 1px solid #e2e8f0;"">
           <!-- Top Accent Bar -->
           <tr>
-            <td style=""height: 6px; background: linear-gradient(90deg, #1A3B8B 0%, #2563EB 50%, #F26522 100%);""></td>
+            <td style=""height: 4px; background: linear-gradient(90deg, #1B4332 0%, #2D6A4F 50%, #81B29A 100%);""></td>
           </tr>
           <!-- Header -->
           <tr>
-            <td style=""padding: 32px 36px 20px 36px; text-align: center; border-bottom: 1px solid #f1f5f9;"">
-              <div style=""display: inline-block; background-color: #ebf2fc; border-radius: 12px; padding: 8px 18px; margin-bottom: 12px;"">
-                <span style=""font-size: 16px; font-weight: 800; color: #1A3B8B; letter-spacing: 1.5px;"">⚽ SCMS SPORTS</span>
+            <td style=""padding: 32px 36px 16px 36px;"">
+              <div style=""display: inline-block; font-size: 16px; font-weight: 800; color: #1B4332; letter-spacing: 0.5px;"">
+                OLYMPIC SPORTS ARENA <span style=""font-size: 13px; font-weight: 600; color: #81B29A;"">• SCMS</span>
               </div>
-              <h1 style=""margin: 0; font-size: 21px; font-weight: 700; color: #0f172a; line-height: 1.3;"">{headerTitle}</h1>
             </td>
           </tr>
           <!-- Body -->
           <tr>
-            <td style=""padding: 28px 36px 32px 36px;"">
-              <p style=""margin: 0 0 14px 0; font-size: 15px; line-height: 1.6; color: #334155;"">
-                Xin chào <strong>{recipientEmail}</strong>,
+            <td style=""padding: 0 36px 36px 36px;"">
+              <p style=""margin: 0 0 16px 0; font-size: 15px; line-height: 24px; color: #1f2937;"">
+                We received a request from <strong>Ho Chi Minh City, Vietnam</strong> to confirm the following action on your SCMS account: <strong>{actionEn}</strong>. Use this code:
               </p>
-              <p style=""margin: 0 0 24px 0; font-size: 15px; line-height: 1.6; color: #475569;"">
-                {introText}
+              <p style=""margin: 0 0 24px 0; font-size: 13px; line-height: 20px; color: #6b7280;"">
+                (Chúng tôi đã nhận được yêu cầu từ <strong>TP. Hồ Chí Minh, Việt Nam</strong> để xác nhận hành động trên tài khoản SCMS của bạn: <strong>{actionVi}</strong>. Sử dụng mã này:)
               </p>
 
-              <!-- OTP Code Highlight Box -->
-              <table role=""presentation"" width=""100%"" border=""0"" cellspacing=""0"" cellpadding=""0"" style=""background-color: #f8fafc; border: 2px dashed #1A3B8B; border-radius: 14px; margin: 20px 0;"">
+              <!-- Stylized 6-Digit Cards (Matching Gmail's Summary Box Card [ 7 ] [ 4 ] [ 8 ] [ 6 ] [ 1 ] [ 9 ]) -->
+              <table role=""presentation"" border=""0"" cellspacing=""0"" cellpadding=""0"" style=""margin: 0 0 20px 0;"">
                 <tr>
-                  <td align=""center"" style=""padding: 24px 20px;"">
-                    <div style=""font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 2.5px; color: #64748b; margin-bottom: 10px;"">
-                      MÃ XÁC THỰC CỦA BẠN (OTP)
-                    </div>
-                    <div style=""font-family: 'Consolas', 'Courier New', Courier, monospace; font-size: 40px; font-weight: 800; letter-spacing: 12px; color: #1A3B8B; line-height: 1; padding: 4px 0;"">
-                      {otp}
-                    </div>
-                    <div style=""margin-top: 14px;"">
-                      <span style=""display: inline-block; background-color: #fef3c7; color: #92400e; font-size: 12px; font-weight: 600; padding: 4px 14px; border-radius: 20px; border: 1px solid #fde68a;"">
-                        ⏱ Hiệu lực trong vòng {expiryMinutes} phút
-                      </span>
-                    </div>
-                  </td>
+                  {digitCells}
                 </tr>
               </table>
 
-              <!-- Security Advisory Box -->
-              <table role=""presentation"" width=""100%"" border=""0"" cellspacing=""0"" cellpadding=""0"" style=""background-color: #fffbeb; border-left: 4px solid #f59e0b; border-radius: 6px; margin-top: 20px;"">
-                <tr>
-                  <td style=""padding: 14px 16px; font-size: 13px; line-height: 1.5; color: #78350f;"">
-                    <strong>Lưu ý bảo mật:</strong><br/>
-                    • Tuyệt đối <strong>không chia sẻ</strong> mã OTP này với bất kỳ ai, kể cả nhân viên SCMS.<br/>
-                    • Nếu bạn không yêu cầu mã này, vui lòng bỏ qua email để đảm bảo an toàn cho tài khoản.
-                  </td>
-                </tr>
-              </table>
-            </td>
-          </tr>
-          <!-- Footer -->
-          <tr>
-            <td style=""background-color: #f8fafc; padding: 22px 36px; border-top: 1px solid #e2e8f0; text-align: center;"">
-              <p style=""margin: 0 0 6px 0; font-size: 12px; font-weight: 600; color: #475569;"">
-                Hệ Thống Quản Lý Trung Tâm Thể Thao SCMS
+              <!-- Large Bold Fallback Code (Plain code for native email copy parsers) -->
+              <div style=""font-family: ui-monospace, 'SFMono-Regular', Menlo, Monaco, Consolas, monospace; font-size: 36px; font-weight: 800; letter-spacing: 8px; color: #000000; line-height: 1; margin: 0 0 24px 0;"">
+                {otp}
+              </div>
+
+              <p style=""margin: 0 0 8px 0; font-size: 14px; line-height: 22px; color: #374151;"">
+                This code expires in <strong>{expiryMinutes} minutes</strong>. If you did not request it, you can safely ignore this email.
               </p>
-              <p style=""margin: 0; font-size: 11px; line-height: 1.6; color: #94a3b8;"">
-                Hotline hỗ trợ: <strong style=""color: #64748b;"">0859 859 367</strong> | Email: <strong style=""color: #64748b;"">duypvd4@gmail.com</strong><br/>
-                Email này được gửi tự động, vui lòng không phản hồi trực tiếp.
+              <p style=""margin: 0 0 28px 0; font-size: 13px; line-height: 20px; color: #9ca3af;"">
+                (Mã này sẽ hết hạn sau <strong>{expiryMinutes} phút</strong>. Nếu bạn không yêu cầu mã này, bạn có thể yên tâm bỏ qua email này.)
+              </p>
+
+              <hr style=""border: none; border-top: 1px solid #f1f5f9; margin: 24px 0 20px 0;"" />
+
+              <p style=""margin: 0; font-size: 12px; line-height: 18px; color: #94a3b8;"">
+                Olympic Sports Arena • SCMS Security System<br />
+                Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. Hồ Chí Minh<br />
+                Email tự động, vui lòng không phản hồi trực tiếp.
               </p>
             </td>
           </tr>

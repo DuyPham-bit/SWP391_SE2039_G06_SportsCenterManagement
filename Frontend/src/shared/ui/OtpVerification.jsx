@@ -140,6 +140,37 @@ export default function OtpVerification({
     }
   };
 
+  const handleQuickPasteFromClipboard = async () => {
+    try {
+      const text = await navigator.clipboard.readText();
+      const cleaned = text.trim();
+      const match = cleaned.match(/\d{6}/);
+      const digits = (match ? match[0] : cleaned.replace(/\D/g, '')).slice(0, OTP_LENGTH).split("");
+      if (digits.length > 0) {
+        setHasError(false);
+        setErrorMessage("");
+        const newOtp = [...otp];
+        digits.forEach((d, i) => { newOtp[i] = d; });
+        setOtp(newOtp);
+        const nextIdx = Math.min(digits.length, OTP_LENGTH - 1);
+        inputRefs.current[nextIdx]?.focus();
+        setActiveInput(nextIdx);
+        if (digits.length === OTP_LENGTH) {
+          triggerVerification(newOtp.join(""));
+        }
+      }
+    } catch {}
+  };
+
+  const handleCopyCode = async () => {
+    const code = otp.join("");
+    if (code) {
+      try {
+        await navigator.clipboard.writeText(code);
+      } catch {}
+    }
+  };
+
   // Hỗ trợ Paste trực tiếp 6 số từ clipboard (Ctrl+V)
   const handlePaste = (e) => {
     e.preventDefault();
@@ -336,6 +367,36 @@ export default function OtpVerification({
             );
           })}
         </motion.div>
+
+        {/* Quick Paste & Copy Action buttons */}
+        {!isVerified && (
+          <div className="flex items-center justify-center gap-2 mb-4 -mt-2">
+            <button
+              type="button"
+              onClick={handleQuickPasteFromClipboard}
+              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-indigo-700 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 transition-colors cursor-pointer"
+              title="Dán nhanh mã 6 chữ số từ email"
+            >
+              <svg className="w-3.5 h-3.5 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+              </svg>
+              <span>Dán mã từ email</span>
+            </button>
+            {otp.join("").length === OTP_LENGTH && (
+              <button
+                type="button"
+                onClick={handleCopyCode}
+                className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-slate-700 bg-slate-100 hover:bg-slate-200 border border-slate-200 transition-colors cursor-pointer"
+                title="Sao chép mã OTP"
+              >
+                <svg className="w-3.5 h-3.5 text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+                </svg>
+                <span>Sao chép mã</span>
+              </button>
+            )}
+          </div>
+        )}
 
         {/* 4. THÔNG BÁO LỖI (Ảnh 4: "! That code didn't match. Try again.") */}
         <AnimatePresence>

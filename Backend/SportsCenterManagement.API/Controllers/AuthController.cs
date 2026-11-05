@@ -335,7 +335,7 @@ public sealed class AuthController(
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        if (!await resetEmail.SendAsync(user, reset, otp, cancellationToken))
+        if (!await resetEmail.SendAsync(user, reset, otp, cancellationToken, "change account password", "đổi mật khẩu tài khoản"))
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new
             {
