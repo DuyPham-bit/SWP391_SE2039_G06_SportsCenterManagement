@@ -1,0 +1,22 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "redirects": [
+    { "source": "/login", "destination": "/#/login", "permanent": false },
+    { "source": "/register", "destination": "/#/register", "permanent": false }
+  ],
+  "rewrites": [
+    {
+      "source": "/api/:path*",
+      "destination": "https://scms-api-4j57.onrender.com/api/:path*"
+    },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
+  ]
+}
