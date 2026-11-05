@@ -119,9 +119,12 @@ public class VnPayService : IVnPayService
         var terminalCode = vnpay.GetResponseData("vnp_TmnCode");
         var expectedTerminalCode = _configuration["VnPay:TmnCode"];
         var expectedCurrencyCode = _configuration["VnPay:CurrCode"] ?? "VND";
+        // VNPay Return/IPN responses can omit vnp_CurrCode. Validate it when supplied.
+        var validCurrency = string.IsNullOrEmpty(currencyCode) ||
+                            string.Equals(currencyCode, expectedCurrencyCode, StringComparison.OrdinalIgnoreCase);
         var validProvider = isValidSignature && !string.IsNullOrWhiteSpace(expectedTerminalCode) &&
                             string.Equals(terminalCode, expectedTerminalCode, StringComparison.Ordinal) &&
-                            string.Equals(currencyCode, expectedCurrencyCode, StringComparison.OrdinalIgnoreCase);
+                            validCurrency;
         var invoiceNumber = vnpay.GetResponseData("vnp_TxnRef");
         var transactionNo = vnpay.GetResponseData("vnp_TransactionNo");
         var bankCode = vnpay.GetResponseData("vnp_BankCode");

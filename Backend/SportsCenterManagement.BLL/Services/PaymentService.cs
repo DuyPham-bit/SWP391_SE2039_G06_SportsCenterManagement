@@ -6,6 +6,8 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.CoreFlows;
 using SportsCenterManagement.BLL.DTOs.Payments;
@@ -20,12 +22,14 @@ public sealed class PaymentService(
     IUnitOfWork unitOfWork,
     IVnPayService vnPayService,
     IMoMoService moMoService,
-    IConfiguration configuration) : IPaymentService
+    IConfiguration configuration,
+    ILogger<PaymentService>? logger = null) : IPaymentService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IVnPayService _vnPayService = vnPayService;
     private readonly IMoMoService _moMoService = moMoService;
     private readonly IConfiguration _configuration = configuration;
+    private readonly ILogger<PaymentService> _logger = logger ?? NullLogger<PaymentService>.Instance;
 
     public async Task<string> CreatePaymentUrlAsync(
         long memberId,
@@ -136,8 +140,11 @@ public sealed class PaymentService(
         {
             throw;
         }
-        catch (Exception)
+        catch (Exception exception)
         {
+            _logger.LogError(exception,
+                "MoMo creation failed. PaymentId={PaymentId} GatewayReference={GatewayReference}",
+                payment.Id, payment.GatewayReference);
             await MarkPaymentPendingForReconciliationAsync(payment.Id, "MoMo chưa xác nhận kết quả khởi tạo; cần đối soát trước khi thử lại.");
             throw new BusinessException(HttpStatusCode.ServiceUnavailable,
                 "Chưa xác định được kết quả tạo giao dịch MoMo. Hệ thống giữ Pending; quản lý cần đối soát trước lần thử mới.");

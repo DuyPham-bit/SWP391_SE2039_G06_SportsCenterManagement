@@ -141,6 +141,49 @@ Check("VNPay callback rejects a valid signature with a mismatched currency", () 
     return !callback.IsValidSignature && !callback.IsSuccess;
 });
 
+foreach (var scenario in new[]
+{
+    (Name: "omitted currency", Currency: (string?)null, Merchant: "AUDITTMN", Tamper: false, Status: "00", Valid: true, Success: true),
+    (Name: "VND currency", Currency: (string?)"VND", Merchant: "AUDITTMN", Tamper: false, Status: "00", Valid: true, Success: true),
+    (Name: "wrong currency", Currency: (string?)"USD", Merchant: "AUDITTMN", Tamper: false, Status: "00", Valid: false, Success: false),
+    (Name: "wrong merchant without currency", Currency: (string?)null, Merchant: "OTHER", Tamper: false, Status: "00", Valid: false, Success: false),
+    (Name: "tampered amount without currency", Currency: (string?)null, Merchant: "AUDITTMN", Tamper: true, Status: "00", Valid: false, Success: false),
+    (Name: "unsuccessful transaction without currency", Currency: (string?)null, Merchant: "AUDITTMN", Tamper: false, Status: "02", Valid: true, Success: false)
+})
+{
+    Check("VNPay callback handles " + scenario.Name, () =>
+    {
+        const string secret = "audit-vnpay-secret";
+        var configuration = new AuditConfiguration(new Dictionary<string, string?>
+        {
+            ["VnPay:HashSecret"] = secret,
+            ["VnPay:TmnCode"] = "AUDITTMN",
+            ["VnPay:CurrCode"] = "VND"
+        });
+        var fields = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["vnp_Amount"] = "65000000",
+            ["vnp_ResponseCode"] = "00",
+            ["vnp_TmnCode"] = scenario.Merchant,
+            ["vnp_TransactionNo"] = "15726901",
+            ["vnp_TransactionStatus"] = scenario.Status,
+            ["vnp_TxnRef"] = "PAY-DEPLOY-REGRESSION"
+        };
+        if (scenario.Currency is not null) fields["vnp_CurrCode"] = scenario.Currency;
+        // Sign independently of the production VNPay helper.
+        var raw = string.Join("&", fields.OrderBy(pair => pair.Key, StringComparer.Ordinal)
+            .Select(pair => System.Net.WebUtility.UrlEncode(pair.Key) + "=" + System.Net.WebUtility.UrlEncode(pair.Value)));
+        fields["vnp_SecureHash"] = Convert.ToHexString(
+            System.Security.Cryptography.HMACSHA512.HashData(
+                System.Text.Encoding.UTF8.GetBytes(secret), System.Text.Encoding.UTF8.GetBytes(raw)));
+        if (scenario.Tamper) fields["vnp_Amount"] = "100";
+        using var client = new HttpClient();
+        var callback = new VnPayService(configuration, client, new BusinessClock(configuration)).ProcessCallback(fields);
+        return callback.IsValidSignature == scenario.Valid && callback.IsSuccess == scenario.Success &&
+               callback.Amount == (scenario.Tamper ? 1m : 650000m);
+    });
+}
+
 Console.WriteLine($"RESULT {checks - failures.Count}/{checks} checks passed");
 if (failures.Count > 0)
 {
