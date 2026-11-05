@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { resolveHeroVideoUrl } from './heroVideo.js';
 import { useAuth } from '../../context/AuthContext.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
 import { FacilitiesSection } from './FacilitiesSection.js';
@@ -176,6 +177,7 @@ export function LandingPage() {
   const { catalog, loading: catalogLoading, error: catalogError } = usePublicCatalog();
   const rawLandingContent = getLandingPresentation(editorialContent, catalog);
   const landingContent = useMemo(() => isEn ? translateLandingContent(rawLandingContent, true) : rawLandingContent, [rawLandingContent, isEn]);
+  const heroVideoUrl = resolveHeroVideoUrl(landingContent.heroBanner);
   const facilitiesList = landingContent.facilitiesSection.facilitiesList;
   const catalogSportList = landingContent.coursesSection.sportsList;
   const hours = landingContent.ctaAndFooter?.hoursWeekdays || (catalog?.center.openingTime && catalog?.center.closingTime ? catalog.center.openingTime.slice(0, 5) + ' - ' + catalog.center.closingTime.slice(0, 5) : 'Chưa cập nhật');
@@ -800,15 +802,15 @@ export function LandingPage() {
         </svg>
 
         {/* Video Background */}
-        {landingContent.heroBanner?.videoUrl ? <video
+        <video
+          key={heroVideoUrl}
           ref={videoRef}
-          autoPlay loop muted playsInline
+          autoPlay loop muted={isVideoMuted} playsInline
           className="hero-video-bg"
           poster={landingContent.heroBanner?.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
         >
-          <source src={landingContent.heroBanner.videoUrl} type="video/mp4" />
-        </video> : <img src={landingContent.heroBanner?.posterUrl || undefined}
-          alt="" className="hero-video-bg" fetchPriority="high" />}
+          <source src={heroVideoUrl} type="video/mp4" />
+        </video>
         <div className="section-overlay" />
 
         {/* Hero Container */}
@@ -860,7 +862,7 @@ export function LandingPage() {
         </div>
 
         {/* Sound Toggle Button */}
-        {landingContent.heroBanner?.videoUrl && <button
+        {heroVideoUrl && <button
           type="button"
           onClick={() => {
             if (videoRef.current) {
