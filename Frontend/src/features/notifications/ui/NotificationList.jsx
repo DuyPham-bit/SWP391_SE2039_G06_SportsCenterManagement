@@ -175,3 +175,5 @@ export function NotificationList({ notifications, title }) {
   );
 }
 
+export default NotificationList;
+
