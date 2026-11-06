@@ -3,6 +3,11 @@ import ReactDOM from 'react-dom/client';
 import App from './app/App.jsx';
 import './styles/theme.css';
 import './styles/tiya-theme.css';
+// Loaded last to keep the cascade order the runtime CDN build used (utilities win over theme rules).
+import './styles/tailwind.css';
+import { installMotion } from './shared/motion/motion.js';
+
+installMotion();
 
 // Gán React và ReactDOM lên window để hỗ trợ tất cả các component dùng cú pháp:
 // const { useState, useEffect } = React;

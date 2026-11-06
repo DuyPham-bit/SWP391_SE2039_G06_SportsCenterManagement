@@ -594,7 +594,16 @@ export function SportRevenueRankingChart({ sports = [], revenueBySport = [] }) {
   const isEn = language === 'en';
   const [metricMode, setMetricMode] = useState('revenue'); // 'revenue' | 'booked'
 
-  if (!sports || !sports.length) {
+  // Sports with paid revenue but no sessions in the period must still be ranked.
+  const byName = new Map((sports || []).map(sport => [sport.name, { ...sport, revenue: null }]));
+  for (const item of revenueBySport || []) {
+    const existing = byName.get(item.sportName);
+    byName.set(item.sportName, existing
+      ? { ...existing, revenue: item.net ?? null }
+      : { name: item.sportName, booked: 0, capacity: 0, sessionsCount: 0, classesCount: 0, percentage: 0, share: 0, revenue: item.net ?? null });
+  }
+
+  if (!byName.size) {
     return (
       <div className="text-xs text-slate-400 dark:text-slate-500 py-8 text-center">
         {isEn ? 'No sports data available.' : 'Chưa có dữ liệu bộ môn.'}
@@ -602,17 +611,13 @@ export function SportRevenueRankingChart({ sports = [], revenueBySport = [] }) {
     );
   }
 
-  const sportsWithMetrics = sports.map(sport => ({
-    ...sport,
-    revenue: revenueBySport.find(item => item.sportName === sport.name)?.net ?? null,
-    color: getSportColor(sport.name)
-  }));
+  const sportsWithMetrics = [...byName.values()].map(sport => ({ ...sport, color: getSportColor(sport.name) }));
 
-  // Sort based on current mode
-  const sorted = [...sportsWithMetrics].sort((a, b) => {
-    if (metricMode === 'revenue') return b.revenue - a.revenue || b.booked - a.booked;
-    return b.booked - a.booked || b.revenue - a.revenue;
-  });
+  // Unallocated (null) revenue ranks last instead of producing NaN comparisons.
+  const descending = (x, y) => (y ?? -Infinity) > (x ?? -Infinity) ? 1 : (y ?? -Infinity) < (x ?? -Infinity) ? -1 : 0;
+  const sorted = [...sportsWithMetrics].sort((a, b) => metricMode === 'revenue'
+    ? descending(a.revenue, b.revenue) || descending(a.booked, b.booked)
+    : descending(a.booked, b.booked) || descending(a.revenue, b.revenue));
 
   const maxVal = Math.max(1, ...sorted.map(s => Math.abs(Number(metricMode === 'revenue' ? s.revenue : s.booked))));
 

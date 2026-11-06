@@ -144,6 +144,7 @@ async function typeMessage(value) {
   assert.deepEqual(requests.find(x => x.route === '/api/coaches/me/messages').body, { coachId: 10, memberId: 22, content: 'HLV trả lời học viên' });
   checks.push('Coach reply uses the existing scoped API and appears in conversation history');
   await evaluate(`document.querySelector('button[aria-label="Thông báo"]').click()`);
+  await until('notification list', () => evaluate(`[...document.querySelectorAll('button')].some(b => b.textContent.includes('Tin nhắn mới từ chương trình huấn luyện'))`));
   await clickText('Tin nhắn mới từ chương trình huấn luyện');
   await until('notification closes', () => evaluate(`document.querySelector('button[aria-label="Thông báo"]').getAttribute('aria-expanded') === 'false'`));
   checks.push('Previously read chat notifications still open the conversation and close the dropdown');

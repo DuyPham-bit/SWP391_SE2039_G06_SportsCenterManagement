@@ -88,12 +88,12 @@ export function PaymentResult() {
             disabled={state.loading}
             className="inline-flex rounded-lg bg-red-600 px-6 py-2.5 text-xs font-bold uppercase tracking-wider text-white hover:bg-red-700 shadow-md transition-all cursor-pointer"
           >
-            {isAuthenticated || window.opener ? (isEn ? 'Return to packages' : 'Quay lại gói tập') : (isEn ? 'Close payment window' : 'Đóng cửa sổ thanh toán')}
+            {isAuthenticated || window.opener ? (isEn ? 'Return to packages' : 'Quay lại gói tập') : (isEn ? 'Log in to view invoice' : 'Đăng nhập để xem hóa đơn')}
           </button>
         </div>
 
         {!isAuthenticated && !window.opener && (
-          <p className="mt-3 text-xs text-slate-500">{isEn ? 'Return to the open packages tab. If you closed it, please log in again to view your invoice.' : 'Quay lại tab gói tập đang mở. Nếu đã đóng tab đó, bạn cần đăng nhập lại để xem hóa đơn.'}</p>
+          <p className="mt-3 text-xs text-slate-500">{isEn ? 'Your sign-in session is not available in this window. Log in again to check your invoice status.' : 'Phiên đăng nhập không có trong cửa sổ này. Vui lòng đăng nhập lại để kiểm tra trạng thái hóa đơn.'}</p>
         )}
       </section>
     </main>

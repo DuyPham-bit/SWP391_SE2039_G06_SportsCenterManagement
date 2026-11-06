@@ -341,7 +341,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             label: isEn ? 'Operations Management' : 'Quản lý vận hành',
             icon: 'sports_score',
             subItems: [
-              { label: isEn ? 'Member Management' : 'Quản lý thành viên', path: '#/manager/members' },
+              { label: isEn ? 'Member Management' : 'Quản lý hội viên', path: '#/manager/members' },
               { label: isEn ? 'Classes, Sports & Courts' : 'Lớp, bộ môn & phòng', path: '#/manager/classes-rooms' },
               { label: isEn ? 'Membership Packages' : 'Gói tập hội viên', path: '#/manager/packages' },
               { label: isEn ? 'Coach Assignment' : 'Phân công HLV', path: '#/manager/coach-assignment' },

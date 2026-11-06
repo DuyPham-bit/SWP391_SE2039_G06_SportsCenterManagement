@@ -816,6 +816,7 @@ export function LandingPage() {
             {/* Animated Headline with Slide-up & Typewriter */}
             <TypewriterHeroHeading
               heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
+              heroTitle={isEn ? '' : landingContent.heroBanner?.title}
             />
 
             {/* Subtext */}

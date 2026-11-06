@@ -131,7 +131,10 @@ async function setInput(selector, value) {
 }
 async function route(hash, text) {
   await evaluate(`location.hash = ${JSON.stringify(hash)}`);
-  await until(text, () => evaluate(`document.querySelector('main')?.textContent.includes(${JSON.stringify(text)})`));
+  await until(text, () => evaluate(`document.querySelector('main')?.textContent.includes(${JSON.stringify(text)})`)).catch(async error => {
+    const diag = await evaluate(`JSON.stringify({ hash: location.hash, main: document.querySelector('main')?.innerText.slice(0, 500), body: document.querySelector('main') ? undefined : document.body.innerText.slice(0, 400) })`).catch(e => String(e));
+    throw new Error(`${error.message} ${diag} recentRequests=${JSON.stringify(requests.slice(-6).map(r => `${r.method} ${r.route}`))}`);
+  });
   await delay(200);
 }
 async function closeDialog() {
@@ -251,9 +254,9 @@ async function closeDialog() {
   await route('#/manager/classes-rooms', classes[0].name);
   assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`), false);
   await click('Lịch học', 'document.querySelector("main")');
-  await until('weekly calendar', () => evaluate(`Boolean(document.querySelector('[aria-label="Lịch học theo tuần"]'))`));
-  assert.equal(await evaluate(`document.querySelector('[aria-label="Lịch học theo tuần"]').querySelectorAll('h4').length`), 7);
-  assert.equal(await evaluate(`document.querySelector('[role=dialog]').textContent.includes('08:00–09:00') && document.querySelector('[role=dialog]').textContent.includes('Phòng kiểm thử')`), true);
+  await until('weekly calendar', () => evaluate(`Boolean(document.querySelector('[aria-label="Thời khóa biểu hàng tuần"]'))`));
+  assert.equal(await evaluate(`document.querySelector('[aria-label="Thời khóa biểu hàng tuần"]').querySelectorAll('h4').length`), 7);
+  assert.equal(await evaluate(`/08:00\\s*–\\s*09:00/.test(document.querySelector('[role=dialog]').textContent) && document.querySelector('[role=dialog]').textContent.includes('Phòng kiểm thử')`), true);
   await closeDialog();
   await evaluate(`(() => { const b=[...document.querySelectorAll('main button')].find(b=>b.textContent.includes('Lớp đã hủy')); b.click(); })()`);
   await until('cancelled tab', () => evaluate(`document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`));
@@ -262,7 +265,10 @@ async function closeDialog() {
   await until('restored', () => classes[1].status === 'Draft');
   checks.push('Cancelled classes have a separate tab, can be restored, and schedules render all seven weekdays');
 
-  await route('#/manager/coach-assignment', classes[0].name);
+  // Draft classes are listed under the "pending publication" tab, separate from published ones.
+  await route('#/manager/coach-assignment', 'Lớp chờ công bố');
+  await evaluate(`[...document.querySelectorAll('main [aria-selected]')].find(b => b.textContent.includes('Lớp chờ công bố')).click()`);
+  await until(classes[0].name, () => evaluate(`document.querySelector('main').textContent.includes(${JSON.stringify(classes[0].name)})`));
   await setInput('main input', classes[0].name);
   await until('assignment search applied', () => evaluate(`!document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`));
   await click('Phân công ngay', 'document.querySelector("main")');
@@ -276,35 +282,24 @@ async function closeDialog() {
 
   await route('#/manager/reports', 'Doanh Thu Theo Bộ Môn');
   await until('report data', () => evaluate(`document.querySelector('main').textContent.includes('12.345')`));
-  assert.equal(await evaluate(`(() => { const section=[...document.querySelectorAll('main section')].find(s=>s.textContent.includes('Biểu Đồ Xếp Hạng Bộ Môn')); return section.textContent.includes('12.345') && !section.textContent.includes('90.000'); })()`), true);
-  await click('Hôm nay', 'document.querySelector("main")');
+  assert.equal(await evaluate(`(() => { const section=[...document.querySelectorAll('main section')].find(s=>s.textContent.includes('Xếp Hạng Bộ Môn')); return section.textContent.includes('12.345') && !section.textContent.includes('90.000'); })()`), true);
+  // A single-day report is requested through the custom range form (quick filters start at 30 days).
+  await evaluate(`(() => { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+    for (const input of document.querySelectorAll('main form input[type=date]')) { set.call(input, ${JSON.stringify(today)}); input.dispatchEvent(new Event('input', { bubbles: true })); } })()`);
+  await click('Áp dụng', 'document.querySelector("main form")');
   await until('daily report', () => requests.some(r => r.route === '/api/reports/revenue' && r.query.from === today && r.query.to === today));
   checks.push('Report rankings show API sport revenue, and the daily filter sends the correct date range');
 
-  await route('#/manager/roles-permissions', 'Phân Quyền Theo Vai Trò');
-  assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Theo Từng Người')`), true);
-  await until('individual permissions', () => evaluate(`document.querySelector('main')?.textContent.includes('Coach Yoga') && document.querySelector('main')?.textContent.includes('Lưu quyền cho tài khoản này')`));
-  await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
-  await click('Lưu quyền cho tài khoản này', 'document.querySelector("main")');
-  await until('individual permission API save', () => requests.some(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT'));
-  assert.deepEqual(requests.find(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT').body.capabilityIds, []);
-  checks.push('An individual account can receive a restricted permission override through the backend API');
-
-  await click('2. Quyền Nền Theo Vai Trò (1)', 'document.querySelector("main")');
-  await until('role defaults', () => evaluate(`document.querySelector('main')?.textContent.includes('Sửa một lần, áp dụng chung cho cả vai trò')`));
-  await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
-  await click('Lưu Phân Quyền Vai Trò [Coach]', 'document.querySelector("main")');
-  await until('role API save', () => requests.some(r => r.route === '/api/centers/1/roles/2/permissions' && r.method === 'PUT'));
-  assert.deepEqual(requests.find(r => r.route === '/api/centers/1/roles/2/permissions').body.capabilityIds, []);
-  await evaluate(`window.confirm = () => true`);
-  await click('Đồng bộ tất cả theo vai trò', 'document.querySelector("main")');
-  await until('role user overrides reset', () => requests.some(r => r.route === '/api/centers/1/roles/2/user-permissions' && r.method === 'DELETE'));
-  assert.equal(await evaluate(`Object.keys(localStorage).some(key => key.startsWith('scms_user_perm_override_'))`), false);
-  checks.push('Role defaults save once and bulk synchronization removes individual overrides without local-storage authorization');
+  // Role and permission configuration is admin-only (#/admin/roles-permissions); managers must not reach it.
+  const permissionRequestsBefore = requests.filter(r => r.route.includes('/permissions')).length;
+  await evaluate(`location.hash = '#/manager/roles-permissions'`);
+  await until('manager roles route unavailable', () => evaluate(`document.body.innerText.includes('404') && !document.querySelector('main input[type=checkbox]')`));
+  assert.equal(requests.filter(r => r.route.includes('/permissions')).length, permissionRequestsBefore);
+  checks.push('Managers can no longer open role and permission configuration, which is admin-only');
 
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, session);
-  for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', classes[0].name], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói'], ['roles-permissions', 'Phân Quyền Theo Vai Trò']]) await route(`#/manager/${hash}`, text);
-  checks.push('All seven affected manager routes render at a mobile viewport');
+  for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', 'Lớp chờ công bố'], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói']]) await route(`#/manager/${hash}`, text);
+  checks.push('All six affected manager routes render at a mobile viewport');
   assert.deepEqual(errors, []);
   checks.push('No uncaught JavaScript exceptions or unexpected API endpoints');
   fs.writeFileSync(path.join(artifacts, 'report.json'), JSON.stringify({ checks, errors, api: 'Local fixtures; no live backend used', viewport: [375, 812] }, null, 2));

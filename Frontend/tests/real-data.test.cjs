@@ -280,7 +280,7 @@ test('open notification inbox keeps empty/error states instead of fabricating un
         if (id.includes('useNotifications')) return { useNotifications: () => ({ items, loading: false, error, readingId: null }) };
         if (id.includes('memberOverview')) return { formatMemberDateTime: () => 'Stored timestamp' };
         if (id.includes('i18nHelper')) return { translateNotificationTitle: value => value, translateNotificationContent: value => value };
-        if (id === './notificationNavigation.js') return load('shared/components/common/notificationNavigation.js');
+        if (id === './notificationNavigation.js') return load('features/notifications/ui/notificationNavigation.js');
         throw new Error(`Unexpected dependency: ${id}`);
       }
     });

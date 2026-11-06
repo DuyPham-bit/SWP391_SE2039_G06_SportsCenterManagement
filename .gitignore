@@ -82,3 +82,6 @@ Thumbs.db
 # Local Graphify index and extraction cache
 graphify-out/
 .env*
+
+# Design-skill working files
+.taste-skill/

@@ -2507,9 +2507,9 @@ function ScheduleManager({
               >
                 {/* Day Column Header */}
                 <div className="flex items-center justify-between pb-1.5 mb-1.5 border-b border-slate-200/60 dark:border-slate-750">
-                  <span className="text-xs font-black text-slate-800 dark:text-slate-200">
+                  <h4 className="text-xs font-black text-slate-800 dark:text-slate-200">
                     {group.label}
-                  </span>
+                  </h4>
                   <span
                     className={`px-1.5 py-0.2 rounded-full text-[10px] font-black ${
                       hasItems

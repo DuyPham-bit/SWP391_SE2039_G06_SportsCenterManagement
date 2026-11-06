@@ -260,13 +260,13 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
   return (
     <header className="h-16 bg-white dark:bg-slate-900 text-slate-800 dark:text-slate-100 border-b border-slate-200 dark:border-slate-800 sticky top-0 z-40 pr-3 sm:pr-6 flex items-center justify-between shadow-xs transition-colors">
       {/* Left: Brand Logo SCMS & Edge Toggle Button (Merged seamlessly with sidebar below) */}
-      <div className="flex items-center h-full">
+      <div className="flex items-center h-full min-w-0">
         {/* Brand Logo Zone: smoothly transitions between full logo (w-64) and compact logo (w-20) */}
         <div
-          className={`relative h-full flex items-center transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 ${
+          className={`relative h-full flex items-center min-w-0 transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-slate-800 ${
             isSidebarCollapsed
               ? 'w-16 lg:w-20 justify-center px-0'
-              : 'w-56 lg:w-64 justify-start px-3 sm:px-4'
+              : 'w-auto sm:w-56 lg:w-64 justify-start px-3 sm:px-4'
           }`}
         >
           <Logo variant="auto" size={isSidebarCollapsed ? 'sm' : 'md'} compact={isSidebarCollapsed} />
@@ -297,7 +297,7 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
       </div>
 
       {/* Right Controls: Language, Notification, DarkMode, Fullscreen, User Profile */}
-      <div className="flex items-center gap-1.5 sm:gap-2.5">
+      <div className="flex items-center gap-1.5 sm:gap-2.5 shrink-0">
         {/* 1. Language Selector Dropdown (Chuyển đổi Tiếng Việt & English thực tế) */}
         <div className="relative hidden sm:block" ref={langMenuRef}>
           <button
@@ -374,7 +374,7 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
         <button
           type="button"
           onClick={handleToggleFullscreen}
-          className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 flex items-center justify-center transition-colors cursor-pointer"
+          className="w-9 h-9 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 hidden sm:flex items-center justify-center transition-colors cursor-pointer"
           title={isFullscreen ? t('header.exit_fullscreen', 'Thu nhỏ màn hình (Esc)') : t('header.fullscreen', 'Toàn màn hình')}
         >
           <span className="material-symbols-outlined text-[20px]">

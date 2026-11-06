@@ -15,7 +15,8 @@ const SCMS_SLOGANS_EN = [
   "TRAIN WITH PROFESSIONAL CERTIFIED COACHES"
 ];
 
-export function TypewriterHeroHeading({ heroBadge }) {
+export function TypewriterHeroHeading({ heroBadge, heroTitle }) {
+  const customTitle = typeof heroTitle === 'string' ? heroTitle.trim() : '';
   const { language } = useLanguage();
   const isEn = language === 'en';
   const slogans = isEn ? SCMS_SLOGANS_EN : SCMS_SLOGANS_VI;
@@ -74,7 +75,7 @@ export function TypewriterHeroHeading({ heroBadge }) {
   return (
     <div
       className="flex flex-col items-center text-center max-w-5xl mx-auto px-4 select-none"
-      style={{ fontFamily: "'Montserrat', 'Lexend', system-ui, -apple-system, sans-serif" }}
+      style={{ fontFamily: "'Archivo', 'Be Vietnam Pro', system-ui, sans-serif" }}
     >
       {/* 1. Badge tinh gọn phía trên */}
       <div className="hero-badge scms-hero-sub mb-3 sm:mb-4">
@@ -86,11 +87,17 @@ export function TypewriterHeroHeading({ heroBadge }) {
       <h1
         className="text-center font-black uppercase text-white tracking-tight"
         style={{
-          fontFamily: "'Montserrat', 'Lexend', system-ui, -apple-system, sans-serif",
+          fontFamily: "'Archivo', 'Be Vietnam Pro', system-ui, sans-serif",
           textShadow: '0 4px 28px rgba(0, 0, 0, 0.9)',
           lineHeight: '1.25'
         }}
       >
+        {/* A manager-published title replaces the default two-line headline. */}
+        {customTitle ? (
+          <span className="scms-hero-line-1 block text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white break-words">
+            {customTitle}
+          </span>
+        ) : (<>
         {/* Dòng 1: ĐI ĐẦU VỀ TẬP LUYỆN */}
         <span className="scms-hero-line-1 block text-2xl sm:text-4xl md:text-5xl lg:text-6xl mb-2 sm:mb-3 font-black tracking-tight text-white">
           {isEn ? 'PIONEERING IN' : 'ĐI ĐẦU VỀ TẬP LUYỆN'}
@@ -111,12 +118,13 @@ export function TypewriterHeroHeading({ heroBadge }) {
             {isEn ? 'PERSONAL' : 'CÁ NHÂN'}
           </span>
         </span>
+        </>)}
       </h1>
 
       {/* 3. Hiệu ứng Typewriter gõ chữ với màu vàng đồng Warm Gold thương hiệu */}
       <div
         className="scms-hero-typewriter mt-4 sm:mt-5 min-h-[38px] flex items-center justify-center text-xs sm:text-base md:text-lg font-bold tracking-wider uppercase text-white"
-        style={{ fontFamily: "'Montserrat', 'Lexend', system-ui, sans-serif" }}
+        style={{ fontFamily: "'Archivo', 'Be Vietnam Pro', system-ui, sans-serif" }}
       >
         <span className="text-white/85 mr-2" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
           {isEn ? 'READY TO:' : 'SẴN SÀNG ĐỂ:'}

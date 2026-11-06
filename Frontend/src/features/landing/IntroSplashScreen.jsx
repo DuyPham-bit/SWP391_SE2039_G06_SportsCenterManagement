@@ -179,7 +179,7 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
         <div
           className="scms-spinner-1turn flex items-start justify-center w-[280px] sm:w-[320px] md:w-[340px] h-[460px] sm:h-[500px] md:h-[520px]"
           style={{
-            fontFamily: "'Montserrat', 'Lexend', system-ui, -apple-system, sans-serif",
+            fontFamily: "'Archivo', 'Be Vietnam Pro', system-ui, sans-serif",
             WebkitTransformStyle: 'preserve-3d',
             transformStyle: 'preserve-3d'
           }}

@@ -5,6 +5,7 @@ import { ProfileModal } from '../../features/auth/ProfileModal.jsx';
 import { useAuth } from '../providers/AuthContext.jsx';
 import { useLanguage } from '../providers/LanguageContext.jsx';
 import { MemberAIChatPopup, openMemberAIChat } from '../../features/member/MemberAIChatPopup.jsx';
+import { usePageEnter } from '../../shared/motion/motion.js';
 
 export function AppLayout({ children, currentPath }) {
   const [desktopCollapsed, setDesktopCollapsed] = useState(() => {
@@ -18,6 +19,8 @@ export function AppLayout({ children, currentPath }) {
   const [profileModalOpen, setProfileModalOpen] = useState(false);
   const { role, currentUser } = useAuth();
   const { language, t } = useLanguage();
+  const pageRef = React.useRef(null);
+  usePageEnter(pageRef, currentPath);
 
   React.useEffect(() => {
     const handleOpenProfile = () => setProfileModalOpen(true);
@@ -162,7 +165,9 @@ export function AppLayout({ children, currentPath }) {
               <span className="font-bold text-[#1E2235] dark:text-white">{breadcrumbTitle}</span>
             </div>
 
-            {children}
+            <div ref={pageRef} className="scms-page">
+              {children}
+            </div>
           </div>
 
           {/* Theme Clean Footer */}

@@ -1,5 +1,6 @@
 /* FPT Education / FAP Portal Theme Styles */
-@layer base {
+/* Native cascade layer (not Tailwind's `base`): these defaults intentionally lose to unlayered utilities. */
+@layer theme-base {
   :root {
     --primary-color: #1A3B8B;
     --primary-hover: #142F70;
@@ -19,7 +20,7 @@
     padding: 0;
     background-color: #F4F6FA;
     color: #1E293B;
-    font-family: 'Inter', 'Lexend', system-ui, -apple-system, sans-serif;
+    font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
@@ -31,7 +32,7 @@
 }
 
 .font-chivo, .font-inter, .font-lexend {
-  font-family: 'Inter', 'Lexend', system-ui, -apple-system, sans-serif !important;
+  font-family: 'Be Vietnam Pro', system-ui, -apple-system, 'Segoe UI', sans-serif !important;
 }
 
 /* Material Symbols Outlined & Material Icons normalization */
@@ -44,6 +45,9 @@
   letter-spacing: normal;
   text-transform: none;
   display: inline-block;
+  /* Reserve a 1em square so ligature names cannot widen layouts while the icon font is still loading. */
+  width: 1em;
+  overflow: hidden;
   white-space: nowrap;
   word-wrap: normal;
   direction: ltr;
@@ -792,7 +796,7 @@ body.scms-simulated-fullscreen #root {
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(129, 178, 154, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.25);
   text-shadow: none;
-  font-family: 'Montserrat', 'Lexend', system-ui, sans-serif !important;
+  font-family: 'Archivo', 'Be Vietnam Pro', system-ui, sans-serif !important;
   font-weight: 800;
   vertical-align: middle;
   line-height: 1.2;
@@ -809,7 +813,7 @@ body.scms-simulated-fullscreen #root {
   border-radius: 10px;
   box-shadow: 0 6px 20px rgba(242, 204, 143, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.4);
   text-shadow: none;
-  font-family: 'Montserrat', 'Lexend', system-ui, sans-serif !important;
+  font-family: 'Archivo', 'Be Vietnam Pro', system-ui, sans-serif !important;
   font-weight: 800;
   vertical-align: middle;
   line-height: 1.2;
@@ -1203,4 +1207,147 @@ body.scms-simulated-fullscreen #root {
   animation: scmsShockwave 0.85s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
   animation: scmsShockwave 0.85s cubic-bezier(0.1, 0.9, 0.2, 1) forwards;
   will-change: transform, opacity;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   SCMS MOTION LAYER (src/shared/motion/motion.js)
+   One idea per place: pages rise in, grid cards flip up in turn, cards tilt in 3D under the
+   mouse, buttons give under the finger, chart bars grow from the axis, landing sections
+   reveal on scroll. Everything is switched off for prefers-reduced-motion.
+───────────────────────────────────────────────────────────── */
+:root {
+  --motion-ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --motion-ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --motion-enter: 460ms;
+  --motion-card: 620ms;
+  --motion-stagger: 55ms;
+}
+
+@keyframes scmsPageRise {
+  from { opacity: 0; transform: translate3d(0, 12px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes scmsCardFlipUp {
+  from { opacity: 0; transform: perspective(1000px) rotateX(14deg) translate3d(0, 22px, -30px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes scmsBarGrow {
+  from { transform: scaleY(0); }
+  to { transform: scaleY(1); }
+}
+
+/* Page enter: the page block rises, the first-level grid cards flip up in sequence. */
+.scms-page-enter > * {
+  animation: scmsPageRise var(--motion-enter) var(--motion-ease-out) both;
+}
+
+.scms-page-enter .grid:not(.grid .grid) > * {
+  animation: scmsCardFlipUp var(--motion-card) var(--motion-ease-out) both;
+  animation-delay: calc(var(--stagger-i, 0) * var(--motion-stagger) + 80ms);
+  transform-origin: 50% 100%;
+}
+
+.scms-page-enter .grid:not(.grid .grid) > :nth-child(2) { --stagger-i: 1; }
+.scms-page-enter .grid:not(.grid .grid) > :nth-child(3) { --stagger-i: 2; }
+.scms-page-enter .grid:not(.grid .grid) > :nth-child(4) { --stagger-i: 3; }
+.scms-page-enter .grid:not(.grid .grid) > :nth-child(5) { --stagger-i: 4; }
+.scms-page-enter .grid:not(.grid .grid) > :nth-child(6) { --stagger-i: 5; }
+.scms-page-enter .grid:not(.grid .grid) > :nth-child(7) { --stagger-i: 6; }
+.scms-page-enter .grid:not(.grid .grid) > :nth-child(n + 8) { --stagger-i: 7; }
+
+/* 3D tilt under the mouse. Triple class beats component :hover rules without !important. */
+.hover-lift,
+.scms-tilt,
+.tiya-course-card,
+.about-stat-card,
+.about-feature-item,
+.tiya-zone-card {
+  transform-style: preserve-3d;
+  will-change: auto;
+}
+
+.is-tilting.is-tilting.is-tilting {
+  transform: perspective(900px) rotateX(var(--tilt-x, 0deg)) rotateY(var(--tilt-y, 0deg)) translate3d(0, -4px, 0);
+  box-shadow: var(--tilt-shadow-x, 0px) var(--tilt-shadow-y, 14px) 30px -10px rgba(30, 34, 53, 0.18),
+    0 4px 10px -4px rgba(30, 34, 53, 0.08);
+  transition: transform 90ms linear, box-shadow 160ms ease-out;
+  will-change: transform;
+}
+
+html.dark .is-tilting.is-tilting.is-tilting {
+  box-shadow: var(--tilt-shadow-x, 0px) var(--tilt-shadow-y, 14px) 32px -10px rgba(0, 0, 0, 0.65);
+}
+
+/* Buttons give a little under the finger. `scale` composes with any transform already on the button. */
+button:not(:disabled),
+.custom-btn,
+[role='button'] {
+  transition-property: color, background-color, border-color, box-shadow, opacity, transform, scale;
+}
+
+button:not(:disabled):active,
+.custom-btn:active,
+[role='button']:active {
+  scale: 0.97;
+  transition-duration: 80ms;
+}
+
+/* Chart bars grow from the axis the first time they render. */
+[data-chart-id] rect[fill^='url('],
+[data-chart-id] .chart-bar {
+  transform-box: fill-box;
+  transform-origin: 50% 100%;
+  animation: scmsBarGrow 700ms var(--motion-ease-out) both;
+}
+
+/* Landing scroll reveal: sections rise, cards inside them flip up in turn. */
+.scms-scroll-reveal {
+  opacity: 0;
+  transform: perspective(1000px) rotateX(10deg) translate3d(0, 36px, 0);
+  transform-origin: 50% 100%;
+  transition: opacity 700ms var(--motion-ease-out), transform 900ms var(--motion-ease-out);
+}
+
+.scms-scroll-reveal.is-revealed {
+  opacity: 1;
+  transform: none;
+}
+
+/* Sidebar links nudge their icon toward the content on hover. */
+aside a .material-symbols-outlined,
+aside button .material-symbols-outlined {
+  transition: translate 200ms var(--motion-ease-spring);
+}
+
+aside a:hover .material-symbols-outlined,
+aside button:hover .material-symbols-outlined {
+  translate: 2px 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scms-page-enter > *,
+  .scms-page-enter .grid > *,
+  [data-chart-id] rect[fill^='url('],
+  [data-chart-id] .chart-bar {
+    animation: none !important;
+  }
+
+  .scms-scroll-reveal {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .is-tilting.is-tilting.is-tilting,
+  .hover-lift:hover {
+    transform: none !important;
+  }
+
+  button:not(:disabled):active,
+  .custom-btn:active,
+  [role='button']:active {
+    scale: none;
+  }
 }

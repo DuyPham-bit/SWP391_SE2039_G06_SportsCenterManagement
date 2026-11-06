@@ -21,10 +21,17 @@ export function NotificationInbox() {
         setOpen(false);
       }
     };
+    const handleEscape = (e) => {
+      if (e.key === 'Escape') setOpen(false);
+    };
     if (open) {
       document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('keydown', handleEscape);
     }
-    return () => document.removeEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleEscape);
+    };
   }, [open]);
 
   const items = backendItems;
@@ -50,12 +57,17 @@ export function NotificationInbox() {
           if (next) refresh();
         }}
         className="relative p-2.5 rounded-xl hover:bg-slate-100 dark:hover:bg-slate-800 text-slate-600 dark:text-slate-300 transition-colors cursor-pointer"
-        title="Thông báo"
-        aria-label="Thông báo"
+        title={isEn ? 'Notifications' : 'Thông báo'}
+        aria-label={isEn ? 'Notifications' : 'Thông báo'}
+        aria-expanded={open}
+        aria-haspopup="true"
       >
-        <span className="material-symbols-outlined text-[20px]">notifications</span>
+        <span className="material-symbols-outlined text-[20px]" aria-hidden="true">notifications</span>
         {unreadCount > 0 && (
-          <span className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-xs animate-pulse">
+          <span
+            aria-label={isEn ? `${unreadCount} unread notifications` : `${unreadCount} thông báo chưa đọc`}
+            className="absolute top-1.5 right-1.5 flex h-4 min-w-[16px] px-1 items-center justify-center rounded-full bg-red-600 text-[10px] font-bold text-white shadow-xs animate-pulse"
+          >
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
@@ -117,9 +129,10 @@ export function NotificationInbox() {
                 const target = notificationTarget(item, role);
                 const actionLabel = getNotificationActionLabel(item, role, isEn);
                 return (
-                  <div
+                  <button
+                    type="button"
                     key={item.id}
-                    className={`p-3.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 transition-colors flex items-start gap-3 cursor-pointer ${
+                    className={`w-full text-left p-3.5 hover:bg-slate-50/80 dark:hover:bg-slate-800/50 focus-visible:outline-none focus-visible:bg-slate-100 dark:focus-visible:bg-slate-800 transition-colors flex items-start gap-3 cursor-pointer ${
                       !item.isRead ? 'bg-red-50/20 dark:bg-red-950/10' : ''
                     }`}
                     onClick={() => {
@@ -130,7 +143,8 @@ export function NotificationInbox() {
                       }
                     }}
                   >
-                    <div
+                    <span
+                      aria-hidden="true"
                       className={`w-8 h-8 rounded-full flex items-center justify-center shrink-0 mt-0.5 ${
                         !item.isRead
                           ? 'bg-red-100 text-red-600 dark:bg-red-950/60 dark:text-red-400'
@@ -140,32 +154,32 @@ export function NotificationInbox() {
                       <span className="material-symbols-outlined text-[16px]">
                         {item.type === 'ClassReminder' ? 'alarm' : item.type === 'Booking' ? 'calendar_today' : 'info'}
                       </span>
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-start justify-between gap-2">
-                        <h4 className={`text-xs font-bold truncate ${!item.isRead ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>
+                    </span>
+                    <span className="block flex-1 min-w-0">
+                      <span className="flex items-start justify-between gap-2">
+                        <span className={`block text-xs font-bold truncate ${!item.isRead ? 'text-slate-900 dark:text-slate-100' : 'text-slate-600 dark:text-slate-400'}`}>
                           {translateNotificationTitle(item.title, language)}
-                        </h4>
+                        </span>
                         {!item.isRead && (
-                          <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0 mt-1" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-red-600 shrink-0 mt-1" aria-label={isEn ? 'Unread' : 'Chưa đọc'} />
                         )}
-                      </div>
-                      <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
+                      </span>
+                      <span className="block text-[11px] text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2">
                         {translateNotificationContent(item.content, language)}
-                      </p>
-                      <div className="flex items-center justify-between gap-2 mt-1.5">
+                      </span>
+                      <span className="flex items-center justify-between gap-2 mt-1.5">
                         <span className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
                           {formatMemberDateTime(item.createdAt)}
                         </span>
                         {target && (
                           <span className="text-[10px] font-bold text-red-600 dark:text-red-400 flex items-center gap-0.5">
                             <span>{actionLabel}</span>
-                            <span className="material-symbols-outlined text-[12px]">arrow_forward</span>
+                            <span className="material-symbols-outlined text-[12px]" aria-hidden="true">arrow_forward</span>
                           </span>
                         )}
-                      </div>
-                    </div>
-                  </div>
+                      </span>
+                    </span>
+                  </button>
                 );
               })
             )}

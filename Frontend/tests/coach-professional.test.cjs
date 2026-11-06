@@ -75,7 +75,7 @@ test('replacement option API sends the selected leave window', async () => {
 });
 
 test('manager has a dedicated pending leave approval entry and status filters', () => {
-  const sidebar = fs.readFileSync(path.join(__dirname, '../src/layouts/Sidebar.jsx'), 'utf8');
+  const sidebar = fs.readFileSync(path.join(__dirname, '../src/app/layout/Sidebar.jsx'), 'utf8');
   const manager = fs.readFileSync(path.join(__dirname, '../src/features/manager/ManagerCoachOperations.jsx'), 'utf8');
   const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/CoachProfessionalService.cs'), 'utf8');
   assert.match(sidebar, /Duyệt đơn nghỉ HLV/);

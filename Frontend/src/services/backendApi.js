@@ -865,12 +865,6 @@ export const memberApi = {
     });
   },
 
-  async syncVietQr(orderCode) {
-    return apiRequest(`payments/vietqr/${orderCode}/sync`, {
-      method: 'POST'
-    });
-  },
-
   async getMyProgress() {
     return asArray(await apiRequest('members/me/progress'));
   },

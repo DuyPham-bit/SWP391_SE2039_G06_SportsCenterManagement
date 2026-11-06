@@ -161,7 +161,10 @@ async function checkout(session) {
   cdp = new CDP(socket);
   const { targetId } = await cdp.send('Target.createTarget', { url: `${appOrigin}/#/login` });
   const session = await cdp.attach(targetId);
-  await until('login form', () => cdp.evaluate(session, `Boolean(document.getElementById('login-email'))`));
+  await until('login form', () => cdp.evaluate(session, `Boolean(document.getElementById('login-email'))`)).catch(async error => {
+    const diag = await cdp.evaluate(session, `JSON.stringify({ href: location.href, ready: document.readyState, body: document.body?.innerHTML.slice(0, 400) })`).catch(e => String(e));
+    throw new Error(`${error.message} ${diag} errors=${JSON.stringify(errors)}`);
+  });
   await cdp.evaluate(session, `(() => {
     const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
     for (const [id, value] of [['login-email', 'member@example.test'], ['login-password', 'TestPassword123!']]) {
@@ -170,88 +173,58 @@ async function checkout(session) {
   })()`);
   await cdp.evaluate(session, `document.querySelector('button[type=submit]').click()`);
   await until('authenticated dashboard', () => cdp.evaluate(session, `location.hash === '#/member/dashboard'`));
-  await cdp.evaluate(session, `location.hash = '#/member/packages'`);
-  await until('package list', () => cdp.evaluate(session, `document.body.textContent.includes('Gói kiểm thử')`));
-  await cdp.evaluate(session, `window.__originalPaymentDocument = true`);
-  await checkout(session);
-  await until('gateway navigation', async () => (await pages()).some(page => page.url === `${apiOrigin}/checkout`));
-  assert.equal(await cdp.evaluate(session, `location.hash`), '#/member/packages', 'Checkout must preserve the authenticated package page');
-  checks.push('Opening checkout preserves the original document and route');
-  const gateway = (await pages()).find(page => page.url === `${apiOrigin}/checkout`);
-  const paymentSession = await cdp.attach(gateway.targetId);
-  const readsBeforeCancel = state.pendingReads;
-  await cdp.evaluate(paymentSession, `document.getElementById('cancel').click()`);
-  await until('cancel returns to original tab', async () => !(await pages()).some(page => page.targetId === gateway.targetId));
-  await until('pending invoices refreshed', () => state.pendingReads > readsBeforeCancel);
-  assert.equal(await cdp.evaluate(session, `window.__originalPaymentDocument && location.hash === '#/member/packages' && !document.querySelector('#login-email')`), true);
-  assert.equal(await cdp.evaluate(session, `document.body.textContent.includes('Đã hủy thanh toán')`), true);
-  checks.push('Cancel on a different callback origin closes checkout and retains login');
-  assert.equal(state.callbacks.length, 0);
-  checks.push('Gateway cancellation does not claim payment success or invoke another gateway');
-
-  const createsBeforeBlock = state.creates;
-  await cdp.evaluate(session, `window.__realOpen = window.open; window.open = () => null`);
-  await checkout(session);
-  assert.equal(state.creates, createsBeforeBlock);
-  assert.equal(await cdp.evaluate(session, `document.body.textContent.includes('chặn cửa sổ thanh toán')`), true);
-  await cdp.evaluate(session, `window.open = window.__realOpen`);
-  checks.push('Popup blocking is reported before creating a payment');
+  // Members are redirected in the same tab; the gateway returns to the app origin, where the tab's session selector survives.
+  const openPackages = async () => {
+    await cdp.evaluate(session, `location.href = ${JSON.stringify(`${appOrigin}/#/member/packages`)}`);
+    await until('package list', () => cdp.evaluate(session, `document.body.textContent.includes('Gói kiểm thử') && !document.querySelector('#login-email')`));
+  };
+  const onGateway = () => cdp.evaluate(session, `location.href === ${JSON.stringify(`${apiOrigin}/checkout`)}`);
+  await openPackages();
+  const initialPageCount = (await pages()).length;
 
   state.createError = true;
-  await buttons(session, 'Xác Nhận Thanh Toán');
-  await until('gateway API failure', () => cdp.evaluate(session, `document.body.textContent.includes('Cổng thanh toán kiểm thử tạm dừng.')`));
-  assert.equal((await pages()).filter(page => page.openerId === targetId).length, 0);
-  state.createError = false;
-  checks.push('Gateway API errors close the blank checkout and retain the package page');
-
-  await buttons(session, 'Xác Nhận Thanh Toán');
-  await until('retry gateway', async () => (await pages()).some(page => page.url === `${apiOrigin}/checkout`));
-  const manual = (await pages()).find(page => page.url === `${apiOrigin}/checkout`);
-  const readsBeforeClose = state.pendingReads;
-  await cdp.send('Target.closeTarget', { targetId: manual.targetId });
-  await until('manual close refresh', () => state.pendingReads > readsBeforeClose);
-  assert.equal(await cdp.evaluate(session, `window.__originalPaymentDocument && location.hash === '#/member/packages'`), true);
-  checks.push('Manually closing checkout preserves login and refreshes invoices');
-
-  let releaseOldFailure;
-  state.delayedFailure = new Promise(resolve => { releaseOldFailure = resolve; });
-  const createsBeforeDelay = state.creates;
   await checkout(session);
-  await until('delayed create started', () => state.creates > createsBeforeDelay);
-  const oldBlank = (await pages()).find(page => page.openerId === targetId);
-  await cdp.send('Target.closeTarget', { targetId: oldBlank.targetId });
-  await until('retry enabled after closing blank popup', () => cdp.evaluate(session, `[...document.querySelectorAll('button')].some(b => b.textContent.includes()'Xác Nhận Thanh Toán' && !b.disabled)`));
-  await buttons(session, 'Xác Nhận Thanh Toán');
-  await until('replacement checkout loaded', async () => (await pages()).some(page => page.url === `${apiOrigin}/checkout`));
-  const replacement = (await pages()).find(page => page.url === `${apiOrigin}/checkout`);
-  releaseOldFailure();
-  await delay(600);
-  assert.equal((await pages()).some(page => page.targetId === replacement.targetId), true, 'Late error from an old checkout must not close the new checkout');
-  const readsBeforeReplacementClose = state.pendingReads;
-  await cdp.send('Target.closeTarget', { targetId: replacement.targetId });
-  await until('replacement close refreshes', () => state.pendingReads > readsBeforeReplacementClose);
-  checks.push('A late response from a closed checkout cannot interfere with its replacement');
+  await until('gateway API failure', () => cdp.evaluate(session, `document.body.textContent.includes('Cổng thanh toán kiểm thử tạm dừng.')`));
+  assert.equal(await cdp.evaluate(session, `location.hash`), '#/member/packages', 'A failed payment link must keep the member on the package page');
+  assert.equal((await pages()).length, initialPageCount, 'Member checkout must not open extra windows');
+  state.createError = false;
+  checks.push('Gateway API errors are shown and keep the member on the package page');
+
+  await openPackages();
+  const createsBeforeCheckout = state.creates;
+  await checkout(session);
+  await until('same-tab gateway navigation', onGateway);
+  assert.equal(state.creates, createsBeforeCheckout + 1, 'One confirmation must create exactly one payment link');
+  assert.equal((await pages()).length, initialPageCount, 'Member checkout must redirect the current tab instead of opening a popup');
+  checks.push('Confirming checkout creates one payment link and redirects the current tab');
+
+  await cdp.evaluate(session, `document.getElementById('cancel').onclick = null; location.href = ${JSON.stringify(`${appOrigin}/payment-result?cancel=true&orderCode=123`)}`);
+  await until('cancelled result', () => cdp.evaluate(session, `document.body.textContent.includes('Giao dịch đã bị hủy')`));
+  assert.equal(state.callbacks.length, 0, 'Cancellation must not call a gateway verification endpoint');
+  await buttons(session, 'Quay lại gói tập');
+  await until('back to packages after cancel', () => cdp.evaluate(session, `location.hash === '#/member/packages' && document.body.textContent.includes('Gói kiểm thử') && !document.querySelector('#login-email')`));
+  checks.push('Cancelling at the gateway returns to packages with the login intact and claims no payment');
 
   for (const [provider, query, callback] of [
     ['VNPay', 'vnp_ResponseCode=00&vnp_TxnRef=fixture', '/api/payments/vnpay-callback'],
     ['MoMo', 'resultCode=0&transId=fixture', '/api/payments/momo-callback']
   ]) {
+    await openPackages();
     await checkout(session);
-    await until(`${provider} gateway`, async () => (await pages()).some(page => page.url === `${apiOrigin}/checkout`));
-    const target = (await pages()).find(page => page.url === `${apiOrigin}/checkout`);
-    const childSession = await cdp.attach(target.targetId);
-    const readsBeforeReturn = state.pendingReads;
+    await until(`${provider} gateway`, onGateway);
     const callbacksBefore = state.callbacks.length;
-    const returnOrigin = apiOrigin;
-    await cdp.send('Page.navigate', { url: `${returnOrigin}/payment-result?${query}` }, childSession);
-    await until(`${provider} returns`, async () => !(await pages()).some(page => page.targetId === target.targetId));
-    await until(`${provider} refreshes`, () => state.pendingReads > readsBeforeReturn);
-    assert.equal(await cdp.evaluate(session, `window.__originalPaymentDocument && location.hash === '#/member/packages'`), true);
-    if (callback) assert.equal(state.callbacks.at(-1), callback); else assert.equal(state.callbacks.length, callbacksBefore);
-    checks.push(`${provider} return preserves login and respects backend verification`);
+    await cdp.evaluate(session, `location.href = ${JSON.stringify(`${appOrigin}/payment-result?${query}`)}`);
+    await until(`${provider} verified`, () => cdp.evaluate(session, `document.body.textContent.includes('Đã xác nhận bằng API kiểm thử.')`));
+    assert.equal(state.callbacks.length, callbacksBefore + 1);
+    assert.equal(state.callbacks.at(-1), callback);
+    await buttons(session, 'Quay lại gói tập');
+    await until(`${provider} back to packages`, () => cdp.evaluate(session, `location.hash === '#/member/packages' && !document.querySelector('#login-email')`));
+    checks.push(`${provider} return is verified by the backend and keeps the member logged in`);
   }
 
-  assert.equal(await cdp.evaluate(session, `Object.keys(sessionStorage).length === 0 && !JSON.stringify(localStorage).includes('fixture-member-token')`), true);
+  // The JWT stays in the HttpOnly cookie; storage may only hold the non-secret per-tab selector and UI state.
+  assert.equal(await cdp.evaluate(session, `/^[a-f0-9]{32}$/.test(sessionStorage.getItem('scms.auth.tab.v1') || '')
+    && !JSON.stringify({ ...sessionStorage, ...localStorage }).includes('fixture-member-token')`), true);
   checks.push('JWT is not persisted to browser storage');
   const screenshot = await cdp.send('Page.captureScreenshot', { format: 'png' }, session);
   fs.writeFileSync(path.join(artifacts, 'returned-packages.png'), Buffer.from(screenshot.data, 'base64'));

@@ -80,7 +80,6 @@ builder.Services.AddScoped<IClassEnrollmentService, ClassEnrollmentService>();
 builder.Services.AddScoped<IPublicCatalogService, PublicCatalogService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
-builder.Services.AddScoped<ICenterAccessService, CenterAccessService>();
 builder.Services.AddScoped<IStaffManagementService, StaffManagementService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();
 builder.Services.AddScoped<ICenterNotificationService, CenterNotificationService>();
