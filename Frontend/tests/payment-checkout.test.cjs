@@ -25,7 +25,7 @@ function fixture({ blocked = false } = {}) {
     setInterval(callback) { timers.add(callback); return callback; },
     clearInterval(callback) { timers.delete(callback); }
   };
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/paymentCheckout.js'), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src/features/payment-checkout/model/paymentCheckout.js'), 'utf8')
     .replaceAll('export function ', 'function ')
     .replaceAll('import.meta.env.VITE_API_BASE_URL', 'undefined');
   const context = vm.createContext({ window, URL, Set });

@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiSource } = require('./helpers/apiSources.cjs');
 const vm = require('node:vm');
 const { webcrypto } = require('node:crypto');
 const { test } = require('node:test');
@@ -14,10 +15,10 @@ function tab(store = new Map(), fetch = async () => new Response('{}')) {
     sessionStorage: { getItem: name => store.get(name), setItem: (name, value) => store.set(name, value), removeItem: name => store.delete(name) },
     window: { dispatchEvent: () => {} }
   });
-  const auth = fs.readFileSync(path.join(__dirname, '../src/services/authState.js'), 'utf8').replace(/export /g, '');
-  const http = fs.readFileSync(path.join(__dirname, '../src/services/http.js'), 'utf8').replace(/^import .*;\r?\n/gm, '')
+  const auth = fs.readFileSync(path.join(__dirname, '../src/shared/api/authState.js'), 'utf8').replace(/export /g, '');
+  const http = fs.readFileSync(path.join(__dirname, '../src/shared/api/http.js'), 'utf8').replace(/^import .*;\r?\n/gm, '')
     .replace(/export /g, '').replaceAll('import.meta.env', '({})');
-  const backend = fs.readFileSync(path.join(__dirname, '../src/services/backendApi.js'), 'utf8').replace(/^import .*;\r?\n/gm, '')
+  const backend = apiSource().replace(/^import .*;\r?\n/gm, '')
     .replaceAll('export const ', 'const ').replaceAll('import.meta.env', '({})');
   vm.runInContext(`${auth}\n${http}\n${backend}\nglobalThis.api = { getApiSession, setApiSession, clearApiSession, createApiSession, apiRequest, authApi };`, context);
   return context.api;

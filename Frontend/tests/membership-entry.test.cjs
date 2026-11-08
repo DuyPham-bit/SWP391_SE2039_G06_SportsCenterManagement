@@ -4,7 +4,7 @@ const path = require('node:path');
 const vm = require('node:vm');
 const { test } = require('node:test');
 const { transformSync } = require('esbuild');
-const moduleSource = fs.readFileSync(path.join(__dirname, '../src/services/membershipEntry.js'), 'utf8');
+const moduleSource = fs.readFileSync(path.join(__dirname, '../src/entities/membership/lib/membershipEntry.js'), 'utf8');
 const loaded = { exports: {} };
 vm.runInNewContext(transformSync(moduleSource, { format: 'cjs' }).code, { module: loaded, URLSearchParams });
 const { getMembershipIntent, getPostLoginRoute, getMembershipAction, getMembershipBanner } = loaded.exports;
@@ -54,8 +54,8 @@ test('facility cards always display "Bao gồm trong gói tập" and sanitize le
     vm.runInNewContext(transformSync(src, { format: 'cjs' }).code, { module: mod, exports: mod.exports, require: () => ({}) });
     return mod.exports;
   }
-  const { sanitizeFacilityImages } = loadHelper('../src/services/landingPresentation.js');
-  const { translatePriceRate } = loadHelper('../src/services/i18nHelper.js');
+  const { sanitizeFacilityImages } = loadHelper('../src/entities/catalog/lib/landingPresentation.js');
+  const { translatePriceRate } = loadHelper('../src/shared/i18n/i18nHelper.js');
 
   const facilityWithHourlyRate = { id: 'room-02', name: 'Sân bóng đá', priceRate: 'Từ 150.000đ - 280.000đ/giờ' };
   const sanitized = sanitizeFacilityImages(facilityWithHourlyRate);

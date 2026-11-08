@@ -1,4 +1,105 @@
-# Task Plan: Olympic Sports Arena Visual Identity, Tab Clarity & Final Delivery
+# Task Plan
+
+## Milestone 13: Đồng bộ màu toàn Frontend theo bảng màu Landing (đã duyệt, đang làm, 2026-11-07)
+Mục tiêu: mọi trang (landing, login, OTP, member, coach, counter, manager, admin, payment-result…) dùng chung một
+bảng màu lấy từ landing. Chỉ đổi styling; không đổi logic, API, routing, text. Landing nhìn y hệt hiện tại.
+Chi tiết khảo sát và bảng màu: findings.md §13.
+
+### Phương án token hoá (đã so sánh)
+| | A. Ghi đè palette Tailwind (`slate`→navy, `emerald`→sage… trong config) | B. Codemod đổi tên class sang `brand-*` giữ nguyên nấc + semantic token | C. Viết lại tay từng component bằng semantic token |
+|---|---|---|---|
+| Công sức | Rất thấp (chỉ config) | Trung bình (script + rà từng phase) | Rất cao (14.230 chỗ) |
+| Rủi ro vỡ giao diện | Thấp | Thấp–trung bình (giữ nấc, có test + soát mắt) | Cao |
+| Rõ nghĩa / bảo trì | Kém: `bg-emerald-500` thực ra là sage, dễ gây nhầm | Tốt: tên class nói đúng màu brand; semantic cho phần dùng chung | Tốt nhất |
+| Chặn màu lạc tông về sau | Không (palette mặc định vẫn "có vẻ" dùng được) | Có: tắt palette mặc định khỏi config sau khi migrate | Có |
+**Đề xuất: B**, kết hợp semantic token cho shared/ui và widgets (phase a). A chỉ dùng tạm nếu cần đồng màu ngay trong 1 bước.
+
+### Kiến trúc token
+1. `app/styles/tokens.css` (mới, nguồn duy nhất): biến kênh RGB cho 6 thang `--brand-{navy|sage|sand|terra|teal|danger}-{50..950}`
+   (tĩnh, không đổi theo dark mode) + semantic token đổi theo `html.dark`:
+   `--color-primary, --color-primary-hover, --color-primary-strong, --color-secondary, --color-accent, --color-accent-hover,
+   --color-surface, --color-surface-muted, --color-surface-raised, --color-border, --color-text (ink), --color-text-muted,
+   --color-success/-soft, --color-warning/-soft, --color-danger/-soft, --color-info/-soft, --color-focus`.
+2. `tailwind.config.cjs`: `colors.brand.{navy,sage,sand,terra,teal,danger}.{50..950}` + semantic
+   (`primary`, `secondary`, `accent`, `surface`, `ink`, `ink-muted`, `line`, `success`, `warning`, `danger`, `info`) dạng
+   `rgb(var(--…) / <alpha-value>)` để giữ được `bg-primary/20`. Palette categorical cho biểu đồ: `chart-1..8` từ màu gốc.
+3. `theme.css` + `tiya-theme.css`: bỏ định nghĩa màu trùng; `--primary-color`, `--secondary-color`, `--fpt-*`, `--p-color`…
+   thành alias trỏ vào token (comment `@deprecated`). `colors.fpt.*` giữ lại, trỏ sang token, đánh dấu deprecated.
+4. Sau phase cuối: bỏ palette Tailwind mặc định không còn dùng (giữ white/black/transparent/current) để chặn tái phát.
+
+### Quy tắc map (codemod, giữ nguyên nấc 50–950, kể cả tiền tố `dark:`, `hover:`, `/opacity`)
+- slate, gray, zinc, neutral, stone → `brand-navy`
+- emerald, green, lime → `brand-sage` · teal, cyan → `brand-teal` · amber, yellow → `brand-sand`
+- orange → `brand-terra` · rose, red, pink → `brand-danger`
+- blue, sky → **(cần quyết)** · indigo, violet, purple → **(cần quyết)**
+- Hex tùy ý: `[#81B29A]`→`brand-sage-500`, `[#2D6A4F]`→`brand-sage-700`, `[#F2CC8F]`→`brand-sand-300` … (bảng đầy đủ sinh từ findings §13.4);
+  hex lạc tông (`[#4F46E5]`, `[#E5A33C]`…) map về nấc gần nhất của thang tương ứng.
+- Nâng nấc chữ để đạt AA **(cần quyết)**: `text-brand-{sage,sand,terra,teal}-{500,600}` không có tiền tố `dark:` → `-700`.
+- Inline `style` hex của biểu đồ → `chart-*` token (đọc qua `getComputedStyle` hoặc hằng số dùng chung).
+
+### Các phase (mỗi phase: codemod → build → npm test → test trình duyệt liên quan → soát mắt light/dark → ghi progress.md)
+- [x] 0. Khảo sát màu landing, thống kê baseline, sinh thang + bảng tương phản (findings §13)
+- [ ] 1. Token layer: tokens.css, tailwind.config.cjs, alias deprecated trong theme.css/tiya-theme.css. Landing chưa đổi gì → so ảnh chụp trước/sau phải trùng.
+- [ ] a. shared/ui + widgets (Button, Modal, Table, StatCard, BusinessAlert, Toast, Logo, app-shell Header/Sidebar/Layout, support-inbox, …) — dùng semantic token
+- [ ] b. auth: login, otp-verification (+ features/auth)
+- [ ] c. member-* (+ features/member-ai-chat, notifications)
+- [ ] d. coach-* (+ features/coach-workspace, widgets/coach-performance)
+- [ ] e. counter-* / receptionist (member-lookup, member-checkin, counter-*, receptionist-dashboard, features/counter-desk)
+- [ ] f. manager-*, admin-dashboard, audit-logs, roles-permissions, payroll
+- [ ] g. payment-result, landing (chỉ đổi sang token, giá trị y hệt), các trang còn lại; bỏ palette mặc định khỏi config
+- [ ] Kiểm chứng cuối: build, npm test, mọi test:*:browser, grep thống kê lại so với baseline, ảnh chụp landing + 1 trang/role × light/dark
+
+### Công cụ kiểm chứng sẽ dùng
+- Ảnh chụp tự động (Chrome headless, cùng khung test trình duyệt hiện có) cho landing + 1 trang mỗi role × light/dark, trước và sau mỗi phase.
+- Script đo tương phản các cặp token chính (findings §13.5) chạy lại sau khi chốt thang.
+- grep baseline (findings §13.2) để báo số class mặc định còn sót.
+
+### Quyết định đã duyệt (2026-11-07)
+- Phương án **B** (codemod brand-* giữ nấc + semantic token cho shared/ui).
+- blue/sky → **brand-teal** (info); indigo/violet/purple → **brand-navy** (secondary).
+- Landing: **chỉnh nhẹ cho đạt AA** (muted text tối hơn chút; chữ trắng trên sage/teal/terracotta dùng nấc đậm hơn).
+- **Nâng nấc chữ** text-{sage,sand,terra,teal}-{500,600} (không có dark:) → 700.
+
+### (Lưu trữ) Câu hỏi đã trình duyệt
+1. Chọn phương án B (khuyến nghị) hay A.
+2. `blue/sky` và `indigo/violet/purple` map sang đâu (đề bài: primary hoặc secondary).
+3. Landing: giữ y hệt kể cả 4 cặp chưa đạt AA, hay chỉnh nhẹ (`--p-color` #717275 → ~#66676B; chữ trắng trên sage/teal/terracotta → dùng nấc đậm hơn).
+4. Quy tắc nâng nấc chữ 500/600 → 700 cho AA.
+
+## Milestone 12: Frontend Feature-Sliced Design migration (Phase 1-3a done, 2026-11-07)
+Goal: finish the half-done FSD migration. Real code moves out of role folders (`features/<role>`) into
+FSD layers; pass-through wrappers and shim folders are removed. Behaviour and UI must not change.
+
+Layers (upper may import lower only): app → pages → widgets → features → entities → shared.
+- [x] Phase 1 — relocate files (no logic changes): script-driven `git mv` + import rewrite.
+  - pages/<route-slice>/ui + index.js (one slice per route; router lazy-loads the slice index)
+  - widgets: app-shell (AppLayout/Header/Sidebar), support-inbox, coach-performance, member-reminders
+  - features: auth, profile-edit, notifications, media-upload, member-ai-chat, refund-review,
+    coach-workspace (CoachShared), counter-desk (ReceptionistShared), payment-checkout
+  - entities: session (AuthContext), permission, member, coach, membership, landing-content, catalog
+  - shared: api (http/authState/api/backendApi), lib (helpers, dateTime, motion, useCountUp),
+    i18n (LanguageContext), ui (+ toast)
+  - app: router (+RoleGuard), styles
+  - delete: old pages/ wrappers, context/, components/, shared/components/, domain wrapper folders,
+    duplicate useNotifications, .js re-export twins, BOMs
+- [x] Phase 1 verification: orphan scan = 0, layer-violation scan = 0, `npm test`, `npm run build`,
+      browser tests.
+- [x] Phase 2 — split `shared/api/backendApi.js` + `api.js` into `entities/<x>/api` (@x for member→staff, class→report; AdminDashboard + PaymentResult moved onto entity APIs; tests use tests/helpers/apiSources.cjs).
+- [x] Phase 3a — extract sub-components, helpers and constants of large pages into slice ui/lib/model files;
+      dedupe identical helpers (shared/lib/calendar, greeting, avatarGradient; shared/ui/gradients;
+      features/coach-workspace CoachCards); delete dead code (FacilitiesTab, 3 unused charts, StatusBadge,
+      QUICK_SUGGESTIONS); fix MyAttendance ReferenceError and ForgotPasswordModal window.React dependency.
+- [ ] Phase 3b — split huge component functions into model/use<Page>.js hook + ui/ section components
+      (browser test added before each split).
+  - [x] ClassesAndRooms 2140→247, StaffManagement 1914→153, HomeContentManagement 1654→198, PayrollPage 1607→94
+  - [x] Fixed: PayrollPage read non-existent useAuth().user → managers/admins never got the payroll report
+  - [x] ReportsAnalytics 1580→185, Attendance 1517→235, MemberManagement 1321→133, LandingPage 1254→143,
+        MemberDashboard 1215→151, AdminDashboard 1201→178, ClassScheduleView 1119→125, TeachingSchedule 1103→141,
+        TrainingPlan 1082→102, CoachAssignment 1043→130, MemberCheckIn 1019→290 (all pages now < 1000 lines)
+  - [x] New browser coverage: admin.browser.cjs (new), payroll, members, reports tables, attendance, teaching
+        schedule, training plans, member dashboard + class schedule booking, check-in desk
+  - [x] Removed vite resolve-js-to-jsx + auto-import-react plugins and window.React globals (no longer needed)
+  - [ ] Optional next: ~900-line pages (SupportRequests, PackageManagement, ManagerDashboard, MySupportRequests, ...)
 
 ## Milestone 6: SCMS Flow 1 Audit & Hardening (Completed & Verified)
 - [x] Map Flow 1 authentication, member ownership, membership purchase, package management, and audit seams.

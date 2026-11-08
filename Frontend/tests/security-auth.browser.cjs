@@ -2,6 +2,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiEntry, SRC: API_SRC } = require('./helpers/apiSources.cjs');
 const http = require('node:http');
 const { spawn } = require('node:child_process');
 const { build } = require('esbuild');
@@ -79,7 +80,7 @@ async function reload(session) {
 }
 
 (async () => {
-  bundle = (await build({ entryPoints: [path.resolve(__dirname, '../src/services/backendApi.js')],
+  bundle = (await build({ stdin: { contents: apiEntry(), resolveDir: API_SRC, loader: 'js' },
     bundle: true, write: false, format: 'esm', define: { 'import.meta.env': '{}' } })).outputFiles[0].text;
   await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
   const origin = `http://127.0.0.1:${server.address().port}`;

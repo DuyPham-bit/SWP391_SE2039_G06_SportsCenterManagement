@@ -10,8 +10,8 @@ function load(file, apiRequest = async () => {}, centerId = '15') {
   const context = vm.createContext({ module, Date, Set, Number, Error, Intl,
     testEnv: { VITE_SPORTS_CENTER_ID: centerId },
     require: id => {
-      if (id === './http.js') return { apiRequest };
-      if (id === './publicCatalog.js') return load('services/publicCatalog.js', apiRequest, centerId);
+      if (id.endsWith('/http.js')) return { apiRequest };
+      if (id.endsWith('/publicCatalog.js')) return load('entities/catalog/api/publicCatalog.js', apiRequest, centerId);
       throw new Error(`Unexpected dependency: ${id}`);
     }
   });
@@ -22,7 +22,7 @@ function load(file, apiRequest = async () => {}, centerId = '15') {
 
 test('empty and failed catalog requests cannot invent sports, rooms or prices', async () => {
   const empty = { center: { id: 15 }, sports: [], rooms: [], classes: [] };
-  const api = load('services/publicCatalog.js', async (route, options) => {
+  const api = load('entities/catalog/api/publicCatalog.js', async (route, options) => {
     assert.equal(route, 'public/centers/15/catalog');
     assert.equal(options.session, null);
     return empty;
@@ -30,13 +30,13 @@ test('empty and failed catalog requests cannot invent sports, rooms or prices', 
   const catalog = await api.getPublicCatalog();
   assert.equal(api.catalogSports(catalog).length, 0);
   assert.equal(api.catalogFacilities(catalog).length, 0);
-  const failing = load('services/publicCatalog.js', async () => { throw new Error('SQL offline'); });
+  const failing = load('entities/catalog/api/publicCatalog.js', async () => { throw new Error('SQL offline'); });
   await assert.rejects(failing.getPublicCatalog(), /SQL offline/);
-  await assert.rejects(load('services/publicCatalog.js', async () => empty, '').getPublicCatalog(), /VITE_SPORTS_CENTER_ID/);
+  await assert.rejects(load('entities/catalog/api/publicCatalog.js', async () => empty, '').getPublicCatalog(), /VITE_SPORTS_CENTER_ID/);
 });
 
 test('catalog names, capacity and relationships come from SQL rather than editorial demo fields', () => {
-  const api = load('services/publicCatalog.js');
+  const api = load('entities/catalog/api/publicCatalog.js');
   const catalog = { center: { id: 15 }, sports: [{ id: 81, name: 'Actual sport', description: 'Stored description' }],
     rooms: [{ id: 77, name: 'Actual room', capacity: 11, roomType: 'Court', locationDescription: 'Stored location' }],
     classes: [{ id: 52, sportId: 81, roomId: 77, level: 'Beginner' }] };
@@ -53,7 +53,7 @@ test('catalog names, capacity and relationships come from SQL rather than editor
 });
 
 test('homepage keeps published CMS IDs, images, relationships and editorial fields when the operational catalog differs', () => {
-  const { getLandingPresentation } = load('services/landingPresentation.js');
+  const { getLandingPresentation } = load('entities/catalog/lib/landingPresentation.js');
   const saved = {
     heroBanner: { title: 'Published center', description: 'Published description', metrics: [{ id: 'saved-metric', value: '24/7' }] },
     whyUs: { stats: [{ id: 'saved-stat', number: 9 }] },
@@ -84,7 +84,7 @@ test('homepage keeps published CMS IDs, images, relationships and editorial fiel
 });
 
 test('an unconfigured homepage uses only the actual SQL catalog and never invents default entries', () => {
-  const { getLandingPresentation } = load('services/landingPresentation.js');
+  const { getLandingPresentation } = load('entities/catalog/lib/landingPresentation.js');
   const content = { coursesSection: { sportsList: [] }, facilitiesSection: { facilitiesList: [] } };
   const empty = getLandingPresentation(content, null);
   assert.equal(empty.coursesSection.sportsList.length, 0);
@@ -117,13 +117,14 @@ function loadCatalogEditor(catalog) {
       };
       if (id === 'react-dom') return { createPortal: children => children };
       if (id.includes('Modal.jsx')) return { Modal: () => null };
+      if (id.includes('entities/catalog')) return { ...load('entities/catalog/api/publicCatalog.js'), usePublicCatalog: () => ({ catalog, loading: false, error: '' }) };
       if (id.includes('usePublicCatalog')) return { usePublicCatalog: () => ({ catalog, loading: false, error: '' }) };
-      if (id.includes('publicCatalog.js')) return load('services/publicCatalog.js');
+      if (id.includes('publicCatalog.js')) return load('entities/catalog/api/publicCatalog.js');
       if (id.includes('LanguageContext')) return { useLanguage: () => ({ language: 'vi' }) };
       throw new Error(`Unexpected dependency: ${id}`);
     }
   });
-  const source = fs.readFileSync(path.join(__dirname, '../src/features/manager/LandingCatalogEditor.jsx'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../src/pages/manager-home-content/ui/LandingCatalogEditor.jsx'), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs', loader: 'jsx' }).code, context);
   return props => {
     hookIndex = 0;
@@ -205,7 +206,7 @@ test('adding a homepage sport retains catalog fallback cards and uses a saveable
 });
 
 test('explicitly emptied homepage card sections stay empty even when the operational catalog has records', () => {
-  const { getLandingPresentation } = load('services/landingPresentation.js');
+  const { getLandingPresentation } = load('entities/catalog/lib/landingPresentation.js');
   const content = {
     coursesSection: { sportsList: [], catalogSource: 'custom' },
     facilitiesSection: { facilitiesList: [], catalogSource: 'custom' }
@@ -240,33 +241,6 @@ test('deleting either type of homepage card requires confirmation and preserves 
   }
 });
 
-test('coach dashboard respects Vietnam day/week/month boundaries and keeps persisted session IDs', () => {
-  const api = load('features/coach/coachDashboardData.js');
-  assert.equal(api.getDashboardSessions(null, 'day').length, 0);
-  const workspace = { events: [], classSessions: [
-    { id: 1, sessionDate: '2026-10-18', startTime: '23:00:00', endTime: '23:30:00', title: 'Sunday', status: 'Scheduled' },
-    { id: 2, sessionDate: '2026-10-19', startTime: '00:00:00', endTime: '01:00:00', title: 'Monday', status: 'Scheduled' },
-    { id: 3, sessionDate: '2026-10-31', startTime: '23:00:00', endTime: '23:30:00', title: 'Month end', status: 'Cancelled' },
-    { id: 4, sessionDate: '2026-11-01', startTime: '00:00:00', endTime: '01:00:00', title: 'Next month', status: 'Scheduled' }
-  ] };
-  const now = new Date('2026-10-18T17:30:00Z');
-  const day = api.getDashboardSessions(workspace, 'day', now);
-  assert.equal(day.length, 1); assert.equal(day[0].sessionId, 2);
-  assert.equal(api.getDashboardSessions(workspace, 'week', now).length, 1);
-  const month = api.getDashboardSessions(workspace, 'month', now);
-  assert.equal(month.length, 3); assert.equal(month[2].status, 'Cancelled');
-});
-
-test('appointment payload identifies a real member and does not fabricate a room or database ID', () => {
-  const api = load('features/coach/coachDashboardData.js');
-  const request = api.appointmentRequest({ memberId: '51', title: ' Saved title ', appointmentType: '1to1', sessionDate: '2026-10-20', startTime: '23:30' });
-  assert.equal(request.memberId, 51); assert.equal(request.roomId, null); assert.equal(request.title, 'Saved title');
-  assert.equal(request.startAt, '2026-10-20T16:30:00.000Z');
-  assert.equal(request.endAt, '2026-10-20T17:30:00.000Z');
-  assert.equal(request.id, undefined);
-  assert.throws(() => api.appointmentRequest({ memberId: '', title: 'Invalid' }), /học viên/);
-});
-
 test('open notification inbox keeps empty/error states instead of fabricating unread notifications', () => {
   const React = require('react');
   const { renderToStaticMarkup } = require('react-dom/server');
@@ -275,12 +249,12 @@ test('open notification inbox keeps empty/error states instead of fabricating un
     const context = vm.createContext({ module, Date,
       require: id => {
         if (id === 'react') return { ...React, useState: () => [true, () => {}] };
-        if (id.includes('AuthContext')) return { useAuth: () => ({ role: 'COACH' }) };
+        if (id.includes('AuthContext') || id.includes('entities/session')) return { useAuth: () => ({ role: 'COACH' }) };
         if (id.includes('LanguageContext')) return { useLanguage: () => ({ language: 'vi' }) };
         if (id.includes('useNotifications')) return { useNotifications: () => ({ items, loading: false, error, readingId: null }) };
-        if (id.includes('memberOverview')) return { formatMemberDateTime: () => 'Stored timestamp' };
+        if (id.includes('memberOverview') || id.includes('entities/member')) return { formatMemberDateTime: () => 'Stored timestamp' };
         if (id.includes('i18nHelper')) return { translateNotificationTitle: value => value, translateNotificationContent: value => value };
-        if (id === './notificationNavigation.js') return load('features/notifications/ui/notificationNavigation.js');
+        if (id.endsWith('/notificationNavigation.js')) return load('features/notifications/lib/notificationNavigation.js');
         throw new Error(`Unexpected dependency: ${id}`);
       }
     });

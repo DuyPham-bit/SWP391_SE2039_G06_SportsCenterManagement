@@ -10,6 +10,7 @@
     "test:security:browser": "node tests/security-auth.browser.cjs",
     "test:payment:browser": "node tests/payment-checkout.browser.cjs",
     "test:manager:browser": "node tests/manager-merge.browser.cjs",
+    "test:admin:browser": "node tests/admin.browser.cjs",
     "test:chat:browser": "node tests/coach-chat.browser.cjs",
     "test:landing:browser": "node tests/landing-content.browser.cjs",
     "test:invoices:browser": "node tests/counter-invoices.browser.cjs",

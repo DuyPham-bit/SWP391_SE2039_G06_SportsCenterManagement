@@ -1,3 +1,67 @@
+# Findings — Milestone 13: Đồng bộ màu toàn Frontend theo bảng màu Landing (Bước 0, 2026-11-07)
+
+## 13.1 Hiện trạng nguồn màu
+- `theme.css` và `tiya-theme.css` **cùng định nghĩa `--primary-color`**: theme.css = `#1A3B8B` (FPT blue), tiya-theme.css = `#81B29A` (sage). `main.jsx` nạp tiya-theme.css sau nên giá trị hiệu lực là sage; mọi chỗ dùng `--fpt-*` / `colors.fpt.*` vẫn ra xanh/cam FPT.
+- `tailwind.config.cjs`: chỉ có `colors.fpt.*` (blue `#1A3B8B`, orange `#F26522`, green `#008744`), `darkMode: 'class'`, Tailwind **3.4** (không có `@theme` của v4 → token khai báo bằng `rgb(var(--x) / <alpha-value>)`).
+- Dark mode: `html.dark` + 5.828 lớp `dark:` viết tay theo từng nấc.
+
+## 13.2 Thống kê màu trong `Frontend/src` (baseline để so sánh sau migrate)
+| Loại | Số lượt |
+|---|---|
+| Class màu Tailwind mặc định (mọi tiền tố bg/text/border/ring/from/via/to/fill/stroke/…) | **14.230** trên **238 file** |
+| ↳ slate 8.817 · emerald 1.621 · amber 1.196 · rose 789 · red 407 · blue 360 · teal 255 · sky 213 · indigo 209 · purple 158 · cyan 79 · orange 51 · lime 38 · gray 25 · violet 7 · yellow 3 · pink 1 · green 1 | |
+| Riêng landing (`pages/landing`) | 122 (slate 40, emerald 26, amber 19, teal 17, rose 16, …) |
+| Class hex tùy ý `[#xxxxxx]` | 2.187 (đa số đã là brand: `[#81B29A]` 548, `[#2D6A4F]` 477, `[#F2CC8F]` 188, `[#1E2235]` 122, `[#1B4332]` 109, `[#24828F]` 98, `[#2F7B5D]` 82, `[#E5A33C]` 65 …; lạc tông: `[#4F46E5]` 22, `[#3730A3]` 12 (indigo), `[#5E4014]`, `[#184534]`, `[#144850]` …) |
+| Class màu ghép động (`bg-${x}-500`) | **0** → codemod đổi tên class an toàn |
+| Hex trong `style={{…}}` inline (chủ yếu biểu đồ) | 43 |
+| Hex trong `theme.css` | 111 |
+
+## 13.3 Bảng màu gốc cuối cùng (quét landing: tiya-theme.css + pages/landing/ui)
+| Vai trò | Màu | Nguồn |
+|---|---|---|
+| Navy / ink (secondary) | `#3D405B`; tối hơn: `#2B2D42`, `#1E2235` (nền dark), `#25283C`, `#32354D` | tiya-theme, landing dark |
+| Sage (primary) | `#81B29A`; `#5E987E`; đậm `#2D6A4F`, `#2F7B5D`; rừng `#1B4332` | landing, app |
+| Cream (surface) | `#F4F1DE`; off-white ấm `#FAF8F5` | tiya-theme |
+| Sand / gold (accent, CTA) | `#F2CC8F`; `#F5CF96`, `#E9B872`, gold `#E5A33C` | tiya-theme, app |
+| Terracotta (hover / nhấn) | `#E07A5F`; đậm `#D45D3E` | tiya-theme |
+| Teal phụ | `#3FAEB8`, `#24828F`; nhạt `#A8DADC`; đậm `#1B5760` | landing |
+| Muted text | `#717275` | tiya-theme `--p-color` |
+| Màu bổ sung bị bỏ sót trong đề bài | `#1B4332`, `#5E987E`, `#D45D3E`, `#E9B872`, `#E5A33C`, `#A8DADC`, `#FAF8F5`, dải navy tối `#1E2235/#25283C/#2B2D42/#32354D` | |
+
+## 13.4 Thang 50–950 (bản nháp, OKLCH, neo đúng màu gốc)
+Mỗi thang bám độ sáng của **họ Tailwind mà nó thay thế** (navy←slate, sage←emerald, sand←amber, terra←orange, teal←teal, danger←rose) để đổi class giữ nguyên nấc vẫn giữ quan hệ tương phản. Màu gốc được neo chính xác vào nấc gần nhất; thang đơn điệu về độ sáng.
+
+| scale | 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 950 |
+|---|---|---|---|---|---|---|---|---|---|---|---|
+| navy | #F9FAFB | #F4F4F5 | #E7E7E9 | #D3D4D7 | #A0A1A5 | **#717275** | #505363 | **#3D405B** | **#2B2D42** | **#1E2235** | #05070F |
+| sage | #EFFCF5 | #E6F2EC | #CEE7DA | #A7DAC1 | #91C2AA | **#81B29A** | **#5E987E** | **#2D6A4F** | #2A5C46 | **#1B4332** | #162920 |
+| sand | **#FAF8F5** | **#F4F1DE** | #EDE6D1 | **#F2CC8F** | #F3C071 | **#E5A33C** | #BF8832 | #9A6705 | #7C5200 | #664307 | #392401 |
+| terra | #FEF6F4 | #FFEBE5 | #FED3C8 | #FEB5A1 | #F89074 | **#E07A5F** | **#D45D3E** | #B54E34 | #99351A | #753322 | #431407 |
+| teal | #F0FDFD | #E6F2F3 | #CEE7E8 | **#A8DADC** | #7CC8CD | **#3FAEB8** | **#24828F** | #27727D | **#1B5760** | #264A50 | #122D31 |
+| danger | #FFF2EF | #FEE5E1 | #FECFC6 | #FFA698 | #FD7462 | #E25D4C | #CD493A | **#C0392B** | #A0190F | #7E2A20 | #4A0C07 |
+(**đậm** = màu gốc neo cứng). Danger là đỏ gạch hue ~25°, đứng cạnh terracotta nhưng vẫn đọc là "lỗi".
+
+## 13.5 Tương phản (bản nháp) — các cặp chính
+- ĐẠT: navy-700 trên trắng/cream (8.9:1), navy-500 `#717275` trên trắng (4.81), mọi badge `*-800 trên *-100` (≥ 10:1), dark mode `*-300` trên navy-900 (≥ 10:1), navy-400 muted trên navy-900 (5.95), navy-700 trên sand-300 CTA (6.63).
+- KHÔNG ĐẠT, **có sẵn từ Tailwind gốc** và sẽ còn nếu đổi giữ nguyên nấc: `text-sage-600` trên trắng 3.35 (emerald-600 gốc 3.77), `text-sand-600` 3.10 (amber-600 gốc 3.19), `text-terra-600` 3.86; chữ trắng trên các nền `*-600` này tương tự.
+- KHÔNG ĐẠT, **thuộc landing gốc**: `#717275` trên cream `#F4F1DE` 4.23:1; chữ trắng trên `#81B29A` 2.40, trên `#E07A5F` 2.95, trên `#3FAEB8` 2.64 (15 chỗ trong app dùng `text-white` trên các nền này).
+
+## 13.6 Kết quả tương phản sau migrate (đo thật trên trang render)
+
+Phương pháp: `color-snap` đo mọi phần tử có chữ trên 13 trang × light/dark (landing, login, otp, payment-result, member ×2, coach ×2, quầy ×2, manager ×2, admin), so chữ với nền đặc gần nhất; ngưỡng 4.5:1 (chữ lớn 3:1), icon 3:1, ký tự trang trí (•, /) bỏ qua. Baseline đo trên bản build từ git HEAD.
+
+- **Token:** 66/66 cặp semantic đạt AA ở cả light và dark (gồm text-muted trên mọi nền soft; `warning-soft` light = sand-100, nền soft trạng thái dark = nấc 950).
+- **Hồi quy:** 0 lỗi mới so với HEAD trên mọi trang; **181 lỗi có sẵn từ HEAD đã hết**. Riêng counter-invoices không có baseline (HEAD crash với fixture), 7 mục còn lại ở đó là icon sidebar/breadcrumb giống mọi trang.
+- **Landing:** 0 lỗi (trước: CTA chữ trắng trên sand 1.52:1 → chữ navy 6.4:1; hover terracotta → chữ navy-900 5.2:1).
+- **Đã sửa trong quá trình:** chữ trắng trên `sage/sand/teal/terra-500/600` → nền 700 (34 chuỗi); chữ accent `500/600` → 700 (codemod + 8 chỗ gốc hex); chữ accent 700+ thiếu `dark:` → thêm `dark:text-*-400` (211 chuỗi); chip trung tính nhạt & thẻ chỉ có màu light → nền/biến thể dark; header cột "hôm nay" → `danger-700`.
+- **Còn lại (có sẵn từ trước, không phải hồi quy):** chữ phụ `text-brand-navy-400` (#A0A1A5, tương đương slate-400 cũ) trên nền trắng ở light mode = 2.6:1, ví dụ nhãn "MENU", chú thích nhỏ, icon chevron. Ở dark mode đã đạt (text-muted). Đề xuất: nâng chữ (không phải icon) `navy-400 → navy-500` ở light (5.0:1) — chưa làm vì thay đổi phân cấp chữ toàn app, cần duyệt.
+
+## 13.7 Ngoại lệ có chủ đích & việc chờ quyết định
+
+- **Giữ nguyên:** logo Google (`#4285F4/#EA4335/#FBBC05/#34A853`); mascot `ArenaMascot.jsx` (hình minh hoạ, đã theo tông sand/terracotta); class CSS chết theme FPT cũ trong `theme.css` (`.fpt-*`, `.athletic-tag-gold`, `.scms-highlight-white`, `.toast-capsule-bg` — 0 chỗ dùng; có thể xoá ở đợt dọn dẹp riêng).
+- **Landing — màu ngoài bảng thương hiệu (chờ quyết định):** để landing "nhìn y hệt", chỉ màu trùng/gần trùng (ΔE_OKLab ≤ 0.02) được đổi sang token. Còn lại: 99 class Tailwind mặc định trong `sportCategories.js`, `IntroSplashScreen.jsx`, `FacilitiesSection.jsx`, `CoursesSection.jsx` (emerald/teal/amber/rose/slate-500/900, blue-600…, ΔE 0.03–0.18 so với token gần nhất), 51 literal trong `tiya-theme.css` (chủ yếu slate `#0F172A/#1E293B/#64748B/#94A3B8`) và 3 nền dark của landing (`header/footer/.bg-white`, giữ nguyên màu cũ). Nếu đổi hết sang token, landing lệch nhẹ nhưng thấy được (rõ nhất: màu bộ môn emerald/rose/teal rực → sage/danger/teal dịu). Palette mặc định của Tailwind vì vậy vẫn còn trong `tailwind.config.cjs`.
+- **Lỗi map phát hiện & đã sửa:** hex map theo sắc độ đẩy slate → teal và tint nhạt → xám; nay hex trùng màu Tailwind map theo quy tắc họ màu, tint nhạt giữ họ màu. Ảnh hưởng thực tế đã sửa: StatCard (3 tint trạng thái), 3 gradient xanh lá tối.
+
 # Key Findings — Senior Feature-First Full-Stack Audit & Hardening
 
 ## 0. Executive Summary of Confirmed Logic Repairs & SQL Execution

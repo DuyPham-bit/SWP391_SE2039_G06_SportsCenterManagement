@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 
 function loadHelpers() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/features/manager/classManagementView.js'), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src/pages/manager-classes-rooms/model/classManagementView.js'), 'utf8')
     .replaceAll('export const ', 'const ')
     .replaceAll('export function ', 'function ');
   const context = vm.createContext({ Intl });

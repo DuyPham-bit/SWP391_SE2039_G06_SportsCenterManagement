@@ -2,15 +2,18 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiSource } = require('./helpers/apiSources.cjs');
+const { readSlice } = require('./helpers/sourceFiles.cjs');
 const vm = require('node:vm');
 
-const view = import('../src/features/coach/coachProfessionalView.js');
+const view = import('../src/entities/coach/lib/coachProfessionalView.js');
 
 function loadProfessionalApis() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/api.js'), 'utf8')
+  const source = apiSource()
     .replace(/^import .+;\r?\n/gm, '')
     .replaceAll('export const ', 'const ')
-    .replace(/export \{[\s\S]+?\} from '.+?';?\s*$/m, '');
+    .replace(/export \{[\s\S]+?\} from '.+?';?\s*$/m, '')
+    .replaceAll('import.meta.env', '({})');
   const calls = [];
   const context = vm.createContext({
     URLSearchParams,
@@ -49,7 +52,7 @@ test('selecting a class session fills the exact leave window, including overnigh
   assert.deepEqual(classSessionWindow({ sessionDate: '2026-10-25', startTime: '23:00:00', endTime: '01:00:00' }), {
     startAt: '2026-10-25T23:00', endAt: '2026-10-26T01:00'
   });
-  const source = fs.readFileSync(path.join(__dirname, '../src/features/coach/CoachProfessionalHub.jsx'), 'utf8');
+  const source = readSlice('pages/coach-professional-hub');
   assert.match(source, /Xin đổi đúng ca này/);
   assert.match(source, /coverage\.candidates\.map/);
   assert.doesNotMatch(source, /data\.peerCoaches\?\.map/);
@@ -75,8 +78,8 @@ test('replacement option API sends the selected leave window', async () => {
 });
 
 test('manager has a dedicated pending leave approval entry and status filters', () => {
-  const sidebar = fs.readFileSync(path.join(__dirname, '../src/app/layout/Sidebar.jsx'), 'utf8');
-  const manager = fs.readFileSync(path.join(__dirname, '../src/features/manager/ManagerCoachOperations.jsx'), 'utf8');
+  const sidebar = fs.readFileSync(path.join(__dirname, '../src/widgets/app-shell/ui/Sidebar.jsx'), 'utf8');
+  const manager = fs.readFileSync(path.join(__dirname, '../src/pages/manager-coach-operations/ui/ManagerCoachOperations.jsx'), 'utf8');
   const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/CoachProfessionalService.cs'), 'utf8');
   assert.match(sidebar, /Duyệt đơn nghỉ HLV/);
   assert.match(manager, /leaveStatusFilter.*Pending/);
@@ -134,7 +137,7 @@ test('partial multi-class notification is one atomic API request with normalized
     content: 'Hoàn thành trước thứ Sáu'
   });
 
-  const source = fs.readFileSync(path.join(__dirname, '../src/features/coach/CoachNotifications.jsx'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../src/pages/coach-notifications/ui/CoachNotifications.jsx'), 'utf8');
   assert.match(source, /classIds:\s*selectedClassIds\.map\(Number\)/);
   assert.match(source, /classIds\.includes\(cid\)/);
   assert.doesNotMatch(source, /selectedClassIds\.map\(async cid/);

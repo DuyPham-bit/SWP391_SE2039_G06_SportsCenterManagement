@@ -1292,6 +1292,10 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
 
+                    b.Property<int>("AttemptCount")
+                        .HasColumnType("int")
+                        .HasColumnName("attempt_count");
+
                     b.Property<string>("Channel")
                         .IsRequired()
                         .HasMaxLength(20)
@@ -1301,6 +1305,24 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("created_at");
+
+                    b.Property<string>("LastError")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasColumnName("last_error");
+
+                    b.Property<DateTime?>("LeaseUntil")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("lease_until");
+
+                    b.Property<string>("LockedBy")
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)")
+                        .HasColumnName("locked_by");
+
+                    b.Property<DateTime?>("NextAttemptAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("next_attempt_at");
 
                     b.Property<long?>("NotificationId")
                         .HasColumnType("bigint")
@@ -1332,6 +1354,8 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("RecipientUserId");
 
                     b.HasIndex("Status", "CreatedAt");
+
+                    b.HasIndex("Status", "NextAttemptAt", "LeaseUntil");
 
                     b.ToTable("communication_deliveries", "dbo");
                 });
@@ -3400,9 +3424,9 @@ namespace SportsCenterManagement.DAL.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CenterId", "CreatedAt");
-
                     b.HasIndex("DriveFileId");
+
+                    b.HasIndex("CenterId", "CreatedAt");
 
                     b.ToTable("uploaded_media", "dbo");
                 });

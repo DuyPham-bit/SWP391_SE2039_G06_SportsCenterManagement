@@ -204,10 +204,20 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   assert.deepEqual(published.facilitiesSection.facilitiesList, []);
   checks.push('Retrying a failed save publishes the draft and preserves empty business lists and metrics.');
 
-  for (const label of ['2. Tại Sao Chọn SCMS', '3. Môn Thể Thao', '4. Thẻ Cụm Sân', '5. Sơ Đồ Phân Khu', '6. Kêu Gọi & Footer']) {
-    await click(manager, label); await delay(100);
+  // Each tab must show its own section heading (not just accept the click).
+  for (const [label, heading] of [
+    ['1. Hero Banner', 'Khu Vực 1: Hero Banner Mở Đầu Trang Chủ'],
+    ['2. Tại Sao Chọn SCMS', 'Khu Vực 2: Tại Sao Nên Chọn SCMS'],
+    ['3. Môn Thể Thao', 'Thêm thẻ bộ môn'],
+    ['4. Thẻ Cụm Sân', 'Thêm thẻ cụm sân'],
+    ['5. Sơ Đồ Phân Khu', 'Khu Vực 5: Sơ Đồ Các Khu Vực Tập Luyện'],
+    ['6. Kêu Gọi & Footer', 'Khu Vực 6: Banner Kêu Gọi Sự Kiện & Chân Trang Footer'],
+    ['7. Banner Đăng Nhập', 'Khu Vực 7: Banner Giới Thiệu Đăng Nhập & Đăng Ký']
+  ]) {
+    await click(manager, label);
+    await until(`tab ${label}`, () => evaluate(manager, `document.body.textContent.includes(${JSON.stringify(heading)})`));
   }
-  checks.push('All six editor tabs render without JavaScript errors.');
+  checks.push('All seven editor tabs render their own section without JavaScript errors.');
 
   await click(manager, '4. Thẻ Cụm Sân');
   await click(manager, 'Thêm thẻ cụm sân');

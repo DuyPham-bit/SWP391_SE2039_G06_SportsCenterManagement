@@ -9,10 +9,17 @@ const { issueBrowserSession, browserCredential } = require('./browser-auth-fixtu
 const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, '.validation/payment-checkout');
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
-const state = { creates: 0, pendingReads: 0, callbacks: [], createError: false, pending: [], delayedFailure: null };
+const state = { bookingPosts: 0, creates: 0, pendingReads: 0, callbacks: [], createError: false, pending: [], delayedFailure: null };
 const errors = [];
 const checks = [];
 const pkg = { id: 7, name: 'Gói kiểm thử', price: 100000, durationDays: 30, status: 'Active' };
+// Dashboard fixture: one confirmed booking tomorrow (Vietnam date) so it is upcoming and cancellable.
+const tomorrow = new Date(Date.now() + 31 * 3600000).toISOString().slice(0, 10);
+const dashboardBooking = { id: 301, sessionId: 401, classId: 5, className: 'Lớp dashboard kiểm thử', sessionDate: tomorrow, startTime: '08:00:00',
+  endTime: '09:00:00', roomName: 'Phòng dashboard', coachName: 'HLV dashboard', status: 'Booked', sessionStatus: 'Scheduled', bookedAt: '2026-11-01T08:00:00Z' };
+// Schedule fixture: a bookable session tomorrow; booking it returns the new booking.
+const scheduleSession = { sessionId: 601, classId: 9, className: 'Lớp lịch học kiểm thử', sportName: 'Yoga', sessionDate: tomorrow, startTime: '10:00:00',
+  endTime: '11:00:00', coachName: 'HLV lịch học', roomName: 'Phòng lịch học', bookedCount: 2, capacity: 10, sessionStatus: 'Scheduled', isBookable: true, allowWaitlist: false };
 let appOrigin, apiOrigin, chrome, cdp;
 
 function json(res, data, status = 200) {
@@ -42,7 +49,7 @@ const api = http.createServer(async (req, res) => {
   if (browserCredential(req) !== 'fixture-member-token') return json(res, { message: 'Unauthorized' }, 401);
   if (route === '/api/profile/me') return json(res, { userId: 1, role: 'Member', status: 'Active', centerId: 1, fullName: 'Hội viên kiểm thử', email: 'member@example.test' });
   if (route === '/api/members/me') return json(res, { memberId: 1 });
-  if (route === '/api/access/me/capabilities') return json(res, []);
+  if (route === '/api/access/me/capabilities') return json(res, ['book_class', 'cancel_booking', 'view_my_progress']);
   if (route === '/api/centers/1/membership-packages') return json(res, [pkg]);
   if (route === '/api/payments/my-pending-invoices') { state.pendingReads += 1; return json(res, state.pending); }
   if (/\/api\/payments\/create-(vnpay|momo)-url$/.test(route)) {
@@ -58,6 +65,10 @@ const api = http.createServer(async (req, res) => {
     await delay(100);
     return json(res, { paymentUrl: `${apiOrigin}/checkout` });
   }
+  if (route === '/api/members/me/session-bookings') return json(res, [dashboardBooking]);
+  if (route === '/api/class-sessions') return json(res, { items: [scheduleSession], totalCount: 1, pageSize: 100 });
+  if (route === '/api/class-sessions/601/bookings' && req.method === 'POST') { state.bookingPosts += 1; return json(res, { booking: { ...dashboardBooking, id: 302, sessionId: 601, classId: 9, className: scheduleSession.className, startTime: '10:00:00', endTime: '11:00:00' } }); }
+  if (route === '/api/members/me/progress' || route === '/api/members/me/training-plans') return json(res, []);
   if (route.endsWith('/subscriptions') || route === '/api/notifications/me') return json(res, []);
   errors.push(`Unexpected API route: ${route}`);
   return json(res, { message: 'Unknown fixture endpoint' }, 404);
@@ -173,6 +184,32 @@ async function checkout(session) {
   })()`);
   await cdp.evaluate(session, `document.querySelector('button[type=submit]').click()`);
   await until('authenticated dashboard', () => cdp.evaluate(session, `location.hash === '#/member/dashboard'`));
+  // Member dashboard: upcoming booking, check-in QR dialog and cancel confirmation render.
+  const dialogHas = text => cdp.evaluate(session, `document.querySelector('[role=dialog]')?.textContent.includes(${JSON.stringify(text)}) === true`);
+  const closeDialog = async () => { await cdp.evaluate(session, `document.querySelector('[role=dialog] button[aria-label="Đóng"]').click()`); await until('dialog closed', () => cdp.evaluate(session, `!document.querySelector('[role=dialog]')`)); };
+  await until('dashboard booking', () => cdp.evaluate(session, `document.querySelector('main')?.textContent.includes('Lớp dashboard kiểm thử') === true`)).catch(async error => {
+    throw new Error(`${error.message} errors=${JSON.stringify(errors)} main=${await cdp.evaluate(session, `(document.querySelector('main')?.innerHTML || 'NO MAIN').slice(0, 1500)`).catch(e => String(e))}`);
+  });
+  await until('qr opened', () => cdp.evaluate(session, `(() => { const b = document.querySelector('main [title="Chạm để phóng to mã QR"]'); if (!b) return false; b.click(); return true; })()`));
+  await until('qr dialog', () => dialogHas('Mã Số Thẻ Check-in Điện Tử Qua Cổng'));
+  await closeDialog();
+  await until('cancel opened', () => cdp.evaluate(session, `(() => { const b = [...document.querySelectorAll('main button')].find(b => b.textContent.includes('Hủy ca học')); if (!b) return false; b.click(); return true; })()`));
+  await until('cancel dialog', () => dialogHas('Lớp dashboard kiểm thử'));
+  await closeDialog();
+  checks.push('Member dashboard shows the upcoming booking, the check-in QR dialog and the cancel confirmation');
+  // Class schedule: week, month and agenda views render; booking from the agenda posts to the session.
+  const pressMain = (label, text) => until(label, () => cdp.evaluate(session, `(() => { const b = [...document.querySelectorAll('main button')].find(b => !b.disabled && b.textContent.includes(${JSON.stringify(text)})); if (!b) return false; b.click(); return true; })()`));
+  await cdp.evaluate(session, `location.hash = '#/member/schedule'`);
+  await until('schedule page', () => cdp.evaluate(session, `Boolean([...document.querySelectorAll('main button')].find(b => b.textContent.includes('Lịch Biểu')))`));
+  await pressMain('month view', 'Tháng');
+  await pressMain('agenda view', 'Lịch Biểu');
+  await until('agenda session', () => cdp.evaluate(session, `document.querySelector('main').textContent.includes('Lớp lịch học kiểm thử')`));
+  await pressMain('book now', 'Đặt Chỗ');
+  await until('booking dialog', () => dialogHas('Xác Nhận Giữ Chỗ'));
+  await until('confirm booking', () => cdp.evaluate(session, `(() => { const b = [...document.querySelectorAll('[role=dialog] button')].find(b => !b.disabled && b.textContent.includes('Xác Nhận Giữ Chỗ')); if (!b) return false; b.click(); return true; })()`));
+  await until('booking request', () => state.bookingPosts > 0);
+  await pressMain('week view', 'Tuần (Timetable)');
+  checks.push('Class schedule renders week, month and agenda views and books a session from the agenda');
   // Members are redirected in the same tab; the gateway returns to the app origin, where the tab's session selector survives.
   const openPackages = async () => {
     await cdp.evaluate(session, `location.href = ${JSON.stringify(`${appOrigin}/#/member/packages`)}`);

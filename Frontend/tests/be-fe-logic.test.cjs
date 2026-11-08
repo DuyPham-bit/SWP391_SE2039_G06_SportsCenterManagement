@@ -1,11 +1,12 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiSource } = require('./helpers/apiSources.cjs');
 const vm = require('node:vm');
 const { test } = require('node:test');
 
 function client(respond, now = '2026-10-17T18:00:00Z', user = { role: 'MEMBER', centerId: 15 }) {
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/backendApi.js'), 'utf8')
+  const source = apiSource()
     .replace(/^import .+;\r?\n/gm, '').replaceAll('export const ', 'const ')
     .replaceAll('import.meta.env', '({})');
   class FixedDate extends Date {
@@ -58,7 +59,7 @@ test('class browsing starts on the Vietnam business date around UTC midnight', a
 });
 
 test('local permission overrides cannot replace backend capabilities or cross roles', () => {
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/permissions.js'), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src/entities/permission/model/permissions.js'), 'utf8')
     .replace(/^import .+;\r?\n/gm, '').replace(/export /g, '');
   const context = vm.createContext({
     getAuthUser: () => ({ id: 1, centerId: 15, role: 'COACH', capabilities: ['view_teaching_schedule'] }),

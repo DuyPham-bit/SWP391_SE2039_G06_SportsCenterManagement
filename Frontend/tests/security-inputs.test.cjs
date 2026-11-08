@@ -1,12 +1,13 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiSource } = require('./helpers/apiSources.cjs');
 const vm = require('node:vm');
 const { test } = require('node:test');
 
 function client() {
   const calls = [];
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/backendApi.js'), 'utf8')
+  const source = apiSource()
     .replace(/^import .+;\r?\n/gm, '').replaceAll('export const ', 'const ')
     .replaceAll('import.meta.env', '({})');
   const context = vm.createContext({
@@ -42,7 +43,7 @@ test('account creation sends exactly the chosen password and appointment does no
 });
 
 test('data-driven links only accept HTTP(S), root-relative paths and local anchors', async () => {
-  const { safeHref } = await import('../src/services/safeUrl.js');
+  const { safeHref } = await import('../src/shared/lib/safeUrl.js');
   for (const value of [
     'https://cdn.example.test/photo.jpg', 'http://localhost:3003/uploads/photo.avif',
     '/uploads/photo.webp?version=2', '#/register', '#khoa-hoc', ' HTTPS://example.test/path '

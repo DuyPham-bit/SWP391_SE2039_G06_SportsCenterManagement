@@ -1,6 +1,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiSource } = require('./helpers/apiSources.cjs');
 const vm = require('node:vm');
 const { test } = require('node:test');
 
@@ -10,8 +11,8 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 test('audit API and manager UI do not expose before/after values', () => {
   const response = read('Backend/SportsCenterManagement.BLL/DTOs/Audit/Responses.cs');
   const query = read('Backend/SportsCenterManagement.BLL/Services/AuditLogService.cs');
-  const ui = read('Frontend/src/features/manager/AuditLogs.jsx');
-  const api = read('Frontend/src/services/backendApi.js');
+  const ui = read('Frontend/src/pages/audit-logs/ui/AuditLogs.jsx');
+  const api = apiSource();
 
   assert.doesNotMatch(response, /OldValues|NewValues/);
   assert.doesNotMatch(query, /log\.OldValues|log\.NewValues/);
@@ -22,8 +23,8 @@ test('audit API and manager UI do not expose before/after values', () => {
 
 test('manager can process support tickets but cannot create a ticket for a requester', () => {
   const controller = read('Backend/SportsCenterManagement.API/Controllers/SupportRequestsController.cs');
-  const supportUi = read('Frontend/src/features/receptionist/SupportRequests.jsx');
-  const managerUi = read('Frontend/src/features/manager/ManagerSupportCommunications.jsx');
+  const supportUi = read('Frontend/src/widgets/support-inbox/ui/SupportRequests.jsx');
+  const managerUi = read('Frontend/src/pages/manager-support/ui/ManagerSupportCommunications.jsx');
 
   assert.match(controller, /\[Authorize\(Roles = "RECEPTIONIST"\)\]\s*public async Task<ActionResult<SupportDetails>> Create/);
   assert.match(supportUi, /currentUser\?\.role[\s\S]*=== 'RECEPTIONIST'/);
@@ -52,7 +53,7 @@ test('center notification backend rebuilds a safe recipient list and records aud
 });
 
 test('frontend sends either all-center or selected-role notification contract', async () => {
-  const source = read('Frontend/src/services/backendApi.js')
+  const source = apiSource()
     .replace(/^import .+;\r?\n/gm, '')
     .replaceAll('export const ', 'const ')
     .replaceAll('import.meta.env', '({})');

@@ -1,8 +1,6 @@
-export { authApi } from './api/authApi.js';
-export { LoginPage, default as LoginPageComponent } from './LoginPage.jsx';
-export { default } from './LoginPage.jsx';
-export { ForgotPasswordModal } from './ForgotPasswordModal.jsx';
-export { GoogleLoginModal } from './GoogleLoginModal.jsx';
-export { ProfileModal } from './ProfileModal.jsx';
-export { PasswordInput } from './PasswordInput.jsx';
-export { AuthField } from './AuthField.jsx';
+export { usePasswordInput } from './model/usePasswordInput.js';
+export { AuthField } from './ui/AuthField.jsx';
+export { ForgotPasswordModal } from './ui/ForgotPasswordModal.jsx';
+export { GoogleLoginModal } from './ui/GoogleLoginModal.jsx';
+export { PasswordInput } from './ui/PasswordInput.jsx';
+export { ProfileModal } from './ui/ProfileModal.jsx';

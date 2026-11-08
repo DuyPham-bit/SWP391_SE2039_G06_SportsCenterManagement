@@ -5,10 +5,10 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 
 function loadHelpers() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/features/manager/coachAssignmentView.js'), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src/pages/manager-coach-assignment/model/coachAssignmentView.js'), 'utf8')
     .replaceAll('export function ', 'function ');
   const context = vm.createContext({ Intl, Set });
-  vm.runInContext(`${source}\nglobalThis.helpers = { isCoachCompatible, summarizeCoachAssignments, filterAndSortAssignmentClasses, coachWorkload };`, context);
+  vm.runInContext(`${source}\nglobalThis.helpers = { isCoachCompatible, filterCompatibleCoaches, summarizeCoachAssignments, filterAndSortAssignmentClasses, coachWorkload };`, context);
   return context.helpers;
 }
 
@@ -51,4 +51,23 @@ test('coach workload counts only active primary assignments', () => {
     { coachId: 2, status: 'Published' }, { coachId: 2, status: 'Completed' }
   ]);
   assert.deepEqual(Array.from(result, item => [item.id, item.primaryClassCount]), [[1, 1], [2, 2]]);
+});
+
+test('filterCompatibleCoaches returns only coaches matching the class sport', () => {
+  const { filterCompatibleCoaches } = loadHelpers();
+  const coaches = [
+    { id: 1, fullName: 'Nguyễn Hữu Đạt', sportIds: [1], specialization: 'Bơi lội' },
+    { id: 2, fullName: 'Trần Quốc Tuấn', sportIds: [2], specialization: 'Thể hình' },
+    { id: 3, fullName: 'Ngô Quang Huy', sportIds: [9], specialization: 'Bóng bàn' }
+  ];
+  const tableTennisClass = { id: 11, sportId: 9, sportName: 'Bóng bàn' };
+  const filtered = filterCompatibleCoaches(coaches, tableTennisClass);
+  assert.deepEqual(filtered.map(c => c.id), [3]);
+  assert.equal(filtered[0].fullName, 'Ngô Quang Huy');
+
+  const swimmingClass = { id: 8, sportId: 1, sportName: 'Bơi lội' };
+  assert.deepEqual(filterCompatibleCoaches(coaches, swimmingClass).map(c => c.id), [1]);
+
+  const unassignedClass = { id: 99, sportId: 10, sportName: 'Pickleball' };
+  assert.deepEqual(filterCompatibleCoaches(coaches, unassignedClass), []);
 });
