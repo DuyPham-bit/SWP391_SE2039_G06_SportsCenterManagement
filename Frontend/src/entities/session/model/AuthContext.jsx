@@ -3,6 +3,7 @@ import { authApi } from '../api/authApi.js';
 import { getApiSession } from '../../../shared/api/http.js';
 import { assertAuthUser, getAuthVersion } from '../../../shared/api/authState.js';
 import { clearMemberAIChatStorage } from '../../../shared/lib/memberAiChatStorage.js';
+import { peekLegacyAvatar, forgetLegacyAvatar } from '../../../shared/lib/avatarHelper.js';
 
 const AuthContext = createContext(null);
 
@@ -115,6 +116,22 @@ export function AuthProvider({ children }) {
     return applyUser(updated);
   };
 
+  // One-time migration: a photo older versions saved only in this browser is moved to the server.
+  useEffect(() => {
+    if (!currentUser?.id || currentUser.avatar) return;
+    const legacy = peekLegacyAvatar(currentUser.id);
+    if (!legacy) return;
+    authApi.updateAvatar(currentUser.id, legacy)
+      .then(updated => { forgetLegacyAvatar(currentUser.id); if (updated) applyUser(updated); })
+      .catch(() => { /* keep the local copy and retry on the next session */ });
+  }, [currentUser?.id, currentUser?.avatar]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const changeInitialPassword = async (currentPassword, newPassword, confirmPassword) => {
+    if (!currentUser) return;
+    const updated = await authApi.changeInitialPassword(currentPassword, newPassword, confirmPassword);
+    return applyUser(updated);
+  };
+
   const value = {
     currentUser,
     role: currentUser?.role || null,
@@ -129,6 +146,7 @@ export function AuthProvider({ children }) {
     updateProfile,
     updateAvatar,
     changePassword,
+    changeInitialPassword,
     refreshUser
   };
 

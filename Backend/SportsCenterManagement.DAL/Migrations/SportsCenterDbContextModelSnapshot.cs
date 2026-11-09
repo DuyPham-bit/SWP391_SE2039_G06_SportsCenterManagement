@@ -23,6 +23,46 @@ namespace SportsCenterManagement.DAL.Migrations
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
 
+            modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AccountActivationToken", b =>
+                {
+                    b.Property<long>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("bigint");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<long>("Id"));
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("created_at");
+
+                    b.Property<DateTime>("ExpiresAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("expires_at");
+
+                    b.Property<string>("TokenHash")
+                        .IsRequired()
+                        .HasMaxLength(64)
+                        .HasColumnType("nvarchar(64)")
+                        .HasColumnName("token_hash");
+
+                    b.Property<DateTime?>("UsedAt")
+                        .HasColumnType("datetime2")
+                        .HasColumnName("used_at");
+
+                    b.Property<long>("UserId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("user_id");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TokenHash")
+                        .IsUnique();
+
+                    b.HasIndex("UserId", "CreatedAt");
+
+                    b.ToTable("account_activation_tokens", "dbo");
+                });
+
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AiConversation", b =>
                 {
                     b.Property<long>("Id")
@@ -3003,6 +3043,12 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("bigint")
                         .HasColumnName("member_id");
 
+                    b.Property<string>("Priority")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasColumnName("priority");
+
                     b.Property<long>("RequesterId")
                         .HasColumnType("bigint")
                         .HasColumnName("requester_id");
@@ -3467,6 +3513,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("nvarchar(255)")
                         .HasColumnName("google_subject");
 
+                    b.Property<bool>("IsEmailVerified")
+                        .HasColumnType("bit")
+                        .HasColumnName("is_email_verified");
+
                     b.Property<DateTime?>("LastLoginAt")
                         .HasColumnType("datetime2")
                         .HasColumnName("last_login_at");
@@ -3474,6 +3524,10 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.Property<DateTime?>("LockedUntil")
                         .HasColumnType("datetime2")
                         .HasColumnName("locked_until");
+
+                    b.Property<bool>("MustChangePassword")
+                        .HasColumnType("bit")
+                        .HasColumnName("must_change_password");
 
                     b.Property<string>("PasswordHash")
                         .IsRequired()
@@ -3562,6 +3616,15 @@ namespace SportsCenterManagement.DAL.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("user_notifications", "dbo");
+                });
+
+            modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AccountActivationToken", b =>
+                {
+                    b.HasOne("SportsCenterManagement.DAL.Entities.User", null)
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
                 });
 
             modelBuilder.Entity("SportsCenterManagement.DAL.Entities.AiConversation", b =>

@@ -1588,22 +1588,6 @@ select {
   transform-origin: 50% 50%;
   animation: dmRingBreath 7s ease-in-out infinite;
 }
-/* A band of light sweeps across once on arrival and again on hover. */
-[data-scms-view='dashboard'] .scms-page .rounded-3xl:has(> [class*='blur-3xl'])::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.16) 50%, transparent 62%) no-repeat;
-  background-size: 260% 100%;
-  background-position: 170% 0;
-  animation: dmHeroSweep 1.8s 0.35s ease-in-out backwards;
-}
-[data-scms-view='dashboard'] .scms-page .rounded-3xl:has(> [class*='blur-3xl']):hover::after {
-  animation: dmHeroSweep 1.4s ease-in-out;
-}
 /* Hero content: identity block, then toolbar, rise in turn. */
 [data-scms-view='dashboard'] .scms-page .rounded-3xl:has(> [class*='blur-3xl']) > .relative > * {
   animation: dmRise 620ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
@@ -1781,17 +1765,13 @@ html.dark[data-scms-view='dashboard'] .scms-page .grid > :is([class*='rounded-2x
   0%, 100% { scale: 1; opacity: 0.3; }
   50% { scale: 1.07; opacity: 0.55; }
 }
-@keyframes dmHeroSweep {
-  from { background-position: 170% 0; }
-  to { background-position: -70% 0; }
-}
 @keyframes dmRise {
   from { opacity: 0; translate: 0 14px; }
   to { opacity: 1; translate: 0 0; }
 }
 /* ── .scms-hero: the same banner choreography on any route (not only dashboards) ──
    Orbs float, the dashed lane flows, solid lines draw in, the ring breathes, a band of light
-   sweeps on arrival and on hover, the content rises in turn. The gradient itself stays still so
+   the content rises in turn. The gradient itself stays still so
    the whole sage → teal → sand band is always visible. */
 .scms-hero {
   position: relative;
@@ -1816,21 +1796,6 @@ html.dark[data-scms-view='dashboard'] .scms-page .grid > :is([class*='rounded-2x
   transform-origin: 50% 50%;
   animation: dmRingBreath 7s ease-in-out infinite;
 }
-.scms-hero::after {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: 1;
-  border-radius: inherit;
-  pointer-events: none;
-  background: linear-gradient(105deg, transparent 38%, rgba(255, 255, 255, 0.16) 50%, transparent 62%) no-repeat;
-  background-size: 260% 100%;
-  background-position: 170% 0;
-  animation: dmHeroSweep 1.8s 0.35s ease-in-out backwards;
-}
-.scms-hero:hover::after {
-  animation: dmHeroSweep 1.4s ease-in-out;
-}
 .scms-hero > .relative > * {
   animation: dmRise 620ms cubic-bezier(0.16, 1, 0.3, 1) backwards;
 }
@@ -1847,8 +1812,7 @@ html.dark[data-scms-view='dashboard'] .scms-page .grid > :is([class*='rounded-2x
 @media (prefers-reduced-motion: reduce) {
   .scms-hero > *,
   .scms-hero > .relative > *,
-  .scms-hero > svg *,
-  .scms-hero::after {
+  .scms-hero > svg * {
     animation: none !important;
   }
   .scms-hero :is(button, a):hover {

@@ -140,9 +140,16 @@ export function ManagerCoachOperations() {
     ).then((ok) => ok && e.target.reset());
   };
 
+  const openIssueCount = (data?.equipmentIssues || [])
+    .filter(issue => !['Resolved', 'Closed', 'Rejected', 'Cancelled'].includes(issue.status)).length;
+
   const tabs = [
     { id: 'leaves', label: isEn ? `Leave Approvals (${pendingLeaveCount})` : `Duyệt đơn nghỉ (${pendingLeaveCount})`, icon: 'event_busy' },
-    { id: 'compensation', label: isEn ? 'Salary & KPI Report' : 'Lương & Báo cáo KPI', icon: 'payments' }
+    { id: 'compensation', label: isEn ? 'Salary & KPI Report' : 'Lương & Báo cáo KPI', icon: 'payments' },
+    // Restored tabs: their data (resources, equipment issues, delivery log) comes from the DB again.
+    { id: 'resources', label: isEn ? 'Equipment & Zones' : 'Tài nguyên & Thiết bị', icon: 'inventory_2' },
+    { id: 'issues', label: isEn ? `Maintenance Issues (${openIssueCount})` : `Sự cố bảo trì (${openIssueCount})`, icon: 'build' },
+    { id: 'delivery', label: isEn ? 'Message Delivery' : 'Giám sát tin nhắn', icon: 'mark_email_read' }
   ];
 
   return (

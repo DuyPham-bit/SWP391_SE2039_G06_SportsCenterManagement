@@ -8,7 +8,7 @@ export const supportApi = {
   },
   get: id => apiRequest(`support-requests/me/${Number(id)}`),
   submit: ({ subject, description, priority }) => apiRequest('support-requests/me', {
-    method: 'POST', body: { subject: subject.trim(), description: description.trim(), priority }
+    method: 'POST', body: { subject: subject.trim(), description: description.trim(), priority: priority || 'Normal' }
   }),
   reply: (id, message) => apiRequest(`support-requests/me/${Number(id)}/messages`, {
     method: 'POST', body: { message: message.trim() }

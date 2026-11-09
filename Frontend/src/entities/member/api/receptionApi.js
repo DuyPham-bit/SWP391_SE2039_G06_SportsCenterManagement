@@ -21,12 +21,11 @@ export const receptionApi = {
       throw new Error('Vui lòng nhập mật khẩu khởi tạo cho hội viên.');
     }
     const cid = centerId();
-    const emailPrefix = (email || '').split('@')[0].replace(/[^a-zA-Z0-9]/g, '');
-    const finalUsername = (username || `${emailPrefix}${Math.floor(100 + Math.random() * 900)}`).toLowerCase();
     const result = await apiRequest(`centers/${cid}/members`, {
       method: 'POST',
       body: {
-        username: finalUsername,
+        // Only an explicitly chosen username is sent; otherwise the server generates a unique one.
+        username: username?.trim() ? username.trim().toLowerCase() : null,
         email: email.trim(),
         password,
         fullName: fullName.trim(),
@@ -36,6 +35,40 @@ export const receptionApi = {
       }
     });
     return mapMember(result);
+  },
+
+  /**
+   * Counter quick-create: the backend sets the phone number as the initial password (must change)
+   * and emails a 24h verify + set-password link. Returns { member, emailSent, message, resendCooldownSeconds }.
+   */
+  async quickCreateMember({ fullName, phoneNumber, email, gender, dateOfBirth, address }) {
+    const result = await apiRequest('receptionist/members/quick-create', {
+      method: 'POST',
+      body: {
+        fullName: fullName.trim(),
+        phoneNumber: phoneNumber.trim(),
+        email: email.trim().toLowerCase(),
+        gender: gender || null,
+        dateOfBirth: dateOfBirth || null,
+        address: address?.trim() || null
+      }
+    });
+    return { ...result, member: mapMember(result.member) };
+  },
+
+  /** Re-sends the activation email. 429 errors carry `retryAfter` (seconds). */
+  async resendVerification(memberId) {
+    const result = await apiRequest(`receptionist/members/${Number(memberId)}/resend-verification`, { method: 'POST' });
+    return { ...result, member: mapMember(result.member) };
+  },
+
+  /** Email-verification state for pending members: [{ memberId, fullName, memberCode, isEmailVerified }]. */
+  async getVerificationStatus(memberIds, { signal } = {}) {
+    const ids = [...new Set(memberIds.map(Number).filter(Number.isSafeInteger))].slice(0, 50);
+    if (!ids.length) return [];
+    const params = new URLSearchParams();
+    ids.forEach(id => params.append('ids', String(id)));
+    return asArray(await apiRequest(`receptionist/members/verification-status?${params}`, { signal }));
   },
 
   async registerCounterPackage({ memberId, packageId, paymentMethod = 'TIỀN MẶT', amountReceived, posApprovalCode, idempotencyKey, cancelPendingIfAny = false }) {
@@ -174,15 +207,15 @@ export const receptionApi = {
     return apiRequest(`centers/${centerId()}/support-requests/${Number(id)}`);
   },
 
-  async createSupportRequest({ memberId, subject, description }) {
+  async createSupportRequest({ memberId, subject, description, priority = 'Normal' }) {
     return apiRequest(`centers/${centerId()}/support-requests`, {
-      method: 'POST', body: { memberId: Number(memberId), subject: subject.trim(), description: description.trim() }
+      method: 'POST', body: { memberId: Number(memberId), subject: subject.trim(), description: description.trim(), priority }
     });
   },
 
-  async updateSupportRequest(id, { status, note }) {
+  async updateSupportRequest(id, { status, note, priority = null }) {
     return apiRequest(`centers/${centerId()}/support-requests/${Number(id)}`, {
-      method: 'PATCH', body: { status, note: note?.trim() || null }
+      method: 'PATCH', body: { status, note: note?.trim() || null, priority }
     });
   }
 };

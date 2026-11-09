@@ -85,3 +85,5 @@ graphify-out/
 
 # Design-skill working files
 .taste-skill/
+.claude/
+skills-lock.json

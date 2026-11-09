@@ -133,6 +133,10 @@ sealed class UnusedAuditStorage : SportsCenterManagement.API.Services.IR2Storage
         => throw new InvalidOperationException("Media writes are outside this isolated audit.");
     public Task DeleteAsync(string key, CancellationToken cancellationToken = default)
         => throw new InvalidOperationException("Media writes are outside this isolated audit.");
+    public Task<string> UploadMemberAvatarAsync(IFormFile file, long memberUserId, long maxFileSize, CancellationToken cancellationToken = default)
+        => throw new InvalidOperationException("Media writes are outside this isolated audit.");
+    public Task DeleteMemberAvatarAsync(string key, long memberUserId, CancellationToken cancellationToken = default)
+        => throw new InvalidOperationException("Media writes are outside this isolated audit.");
     public string GetPresignedUrl(string key, TimeSpan expiresIn)
         => throw new InvalidOperationException("Media reads are outside this isolated audit.");
 }

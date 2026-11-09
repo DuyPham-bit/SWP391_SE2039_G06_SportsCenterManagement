@@ -312,12 +312,20 @@ export function ManagerDashboard() {
     }));
   }, [revenueBySport]);
 
-  // Real class booking items from DB
+  // Real class booking items from DB (Ranked classes with full metadata)
   const classBookingItems = useMemo(() => {
     return topClasses.slice(0, 6).map((cls, idx) => ({
-      month: cls.name.length > 10 ? cls.name.slice(0, 9) + '…' : cls.name,
+      rank: idx + 1,
+      id: cls.id,
+      name: cls.name,
+      sportName: cls.sportName || '',
+      coachName: cls.coachName || '',
+      roomName: cls.roomName || '',
       val: cls.booked || 0,
-      isCurrent: idx === 0
+      capacity: cls.capacity || 0,
+      occupancyRate: cls.occupancyRate != null ? cls.occupancyRate : (cls.capacity > 0 ? Math.round(((cls.booked || 0) / cls.capacity) * 100) : 0),
+      isCurrent: idx === 0,
+      month: cls.name
     }));
   }, [topClasses]);
 
@@ -651,7 +659,7 @@ export function ManagerDashboard() {
                 </span>
               </div>
               <div className="py-2 flex-1 flex items-center justify-center">
-                <RoomStatusDonutChart total={totalRooms} data={roomDonutData} />
+                <RoomStatusDonutChart total={totalRooms} data={roomDonutData} activeRooms={activeRooms} vacantRooms={vacantRooms} />
               </div>
             </div>
 
@@ -685,6 +693,9 @@ export function ManagerDashboard() {
                   percentage={occupancyRate}
                   collectedText={isEn ? `${totalBookings} booked / ${totalClasses} sessions` : `${totalBookings} lượt đặt / ${totalClasses} ca học`}
                   remainingText={isEn ? `${activeMembers} active members` : `${activeMembers} HV có gói`}
+                  totalBookings={totalBookings}
+                  totalClasses={totalClasses}
+                  activeMembers={activeMembers}
                 />
               </div>
             </div>
@@ -700,7 +711,7 @@ export function ManagerDashboard() {
                 </span>
               </div>
               <div className="py-2 flex-1">
-                <MemberDocumentsStackedBars items={memberStackedItems} />
+                <MemberDocumentsStackedBars items={memberStackedItems} totalMembers={totalMembers} activeMembers={activeMembers} membersWithPackage={membersWithPackage} membersWithoutPackage={membersWithoutPackage} expiredMembers={expiredMembers} />
               </div>
             </div>
           </div>
@@ -710,47 +721,98 @@ export function ManagerDashboard() {
              ======================================================== */}
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
             {/* Card 1 (6 cols): Biến động doanh thu theo thời gian */}
-            <section className="lg:col-span-6 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col">
-              <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
-                <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">
-                  {isEn ? 'Cashflow Trajectory (Gross – Refunds – Net)' : 'Biến động doanh thu theo thời gian'}
-                </h4>
-                <span className="text-[11px] text-brand-navy-400 font-medium">
-                  {period === '30D' ? (isEn ? 'Last 30 Days' : '30 ngày qua') : period === 'MONTH' ? (isEn ? 'This Month' : 'Tháng này') : period === 'LAST_MONTH' ? (isEn ? 'Last Month' : 'Tháng trước') : (isEn ? 'This Quarter' : 'Quý này')}
-                </span>
+            <section className="lg:col-span-6 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
+                  <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">
+                    {isEn ? 'Cashflow Trajectory (Gross – Refunds – Net)' : 'Biến động doanh thu theo thời gian'}
+                  </h4>
+                  <span className="text-[11px] text-brand-navy-400 font-medium">
+                    {period === '30D' ? (isEn ? 'Last 30 Days' : '30 ngày qua') : period === 'MONTH' ? (isEn ? 'This Month' : 'Tháng này') : period === 'LAST_MONTH' ? (isEn ? 'Last Month' : 'Tháng trước') : (isEn ? 'This Quarter' : 'Quý này')}
+                  </span>
+                </div>
+
+                {/* Streamlined Executive KPI Strip (Compact & High-Density) */}
+                <div className="grid grid-cols-3 gap-2.5 pt-2.5 pb-1">
+                  <div className="px-3 py-2 rounded-xl bg-brand-sand-50/80 dark:bg-brand-sand-950/50 border border-brand-sand-200/80 dark:border-brand-sand-800/60 flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-brand-sand-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <span className="material-symbols-outlined text-[15px]">trending_up</span>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-sand-800 dark:text-brand-sand-400 block truncate">
+                        {isEn ? 'Net Revenue' : 'Thực thu ròng'}
+                      </span>
+                      <span className="text-sm font-black font-chivo text-brand-navy-900 dark:text-white block truncate leading-tight">
+                        <AnimatedNumber value={netRevenue} duration={1200} suffix="đ" />
+                      </span>
+                    </div>
+                  </div>
+                  <div className="px-3 py-2 rounded-xl bg-brand-teal-50/80 dark:bg-brand-teal-950/50 border border-brand-teal-200/80 dark:border-brand-teal-800/60 flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-brand-teal-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <span className="material-symbols-outlined text-[15px]">payments</span>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-teal-800 dark:text-brand-teal-400 block truncate">
+                        {isEn ? 'Gross Revenue' : 'Doanh thu gộp'}
+                      </span>
+                      <span className="text-sm font-black font-chivo text-brand-navy-900 dark:text-white block truncate leading-tight">
+                        <AnimatedNumber value={grossRevenue} duration={1200} suffix="đ" />
+                      </span>
+                    </div>
+                  </div>
+                  <div className="px-3 py-2 rounded-xl bg-brand-danger-50/80 dark:bg-brand-danger-950/50 border border-brand-danger-200/80 dark:border-brand-danger-800/60 flex items-center gap-2.5">
+                    <div className="w-7 h-7 rounded-lg bg-brand-danger-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
+                      <span className="material-symbols-outlined text-[15px]">assignment_return</span>
+                    </div>
+                    <div className="min-w-0">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-brand-danger-700 dark:text-brand-danger-400 block truncate">
+                        {isEn ? 'Refunds' : 'Đã hoàn tiền'}
+                      </span>
+                      <span className="text-sm font-black font-chivo text-brand-navy-900 dark:text-white block truncate leading-tight">
+                        <AnimatedNumber value={refundedRevenue} duration={1200} suffix="đ" />
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <div className="flex-1 flex items-center justify-center pt-2">
+
+              {/* Chart container - Enlarge to fit the entire card */}
+              <div className="flex-1 flex flex-col justify-end pt-2 pb-1 min-h-[340px]">
                 <TwelveMonthRevenueExpensesProfitChart revenuePeriods={revenue} />
               </div>
             </section>
 
             {/* Card 2 (3 cols): Cơ cấu doanh thu theo bộ môn */}
-            <section className="lg:col-span-3 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col overflow-hidden">
-              <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
-                <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">
-                  {isEn ? 'Revenue by Sport' : 'Doanh thu theo bộ môn'}
-                </h4>
-                <span className="text-[11px] text-brand-navy-400 font-medium">
-                  {revenueBySport.length} {isEn ? 'sports' : 'bộ môn'}
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center py-1">
-                <ThreeMonthExpensesBars items={sportRevenueItems} emptyText={isEn ? 'No sport revenue in period.' : 'Chưa có doanh thu bộ môn trong kỳ.'} />
+            <section className="lg:col-span-3 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
+                  <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">
+                    {isEn ? 'Revenue by Sport' : 'Doanh thu theo bộ môn'}
+                  </h4>
+                  <span className="text-[11px] text-brand-navy-400 font-medium">
+                    {revenueBySport.length} {isEn ? 'sports' : 'bộ môn'}
+                  </span>
+                </div>
+                <div className="pt-2">
+                  <ThreeMonthExpensesBars items={sportRevenueItems} emptyText={isEn ? 'No sport revenue in period.' : 'Chưa có doanh thu bộ môn trong kỳ.'} />
+                </div>
               </div>
             </section>
 
             {/* Card 3 (3 cols): Lượt đặt theo lớp học */}
-            <section className="lg:col-span-3 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col">
-              <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
-                <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">
-                  {isEn ? 'Bookings by Class' : 'Lượt đặt theo lớp học'}
-                </h4>
-                <span className="text-[11px] text-brand-navy-400 font-medium">
-                  {topClasses.length} {isEn ? 'classes' : 'lớp'}
-                </span>
-              </div>
-              <div className="flex-1 flex flex-col justify-center py-1">
-                <SixMonthContractExpiryBars items={classBookingItems} emptyText={isEn ? 'No class sessions in period.' : 'Chưa có lớp học nào mở trong kỳ.'} />
+            <section className="lg:col-span-3 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
+              <div>
+                <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
+                  <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">
+                    {isEn ? 'Bookings by Class' : 'Lượt đặt theo lớp học'}
+                  </h4>
+                  <span className="text-[11px] text-brand-navy-400 font-medium">
+                    {topClasses.length} {isEn ? 'classes' : 'lớp'}
+                  </span>
+                </div>
+                <div className="pt-2">
+                  <SixMonthContractExpiryBars items={classBookingItems} emptyText={isEn ? 'No class sessions in period.' : 'Chưa có lớp học nào mở trong kỳ.'} />
+                </div>
               </div>
             </section>
           </div>

@@ -1,12 +1,13 @@
 import React, { useState } from 'react';
 import { usePasswordInput } from '../model/usePasswordInput.js';
 
-export function AuthField({ id, label, type = 'text', error, hint, required, ...inputProps }) {
+export function AuthField({ id, label, type = 'text', error, hint, hintId, required, ...inputProps }) {
   const [showPassword, setShowPassword] = useState(false);
   const isPassword = type === 'password';
   const { inputError, handlers } = usePasswordInput({ value: inputProps.value, onChange: inputProps.onChange, enabled: isPassword });
   const displayedError = inputError || error;
-  const descriptionId = displayedError ? `${id}-error` : hint ? `${id}-hint` : undefined;
+  // hintId: the hint is rendered by the parent (e.g. full width under a two-column row)
+  const descriptionId = displayedError ? `${id}-error` : hint ? `${id}-hint` : hintId;
 
   return (
     <div className="min-w-0">

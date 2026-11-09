@@ -1,12 +1,13 @@
 import React from 'react';
 import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
 import { translateFacilityBadge, translateSportName, translateFacilityName, translateLocation, translateCourseHighlight, translateCoachName, translateOpenHours } from '../../../shared/i18n/i18nHelper.js';
+import { CarouselSideArrows } from './CarouselControls.jsx';
 
 export function CoursesSection({
   catalogError, catalogLoading, categoryConfig, editorialContent, facilitiesList, filteredSports,
   handleScrollSportsToIndex, handleSportClick, handleSportsScroll, highlightedSportId, hours, isEn,
   landingContent, membershipAction, selectedCategory, setSelectedCategory, sportCarouselIndex,
-  sportsCarouselRef, sportsList, visibleSports
+  sportsCarousel, sportsCarouselRef, sportsList, visibleSports
 }) {
   return (
     <section className="courses-section" id="khoa-hoc">
@@ -56,10 +57,23 @@ export function CoursesSection({
         </div>
 
         {/* COURSES CAROUSEL */}
-        <div style={{position:'relative',width:'100%'}}>
+        <div
+          className="tiya-carousel-shell"
+          style={{ position: 'relative', width: '100%' }}
+          {...(sportsCarousel?.containerProps || {})}
+        >
+          <CarouselSideArrows
+            carousel={sportsCarousel}
+            isEn={isEn}
+            itemCount={filteredSports.length}
+            sectionLabel={isEn ? 'sport' : 'môn thể thao'}
+          />
+
           <div
             ref={sportsCarouselRef}
             onScroll={handleSportsScroll}
+            {...(sportsCarousel?.trackProps || {})}
+            className={`tiya-carousel-track ${sportsCarousel?.isDragging ? 'is-dragging' : ''}`}
             style={{display:'flex',gap:'24px',overflowX:'auto',scrollBehavior:'smooth',scrollSnapType:'x mandatory',paddingBottom:'20px',paddingTop:'4px',msOverflowStyle:'none',scrollbarWidth:'none'}}
           >
             {filteredSports.length === 0 ? (
@@ -99,7 +113,7 @@ export function CoursesSection({
                     className={`tiya-course-card ${isHighlighted ? 'highlighted' : ''}`}
                   >
                     <div className="tiya-course-card__image-wrap">
-                      {sport.image || facility.image || facility.secondaryImage ? <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
+                      {sport.image || facility.image || facility.secondaryImage ? <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" draggable={false} /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
                       <div style={{position:'absolute',top:'12px',left:'12px',right:'12px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',zIndex:2}}>
                         <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(0,0,0,0.65)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,textTransform:'uppercase',backdropFilter:'blur(4px)'}}>
                           <span className="material-symbols-outlined" style={{fontSize:'13px'}}>{sport.icon}</span>
@@ -159,28 +173,12 @@ export function CoursesSection({
               );
             }))}
           </div>
-
-          {/* Carousel Dots */}
-          {filteredSports.length > 1 && (
-            <div className="tiya-carousel-dots">
-              {filteredSports.map((sport, idx) => (
-                <button
-                  key={sport.id}
-                  type="button"
-                  onClick={() => handleScrollSportsToIndex(idx)}
-                  aria-label={isEn ? `Go to ${sport.name}` : `Chuyển đến môn ${sport.name}`}
-                  className={`tiya-carousel-dot ${sportCarouselIndex === idx ? 'active' : ''}`}
-                  style={{width: sportCarouselIndex === idx ? '36px' : '8px', background: sportCarouselIndex === idx ? 'var(--primary-color)' : 'rgba(0,0,0,0.15)'}}
-                />
-              ))}
-            </div>
-          )}
         </div>
       </div>
 
-      {/* Bottom Wave: Pure White #ffffff flowing into Facilities Section */}
-      <svg className="courses-bottom-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
-        <path fill="#ffffff" fillOpacity="1" d="M0,224L34.3,192C68.6,160,137,96,206,90.7C274.3,85,343,139,411,144C480,149,549,107,617,122.7C685.7,139,754,213,823,240C891.4,267,960,245,1029,224C1097.1,203,1166,181,1234,160C1302.9,139,1371,117,1406,106.7L1440,96L1440,320L1405.7,320C1371.4,320,1303,320,1234,320C1165.7,320,1097,320,1029,320C960,320,891,320,823,320C754.3,320,686,320,617,320C548.6,320,480,320,411,320C342.9,320,274,320,206,320C137.1,320,69,320,34,320L0,320Z" />
+      {/* Seamless flow into Facilities Section (both sharing Tiya Warm Cream #F4F1DE) */}
+      <svg className="courses-bottom-wave" style={{ display: 'none' }} xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">
+        <path fill="#F4F1DE" fillOpacity="1" d="M0,224L34.3,192C68.6,160,137,96,206,90.7C274.3,85,343,139,411,144C480,149,549,107,617,122.7C685.7,139,754,213,823,240C891.4,267,960,245,1029,224C1097.1,203,1166,181,1234,160C1302.9,139,1371,117,1406,106.7L1440,96L1440,320L1405.7,320C1371.4,320,1303,320,1234,320C1165.7,320,1097,320,1029,320C960,320,891,320,823,320C754.3,320,686,320,617,320C548.6,320,480,320,411,320C342.9,320,274,320,206,320C137.1,320,69,320,34,320L0,320Z" />
       </svg>
     </section>
   );

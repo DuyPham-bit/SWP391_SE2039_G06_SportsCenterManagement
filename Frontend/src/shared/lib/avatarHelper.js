@@ -7,44 +7,53 @@
  * - Đồng bộ hóa lưu trữ theo User ID và phát sự kiện cập nhật tức thời
  */
 
-export const AVATAR_STORAGE_PREFIX = 'scms_avatar_';
+// Photos are stored server-side (users.avatar_key + R2). The browser only keeps a legacy copy
+// from older versions until it has been migrated to the server once.
+const LEGACY_AVATAR_PREFIX = 'scms_avatar_';
 
-export function getAvatarStorageKey(userId) {
-  return `${AVATAR_STORAGE_PREFIX}${userId}`;
-}
-
-export function getStoredAvatar(userId) {
+/** Legacy photo saved in this browser by older versions; removed once read. */
+export function takeLegacyAvatar(userId) {
   if (!userId || typeof localStorage === 'undefined') return null;
   try {
-    return localStorage.getItem(getAvatarStorageKey(userId)) || null;
-  } catch (e) {
-    console.warn('Lỗi khi đọc avatar từ localStorage:', e);
+    const key = `${LEGACY_AVATAR_PREFIX}${userId}`;
+    const value = localStorage.getItem(key);
+    if (value) localStorage.removeItem(key);
+    return value && value.startsWith('data:image/') ? value : null;
+  } catch {
     return null;
   }
 }
 
-export function setStoredAvatar(userId, dataUrl) {
-  if (!userId || typeof localStorage === 'undefined') return;
+/** Peek without removing (used to migrate a member photo only after the upload succeeds). */
+export function peekLegacyAvatar(userId) {
+  if (!userId || typeof localStorage === 'undefined') return null;
   try {
-    const key = getAvatarStorageKey(userId);
-    if (dataUrl) {
-      localStorage.setItem(key, dataUrl);
-    } else {
-      localStorage.removeItem(key);
-    }
-    // Phát sự kiện toàn cục để các thành phần (Header, Sidebar, ProfileModal, v.v.) cập nhật ngay lập tức
-    if (typeof window !== 'undefined') {
-      window.dispatchEvent(new CustomEvent('scms:avatar-changed', {
-        detail: { userId, avatar: dataUrl || null }
-      }));
-    }
-  } catch (e) {
-    console.warn('Lỗi khi lưu avatar vào localStorage:', e);
+    const value = localStorage.getItem(`${LEGACY_AVATAR_PREFIX}${userId}`);
+    return value && value.startsWith('data:image/') ? value : null;
+  } catch {
+    return null;
   }
 }
 
-export function removeStoredAvatar(userId) {
-  setStoredAvatar(userId, null);
+export function forgetLegacyAvatar(userId) {
+  try { localStorage.removeItem(`${LEGACY_AVATAR_PREFIX}${userId}`); } catch { /* storage disabled */ }
+}
+
+/** data:image/...;base64 → File, for multipart upload. */
+export function dataUrlToFile(dataUrl, baseName = 'avatar') {
+  const [header, base64] = String(dataUrl).split(',');
+  const mime = /data:([^;]+)/.exec(header)?.[1] || 'image/jpeg';
+  const binary = atob(base64 || '');
+  const bytes = new Uint8Array(binary.length);
+  for (let i = 0; i < binary.length; i += 1) bytes[i] = binary.charCodeAt(i);
+  const extension = mime.split('/')[1]?.replace('jpeg', 'jpg') || 'jpg';
+  return new File([bytes], `${baseName}.${extension}`, { type: mime });
+}
+
+/** Lets Header, Sidebar and other open views refresh a user's photo immediately. */
+export function notifyAvatarChanged(userId, avatarUrl) {
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(new CustomEvent('scms:avatar-changed', { detail: { userId, avatar: avatarUrl || null } }));
 }
 
 /**

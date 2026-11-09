@@ -6,7 +6,7 @@ import React from 'react';
  * - Left emblem: stylized wave swirls with athlete silhouettes
  * - Right typography: OLYMPIC SPORTS ARENA
  */
-const LOGO_VERSION = '20261103v2';
+const LOGO_VERSION = '20261109v4';
 
 export function Logo({
   variant = 'auto', // 'auto' | 'dark' | 'light' | 'brand'

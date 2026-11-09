@@ -93,6 +93,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
               label: isEn ? 'Class Schedule' : 'Lịch học',
               icon: 'calendar_month',
               subItems: [
+                { label: isEn ? 'Sport & Coach Enrollment' : 'Đăng ký môn & HLV', path: '#/member/enroll' },
                 { label: isEn ? 'Timetable' : 'Thời khóa biểu', path: '#/member/schedule' },
                 { label: isEn ? 'Booked & Cancelled' : 'Lớp đã đặt & Hủy', path: '#/member/bookings' }
               ]

@@ -1387,7 +1387,7 @@
    FACILITIES SECTION (Pure White Background #ffffff)
 ───────────────────────────────────────────────────────────── */
 .facilities-section-wrapper {
-  background-color: var(--white-color);
+  background-color: var(--section-bg-color);
   padding: 0;
   position: relative;
 }
@@ -2541,4 +2541,202 @@ html.dark .landing-page-root footer {
 html.dark .landing-page-root .bg-white {
   background-color: #1E293B !important;
   border-color: #334155 !important;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   INTERACTIVE CAROUSEL CONTROLS (DESKTOP ARROWS + DRAG + AUTOPLAY)
+───────────────────────────────────────────────────────────── */
+.tiya-carousel-shell {
+  position: relative;
+  width: 100%;
+}
+
+.tiya-carousel-track {
+  cursor: grab;
+  outline: none;
+}
+
+.tiya-carousel-track::-webkit-scrollbar {
+  display: none;
+}
+
+.tiya-carousel-track.is-dragging {
+  cursor: grabbing !important;
+  user-select: none;
+}
+
+.tiya-carousel-track.is-dragging .tiya-course-card {
+  cursor: grabbing !important;
+}
+
+.tiya-carousel-side-btn {
+  position: absolute;
+  top: calc(50% - 34px);
+  transform: translateY(-50%);
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--white-color);
+  color: var(--secondary-color);
+  border: 1.5px solid rgb(var(--brand-navy-200));
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.14);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  z-index: 15;
+  transition: transform 0.22s ease, background-color 0.22s ease, color 0.22s ease, border-color 0.22s ease, box-shadow 0.22s ease;
+}
+
+.tiya-carousel-side-btn .material-symbols-outlined {
+  font-size: 26px;
+}
+
+.tiya-carousel-side-btn--prev {
+  left: -18px;
+}
+
+.tiya-carousel-side-btn--next {
+  right: -18px;
+}
+
+.tiya-carousel-side-btn:hover,
+.tiya-carousel-side-btn:focus-visible {
+  background: rgb(var(--brand-sage-700));
+  border-color: rgb(var(--brand-sage-700));
+  color: var(--white-color);
+  transform: translateY(-50%) scale(1.08);
+  box-shadow: 0 14px 32px rgb(var(--brand-sage-700) / 0.32);
+  outline: none;
+}
+
+.tiya-carousel-side-btn:active {
+  transform: translateY(-50%) scale(0.97);
+}
+
+@media (max-width: 768px) {
+  .tiya-carousel-side-btn {
+    width: 44px;
+    height: 44px;
+  }
+  .tiya-carousel-side-btn--prev {
+    left: 6px;
+  }
+  .tiya-carousel-side-btn--next {
+    right: 6px;
+  }
+}
+
+.tiya-carousel-controls-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 14px;
+}
+
+.tiya-carousel-dots-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  padding: 6px 10px;
+  border-radius: 100px;
+  background: var(--white-color);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05);
+}
+
+.tiya-carousel-step-btn {
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  background: rgb(var(--brand-navy-50));
+  color: var(--secondary-color);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tiya-carousel-step-btn .material-symbols-outlined {
+  font-size: 17px;
+}
+
+.tiya-carousel-step-btn:hover,
+.tiya-carousel-step-btn:focus-visible {
+  background: rgb(var(--brand-sage-700));
+  border-color: rgb(var(--brand-sage-700));
+  color: var(--white-color);
+  outline: none;
+}
+
+.tiya-carousel-dots {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.tiya-carousel-dot {
+  height: 8px;
+  border-radius: 100px;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.tiya-carousel-meta-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.tiya-carousel-counter {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--p-color);
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: var(--white-color);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.tiya-carousel-counter strong {
+  color: var(--secondary-color);
+  font-weight: 800;
+}
+
+.tiya-carousel-autoplay-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: 100px;
+  font-size: 12px;
+  font-weight: 700;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--white-color);
+  color: var(--secondary-color);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
+}
+
+.tiya-carousel-autoplay-btn.is-active {
+  background: rgb(var(--brand-sage-500) / 0.15);
+  border-color: rgb(var(--brand-sage-500) / 0.45);
+  color: rgb(var(--brand-sage-700));
+}
+
+.tiya-carousel-autoplay-btn:hover,
+.tiya-carousel-autoplay-btn:focus-visible {
+  border-color: rgb(var(--brand-sage-700));
+  transform: translateY(-1px);
+  outline: none;
 }

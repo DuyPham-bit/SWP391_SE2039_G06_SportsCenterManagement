@@ -58,7 +58,20 @@ export const classApi = {
    const query = new URLSearchParams({ from, to, includeHistory: String(Boolean(includeHistory)) });
    return asArray(await apiRequest('coaches/me/teaching-schedule?'+query)).map(mapSession);
  },
+ /** Opening hours of the signed-in staff member's center, as configured by the Admin (stored in the DB). */
+ async getCenterHours() {
+   const catalog = await apiRequest('public/centers/'+centerId()+'/catalog', { session: null });
+   return { openingTime: catalog?.center?.openingTime || null, closingTime: catalog?.center?.closingTime || null };
+ },
  async getManagementClasses() { return asArray(await apiRequest('centers/'+centerId()+'/classes/all')); },
+ // Member self-enrollment: sport → coach → class tree with per-class eligibility from the backend.
+ async getEnrollmentOptions() { return apiRequest('members/me/enrollment-options?centerId='+centerId()); },
+ async enroll(classId, subscriptionId) {
+   return apiRequest('classes/'+Number(classId)+'/enrollments', { method: 'POST', body: { subscriptionId: Number(subscriptionId) } });
+ },
+ async cancelEnrollment(classId, enrollmentId, reason) {
+   return apiRequest('classes/'+Number(classId)+'/enrollments/'+Number(enrollmentId), { method: 'DELETE', body: { reason: reason || null } });
+ },
  async getSports() { return asArray(await apiRequest('centers/'+centerId()+'/sports')); },
  async getManagementSports() { return asArray(await apiRequest('centers/'+centerId()+'/sports/all')); },
  async createSport(body) { return apiRequest('centers/'+centerId()+'/sports', { method: 'POST', body }); },

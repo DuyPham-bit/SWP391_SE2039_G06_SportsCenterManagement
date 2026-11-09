@@ -146,6 +146,22 @@ export function getLegacyLandingContent() {
   } catch { return null; }
 }
 
+/** Unpublished editor draft stored in the DB (shared by Managers/Admins, survives other devices). */
+export async function loadLandingDraft({ signal } = {}) {
+  const response = await apiRequest('landing-content/draft', { signal });
+  return response?.content
+    ? { content: fixMojibake(mergeContent(DEFAULT_LANDING_CONTENT, response.content)), updatedAt: response.updatedAt }
+    : null;
+}
+
+export function saveLandingDraft(content) {
+  return apiRequest('landing-content/draft', { method: 'PUT', body: { content: fixMojibake(content) } });
+}
+
+export function discardLandingDraft() {
+  return apiRequest('landing-content/draft', { method: 'DELETE' });
+}
+
 export async function loadLandingContent({ signal } = {}) {
   const response = await apiRequest('landing-content', { signal, session: null });
   publishedContent = fixMojibake(mergeContent(DEFAULT_LANDING_CONTENT, response?.content));

@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from 'react';
-import { receptionApi, formatMemberDate } from '../../../entities/member/index.js';
+import { receptionApi, memberApi, formatMemberDate } from '../../../entities/member/index.js';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
-import { Modal } from '../../../shared/ui/Modal.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { CounterError } from '../../../features/counter-desk/index.js';
+import { CounterError, EmailVerificationBadge, QuickCreateMemberModal, ResendVerificationButton, useActivationWatcher } from '../../../features/counter-desk/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { processAvatarFile, setStoredAvatar } from '../../../shared/lib/avatarHelper.js';
+import { useAuth } from '../../../entities/session/index.js';
+import { hasCapability } from '../../../entities/permission/index.js';
+import { processAvatarFile, peekLegacyAvatar, forgetLegacyAvatar } from '../../../shared/lib/avatarHelper.js';
 
 export function MemberLookup() {
   const { language } = useLanguage();
+  const { role } = useAuth();
+  // Creating members and resending activation mail use a different capability than this page.
+  const canRegister = hasCapability(role, 'register_counter_package');
   const isEn = language === 'en';
 
   const { showSuccess, showError } = useToast();
@@ -24,16 +28,9 @@ export function MemberLookup() {
   const [subsError, setSubsError] = useState('');
   const [subsVersion, setSubsVersion] = useState(0);
 
-  // Modal Register Member At Counter
+  // Quick-create member at counter (phone = default password, email activation link)
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
-  const [regFullName, setRegFullName] = useState('');
-  const [regPhone, setRegPhone] = useState('');
-  const [regEmail, setRegEmail] = useState('');
-  const [regUsername, setRegUsername] = useState('');
-  const [regDob, setRegDob] = useState('');
-  const [regPassword, setRegPassword] = useState('');
-  const [regSaving, setRegSaving] = useState(false);
-  const [regError, setRegError] = useState('');
+  const [registerPrefill, setRegisterPrefill] = useState({});
 
   // Auto-search if query parameter exists in URL
   useEffect(() => {
@@ -105,45 +102,50 @@ export function MemberLookup() {
     return () => { isMounted = false; };
   }, [selectedMember?.id, subsVersion]);
 
-  const handleRegisterMember = async (e) => {
-    e.preventDefault();
-    if (!regFullName.trim() || !regPhone.trim() || !regEmail.trim()) {
-      setRegError(isEn ? 'Please provide Full Name, Phone number and Email!' : 'Vui lòng nhập đầy đủ Họ tên, Số điện thoại và Email!');
-      return;
-    }
-    if (!regPassword.trim()) {
-      setRegError(isEn ? 'Please enter an initial password.' : 'Vui lòng nhập mật khẩu khởi tạo.');
-      return;
-    }
-    setRegSaving(true);
-    setRegError('');
-    try {
-      const newMember = await receptionApi.createMember({
-        fullName: regFullName.trim(),
-        phone: regPhone.trim(),
-        email: regEmail.trim(),
-        username: regUsername.trim() || undefined,
-        password: regPassword,
-        dateOfBirth: regDob || undefined
-      });
-      showSuccess(isEn ? `Member created successfully! Code: ${newMember.memberCode}` : `Đăng ký hội viên thành công! Mã: ${newMember.memberCode}`);
-      setRegisterModalOpen(false);
-      setRegFullName('');
-      setRegPhone('');
-      setRegEmail('');
-      setRegUsername('');
-      setRegDob('');
-      setRegPassword('');
-      setSelectedMember(newMember);
-      setResults([newMember]);
-      setHasSearched(true);
-      setQuery(newMember.memberCode || newMember.phone || '');
-    } catch (err) {
-      setRegError(err.message || (isEn ? 'Error creating member profile.' : 'Lỗi khi đăng ký hội viên.'));
-      showError(err.message || (isEn ? 'Member registration failed' : 'Lỗi đăng ký hội viên'));
-    } finally {
-      setRegSaving(false);
-    }
+  const handleMemberCreated = (newMember) => {
+    setSelectedMember(newMember);
+    setResults([newMember]);
+    setHasSearched(true);
+    setSearchError('');
+    setQuery(newMember.memberCode || newMember.phone || '');
+  };
+
+  // Keep list + detail in sync after a resend returns the fresh member state.
+  // One-time migration: photos older versions kept only in this browser are moved to the server.
+  useEffect(() => {
+    const member = selectedMember;
+    if (!member?.id || member.avatar || !member.userId) return;
+    const legacy = peekLegacyAvatar(member.userId);
+    if (!legacy) return;
+    let cancelled = false;
+    memberApi.uploadMemberAvatar(member.id, legacy)
+      .then(updated => {
+        forgetLegacyAvatar(member.userId);
+        if (cancelled) return;
+        setSelectedMember(prev => (prev?.id === member.id ? { ...prev, avatar: updated.avatar } : prev));
+        setResults(prev => prev.map(m => (m.id === member.id ? { ...m, avatar: updated.avatar } : m)));
+      })
+      .catch(() => { /* keep the local copy and retry next time */ });
+    return () => { cancelled = true; };
+  }, [selectedMember?.id, selectedMember?.avatar]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Flip "pending" badges as soon as a member finishes the email link, and tell the receptionist.
+  const pendingIds = [...results, selectedMember]
+    .filter(member => member && member.emailVerified === false)
+    .map(member => member.id);
+  useActivationWatcher(pendingIds, (activatedIds, statuses) => {
+    const activated = new Set(activatedIds);
+    setResults(prev => prev.map(m => (activated.has(Number(m.id)) ? { ...m, emailVerified: true } : m)));
+    setSelectedMember(prev => (prev && activated.has(Number(prev.id)) ? { ...prev, emailVerified: true } : prev));
+    statuses.forEach(item => showSuccess(isEn
+      ? `${item.fullName} (${item.memberCode}) verified their email and set a new password.`
+      : `Hội viên ${item.fullName} (${item.memberCode}) đã xác nhận email và đổi mật khẩu thành công.`));
+  });
+
+  const handleMemberRefreshed = (updated) => {
+    if (!updated) return;
+    setResults(prev => prev.map(m => (m.id === updated.id ? { ...m, emailVerified: updated.emailVerified } : m)));
+    setSelectedMember(prev => (prev?.id === updated.id ? { ...prev, emailVerified: updated.emailVerified } : prev));
   };
 
   return (
@@ -177,17 +179,17 @@ export function MemberLookup() {
           </p>
         </div>
 
-        <button
+        {canRegister && <button
           type="button"
           onClick={() => {
-            setRegError('');
+            setRegisterPrefill({});
             setRegisterModalOpen(true);
           }}
           className="scms-shine px-5 py-3 bg-brand-navy-950 hover:bg-brand-navy-900 text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 shrink-0 cursor-pointer relative z-10"
         >
           <span className="material-symbols-outlined text-[18px] text-brand-sand-300">person_add</span>
           <span>{isEn ? 'Register New Member' : 'Đăng Ký Hội Viên Mới'}</span>
-        </button>
+        </button>}
       </div>
 
       {/* Search Input Bar */}
@@ -236,20 +238,20 @@ export function MemberLookup() {
                   ? `No matching records found for "${query}". Please check the phone number or card ID.`
                   : `Không có dữ liệu trùng khớp với từ khóa "${query}". Vui lòng kiểm tra lại số điện thoại hoặc mã thẻ.`}
               </p>
-              <button
+              {canRegister && <button
                 type="button"
                 onClick={() => {
-                  setRegError('');
-                  setRegFullName('');
-                  setRegPhone(/^\d+$/.test(query) ? query : '');
-                  setRegEmail(query.includes('@') ? query : '');
+                  setRegisterPrefill({
+                    phoneNumber: /^[\d\s+.-]+$/.test(query) ? query.trim() : '',
+                    email: query.includes('@') ? query.trim() : ''
+                  });
                   setRegisterModalOpen(true);
                 }}
                 className="mt-4 inline-flex items-center gap-2 px-5 py-2.5 bg-brand-sage-700 hover:bg-brand-sage-900 text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all hover-lift cursor-pointer"
               >
                 <span className="material-symbols-outlined text-[18px]">person_add</span>
                 <span>{isEn ? 'Register Member With This Info' : 'Đăng Ký Hội Viên Mới Với Thông Tin Này'}</span>
-              </button>
+              </button>}
             </div>
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
@@ -281,6 +283,12 @@ export function MemberLookup() {
                       </div>
                       <Badge variant={member.packageStatus} size="sm">{member.packageStatus}</Badge>
                     </div>
+                    {!member.emailVerified && (
+                      <div className="mt-3 pt-3 border-t border-brand-navy-100 dark:border-brand-navy-800 flex items-center justify-between gap-2">
+                        <EmailVerificationBadge verified={member.emailVerified} />
+                        {canRegister && <ResendVerificationButton memberId={member.id} size="sm" onResent={handleMemberRefreshed} />}
+                      </div>
+                    )}
                   </div>
                 ))}
               </div>
@@ -316,10 +324,10 @@ export function MemberLookup() {
                             if (!file || !selectedMember) return;
                             try {
                               const result = await processAvatarFile(file, 360, 0.88);
-                              const key = selectedMember.userId || selectedMember.id;
-                              setStoredAvatar(key, result.dataUrl);
-                              setSelectedMember(prev => ({ ...prev, avatar: result.dataUrl }));
-                              setResults(prev => prev.map(m => (m.id === selectedMember.id ? { ...m, avatar: result.dataUrl } : m)));
+                              // Saved on the server (R2 + users.avatar_key), visible on every device.
+                              const updated = await memberApi.uploadMemberAvatar(selectedMember.id, result.dataUrl);
+                              setSelectedMember(prev => ({ ...prev, avatar: updated.avatar }));
+                              setResults(prev => prev.map(m => (m.id === selectedMember.id ? { ...m, avatar: updated.avatar } : m)));
                               showSuccess(isEn ? 'Member photo updated successfully!' : 'Đã cập nhật ảnh thẻ hội viên thành công!');
                             } catch (err) {
                               showError(err.message || (isEn ? 'Failed to process image!' : 'Không thể xử lý hình ảnh!'));
@@ -332,8 +340,15 @@ export function MemberLookup() {
                         <div className="flex items-center gap-2">
                           <h2 className="font-chivo text-xl font-black text-brand-navy-900 dark:text-white">{selectedMember.fullName}</h2>
                           <Badge variant={selectedMember.status}>{selectedMember.status}</Badge>
+                          <EmailVerificationBadge verified={selectedMember.emailVerified} size="md" />
                         </div>
                         <div className="text-xs text-brand-navy-500 dark:text-brand-navy-400 mt-0.5">{selectedMember.email} • {selectedMember.phone}</div>
+                        {!selectedMember.emailVerified && (
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            <span className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400">Hội viên chưa bấm link xác nhận trong email.</span>
+                            {canRegister && <ResendVerificationButton memberId={selectedMember.id} size="sm" onResent={handleMemberRefreshed} />}
+                          </div>
+                        )}
                         <div className="text-xs font-bold text-brand-sage-700 dark:text-brand-sage-500 mt-1 font-mono">
                           {isEn ? 'SCMS Card ID' : 'Mã Thẻ SCMS'}: {selectedMember.memberCode}
                         </div>
@@ -496,133 +511,14 @@ export function MemberLookup() {
         </div>
       )}
 
-      {/* Modal Register Member At Counter */}
-      <Modal
+      {/* Quick-create member at counter */}
+      <QuickCreateMemberModal
         isOpen={registerModalOpen}
         onClose={() => setRegisterModalOpen(false)}
-        title={isEn ? 'Register New Member at Counter' : 'Đăng Ký Thành Viên Mới Tại Quầy'}
-      >
-        <form onSubmit={handleRegisterMember} noValidate className="space-y-4">
-          {regError && (
-            <div className="p-3 bg-brand-danger-50 dark:bg-brand-danger-950/30 border border-brand-danger-200 dark:border-brand-danger-800 text-brand-danger-700 dark:text-brand-danger-300 text-xs rounded-xl flex items-center gap-2">
-              <span className="material-symbols-outlined text-[18px]">error</span>
-              <span>{regError}</span>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
-              {isEn ? 'Full Name *' : 'Họ và tên *'}
-            </label>
-            <input
-              type="text"
-              placeholder={isEn ? 'John Doe' : 'Nguyễn Văn A'}
-              value={regFullName}
-              onChange={e => setRegFullName(e.target.value)}
-              className="w-full px-3 py-2 text-sm rounded-lg border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
-                {isEn ? 'Phone Number *' : 'Số điện thoại *'}
-              </label>
-              <input
-                type="tel"
-                placeholder="0912345678"
-                value={regPhone}
-                onChange={e => setRegPhone(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
-                Email *
-              </label>
-              <input
-                type="email"
-                placeholder="member@example.com"
-                value={regEmail}
-                onChange={e => setRegEmail(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
-              />
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
-                {isEn ? 'Username (Optional)' : 'Tên đăng nhập (Tùy chọn)'}
-              </label>
-              <input
-                type="text"
-                placeholder={isEn ? 'Auto-generated if blank' : 'Tự động nếu để trống'}
-                value={regUsername}
-                onChange={e => setRegUsername(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
-              />
-            </div>
-            <div>
-              <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
-                {isEn ? 'Date of Birth (Optional)' : 'Ngày sinh (Tùy chọn)'}
-              </label>
-              <input
-                type="date"
-                value={regDob}
-                onChange={e => setRegDob(e.target.value)}
-                className="w-full px-3 py-2 text-sm rounded-lg border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
-              {isEn ? 'Initial Temporary Password' : 'Mật khẩu khởi tạo'}
-            </label>
-            <input
-              type="password"
-              autoComplete="new-password"
-              required
-              minLength={6}
-              maxLength={128}
-              value={regPassword}
-              onChange={e => setRegPassword(e.target.value)}
-              className="w-full px-3 py-2 text-sm font-mono rounded-lg border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
-            />
-            <p className="text-[11px] text-brand-navy-400 mt-1">
-              {isEn ? 'Required: use uppercase, lowercase, a number and a special character.' : 'Bắt buộc nhập, gồm chữ hoa, chữ thường, số và ký tự đặc biệt.'}
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-brand-navy-100 dark:border-brand-navy-800">
-            <button
-              type="button"
-              onClick={() => setRegisterModalOpen(false)}
-              className="px-4 py-2 text-xs font-bold uppercase tracking-wider text-brand-navy-600 dark:text-brand-navy-400 hover:bg-brand-navy-100 dark:hover:bg-brand-navy-800 rounded-lg transition-colors cursor-pointer"
-            >
-              {isEn ? 'CANCEL' : 'HỦY'}
-            </button>
-            <button
-              type="submit"
-              disabled={regSaving}
-              className="px-5 py-2 bg-brand-sage-700 hover:bg-brand-sage-900 disabled:opacity-50 text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-lg shadow-md transition-all hover-lift flex items-center gap-1.5 cursor-pointer"
-            >
-              {regSaving ? (
-                <>
-                  <span className="material-symbols-outlined text-[16px] animate-spin">progress_activity</span>
-                  <span>{isEn ? 'Processing...' : 'Đang xử lý...'}</span>
-                </>
-              ) : (
-                <>
-                  <span className="material-symbols-outlined text-[16px]">how_to_reg</span>
-                  <span>{isEn ? 'Create Member' : 'Tạo Hội Viên'}</span>
-                </>
-              )}
-            </button>
-          </div>
-        </form>
-      </Modal>
+        initialValues={registerPrefill}
+        onCreated={handleMemberCreated}
+        isEn={isEn}
+      />
     </div>
   );
 }

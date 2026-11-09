@@ -4,6 +4,7 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { getRoleConfig, today } from '../lib/staffDisplay.js';
 import { COACH_CLASS_FILTER, matchesCoachClassFilter } from './staffManagementView.js';
 import { staffApi } from '../../../entities/staff/index.js';
+import { getPasswordPolicyError } from '../../../shared/lib/passwordPolicy.js';
 import { classApi } from '../../../entities/class/index.js';
 
 export function useStaffManagement() {
@@ -311,6 +312,13 @@ export function useStaffManagement() {
               : `Đã bổ nhiệm thành công vai trò [${roleConfig[form.role]?.label || form.role}] cho ${selectedMember.fullName}!`
           );
         } else {
+          // Same rule as the backend PasswordPolicy, checked before the request is sent.
+          const passwordError = getPasswordPolicyError(form.password, { email: form.email.trim(), phone: form.phone.trim() });
+          if (passwordError) {
+            showError(passwordError);
+            setSaving(false);
+            return;
+          }
           await staffApi.create({
             username: form.username.trim(),
             email: form.email.trim(),

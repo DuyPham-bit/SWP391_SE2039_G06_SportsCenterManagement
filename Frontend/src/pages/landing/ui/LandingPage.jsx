@@ -20,7 +20,7 @@ export function LandingPage() {
     selectedCategory, selectedFacilityForModal, selectedSportFromMenu, setIsMobileCoursesOpen,
     setIsMobileMenuOpen, setIsVideoMuted, setLanguage, setSelectedCategory,
     setSelectedFacilityForModal, setShowIntro, showIntro, socialContacts, sportCarouselIndex,
-    sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
+    sportsCarousel, sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
   } = useLandingPage();
 
   return (
@@ -105,13 +105,14 @@ export function LandingPage() {
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         sportCarouselIndex={sportCarouselIndex}
+        sportsCarousel={sportsCarousel}
         sportsCarouselRef={sportsCarouselRef}
         sportsList={sportsList}
         visibleSports={visibleSports}
       />
 
       {/* ─────────────────────────────────────────────────────────────
-          5. FACILITIES SECTION (Pure White Background #ffffff)
+          5. FACILITIES SECTION (Tiya Warm Cream #F4F1DE Background)
       ───────────────────────────────────────────────────────────── */}
       <div className="facilities-section-wrapper">
         <FacilitiesSection

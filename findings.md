@@ -1,4 +1,48 @@
-# Findings — Milestone 13: Đồng bộ màu toàn Frontend theo bảng màu Landing (Bước 0, 2026-11-07)
+# Findings
+
+## Milestone 21: Phân tích & Tối ưu Biểu Đồ Doanh Thu Card 1 Dashboard ("Phóng to ra cho vừa") (2026-11-09)
+1. **Nguyên nhân biểu đồ bị thu nhỏ & trần trống trải**:
+   - `viewBox` trước đó đặt ở tỷ lệ quá bẹt (`760x310` = tỷ lệ 2.45), trong khi khung chứa thẻ cha có chiều rộng ~560px. Điều này ép chiều cao render của SVG xuống chỉ còn ~224px, tạo ra một khoảng không gian trống vô lý ở phần trên thẻ.
+   - Trục Y trước đó sử dụng `niceMax = 7.5 tr` hoặc `10.0 tr`, khiến cột doanh thu cao nhất (5.8 tr) chỉ đạt ~58% chiều cao canvas, tạo cảm giác các cột bị lùn và co cụm ở đáy.
+   - Giải pháp: Chuyển `viewBox` sang `0 0 720 340` (tỷ lệ 2.12), đặt `niceMax = 6.0 tr` làm cột đỉnh đạt **96.7%** chiều cao canvas (`251px / 260px innerHeight`), đồng thời đặt khung container `min-h-[340px] flex-1 flex flex-col justify-end`.
+2. **Nguyên nhân đường Spline và Nốt ngọc trai tách rời nhau**:
+   - Việc áp dụng bộ lọc làm mịn trung bình trượt với trọng số tâm 0.56 đã làm giảm đỉnh đường cong xuống 3.25 tr trong khi cột thực tế đạt 5.8 tr. Nốt ngọc trai lại được vẽ độc lập ở 5.8 tr dẫn đến nốt ngọc trai bay lơ lửng giữa trời, hoàn toàn tách rời khỏi đường cong phía dưới.
+   - Giải pháp: Nối trực tiếp các điểm thực thu ròng ngày bằng thuật toán tiếp tuyến đơn điệu Fritsch-Carlson Monotone Spline. Nhờ đó, đường cong vàng hổ phách uốn lượn tự nhiên và đi chính xác qua đỉnh các cột giao dịch, nốt ngọc trai ngự vững chãi trên đỉnh cột.
+3. **Nguyên nhân nhãn ngày trục X bị cắt xén**:
+   - `paddingBottom` trước đó chỉ có 30px và container thẻ cha ép `min-h-[290px] justify-center` làm phần đáy SVG bị đẩy sát hoặc lọt ra ngoài mép thẻ.
+   - Giải pháp: Nâng `paddingBottom = 48px`, đặt nhãn ngày tại `y = baselineY + 20 = 312px`, tạo ra 28px khoảng thở an toàn trước mép đáy 340px.
+
+---
+
+## Milestone 15: Khảo sát & Phân tích lỗi Dashboard Quản lý (Row 3) (2026-11-09)
+1. **Lỗi đè chữ tại biểu đồ "Lượt đặt theo lớp học"**:
+   - `SixMonthContractExpiryBars` sử dụng thẻ `<svg viewBox="0 0 320 175">`.
+   - Chiều rộng khả dụng cho 6 cột là `innerWidth = 284px`, mỗi cột chiếm `~47px`.
+   - Nhãn chữ `cls.name` tiếng Việt dài 10-15 ký tự chiếm ~60-80px.
+   - Việc căn giữa nhãn (`textAnchor="middle"`) ở mỗi cột cách nhau 47px làm các nhãn tràn lấn và đè đặc lên nhau thành một dải đen không thể đọc được.
+   - Chiều cao cố định 175px trong khi thẻ cha bị kéo dài theo thẻ "Doanh thu theo bộ môn" (9 bộ môn ~500px) tạo ra vùng trống thừa lớn (70% thẻ trống trơn).
+2. **Lỗi biểu đồ dòng tiền "Biến động doanh thu theo thời gian" nhọn dị thường**:
+   - Dữ liệu hóa đơn trong `seed_full_center_data.sql` trước đó chỉ được gán vào 2 mốc ngày duy nhất (`@curStart` ngày -12 và `@pastStart` ngày -75).
+   - Vì thế trong 30 ngày qua, 28 ngày doanh thu = 0đ, và đúng 1 ngày vọt lên 17.1Mđ, tạo thành hình 2 chiếc kim nhọn bất thường.
+   - Cần rải đều ngày phát hành hóa đơn (`paid_at`) cách 2-3 ngày/lần trong tháng.
+
+---
+
+# Findings
+
+## Milestone 21: Phân tích & Tối ưu Biểu Đồ Doanh Thu Card 1 Dashboard ("Phóng to ra cho vừa") (2026-11-09)
+1. **Nguyên nhân biểu đồ bị thu nhỏ & trần trống trải**:
+   - `viewBox` trước đó đặt ở tỷ lệ quá bẹt (`760x310` = tỷ lệ 2.45), trong khi khung chứa thẻ cha có chiều rộng ~560px. Điều này ép chiều cao render của SVG xuống chỉ còn ~224px, tạo ra một khoảng không gian trống vô lý ở phần trên thẻ.
+   - Trục Y trước đó sử dụng `niceMax = 7.5 tr` hoặc `10.0 tr`, khiến cột doanh thu cao nhất (5.8 tr) chỉ đạt ~58% chiều cao canvas, tạo cảm giác các cột bị lùn và co cụm ở đáy.
+   - Giải pháp: Chuyển `viewBox` sang `0 0 720 340` (tỷ lệ 2.12), đặt `niceMax = 6.0 tr` làm cột đỉnh đạt **96.7%** chiều cao canvas (`251px / 260px innerHeight`), đồng thời đặt khung container `min-h-[340px] flex-1 flex flex-col justify-end`.
+2. **Nguyên nhân đường Spline và Nốt ngọc trai tách rời nhau**:
+   - Việc áp dụng bộ lọc làm mịn trung bình trượt với trọng số tâm 0.56 đã làm giảm đỉnh đường cong xuống 3.25 tr trong khi cột thực tế đạt 5.8 tr. Nốt ngọc trai lại được vẽ độc lập ở 5.8 tr dẫn đến nốt ngọc trai bay lơ lửng giữa trời, hoàn toàn tách rời khỏi đường cong phía dưới.
+   - Giải pháp: Nối trực tiếp các điểm thực thu ròng ngày bằng thuật toán tiếp tuyến đơn điệu Fritsch-Carlson Monotone Spline. Nhờ đó, đường cong vàng hổ phách uốn lượn tự nhiên và đi chính xác qua đỉnh các cột giao dịch, nốt ngọc trai ngự vững chãi trên đỉnh cột.
+3. **Nguyên nhân nhãn ngày trục X bị cắt xén**:
+   - `paddingBottom` trước đó chỉ có 30px và container thẻ cha ép `min-h-[290px] justify-center` làm phần đáy SVG bị đẩy sát hoặc lọt ra ngoài mép thẻ.
+   - Giải pháp: Nâng `paddingBottom = 48px`, đặt nhãn ngày tại `y = baselineY + 20 = 312px`, tạo ra 28px khoảng thở an toàn trước mép đáy 340px.
+
+--- — Milestone 13: Đồng bộ màu toàn Frontend theo bảng màu Landing (Bước 0, 2026-11-07)
 
 ## 13.1 Hiện trạng nguồn màu
 - `theme.css` và `tiya-theme.css` **cùng định nghĩa `--primary-color`**: theme.css = `#1A3B8B` (FPT blue), tiya-theme.css = `#81B29A` (sage). `main.jsx` nạp tiya-theme.css sau nên giá trị hiệu lực là sage; mọi chỗ dùng `--fpt-*` / `colors.fpt.*` vẫn ra xanh/cam FPT.

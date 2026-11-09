@@ -1,10 +1,18 @@
 import { asArray, centerId } from '../../../shared/api/apiUtils.js';
 import { apiRequest, createIdempotencyKey } from '../../../shared/api/http.js';
-import { setStoredAvatar } from '../../../shared/lib/avatarHelper.js';
+import { dataUrlToFile } from '../../../shared/lib/avatarHelper.js';
+import { mapMember } from './mapMember.js';
 
 export const memberApi = {
-  async updateMemberAvatar(memberId, avatarUrl) {
-    setStoredAvatar(memberId, avatarUrl || null);
+  /** Counter staff set a member's photo: stored in R2, key saved to users.avatar_key. Returns the updated member. */
+  async uploadMemberAvatar(memberId, dataUrl) {
+    const formData = new FormData();
+    formData.append('file', dataUrlToFile(dataUrl, `member-${memberId}`));
+    return mapMember(await apiRequest(`centers/${centerId()}/members/${Number(memberId)}/avatar`, { method: 'POST', body: formData }));
+  },
+
+  async removeMemberAvatar(memberId) {
+    return mapMember(await apiRequest(`centers/${centerId()}/members/${Number(memberId)}/avatar`, { method: 'DELETE' }));
   },
 
   async getCenterMembers(query = '', page = 1) {

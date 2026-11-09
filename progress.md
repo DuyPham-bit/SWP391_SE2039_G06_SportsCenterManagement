@@ -1,5 +1,61 @@
 # Progress
 
+## Milestone 21: Phóng To Biểu Đồ Doanh Thu & Đồng Bộ Đỉnh Spline Card 1 Dashboard — HOÀN THÀNH (2026-11-09)
+- [x] **Tái thiết kế UI/UX theo tiêu chuẩn Pro Max (`ux-ui-promax`)**:
+  - Khắc phục triệt để hiện tượng biểu đồ bị dẹp, thừa khoảng trắng trần và nhãn ngày bị cắt.
+  - Tăng chiều cao biểu đồ lên `chartHeight = 340px`, tỷ lệ `720x340` (2.12).
+  - Tối ưu `niceMax = 6.0 tr`: Cột doanh thu đạt đỉnh (5.8 tr) vươn cao tới **96.7%** chiều cao canvas, tạo cảm giác bề thế, mạnh mẽ và vừa khít thẻ card.
+  - Sửa lỗi đường cong thực thu bị chùng: Đỉnh spline nối mượt Fritsch-Carlson đi xuyên suốt các đỉnh cột giao dịch, nốt ngọc trai vàng hổ phách viền trắng ngự trực tiếp trên đỉnh cột và đường.
+  - Nhãn ngày trục X (`DD/MM`) được bố trí tại `y = baselineY + 20 = 312px` với lề đáy 48px, hiển thị trọn vẹn 100%.
+  - Chuyển đổi 3 thẻ KPI trên đỉnh thành dạng capsule tinh gọn cao ~56px, dồn thêm 70px không gian dọc cho biểu đồ.
+- [x] **Kiểm chứng & Xuất bản**:
+  - `npm --prefix Frontend test`: 153/153 tests pass.
+  - `npm --prefix Frontend run build`: Bundle Vite build thành công (16.21s).
+  - Khởi động lại container `scms-frontend` (cổng 3004).
+  - Kiểm tra SQL Server: Giữ nguyên vẹn đúng 7 hội viên (`TotalMembers = 7`).
+  - Refresh AST Graphify: 5303 nodes, 16549 edges.
+
+---
+
+## Milestone 15: Fix UX/UI Dashboard Quản Lý: Trực quan hóa Lượt đặt lớp học & Dòng tiền tự nhiên — HOÀN THÀNH (2026-11-09)
+- [x] **Áp dụng Design Intelligence (`ux-ui-promax`) thiết kế lại toàn diện Row 3**:
+  - **Thẻ 1 (Biến động doanh thu theo thời gian - 6 cols)**:
+    - Bổ sung dải 3 thẻ thống kê Executive KPI (`Thực thu ròng`, `Doanh thu gộp`, `Đã hoàn tiền`) ngay dưới header.
+    - Mở rộng chiều cao biểu đồ sóng Fritsch-Carlson, xóa bỏ 100% khoảng trống trắng thừa thãi.
+    - Đồ thị tài chính sóng mượt mà, hỗ trợ tooltip chi tiết khi rê chuột.
+  - **Thẻ 2 (Doanh thu theo bộ môn - 3 cols)**:
+    - Chuẩn hóa Top 6 bộ môn thể thao chính, thanh tiến độ `1.5px` tinh tế.
+    - Cân đối chiều cao hoàn hảo với Thẻ 3, không bị kéo dài lệch nhịp.
+  - **Thẻ 3 (Lượt đặt theo lớp học - 3 cols)**:
+    - Tái cấu trúc thành **Card 2 tầng thông minh**:
+      - Hàng 1: Badge hạng `#1`–`#6` + Tên lớp học trọn vẹn (chiếm 70% chiều ngang, không còn bị cắt chữ `...`) + Số lượt đặt.
+      - Hàng 2: Thanh tiến độ ngang theo màu thương hiệu.
+      - Hàng 3: Tên bộ môn và Tỷ lệ lấp đầy `{occRate}%`.
+    - Xóa bỏ `justify-center` làm trôi nổi nội dung, đưa danh sách neo sát đỉnh thẻ, loại bỏ lỗi xén viền trên item #1.
+  - Cả 3 thẻ trong Row 3 đồng bộ chiều cao lý tưởng (~370px).
+- [x] **Chuẩn hóa chuỗi dữ liệu tài chính tự nhiên trong SQL (`systematic-debugging`)**:
+  - Phân bổ 12 hóa đơn rải đều qua các mốc ngày (cách 2-3 ngày 1 giao dịch) từ 2026-10-12 đến 2026-11-07.
+  - Bổ sung 2 khoản hoàn tiền thực tế (2026-10-18 và 2026-11-05).
+  - Giữ nguyên số lượng 7 hội viên hiện hữu, TUYỆT ĐỐI KHÔNG thêm bất kỳ thành viên mới nào.
+- [x] **Kiểm chứng & Biên dịch**:
+  - `npm --prefix Frontend test` pass 153/153 tests.
+  - `npm --prefix Frontend run build` xuất bản bundle production thành công.
+  - Rebuild và cập nhật thành công container Docker `scms-frontend` (cổng 3004) và `scms-backend` (cổng 5000).
+  - Refresh đồ thị Graphify: 5300 nodes, 16540 edges.
+- [x] Đã cập nhật `Backend/database/seed_demo_data.sql`: Loại bỏ toàn bộ logic insert user/member_profile mới; toàn bộ hóa đơn, thanh toán, ca học, điểm danh được gắn trực tiếp vào danh sách `member_profiles` hiện hữu trong DB.
+- [x] Đã triển khai phương thức `EnsureDemoBusinessDataAsync(SportsCenterDbContext context)` trong `Backend/SportsCenterManagement.DAL/Context/DbInitializer.cs`:
+  - Đảm bảo 4 gói tập chuẩn (`Basic 30 ngày`, `Pro 90 ngày`, `Elite 180 ngày`, `All-Access Olympic Pass 365 ngày`) với đầy đủ quyền hạn môn học và đặc quyền.
+  - Tự động sinh lớp học (`ClassEntity`) và lịch tuần (`ClassSchedule`) cho toàn bộ 10 môn thể thao.
+  - Tự động sinh ca học (`ClassSession`) trong vòng 60 ngày (30 ngày trước + 30 ngày tới).
+  - Tự động sinh `MemberSubscription`, `Invoice` (status: `Paid`), `Payment` (VNPAY, MOMO, Tiền mặt) cho các thành viên hiện có (`existingMembers`).
+  - Đăng ký lớp (`ClassEnrollment`), đặt chỗ (`SessionBooking`), dữ liệu điểm danh (`Attendance`) và lịch sử check-in cổng (`CenterCheckin`).
+  - Ghi nhận `EquipmentIssue` cho cơ sở vật chất trung tâm.
+  - Bảo vệ chống ghi đè/chạy trùng lặp bằng marker `seed.demo.business-data.v2`.
+- [x] Kiểm chứng Backend: `dotnet build Backend/SWP391_SE2039_G06_SportsCenterManagement1.slnx` thành công 100% với 0 Warning, 0 Error.
+- [x] Kiểm chứng Frontend: `npm --prefix Frontend test` pass toàn bộ 153/153 tests; `npm --prefix Frontend run build` xuất bản bundle thành công (24.03s).
+- [x] Cập nhật đồ thị Graphify: 5300 nodes, 16539 edges.
+- [x] Tối ưu khởi chạy 1 lệnh duy nhất: Đã có sẵn file `start-docker.bat` để chạy full stack Docker và truy cập thẳng `http://localhost:3004`.
+
 ## Milestone 13: Đồng bộ màu theo Landing — XONG (Phase 1, a–g + kiểm chứng); chờ quyết định màu ngoài bảng của landing (2026-11-07 → 2026-11-08)
 
 - [x] Graphify extract (code-only) trước khi tìm code.
@@ -83,3 +139,28 @@
    - Frontend Suite: 145/145 PASS (100%).
    - Backend Solution Build: 0 warnings, 0 errors.
    - Frontend Production Build: 0 errors, bundle synced to `Backend/SportsCenterManagement.API/wwwroot`.
+
+---
+
+## Milestone 20: Tái thiết kế UI/UX Doanh thu theo bộ môn & Thị phần đặt chỗ (SportRevenueRow) trên trang Báo cáo Quản lý (/manager/reports) — HOÀN THÀNH (2026-11-09)
+- [x] **Áp dụng UX/UI Pro Max (`ux-ui-promax`) tái cấu trúc 2 thẻ Tier 4**:
+  - **Thẻ 1: Doanh thu theo bộ môn (`SportRevenueBarChart`)**:
+    - Xóa bỏ 9 ô hộp lồng hộp rời rạc (box-in-box), chuyển sang danh sách phân đoạn sang trọng với đường kẻ phân cách thanh mảnh.
+    - Bổ sung huy hiệu thứ hạng Olympic (`🏆 #1` Gold, `🥈 #2` Silver, `🥉 #3` Bronze, `#4`–`#9` Navy) và icon thể thao chuyên biệt squircle (`pool`, `fitness_center`, `sports_mma`, `self_improvement`...).
+    - Dải màu gradient thương hiệu đa tầng cho từng môn (Coral, Cyan, Amber, Forest Sage, Mint, Gold, Terracotta...).
+    - Phân rã dòng tiền minh bạch: Doanh thu thuần (font Chivo), Doanh thu gộp (Thu) và Hoàn tiền (đỏ nổi bật khi có hoàn tiền).
+    - Hỗ trợ toggle xem Top 6 hoặc toàn bộ 9 bộ môn kèm chỉ số Tổng doanh thu phân bổ.
+  - **Thẻ 2: Thị phần đặt chỗ & Hiệu suất bộ môn (`SportsDonutChart`)**:
+    - Triệt tiêu 100% khoảng trắng thừa 500px ở nửa dưới thẻ!
+    - Chuẩn hóa SVG Donut 460x210 (bảo toàn `data-chart-id="chart-donut"` tương thích hoàn toàn tính năng xuất PDF).
+    - Thêm 3 thẻ KPI điều hành mini:
+      1. `Môn Dẫn Đầu`: Bơi lội (56 lượt · 40.3% thị phần).
+      2. `Lấp Đầy Trung Bình`: ~2.1 HV/ca toàn cơ sở.
+      3. `Ca Học Vận Hành`: 67 ca đang mở lớp.
+    - Thêm danh sách xếp hạng lượt đặt theo bộ môn và thanh tiến độ lấp đầy, cân bằng chiều cao tuyệt đối với Thẻ 1.
+- [x] **Kiểm thử & Rebuild**:
+  - `npm --prefix Frontend test` pass 153/153 tests.
+  - `npm --prefix Frontend run build` xuất bản bundle production thành công (17.24s).
+  - Rebuild Docker container `scms-frontend` (cổng 3004).
+- [x] **Bảo toàn dữ liệu**: Database giữ nguyên 7 hội viên, không thêm hội viên mới.
+- [x] **Đồng bộ Graphify Code Index**: AST code extraction cập nhật thành công (5.303 nodes, 16.549 edges).

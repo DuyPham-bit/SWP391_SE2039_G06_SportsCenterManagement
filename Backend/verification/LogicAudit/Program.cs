@@ -48,6 +48,7 @@ var options = new DbContextOptionsBuilder<SportsCenterDbContext>()
     .UseSqlServer(master.ConnectionString.Replace("Database=master", $"Database={name}", StringComparison.OrdinalIgnoreCase)).Options;
 var failures = new List<string>();
 int count = 0;
+var phoneMigrationOk = false;
 try {
     await using (var db = new SportsCenterDbContext(options)) {
         var migrations = db.Database.GetMigrations().ToArray();
@@ -70,7 +71,22 @@ try {
             INSERT INTO dbo.uploaded_media (drive_file_id, file_name, mime_type, file_url, created_at)
             VALUES ('upgrade-unowned', 'unowned.png', 'image/png', '/uploads/upgrade-unowned.png', SYSUTCDATETIME());
             """);
+        // Phones written with the country code before the normalization migration, plus one collision.
+        await db.GetService<IMigrator>().MigrateAsync("20261108183932_AddCounterMemberActivation");
+        await db.Database.ExecuteSqlRawAsync("""
+            INSERT INTO dbo.users (username, email, password_hash, role_id, status, failed_login_attempts, created_at, phone)
+            SELECT v.username, v.username + '@upgrade.test', 'existing-hash', r.id, 'Active', 0, SYSUTCDATETIME(), v.phone
+            FROM (VALUES ('phone-plus84', '+84900000001'), ('phone-bare84', '84900000002'),
+                         ('phone-taken', '0900000003'), ('phone-collides', '+84900000003'),
+                         ('phone-foreign', '+14155550100')) AS v(username, phone)
+            CROSS JOIN dbo.roles r WHERE r.name = 'UpgradeFixture';
+            """);
         await db.Database.MigrateAsync();
+        var upgradedPhones = await db.Users.AsNoTracking().Where(u => u.Email.EndsWith("@upgrade.test"))
+            .ToDictionaryAsync(u => u.Username, u => u.Phone);
+        phoneMigrationOk = upgradedPhones["phone-plus84"] == "0900000001" && upgradedPhones["phone-bare84"] == "0900000002"
+            && upgradedPhones["phone-taken"] == "0900000003" && upgradedPhones["phone-collides"] == "+84900000003"
+            && upgradedPhones["phone-foreign"] == "+14155550100";
         var center = new Center { Name = "Test center", Address = "Test", Status = "Active", CreatedAt = DateTime.UtcNow };
         var other = new Center { Name = "Other center", Address = "Test", Status = "Active", CreatedAt = DateTime.UtcNow };
         var memberRole = new Role { Name = "Member" }; var coachRole = new Role { Name = "Coach" }; var staffRole = new Role { Name = "Receptionist" };
@@ -400,6 +416,8 @@ try {
         builder.Services.AddScoped<IPaymentService>(s => new PaymentService(s.GetRequiredService<IUnitOfWork>(), null!, null!, builder.Configuration));
         builder.Services.AddScoped<IMemberService, MemberService>();
         builder.Services.AddScoped<IAuthService, AuthService>();
+        builder.Services.AddScoped<IMemberActivationService, MemberActivationService>();
+        builder.Services.AddSingleton<SportsCenterManagement.BLL.Common.MediaUrlBuilder>();
         builder.Services.AddScoped<IProfileService, ProfileService>();
         builder.Services.AddScoped<ICoreFlowService, CoreFlowService>();
         builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJwtBearer(o => {
@@ -464,6 +482,30 @@ try {
         builder.Configuration["ExternalCommunications:Email:BearerToken"] = "audit-only-token";
         await RegistrationChecks.Run(db, http, mail, builder.Configuration, center.Id, Check);
         await AuthChecks.Run(db, http, issuer, owner, mail, Check);
+        await ActivationChecks.Run(db, http, issuer, mail, builder.Configuration, Check);
+        await OtpEmailChecks.Run(http, mail, builder.Configuration, Check);
+        await VnPayCallbackChecks.Run(Check);
+        await Check("manager coach-operations workspace returns resources, equipment issues and delivery data from the DB", async () => {
+            var resource = new FacilityResource { CenterId = center.Id, Name = "Audit treadmill", ResourceType = "Equipment", Status = "Active", CreatedAt = DateTime.UtcNow };
+            db.FacilityResources.Add(resource); await db.SaveChangesAsync();
+            db.EquipmentIssues.Add(new EquipmentIssue { CenterId = center.Id, ResourceId = resource.Id, ReportedByUserId = manager.Id,
+                Title = "Audit belt slipping", Description = "Belt slips at speed 8", Severity = "High", Status = "Open", ReportedAt = DateTime.UtcNow });
+            await db.SaveChangesAsync();
+            var workspace = await new CoachProfessionalService(db, clock).ManagerWorkspace(manager.Id, default);
+            var json = JsonSerializer.Serialize(workspace, new JsonSerializerOptions(JsonSerializerDefaults.Web));
+            using var parsed = JsonDocument.Parse(json);
+            var root = parsed.RootElement;
+            return root.TryGetProperty("deliverySummary", out _) && root.TryGetProperty("resourceBookings", out _)
+                && root.TryGetProperty("salesCredits", out _)
+                && root.GetProperty("resources").EnumerateArray().Any(r => r.GetProperty("name").GetString() == "Audit treadmill")
+                && root.GetProperty("equipmentIssues").EnumerateArray().Any(i => i.GetProperty("title").GetString() == "Audit belt slipping"
+                    && i.GetProperty("resourceName").GetString() == "Audit treadmill");
+        });
+        await Check("migration normalizes +84/84 phones to 0… and leaves collisions and foreign numbers untouched", () => Task.FromResult(phoneMigrationOk));
+        await RegistrationIdentityChecks.Run(db, http, mail, center.Id, Check);
+        await CenterHoursChecks.Run(db, owner.Id, Check);
+        await EnrollmentOptionsChecks.Run(db, Check);
+        await PersistenceChecks.Run(db, http, issuer, objectStorage, builder.Configuration, Check);
         await BrowserSessionChecks.Run(db, http.BaseAddress!, mail, center.Id, Check);
         await MailSecurityChecks.Run(db, http, issuer, mailFixture, Check);
         await MediaSecurityChecks.Run(db, http, issuer, objectStorage, Check);

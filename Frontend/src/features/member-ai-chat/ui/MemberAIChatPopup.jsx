@@ -7,6 +7,7 @@ import { aiApi } from '../../../entities/ai-chat/index.js';
 import { getMemberAIChatStorageKey } from '../../../shared/lib/memberAiChatStorage.js';
 import { hasCorruptedEncoding, parseFormattedMarkdown } from './chatMarkdown.jsx';
 import { ArenaMascot } from '../../../shared/ui/ArenaMascot.jsx';
+import { parseApiDate } from '../../../shared/lib/dateTime.js';
 // Global helper to trigger opening the AI chat popup from anywhere in the app
 export function openMemberAIChat(prompt = '') {
   window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP', { detail: { prompt } }));
@@ -106,6 +107,30 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+
+  // History is stored in the DB; this tab cache is empty in a new tab or after signing in again,
+  // so reload the latest conversation from the server instead of starting from scratch.
+  useEffect(() => {
+    if (!userId || conversationId || messages.some(m => m.id !== 'welcome')) return undefined;
+    const controller = new AbortController();
+    aiApi.getLatest({ signal: controller.signal })
+      .then(result => {
+        if (!result?.conversationId || !Array.isArray(result.messages) || result.messages.length === 0) return;
+        const restored = result.messages
+          .filter(m => typeof m.text === 'string' && !hasCorruptedEncoding(m.text))
+          .map(m => ({
+            id: `db-${m.id}`,
+            sender: m.sender === 'user' ? 'user' : 'ai',
+            text: m.text,
+            // DB timestamps are UTC without a "Z": parseApiDate interprets them correctly.
+            time: parseApiDate(m.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
+          }));
+        setConversationId(String(result.conversationId));
+        setMessages([getInitialMessage(), ...restored]);
+      })
+      .catch(() => { /* keep the welcome message; history stays available on the server */ });
+    return () => controller.abort();
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Initialize bubble position if null
   useEffect(() => {

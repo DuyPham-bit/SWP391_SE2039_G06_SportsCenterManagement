@@ -1,8 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { getLandingContent, loadLandingContent, getLegacyLandingContent, saveLandingContent, openLandingPreview } from '../../../entities/landing-content/index.js';
-import { cloneContent, MANAGER_DRAFT_KEY, saveDraft, clearDraft } from './draft.js';
+import { getLandingContent, loadLandingContent, loadLandingDraft, getLegacyLandingContent, saveLandingContent, openLandingPreview } from '../../../entities/landing-content/index.js';
+import { cloneContent, saveDraft, clearDraft, readLocalDraft, flushDraft } from './draft.js';
 
 export function useHomeContentEditor() {
   const { language } = useLanguage();
@@ -61,24 +61,28 @@ export function useHomeContentEditor() {
     const controller = new AbortController();
     setIsLoading(true);
     setLoadError('');
-    loadLandingContent({ signal: controller.signal }).then(result => {
+    Promise.all([
+      loadLandingContent({ signal: controller.signal }),
+      // The draft lives in the DB; a failed lookup only means "no draft to restore".
+      loadLandingDraft({ signal: controller.signal }).catch(() => null)
+    ]).then(([result, serverDraft]) => {
       if (!active) return;
       savedContentRef.current = cloneContent(result.content);
+      const published = JSON.stringify(result.content);
+      // Prefer the server draft; a local copy only exists if a previous autosave could not reach the server.
+      const localDraft = readLocalDraft();
+      const draft = serverDraft?.content && JSON.stringify(serverDraft.content) !== published ? serverDraft.content
+        : localDraft && JSON.stringify(localDraft) !== published ? localDraft
+        : null;
 
-      // Check for local draft preserved across F5
-      let localDraft = null;
-      try {
-        const raw = localStorage.getItem(MANAGER_DRAFT_KEY);
-        if (raw) localDraft = JSON.parse(raw);
-      } catch { localDraft = null; }
-
-      if (localDraft && JSON.stringify(localDraft) !== JSON.stringify(result.content)) {
-        setContent(localDraft);
+      if (draft) {
+        setContent(draft);
         setIsDirty(true);
+        if (draft === localDraft) saveDraft(localDraft); // push the offline copy to the server
         addToast(
           isEn
-            ? 'Restored your unsaved draft. Click "Save All Changes" to publish to server.'
-            : 'Đã giữ lại số liệu bạn đang chỉnh sửa (Bản nháp). Bấm "Lưu Toàn Bộ Thay Đổi" để công bố lên máy chủ.',
+            ? 'Restored the saved draft. Click "Save All Changes" to publish it.'
+            : 'Đã khôi phục bản nháp đã lưu. Bấm "Lưu Toàn Bộ Thay Đổi" để công bố.',
           'info'
         );
       } else {
@@ -100,9 +104,13 @@ export function useHomeContentEditor() {
     return () => { active = false; controller.abort(); };
   }, [reloadKey, isEn]);
 
+  // Save any pending autosave when the editor is left inside the app.
+  useEffect(() => () => { void flushDraft(); }, []);
+
   // Prevent accidental loss of edits when hitting F5
   useEffect(() => {
     const handleBeforeUnload = (event) => {
+      void flushDraft();
       if (isDirty) {
         event.preventDefault();
         event.returnValue = '';

@@ -6,6 +6,7 @@ import { useLandingContent, normalizeZaloPhone, getExternalContactUrl } from '..
 import { usePublicCatalog, getLandingPresentation } from '../../../entities/catalog/index.js';
 import { translateLandingContent, translateSportName } from '../../../shared/i18n/i18nHelper.js';
 import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
+import { useHorizontalCarousel } from './useHorizontalCarousel.js';
 
 export function useLandingPage() {
   const { isAuthenticated, role, logout } = useAuth();
@@ -25,10 +26,6 @@ export function useLandingPage() {
     { label: 'Facebook', icon: 'public', url: getExternalContactUrl(landingContent.ctaAndFooter?.contactFacebookUrl) }
   ].filter(contact => contact.url);
   const [selectedCategory, setSelectedCategory] = useState('Tất cả');
-  const [sportCarouselIndex, setSportCarouselIndex] = useState(0);
-  const sportsCarouselRef = useRef(null);
-  const isSportsProgrammaticScrollRef = useRef(false);
-  const sportsScrollTimeoutRef = useRef(null);
   const [selectedFacilityForModal, setSelectedFacilityForModal] = useState(null);
   const [activeNav, setActiveNav] = useState('trang-chu');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -303,67 +300,17 @@ export function useLandingPage() {
     ? visibleSports
     : visibleSports.filter(s => s.category === selectedCategory);
 
-  const handleSportsScroll = () => {
-    if (isSportsProgrammaticScrollRef.current) return;
-    const el = sportsCarouselRef.current;
-    if (!el) return;
-    const scrollLeft = el.scrollLeft;
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    const items = el.querySelectorAll('[data-carousel-item]');
-    if (!items.length) return;
-
-    // Nếu đã cuộn gần chạm mép phải (thẻ cuối cùng đang hiển thị đầy đủ)
-    if (scrollLeft >= maxScroll - 25) {
-      setSportCarouselIndex(items.length - 1);
-      return;
-    }
-
-    // Tìm thẻ có mép trái gần sát vị trí đầu container nhất
-    let closestIdx = 0;
-    let minDiff = Infinity;
-    const containerLeft = el.getBoundingClientRect().left;
-
-    items.forEach((item, idx) => {
-      const itemRect = item.getBoundingClientRect();
-      const diff = Math.abs(itemRect.left - containerLeft);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIdx = idx;
-      }
-    });
-
-    setSportCarouselIndex(closestIdx);
-  };
-
-  const handleScrollSportsToIndex = (idx) => {
-    const el = sportsCarouselRef.current;
-    if (!el) return;
-    const items = el.querySelectorAll('[data-carousel-item]');
-    if (!items[idx]) return;
-
-    isSportsProgrammaticScrollRef.current = true;
-    setSportCarouselIndex(idx);
-
-    const targetItem = items[idx];
-    const scrollTarget = targetItem.offsetLeft - el.offsetLeft;
-
-    el.scrollTo({
-      left: Math.max(0, scrollTarget),
-      behavior: 'smooth'
-    });
-
-    if (sportsScrollTimeoutRef.current) clearTimeout(sportsScrollTimeoutRef.current);
-    sportsScrollTimeoutRef.current = setTimeout(() => {
-      isSportsProgrammaticScrollRef.current = false;
-    }, 450);
-  };
-
-  useEffect(() => {
-    if (sportsCarouselRef.current) {
-      sportsCarouselRef.current.scrollLeft = 0;
-      setSportCarouselIndex(0);
-    }
-  }, [selectedCategory, filteredSports.length]);
+  const sportsCarousel = useHorizontalCarousel({
+    itemCount: filteredSports.length,
+    itemSelector: '[data-carousel-item]',
+    resetKey: `${selectedCategory}-${filteredSports.length}`,
+    isModalOpen: Boolean(selectedFacilityForModal),
+    autoPlayIntervalMs: 3800
+  });
+  const sportCarouselIndex = sportsCarousel.activeIndex;
+  const sportsCarouselRef = sportsCarousel.carouselRef;
+  const handleSportsScroll = sportsCarousel.handleScroll;
+  const handleScrollSportsToIndex = sportsCarousel.scrollToIndex;
 
   const getDashboardLink = () => {
     const normalized = String(role || '').toUpperCase();
@@ -388,6 +335,6 @@ export function useLandingPage() {
     selectedCategory, selectedFacilityForModal, selectedSportFromMenu, setIsMobileCoursesOpen,
     setIsMobileMenuOpen, setIsVideoMuted, setLanguage, setSelectedCategory,
     setSelectedFacilityForModal, setShowIntro, showIntro, socialContacts, sportCarouselIndex,
-    sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
+    sportsCarousel, sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
   };
 }

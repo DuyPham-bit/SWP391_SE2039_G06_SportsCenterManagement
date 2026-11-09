@@ -30,6 +30,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
+    public DbSet<AccountActivationToken> AccountActivationTokens => Set<AccountActivationToken>();
     public DbSet<MemberSubscription> MemberSubscriptions => Set<MemberSubscription>();
     public DbSet<ClassCoach> ClassCoaches => Set<ClassCoach>();
     public DbSet<ClassSchedule> ClassSchedules => Set<ClassSchedule>();
@@ -320,6 +321,14 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(entity => entity.UpdatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AccountActivationToken>().HasIndex(entity => entity.TokenHash).IsUnique();
+        modelBuilder.Entity<AccountActivationToken>().HasIndex(entity => new { entity.UserId, entity.CreatedAt });
+        modelBuilder.Entity<AccountActivationToken>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(entity => entity.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PasswordResetToken>()

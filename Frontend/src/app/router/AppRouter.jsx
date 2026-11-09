@@ -9,6 +9,8 @@ import { AppLayout } from '../../widgets/app-shell/index.js';
 const LandingPage = lazy(() => import('../../pages/landing/index.js').then(m => ({ default: m.LandingPage })));
 const LoginPage = lazy(() => import('../../pages/login/index.js').then(m => ({ default: m.LoginPage })));
 const OtpVerification = lazy(() => import('../../pages/otp-verification/index.js').then(m => ({ default: m.OtpVerification })));
+const VerifyEmailPage = lazy(() => import('../../pages/verify-email/index.js').then(m => ({ default: m.VerifyEmailPage })));
+const InitialPasswordPage = lazy(() => import('../../pages/initial-password/index.js').then(m => ({ default: m.InitialPasswordPage })));
 
 // Manager Pages (Lazy Loaded)
 const ManagerDashboard = lazy(() => import('../../pages/manager-dashboard/index.js').then(m => ({ default: m.ManagerDashboard })));
@@ -43,6 +45,7 @@ const CoachNotifications = lazy(() => import('../../pages/coach-notifications/in
 const AIRecommendation = lazy(() => import('../../pages/coach-ai-recommendation/index.js').then(m => ({ default: m.AIRecommendation })));
 const PerformanceDashboard = lazy(() => import('../../pages/coach-performance/index.js').then(m => ({ default: m.PerformanceDashboard })));
 const CoachSalaryKPI = PerformanceDashboard;
+const CoachResources = lazy(() => import('../../pages/coach-resources/index.js').then(m => ({ default: m.CoachResources })));
 const CoachProfessionalHub = lazy(() => import('../../pages/coach-professional-hub/index.js').then(m => ({ default: m.CoachProfessionalHub })));
 const ManagerCoachOperations = lazy(() => import('../../pages/manager-coach-operations/index.js').then(m => ({ default: m.ManagerCoachOperations })));
 const ManagerSupportCommunications = lazy(() => import('../../pages/manager-support/index.js').then(m => ({ default: m.ManagerSupportCommunications })));
@@ -50,6 +53,7 @@ const ManagerSupportCommunications = lazy(() => import('../../pages/manager-supp
 // Member Pages (Lazy Loaded)
 const MemberDashboard = lazy(() => import('../../pages/member-dashboard/index.js').then(m => ({ default: m.MemberDashboard })));
 const MemberPackages = lazy(() => import('../../pages/member-packages/index.js').then(m => ({ default: m.MemberPackages })));
+const MemberEnrollment = lazy(() => import('../../pages/member-enrollment/index.js').then(m => ({ default: m.MemberEnrollment })));
 const ClassScheduleView = lazy(() => import('../../pages/member-class-schedule/index.js').then(m => ({ default: m.ClassScheduleView })));
 const MyBookings = lazy(() => import('../../pages/member-bookings/index.js').then(m => ({ default: m.MyBookings })));
 const MyProgress = lazy(() => import('../../pages/member-progress/index.js').then(m => ({ default: m.MyProgress })));
@@ -93,7 +97,7 @@ function getRouteHash() {
 }
 
 function AppRouter() {
-  const { initializing, initializationError } = useAuth();
+  const { initializing, initializationError, currentUser } = useAuth();
   const [currentHash, setCurrentHash] = useState(getRouteHash);
 
   useEffect(() => {
@@ -192,6 +196,10 @@ function AppRouter() {
     path === '#/otp';
 
   const renderRouteContent = () => {
+    // The activation link must work even when someone is signed in on this browser.
+    if (path === '#/verify-email') return <VerifyEmailPage />;
+    // Accounts still on the default (phone) password must set a new one before using any screen.
+    if (currentUser?.mustChangePassword) return <InitialPasswordPage />;
     if (!isDashboardOrAuth) {
       return <LandingPage />;
     }
@@ -305,6 +313,8 @@ function AppRouter() {
         return renderCoachRoute(PerformanceDashboard, 'manage_coach_workspace');
       case '#/coach/salary':
         return renderCoachRoute(PayrollPage, 'manage_coach_workspace');
+      case '#/coach/resources':
+        return renderCoachRoute(CoachResources, 'manage_coach_workspace');
       case '#/coach/professional':
       case '#/coach/messages':
         return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');
@@ -318,6 +328,8 @@ function AppRouter() {
         return renderMemberRoute(MemberPackages);
       case '#/member/refunds':
         return renderMemberRoute(MemberRefundRequests);
+      case '#/member/enroll':
+        return renderMemberRoute(MemberEnrollment, 'book_class');
       case '#/member/schedule':
         return renderMemberRoute(ClassScheduleView, 'book_class');
       case '#/member/bookings':

@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { supportApi } from '../../../entities/support-request/index.js';
+import { supportApi, SupportPriorityBadge, SupportPrioritySelect } from '../../../entities/support-request/index.js';
 import { useAuth } from '../../../entities/session/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
@@ -73,6 +73,7 @@ export function MySupportRequests() {
   const [creating, setCreating] = useState(false);
   const [createSubject, setCreateSubject] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [createPriority, setCreatePriority] = useState('Normal');
   const [createError, setCreateError] = useState('');
   const [submittingCreate, setSubmittingCreate] = useState(false);
 
@@ -204,13 +205,14 @@ export function MySupportRequests() {
     setCreateError('');
 
     try {
-      const res = await supportApi.submit({ subject, description });
+      const res = await supportApi.submit({ subject, description, priority: createPriority });
 
       if (activeUserIdRef.current === currentId) {
         showSuccess(isEn ? `Request #${res.request.id} submitted successfully!` : `Đã gửi yêu cầu #${res.request.id} thành công!`);
         setCreating(false);
         setCreateSubject('');
         setCreateDescription('');
+        setCreatePriority('Normal');
         setDetail(res);
         setActiveStatusTab('');
         setCurrentPage(1);
@@ -558,6 +560,7 @@ export function MySupportRequests() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                      <SupportPriorityBadge priority={req.priority} isEn={isEn} />
                       {/* Status Badge */}
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${statusCfg.badgeClass}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dotClass} ${req.status === 'Open' ? 'animate-pulse' : ''}`} />
@@ -653,6 +656,7 @@ export function MySupportRequests() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              <SupportPriorityBadge priority={detail.request.priority} isEn={isEn} />
               {/* Status Badge */}
               {(() => {
                 const s = statusConfig[detail.request.status] || statusConfig.Open;
@@ -897,6 +901,14 @@ export function MySupportRequests() {
                 onChange={e => setCreateSubject(e.target.value)}
                 className="w-full rounded-xl border border-brand-navy-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-danger-600 focus:border-brand-danger-600"
               />
+            </div>
+
+            {/* Priority (stored with the request; staff can adjust it) */}
+            <div className="space-y-1">
+              <label htmlFor="support-create-priority" className="text-xs font-bold text-brand-navy-700 uppercase tracking-wider">
+                {isEn ? 'Priority' : 'Mức ưu tiên'}
+              </label>
+              <SupportPrioritySelect id="support-create-priority" value={createPriority} onChange={setCreatePriority} isEn={isEn} />
             </div>
 
             {/* Description Textarea */}

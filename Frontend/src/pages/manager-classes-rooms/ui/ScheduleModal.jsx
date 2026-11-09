@@ -27,6 +27,7 @@ export function ScheduleModal({
               row={modal.row}
               schedules={schedules}
               rooms={data.rooms}
+              centerHours={data.centerHours}
               sports={data.sports}
               form={form}
               change={handleFormChange}

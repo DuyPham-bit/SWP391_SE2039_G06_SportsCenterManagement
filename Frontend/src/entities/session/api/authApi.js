@@ -1,12 +1,35 @@
 import { asArray } from '../../../shared/api/apiUtils.js';
 import { assertAuthVersion, beginAuthOperation, getAuthUser, getAuthVersion, setAuthUser } from '../../../shared/api/authState.js';
 import { apiRequest, clearApiSession, createApiSession, getApiSession, setApiSession } from '../../../shared/api/http.js';
-import { getStoredAvatar, setStoredAvatar } from '../../../shared/lib/avatarHelper.js';
+import { dataUrlToFile, notifyAvatarChanged } from '../../../shared/lib/avatarHelper.js';
 
 async function loadCurrentUser(session = getApiSession(), version = getAuthVersion()) {
   if (!session) return null;
   const profile = await apiRequest('profile/me', { session });
   assertAuthVersion(version);
+  if (profile.mustChangePassword) {
+    // Accounts on the default (phone) password are blocked from guarded APIs until they set a new one,
+    // so only load what the forced password-change screen needs.
+    const restricted = {
+      capabilities: [],
+      id: profile.userId,
+      memberId: null,
+      email: profile.email,
+      fullName: profile.fullName,
+      phone: profile.phone || '',
+      role: String(profile.role).toUpperCase(),
+      status: String(profile.status || 'Active').toUpperCase(),
+      memberCode: profile.memberCode,
+      centerId: profile.centerId,
+      createdAt: profile.createdAt,
+      mustChangePassword: true,
+      emailVerified: profile.isEmailVerified !== false,
+      scheduledSubscriptions: [],
+      avatar: profile.avatar || null
+    };
+    setAuthUser(restricted);
+    return restricted;
+  }
   let memberId = null;
   let memberProfile = null;
   let scheduledSubscriptions = [];
@@ -43,10 +66,28 @@ async function loadCurrentUser(session = getApiSession(), version = getAuthVersi
     packageStartDate: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStartDate || null) : null,
     packageStatus: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStatus || 'INACTIVE') : null,
     scheduledSubscriptions,
-    avatar: getStoredAvatar(profile.userId)
+    mustChangePassword: false,
+    emailVerified: profile.isEmailVerified !== false,
+    avatar: profile.avatar || null
   };
   setAuthUser(user);
   return user;
+}
+
+/**
+ * Maps an avatar value from the UI to the profile API field:
+ * data URL → upload to storage and return its key; null/"" → "" (remove); existing URL/undefined → undefined (keep).
+ */
+async function resolveAvatarKey(value) {
+  if (value === undefined) return undefined;
+  if (!value) return '';
+  if (typeof value === 'string' && value.startsWith('data:image/')) {
+    const formData = new FormData();
+    formData.append('file', dataUrlToFile(value));
+    const uploaded = await apiRequest('r2-images/avatar', { method: 'POST', body: formData });
+    return uploaded.key;
+  }
+  return undefined;
 }
 
 async function loginAndLoad(path, body) {
@@ -87,13 +128,12 @@ export const authApi = {
     if (!Number.isSafeInteger(registeredCenterId) || registeredCenterId <= 0) {
       throw new Error('Cấu hình VITE_SPORTS_CENTER_ID thành ID trung tâm hợp lệ trước khi đăng ký hội viên.');
     }
-    const localPart = cleanEmail.split('@')[0];
-    const username = localPart.length >= 3 ? localPart : `user-${localPart}`;
     const version = beginAuthOperation();
     await apiRequest('auth/register', {
       method: 'POST', session: null,
+      // No username: the server derives a unique, valid one (the email local part may contain '+'
+      // or already exist on another domain).
       body: {
-        username,
         email: cleanEmail,
         password,
         emailOtp,
@@ -114,6 +154,30 @@ export const authApi = {
 
   async linkGoogle(credential, currentPassword) {
     return apiRequest('auth/google/link', { method: 'POST', body: { idToken: credential, currentPassword } });
+  },
+
+  /** Validates an emailed activation link; resolves to { fullName, email, phone, expiresAt }. */
+  async previewActivation(token, { signal } = {}) {
+    return apiRequest('auth/verify-email/preview', { method: 'POST', session: null, signal, body: { token } });
+  },
+
+  /** Verifies the email and replaces the default password in one call. */
+  async completeActivation(token, newPassword, confirmPassword) {
+    await apiRequest('auth/verify-and-change-password', {
+      method: 'POST', session: null, body: { token, newPassword, confirmPassword }
+    });
+    return true;
+  },
+
+  /** First-login fallback for accounts still on the default password; the server rotates the session. */
+  async changeInitialPassword(currentPassword, newPassword, confirmPassword) {
+    const version = beginAuthOperation();
+    const session = getApiSession();
+    await apiRequest('auth/initial-password', {
+      method: 'POST', session, body: { currentPassword, newPassword, confirmPassword }
+    });
+    assertAuthVersion(version);
+    return loadCurrentUser(session, getAuthVersion());
   },
 
   async requestPasswordReset(email, { signal } = {}) {
@@ -149,28 +213,22 @@ export const authApi = {
   async updateProfile(_userId, profileData) {
     const version = getAuthVersion();
     const session = getApiSession();
-    if (profileData && profileData.avatar !== undefined) {
-      setStoredAvatar(_userId, profileData.avatar || null);
-    }
+    const avatarKey = await resolveAvatarKey(profileData?.avatar);
     await apiRequest('profile/me', {
       method: 'PATCH', session,
-      body: { fullName: profileData.fullName, phone: profileData.phone || null }
+      // avatarKey omitted = keep the stored photo; "" = remove; otherwise the newly uploaded key.
+      body: { fullName: profileData.fullName, phone: profileData.phone || null, ...(avatarKey === undefined ? {} : { avatarKey }) }
     });
     assertAuthVersion(version);
-    return loadCurrentUser(session, version);
+    const user = await loadCurrentUser(session, version);
+    if (avatarKey !== undefined) notifyAvatarChanged(user?.id, user?.avatar);
+    return user;
   },
 
-  async updateAvatar(userId, avatarUrl) {
-    const version = getAuthVersion();
-    const session = getApiSession();
-    setStoredAvatar(userId, avatarUrl || null);
+  /** value: new photo as data URL, null/"" to remove, or the current URL to keep. Saved in the DB. */
+  async updateAvatar(_userId, value) {
     const current = getAuthUser();
-    if (current && Number(current.id) === Number(userId)) {
-      const updated = { ...current, avatar: avatarUrl || null };
-      setAuthUser(updated);
-      return updated;
-    }
-    return loadCurrentUser(session, version);
+    return this.updateProfile(current?.id, { fullName: current?.fullName || '', phone: current?.phone || null, avatar: value ?? null });
   },
 
   getCurrentUser: loadCurrentUser,

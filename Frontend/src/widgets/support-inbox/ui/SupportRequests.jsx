@@ -4,6 +4,7 @@ import { Modal } from '../../../shared/ui/Modal.jsx';
 import { counterInput, CounterError, CounterMemberPicker } from '../../../features/counter-desk/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useAuth } from '../../../entities/session/index.js';
+import { SupportPriorityBadge, SupportPrioritySelect } from '../../../entities/support-request/index.js';
 import { getStatusConfig, getTopicPresets, getQuickNotes, extractTopic } from '../lib/supportPresets.js';
 
 export function SupportRequests({ allowCreate = true, showHeader = true }) {
@@ -27,6 +28,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
   const [detail, setDetail] = useState(null);
   const [detailError, setDetailError] = useState('');
   const [nextStatus, setNextStatus] = useState('Open');
+  const [nextPriority, setNextPriority] = useState('Normal');
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
 
@@ -35,6 +37,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
   const [member, setMember] = useState(null);
   const [createSubject, setCreateSubject] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [createPriority, setCreatePriority] = useState('Normal');
   const [createError, setCreateError] = useState('');
   const [success, setSuccess] = useState('');
 
@@ -69,6 +72,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
   const selectDetail = result => {
     setDetail(result);
     setNextStatus(result.request.status);
+    setNextPriority(result.request.priority || 'Normal');
     setNote('');
   };
 
@@ -123,7 +127,8 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
       const result = await receptionApi.createSupportRequest({
         memberId: member.id,
         subject: createSubject.trim(),
-        description: createDescription.trim()
+        description: createDescription.trim(),
+        priority: createPriority
       });
       selectDetail(result);
       setCreating(false);
@@ -150,6 +155,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
     try {
       const result = await receptionApi.updateSupportRequest(detail.request.id, {
         status: targetStatus,
+        priority: nextPriority,
         note: note.trim() || (overrideStatus === 'Resolved' ? (isEn ? 'Resolved and closed ticket.' : 'Đã xử lý và đóng yêu cầu.') : null)
       });
       selectDetail(result);
@@ -216,6 +222,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                 setMember(null);
                 setCreateSubject('');
                 setCreateDescription('');
+                setCreatePriority('Normal');
                 setCreating(true);
               }}
             >
@@ -469,6 +476,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                           )}
                         </div>
 
+                        {(r.priority === 'High' || r.priority === 'Urgent') && <SupportPriorityBadge priority={r.priority} isEn={isEn} />}
                         <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold border shrink-0 ${statusInfo.badgeClass}`}>
                           <span className={`w-1.5 h-1.5 rounded-full ${statusInfo.dotClass}`} />
                           {statusInfo.label}
@@ -569,6 +577,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                         {extractTopic(detail.request.subject).topic}
                       </span>
                     )}
+                    <SupportPriorityBadge priority={detail.request.priority} isEn={isEn} />
                     <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold border ${statusConfig[detail.request.status]?.badgeClass}`}>
                       <span className={`w-1.5 h-1.5 rounded-full ${statusConfig[detail.request.status]?.dotClass}`} />
                       {statusConfig[detail.request.status]?.label}
@@ -753,6 +762,12 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                       </select>
                     </div>
 
+                    {/* Priority is saved together with the status update */}
+                    <div className="space-y-1">
+                      <label htmlFor="support-next-priority" className="block text-xs font-bold text-ink">{isEn ? 'Priority' : 'Mức ưu tiên'}</label>
+                      <SupportPrioritySelect id="support-next-priority" value={nextPriority} onChange={setNextPriority} disabled={busy} isEn={isEn} />
+                    </div>
+
                     {/* Quick Response Templates */}
                     <div>
                       <div className="flex items-center justify-between text-xs text-ink-muted mb-1.5">
@@ -850,6 +865,7 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                   setMember(null);
                   setCreateSubject('');
                   setCreateDescription('');
+                  setCreatePriority('Normal');
                   setCreating(true);
                 }}
                 className="mt-2 inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-surface-muted hover:bg-brand-navy-200 text-ink text-xs font-bold transition-colors cursor-pointer hover-lift"
@@ -926,6 +942,11 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
                 value={createSubject}
                 onChange={e => setCreateSubject(e.target.value)}
               />
+            </div>
+
+            <div className="space-y-1">
+              <label htmlFor="support-create-priority" className="block text-xs font-bold text-ink">{isEn ? 'Priority' : 'Mức ưu tiên'}</label>
+              <SupportPrioritySelect id="support-create-priority" value={createPriority} onChange={setCreatePriority} isEn={isEn} />
             </div>
 
             {/* Step 4: Nội dung */}
