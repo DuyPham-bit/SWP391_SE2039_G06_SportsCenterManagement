@@ -46,3 +46,16 @@ test('Medical NLP engine fields (extractedTags, aiReasoning, recommendedVolume) 
     assert.match(component, new RegExp(`result\\.${field}`));
   }
 });
+
+test('coach can manually enter member biometrics from the AI recommendation panel', () => {
+  assert.match(api, /updateMemberBiometrics:\s*\(classId, memberId, data\)/);
+  assert.match(api, /members\/\$\{memberId\}\/biometrics`, \{\s*method: 'PUT'/);
+  assert.match(component, /coachApi\.updateMemberBiometrics\(selectedClass\.id, member\.id/);
+  assert.match(component, /bioField\('heightCm'\)/);
+  assert.match(component, /bioField\('weightKg'\)/);
+  assert.match(component, /bioField\('dateOfBirth'\)/);
+});
+
+test('biometrics panel shows whether weight came from the latest training_results session log', () => {
+  assert.match(component, /context\.weightSource === 'training_result'/);
+});

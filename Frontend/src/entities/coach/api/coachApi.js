@@ -20,6 +20,16 @@ export const coachApi = {
   getClassMembers: sessionId => apiRequest('coaches/me/sessions/'+sessionId+'/members'),
   getMembersForClass: classId => apiRequest('coaches/me/classes/'+classId+'/members'),
   getAIContext: (classId, memberId) => apiRequest(`coaches/me/classes/${classId}/members/${memberId}/ai-context`),
+  updateMemberBiometrics: (classId, memberId, data) => apiRequest(`coaches/me/classes/${classId}/members/${memberId}/biometrics`, {
+    method: 'PUT', body: {
+      heightCm: data.heightCm === '' || data.heightCm == null ? null : Number(data.heightCm),
+      weightKg: data.weightKg === '' || data.weightKg == null ? null : Number(data.weightKg),
+      gender: data.gender || null,
+      dateOfBirth: data.dateOfBirth || null,
+      fitnessLevel: data.fitnessLevel || null,
+      medicalNote: data.medicalNote?.trim() || null
+    }
+  }),
   getCoachClassesAndMembers: () => apiRequest('coaches/me/classes'),
   getTrainingPlans: () => apiRequest('coaches/me/training-plans'),
   createTrainingPlan: plan => apiRequest('coaches/me/training-plans', { method: 'POST', body: planRequest({ ...plan, memberId: null }) }),
