@@ -2,13 +2,15 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiSource } = require('./helpers/apiSources.cjs');
+const { readSlice } = require('./helpers/sourceFiles.cjs');
 
-const overview = import('../src/features/coach/coachOverview.js');
+const overview = import('../src/entities/coach/lib/coachOverview.js');
 const now = new Date('2026-10-17T12:00:00+07:00');
 
 test('coach dashboard persists quick progress and attendance through the real APIs', () => {
-  const dashboard = fs.readFileSync(path.join(__dirname, '../src/features/coach/CoachDashboard.jsx'), 'utf8');
-  const api = fs.readFileSync(path.join(__dirname, '../src/services/api.js'), 'utf8');
+  const dashboard = fs.readFileSync(path.join(__dirname, '../src/pages/coach-dashboard/ui/CoachDashboard.jsx'), 'utf8');
+  const api = apiSource();
   assert.match(dashboard, /coachApi\.recordWorkoutProgress\(dashboardProgressRequest/);
   assert.match(dashboard, /coachApi\.getClassMembers\(session\.id\)/);
   assert.match(dashboard, /coachApi\.takeAttendance\(activeSession\.id/);
@@ -27,9 +29,9 @@ test('backend roster and attendance honor replacement coach and active class enr
 });
 
 test('attendance schedule excludes cancelled class and session history', () => {
-  const attendance = fs.readFileSync(path.join(__dirname, '../src/features/coach/Attendance.jsx'), 'utf8');
-  const shared = fs.readFileSync(path.join(__dirname, '../src/features/coach/CoachShared.jsx'), 'utf8');
-  const backendApi = fs.readFileSync(path.join(__dirname, '../src/services/backendApi.js'), 'utf8');
+  const attendance = readSlice('pages/coach-attendance');
+  const shared = fs.readFileSync(path.join(__dirname, '../src/features/coach-workspace/ui/CoachShared.jsx'), 'utf8');
+  const backendApi = apiSource();
 
   assert.match(attendance, /useTeachingSessions\(60, null, false\)/);
   assert.match(shared, /getTeachingSchedule\(range\.from, range\.to, includeHistory\)/);

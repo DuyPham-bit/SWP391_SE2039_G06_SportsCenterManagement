@@ -15,6 +15,16 @@ const clients = [
 const coaches = [{ id: 10, userId: 110, fullName: 'HLV kiểm thử' }, { id: 11, userId: 111, fullName: 'HLV khác' }];
 const messages = [{ id: 1, coachId: 10, memberId: 22, senderUserId: 122, content: 'alo HLV Nam', createdAt: '2026-10-22T15:00:15Z' }];
 const requests = [], errors = [], checks = [];
+// Attendance fixture: one session today (Vietnam date) that has already started, with one enrolled student.
+const vietnamToday = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+const attendanceSession = { sessionId: 501, classId: 7, className: 'Lớp điểm danh kiểm thử', sportName: 'Yoga', sessionDate: vietnamToday,
+  startTime: '00:00:00', endTime: '23:59:00', roomName: 'Phòng điểm danh', sessionStatus: 'Scheduled', bookedCount: 1, capacity: 10 };
+// Training plan fixture: one coach class and one shared lesson plan for it.
+const coachClasses = [{ id: 7, name: 'Lớp điểm danh kiểm thử', sportName: 'Yoga', members: [{ memberId: 21, fullName: 'Học viên điểm danh' }] }];
+const trainingPlans = [{ id: 81, classId: 7, className: 'Lớp điểm danh kiểm thử', sportName: 'Yoga', title: 'Giáo án kiểm thử sức bền', goal: 'Tăng sức bền',
+  startDate: vietnamToday, endDate: null, coachName: 'HLV kiểm thử', isCustom: false, memberId: null, memberName: null,
+  exercises: [{ name: 'Khởi động khớp', sets: '2', reps: '5 phút', note: '' }] }];
+const attendanceRoster = [{ memberId: 21, memberName: 'Học viên điểm danh', memberCode: 'MEM-ATT', attendanceStatus: null, note: '' }];
 const token = role => `fixture.${Buffer.from(JSON.stringify({ exp: Math.floor(Date.now() / 1000) + 3600, role })).toString('base64url')}.fixture`;
 const coachToken = token('Coach'), memberToken = token('Member');
 const coachSession = '1'.repeat(32), memberSession = '2'.repeat(32);
@@ -33,11 +43,16 @@ const server = http.createServer(async (req, res) => {
     const isMember = browserCredential(req) === memberToken;
     requests.push({ route, method: req.method, body });
     if (route === '/api/profile/me') return json(res, { userId: isMember ? 122 : 110, role: isMember ? 'Member' : 'Coach', status: 'Active', centerId: 1, fullName: isMember ? clients[1].fullName : coaches[0].fullName });
-    if (route === '/api/access/me/capabilities') return json(res, [isMember ? 'use_coach_portal' : 'manage_coach_workspace']);
+    if (route === '/api/access/me/capabilities') return json(res, isMember ? ['use_coach_portal'] : ['manage_coach_workspace', 'view_teaching_schedule', 'take_attendance', 'create_training_plan']);
     if (route === '/api/members/me') return json(res, { memberId: 22 });
     if (route === '/api/members/22/subscriptions') return json(res, []);
     if (route === '/api/notifications/me') return json(res, [{ id: 91, title: 'Tin nhắn mới từ chương trình huấn luyện', content: isMember ? 'HLV trả lời học viên' : 'alo HLV Nam', notificationType: 'CoachChat', senderId: isMember ? 110 : 122, createdAt: '2026-10-22T15:00:15Z', isRead: true }]);
     if (route.endsWith('/read') || route.endsWith('/read-all')) return json(res, {}, 204);
+    if (route === '/api/coaches/me/teaching-schedule') return json(res, [attendanceSession]);
+    if (route === '/api/coaches/me/classes') return json(res, coachClasses);
+    if (route === '/api/coaches/me/training-plans' && req.method === 'GET') return json(res, trainingPlans);
+    if (route === '/api/coaches/me/sessions/501/members') return json(res, attendanceRoster);
+    if (route === '/api/coaches/me/sessions/501/attendance' && req.method === 'PUT') return json(res, {});
     if (route === '/api/coaches/me/professional') return json(res, {
       profile: { id: 10, userId: 110, fullName: coaches[0].fullName }, clients,
       threads: [{ memberId: 22, unread: 1 }], kpi: {}, events: [], classSessions: [], leaves: [],
@@ -101,7 +116,8 @@ async function evaluate(expression) {
   return result.result.value;
 }
 async function clickText(text) {
-  await evaluate(`(() => { const button = [...document.querySelectorAll('button')].find(x => !x.disabled && x.textContent.includes(${JSON.stringify(text)})); if (!button) throw Error('Missing button'); button.click(); })()`);
+  // Wait for the button (lists render after their API call) and click it in the same evaluation.
+  await until(`button ${text}`, () => evaluate(`(() => { const button = [...document.querySelectorAll('button')].find(x => !x.disabled && x.textContent.includes(${JSON.stringify(text)})); if (!button) return false; button.click(); return true; })()`));
 }
 async function typeMessage(value) {
   await evaluate(`(() => { const input = document.querySelector('main form input[placeholder]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event('input', { bubbles: true })); })()`);
@@ -144,6 +160,7 @@ async function typeMessage(value) {
   assert.deepEqual(requests.find(x => x.route === '/api/coaches/me/messages').body, { coachId: 10, memberId: 22, content: 'HLV trả lời học viên' });
   checks.push('Coach reply uses the existing scoped API and appears in conversation history');
   await evaluate(`document.querySelector('button[aria-label="Thông báo"]').click()`);
+  await until('notification list', () => evaluate(`[...document.querySelectorAll('button')].some(b => b.textContent.includes('Tin nhắn mới từ chương trình huấn luyện'))`));
   await clickText('Tin nhắn mới từ chương trình huấn luyện');
   await until('notification closes', () => evaluate(`document.querySelector('button[aria-label="Thông báo"]').getAttribute('aria-expanded') === 'false'`));
   checks.push('Previously read chat notifications still open the conversation and close the dropdown');
@@ -160,6 +177,48 @@ async function typeMessage(value) {
   assert.equal(await evaluate(`document.querySelector('main').textContent.includes('alo HLV Nam')`), false);
   failMessages = false;
   checks.push('Switching students clears old history and displays loading failures');
+
+  // Attendance: today's session loads its roster in both views, "mark all present" and save send the records.
+  await evaluate(`location.hash = '#/coach/attendance'`);
+  await until('attendance roster', () => evaluate(`document.querySelector('main')?.textContent.includes('Học viên điểm danh') === true`));
+  await clickText('Lịch tuần');
+  await until('weekly view', () => evaluate(`document.querySelector('main').textContent.includes('Lớp điểm danh kiểm thử')`));
+  await clickText('Danh sách ca');
+  await evaluate(`document.querySelector('main button[title="Đánh dấu tất cả học viên thành Có mặt"]').click()`);
+  await clickText('Lưu Kết Quả Điểm Danh');
+  await until('attendance saved', () => requests.some(x => x.route === '/api/coaches/me/sessions/501/attendance' && x.method === 'PUT'));
+  const savedRecords = requests.find(x => x.route === '/api/coaches/me/sessions/501/attendance').body;
+  assert.equal(savedRecords.length, 1);
+  assert.equal(savedRecords[0].memberId, 21);
+  assert.ok(savedRecords[0].status, 'the student must have a status after "mark all present"');
+  checks.push('Attendance: roster loads in list and weekly views; mark-all-present and save send the records');
+
+  // Teaching schedule: week, month and agenda views render today's session; its detail dialog opens.
+  const pressText = (label, text) => until(label, () => evaluate(`(() => { const b = [...document.querySelectorAll('main button')].find(b => !b.disabled && b.textContent.includes(${JSON.stringify(text)})); if (!b) return false; b.click(); return true; })()`));
+  await evaluate(`location.hash = '#/coach/schedule'`);
+  await until('teaching schedule', () => evaluate(`document.querySelector('main')?.textContent.includes('Lớp điểm danh kiểm thử') === true`));
+  await pressText('month view', 'Lịch Tháng');
+  await pressText('agenda view', 'Lịch Biểu');
+  await until('agenda session', () => evaluate(`document.querySelector('main').textContent.includes('Lớp điểm danh kiểm thử')`));
+  await until('open session detail', () => evaluate(`(() => { const item = [...document.querySelectorAll('main .cursor-pointer')].find(el => el.textContent.includes('Lớp điểm danh kiểm thử')); if (!item) return false; item.click(); return true; })()`));
+  await until('session detail dialog', () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes('Chi tiết ca giảng dạy') === true`));
+  await evaluate(`document.querySelector('[role=dialog] button[aria-label="Đóng"]').click()`);
+  await until('detail closed', () => evaluate(`!document.querySelector('[role=dialog]')`));
+  await pressText('week view', 'Lịch Tuần');
+  checks.push('Teaching schedule renders week, month and agenda views and opens the session detail');
+
+  // Training plans: the API plan is listed, its detail dialog and the create-plan form open.
+  const dialogHas = text => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes(${JSON.stringify(text)}) === true`);
+  const closeDialog = async () => { await evaluate(`document.querySelector('[role=dialog] button[aria-label="Đóng"]').click()`); await until('dialog closed', () => evaluate(`!document.querySelector('[role=dialog]')`)); };
+  await evaluate(`location.hash = '#/coach/training-plan'`);
+  await until('training plans', () => evaluate(`document.querySelector('main')?.textContent.includes('Giáo án kiểm thử sức bền') === true`));
+  await pressText('plan detail', 'Chi tiết');
+  await until('plan detail dialog', () => dialogHas('Khởi động khớp'));
+  await closeDialog();
+  await pressText('create plan', 'Soạn Giáo Án Mới');
+  await until('create plan dialog', () => dialogHas('Soạn Thảo Giáo Án Chung Cho Lớp Học'));
+  await closeDialog();
+  checks.push('Training plans: API plan listed; detail dialog and create-plan form open');
   await evaluate(`sessionStorage.setItem('scms.auth.tab.v1', ${JSON.stringify(memberSession)}); location.hash = '#/member/coach-portal'; location.reload()`);
   await until('member portal', () => evaluate(`document.querySelector('main')?.textContent.includes('HLV')`));
   await evaluate(`document.querySelector('button[aria-label="Thông báo"]').click()`);

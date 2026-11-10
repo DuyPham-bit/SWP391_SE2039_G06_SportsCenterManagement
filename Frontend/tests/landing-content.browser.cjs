@@ -100,8 +100,13 @@ async function setInput(session, inputExpression, value) {
   await evaluate(session, `(() => { const input = ${inputExpression}; if (!input) throw Error('Input missing'); Object.getOwnPropertyDescriptor(Object.getPrototypeOf(input), 'value').set.call(input, ${JSON.stringify(value)}); input.dispatchEvent(new Event(input.tagName === 'SELECT' ? 'change' : 'input', { bubbles: true })); })()`);
 }
 async function click(session, label) {
-  await evaluate(session, `(() => { const button = [...document.querySelectorAll('button')].find(b => !b.disabled && b.textContent.includes(${JSON.stringify(label)})); if (!button) throw Error('Missing button'); button.click(); })()`);
+  // Wait for the button so clicks right after a tab switch do not race React's render.
+  const find = `[...document.querySelectorAll('button')].find(b => !b.disabled && b.textContent.includes(${JSON.stringify(label)}))`;
+  await until(`button ${label}`, () => evaluate(session, `Boolean(${find})`)).catch(() => { throw new Error(`Missing button: ${label}`); });
+  await evaluate(session, `${find}.click()`);
 }
+// Toasts also use role=alert, so look through every alert rather than only the first one.
+const alertIncludes = text => `[...document.querySelectorAll('[role=alert]')].some(alert => alert.textContent.includes(${JSON.stringify(text)}))`;
 const titleInput = value => `[...document.querySelectorAll('main input')].find(input => input.value === ${JSON.stringify(value)})`;
 const discardButton = `[...document.querySelectorAll('main button')].find(button => button.textContent.includes('Hủy thay đổi'))`;
 
@@ -149,7 +154,10 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
     return Boolean(previewId);
   });
   const preview = await attach(previewId);
-  await until('preview draft rendered', () => evaluate(preview, `document.querySelector('h1')?.textContent.includes('Isolated preview draft')`));
+  await until('preview draft rendered', () => evaluate(preview, `document.querySelector('h1')?.textContent.includes('Isolated preview draft')`)).catch(async error => {
+    const diag = await evaluate(preview, `JSON.stringify({ href: location.href, ready: document.readyState, h1s: [...document.querySelectorAll('h1')].map(h => h.textContent.trim().slice(0, 80)), stored: Object.keys(sessionStorage), body: document.body?.innerText.slice(0, 300) })`).catch(e => String(e));
+    throw new Error(`${error.message} ${diag} errors=${JSON.stringify(errors)}`);
+  });
   assert.equal(saves, 0); assert.equal(published, null);
   checks.push('Preview opens the draft in a separate tab without publishing.');
 
@@ -172,7 +180,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await setInput(manager, titleInput('Isolated preview draft'), 'Unsaved failure draft');
   failSave = true;
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
-  await until('save error', () => evaluate(manager, `document.querySelector('[role=alert]')?.textContent.includes('Simulated save failure')`));
+  await until('save error', () => evaluate(manager, `${alertIncludes('Simulated save failure')}`));
   assert.equal(published.heroBanner.title, 'Isolated preview draft');
   assert.equal(await evaluate(manager, `document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`), true);
   checks.push('Save failure keeps the draft dirty and leaves published content unchanged.');
@@ -196,10 +204,20 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   assert.deepEqual(published.facilitiesSection.facilitiesList, []);
   checks.push('Retrying a failed save publishes the draft and preserves empty business lists and metrics.');
 
-  for (const label of ['2. Tại Sao Chọn SCMS', '3. Thẻ Môn Thể Thao', '4. Thẻ Cụm Sân', '5. Sơ Đồ Phân Khu', '6. Banner Kêu Gọi & Footer']) {
-    await click(manager, label); await delay(100);
+  // Each tab must show its own section heading (not just accept the click).
+  for (const [label, heading] of [
+    ['1. Hero Banner', 'Khu Vực 1: Hero Banner Mở Đầu Trang Chủ'],
+    ['2. Tại Sao Chọn SCMS', 'Khu Vực 2: Tại Sao Nên Chọn SCMS'],
+    ['3. Môn Thể Thao', 'Thêm thẻ bộ môn'],
+    ['4. Thẻ Cụm Sân', 'Thêm thẻ cụm sân'],
+    ['5. Sơ Đồ Phân Khu', 'Khu Vực 5: Sơ Đồ Các Khu Vực Tập Luyện'],
+    ['6. Kêu Gọi & Footer', 'Khu Vực 6: Banner Kêu Gọi Sự Kiện & Chân Trang Footer'],
+    ['7. Banner Đăng Nhập', 'Khu Vực 7: Banner Giới Thiệu Đăng Nhập & Đăng Ký']
+  ]) {
+    await click(manager, label);
+    await until(`tab ${label}`, () => evaluate(manager, `document.body.textContent.includes(${JSON.stringify(heading)})`));
   }
-  checks.push('All six editor tabs render without JavaScript errors.');
+  checks.push('All seven editor tabs render their own section without JavaScript errors.');
 
   await click(manager, '4. Thẻ Cụm Sân');
   await click(manager, 'Thêm thẻ cụm sân');
@@ -227,20 +245,22 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await openCard();
   assert.equal(await evaluate(manager, `${cardField('description')}.value`), 'Nội dung chi tiết sân mới');
   await click(manager, 'Tải/Đổi Ảnh');
-  await until('card media picker opens', () => evaluate(manager, `document.querySelectorAll('p[title^="photo-"]').length === 7`));
+  // R2 picker: one "Chọn ảnh #<id>" button per library image.
+  await until('card media picker opens', () => evaluate(manager, `document.querySelectorAll('button[aria-label^="Chọn ảnh #"]').length === 7`));
   assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
-  await click(manager, 'Hủy bỏ');
+  await evaluate(manager, `[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Hủy').click()`);
   await until('card dialog resumes after cancelling the picker', () => evaluate(manager, `Boolean(${cardField('description')})`));
   assert.equal(await evaluate(manager, `${cardField('description')}.value`), 'Nội dung chi tiết sân mới');
   await click(manager, 'Tải/Đổi Ảnh');
-  await until('card gallery loads', () => evaluate(manager, `Boolean(document.querySelector('p[title="photo-0.jpg"]'))`));
-  await evaluate(manager, `document.querySelector('p[title="photo-0.jpg"]').click()`);
-  await click(manager, 'Áp Dụng Hình Ảnh Này');
+  await until('card gallery loads', () => evaluate(manager, `Boolean(document.querySelector('button[aria-label="Chọn ảnh #1"]'))`));
+  await evaluate(manager, `document.querySelector('button[aria-label="Chọn ảnh #1"]').click()`);
+  await until('gallery image selected', () => evaluate(manager, `document.querySelector('button[aria-label="Chọn ảnh #1"]').getAttribute('aria-pressed') === 'true'`));
+  await click(manager, 'Dùng ảnh này');
   await until('card image updated and dialog resumes', () => evaluate(manager, `${cardField('image')}?.value === ${JSON.stringify(galleryFiles[0].url)}`));
   await closeCard();
   const facilityId = await evaluate(manager, `document.querySelector('main article').dataset.cardId`);
 
-  await click(manager, '3. Thẻ Môn Thể Thao');
+  await click(manager, '3. Môn Thể Thao');
   await click(manager, 'Thêm thẻ bộ môn');
   assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
   await openCard();
@@ -263,8 +283,11 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await evaluate(manager, `location.hash = '#/manager/dashboard'`);
   await until('card editor closed', () => evaluate(manager, `!document.querySelector('main fieldset')`));
   await evaluate(manager, `location.hash = '#/manager/home-content'`);
+  // The editor intentionally reopens the last tab used in this browser tab.
+  await until('editor tabs rendered', () => evaluate(manager, `[...document.querySelectorAll('button')].some(b => b.textContent.includes('1. Hero Banner'))`));
+  await click(manager, '1. Hero Banner');
   await until('card editor reloaded', () => evaluate(manager, `Boolean(${titleInput('Unsaved failure draft')})`));
-  await click(manager, '3. Thẻ Môn Thể Thao');
+  await click(manager, '3. Môn Thể Thao');
   assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
   await openCard();
   assert.equal(await evaluate(manager, `${cardField('facilityId')}.value`), facilityId);
@@ -305,7 +328,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await until('facility removed from draft', () => evaluate(manager, `document.querySelectorAll('main article').length === 0`));
   assert.equal(published.facilitiesSection.facilitiesList.length, 1);
   const savesBeforeRestoringCards = saves;
-  await click(manager, '3. Thẻ Môn Thể Thao');
+  await click(manager, '3. Môn Thể Thao');
   await openCard();
   await setInput(manager, cardField('name'), 'Bộ môn nháp chưa lưu');
   await setInput(manager, cardField('highlight'), 'Nội dung nháp chưa lưu');
@@ -325,7 +348,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   assert.equal(await evaluate(manager, `${cardField('description')}.value`), 'Chi tiết đã sửa');
   assert.equal(await evaluate(manager, `${cardField('spec-value')}.value`), '300 m²');
   await closeCard();
-  await click(manager, '3. Thẻ Môn Thể Thao');
+  await click(manager, '3. Môn Thể Thao');
   await openCard();
   assert.equal(await evaluate(manager, `${cardField('name')}.value`), 'Bộ môn đã sửa');
   assert.equal(await evaluate(manager, `${cardField('highlight')}.value`), 'Nội dung đã sửa');
@@ -339,7 +362,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   failSave = true;
   const attemptsBeforeFailedDelete = saves;
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
-  await until('failed deletion save reports error', async () => saves > attemptsBeforeFailedDelete && await evaluate(manager, `!document.querySelector('main fieldset').disabled && document.querySelector('[role=alert]')?.textContent.includes('Simulated save failure')`));
+  await until('failed deletion save reports error', async () => saves > attemptsBeforeFailedDelete && await evaluate(manager, `!document.querySelector('main fieldset').disabled && ${alertIncludes('Simulated save failure')}`));
   assert.equal(published.facilitiesSection.facilitiesList.length, 1);
   assert.equal(await evaluate(manager, `document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`), true);
   failSave = false;
@@ -349,7 +372,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   assert.equal(published.coursesSection.sportsList[0].id, sportId);
   assert.equal(published.coursesSection.sportsList[0].facilityId, '');
   assert.equal(published.coursesSection.sportsList[0].name, 'Bộ môn đã sửa');
-  await click(manager, '3. Thẻ Môn Thể Thao');
+  await click(manager, '3. Môn Thể Thao');
   await click(manager, 'Xóa thẻ');
   await click(manager, 'Xác nhận xóa');
   await until('sport removed from draft', () => evaluate(manager, `document.querySelectorAll('main article').length === 0`));
@@ -371,15 +394,17 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await evaluate(manager, `location.hash = '#/manager/dashboard'`);
   await until('leave deleted card lists', () => evaluate(manager, `!document.querySelector('main fieldset')`));
   await evaluate(manager, `location.hash = '#/manager/home-content'`);
+  await until('editor tabs rendered after deletion', () => evaluate(manager, `[...document.querySelectorAll('button')].some(b => b.textContent.includes('1. Hero Banner'))`));
+  await click(manager, '1. Hero Banner');
   await until('deleted card lists reloaded', () => evaluate(manager, `Boolean(${titleInput('Unsaved failure draft')})`));
-  for (const label of ['3. Thẻ Môn Thể Thao', '4. Thẻ Cụm Sân']) {
+  for (const label of ['3. Môn Thể Thao', '4. Thẻ Cụm Sân']) {
     await click(manager, label);
     await until('empty custom list rendered', () => evaluate(manager, `document.querySelector('main').textContent.includes('Chưa có thẻ.')`));
     assert.equal(await evaluate(manager, `document.querySelectorAll('main article').length`), 0);
   }
   checks.push('Card deletion requires confirmation, preserves linked sport cards, handles failed saves, and keeps the last card deleted after reload even with a populated catalog.');
 
-  await click(manager, '6. Banner Kêu Gọi & Footer');
+  await click(manager, '6. Kêu Gọi & Footer');
 
   const zaloPhone = '0901234567';
   const zaloLabel = `Zalo: ${zaloPhone}`;
@@ -409,8 +434,8 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await evaluate(manager, `location.hash = '#/manager/dashboard'`);
   await until('manager leaves editor', () => evaluate(manager, `!document.querySelector('main fieldset')`));
   await evaluate(manager, `location.hash = '#/manager/home-content'`);
-  await until('editor reloads', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && Boolean(${titleInput('Unsaved failure draft')})`));
-  await click(manager, '6. Banner Kêu Gọi & Footer');
+  await until('editor reloads', () => evaluate(manager, `document.querySelector('main fieldset')?.disabled === false && [...document.querySelectorAll('button')].some(b => b.textContent.includes('6. Kêu Gọi & Footer'))`));
+  await click(manager, '6. Kêu Gọi & Footer');
   assert.equal(await evaluate(manager, `document.querySelector('#footer-zalo-phone').value`), zaloPhone);
   assert.equal(await evaluate(manager, `document.querySelector('#footer-facebook-url').value`), facebookUrl);
   checks.push('Both contact links persist after reopening the editor and reloading an independent visitor.');
@@ -418,13 +443,13 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   const savesBeforeInvalidLink = saves;
   await setInput(manager, `document.querySelector('#footer-zalo-phone')`, '090abc1234');
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
-  await until('invalid Zalo phone rejected', () => evaluate(manager, `document.querySelector('[role=alert]')?.textContent.includes('Số điện thoại Zalo')`));
+  await until('invalid Zalo phone rejected', () => evaluate(manager, `${alertIncludes('Số điện thoại Zalo')}`));
   assert.equal(saves, savesBeforeInvalidLink);
   assert.equal(published.ctaAndFooter.contactZaloPhone, zaloPhone);
   await setInput(manager, `document.querySelector('#footer-zalo-phone')`, zaloPhone);
   await setInput(manager, `document.querySelector('#footer-facebook-url')`, 'javascript:alert(1)');
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
-  await until('invalid contact URL rejected', () => evaluate(manager, `document.querySelector('[role=alert]')?.textContent.includes('Facebook')`));
+  await until('invalid contact URL rejected', () => evaluate(manager, `${alertIncludes('Facebook')}`));
   assert.equal(saves, savesBeforeInvalidLink);
   assert.equal(published.ctaAndFooter.contactFacebookUrl, facebookUrl);
   await setInput(manager, `document.querySelector('#footer-zalo-phone')`, '');
@@ -438,9 +463,9 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
 
   await click(manager, '1. Hero Banner');
   await click(manager, 'Tải/Đổi Ảnh');
-  await until('all gallery images rendered', () => evaluate(manager, `document.querySelectorAll('p[title^="photo-"]').length === 7`));
+  await until('all gallery images rendered', () => evaluate(manager, `document.querySelectorAll('button[aria-label^="Chọn ảnh #"]').length === 7`));
   for (const file of galleryFiles.filter(file => file.mimeType === 'image/avif')) {
-    assert.equal(await evaluate(manager, `Boolean(document.querySelector(${JSON.stringify(`p[title="${file.fileName}"]`)}))`), true);
+    assert.equal(await evaluate(manager, `Boolean(document.querySelector(${JSON.stringify(`button[aria-label^="Chọn ảnh #"] img[src="${file.url}"]`)}))`), true);
   }
   checks.push('The media picker renders all seven API images, including three AVIF images.');
   assert.deepEqual(errors, []);

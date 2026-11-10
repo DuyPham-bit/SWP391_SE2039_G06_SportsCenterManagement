@@ -38,6 +38,7 @@ services:
       R2Storage__BucketName: ${R2_BUCKET_NAME}
       R2Storage__PublicDomain: ${R2_PUBLIC_DOMAIN}
       Cors__AllowedOrigins__0: http://localhost:3004
+      Authentication__AllowCrossSiteCookies: ${AUTHENTICATION_ALLOW_CROSS_SITE_COOKIES:-false}
 
       # Email xác thực, quên mật khẩu và thông báo
       ExternalCommunications__Email__Smtp__Host: ${EMAIL_SMTP_HOST:-smtp.gmail.com}

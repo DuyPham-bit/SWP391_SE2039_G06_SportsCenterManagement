@@ -25,7 +25,7 @@ function fixture({ blocked = false } = {}) {
     setInterval(callback) { timers.add(callback); return callback; },
     clearInterval(callback) { timers.delete(callback); }
   };
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/paymentCheckout.js'), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src/features/payment-checkout/model/paymentCheckout.js'), 'utf8')
     .replaceAll('export function ', 'function ')
     .replaceAll('import.meta.env.VITE_API_BASE_URL', 'undefined');
   const context = vm.createContext({ window, URL, Set });
@@ -44,9 +44,9 @@ test('checkout preserves the original document and rejects messages from other t
   receive({ source: f.popup, origin: 'https://gateway.example', data: { type: 'scms:payment-returned' } });
   assert.equal(f.returned.length, 0);
   assert.equal(f.popup.closed, false);
-  receive({ source: f.popup, origin: 'http://localhost:54162', data: { type: 'scms:payment-ready' } });
-  assert.equal(f.messages[0].origin, 'http://localhost:54162');
-  receive({ source: f.popup, origin: 'http://localhost:54162', data: { type: 'scms:payment-returned', cancelled: true } });
+  receive({ source: f.popup, origin: 'http://localhost:5000', data: { type: 'scms:payment-ready' } });
+  assert.equal(f.messages[0].origin, 'http://localhost:5000');
+  receive({ source: f.popup, origin: 'http://localhost:5000', data: { type: 'scms:payment-returned', cancelled: true } });
   assert.equal(f.returned[0].cancelled, true);
   assert.equal(f.popup.closed, true);
   assert.equal(f.window.focused, true);

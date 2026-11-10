@@ -13,7 +13,7 @@ function loadService(fetchImpl, service = 'r2ImageStorage.js') {
       return response.json();
     } })
   });
-  const source = fs.readFileSync(path.join(__dirname, '../src/services', service), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../src/shared/api', service), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs' }).code, context);
   return context.module.exports;
 }

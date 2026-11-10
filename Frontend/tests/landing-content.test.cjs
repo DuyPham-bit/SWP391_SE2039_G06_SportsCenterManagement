@@ -34,13 +34,13 @@ function loadService(apiRequest, { blockedStorage = false, popupBlocked = false 
       module, window, localStorage, URL, URLSearchParams, console,
       sessionStorage: { getItem: key => previewStore.get(key) ?? null },
       CustomEvent: class { constructor(type, { detail }) { this.type = type; this.detail = detail; } },
-      require: id => id === './http.js' ? { apiRequest } : load(path.resolve(path.dirname(file), id))
+      require: id => id.endsWith('/http.js') ? { apiRequest } : load(path.resolve(path.dirname(file), id))
     });
     vm.runInContext(transformSync(fs.readFileSync(file, 'utf8'), { format: 'cjs' }).code, context);
     modules.set(file, module.exports);
     return module.exports;
   }
-  return { api: load(path.join(__dirname, '../src/services/landingContentService.js')), window, store, events, previewStore, previewWindow };
+  return { api: load(path.join(__dirname, '../src/entities/landing-content/api/landingContentService.js')), window, store, events, previewStore, previewWindow };
 }
 
 test('publishing goes through the API and another browser reads the shared content', async () => {

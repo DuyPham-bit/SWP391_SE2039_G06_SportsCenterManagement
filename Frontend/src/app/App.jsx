@@ -1,7 +1,7 @@
 import React from 'react';
-import { AuthProvider } from './providers/AuthContext.jsx';
-import { ToastProvider } from './providers/ToastContext.jsx';
-import { LanguageProvider } from './providers/LanguageContext.jsx';
+import { AuthProvider } from '../entities/session/index.js';
+import { ToastProvider } from '../shared/ui/toast/ToastContext.jsx';
+import { LanguageProvider } from '../shared/i18n/LanguageContext.jsx';
 import AppRouter from './router/AppRouter.jsx';
 
 export default function App() {

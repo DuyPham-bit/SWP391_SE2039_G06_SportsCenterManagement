@@ -1,11 +1,12 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiSource } = require('./helpers/apiSources.cjs');
 const vm = require('node:vm');
 const { test } = require('node:test');
 
 function loadApi(request) {
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/backendApi.js'), 'utf8')
+  const source = apiSource()
     .replace(/^import .+;\r?\n/gm, '')
     .replaceAll('export const ', 'const ')
     .replaceAll('import.meta.env', 'testEnvironment');

@@ -2,11 +2,11 @@
 
 ## Nguyên nhân và thay đổi
 
-FE `http://localhost:3004` gọi `/api` qua Vite đến `http://localhost:54162`. Lỗi `Yêu cầu API thất bại (500)` đã tái hiện bằng `/api/health`: Vite trả HTTP 500 rỗng khi backend không chạy. Database Development trỏ tới `SQLEXPRESS`, trong khi máy này chạy instance SQL Server mặc định.
+FE `http://localhost:3004` gọi `/api` qua Vite đến `http://localhost:5000`. Lỗi `Yêu cầu API thất bại (500)` đã tái hiện bằng `/api/health`: Vite trả HTTP 500 rỗng khi backend không chạy. Database Development trỏ tới `SQLEXPRESS`, trong khi máy này chạy instance SQL Server mặc định.
 
 - Đã sửa server Development thành `.` và giữ database `SportsCenterManagement`, trung tâm ID `15`.
 - Khởi động backend với seed demo tắt; migration `20261015090000_AddCoachSports` đã bổ sung bảng/chuyên môn còn thiếu trong database hiện tại.
-- Thêm `SCMS_API_PROXY_TARGET` để cấu hình đích proxy; mặc định vẫn là `http://localhost:54162`.
+- Thêm `SCMS_API_PROXY_TARGET` để cấu hình đích proxy; mặc định là `http://localhost:5000`.
 - Khi backend không kết nối được, proxy trả Problem Details HTTP 503 với mã `API_UNAVAILABLE` và hướng xử lý.
 - Vite bỏ qua `tmp/` và `.validation/`, tránh lỗi Windows `EBUSY` do file Chrome kiểm thử đang bị khóa làm dừng FE.
 
@@ -29,7 +29,7 @@ Từ workspace, chạy backend; lệnh sử dụng cấu hình Development và g
 ```powershell
 $env:ASPNETCORE_ENVIRONMENT = 'Development'
 $env:Database__SeedDemoData = 'false'
-dotnet run --project Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj --no-launch-profile --urls http://localhost:54162
+dotnet run --project Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj --no-launch-profile --urls http://localhost:5000
 ```
 
 Trong terminal khác:

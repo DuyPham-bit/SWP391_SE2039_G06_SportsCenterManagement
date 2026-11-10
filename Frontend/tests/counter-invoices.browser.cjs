@@ -29,6 +29,7 @@ const details = row => ({
   const profile = path.join(artifacts, `chrome-${Date.now()}`);
   const browser = spawn(process.env.CHROME_PATH || 'C:/Program Files/Google/Chrome/Application/chrome.exe', ['--headless=new', '--disable-gpu', '--disable-background-networking', '--no-first-run', '--no-default-browser-check', '--remote-debugging-port=0', `--user-data-dir=${profile}`, 'about:blank'], { windowsHide: true, stdio: 'ignore' });
   const checks = [], errors = [], requests = [];
+  const checkinBodies = [];
   let socket, send, held, delayNext = false, failNext = false;
   try {
     const portFile = path.join(profile, 'DevToolsActivePort');
@@ -61,7 +62,12 @@ const details = row => ({
         requests.push({ route, method: request.method });
         let value = [], status = 200;
         if (route === 'profile/me') value = { userId: 99999, role: 'Receptionist', status: 'Active', centerId: 15, fullName: 'Fixture Receptionist' };
-        else if (route === 'access/me/capabilities') value = ['register_counter_package'];
+        else if (route === 'access/me/capabilities') value = ['register_counter_package', 'checkin_member'];
+        else if (route === 'centers/15/checkins/today') value = [];
+        else if (route === 'centers/15/checkins' && request.method === 'POST') {
+          checkinBodies.push(JSON.parse(request.postData || '{}'));
+          value = { memberName: 'Hội viên check-in', memberCode: 'MEM-CHECKIN', packageName: 'Gói kiểm thử', checkInTime: new Date().toISOString() };
+        }
         else if (route === 'centers/15/invoices') value = { items: rows, totalCount: 41, page: 1, pageSize: 20 };
         else if (route.startsWith('invoices/')) {
           const number = decodeURIComponent(route.slice('invoices/'.length));
@@ -128,10 +134,23 @@ const details = row => ({
     await send('Emulation.setDeviceMetricsOverride', { width: 390, height: 844, deviceScaleFactor: 1, mobile: true });
     await pause(200); await screenshot('invoice-mobile.png');
     const mobile = await evaluate(`(() => {const r=document.querySelector('[role="dialog"]').getBoundingClientRect();return {left:r.left,right:r.right,top:r.top,bottom:r.bottom};})()`);
-    assert.ok(mobile.left >= 0 && mobile.right <= 390 && mobile.top >= 0 && mobile.bottom <= 844, JSON.stringify(mobile));
+    const diag = await evaluate(`JSON.stringify({ vw: innerWidth, sw: document.documentElement.scrollWidth, wide: [...document.querySelectorAll('body *')].filter(e => { const r = e.getBoundingClientRect(); if (!(r.right > 392 && r.width > 0) || [...e.children].some(c => c.getBoundingClientRect().right > 392)) return false; for (let p = e.parentElement; p && p !== document.body; p = p.parentElement) { if (getComputedStyle(p).overflowX !== 'visible') return false; } return true; }).slice(0, 8).map(e => ({ tag: e.tagName, cls: String(e.className).slice(0, 120), text: e.textContent.trim().slice(0, 40), right: Math.round(e.getBoundingClientRect().right) })) })`);
+    assert.ok(mobile.left >= 0 && mobile.right <= 390 && mobile.top >= 0 && mobile.bottom <= 844, JSON.stringify(mobile) + ' ' + diag);
     assert.equal(requests.some(request => request.method !== 'GET'), false);
     assert.deepEqual(errors, []);
     checks.push('Mobile dialog fits the viewport; opening, retrying and closing issue only GET requests.');
+
+    // Check-in desk: manual key-in validates the card and shows the approved entry.
+    await send('Emulation.setDeviceMetricsOverride', { width: 1440, height: 1000, deviceScaleFactor: 1, mobile: false });
+    await evaluate(`location.hash = '#/receptionist/check-in'`);
+    await until(() => evaluate(`(() => { const b = [...document.querySelectorAll('main button')].find(b => b.textContent.includes('RFID / Key-in')); if (!b) return false; b.click(); return true; })()`), 'manual check-in mode');
+    await until(() => evaluate(`Boolean(document.querySelector('main input[placeholder^="Scan card or enter ID"]'))`), 'manual input');
+    await evaluate(`(() => { const input = document.querySelector('main input[placeholder^="Scan card or enter ID"]'); Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set.call(input, 'MEM-CHECKIN'); input.dispatchEvent(new Event('input', { bubbles: true })); input.form.requestSubmit(); })()`);
+    await until(() => checkinBodies.length === 1, 'check-in request');
+    assert.deepEqual(checkinBodies[0], { identifier: 'MEM-CHECKIN' });
+    await until(() => evaluate(`document.querySelector('main').textContent.includes('GATE UNLOCKED') && document.querySelector('main').textContent.includes('Hội viên check-in')`), 'approved entry');
+    assert.deepEqual(errors, []);
+    checks.push('Check-in desk: manual key-in sends the card identifier and shows the approved entry.');
     fs.writeFileSync(path.join(artifacts, 'report.json'), JSON.stringify({ checks, errors, requests }, null, 2));
     console.log(`PASS: ${checks.length} browser checks\n${checks.map(check => `- ${check}`).join('\n')}`);
   } catch (error) {

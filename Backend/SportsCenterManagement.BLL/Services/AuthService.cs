@@ -228,33 +228,6 @@ public sealed class AuthService(IUnitOfWork unitOfWork) : IAuthService
         return new AuthResponses.AuthenticatedUser(user.Id, user.Username, role.Name, centerId, user.Email, user.AuthVersion);
     }
 
-    /// <summary>
-    /// Validates password complexity: minimum 6 characters, including uppercase, lowercase, numbers, and special characters.
-    /// </summary>
-    /// <param name="password">Plain text password to be validated.</param>
-    private static void ValidatePassword(string password)
-    {
-        // 1. Kiểm tra chuỗi rỗng hoặc độ dài tối thiểu 6 ký tự / Check null or minimum length of 6 characters
-        if (string.IsNullOrWhiteSpace(password) || password.Length < 6
-            // 2. Phải chứa ít nhất 1 chữ hoa / Must contain at least one uppercase letter (A-Z)
-            || !Regex.IsMatch(password, "[A-Z]")
-            // 3. Phải chứa ít nhất 1 chữ thường / Must contain at least one lowercase letter (a-z)
-            || !Regex.IsMatch(password, "[a-z]")
-            // 4. Phải chứa ít nhất 1 chữ số / Must contain at least one number (0-9)
-            || !Regex.IsMatch(password, "[0-9]")
-            // 5. Phải chứa ít nhất 1 ký tự đặc biệt / Must contain at least one special character (non-alphanumeric)
-            || !Regex.IsMatch(password, "[^a-zA-Z0-9]"))
-        {
-            // Ném ngoại lệ nếu không thỏa mãn bất kỳ điều kiện bảo mật nào / Throw validation exception if any rule fails
-            throw new ValidationException("Password must be at least 6 characters long and contain uppercase letters, lowercase letters, numbers, and special characters.");
-        }
-    }
-
-    private static string? NormalizeOptional(string? value)
-    {
-        return string.IsNullOrWhiteSpace(value) ? null : value.Trim();
-    }
-
     private static void ValidatePhone(string? phone)
     {
         if (phone is not null && !Regex.IsMatch(phone, @"^\+?[0-9]{8,15}$"))

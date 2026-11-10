@@ -23,7 +23,7 @@ function loadService(apiRequest, fetchImpl) {
     fetch: fetchImpl,
     require: () => ({ apiRequest: unifiedApiRequest, getApiSession: () => 'manager-tab', getApiUrl: route => `/api/${route}` })
   });
-  const source = fs.readFileSync(path.join(__dirname, '../src/features/media/api/mediaApi.js'), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../src/shared/api/mediaApi.js'), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs' }).code, context);
   return context.module.exports;
 }

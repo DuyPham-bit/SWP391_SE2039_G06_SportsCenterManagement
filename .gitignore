@@ -13,10 +13,27 @@ credentials.local.json
 Frontend/.env.*.local
 .env.local
 **/.env.local
+credentials.json
+*.local.json
 .env
 .env.*
+.env*.local
 *.env
+*.env.*
+Frontend/.env
+Frontend/.env.*
+Frontend/.env*.local
+Frontend/.env.local
+Backend/.env
+Backend/.env.*
+Backend/.env*.local
+Backend/.env.local
+docker/.env
+docker/.env.*
 !.env.example
+!Frontend/.env.example
+!Backend/.env.example
+!docker/.env.example
 
 # .NET & Visual Studio build outputs
 bin/
@@ -76,3 +93,7 @@ docker/nginx.conf
 **/appsettings.Development.json
 # Local Graphify index and extraction cache
 graphify-out/
+.env*
+
+# Design-skill working files
+.taste-skill/

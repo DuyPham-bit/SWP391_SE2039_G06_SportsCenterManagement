@@ -6,31 +6,31 @@ export function Badge({ children, variant = 'primary', size = 'md' }) {
       case 'OPEN':
       case 'CONFIRMED':
       case 'AVAILABLE':
-        return 'bg-[#E8F8EE] text-[#15803D] border-[#BBF7D0]';
+        return 'bg-brand-sage-100 text-brand-sage-700 border-brand-sage-200';
       case 'danger':
       case 'error':
       case 'INACTIVE':
       case 'FULL':
       case 'EXPIRED':
       case 'CANCELLED':
-        return 'bg-[#FEE2E2] text-[#DC2626] border-[#FECACA]';
+        return 'bg-brand-danger-100 text-brand-danger-700 border-brand-danger-200';
       case 'warning':
       case 'PENDING':
-        return 'bg-[#FEF6E6] text-[#D97706] border-[#FDE68A]';
+        return 'bg-brand-sand-100 text-brand-sand-800 border-brand-sand-200';
       case 'info':
       case 'MANAGER':
       case 'SYSTEMADMIN':
       case 'ADMIN':
-        return 'bg-[#81B29A]/15 text-[#2D6A4F] border-[#81B29A]/30 font-semibold';
+        return 'bg-brand-sage-500/15 text-brand-sage-700 border-brand-sage-500/30 font-semibold';
       case 'RECEPTIONIST':
-        return 'bg-purple-50 text-purple-700 border-purple-200';
+        return 'bg-brand-navy-50 text-brand-navy-800 border-brand-navy-200';
       case 'COACH':
-        return 'bg-[#F2CC8F]/25 text-[#92400E] border-[#F2CC8F]/50 font-bold';
+        return 'bg-brand-sand-300/25 text-brand-sand-800 border-brand-sand-300/50 font-bold';
       case 'MEMBER':
-        return 'bg-slate-100 text-slate-700 border-slate-200';
+        return 'bg-brand-navy-100 text-brand-navy-700 border-brand-navy-200';
       case 'primary':
       default:
-        return 'bg-[#81B29A]/15 text-[#2D6A4F] border-[#81B29A]/30';
+        return 'bg-brand-sage-500/15 text-brand-sage-700 border-brand-sage-500/30';
     }
   };
 
@@ -45,24 +45,24 @@ export function Badge({ children, variant = 'primary', size = 'md' }) {
 
 export function StatCard({ title, value, subtitle, icon, trend, color = 'blue' }) {
   return (
-    <div className="p-5 rounded-2xl bg-white border border-slate-200 shadow-xs relative overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+    <div className="p-5 rounded-2xl bg-white border border-brand-navy-200 shadow-xs relative overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
       <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wider font-bold text-slate-500">
+        <span className="text-xs uppercase tracking-wider font-bold text-brand-navy-500">
           {title}
         </span>
-        <div className="w-9 h-9 rounded-xl bg-[#81B29A]/15 text-[#2D6A4F] flex items-center justify-center shadow-2xs">
+        <div className="w-9 h-9 rounded-xl bg-brand-sage-500/15 text-brand-sage-700 flex items-center justify-center shadow-2xs">
           <span className="material-symbols-outlined text-[20px]">{icon}</span>
         </div>
       </div>
 
-      <div className="text-2xl sm:text-3xl font-extrabold text-slate-900 mt-2.5 tracking-tight font-sans">
+      <div className="text-2xl sm:text-3xl font-extrabold text-brand-navy-900 mt-2.5 tracking-tight font-sans">
         {value}
       </div>
 
       {(subtitle || trend) && (
-        <div className="flex items-center gap-2 mt-2 text-xs font-medium text-slate-500">
+        <div className="flex items-center gap-2 mt-2 text-xs font-medium text-brand-navy-500">
           {trend && (
-            <span className="px-1.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 font-bold border border-emerald-200 text-[10px]">
+            <span className="px-1.5 py-0.5 rounded-full bg-brand-sage-50 text-brand-sage-700 font-bold border border-brand-sage-200 text-[10px]">
               {trend}
             </span>
           )}

@@ -1,66 +1,66 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
-import { useAuth } from '../providers/AuthContext.jsx';
+import { useAuth } from '../../entities/session/index.js';
 
 
-import { ProtectedRoute, RoleGuard } from '../../shared/components/auth/RoleGuard.jsx';
-import { AppLayout } from '../layout/AppLayout.jsx';
+import { ProtectedRoute, RoleGuard } from './RoleGuard.jsx';
+import { AppLayout } from '../../widgets/app-shell/index.js';
 
 // Public & Auth Pages (Lazy Loaded)
-const LandingPage = lazy(() => import('../../pages/landing/LandingPage.jsx').then(m => ({ default: m.LandingPage })));
-const LoginPage = lazy(() => import('../../pages/auth/LoginPage.jsx').then(m => ({ default: m.LoginPage })));
-const OtpVerification = lazy(() => import('../../shared/components/common/OtpVerification.jsx'));
+const LandingPage = lazy(() => import('../../pages/landing/index.js').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazy(() => import('../../pages/login/index.js').then(m => ({ default: m.LoginPage })));
+const OtpVerification = lazy(() => import('../../pages/otp-verification/index.js').then(m => ({ default: m.OtpVerification })));
 
 // Manager Pages (Lazy Loaded)
-const ManagerDashboard = lazy(() => import('../../pages/manager/ManagerDashboardPage.jsx').then(m => ({ default: m.ManagerDashboard })));
-const StaffManagement = lazy(() => import('../../pages/manager/StaffManagementPage.jsx').then(m => ({ default: m.StaffManagement })));
-const MemberManagement = lazy(() => import('../../pages/manager/MemberManagementPage.jsx').then(m => ({ default: m.MemberManagement })));
-const PackageManagement = lazy(() => import('../../pages/manager/PackageManagementPage.jsx').then(m => ({ default: m.PackageManagement })));
-const ClassesAndRooms = lazy(() => import('../../pages/manager/ClassesAndRoomsPage.jsx').then(m => ({ default: m.ClassesAndRooms })));
-const CoachAssignment = lazy(() => import('../../pages/manager/CoachAssignmentPage.jsx').then(m => ({ default: m.CoachAssignment })));
-const ReportsAnalytics = lazy(() => import('../../pages/manager/ReportsAnalyticsPage.jsx').then(m => ({ default: m.ReportsAnalytics })));
-const RolesPermissions = lazy(() => import('../../pages/manager/RolesPermissionsPage.jsx').then(m => ({ default: m.RolesPermissions })));
-const AuditLogs = lazy(() => import('../../pages/manager/AuditLogsPage.jsx').then(m => ({ default: m.AuditLogs })));
-const HomeContentManagement = lazy(() => import('../../pages/manager/HomeContentManagementPage.jsx').then(m => ({ default: m.HomeContentManagement })));
-const AdminDashboard = lazy(() => import('../../pages/admin/AdminDashboardPage.jsx').then(m => ({ default: m.AdminDashboard })));
+const ManagerDashboard = lazy(() => import('../../pages/manager-dashboard/index.js').then(m => ({ default: m.ManagerDashboard })));
+const StaffManagement = lazy(() => import('../../pages/manager-staff/index.js').then(m => ({ default: m.StaffManagement })));
+const MemberManagement = lazy(() => import('../../pages/manager-members/index.js').then(m => ({ default: m.MemberManagement })));
+const PackageManagement = lazy(() => import('../../pages/manager-packages/index.js').then(m => ({ default: m.PackageManagement })));
+const ClassesAndRooms = lazy(() => import('../../pages/manager-classes-rooms/index.js').then(m => ({ default: m.ClassesAndRooms })));
+const CoachAssignment = lazy(() => import('../../pages/manager-coach-assignment/index.js').then(m => ({ default: m.CoachAssignment })));
+const ReportsAnalytics = lazy(() => import('../../pages/manager-reports/index.js').then(m => ({ default: m.ReportsAnalytics })));
+const RolesPermissions = lazy(() => import('../../pages/roles-permissions/index.js').then(m => ({ default: m.RolesPermissions })));
+const AuditLogs = lazy(() => import('../../pages/audit-logs/index.js').then(m => ({ default: m.AuditLogs })));
+const HomeContentManagement = lazy(() => import('../../pages/manager-home-content/index.js').then(m => ({ default: m.HomeContentManagement })));
+const AdminDashboard = lazy(() => import('../../pages/admin-dashboard/index.js').then(m => ({ default: m.AdminDashboard })));
 
 // Receptionist Pages (Lazy Loaded)
-const ReceptionistDashboard = lazy(() => import('../../pages/receptionist/ReceptionistDashboardPage.jsx').then(m => ({ default: m.ReceptionistDashboard })));
-const MemberLookup = lazy(() => import('../../pages/receptionist/MemberLookupPage.jsx').then(m => ({ default: m.MemberLookup })));
-const CounterMembership = lazy(() => import('../../pages/receptionist/CounterMembershipPage.jsx').then(m => ({ default: m.CounterMembership })));
-const MemberCheckIn = lazy(() => import('../../pages/receptionist/MemberCheckInPage.jsx').then(m => ({ default: m.MemberCheckIn })));
-const CounterBooking = lazy(() => import('../../pages/receptionist/CounterBookingPage.jsx').then(m => ({ default: m.CounterBooking })));
-const CounterInvoices = lazy(() => import('../../pages/receptionist/CounterInvoicesPage.jsx').then(m => ({ default: m.CounterInvoices })));
-const SupportRequests = lazy(() => import('../../pages/receptionist/SupportRequestsPage.jsx').then(m => ({ default: m.SupportRequests })));
+const ReceptionistDashboard = lazy(() => import('../../pages/receptionist-dashboard/index.js').then(m => ({ default: m.ReceptionistDashboard })));
+const MemberLookup = lazy(() => import('../../pages/member-lookup/index.js').then(m => ({ default: m.MemberLookup })));
+const CounterMembership = lazy(() => import('../../pages/counter-membership/index.js').then(m => ({ default: m.CounterMembership })));
+const MemberCheckIn = lazy(() => import('../../pages/member-checkin/index.js').then(m => ({ default: m.MemberCheckIn })));
+const CounterBooking = lazy(() => import('../../pages/counter-booking/index.js').then(m => ({ default: m.CounterBooking })));
+const CounterInvoices = lazy(() => import('../../pages/counter-invoices/index.js').then(m => ({ default: m.CounterInvoices })));
+const SupportRequests = lazy(() => import('../../pages/support-requests/index.js').then(m => ({ default: m.SupportRequests })));
 
 // Coach Pages (Lazy Loaded)
-const CoachDashboard = lazy(() => import('../../pages/coach/CoachDashboardPage.jsx').then(m => ({ default: m.CoachDashboard })));
-const TeachingSchedule = lazy(() => import('../../pages/coach/TeachingSchedulePage.jsx').then(m => ({ default: m.TeachingSchedule })));
-const ClassMembers = lazy(() => import('../../pages/coach/ClassMembersPage.jsx').then(m => ({ default: m.ClassMembers })));
-const Attendance = lazy(() => import('../../pages/coach/AttendancePage.jsx').then(m => ({ default: m.Attendance })));
-const TrainingPlan = lazy(() => import('../../pages/coach/TrainingPlanPage.jsx').then(m => ({ default: m.TrainingPlan })));
-const WorkoutProgress = lazy(() => import('../../pages/coach/WorkoutProgressPage.jsx').then(m => ({ default: m.WorkoutProgress })));
-const CoachNotifications = lazy(() => import('../../pages/coach/CoachNotificationsPage.jsx').then(m => ({ default: m.CoachNotifications })));
-const AIRecommendation = lazy(() => import('../../pages/coach/AIRecommendationPage.jsx').then(m => ({ default: m.AIRecommendation })));
-const PerformanceDashboard = lazy(() => import('../../pages/coach/PerformanceDashboardPage.jsx').then(m => ({ default: m.PerformanceDashboard })));
+const CoachDashboard = lazy(() => import('../../pages/coach-dashboard/index.js').then(m => ({ default: m.CoachDashboard })));
+const TeachingSchedule = lazy(() => import('../../pages/coach-teaching-schedule/index.js').then(m => ({ default: m.TeachingSchedule })));
+const ClassMembers = lazy(() => import('../../pages/coach-class-members/index.js').then(m => ({ default: m.ClassMembers })));
+const Attendance = lazy(() => import('../../pages/coach-attendance/index.js').then(m => ({ default: m.Attendance })));
+const TrainingPlan = lazy(() => import('../../pages/coach-training-plan/index.js').then(m => ({ default: m.TrainingPlan })));
+const WorkoutProgress = lazy(() => import('../../pages/coach-workout-progress/index.js').then(m => ({ default: m.WorkoutProgress })));
+const CoachNotifications = lazy(() => import('../../pages/coach-notifications/index.js').then(m => ({ default: m.CoachNotifications })));
+const AIRecommendation = lazy(() => import('../../pages/coach-ai-recommendation/index.js').then(m => ({ default: m.AIRecommendation })));
+const PerformanceDashboard = lazy(() => import('../../pages/coach-performance/index.js').then(m => ({ default: m.PerformanceDashboard })));
 const CoachSalaryKPI = PerformanceDashboard;
-const CoachProfessionalHub = lazy(() => import('../../pages/coach/CoachProfessionalHubPage.jsx').then(m => ({ default: m.CoachProfessionalHub })));
-const ManagerCoachOperations = lazy(() => import('../../pages/manager/ManagerCoachOperationsPage.jsx').then(m => ({ default: m.ManagerCoachOperations })));
-const ManagerSupportCommunications = lazy(() => import('../../pages/manager/ManagerSupportCommunicationsPage.jsx').then(m => ({ default: m.ManagerSupportCommunications })));
+const CoachProfessionalHub = lazy(() => import('../../pages/coach-professional-hub/index.js').then(m => ({ default: m.CoachProfessionalHub })));
+const ManagerCoachOperations = lazy(() => import('../../pages/manager-coach-operations/index.js').then(m => ({ default: m.ManagerCoachOperations })));
+const ManagerSupportCommunications = lazy(() => import('../../pages/manager-support/index.js').then(m => ({ default: m.ManagerSupportCommunications })));
 
 // Member Pages (Lazy Loaded)
-const MemberDashboard = lazy(() => import('../../pages/member/MemberDashboardPage.jsx').then(m => ({ default: m.MemberDashboard })));
-const MemberPackages = lazy(() => import('../../pages/member/MemberPackagesPage.jsx').then(m => ({ default: m.MemberPackages })));
-const ClassScheduleView = lazy(() => import('../../pages/member/ClassSchedulePage.jsx').then(m => ({ default: m.ClassScheduleView })));
-const MyBookings = lazy(() => import('../../pages/member/MyBookingsPage.jsx').then(m => ({ default: m.MyBookings })));
-const MyProgress = lazy(() => import('../../pages/member/MyProgressPage.jsx').then(m => ({ default: m.MyProgress })));
-const MyAttendance = lazy(() => import('../../pages/member/MyAttendancePage.jsx').then(m => ({ default: m.MyAttendance })));
-const MemberNotifications = lazy(() => import('../../pages/member/MemberNotificationsPage.jsx').then(m => ({ default: m.MemberNotifications })));
-const MemberAIAssistant = lazy(() => import('../../pages/member/MemberAIAssistantPage.jsx').then(m => ({ default: m.MemberAIAssistant })));
-const PaymentResult = lazy(() => import('../../pages/member/PaymentResultPage.jsx').then(m => ({ default: m.PaymentResult })));
-const MemberCoachPortal = lazy(() => import('../../pages/member/MemberCoachPortalPage.jsx').then(m => ({ default: m.MemberCoachPortal })));
-const MySupportRequests = lazy(() => import('../../pages/member/MySupportRequestsPage.jsx').then(m => ({ default: m.MySupportRequests })));
-const MemberRefundRequests = lazy(() => import('../../pages/member/MemberRefundRequestsPage.jsx').then(m => ({ default: m.MemberRefundRequests })));
-const PayrollPage = lazy(() => import('../../pages/shared/PayrollPage.jsx').then(m => ({ default: m.PayrollPage })));
+const MemberDashboard = lazy(() => import('../../pages/member-dashboard/index.js').then(m => ({ default: m.MemberDashboard })));
+const MemberPackages = lazy(() => import('../../pages/member-packages/index.js').then(m => ({ default: m.MemberPackages })));
+const ClassScheduleView = lazy(() => import('../../pages/member-class-schedule/index.js').then(m => ({ default: m.ClassScheduleView })));
+const MyBookings = lazy(() => import('../../pages/member-bookings/index.js').then(m => ({ default: m.MyBookings })));
+const MyProgress = lazy(() => import('../../pages/member-progress/index.js').then(m => ({ default: m.MyProgress })));
+const MyAttendance = lazy(() => import('../../pages/member-attendance/index.js').then(m => ({ default: m.MyAttendance })));
+const MemberNotifications = lazy(() => import('../../pages/member-notifications/index.js').then(m => ({ default: m.MemberNotifications })));
+const MemberAIAssistant = lazy(() => import('../../pages/member-ai-assistant/index.js').then(m => ({ default: m.MemberAIAssistant })));
+const PaymentResult = lazy(() => import('../../pages/payment-result/index.js').then(m => ({ default: m.PaymentResult })));
+const MemberCoachPortal = lazy(() => import('../../pages/member-coach-portal/index.js').then(m => ({ default: m.MemberCoachPortal })));
+const MySupportRequests = lazy(() => import('../../pages/my-support-requests/index.js').then(m => ({ default: m.MySupportRequests })));
+const MemberRefundRequests = lazy(() => import('../../pages/member-refund-requests/index.js').then(m => ({ default: m.MemberRefundRequests })));
+const PayrollPage = lazy(() => import('../../pages/payroll/index.js').then(m => ({ default: m.PayrollPage })));
 
 
 function Navigate({ to, replace = true }) {
@@ -77,8 +77,8 @@ function Navigate({ to, replace = true }) {
 function RouteFallback() {
   return (
     <div className="min-h-[50vh] flex items-center justify-center p-8">
-      <div className="flex items-center gap-2.5 text-slate-500 text-sm font-medium">
-        <span className="w-4 h-4 border-2 border-red-600 border-t-transparent rounded-full animate-spin" />
+      <div className="flex items-center gap-2.5 text-brand-navy-500 text-sm font-medium">
+        <span className="w-4 h-4 border-2 border-brand-danger-600 border-t-transparent rounded-full animate-spin" />
         <span>Đang tải màn hình...</span>
       </div>
     </div>
@@ -118,7 +118,7 @@ function AppRouter() {
 
   const path = currentHash.split('?')[0];
   if (initializing) return <div role="status" className="p-8 text-center">Đang xác thực phiên đăng nhập...</div>;
-  if (initializationError) return <div role="alert" className="p-8 text-center text-red-700">
+  if (initializationError) return <div role="alert" className="p-8 text-center text-brand-danger-700 dark:text-brand-danger-400">
     <p>{initializationError}</p>
     <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 rounded border">Thử lại</button>
   </div>;
@@ -328,25 +328,25 @@ function AppRouter() {
       // 404 NOT FOUND ROUTE
       default:
         return (
-          <div className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-            <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm max-w-md w-full text-center">
-              <div className="w-16 h-16 rounded-full bg-red-100 text-red-600 flex items-center justify-center mx-auto mb-4">
+          <div className="min-h-screen bg-brand-navy-50 flex items-center justify-center p-6">
+            <div className="animate-fade-slide-up bg-white p-6 sm:p-8 rounded-2xl border border-brand-navy-200 shadow-sm max-w-md w-full text-center">
+              <div className="scms-empty-icon w-16 h-16 rounded-full bg-brand-danger-100 text-brand-danger-600 flex items-center justify-center mx-auto mb-4">
                 <span className="material-symbols-outlined text-[36px]">travel_explore</span>
               </div>
-              <h1 className="font-chivo text-2xl font-black text-slate-900">404 - KHÔNG TÌM THẤY TRANG</h1>
-              <p className="text-xs text-slate-500 mt-2">
-                Đường dẫn <code className="bg-slate-100 text-red-600 px-1.5 py-0.5 rounded">{path}</code> không tồn tại trên hệ thống SCMS.
+              <h1 className="font-chivo text-2xl font-black text-brand-navy-900">404 - KHÔNG TÌM THẤY TRANG</h1>
+              <p className="text-xs text-brand-navy-500 mt-2">
+                Đường dẫn <code className="bg-brand-navy-100 text-brand-danger-600 px-1.5 py-0.5 rounded break-all">{path}</code> không tồn tại trên hệ thống SCMS.
               </p>
               <div className="mt-6 flex flex-col gap-2">
                 <a
                   href="#/"
-                  className="w-full py-2.5 bg-red-600 hover:bg-red-700 text-white rounded-lg font-chivo font-bold text-xs uppercase tracking-wider transition-colors shadow"
+                  className="w-full py-2.5 bg-brand-danger-600 hover:bg-brand-danger-700 text-white rounded-lg font-chivo font-bold text-xs uppercase tracking-wider transition-colors shadow"
                 >
                   Về Trang Chủ SCMS
                 </a>
                 <a
                   href="#/login"
-                  className="w-full py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg font-chivo font-bold text-xs uppercase tracking-wider transition-colors"
+                  className="w-full py-2.5 bg-brand-navy-100 hover:bg-brand-navy-200 text-brand-navy-700 rounded-lg font-chivo font-bold text-xs uppercase tracking-wider transition-colors"
                 >
                   Đến Trang Đăng Nhập
                 </a>

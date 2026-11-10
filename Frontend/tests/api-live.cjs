@@ -3,6 +3,7 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiEntry, SRC: API_SRC } = require('./helpers/apiSources.cjs');
 const { build } = require('esbuild');
 
 const frontend = path.resolve(__dirname, '..');
@@ -28,7 +29,7 @@ async function check(role, name, action, validate = () => {}) {
 (async () => {
   fs.mkdirSync(artifacts, { recursive: true });
   const bundle = path.join(artifacts, 'services.cjs');
-  await build({ entryPoints: [path.join(frontend, 'src/services/api.js')], outfile: bundle, bundle: true,
+  await build({ stdin: { contents: apiEntry(), resolveDir: API_SRC, loader: 'js' }, outfile: bundle, bundle: true,
     platform: 'node', format: 'cjs', logLevel: 'silent',
     define: { 'import.meta.env': JSON.stringify({ VITE_API_BASE_URL: apiBase }) } });
   const actualFetch = globalThis.fetch;
@@ -61,7 +62,6 @@ async function check(role, name, action, validate = () => {}) {
       if (members?.items.length) await check(role, 'member subscriptions', () => receptionApi.getMemberSubscriptions(members.items[0].memberId), array);
       if (classes?.length) await check(role, 'class schedules', () => classApi.getSchedules(classes[0].id), array);
       for (const period of ['DAY', 'WEEK', 'MONTH', 'QUARTER', 'YEAR']) await check(role, `reports ${period}`, () => reportApi.getOverview(period), value => { array(value.revenueBySport); assert.ok(Number.isFinite(value.netRevenue)); });
-      await check(role, 'role matrix', () => systemApi.getPermissions(), array);
       await check(role, 'audit logs', () => systemApi.getAuditPage(), page);
     }
     if (role === 'RECEPTIONIST') {
