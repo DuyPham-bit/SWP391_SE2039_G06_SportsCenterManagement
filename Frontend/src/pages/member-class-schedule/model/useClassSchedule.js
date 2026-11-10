@@ -56,9 +56,17 @@ export function useClassSchedule() {
       );
       setBookedSessionIds(confirmedIds);
 
-      // Tự động căn chỉnh lịch vào tuần có lớp học nếu ngày hiện tại chưa có dữ liệu (khi không có ?date=)
+      // Tự động căn chỉnh lịch theo tham số ?date= và ?search= nếu có từ thông báo
       const currentHash = window.location.hash || '';
-      if (!currentHash.includes('?date=') && !currentHash.includes('&date=')) {
+      const qs = currentHash.includes('?') ? currentHash.split('?')[1] : '';
+      const params = qs ? new URLSearchParams(qs) : null;
+      const urlDate = params?.get('date');
+      const urlSearch = params?.get('search');
+
+      if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) {
+        setCurrentDate(parseIsoDate(urlDate));
+        setSelectedCalendarDate(urlDate);
+      } else if (!currentHash.includes('?date=') && !currentHash.includes('&date=')) {
         if (classList && classList.length > 0) {
           const todayStr = formatIsoDate(parseCalendarDate());
           const hasToday = classList.some(c => c.sessionDate === todayStr);
@@ -68,6 +76,14 @@ export function useClassSchedule() {
           }
         }
       }
+
+      if (urlSearch) {
+        setSearchQuery(decodeURIComponent(urlSearch));
+      }
+
+      if (classList && classList.length > 0) {
+        openMatchingSession(classList, urlDate, urlSearch);
+      }
     } catch (error) {
       showError(error.message || (isEn ? 'Unable to load class schedule.' : 'Không thể tải lịch lớp học. Vui lòng thử lại sau.'));
     } finally {
@@ -75,9 +91,90 @@ export function useClassSchedule() {
     }
   };
 
+  // Tự động mở modal chi tiết buổi tập nếu có session khớp với date & search từ thông báo
+  const openMatchingSession = (classList, customDate, customSearch, customSessionId) => {
+    if (!classList || classList.length === 0) return;
+    const hash = window.location.hash || '';
+    const qs = hash.includes('?') ? hash.split('?')[1] : '';
+    const params = qs ? new URLSearchParams(qs) : null;
+    const urlDate = customDate || params?.get('date');
+    const urlSearch = customSearch || params?.get('search');
+    const urlSessionId = customSessionId || (params ? Number(params.get('sessionId')) : null);
+
+    if (!urlSessionId && !urlDate && !urlSearch) return;
+
+    let matched = null;
+    if (urlSessionId) {
+      matched = classList.find(s => s.id === urlSessionId || s.sessionId === urlSessionId);
+    }
+    if (!matched && (urlDate || urlSearch)) {
+      const normalizedSearch = urlSearch ? decodeURIComponent(urlSearch).toLowerCase() : '';
+      matched = classList.find(s => {
+        const dateMatch = !urlDate || s.sessionDate === urlDate;
+        const searchMatch = !normalizedSearch ||
+          (s.name || '').toLowerCase().includes(normalizedSearch) ||
+          (s.sportName || '').toLowerCase().includes(normalizedSearch);
+        return dateMatch && searchMatch;
+      });
+      if (!matched && normalizedSearch) {
+        matched = classList.find(s =>
+          (s.name || '').toLowerCase().includes(normalizedSearch) ||
+          (s.sportName || '').toLowerCase().includes(normalizedSearch)
+        );
+      }
+    }
+    if (matched) {
+      setActiveSession(matched);
+      setBookingError(null);
+      setDetailModalOpen(true);
+    }
+  };
+
   useEffect(() => {
     loadClasses();
   }, [currentUser?.id]);
+
+  useEffect(() => {
+    const handleHashParams = () => {
+      const hash = window.location.hash || '';
+      const qs = hash.includes('?') ? hash.split('?')[1] : '';
+      if (!qs) return;
+      const params = new URLSearchParams(qs);
+      const urlDate = params.get('date');
+      const urlSearch = params.get('search');
+      if (urlDate && /^\d{4}-\d{2}-\d{2}$/.test(urlDate)) {
+        setCurrentDate(parseIsoDate(urlDate));
+        setSelectedCalendarDate(urlDate);
+      }
+      if (urlSearch) {
+        setSearchQuery(decodeURIComponent(urlSearch));
+      }
+      if (classes.length > 0) {
+        openMatchingSession(classes, urlDate, urlSearch);
+      }
+    };
+
+    const onDirectOpen = (event) => {
+      const { isoDate, className } = event.detail || {};
+      if (isoDate && /^\d{4}-\d{2}-\d{2}$/.test(isoDate)) {
+        setCurrentDate(parseIsoDate(isoDate));
+        setSelectedCalendarDate(isoDate);
+      }
+      if (className) {
+        setSearchQuery(className);
+      }
+      if (classes.length > 0) {
+        openMatchingSession(classes, isoDate, className);
+      }
+    };
+
+    window.addEventListener('hashchange', handleHashParams);
+    window.addEventListener('scms:open-schedule-target', onDirectOpen);
+    return () => {
+      window.removeEventListener('hashchange', handleHashParams);
+      window.removeEventListener('scms:open-schedule-target', onDirectOpen);
+    };
+  }, [classes]);
 
   // Điều hướng lịch
   const handlePrev = () => {

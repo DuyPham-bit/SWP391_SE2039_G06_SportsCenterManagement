@@ -3,7 +3,7 @@ import { formatMemberDateTime } from '../../../entities/member/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { translateNotificationTitle, translateNotificationContent } from '../../../shared/i18n/i18nHelper.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { notificationTarget, getNotificationActionLabel } from '../lib/notificationNavigation.js';
+import { notificationTarget, getNotificationActionLabel, parseNotificationDetails } from '../lib/notificationNavigation.js';
 
 export function NotificationList({ notifications, title }) {
   const { role } = useAuth();
@@ -152,7 +152,15 @@ export function NotificationList({ notifications, title }) {
                 {formatMemberDateTime(item.createdAt, isEn)}
               </time>
               {notificationTarget(item, role) && (
-                <a href={notificationTarget(item, role)} onClick={() => markRead(item)} className="font-bold text-brand-sage-700 dark:text-brand-sage-400 hover:underline">
+                <a
+                  href={notificationTarget(item, role)}
+                  onClick={() => {
+                    markRead(item);
+                    const details = parseNotificationDetails(item);
+                    window.dispatchEvent(new CustomEvent('scms:open-schedule-target', { detail: details }));
+                  }}
+                  className="font-bold text-brand-sage-700 dark:text-brand-sage-400 hover:underline"
+                >
                   {getNotificationActionLabel(item, role, isEn)}
                 </a>
               )}

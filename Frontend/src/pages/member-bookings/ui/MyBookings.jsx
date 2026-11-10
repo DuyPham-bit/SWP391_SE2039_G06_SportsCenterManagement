@@ -64,6 +64,35 @@ export function MyBookings() {
     loadBookings();
   }, [currentUser]);
 
+  // Tự động nhận diện từ khóa và mở modal đặt chỗ nếu điều hướng từ thông báo
+  useEffect(() => {
+    const handleHash = () => {
+      const hash = window.location.hash || '';
+      const qs = hash.includes('?') ? hash.split('?')[1] : '';
+      if (!qs) return;
+      const params = new URLSearchParams(qs);
+      const urlSearch = params.get('search');
+      if (urlSearch) {
+        const decoded = decodeURIComponent(urlSearch);
+        setSearchQuery(decoded);
+        if (bookings.length > 0) {
+          const q = decoded.toLowerCase();
+          const matched = bookings.find(b =>
+            (b.className || b.name || '').toLowerCase().includes(q) ||
+            (b.sportName || '').toLowerCase().includes(q)
+          );
+          if (matched) {
+            setSelectedBookingDetail(matched);
+            setDetailModalOpen(true);
+          }
+        }
+      }
+    };
+    handleHash();
+    window.addEventListener('hashchange', handleHash);
+    return () => window.removeEventListener('hashchange', handleHash);
+  }, [bookings]);
+
   const openCancelModal = (booking) => {
     setBookingToCancel(booking);
     setCancelError(null);
