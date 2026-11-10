@@ -179,9 +179,6 @@ if (autoMigrateOnStartup)
     {
         await DbInitializer.SeedAsync(dbContext);
         await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
-        await LandingMediaBackfill.RunAsync(dbContext,
-            scope.ServiceProvider.GetRequiredService<IR2StorageService>(),
-            scope.ServiceProvider.GetRequiredService<LandingContentService>());
     }
     finally
     {

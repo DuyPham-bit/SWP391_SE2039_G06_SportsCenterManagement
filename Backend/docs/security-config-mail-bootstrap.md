@@ -34,4 +34,4 @@ Bản sửa source không tự thay secret ở nhà cung cấp, không đổi m�
 ## Kiểm chứng
 
 - `Frontend`: `node --test tests/config-secrets.test.cjs` và `npm test`.
-- Từ gốc repository: `dotnet run --project Backend/verification/LogicAudit/LogicAudit.csproj` chạy HTTP/SQL Server trên database kiểm thử riêng, dùng mail fixture không gửi thư ra ngoài.
+- Từ gốc repository: `dotnet run --project Backend/verification/PostgresMergeAudit` (cần PostgreSQL local, biến `SCMS_AUDIT_CONNECTION`) chạy API thật trên database kiểm thử riêng.

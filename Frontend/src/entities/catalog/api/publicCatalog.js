@@ -37,7 +37,7 @@ export function catalogSports(catalog, editorial = []) {
     const classes = catalog.classes.filter(item => item.sportId === sport.id);
     const room = catalog.rooms.find(item => item.id === classes[0]?.roomId);
     return {
-      id: String(sport.id), name: sport.name, icon: 'sports', category: 'Thể thao',
+      id: String(sport.id), sportId: String(sport.id), name: sport.name, icon: 'sports', category: 'Thể thao',
       facilityId: room ? String(room.id) : null, venue: room?.name || '', location: room?.locationDescription || '',
       highlight: sport.description || '', level: [...new Set(classes.map(item => item.level).filter(Boolean))].join(' • '),
       coach: '', schedule: '', price: '', capacity: room ? `${room.capacity} người` : '', badges: [],

@@ -27,7 +27,7 @@ Không đổi stack React/Vite + .NET/EF Core/SQL Server, schema, migration, con
 | `AuthContext.jsx`, `authState.js`, `permissions.js` | Trạng thái và điều hướng của giao diện dựa trên hồ sơ API; không khôi phục Session từ browser storage |
 | `Frontend/dist`, API `wwwroot` | Cùng build từ source JWT hiện tại; frontend nhúng không tiếp tục chạy bundle Session cũ |
 
-Rà soát toàn project không tìm thấy Session đăng nhập ở API, BLL, DTO xác thực hoặc database entities. `sessionStorage` trong bài mẫu `FontMau.txt` là cache emoji của trang tham khảo, không được frontend hiện tại sử dụng. Các test còn ghi dữ liệu theo key cũ để chứng minh ứng dụng bỏ qua chúng.
+Rà soát toàn project không tìm thấy Session đăng nhập ở API, BLL, DTO xác thực hoặc database entities. Các test còn ghi dữ liệu theo key cũ để chứng minh ứng dụng bỏ qua chúng.
 
 Phát hiện bổ sung: `wwwroot/index.html` trước đây còn trỏ đến `index-DY7i1vTn.js` có `SCMS_AUTH_SESSION` và event hết hạn cũ. Đã build lại thư mục này; script `build:api` thêm `--emptyOutDir` để thay các bundle build cũ mỗi lần chạy. `wwwroot` đã được xác minh chỉ chứa đầu ra build, tài nguyên nguồn nằm trong `Frontend/public/`. Tài liệu README ở workspace/BE, hướng dẫn triển khai và Flow 1 đã đồng bộ.
 

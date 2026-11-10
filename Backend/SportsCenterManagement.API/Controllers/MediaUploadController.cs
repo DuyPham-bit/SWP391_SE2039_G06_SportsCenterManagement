@@ -68,11 +68,6 @@ public sealed class MediaUploadController(
         return Ok(await MediaQuery(scope).Take(Math.Clamp(limit, 1, 100)).ToListAsync(ct));
     }
 
-    [HttpPost("migrate-legacy")]
-    [Authorize(Roles = "ADMIN")]
-    public async Task<ActionResult<LegacyMediaMigrationResult>> MigrateLegacyMedia(CancellationToken ct = default) =>
-        Ok(await storageService.MigrateLegacyMediaAsync(ct));
-
     private IQueryable<UploadMediaResultDto> MediaQuery(MediaAccessScope scope) =>
         scope.Library(dbContext).OrderByDescending(media => media.CreatedAt).Select(media => new UploadMediaResultDto(
             media.Id, media.DriveFileId, media.FileUrl, media.FileName, media.MimeType,

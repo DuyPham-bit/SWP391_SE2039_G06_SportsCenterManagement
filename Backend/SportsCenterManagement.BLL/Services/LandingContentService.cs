@@ -1,8 +1,10 @@
+using System.Globalization;
 using System.Text;
 using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.Extensions.Configuration;
 using Microsoft.EntityFrameworkCore;
+using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
@@ -14,6 +16,7 @@ public sealed record LandingContentResponse(JsonElement? Content, DateTime? Upda
 public sealed class LandingContentService(SportsCenterDbContext db, IConfiguration configuration)
 {
     private const string SettingKey = "site.landing-content";
+    private const int SportDescriptionMaxLength = 500; // sports.description column length
     private static readonly string[] RequiredSections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter"];
     private static readonly string[] Sections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter", "authShowcase"];
     private static readonly HashSet<string> ObjectArrays = ["metrics", "features", "stats", "sportsList", "facilitiesList", "zones", "serviceAmenities", "specs", "trustBadges"];
@@ -55,16 +58,21 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
         var media = await db.UploadedMedias.AsNoTracking().Where(m => ids.Contains(m.Id)).ToDictionaryAsync(m => m.Id, ct);
         var node = JsonNode.Parse(setting.SettingValue)!;
         Hydrate(node, media);
+        await HydrateSportDescriptionsAsync(node, ct);
         return new(JsonSerializer.SerializeToElement(node), setting.UpdatedAt);
     }
 
-    public async Task<LandingContentResponse> SaveAsync(JsonElement content, long userId, CancellationToken ct)
+    /// <param name="ensureCenterAccess">Throws when the caller may not edit sports of the given center.
+    /// It runs only for sports whose description this save actually changes.</param>
+    public async Task<LandingContentResponse> SaveAsync(JsonElement content, long userId,
+        Func<long, CancellationToken, Task> ensureCenterAccess, CancellationToken ct)
     {
         var node = JsonNode.Parse(content.GetRawText())!;
         var media = await db.UploadedMedias.AsNoTracking().Where(m => m.StorageKey.StartsWith("dashboard/")).ToListAsync(ct);
         StoreReferences(node, media.ToDictionary(m => m.StorageKey), media.ToDictionary(m => m.Id));
+        Validate(JsonSerializer.SerializeToElement(node));
+        await StoreSportDescriptionsAsync(node, userId, ensureCenterAccess, ct);
         var storedContent = JsonSerializer.SerializeToElement(node);
-        Validate(storedContent);
         var setting = await db.SystemSettings.SingleOrDefaultAsync(s => s.SettingKey == SettingKey, ct);
         if (setting is null)
         {
@@ -80,6 +88,77 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
 
     private string PublicDomain => configuration["R2Storage:PublicDomain"]?.Trim().TrimEnd('/')
         ?? throw new InvalidOperationException("R2Storage:PublicDomain is not configured.");
+
+    // Homepage sport cards may link to a `sports` row through "sportId". For linked cards the
+    // sports table is the single source of the "highlight" text: GET fills it in, PUT writes
+    // changed text back to the sport and never stores a copy in the landing JSON.
+    private async Task HydrateSportDescriptionsAsync(JsonNode node, CancellationToken ct)
+    {
+        var cards = LinkedSportCards(node).Where(card => card.SportId > 0).ToList();
+        if (cards.Count == 0) return;
+        var ids = cards.Select(card => card.SportId).Distinct().ToList();
+        var descriptions = await db.Sports.AsNoTracking().Where(s => ids.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => s.Description, ct);
+        foreach (var (card, sportId) in cards)
+            if (descriptions.TryGetValue(sportId, out var description)) card["highlight"] = description ?? "";
+    }
+
+    private async Task StoreSportDescriptionsAsync(JsonNode node, long userId,
+        Func<long, CancellationToken, Task> ensureCenterAccess, CancellationToken ct)
+    {
+        var cards = LinkedSportCards(node);
+        if (cards.Count == 0) return;
+        if (cards.Any(card => card.SportId <= 0))
+            throw FlowException.BadRequest("Liên kết bộ môn trên thẻ trang chủ không hợp lệ.");
+        var ids = cards.Select(card => card.SportId).Distinct().ToList();
+        var sports = await db.Sports.Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, ct);
+        if (sports.Count != ids.Count)
+            throw FlowException.BadRequest("Bộ môn liên kết trên thẻ trang chủ không tồn tại.");
+
+        var changes = new Dictionary<long, string>();
+        foreach (var (card, sportId) in cards)
+        {
+            var text = card["highlight"] is JsonValue value && value.TryGetValue<string>(out var raw) ? raw.Trim() : "";
+            card.Remove("highlight");
+            // Blank or missing text (e.g. a raw re-save) never wipes a stored description.
+            if (text.Length == 0 || text == sports[sportId].Description) continue;
+            if (text.Length > SportDescriptionMaxLength)
+                throw FlowException.BadRequest($"Mô tả bộ môn tối đa {SportDescriptionMaxLength} ký tự.");
+            if (changes.TryGetValue(sportId, out var other) && other != text)
+                throw FlowException.BadRequest("Hai thẻ cùng liên kết một bộ môn nhưng có mô tả khác nhau.");
+            changes[sportId] = text;
+        }
+
+        // Check every change before touching any entity so a refusal leaves nothing half-applied.
+        foreach (var sportId in changes.Keys)
+        {
+            if (sports[sportId].CenterId is not long centerId)
+                throw FlowException.Forbidden("Bộ môn dùng chung không sửa mô tả từ trang chủ; hãy dùng mục Quản lý bộ môn.");
+            await ensureCenterAccess(centerId, ct);
+        }
+        foreach (var (sportId, text) in changes)
+        {
+            var sport = sports[sportId];
+            var previous = sport.Description;
+            sport.Description = text;
+            AuditLogWriter.Add(db, userId > 0 ? userId : null, sport.CenterId, "SPORT.UPDATED", "Sport", sport.Id,
+                new { Description = previous }, new { Description = text });
+        }
+    }
+
+    private static List<(JsonObject Card, long SportId)> LinkedSportCards(JsonNode node)
+    {
+        var result = new List<(JsonObject, long)>();
+        if (node is not JsonObject root || root["coursesSection"] is not JsonObject section
+            || section["sportsList"] is not JsonArray cards) return result;
+        foreach (var card in cards.OfType<JsonObject>())
+        {
+            if (card["sportId"] is not JsonValue value || !value.TryGetValue<string>(out var link)
+                || string.IsNullOrWhiteSpace(link)) continue;
+            result.Add((card, long.TryParse(link.Trim(), NumberStyles.None, CultureInfo.InvariantCulture, out var id) ? id : 0));
+        }
+        return result;
+    }
 
     private void Hydrate(JsonNode node, Dictionary<long, UploadedMedia> media)
     {

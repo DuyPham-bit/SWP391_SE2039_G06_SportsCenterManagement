@@ -310,7 +310,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             </div>
 
             {/* Description */}
-            <p style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--p-color)', marginBottom: '14px', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '42px' }}>
+            <p title={displayHighlight || undefined} style={{ fontSize: '13px', lineHeight: 1.6, color: 'var(--p-color)', marginBottom: '14px', display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden', minHeight: '62px' }}>
               {displayHighlight}
             </p>
 
@@ -341,6 +341,13 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
       </div>
     );
   };
+
+  // The card shows the short "highlights" first; the detail view prefers the full description.
+  const modalDescription = selectedFacility
+    ? (isEn
+      ? (translateFacilityDescription(selectedFacility.description, true) || translateFacilityHighlight(selectedFacility.highlights, true))
+      : (selectedFacility.description || selectedFacility.highlights || ''))
+    : '';
 
   return (
     <section id="co-so-vat-chat" className="w-full bg-white text-slate-900 font-sans min-h-screen pt-20 pb-0 px-6 sm:px-10 md:px-14 lg:px-20 relative overflow-hidden flex flex-col justify-center">
@@ -671,6 +678,17 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
               {activeModalTab === 'specs' ? (
                 /* SPECS & AMENITIES TAB */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  {modalDescription && (
+                    <div className="tiya-spec-section">
+                      <div className="tiya-spec-section__title">
+                        <span className="material-symbols-outlined">info</span>
+                        <span>{isEn ? 'About this facility' : 'Giới thiệu'}</span>
+                      </div>
+                      <p style={{ margin: 0, fontSize: '13.5px', lineHeight: 1.7, color: 'var(--p-color)' }}>{modalDescription}</p>
+                    </div>
+                  )}
+
+                  {(selectedFacility.specs || []).length > 0 && (
                   <div className="tiya-spec-section">
                     <div className="tiya-spec-section__title">
                       <span className="material-symbols-outlined">verified</span>
@@ -685,7 +703,9 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                       ))}
                     </div>
                   </div>
+                  )}
 
+                  {(selectedFacility.amenities || []).length > 0 && (
                   <div className="tiya-spec-section" style={{ marginBottom: 0 }}>
                     <div className="tiya-spec-section__title">
                       <span className="material-symbols-outlined">check_circle</span>
@@ -700,6 +720,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                       ))}
                     </div>
                   </div>
+                  )}
 
                   <div className="tiya-price-callout">
                     <strong>{isEn ? 'Membership: ' : 'Gói tập: '}</strong>
@@ -756,6 +777,9 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                             ⏱ {selectedFacility.openHours || '06:00 - 22:00'} • 👥 {selectedFacility.capacity || (isEn ? '30 slots' : 'Sức chứa tiêu chuẩn')}
                           </span>
                         </div>
+                        {modalDescription && (
+                          <p className="text-xs text-brand-navy-700 leading-relaxed mb-1">{modalDescription}</p>
+                        )}
                         <p className="text-xs text-brand-navy-700 font-medium leading-snug">
                           {isEn
                             ? `Join with a membership pass to train at ${selectedFacility.name} with free lockers & warm showers.`

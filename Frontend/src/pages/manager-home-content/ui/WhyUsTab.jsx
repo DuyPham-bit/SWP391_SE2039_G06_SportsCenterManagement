@@ -3,7 +3,7 @@ import { TabSaveFooter } from './TabSaveFooter.jsx';
 
 export function WhyUsTab({
   content, handleDiscardChanges, handleSaveAll, handleTabChange, isDirty, isEn, isSaving,
-  openMediaPicker, updateContentField
+  updateContentField
 }) {
   return (
     <div className="bg-white dark:bg-brand-navy-900 rounded-2xl border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-sm p-6 sm:p-8 space-y-6">
@@ -55,19 +55,6 @@ export function WhyUsTab({
           </div>
 
           {/* 3 Advantages */}
-          <div className="space-y-2">
-            <button type="button" className="rounded-xl bg-[#2D6A4F] px-4 py-2 text-xs font-bold text-white"
-              onClick={() => openMediaPicker(isEn ? 'About image' : 'Ảnh giới thiệu',
-                content.whyUs.imageUrl || '', url => updateContentField('whyUs', 'imageUrl', url))}>
-              {isEn ? 'Upload / change about image' : 'Tải / đổi ảnh giới thiệu'}
-            </button>
-            {content.whyUs.imageUrl && <img src={content.whyUs.imageUrl} alt=""
-              className="h-36 w-full rounded-xl object-contain" />}
-            <input type="text" value={content.whyUs.imageAlt || ''}
-              aria-label={isEn ? 'Image description' : 'Mô tả ảnh'}
-              onChange={e => updateContentField('whyUs', 'imageAlt', e.target.value)}
-              className="w-full rounded-xl border px-3 py-2 text-xs" />
-          </div>
           <div className="space-y-3 pt-2">
             <span className="block text-xs font-bold text-brand-navy-800 dark:text-brand-navy-200 uppercase">
               {isEn ? '3 Competitive Highlights:' : '3 Điểm Nổi Bật Vượt Trội:'}

@@ -22,4 +22,4 @@ Chạy migration trước khi phục vụ backend mới, bằng lệnh EF trong 
 
 ## Kiểm tra
 
-`Backend/verification/LogicAudit` chạy API thật và SQL Server LocalDB tạm, thay S3/Drive bằng bộ ghi nhận tại ranh giới dịch vụ. Các ca kiểm tra gồm vượt quyền giữa hai center, key giả/casing khác, file cũ, chuyển center, gắn chứng từ, thư viện dự phòng và đồng bộ Drive. Không truy cập bucket thật.
+`Backend/verification/PostgresMergeAudit` chạy trên database PostgreSQL tạm, thay S3 bằng bộ ghi nhận tại ranh giới dịch vụ và kiểm tra quyền sở hữu ảnh theo center (upload, xóa khác center, ảnh đang được trang chủ tham chiếu). Không truy cập bucket thật.

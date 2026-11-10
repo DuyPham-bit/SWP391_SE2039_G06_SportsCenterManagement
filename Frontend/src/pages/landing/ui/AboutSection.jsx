@@ -8,13 +8,6 @@ export function AboutSection({ catalog, facilitiesList, isEn, landingContent, vi
         <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))',gap:'60px',alignItems:'start'}}>
           {/* Left Column */}
           <div className="tiya-reveal" style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
-            {landingContent.whyUs?.imageUrl && (
-              <figure className="mb-5 w-full overflow-hidden rounded-2xl bg-slate-50">
-                <img src={landingContent.whyUs.imageUrl} alt={landingContent.whyUs.imageAlt || ''}
-                  loading="lazy" className="h-56 w-full object-contain" />
-                <figcaption className="p-3 text-sm text-slate-600">{landingContent.whyUs.imageAlt}</figcaption>
-              </figure>
-            )}
             <div className="about-badge">
               <span className="material-symbols-outlined" style={{fontSize:'16px'}}>verified</span>
               {isEn ? 'WHY CHOOSE OLYMPIC SPORTS ARENA' : (landingContent.whyUs?.badge || 'TẠI SAO NÊN CHỌN OLYMPIC SPORTS ARENA')}

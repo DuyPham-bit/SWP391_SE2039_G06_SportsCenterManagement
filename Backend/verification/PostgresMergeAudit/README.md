@@ -15,6 +15,5 @@ flow. R2 is stubbed for deterministic media checks; no real objects are uploaded
 or deleted. It starts the API on an ephemeral loopback port and removes only its
 own database in `finally`. The project's database is never selected.
 
-SQL Server-specific `LogicAudit` is historical source-branch tooling and does not
-validate this PostgreSQL deployment. Use this audit plus CoachBusinessAudit,
+The old SQL Server `LogicAudit` has been removed. Use this audit plus CoachBusinessAudit,
 AiSafetyAudit, TimezoneAudit and the frontend suite for this integration.
