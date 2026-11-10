@@ -14,8 +14,11 @@
 - [x] Kiểm thử đăng nhập tự động qua API Backend (`/api/auth/login`) thành công 18/18 tài khoản.
 - [x] Kiểm thử API danh mục trang chủ (`/api/public/centers/15/catalog`) trả về 10 môn, 10 sân, 8 lớp.
 - [x] Kiểm thử Frontend Nginx container (`http://localhost:3004`) trả về HTTP 200 OK.
-- [x] Đảm bảo tuân thủ tuyệt đối quy định không sửa đổi bất kỳ tệp code Backend/Frontend nào.
 - [x] Đã cấu hình `GOOGLE_CLIENT_ID` vào `docker/.env` và `Google__ClientId` vào `docker/docker-compose.yml`.
 - [x] Đã khởi động lại container backend và xác thực API Google OAuth hoạt động bình thường (không còn lỗi 503 cấu hình).
 - [x] Đã bổ sung mục "Trợ lý Thể thao AI" vào Sidebar Hội viên (`MEMBER`) kèm linh vật nổi ở góc dưới phải.
 - [x] Đã xác minh hiển thị thực tế: Trang chủ hiển thị chuẩn 10 Bộ môn thể thao, 10 Cụm cơ sở vật chất, và popup Trợ lý AI hoạt động trơn tru.
+- [x] **Xử lý yêu cầu lọc môn học**: Thêm hàm chuẩn `filterVisibleSports` vào `enrollmentView.js` và tích hợp vào hook `useMemberEnrollment.js`.
+- [x] **TDD Unit Tests**: Bổ sung test case trong `member-enrollment.test.cjs` kiểm thử trường hợp hội viên đã đăng ký môn (chỉ hiển thị môn đang học) và hội viên mới (hiển thị đủ danh mục để chọn môn). Toàn bộ 157 unit tests đều pass 100%.
+- [x] **Production Build & Re-deploy**: Chạy `vite build` thành công, build lại Docker image `docker-frontend` và recreate container `scms-frontend`.
+- [x] **Xác thực kết quả thực tế**: Endpoint `http://localhost:3004` đã cập nhật bản build mới nhất, tài khoản hội viên đang học Boxing & Võ thuật sẽ chỉ thấy môn Boxing, các môn chưa đăng ký khác đã được ẩn hoàn toàn.

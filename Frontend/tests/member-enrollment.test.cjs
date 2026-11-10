@@ -97,3 +97,28 @@ test('enrollment API errors are translated for members', () => {
   assert.match(view.enrollmentErrorMessage(new Error('Class is full.'), true), /full/i);
   assert.equal(view.enrollmentErrorMessage(new Error('Lỗi khác từ máy chủ'), false), 'Lỗi khác từ máy chủ');
 });
+
+test('filterVisibleSports hides unstudied sports when enrolled sports exist, and preserves all sports for new members', () => {
+  // options.sports[0] is enrolled (Bơi), options.sports[1] is not (Gym)
+  const filtered = view.filterVisibleSports(options.sports);
+  assert.equal(filtered.length, 1);
+  assert.equal(filtered[0].sportId, 1);
+  assert.equal(filtered[0].name, 'Bơi');
+
+  // When no sports are enrolled, returns all available sports so new member can choose
+  const unenrolledList = options.sports.map(s => ({
+    ...s,
+    isEnrolled: false,
+    coaches: s.coaches.map(c => ({
+      ...c,
+      classes: c.classes.map(cl => ({ ...cl, enrollmentId: null }))
+    }))
+  }));
+  const unenrolledFiltered = view.filterVisibleSports(unenrolledList);
+  assert.equal(unenrolledFiltered.length, 2);
+
+  // Handles null / empty gracefully
+  assert.deepEqual(view.filterVisibleSports([]), []);
+  assert.deepEqual(view.filterVisibleSports(null), []);
+});
+

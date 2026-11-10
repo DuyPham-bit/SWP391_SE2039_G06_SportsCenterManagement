@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { classApi } from '../../../entities/class/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { enrollmentErrorMessage } from './enrollmentView.js';
+import { enrollmentErrorMessage, filterVisibleSports } from './enrollmentView.js';
 
 /** Steps: 'sport' → 'coach' → 'class'. Selections are kept by id so a reload keeps them in sync. */
 export function useMemberEnrollment() {
@@ -33,7 +33,9 @@ export function useMemberEnrollment() {
 
   useEffect(() => { load(); }, [load]);
 
-  const sports = options?.sports || [];
+  const sports = useMemo(() => {
+    return filterVisibleSports(options?.sports);
+  }, [options]);
   const sport = useMemo(() => sports.find(s => s.sportId === sportId) || null, [sports, sportId]);
   const coach = useMemo(() => sport?.coaches.find(c => c.coachId === coachId) || null, [sport, coachId]);
   const step = !sport ? 'sport' : !coach ? 'coach' : 'class';

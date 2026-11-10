@@ -43,6 +43,18 @@ export function summarizeSport(sport) {
   };
 }
 
+/**
+ * Filter sports shown to the member:
+ * When the member is enrolled in sport(s), only show their active enrolled sports (hiding unstudied sports).
+ * If the member has not yet enrolled in any sport, show all available sports so they can pick one.
+ */
+export function filterVisibleSports(sports) {
+  const list = sports || [];
+  const enrolled = list.filter(s => summarizeSport(s).isEnrolled);
+  return enrolled.length > 0 ? enrolled : list;
+}
+
+
 export function packageUsage(subscriptions) {
   return (subscriptions || []).map(s => ({
     subscriptionId: s.subscriptionId,
