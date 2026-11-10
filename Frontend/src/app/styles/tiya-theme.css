@@ -2526,7 +2526,7 @@
    LANDING DARK SURFACES — kept exactly as before the colour unification.
    The app-wide automatic dark rules (theme.css) now use brand tokens; the landing keeps its original
    dark surfaces so it looks identical. These literals belong to the landing's non-brand colours that are
-   listed in findings.md §13 (pending decision).
+   kept as literals on purpose.
 ───────────────────────────────────────────────────────────── */
 html.dark .landing-page-root header {
   background-color: #0F172A !important;

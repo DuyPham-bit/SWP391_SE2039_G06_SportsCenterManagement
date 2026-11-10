@@ -28,6 +28,7 @@ export function sanitizeFacilityImages(fac) {
 export function getLandingPresentation(content, catalog) {
   // Published CMS entries have their own IDs and relationships. Replacing them
   // with operational IDs drops saved images, details and whole disciplines.
+  // Linked sport cards (sportId) already carry the sports-table description from the API.
   const sports = content.coursesSection?.sportsList || [];
   const facilities = (content.facilitiesSection?.facilitiesList || []).map(sanitizeFacilityImages);
   return {

@@ -354,16 +354,16 @@ public static class DbInitializer
         // Definition of all 10 sports and corresponding facilities matching site.landing-content
         var catalog = new (string SportName, string SportDesc, string RoomName, string RoomType, int RoomCapacity, string RoomLocation)[]
         {
-            ("Bơi lội", "Bơi lội thể thao, cải thiện thể lực và sức bền toàn diện", "Bể bơi Olympic 50m", "Swimming Pool", 30, "Khu Thể Thao Dưới Nước • Tầng 1"),
-            ("Gym & Fitness", "Rèn luyện thể hình, tăng cơ giảm mỡ và tăng cường sức mạnh", "Phòng Gym High-Performance", "Gym", 45, "Khu A • Tầng 2"),
-            ("Yoga & Pilates", "Phục hồi chức năng, tăng độ dẻo dai và tĩnh tâm", "Phòng Yoga & Pilates Reformer", "Studio", 20, "Khu C • Tầng 3"),
-            ("Cầu lông", "Tập luyện phản xạ nhanh, di chuyển linh hoạt và đối kháng", "Sân Cầu lông Tiêu chuẩn #1", "Badminton Court", 24, "Khu B • Tầng 2"),
-            ("Boxing & Võ thuật", "Đốt cháy calo, rèn luyện kỹ năng tự vệ và phản xạ chiến đấu", "Võ đài Boxing & Kickfit", "Combat Ring", 25, "Khu C • Tầng 1"),
-            ("Golf", "Học viện đào tạo Golf chuẩn quốc tế, driving range 18 làn và phòng mô phỏng 3D TrackMan 4K", "Tổ Hợp Sân Tập Golf & 3D Simulator", "Golf Complex", 30, "Khu Ngoài Trời & Khu C • Tầng 2"),
-            ("Bóng đá", "Sân cỏ nhân tạo 5 người tiêu chuẩn, mặt cỏ êm ái chống chấn thương, hệ thống thoát nước và dàn đèn LED cao áp ban đêm.", "Sân Bóng Đá Cỏ Nhân Tạo (Sân 5)", "Outdoor Field", 14, "Khu Ngoài Trời"),
-            ("Bóng rổ", "Sân bóng rổ tiêu chuẩn thi đấu phong trào, mặt sân sơn acrylic chống trượt, trụ rổ kính cường lực độ nảy tốt và mái che mát.", "Sân Bóng Rổ Tiêu Chuẩn Phong Trào", "Basketball Court", 25, "Khu B • Tầng 1"),
-            ("Bóng bàn", "Khu bóng bàn trong nhà trang bị bàn thi đấu đạt chuẩn quốc tế, ánh sáng đều chống lóa và không gian di chuyển an toàn.", "Khu Bóng Bàn Trong Nhà", "Table Tennis Area", 20, "Khu B • Tầng 3"),
-            ("Pickleball", "Cụm sân Pickleball ngoài trời hiện đại, mặt sân acrylic chuyên dụng, vạch bếp chuẩn thi đấu và rào chắn bóng kiên cố.", "Cụm Sân Pickleball Ngoài Trời", "Pickleball Complex", 20, "Khu Ngoài Trời")
+            ("Bơi lội", "Học bơi từ cơ bản đến nâng cao với 4 kiểu ếch, sải, ngửa, bướm. Tăng sức bền tim phổi, toàn thân săn chắc, phù hợp mọi lứa tuổi.", "Bể bơi Olympic 50m", "Swimming Pool", 30, "Khu Thể Thao Dưới Nước • Tầng 1"),
+            ("Gym & Fitness", "Tập tạ và thể lực theo giáo án cá nhân: tăng cơ, giảm mỡ, cải thiện sức mạnh và vóc dáng cùng huấn luyện viên kèm sát.", "Phòng Gym High-Performance", "Gym", 45, "Khu A • Tầng 2"),
+            ("Yoga & Pilates", "Yoga và Pilates giúp tăng độ dẻo dai, cải thiện tư thế, siết cơ trung tâm và giảm căng thẳng sau giờ làm việc.", "Phòng Yoga & Pilates Reformer", "Studio", 20, "Khu C • Tầng 3"),
+            ("Cầu lông", "Luyện kỹ thuật cầm vợt, bộ pháp di chuyển, đập cầu và chiến thuật đánh đơn, đánh đôi. Tăng phản xạ và sự nhanh nhẹn.", "Sân Cầu lông Tiêu chuẩn #1", "Badminton Court", 24, "Khu B • Tầng 2"),
+            ("Boxing & Võ thuật", "Boxing và võ thuật đối kháng: rèn đòn tay, đòn chân, phản xạ và kỹ năng tự vệ. Đốt calo mạnh, giải tỏa căng thẳng.", "Võ đài Boxing & Kickfit", "Combat Ring", 25, "Khu C • Tầng 1"),
+            ("Golf", "Làm quen swing, chipping và putting cùng huấn luyện viên; luyện tập trên driving range và phòng mô phỏng golf 3D.", "Tổ Hợp Sân Tập Golf & 3D Simulator", "Golf Complex", 30, "Khu Ngoài Trời & Khu C • Tầng 2"),
+            ("Bóng đá", "Rèn kỹ thuật dẫn bóng, chuyền, sút và phối hợp đồng đội trên sân cỏ nhân tạo. Nâng cao thể lực và tinh thần tập thể.", "Sân Bóng Đá Cỏ Nhân Tạo (Sân 5)", "Outdoor Field", 14, "Khu Ngoài Trời"),
+            ("Bóng rổ", "Luyện dẫn bóng, ném rổ, phòng thủ và chiến thuật đồng đội. Phát triển sức bật, sự linh hoạt và khả năng phối hợp.", "Sân Bóng Rổ Tiêu Chuẩn Phong Trào", "Basketball Court", 25, "Khu B • Tầng 1"),
+            ("Bóng bàn", "Rèn kỹ thuật giao bóng, giật, cắt bóng và phản xạ nhanh. Môn thể thao nhẹ nhàng giúp tăng tập trung, hợp mọi lứa tuổi.", "Khu Bóng Bàn Trong Nhà", "Table Tennis Area", 20, "Khu B • Tầng 3"),
+            ("Pickleball", "Kết hợp giữa tennis, cầu lông và bóng bàn, dễ chơi và vui nhộn. Học luật, kỹ thuật dink, volley và phối hợp đánh đôi.", "Cụm Sân Pickleball Ngoài Trời", "Pickleball Complex", 20, "Khu Ngoài Trời")
         };
 
         var sportsDict = new Dictionary<string, Sport>(StringComparer.OrdinalIgnoreCase);

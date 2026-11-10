@@ -88,7 +88,6 @@ export function HomeContentManagement() {
       {activeTab === 'whyUs' && (
         <WhyUsTab
           content={content}
-          openMediaPicker={openMediaPicker}
           handleDiscardChanges={handleDiscardChanges}
           handleSaveAll={handleSaveAll}
           handleTabChange={handleTabChange}

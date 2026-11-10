@@ -24,7 +24,7 @@ Trang quản lý: `#/manager/home-content`. Manager/Admin quản lý nội dung 
 
 ## Chuyển dữ liệu cũ
 
-Migration `AddMediaStorageKey` thêm cột/index, không xóa dữ liệu cũ. Khi backend khởi động, `LandingMediaBackfill` đọc các R2 key đang có trong landing, đọc metadata object R2, tạo một dòng cho mỗi key và đổi JSON sang ID trong cùng transaction. File R2 không bị upload lại hay thay đổi. Chạy lại không tạo trùng vì landing đã chuyển thành ID.
+Migration `AddMediaStorageKey` thêm cột/index, không xóa dữ liệu cũ. Việc chuyển dữ liệu cũ đã hoàn tất trên database local và Render (ngày 10/11/2026: mọi ảnh nằm trên R2, landing chỉ còn lưu ID ảnh, không còn ảnh Google Drive), nên bước backfill lúc khởi động, endpoint chuyển ảnh Google Drive và công cụ `LandingImageSync` đã được gỡ. Cột `drive_file_id`, `file_url`, `web_view_link` vẫn giữ để tương thích schema.
 
 Xem ảnh trực tiếp trong DB:
 
@@ -47,18 +47,20 @@ ORDER BY "Id";
 - Tennis: 9 (bộ môn), 11 (sân).
 - Bóng rổ: 10 (bộ môn), 17 (sân).
 - Bóng bàn: 15 (bộ môn), 16 (khu tập).
-- Boxing: 20. Chạy bộ: 13. Tư vấn sức khỏe trong phần giới thiệu: 12.
+- Boxing: 20. Chạy bộ: 13. Ảnh 12 (tư vấn sức khỏe) không còn hiển thị ở phần giới thiệu.
 
 Các thẻ là nội dung giới thiệu, không tự tạo lớp học, sân có thể đặt chỗ, giá, lịch hoặc sức chứa.
 
-Script `Frontend/scripts/import-landing-r2.mjs` đọc ảnh đã tải trong `.validation/landing-import`, xác thực bằng cấu hình local, upload qua API và công bố. Báo cáo `r2-import.json` lưu mapping/hash để chạy tiếp khi gián đoạn; không chứa mật khẩu/token. Không chạy lại để ghi đè tùy chỉnh danh sách của biên tập viên.
+Mô tả bộ môn: mỗi thẻ bộ môn có thể liên kết `sportId` tới `sports."Id"`. Với thẻ đã liên kết, `GET /api/landing-content` điền `highlight` từ `sports.description`; khi manager sửa "Nội dung giới thiệu" trong trình sửa trang chủ, `PUT` ghi thẳng vào `sports.description` (tối đa 500 ký tự, kiểm tra quyền theo trung tâm, ghi audit `SPORT.UPDATED`) và không lưu bản sao trong JSON. Nội dung trống không xoá mô tả đã có. Thẻ chưa liên kết (Tennis, Chạy bộ) giữ `highlight` riêng trong JSON. Kiểm thử: `dotnet run --project Backend/verification/LandingSportDescriptionAudit`.
+
+Mô tả phòng / sân: lưu trong `facilitiesList[].description` ("Mô tả chi tiết"); thẻ hiển thị `highlights` nếu có, nếu không thì `description`; cửa sổ chi tiết hiển thị đầy đủ `description`.
+
+Bộ ảnh trên đã được nhập lên R2 một lần (script nhập/kiểm tra một lần đã được gỡ khỏi repo sau khi hoàn tất).
 
 ## Kiểm chứng
 
 ```powershell
-dotnet build Backend/Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj
+dotnet build Backend/SportsCenterManagement.API/SportsCenterManagement.API.csproj
 node --test Frontend/tests/cloud-media.test.cjs Frontend/tests/landing-content.test.cjs
-node Frontend/scripts/verify-landing-r2.mjs
+dotnet run --project Backend/verification/LandingSportDescriptionAudit
 ```
-
-Script verification đọc 21 object thật, so SHA256 với ảnh nguồn, kiểm tra định dạng/dung lượng, tên an toàn, bảo vệ ảnh dùng chung và xóa upload tạm do test tạo.

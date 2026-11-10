@@ -50,6 +50,7 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
     ? catalogSports(catalog).map(record => ({ ...record, facilityId: record.facilityId || '' }))
     : catalogFacilities(catalog));
   const availableFacilities = facilities ?? catalogFacilities(catalog);
+  const storedSports = catalog?.sports || [];
   const relatedSports = isSports ? [] : (sports ?? catalogSports(catalog).map(record => ({ ...record, facilityId: record.facilityId || '' })));
   const fields = isSports ? SPORT_FIELDS : FACILITY_FIELDS;
   const activeRecord = editingCard?.type === type
@@ -96,21 +97,36 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
       image: '',
       isVisible: true,
       ...(isSports
-        ? { icon: 'sports', facilityId: '', badges: [] }
+        ? { icon: 'sports', facilityId: '', sportId: '', badges: [] }
         : { secondaryImage: '', specs: [], amenities: [], tags: [] })
     };
     onChange([...records, card]);
   };
-  const renderField = (record, [key, vi, en, multiline]) => (
+  const linkedSport = record => isSports && record.sportId
+    ? storedSports.find(sport => String(sport.id) === String(record.sportId)) || { id: record.sportId, name: `#${record.sportId}` }
+    : null;
+  const linkSport = (record, sportId) => {
+    const stored = storedSports.find(sport => String(sport.id) === String(sportId));
+    // Load the linked sport's own description so saving never copies another sport's text into it.
+    update(record, sportId ? { sportId, highlight: stored?.description || '' } : { sportId: '' });
+  };
+  const renderField = (record, [key, vi, en, multiline]) => {
+    const sport = key === 'highlight' ? linkedSport(record) : null;
+    return (
     <label key={key} className={`block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 ${multiline ? 'sm:col-span-2' : ''}`}>
       {isEn ? en : vi}
+      {sport && (
+        <span className="ml-1 font-normal text-brand-sage-700 dark:text-brand-sage-500">
+          {isEn ? `(saved to sport "${sport.name}", max 500 characters)` : `(lưu vào bộ môn "${sport.name}", tối đa 500 ký tự)`}
+        </span>
+      )}
       {multiline ? (
         <textarea
           name={key}
           value={record[key] ?? ''}
           onChange={event => update(record, { [key]: event.target.value })}
           rows={3}
-          maxLength={10000}
+          maxLength={sport ? 500 : 10000}
           className={inputClass}
         />
       ) : (
@@ -124,7 +140,8 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
         />
       )}
     </label>
-  );
+    );
+  };
   const renderCardContent = record => (
     <div className="space-y-3">
       {record.image ? (
@@ -157,6 +174,28 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
         </label>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
+        {isSports && (
+          <label className="block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 sm:col-span-2">
+            {isEn ? 'Linked sport (description source)' : 'Bộ môn trong hệ thống (nguồn mô tả)'}
+            <select
+              name="sportId"
+              value={record.sportId ?? ''}
+              onChange={event => linkSport(record, event.target.value)}
+              className={inputClass}
+            >
+              <option value="">{isEn ? 'Not linked — the introduction stays on this card only' : 'Chưa liên kết — nội dung giới thiệu chỉ lưu trên thẻ này'}</option>
+              {record.sportId && !storedSports.some(sport => String(sport.id) === String(record.sportId)) && (
+                <option value={record.sportId}>{isEn ? `Sport #${record.sportId} (inactive)` : `Bộ môn #${record.sportId} (không hoạt động)`}</option>
+              )}
+              {storedSports.map(sport => <option key={sport.id} value={String(sport.id)}>{sport.name}</option>)}
+            </select>
+            <span className="mt-1 block font-normal text-[11px] text-brand-navy-500 dark:text-brand-navy-400">
+              {isEn
+                ? 'When linked, the introduction below is the sport\'s description: editing it here (then Save All Changes) also updates Sports management.'
+                : 'Khi liên kết, nội dung giới thiệu bên dưới chính là mô tả của bộ môn: sửa ở đây (rồi Lưu Toàn Bộ Thay Đổi) sẽ cập nhật luôn trong Quản lý bộ môn.'}
+            </span>
+          </label>
+        )}
         {fields.map(field => renderField(record, field))}
         {isSports && (
           <label className="block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 sm:col-span-2">

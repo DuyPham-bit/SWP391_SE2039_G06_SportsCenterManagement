@@ -1,4 +1,4 @@
-// Real React/Chrome flow with a local API fixture. SQL and delivery are exercised separately by LogicAudit.
+// Real React/Chrome flow with a local API fixture. SQL and delivery are exercised separately by the backend audits.
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -171,7 +171,7 @@ async function screenshot(name, width, height) {
   checks.push('Password reset reads the emailed code, allows retry after rejection, and returns to login after success.');
   assert.deepEqual(errors, []);
   checks.push('No uncaught browser JavaScript exceptions.');
-  fs.writeFileSync(path.join(artifacts, 'report.json'), JSON.stringify({ checks, errors, api: 'Local fixture. Delivery and persistence tested separately by LogicAudit.' }, null, 2));
+  fs.writeFileSync(path.join(artifacts, 'report.json'), JSON.stringify({ checks, errors, api: 'Local fixture. Delivery and persistence tested separately by the backend audits.' }, null, 2));
   console.log(`PASS ${checks.length} browser checks\n${checks.join('\n')}`);
 })().catch(error => { console.error(error.stack); process.exitCode = 1; }).finally(async () => {
   if (cdp) { await cdp.send('Browser.close').catch(() => {}); socket.close(); }

@@ -99,6 +99,29 @@ test('an unconfigured homepage uses only the actual SQL catalog and never invent
   assert.equal(result.facilitiesSection.facilitiesList[0].capacity, '11 người');
 });
 
+test('homepage sport cards show the text the API (or an unsaved preview draft) provides, not an older catalog copy', () => {
+  const { getLandingPresentation } = load('entities/catalog/lib/landingPresentation.js');
+  // The API fills a linked card's highlight from the sports table; a manager preview carries the draft text.
+  const content = {
+    coursesSection: { catalogSource: 'custom', sportsList: [
+      { id: 'swimming', name: 'Bơi lội', sportId: '1', highlight: 'Draft swimming text' },
+      { id: 'tennis', name: 'Tennis', highlight: 'Editorial tennis' }
+    ] },
+    facilitiesSection: { facilitiesList: [] }
+  };
+  const catalog = { center: {}, rooms: [], classes: [], sports: [{ id: 1, name: 'Bơi lội', description: 'Published swimming text' }] };
+  const sports = getLandingPresentation(content, catalog).coursesSection.sportsList;
+  assert.equal(sports[0].highlight, 'Draft swimming text');
+  assert.equal(sports[1].highlight, 'Editorial tennis');
+});
+
+test('catalog fallback sport cards keep a link to their sports table row', () => {
+  const api = load('entities/catalog/api/publicCatalog.js');
+  const sports = api.catalogSports({ center: {}, sports: [{ id: 81, name: 'Actual sport', description: 'Stored' }], rooms: [], classes: [] });
+  assert.equal(sports[0].sportId, '81');
+  assert.equal(sports[0].highlight, 'Stored');
+});
+
 function loadCatalogEditor(catalog) {
   const React = require('react');
   const module = { exports: {} };
@@ -191,6 +214,32 @@ test('both homepage card editors can add and edit cards without changing existin
     assert.equal(cards[0].id, original[0].id);
     assert.equal(cards[0].facilityId, original[0].facilityId);
   }
+});
+
+test('a homepage sport card can be linked to a sports table row without losing its other details', () => {
+  const renderEditor = loadCatalogEditor({ center: {}, rooms: [], classes: [], sports: [
+    { id: 4, name: 'Cầu lông', description: 'Stored badminton' },
+    { id: 7, name: 'Bóng đá', description: 'Stored football' }
+  ] });
+  const original = [{ id: 'badminton', name: 'Cầu lông', image: '/badminton.webp', facilityId: 'landing-badminton', highlight: 'Old text' }];
+  let cards = original;
+  const view = () => renderEditor({ type: 'sports', metadata: cards, facilities: [], onChange: value => { cards = value; } });
+  findAll(view(), 'button').find(button => button.props['aria-haspopup'] === 'dialog').props.onClick();
+  const select = () => findAll(view(), 'select').find(item => item.props.name === 'sportId');
+  assert.ok(select(), 'Sport cards should offer a sports table link');
+  assert.deepEqual(findAll(select(), 'option').map(option => option.props.value), ['', '4', '7']);
+  // Linking loads that sport's stored description, so saving never copies another sport's text into it.
+  select().props.onChange({ target: { value: '4' } });
+  assert.deepEqual(JSON.parse(JSON.stringify(cards)), [{ ...original[0], sportId: '4', highlight: 'Stored badminton' }]);
+  const description = () => findAll(view(), 'textarea').find(item => item.props.name === 'highlight');
+  assert.equal(description().props.maxLength, 500, 'Linked descriptions are limited to the sports table column');
+  select().props.onChange({ target: { value: '7' } });
+  assert.equal(cards[0].highlight, 'Stored football');
+  // Unlinking keeps the current text as the card's own introduction.
+  select().props.onChange({ target: { value: '' } });
+  assert.equal(cards[0].sportId, '');
+  assert.equal(cards[0].highlight, 'Stored football');
+  assert.equal(description().props.maxLength, 10000);
 });
 
 test('adding a homepage sport retains catalog fallback cards and uses a saveable empty facility reference', () => {

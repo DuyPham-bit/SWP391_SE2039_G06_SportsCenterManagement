@@ -8,4 +8,4 @@ Mỗi tab chỉ lưu mã chọn phiên ngẫu nhiên 32 ký tự tại `sessionS
 
 Frontend mặc định dùng `/api` cùng origin (Vite proxy hoặc frontend nhúng trong API). Khi gọi API khác origin nhưng cùng site, cấu hình đúng `Cors:AllowedOrigins`; API chỉ cho phép credentials với các origin đã cấu hình. Cookie SameSite=Strict không hỗ trợ frontend/API ở hai site không liên quan. Cookie đơn lẻ, thiếu header chọn phiên, không được dùng để xác thực. API client ngoài trình duyệt vẫn dùng Bearer JWT như trước.
 
-Bộ hồi quy: `tests/auth-session.test.cjs`, `tests/security-auth.browser.cjs` (Chrome và API fixture riêng), cùng `Backend/verification/LogicAudit/BrowserSessionChecks.cs` (HTTP và SQL Server riêng). Không thay đổi schema hoặc dữ liệu ứng dụng.
+Bộ hồi quy: `tests/auth-session.test.cjs`, `tests/security-auth.browser.cjs` (Chrome và API fixture riêng). Không thay đổi schema hoặc dữ liệu ứng dụng.

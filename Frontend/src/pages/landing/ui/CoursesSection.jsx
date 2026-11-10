@@ -86,6 +86,7 @@ export function CoursesSection({
                 labelEn: sport.category
               };
               const isHighlighted = highlightedSportId === sport.id;
+              const description = isEn ? (translateCourseHighlight(details.highlight, true) || details.highlight) : details.highlight;
 
               return (
                 <div
@@ -126,11 +127,16 @@ export function CoursesSection({
 
                       <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:600,color:'var(--primary-color)',marginBottom:'10px',minHeight:'20px'}}>
                         <span className="material-symbols-outlined" style={{fontSize:'15px',flexShrink:0}}>location_on</span>
-                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{isEn ? translateFacilityName(facility.name, true) : facility.name} • {isEn ? translateLocation(facility.location, true) : facility.location}</span>
+                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                          {[
+                            isEn ? translateFacilityName(facility.name || sport.venue, true) : (facility.name || sport.venue),
+                            isEn ? translateLocation(facility.location, true) : facility.location
+                          ].filter(Boolean).join(' • ')}
+                        </span>
                       </div>
 
-                      <p style={{fontSize:'13px',lineHeight:1.6,color:'var(--p-color)',marginBottom:'14px',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',minHeight:'42px'}}>
-                        {isEn ? (translateCourseHighlight(details.highlight, true) || details.highlight) : details.highlight}
+                      <p title={description || undefined} style={{fontSize:'13px',lineHeight:1.6,color:'var(--p-color)',marginBottom:'14px',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden',minHeight:'62px'}}>
+                        {description}
                       </p>
 
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'16px',fontSize:'11px',color:'var(--p-color)',minHeight:'36px'}}>

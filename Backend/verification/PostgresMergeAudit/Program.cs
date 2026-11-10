@@ -102,7 +102,7 @@ try
     AsUser(manager.Id);
     var s3 = DispatchProxy.Create<IAmazonS3, AuditS3>();
     var r2Options = Options.Create(new R2StorageOptions { BucketName = "audit", PublicDomain = "https://media.example.test" });
-    using var storage = new R2StorageService(r2Options, TimeProvider.System, db, accessor, NullLogger<R2StorageService>.Instance, new AuditHttpFactory(), s3);
+    using var storage = new R2StorageService(r2Options, TimeProvider.System, db, accessor, NullLogger<R2StorageService>.Instance, s3);
     var catalog = new MediaCatalogService(db, storage, r2Options);
     byte[] png = [137, 80, 78, 71, 13, 10, 26, 10, 0, 0, 0, 0];
     var file = new FormFile(new MemoryStream(png), 0, png.Length, "file", "audit.png") { Headers = new HeaderDictionary(), ContentType = "image/png" };
@@ -117,7 +117,7 @@ try
         ["whyUs"] = new { }, ["coursesSection"] = new { }, ["facilitiesSection"] = new { },
         ["zonesLayout"] = new { }, ["ctaAndFooter"] = new { }
     });
-    var published = await landing.SaveAsync(content, manager.Id, default);
+    var published = await landing.SaveAsync(content, manager.Id, (_, _) => Task.CompletedTask, default);
     var stored = await db.SystemSettings.SingleAsync(s => s.SettingKey == "site.landing-content");
     Check(LandingContentService.ReferencedMediaIds(stored.SettingValue).Contains(image.Id) && !stored.SettingValue!.Contains("https://"), "landing stores media IDs, not public URLs");
     Check(published.Content!.Value.GetProperty("heroBanner").GetProperty("image").GetString() == catalog.PublicUrl(image.StorageKey), "landing hydrates IDs to renderable URLs");
@@ -203,4 +203,3 @@ public class AuditS3 : DispatchProxy
         _ => throw new NotSupportedException("Unexpected S3 operation: " + method?.Name)
     };
 }
-sealed class AuditHttpFactory : IHttpClientFactory { public HttpClient CreateClient(string name) => new(); }

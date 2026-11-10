@@ -612,6 +612,27 @@ export const FACILITY_HIGHLIGHTS_MAP = {
 };
 
 export const FACILITY_DESCRIPTION_MAP = {
+  // Homepage facility card descriptions (site.landing-content → facilitiesList[].description).
+  'Bể bơi trong nhà chia làn riêng cho người mới học và người bơi luyện tập. Nước được lọc và kiểm tra hằng ngày, có khu tắm tráng và thay đồ.':
+    'Indoor pool with separate lanes for beginners and lap swimmers. Water is filtered and tested daily, with showers and changing rooms.',
+  'Sân cầu lông trong nhà, thảm chuyên dụng chống trơn, trần cao và ánh sáng chống chói, phù hợp cả tập luyện lẫn thi đấu giao hữu.':
+    'Indoor badminton courts with anti-slip sport mats, high ceilings and glare-free lighting, suited to both training and friendly matches.',
+  'Sân cỏ nhân tạo có lớp hạt cao su giảm chấn, thoát nước nhanh sau mưa và hệ thống đèn chiếu sáng cho các buổi đá buổi tối.':
+    'Artificial turf pitch with shock-absorbing rubber infill, fast drainage after rain and floodlights for evening games.',
+  'Phòng tập yên tĩnh, thoáng mát với sàn gỗ và gương lớn, có sẵn thảm, gạch và dây hỗ trợ cho các lớp Yoga và Pilates.':
+    'A quiet, airy studio with wooden floors and large mirrors, equipped with mats, blocks and straps for Yoga and Pilates classes.',
+  'Khu tập có máy cardio, máy tập sức mạnh và khu tạ tự do, không gian rộng thoáng cho cả người mới bắt đầu lẫn người tập lâu năm.':
+    'Cardio machines, strength machines and a free-weight zone in a spacious room for beginners and experienced lifters alike.',
+  'Sân tennis mặt cứng sơn chuyên dụng, kẻ vạch theo chuẩn thi đấu, có lưới chắn bóng xung quanh và đèn chiếu sáng để chơi buổi tối.':
+    'Hard tennis court with a sport coating, regulation markings, surrounding fences and lighting for evening play.',
+  'Sân bóng rổ mặt sơn chống trơn, trụ rổ chắc chắn, đủ rộng cho tập kỹ năng, đấu tập theo đội và các giải phong trào.':
+    'Basketball court with an anti-slip coated surface and sturdy hoops, roomy enough for skills training, team scrimmages and amateur tournaments.',
+  'Khu bóng bàn trong nhà với bàn thi đấu tiêu chuẩn, ánh sáng đều không chói và khoảng trống rộng quanh mỗi bàn để di chuyển.':
+    'Indoor table tennis area with competition tables, even glare-free lighting and plenty of room to move around each table.',
+  'Khu tập đối kháng có võ đài, bao cát, sàn đệm giảm chấn và đồ bảo hộ, phục vụ các lớp Boxing, Kickboxing và võ thuật.':
+    'Combat training area with a ring, heavy bags, shock-absorbing mats and protective gear for Boxing, Kickboxing and martial arts classes.',
+  'Đường chạy bề mặt êm, có vạch chia làn cùng khu khởi động và giãn cơ, phù hợp chạy rèn sức bền và các bài tập tốc độ.':
+    'A cushioned running track with lane markings plus warm-up and stretching areas, suited to endurance runs and speed work.',
   'Bể bơi trong nhà kích thước 25m x 12.5m với 5 làn bơi riêng biệt, độ sâu an toàn từ 1.2m đến 1.8m. Hệ thống lọc nước tuần hoàn khử khuẩn sạch sẽ mỗi ngày, nước ấm ổn định phù hợp cho việc học bơi và rèn luyện thể lực quanh năm cho cả người lớn lẫn trẻ em.':
     'Indoor 25m x 12.5m swimming pool featuring 5 lanes and safety depths from 1.2m to 1.8m. Continuous circulation ozone filtration keeps water crystal clear, maintaining comfortable warm temperatures for all ages.',
   'Cụm sân bóng đá mini cỏ nhân tạo ngoài trời chuẩn sân 5 người. Mặt cỏ dày, rải hạt cao su đàn hồi giảm chấn động cho khớp gối và cổ chân. Hệ thống thoát nước nhanh chóng giúp sân luôn khô ráo sau mưa.':
@@ -833,6 +854,31 @@ export const SERVICE_AMENITY_MAP = {
 };
 
 export const COURSE_HIGHLIGHT_MAP = {
+  // Sport descriptions stored in the `sports` table (and the two CMS-only cards).
+  'Học bơi từ cơ bản đến nâng cao với 4 kiểu ếch, sải, ngửa, bướm. Tăng sức bền tim phổi, toàn thân săn chắc, phù hợp mọi lứa tuổi.':
+    'Learn to swim from basics to advanced: breaststroke, freestyle, backstroke and butterfly. Builds cardio endurance and tones the whole body, for all ages.',
+  'Tập tạ và thể lực theo giáo án cá nhân: tăng cơ, giảm mỡ, cải thiện sức mạnh và vóc dáng cùng huấn luyện viên kèm sát.':
+    'Strength and conditioning on a personal plan: build muscle, lose fat and improve power and physique with close coaching.',
+  'Yoga và Pilates giúp tăng độ dẻo dai, cải thiện tư thế, siết cơ trung tâm và giảm căng thẳng sau giờ làm việc.':
+    'Yoga and Pilates improve flexibility and posture, strengthen your core and relieve stress after work.',
+  'Luyện kỹ thuật cầm vợt, bộ pháp di chuyển, đập cầu và chiến thuật đánh đơn, đánh đôi. Tăng phản xạ và sự nhanh nhẹn.':
+    'Train grip, footwork, smashes and singles/doubles tactics. Sharpens reflexes and agility.',
+  'Boxing và võ thuật đối kháng: rèn đòn tay, đòn chân, phản xạ và kỹ năng tự vệ. Đốt calo mạnh, giải tỏa căng thẳng.':
+    'Boxing and combat martial arts: punches, kicks, reflexes and self-defence skills. High calorie burn and great stress relief.',
+  'Làm quen swing, chipping và putting cùng huấn luyện viên; luyện tập trên driving range và phòng mô phỏng golf 3D.':
+    'Learn the swing, chipping and putting with a coach, practising on the driving range and in the 3D golf simulator.',
+  'Rèn kỹ thuật dẫn bóng, chuyền, sút và phối hợp đồng đội trên sân cỏ nhân tạo. Nâng cao thể lực và tinh thần tập thể.':
+    'Build dribbling, passing, shooting and teamwork on artificial turf. Improves fitness and team spirit.',
+  'Luyện dẫn bóng, ném rổ, phòng thủ và chiến thuật đồng đội. Phát triển sức bật, sự linh hoạt và khả năng phối hợp.':
+    'Practise dribbling, shooting, defence and team tactics. Develops jumping power, agility and coordination.',
+  'Rèn kỹ thuật giao bóng, giật, cắt bóng và phản xạ nhanh. Môn thể thao nhẹ nhàng giúp tăng tập trung, hợp mọi lứa tuổi.':
+    'Train serves, loops, chops and quick reflexes. A low-impact sport that boosts focus, suitable for all ages.',
+  'Kết hợp giữa tennis, cầu lông và bóng bàn, dễ chơi và vui nhộn. Học luật, kỹ thuật dink, volley và phối hợp đánh đôi.':
+    'A fun, easy-to-learn mix of tennis, badminton and table tennis. Learn the rules, dinks, volleys and doubles play.',
+  'Học kỹ thuật forehand, backhand, giao bóng và di chuyển trên sân. Tăng sức bền, phản xạ và tư duy chiến thuật.':
+    'Learn forehand, backhand, serving and court movement. Builds endurance, reflexes and tactical thinking.',
+  'Chạy bộ theo giáo án: khởi động đúng cách, kỹ thuật bước chạy, nhịp thở và tăng dần cự ly. Cải thiện sức bền tim mạch.':
+    'Guided running: proper warm-up, stride technique, breathing rhythm and gradually longer distances. Improves cardio endurance.',
   'Bể bơi 25m tiêu chuẩn tập luyện, 5 làn bơi nước ấm 4 mùa, lọc ozone an toàn tuyệt đối.':
     '25m standard pool with 5 heated 4-season lanes and safe ozone water purification.',
   'Mặt cỏ nhân tạo dày êm chân rải hạt cao su giảm chấn, thoát nước nhanh và dàn đèn LED cao áp đêm.':

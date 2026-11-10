@@ -1,7 +1,9 @@
 using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.API.Filters;
+using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.BLL.Services;
 using SportsCenterManagement.API.Services;
 using Microsoft.EntityFrameworkCore;
@@ -28,7 +30,7 @@ public sealed class LandingContentController(LandingContentService contentServic
     {
         var previous = await db.SystemSettings.AsNoTracking().Where(s => s.SettingKey == "site.landing-content")
             .Select(s => s.SettingValue).SingleOrDefaultAsync(ct);
-        var result = await contentService.SaveAsync(request.Content, CurrentUserId, ct);
+        var result = await contentService.SaveAsync(request.Content, CurrentUserId, EnsureSportCenterAccessAsync, ct);
         var current = await db.SystemSettings.AsNoTracking().Where(s => s.SettingKey == "site.landing-content")
             .Select(s => s.SettingValue).SingleOrDefaultAsync(ct);
         // Only retire images removed by this successful CMS save. Shared references survive.
@@ -41,5 +43,15 @@ public sealed class LandingContentController(LandingContentService contentServic
             catch (Exception ex) { logger.LogWarning(ex, "Could not remove retired landing image {MediaId}", media.Id); }
         }
         return Ok(result);
+    }
+
+    // Editing a linked sport's description from the homepage needs the same center access as sport management.
+    private async Task EnsureSportCenterAccessAsync(long centerId, CancellationToken ct)
+    {
+        try { await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct); }
+        catch (InvalidOperationException ex) when (ex is not FlowException && ex.Data["StatusCode"] is int status)
+        {
+            throw new FlowException(status, ex.Message);
+        }
     }
 }
