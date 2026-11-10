@@ -1,6 +1,6 @@
 const assert = require('node:assert/strict');
 const { test } = require('node:test');
-const { fixMojibake, fixMojibakeString } = require('../src/services/encodingHelper.js');
+const { fixMojibake, fixMojibakeString } = require('../src/shared/lib/encodingHelper.js');
 
 test('fixMojibake repairs Windows-1252/Latin-1 UTF-8 mojibake strings correctly', () => {
   const corruptedDesc = 'PhÃ¡t triá»ƒn thá»ƒ lá»±c, tÃ´i luyá»‡n Ã½ chÃ­ vÃ  bá»©t phÃ¡ má»\u008Di giá»›i háº¡n cÃ¹ng há»‡ thá»‘ng 9 cá»¥m sÃ¢n, phÃ²ng táº­p phá»¥c vá»¥ 9 bá»™ mÃ´n thá»ƒ thao.';

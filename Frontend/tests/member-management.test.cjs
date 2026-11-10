@@ -1,12 +1,13 @@
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { readSlice } = require('./helpers/sourceFiles.cjs');
 const vm = require('node:vm');
 const { test } = require('node:test');
-const pageSource = fs.readFileSync(path.join(__dirname, '../src/features/manager/MemberManagement.jsx'), 'utf8');
+const pageSource = readSlice('pages/manager-members');
 
 function loadHelpers() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/features/manager/memberManagementView.js'), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src/pages/manager-members/model/memberManagementView.js'), 'utf8')
     .replaceAll('export function ', 'function ');
   const context = vm.createContext({ Intl });
   vm.runInContext(`${source}\nglobalThis.helpers = {

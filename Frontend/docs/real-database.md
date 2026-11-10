@@ -33,7 +33,7 @@ User Secrets của project API đang trỏ tới SQL Server instance `.` với W
 
 ```dotenv
 VITE_API_BASE_URL=/api
-SCMS_API_PROXY_TARGET=http://localhost:3003
+SCMS_API_PROXY_TARGET=http://localhost:5000
 VITE_SPORTS_CENTER_ID=15
 ```
 
@@ -52,7 +52,7 @@ cd .\Frontend
 npm.cmd run dev
 ```
 
-Mở `http://localhost:3004` rồi F5. API hiện chạy ở `3003`. Nếu dùng giao diện nhúng do backend phục vụ, chạy `npm.cmd run build:api` trong `Frontend` để cập nhật bundle.
+Mở `http://localhost:3004` rồi F5. API hiện chạy ở `5000`. Nếu dùng giao diện nhúng do backend phục vụ, chạy `npm.cmd run build:api` trong `Frontend` để cập nhật bundle.
 
 ## Kiểm chứng
 

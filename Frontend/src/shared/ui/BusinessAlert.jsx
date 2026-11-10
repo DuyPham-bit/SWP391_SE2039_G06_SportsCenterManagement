@@ -19,36 +19,36 @@ export function BusinessAlert({
 
   const styles = {
     error: {
-      container: 'bg-red-50/95 border-red-300 text-red-950 shadow-sm shadow-red-500/10',
-      badge: 'bg-red-200 text-red-900 border-red-300',
+      container: 'bg-brand-danger-50/95 border-brand-danger-300 text-brand-danger-950 shadow-sm shadow-brand-danger-500/10',
+      badge: 'bg-brand-danger-200 text-brand-danger-900 border-brand-danger-300',
       icon: 'error',
-      iconColor: 'text-red-600',
-      handlingBox: 'bg-white/80 border-red-200 text-red-900',
-      btn: 'bg-red-600 hover:bg-red-700 text-white shadow-sm'
+      iconColor: 'text-brand-danger-600',
+      handlingBox: 'bg-white/80 border-brand-danger-200 text-brand-danger-900',
+      btn: 'bg-brand-danger-600 hover:bg-brand-danger-700 text-white shadow-sm'
     },
     warning: {
-      container: 'bg-amber-50/95 border-amber-300 text-amber-950 shadow-sm shadow-amber-500/10',
-      badge: 'bg-amber-200 text-amber-900 border-amber-300',
+      container: 'bg-brand-sand-50/95 border-brand-sand-300 text-brand-sand-950 shadow-sm shadow-brand-sand-500/10',
+      badge: 'bg-brand-sand-200 text-brand-sand-900 border-brand-sand-300',
       icon: 'warning',
-      iconColor: 'text-amber-600',
-      handlingBox: 'bg-white/80 border-amber-200 text-amber-900',
-      btn: 'bg-amber-600 hover:bg-amber-700 text-white shadow-sm'
+      iconColor: 'text-brand-sand-700 dark:text-brand-sand-400',
+      handlingBox: 'bg-white/80 border-brand-sand-200 text-brand-sand-900',
+      btn: 'bg-brand-sand-600 hover:bg-brand-sand-700 text-white shadow-sm'
     },
     info: {
-      container: 'bg-sky-50/95 border-sky-300 text-sky-950 shadow-sm shadow-sky-500/10',
-      badge: 'bg-sky-200 text-sky-900 border-sky-300',
+      container: 'bg-brand-teal-50/95 border-brand-teal-300 text-brand-teal-950 shadow-sm shadow-brand-teal-500/10',
+      badge: 'bg-brand-teal-200 text-brand-teal-900 border-brand-teal-300',
       icon: 'info',
-      iconColor: 'text-sky-600',
-      handlingBox: 'bg-white/80 border-sky-200 text-sky-900',
-      btn: 'bg-sky-600 hover:bg-sky-700 text-white shadow-sm'
+      iconColor: 'text-brand-teal-700 dark:text-brand-teal-400',
+      handlingBox: 'bg-white/80 border-brand-teal-200 text-brand-teal-900',
+      btn: 'bg-brand-teal-700 hover:bg-brand-teal-800 text-white shadow-sm'
     },
     success: {
-      container: 'bg-emerald-50/95 border-emerald-300 text-emerald-950 shadow-sm shadow-emerald-500/10',
-      badge: 'bg-emerald-200 text-emerald-900 border-emerald-300',
+      container: 'bg-brand-sage-50/95 border-brand-sage-300 text-brand-sage-950 shadow-sm shadow-brand-sage-500/10',
+      badge: 'bg-brand-sage-200 text-brand-sage-900 border-brand-sage-300',
       icon: 'check_circle',
-      iconColor: 'text-emerald-600',
-      handlingBox: 'bg-white/80 border-emerald-200 text-emerald-900',
-      btn: 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-sm'
+      iconColor: 'text-brand-sage-700 dark:text-brand-sage-400',
+      handlingBox: 'bg-white/80 border-brand-sage-200 text-brand-sage-900',
+      btn: 'bg-brand-sage-700 hover:bg-brand-sage-800 text-white shadow-sm'
     }
   };
 
@@ -68,7 +68,7 @@ export function BusinessAlert({
 
       <div className="flex-1 min-w-0 space-y-1.5">
         {title && (
-          <h4 className="font-chivo font-bold text-sm tracking-tight text-slate-900">
+          <h4 className="font-chivo font-bold text-sm tracking-tight text-brand-navy-900">
             {title}
           </h4>
         )}
@@ -99,7 +99,7 @@ export function BusinessAlert({
           type="button"
           onClick={onClose}
           aria-label="Đóng thông báo"
-          className="text-slate-400 hover:text-slate-700 p-1 rounded-lg hover:bg-black/5 transition-colors shrink-0"
+          className="text-brand-navy-400 hover:text-brand-navy-700 p-1 rounded-lg hover:bg-black/5 transition-colors shrink-0"
         >
           <span className="material-symbols-outlined text-[18px]">close</span>
         </button>

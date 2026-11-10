@@ -2,10 +2,11 @@ const test = require('node:test');
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
+const { apiSource } = require('./helpers/apiSources.cjs');
 
 const frontend = path.resolve(__dirname, '..');
-const component = fs.readFileSync(path.join(frontend, 'src/features/coach/AIRecommendation.jsx'), 'utf8');
-const api = fs.readFileSync(path.join(frontend, 'src/services/api.js'), 'utf8');
+const component = fs.readFileSync(path.join(frontend, 'src/pages/coach-ai-recommendation/ui/AIRecommendation.jsx'), 'utf8');
+const api = apiSource();
 
 test('AI recommendation sends normalized subjective tag identifiers to the backend', () => {
   assert.match(component, /subjectiveTags:\s*selectedTagIds/);
@@ -44,4 +45,17 @@ test('Medical NLP engine fields (extractedTags, aiReasoning, recommendedVolume) 
   for (const field of ['extractedTags', 'aiReasoning', 'recommendedVolume']) {
     assert.match(component, new RegExp(`result\\.${field}`));
   }
+});
+
+test('coach can manually enter member biometrics from the AI recommendation panel', () => {
+  assert.match(api, /updateMemberBiometrics:\s*\(classId, memberId, data\)/);
+  assert.match(api, /members\/\$\{memberId\}\/biometrics`, \{\s*method: 'PUT'/);
+  assert.match(component, /coachApi\.updateMemberBiometrics\(selectedClass\.id, member\.id/);
+  assert.match(component, /bioField\('heightCm'\)/);
+  assert.match(component, /bioField\('weightKg'\)/);
+  assert.match(component, /bioField\('dateOfBirth'\)/);
+});
+
+test('biometrics panel shows whether weight came from the latest training_results session log', () => {
+  assert.match(component, /context\.weightSource === 'training_result'/);
 });

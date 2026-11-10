@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 
 function loadCreateReportCsv() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/reportExport.js'), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src/shared/lib/reportExport.js'), 'utf8')
     .replace('export function createReportCsv', 'function createReportCsv');
   const context = vm.createContext({ Date });
   vm.runInContext(`${source}\nglobalThis.createReportCsv = createReportCsv;`, context);
@@ -13,7 +13,7 @@ function loadCreateReportCsv() {
 }
 
 function loadReportFileData() {
-  const source = fs.readFileSync(path.join(__dirname, '../src/services/reportFileData.js'), 'utf8')
+  const source = fs.readFileSync(path.join(__dirname, '../src/shared/lib/reportFileData.js'), 'utf8')
     .replaceAll('export function ', 'function ')
     .replace('export const reportLabel', 'const reportLabel');
   const context = vm.createContext({ Math, Number });

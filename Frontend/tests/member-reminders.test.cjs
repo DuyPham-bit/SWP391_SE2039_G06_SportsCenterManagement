@@ -11,7 +11,7 @@ function loadModule(file) {
   vm.runInContext(transformSync(fs.readFileSync(file, 'utf8'), { format: 'cjs' }).code, context);
   return module.exports;
 }
-const context = { getReminders: loadModule(path.join(__dirname, '../src/features/member/memberOverview.js')).getMemberReminders };
+const context = { getReminders: loadModule(path.join(__dirname, '../src/entities/member/lib/memberOverview.js')).getMemberReminders };
 const user = { packageStatus: 'ACTIVE', packageExpiry: '2027-01-07' };
 const booking = { id: 1, status: 'CONFIRMED', sessionStatus: 'SCHEDULED', bookingDate: '2026-10-15',
   startTime: '08:30:00', timeSlot: '08:30 - 09:30', className: 'Yoga Phục hồi', roomName: 'Phòng Yoga' };

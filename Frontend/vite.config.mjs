@@ -1,61 +1,12 @@
-import { defineConfig, loadEnv, normalizePath } from 'vite';
+import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import fs from 'fs';
-import path from 'path';
-
-// Plugin tự động map các import đuôi .js sang .jsx khi file vật lý là .jsx
-function resolveJsToJsx() {
-  return {
-    name: 'resolve-js-to-jsx',
-    resolveId(source, importer) {
-      if (importer && source.startsWith('.') && source.endsWith('.js')) {
-        const dir = path.dirname(importer);
-        const resolvedPath = path.resolve(dir, source);
-        // Nếu file .js thực tế đã tồn tại (ví dụ api.js), giữ nguyên
-        if (fs.existsSync(resolvedPath)) {
-          return null;
-        }
-        // Nếu file .jsx tồn tại thay thế, ánh xạ trực tiếp sang file .jsx
-        const jsxPath = resolvedPath.replace(/\.js$/, '.jsx');
-        if (fs.existsSync(jsxPath)) {
-          return normalizePath(jsxPath);
-        }
-      }
-      return null;
-    }
-  };
-}
-
-// Plugin tự động import React nếu file có sử dụng React mà chưa import
-function autoImportReact() {
-  return {
-    name: 'auto-import-react',
-    enforce: 'pre',
-    transform(code, id) {
-      if (id.includes('node_modules')) return null;
-      if (/\.(jsx|js)$/.test(id) && /\bReact\b/.test(code)) {
-        if (!code.includes("from 'react'") && !code.includes('from "react"')) {
-          return {
-            code: `import React from 'react';\n` + code,
-            map: null
-          };
-        }
-      }
-      return null;
-    }
-  };
-}
 
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), '');
-  const apiTarget = env.SCMS_API_PROXY_TARGET || 'http://localhost:54162';
+  const apiTarget = env.SCMS_API_PROXY_TARGET || 'http://localhost:5000';
 
   return {
-    plugins: [
-      autoImportReact(),
-      resolveJsToJsx(),
-      react()
-    ],
+    plugins: [react()],
     server: {
       port: 3004,
       host: 'localhost',

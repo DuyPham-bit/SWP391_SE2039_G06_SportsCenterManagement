@@ -47,7 +47,7 @@ Frontend của Hệ thống Quản lý Trung tâm Thể thao SCMS chịu trách 
    - Hệ thống không chỉ cố định vai trò mà còn cho phép Manager linh hoạt cấp thêm quyền hạn giữa các role thông qua màn hình *Vai Trò & Phân Quyền*. Menu Sidebar sẽ tự động cập nhật mục *"QUYỀN ĐƯỢC CẤP THÊM"* theo thời gian thực nhờ sự kiện `SCMS_PERMISSIONS_CHANGED`.
 
 4. **Dữ liệu qua API và SQL Server:**
-   - `api.js`/`backendApi.js` gọi backend qua `http.js`, gửi Bearer JWT và hiển thị lỗi HTTP. Giáo án, tiến độ, thông báo và lịch sử AI lưu ở server.
+   - Các module `entities/<x>/api` gọi backend qua `shared/api/http.js`; phiên đăng nhập nằm trong cookie HttpOnly kèm header `X-SCMS-Session` theo từng tab, lỗi HTTP được hiển thị lên giao diện. Giáo án, tiến độ, thông báo và lịch sử AI lưu ở server.
    - Xác thực bằng JWT Bearer. JWT lưu trong sessionStorage riêng từng tab để F5 vẫn đăng nhập; sau reload, hồ sơ/quyền/trung tâm được tải lại từ API. Backend xác minh chữ ký, thời hạn và tài khoản/quyền trong SQL Server. Đăng xuất hoặc HTTP 401 xóa JWT của tab hiện tại; tab khác giữ đăng nhập riêng. localStorage chỉ giữ tùy chọn Ghi nhớ email. Chi tiết: [JWT và đăng nhập nhiều tab](docs/jwt-auth-fix.md).
 
 ---
@@ -89,83 +89,74 @@ Frontend của Hệ thống Quản lý Trung tâm Thể thao SCMS chịu trách 
 
 ## 3. Cấu trúc Thư mục Thực tế của Codebase
 
-Toàn bộ mã nguồn Frontend được cấu trúc rõ ràng theo tính năng (Feature-based Architecture):
+Frontend tổ chức theo **Feature-Sliced Design (FSD)**. Mã nguồn chia thành 6 tầng; tầng trên chỉ được import tầng dưới:
+
+`app → pages → widgets → features → entities → shared`
+
+- Mỗi thư mục con trong `pages/`, `widgets/`, `features/`, `entities/` là một **slice** độc lập, gồm các segment `ui/`, `model/`, `api/`, `lib/` và một `index.js` làm public API.
+- Slice khác chỉ được import qua `index.js`, không đi thẳng vào file bên trong. Hai slice cùng tầng không import lẫn nhau.
+- `shared/` không chia slice; các tầng khác import trực tiếp từng file trong đó.
 
 ```text
 src/
-├── main.jsx                            # Điểm khởi động React 18, mount DOM vào #root
-├── App.jsx                             # Quản lý Routing hash, Layout wrapper và RoleGuards
+├── main.jsx                      # Điểm khởi động React 18, nạp style và motion
 │
-├── context/
-│   ├── AuthContext.jsx                 # Quản lý Auth State, currentUser, Token, Login, Register, Google OAuth
-│   └── ToastContext.jsx                # Hệ thống thông báo Toast (Success, Error, Info, Warning)
+├── app/                          # Khởi tạo ứng dụng
+│   ├── App.jsx                   # Gắn các Provider (Auth, Toast, Language) và Router
+│   ├── router/                   # AppRouter (hash routing + lazy load từng trang), RoleGuard
+│   └── styles/                   # tailwind.css, theme.css, tiya-theme.css
 │
-├── components/
-│   ├── auth/
-│   │   └── RoleGuard.jsx               # ProtectedRoute & RoleGuard (Role + Capability validator)
-│   ├── layout/
-│   │   ├── AppLayout.jsx               # Khung sườn ứng dụng gồm Header, Sidebar và Main container
-│   │   ├── Header.jsx                  # Thanh điều hướng trên, User badge, nút Hồ sơ, Logout
-│   │   └── Sidebar.jsx                 # Menu bên trái động theo vai trò và quyền hạn
-│   └── common/
-│       ├── Modal.jsx                   # Dialog modal tái sử dụng
-│       ├── StatCard.jsx                # Thẻ thống kê KPI & Badge hiển thị trạng thái
-│       └── Table.jsx                   # Bảng dữ liệu chuẩn hóa có Loading spinner & Empty state
+├── pages/                        # Mỗi route là một slice: pages/<route>/ui + index.js
+│   ├── landing/  login/  otp-verification/  payment-result/
+│   ├── admin-dashboard/  roles-permissions/  audit-logs/
+│   ├── manager-dashboard/  manager-staff/  manager-members/  manager-packages/
+│   ├── manager-classes-rooms/  manager-coach-assignment/  manager-reports/
+│   ├── manager-home-content/  manager-coach-operations/  manager-support/
+│   ├── receptionist-dashboard/  member-lookup/  member-checkin/  counter-membership/
+│   ├── counter-booking/  counter-invoices/  support-requests/
+│   ├── coach-dashboard/  coach-teaching-schedule/  coach-class-members/  coach-attendance/
+│   ├── coach-training-plan/  coach-workout-progress/  coach-notifications/
+│   ├── coach-ai-recommendation/  coach-performance/  coach-professional-hub/
+│   ├── member-dashboard/  member-packages/  member-class-schedule/  member-bookings/
+│   ├── member-progress/  member-attendance/  member-notifications/  member-ai-assistant/
+│   ├── member-coach-portal/  member-refund-requests/  my-support-requests/
+│   └── payroll/
 │
-├── features/
-│   ├── landing/
-│   │   ├── LandingPage.jsx             # Trang chủ giới thiệu trung tâm, 15 môn thể thao
-│   │   └── FacilitiesSection.jsx       # Trưng bày 9 cụm sân tiêu chuẩn Olympic với Modal chi tiết
-│   │
-│   ├── auth/
-│   │   ├── LoginPage.jsx               # Màn hình split-screen 50/50: Đăng nhập & Đăng ký tài khoản
-│   │   ├── GoogleLoginModal.jsx        # Hộp thoại đăng nhập / đăng ký nhanh qua Google OAuth
-│   │   ├── ForgotPasswordModal.jsx     # Hộp thoại khôi phục mật khẩu qua mã OTP 3 bước
-│   │   └── ProfileModal.jsx            # Hộp thoại xem/sửa hồ sơ và đổi mật khẩu cá nhân
-│   │
-│   ├── manager/                        # Phân hệ Quản trị viên (8 chức năng)
-│   │   ├── ManagerDashboard.jsx        # Bảng điều khiển KPI tổng thể, biểu đồ doanh thu & công suất
-│   │   ├── MemberManagement.jsx        # Danh sách, tạo/sửa, khóa/mở thành viên và lịch sử gói
-│   │   ├── StaffManagement.jsx         # Quản lý nhân viên (HLV, Lễ tân): Tạo mới, sửa, bật/khóa
-│   │   ├── PackageManagement.jsx       # Quản lý gói tập hội viên: Cấu hình giá, số môn, thời hạn
-│   │   ├── ClassesAndRooms.jsx         # Quản lý lớp, bộ môn, phòng và lịch học
-│   │   ├── CoachAssignment.jsx         # Phân công HLV cho lớp học có kiểm tra xung đột thời gian
-│   │   ├── ReportsAnalytics.jsx        # Báo cáo thống kê, doanh thu, tăng trưởng & cơ cấu gói tập
-│   │   ├── RolesPermissions.jsx        # Ma trận phân quyền động (SYSTEM_CAPABILITIES)
-│   │   └── AuditLogs.jsx               # Nhật ký thao tác hệ thống thời gian thực
-│   │
-│   ├── receptionist/                   # Phân hệ Lễ tân quầy (4 chức năng)
-│   │   ├── ReceptionistDashboard.jsx   # Bảng điều khiển ca trực lễ tân, thống kê lượt tập trong ngày
-│   │   ├── MemberLookup.jsx            # Tra cứu hồ sơ hội viên theo Tên, Email, SĐT, Mã hội viên
-│   │   ├── CounterMembership.jsx       # Đăng ký & gia hạn gói tập tại quầy với quy trình 4 bước
-│   │   └── MemberCheckIn.jsx           # Quét mã check-in xác thực gói tập và tài khoản vào cổng
-│   │
-│   ├── coach/                          # Phân hệ Huấn luyện viên (8 chức năng)
-│   │   ├── CoachDashboard.jsx          # Bảng điều khiển cá nhân của HLV
-│   │   ├── TeachingSchedule.jsx        # Lịch giảng dạy hàng tuần theo ca và sân bãi
-│   │   ├── ClassMembers.jsx            # Danh sách học viên đăng ký theo từng lớp
-│   │   ├── Attendance.jsx              # Điểm danh học viên lớp học (Có mặt / Vắng mặt)
-│   │   ├── TrainingPlan.jsx            # Soạn thảo giáo án rèn luyện thể chất cho học viên
-│   │   ├── WorkoutProgress.jsx         # Ghi nhận chỉ số thể lực (Cân nặng, Body Fat, Cơ bắp, RPE)
-│   │   ├── CoachNotifications.jsx      # Gửi bài tập về nhà và thông báo tới học viên
-│   │   └── AIRecommendation.jsx        # Trợ lý AI gợi ý giáo án thể thao chuyên biệt theo môn
-│   │
-│   └── member/                         # Phân hệ Hội viên (8 màn hình)
-│       ├── MemberDashboard.jsx         # Bảng thông tin cá nhân, thẻ hội viên số, đếm ngược ca học
-│       ├── MemberPackages.jsx          # Danh mục gói tập và thanh toán trực tuyến (VNPAY, MoMo)
-│       ├── ClassScheduleView.jsx       # Tra cứu lịch 15 môn thể thao và đặt chỗ lớp học
-│       ├── MyBookings.jsx              # Quản lý các lớp đã đặt, lịch sử và hủy đặt chỗ
-│       ├── MyProgress.jsx              # Xem giáo án được giao, chỉ số rèn luyện và nhận xét của HLV
-│       ├── MyAttendance.jsx            # Lịch sử điểm danh và ghi chú HLV theo buổi
-│       ├── MemberNotifications.jsx     # Thông báo đã/chưa đọc, nhắc lịch và hạn gói
-│       └── MemberAIAssistant.jsx       # Chatbot Trợ lý Thể thao AI tương tác hỏi đáp 24/7
+├── widgets/                      # Khối giao diện lớn dùng ở nhiều trang
+│   ├── app-shell/                # AppLayout, Header, Sidebar
+│   ├── support-inbox/            # Hộp xử lý yêu cầu hỗ trợ (Lễ tân + Manager)
+│   ├── coach-performance/        # Bảng hiệu suất giảng dạy (trang riêng + Professional Hub)
+│   └── member-reminders/         # Nhắc lịch và hạn gói cho hội viên
 │
-└── services/
-    ├── api.js                          # Tầng Service API hợp nhất toàn bộ 24+ Use Case
-    ├── backendApi.js                   # API nghiệp vụ theo trung tâm và ánh xạ DTO
-    ├── http.js                         # HTTP, Bearer JWT và lỗi từ backend
-    └── permissions.js                  # Định nghĩa SYSTEM_CAPABILITIES, hasCapability, dynamic navigation
+├── features/                     # Hành động người dùng có thể tái sử dụng
+│   ├── auth/                     # Form đăng nhập, Google, quên mật khẩu, hồ sơ & đổi mật khẩu
+│   ├── notifications/            # Hộp thông báo, điều hướng theo thông báo, useNotifications
+│   ├── media-upload/             # Chọn/tải ảnh lên Cloudflare R2
+│   ├── member-ai-chat/           # Popup chat AI của hội viên
+│   ├── refund-review/            # Xử lý yêu cầu hoàn tiền
+│   ├── payment-checkout/         # Mở cổng thanh toán VNPay/MoMo
+│   ├── coach-workspace/          # Bộ công cụ chung của HLV (chọn kỳ, lỗi, phiên dạy)
+│   └── counter-desk/             # Bộ công cụ chung tại quầy lễ tân (chọn hội viên…)
+│
+├── entities/                     # Mô hình nghiệp vụ; mỗi entity có api/ gọi backend của riêng nó
+│   ├── session/                  # AuthContext + authApi (login/logout, hồ sơ, capabilities)
+│   ├── permission/               # SYSTEM_CAPABILITIES, menu động + systemApi (phân quyền, audit)
+│   ├── member/                   # memberApi, receptionApi, mapMember + định dạng/nhãn trạng thái
+│   ├── coach/                    # coachApi, coachProfessionalApi, memberCoachApi, managerCoachApi
+│   ├── membership/               # packageApi + luồng chọn gói trước/sau đăng nhập
+│   ├── class/  booking/  facility/  staff/  report/  center/
+│   ├── notification/  support-request/  payment/  payroll/  ai-chat/
+│   ├── catalog/                  # Danh mục sân & môn công khai
+│   └── landing-content/          # Nội dung trang chủ đã xuất bản
+│
+└── shared/                       # Hạ tầng dùng chung, không chứa nghiệp vụ
+    ├── api/                      # http.js (cookie HttpOnly + X-SCMS-Session), authState, apiUtils (centerId, asArray), mediaApi
+    ├── i18n/                     # LanguageContext, i18nHelper (dịch dữ liệu từ DB)
+    ├── lib/                      # dateTime, motion, safeUrl, report/invoice export, encoding…
+    └── ui/                       # Modal, Table, StatCard, Logo, MotionButton, toast/…
 ```
+
+> Khi một entity cần code của entity khác, dùng quy ước `@x` của FSD: `entities/member/@x/staff.js` chỉ dành cho `entities/staff`, `entities/class/@x/report.js` chỉ dành cho `entities/report`.
 
 ---
 
@@ -627,7 +618,7 @@ Toàn bộ ứng dụng sử dụng cơ chế Hash Routing mượt mà, không y
 
 Backend ASP.NET Core/EF Core lưu nghiệp vụ trong SQL Server. Frontend gửi JWT HS256 tới API; server kiểm tra chữ ký, issuer, audience, thời hạn, trạng thái tài khoản và quyền theo trung tâm. Sau khi tải lại trang, AuthContext xác minh phiên với server trước khi mở màn hình nghiệp vụ.
 
-`dbStorage.js` và `mockData.js` đã được gỡ. Dữ liệu nghiệp vụ đi theo luồng `api.js`/`backendApi.js` → `http.js` → ASP.NET Core API → EF Core → SQL Server. API lỗi được báo về giao diện; không thay bằng dữ liệu mẫu. Backend đã gỡ mã seed dữ liệu nghiệp vụ, chỉ đồng bộ schema/quyền và giữ các bản ghi đã có trong database. Danh mục trang chủ đọc từ public catalog API; CMS chỉ gắn ảnh và ẩn/hiện cho ID thật. Hướng dẫn cấu hình và kiểm chứng: [Kết nối DB thật](docs/real-database.md).
+`dbStorage.js` và `mockData.js` đã được gỡ. Dữ liệu nghiệp vụ đi theo luồng `entities/<x>/api` → `shared/api/http.js` → ASP.NET Core API → EF Core → SQL Server. API lỗi được báo về giao diện; không thay bằng dữ liệu mẫu. Backend đã gỡ mã seed dữ liệu nghiệp vụ, chỉ đồng bộ schema/quyền và giữ các bản ghi đã có trong database. Danh mục trang chủ đọc từ public catalog API; CMS chỉ gắn ảnh và ẩn/hiện cho ID thật. Hướng dẫn cấu hình và kiểm chứng: [Kết nối DB thật](docs/real-database.md).
 
 ### 12.2 Service API
 
@@ -671,37 +662,37 @@ Hệ thống hiển thị thông báo góc trên bên phải màn hình qua hook
 
 | Mã Use Case | Tên nghiệp vụ | File Component JSX thực tế | Tuyến đường Hash thực tế | Service API phụ trách | Trạng thái hiện thực |
 |---|---|---|---|---|---|
-| **UC-01** | Đăng nhập hệ thống | `src/features/auth/LoginPage.jsx` | `#/login` | `authApi.login` | **Có giao diện và service** |
-| **UC-01+**| Đăng nhập bằng Google | `src/features/auth/GoogleLoginModal.jsx` | Modal tại `#/login` | `authApi.loginWithGoogle` | **Có giao diện và service** |
-| **UC-02** | Đăng xuất hệ thống | `src/layouts/Header.jsx` | Nút đăng xuất header | `AuthContext.logout` | **Có giao diện và service** |
-| **UC-03** | Xem hồ sơ & Đổi mật khẩu | `src/features/auth/ProfileModal.jsx` | Modal tại Header | `authApi.changePassword` | **Có giao diện và service** |
-| **UC-04** | Khôi phục mật khẩu (OTP) | `src/features/auth/ForgotPasswordModal.jsx`| Modal tại `#/login` | `authApi.resetPassword` | **Có giao diện và service** |
-| **UC-10** | Quản lý tài khoản nhân viên | `src/features/manager/StaffManagement.jsx` | `#/manager/staff` | `staffApi` | **Có giao diện và service** |
-| **Manager** | Quản lý thành viên | `src/features/manager/MemberManagement.jsx` | `#/manager/members` | `memberApi`, `receptionApi` | **Có giao diện và service** |
-| **UC-11** | Quản lý gói cước hội viên | `src/features/manager/PackageManagement.jsx` | `#/manager/packages` | `packageApi` | **Có giao diện và service** |
-| **UC-12** | Quản lý lớp học & sân bãi | `src/features/manager/ClassesAndRooms.jsx` | `#/manager/classes-rooms` | `classApi`, `roomApi` | **Có giao diện và service** |
-| **UC-13** | Phân công HLV & Tránh xung đột | `src/features/manager/CoachAssignment.jsx` | `#/manager/coach-assignment` | `classApi.assignCoach` | **Có giao diện và service** |
-| **UC-14** | Báo cáo thống kê & Doanh thu | `src/features/manager/ReportsAnalytics.jsx` | `#/manager/reports` | `reportApi.getOverview` | **Có giao diện và service** |
-| **UC-15** | Ma trận vai trò & phân quyền | `src/features/manager/RolesPermissions.jsx`| `#/manager/roles-permissions` | `systemApi.updatePermissions`| **Có giao diện và service** |
-| **UC-16** | Nhật ký thao tác (Audit Logs) | `src/features/manager/AuditLogs.jsx` | `#/manager/audit-logs` | `systemApi.getAuditLogs` | **Có giao diện và service** |
-| **UC-20** | Tra cứu hồ sơ hội viên | `src/features/receptionist/MemberLookup.jsx`| `#/receptionist/lookup` | `receptionApi.lookupMember`| **Có giao diện và service** |
-| **UC-21** | Thu ngân & Gia hạn tại quầy | `src/features/receptionist/CounterMembership.jsx`| `#/receptionist/counter-register`| `receptionApi.registerCounterPackage`| **Có giao diện và service** |
-| **UC-22** | Check-in quét thẻ vào sân | `src/features/receptionist/MemberCheckIn.jsx`| `#/receptionist/check-in` | `receptionApi.checkInMember` | **Có giao diện và service** |
-| **UC-30** | Lịch giảng dạy của HLV | `src/features/coach/TeachingSchedule.jsx` | `#/coach/schedule` | `classApi.getTeachingSchedule` | **Có giao diện và service** |
-| **UC-31** | Quản lý học viên trong lớp | `src/features/coach/ClassMembers.jsx` | `#/coach/members` | `coachApi.getMembersForClass` | **Có giao diện và service** |
-| **UC-32** | Soạn giáo án huấn luyện | `src/features/coach/TrainingPlan.jsx` | `#/coach/training-plan` | `coachApi.createTrainingPlan` | **Có giao diện và service** |
-| **UC-33** | Ghi nhận tiến độ & InBody | `src/features/coach/WorkoutProgress.jsx` | `#/coach/progress` | `coachApi.recordWorkoutProgress` | **Có giao diện và service** |
-| **UC-34** | Điểm danh học viên ca học | `src/features/coach/Attendance.jsx` | `#/coach/attendance` | `coachApi.takeAttendance` | **Có giao diện và service** |
-| **UC-35** | Gửi bài tập & thông báo | `src/features/coach/CoachNotifications.jsx` | `#/coach/notifications` | `coachApi.sendNotification` | **Có giao diện và service** |
-| **UC-36** | Trợ lý gợi ý giáo án AI | `src/features/coach/AIRecommendation.jsx` | `#/coach/ai-recommendation` | `coachApi.getAIRecommendation` | **Có giao diện và service** |
-| **UC-40** | Đăng ký thành viên mới | `src/features/auth/LoginPage.jsx` (Register) | `#/register` | `authApi.register` | **Có giao diện và service** |
-| **UC-41** | Mua gói cước trực tuyến | `src/features/member/MemberPackages.jsx` | `#/member/packages` | `memberApi.subscribeOnline` | **Có giao diện và service** |
-| **UC-42** | Tra cứu lịch 15 môn thể thao | `src/features/member/ClassScheduleView.jsx` | `#/member/schedule` | `classApi.getAll` | **Có giao diện và service** |
-| **UC-43** | Đặt chỗ lớp học thể thao | `src/features/member/ClassScheduleView.jsx` | `#/member/schedule` (Modal) | `bookingApi.bookClass` | **Có giao diện và service** |
-| **UC-44** | Hủy đặt chỗ lớp học | `src/features/member/MyBookings.jsx` | `#/member/bookings` | `bookingApi.cancelBooking` | **Có giao diện và service** |
-| **UC-45** | Xem tiến độ & nhận xét HLV | `src/features/member/MyProgress.jsx` | `#/member/progress` | `memberApi.getMyProgress` | **Có giao diện và service** |
-| **UC-46** | Trợ lý Thể thao AI (Chatbot) | `src/features/member/MemberAIAssistant.jsx` | `#/member/ai-assistant` | `aiApi.chat` | **Có giao diện và service** |
-| **LANDING**| Giới thiệu trung tâm & sân bãi | `src/features/landing/LandingPage.jsx` | `#/` | `sportsCatalog.js` | **Có giao diện và service** |
+| **UC-01** | Đăng nhập hệ thống | `src/pages/login/ui/LoginPage.jsx` | `#/login` | `authApi.login` | **Có giao diện và service** |
+| **UC-01+**| Đăng nhập bằng Google | `src/features/auth/ui/GoogleLoginModal.jsx` | Modal tại `#/login` | `authApi.loginWithGoogle` | **Có giao diện và service** |
+| **UC-02** | Đăng xuất hệ thống | `src/widgets/app-shell/ui/Header.jsx` | Nút đăng xuất header | `AuthContext.logout` | **Có giao diện và service** |
+| **UC-03** | Xem hồ sơ & Đổi mật khẩu | `src/features/auth/ui/ProfileModal.jsx` | Modal tại Header | `authApi.changePassword` | **Có giao diện và service** |
+| **UC-04** | Khôi phục mật khẩu (OTP) | `src/features/auth/ui/ForgotPasswordModal.jsx`| Modal tại `#/login` | `authApi.resetPassword` | **Có giao diện và service** |
+| **UC-10** | Quản lý tài khoản nhân viên | `src/pages/manager-staff/ui/StaffManagement.jsx` | `#/manager/staff` | `staffApi` | **Có giao diện và service** |
+| **Manager** | Quản lý thành viên | `src/pages/manager-members/ui/MemberManagement.jsx` | `#/manager/members` | `memberApi`, `receptionApi` | **Có giao diện và service** |
+| **UC-11** | Quản lý gói cước hội viên | `src/pages/manager-packages/ui/PackageManagement.jsx` | `#/manager/packages` | `packageApi` | **Có giao diện và service** |
+| **UC-12** | Quản lý lớp học & sân bãi | `src/pages/manager-classes-rooms/ui/ClassesAndRooms.jsx` | `#/manager/classes-rooms` | `classApi`, `roomApi` | **Có giao diện và service** |
+| **UC-13** | Phân công HLV & Tránh xung đột | `src/pages/manager-coach-assignment/ui/CoachAssignment.jsx` | `#/manager/coach-assignment` | `classApi.assignCoach` | **Có giao diện và service** |
+| **UC-14** | Báo cáo thống kê & Doanh thu | `src/pages/manager-reports/ui/ReportsAnalytics.jsx` | `#/manager/reports` | `reportApi.getOverview` | **Có giao diện và service** |
+| **UC-15** | Ma trận vai trò & phân quyền | `src/pages/roles-permissions/ui/RolesPermissions.jsx`| `#/manager/roles-permissions` | `systemApi.updatePermissions`| **Có giao diện và service** |
+| **UC-16** | Nhật ký thao tác (Audit Logs) | `src/pages/audit-logs/ui/AuditLogs.jsx` | `#/manager/audit-logs` | `systemApi.getAuditLogs` | **Có giao diện và service** |
+| **UC-20** | Tra cứu hồ sơ hội viên | `src/pages/member-lookup/ui/MemberLookup.jsx`| `#/receptionist/lookup` | `receptionApi.lookupMember`| **Có giao diện và service** |
+| **UC-21** | Thu ngân & Gia hạn tại quầy | `src/pages/counter-membership/ui/CounterMembership.jsx`| `#/receptionist/counter-register`| `receptionApi.registerCounterPackage`| **Có giao diện và service** |
+| **UC-22** | Check-in quét thẻ vào sân | `src/pages/member-checkin/ui/MemberCheckIn.jsx`| `#/receptionist/check-in` | `receptionApi.checkInMember` | **Có giao diện và service** |
+| **UC-30** | Lịch giảng dạy của HLV | `src/pages/coach-teaching-schedule/ui/TeachingSchedule.jsx` | `#/coach/schedule` | `classApi.getTeachingSchedule` | **Có giao diện và service** |
+| **UC-31** | Quản lý học viên trong lớp | `src/pages/coach-class-members/ui/ClassMembers.jsx` | `#/coach/members` | `coachApi.getMembersForClass` | **Có giao diện và service** |
+| **UC-32** | Soạn giáo án huấn luyện | `src/pages/coach-training-plan/ui/TrainingPlan.jsx` | `#/coach/training-plan` | `coachApi.createTrainingPlan` | **Có giao diện và service** |
+| **UC-33** | Ghi nhận tiến độ & InBody | `src/pages/coach-workout-progress/ui/WorkoutProgress.jsx` | `#/coach/progress` | `coachApi.recordWorkoutProgress` | **Có giao diện và service** |
+| **UC-34** | Điểm danh học viên ca học | `src/pages/coach-attendance/ui/Attendance.jsx` | `#/coach/attendance` | `coachApi.takeAttendance` | **Có giao diện và service** |
+| **UC-35** | Gửi bài tập & thông báo | `src/pages/coach-notifications/ui/CoachNotifications.jsx` | `#/coach/notifications` | `coachApi.sendNotification` | **Có giao diện và service** |
+| **UC-36** | Trợ lý gợi ý giáo án AI | `src/pages/coach-ai-recommendation/ui/AIRecommendation.jsx` | `#/coach/ai-recommendation` | `coachApi.getAIRecommendation` | **Có giao diện và service** |
+| **UC-40** | Đăng ký thành viên mới | `src/pages/login/ui/LoginPage.jsx` (Register) | `#/register` | `authApi.register` | **Có giao diện và service** |
+| **UC-41** | Mua gói cước trực tuyến | `src/pages/member-packages/ui/MemberPackages.jsx` | `#/member/packages` | `memberApi.subscribeOnline` | **Có giao diện và service** |
+| **UC-42** | Tra cứu lịch 15 môn thể thao | `src/pages/member-class-schedule/ui/ClassScheduleView.jsx` | `#/member/schedule` | `classApi.getAll` | **Có giao diện và service** |
+| **UC-43** | Đặt chỗ lớp học thể thao | `src/pages/member-class-schedule/ui/ClassScheduleView.jsx` | `#/member/schedule` (Modal) | `bookingApi.bookClass` | **Có giao diện và service** |
+| **UC-44** | Hủy đặt chỗ lớp học | `src/pages/member-bookings/ui/MyBookings.jsx` | `#/member/bookings` | `bookingApi.cancelBooking` | **Có giao diện và service** |
+| **UC-45** | Xem tiến độ & nhận xét HLV | `src/pages/member-progress/ui/MyProgress.jsx` | `#/member/progress` | `memberApi.getMyProgress` | **Có giao diện và service** |
+| **UC-46** | Trợ lý Thể thao AI (Chatbot) | `src/pages/member-ai-assistant/ui/MemberAIAssistant.jsx` | `#/member/ai-assistant` | `aiApi.chat` | **Có giao diện và service** |
+| **LANDING**| Giới thiệu trung tâm & sân bãi | `src/pages/landing/ui/LandingPage.jsx` | `#/` | `sportsCatalog.js` | **Có giao diện và service** |
 
 ---
 

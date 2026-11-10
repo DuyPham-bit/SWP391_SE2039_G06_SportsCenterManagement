@@ -23,6 +23,9 @@ const classes = [
 ];
 const member = { memberId: 1, userId: 3, memberCode: 'MEM-TEST', fullName: 'Hội viên kiểm thử', email: 'member@example.test', accountStatus: 'Active' };
 const staff = { userId: 10, fullName: 'Coach Yoga', email: 'coach@example.test', roleName: 'Coach', status: 'Active', specialization: 'Yoga', sportIds: [1] };
+const payrollCoach = { userId: 10, fullName: 'HLV Lương Kiểm Thử', role: 'Coach', employeeCode: 'EMP-PAY-01', centerName: 'Cơ sở kiểm thử',
+  baseSalary: 8000000, allowance: 0, commissionPerSession: 150000, targetSessions: 20, completedSessions: 12, sessionBonus: 1800000,
+  estimatedTotal: 9800000, policyConfigured: true, effectiveFrom: '2026-11-01', effectiveTo: null };
 const roleMatrix = [{ roleId: 2, roleName: 'Coach', permissions: [], availablePermissions: [],
   capabilityIds: ['view_teaching_schedule'], availableCapabilities: ['view_teaching_schedule', 'take_attendance'] }];
 let subscriptionFailure = true, browser, socket, cdp, origin;
@@ -85,6 +88,8 @@ const server = http.createServer(async (req, res) => {
     if (route === '/api/reports/revenue-by-sport') return json(res, { allocatedNet: 12345, unallocatedNet: 77655, sports: [{ sportId: 1, sportName: 'Yoga', net: 12345, gross: 12345, refunds: 0, share: 13.7 }] });
     if (route === '/api/reports/membership') return json(res, { totalMembers: 1, activeMembers: 1, newMembers: 1, periods: [{ periodStart: today, newMembers: 1 }] });
     if (route === '/api/reports/classes') return json(res, { currentStatusCounts: { Booked: 4 }, periods: [] });
+    if (route === '/api/payroll/report') return json(res, { employees: [payrollCoach] });
+    if (route === '/api/payroll/staff-policy' && req.method === 'POST') return json(res, {});
     if (route === '/api/reports/operations') return json(res, {
       totalStaff: 2, activeStaff: 2, managerCount: 1, coachCount: 1, receptionistCount: 0,
       totalRooms: 1, activeRooms: 1, sessionsCount: 1, bookedSeats: 4, capacitySeats: 20, occupancyRate: 20,
@@ -148,7 +153,10 @@ async function setInput(selector, value) {
 }
 async function route(hash, text) {
   await evaluate(`location.hash = ${JSON.stringify(hash)}`);
-  await until(text, () => evaluate(`document.querySelector('main')?.textContent.includes(${JSON.stringify(text)})`));
+  await until(text, () => evaluate(`document.querySelector('main')?.textContent.includes(${JSON.stringify(text)})`)).catch(async error => {
+    const diag = await evaluate(`JSON.stringify({ hash: location.hash, main: document.querySelector('main')?.innerText.slice(0, 500), body: document.querySelector('main') ? undefined : document.body.innerText.slice(0, 400) })`).catch(e => String(e));
+    throw new Error(`${error.message} ${diag} recentRequests=${JSON.stringify(requests.slice(-6).map(r => `${r.method} ${r.route}`))}`);
+  });
   await delay(200);
 }
 async function closeDialog() {
@@ -159,7 +167,7 @@ async function closeDialog() {
 async function verifyReportPeriods(hash) {
   await route(hash, 'Doanh Thu Theo Bộ Môn');
   await until('report data', () => evaluate(`document.querySelector('main').textContent.includes('12.345')`));
-  if (!reportsOnly) assert.equal(await evaluate(`(() => { const section=[...document.querySelectorAll('main section')].find(s=>s.textContent.includes('Biểu Đồ Xếp Hạng Bộ Môn')); return section.textContent.includes('12.345') && !section.textContent.includes('90.000'); })()`), true);
+  if (!reportsOnly) assert.equal(await evaluate(`(() => { const section=[...document.querySelectorAll('main section')].find(s=>s.textContent.includes('Xếp Hạng Bộ Môn')); return section.textContent.includes('12.345') && !section.textContent.includes('90.000'); })()`), true);
   await click('Hôm nay', 'document.querySelector("main")');
   await until('daily report', () => requests.some(r => r.route === '/api/reports/revenue' && r.query.from === today && r.query.to === today));
   await until('daily report loaded', () => evaluate(`!document.querySelector('#btn-print-report').disabled`));
@@ -277,6 +285,23 @@ async function verifyReportPeriods(hash) {
   checks.push('Manager dashboard leaves its loading state after report data settles');
 
   if (!reportsOnly) {
+    // Shared UI helpers for the manager screens below.
+    const mainHas = text => evaluate(`document.querySelector('main').textContent.includes(${JSON.stringify(text)})`);
+    const pressIn = async (scope, text) => {
+      const find = `[...document.querySelectorAll(${JSON.stringify(scope + ' button')})].find(b => !b.disabled && b.textContent.includes(${JSON.stringify(text)}))`;
+      // find and click in one evaluation so a re-render between the two cannot detach the button
+      await until(`button ${text}`, () => evaluate(`(() => { const b = ${find}; if (!b) return false; b.click(); return true; })()`));
+    };
+    const pressInMain = text => pressIn('main', text);
+    const pressTitled = async title => {
+      await until(`button titled ${title}`, () => evaluate(`(() => { const b = document.querySelector(${JSON.stringify(`main button[title="${title}"]`)}); if (!b) return false; b.click(); return true; })()`));
+    };
+    const expectDialog = async (title, extra = null) => {
+      await until(`dialog ${title}`, () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes(${JSON.stringify(title)}) === true`));
+      if (extra) await until(`dialog shows ${extra}`, () => evaluate(`document.querySelector('[role=dialog]').textContent.includes(${JSON.stringify(extra)})`));
+      await closeDialog();
+    };
+
     await route('#/manager/members', member.fullName);
     await click('Sửa', 'document.querySelector("main")');
     await until('member edit', () => evaluate(`Boolean(document.querySelector('[role=dialog] input[name=email]'))`));
@@ -293,6 +318,21 @@ async function verifyReportPeriods(hash) {
     await until('history retry', () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes('Gói kiểm thử')`));
     await closeDialog(); checks.push('Subscription history renders errors and retries successfully');
 
+    // Members: search, details, lock confirmation and the add-member form render.
+    // member search is server-side: submitting the form sends the query to the API
+    await setInput('main input[aria-label="Tìm thành viên"]', 'MEM-TEST');
+    await evaluate(`document.querySelector('main input[aria-label="Tìm thành viên"]').form.requestSubmit()`);
+    await until('member search request', () => requests.some(r => r.route === '/api/centers/1/members' && r.query.query === 'MEM-TEST'));
+    await until('member list back', () => mainHas(member.fullName));
+    await pressTitled('Xem chi tiết hồ sơ');
+    await expectDialog('Hồ sơ chi tiết thành viên', member.memberCode);
+    await pressTitled('Tạm khóa tài khoản');
+    await expectDialog('Xác nhận trạng thái tài khoản', member.fullName);
+    await pressInMain('Thêm thành viên mới');
+    await until('add member form', () => evaluate(`Boolean(document.querySelector('[role=dialog] input[placeholder="ví dụ: nguyenvana"]'))`));
+    await closeDialog();
+    checks.push('Members: search, details, lock confirmation and the add-member form render');
+
     await route('#/manager/staff', staff.fullName);
     await click('Sửa', 'document.querySelector("main")');
     await until('staff edit', () => evaluate(`Boolean(document.querySelector('[role=dialog] button[aria-pressed]'))`));
@@ -303,12 +343,29 @@ async function verifyReportPeriods(hash) {
     await until('staff dialog closed', () => evaluate(`!document.querySelector('[role=dialog]')`));
     checks.push('Staff screen loads its sport catalog and preserves selected sport IDs when saving');
 
+    // Staff screen: search, details, lock confirmation and both create modes render.
+    await until('staff search box', () => evaluate(`Boolean(document.querySelector('main input[aria-label="Tìm nhân viên"]'))`));
+    await setInput('main input[aria-label="Tìm nhân viên"]', 'khong-co-nhan-vien');
+    await until('staff empty state', () => mainHas('Không tìm thấy nhân viên nào'));
+    await setInput('main input[aria-label="Tìm nhân viên"]', '');
+    await until('staff list back', () => mainHas(staff.fullName));
+    await pressTitled('Xem chi tiết hồ sơ');
+    await expectDialog('Hồ sơ chi tiết nhân viên', staff.email);
+    await pressTitled('Khóa nhân viên');
+    await expectDialog('Xác nhận trạng thái nhân sự', staff.fullName);
+    await pressInMain('Thêm nhân viên mới');
+    await until('create staff dialog', () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes('Thêm nhân sự mới vào trung tâm') === true`));
+    await pressIn('[role=dialog]', 'Bổ nhiệm từ hội viên có sẵn');
+    await pressIn('[role=dialog]', 'Tạo tài khoản trực tiếp');
+    await closeDialog();
+    checks.push('Staff: search, details, lock confirmation and both create modes render');
+
     await route('#/manager/classes-rooms', classes[0].name);
     assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`), false);
     await click('Lịch học', 'document.querySelector("main")');
-    await until('weekly calendar', () => evaluate(`Boolean(document.querySelector('[aria-label="Lịch học theo tuần"]'))`));
-    assert.equal(await evaluate(`document.querySelector('[aria-label="Lịch học theo tuần"]').querySelectorAll('h4').length`), 7);
-    assert.equal(await evaluate(`document.querySelector('[role=dialog]').textContent.includes('08:00–09:00') && document.querySelector('[role=dialog]').textContent.includes('Phòng kiểm thử')`), true);
+    await until('weekly calendar', () => evaluate(`Boolean(document.querySelector('[aria-label="Thời khóa biểu hàng tuần"]'))`));
+    assert.equal(await evaluate(`document.querySelector('[aria-label="Thời khóa biểu hàng tuần"]').querySelectorAll('h4').length`), 7);
+    assert.equal(await evaluate(`/08:00\\s*–\\s*09:00/.test(document.querySelector('[role=dialog]').textContent) && document.querySelector('[role=dialog]').textContent.includes('Phòng kiểm thử')`), true);
     await closeDialog();
     await evaluate(`(() => { const b=[...document.querySelectorAll('main button')].find(b=>b.textContent.includes('Lớp đã hủy')); b.click(); })()`);
     await until('cancelled tab', () => evaluate(`document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`));
@@ -317,18 +374,84 @@ async function verifyReportPeriods(hash) {
     await until('restored', () => classes[1].status === 'Draft');
     checks.push('Cancelled classes have a separate tab, can be restored, and schedules render all seven weekdays');
 
-    await route('#/manager/coach-assignment', classes[0].name);
+    // Every tab, view mode, filter and create dialog of the classes & rooms screen renders and responds.
+    await pressInMain('Lớp đào tạo');
+    await until('active classes tab', () => mainHas(classes[0].name));
+    await until('class search box', () => evaluate(`Boolean(document.querySelector('main input[placeholder^="Tìm theo tên lớp"]'))`)).catch(async error => {
+      throw new Error(`${error.message} inputs=${await evaluate(`JSON.stringify([...document.querySelectorAll('input')].map(i => i.placeholder))`)}`);
+    });
+    await setInput('main input[placeholder^="Tìm theo tên lớp"]', 'khong-co-lop-nao');
+    await until('search hides classes', async () => !(await mainHas(classes[0].name)));
+    await setInput('main input[placeholder^="Tìm theo tên lớp"]', '');
+    await until('search cleared', () => mainHas(classes[0].name));
+    await evaluate(`document.querySelector('main button[title="Chế độ bảng dữ liệu"]').click()`);
+    await until('table view', () => evaluate(`document.querySelector('main table')?.textContent.includes(${JSON.stringify(classes[0].name)}) === true`));
+    await evaluate(`document.querySelector('main button[title="Chế độ thẻ trực quan"]').click()`);
+    await until('card view', () => evaluate(`!document.querySelector('main table')`));
+    await pressInMain('Mở lớp đào tạo mới');
+    await expectDialog('Mở Lớp Đào Tạo Mới');
+    await pressInMain('Phòng tập & Sân bãi');
+    await until('rooms tab', () => mainHas(rooms[0].name));
+    await pressInMain('Thêm phòng / Sân mới');
+    await expectDialog('Thêm Phòng Tập / Sân Bãi');
+    await pressInMain('Bộ môn thể thao');
+    await until('sports tab', () => mainHas(sports[1].name));
+    await pressInMain('Thêm bộ môn thể thao');
+    await expectDialog('Thêm Bộ Môn Thể Thao Mới');
+    checks.push('Classes & rooms: tabs, search, card/table views and the class, room and sport dialogs all render');
+
+    // Draft classes are listed under the "pending publication" tab, separate from published ones.
+    await route('#/manager/coach-assignment', 'Lớp chờ công bố');
+    await evaluate(`[...document.querySelectorAll('main [aria-selected]')].find(b => b.textContent.includes('Lớp chờ công bố')).click()`);
+    await until(classes[0].name, () => evaluate(`document.querySelector('main').textContent.includes(${JSON.stringify(classes[0].name)})`));
     await setInput('main input', classes[0].name);
     await until('assignment search applied', () => evaluate(`!document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`));
     await click('Phân công ngay', 'document.querySelector("main")');
     await until('assignment dialog', () => evaluate(`Boolean(document.querySelector('[role=dialog] select'))`));
-    assert.equal(await evaluate(`document.querySelector('[role=dialog] option[value="11"]').disabled`), true);
+    assert.equal(await evaluate(`document.querySelector('[role=dialog] option[value="11"]')`), null);
+    assert.equal(await evaluate(`Boolean(document.querySelector('[role=dialog] option[value="10"]'))`), true);
     assert.equal(await evaluate(`document.querySelectorAll('[role=dialog]').length`), 1);
     await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
     await until('coach assigned', () => classes[0].coachId === 10);
     assert.equal(requests.find(r => r.route === '/api/classes/1/coaches').body.replacePrimary, true);
-    checks.push('Coach assignment opens one modal, disables incompatible coaches, and retains replacePrimary');
+    checks.push('Coach assignment opens one modal, filters out incompatible coaches, and retains replacePrimary');
 
+    await route('#/manager/reports', 'Doanh Thu Theo Bộ Môn');
+    await until('report data', () => evaluate(`document.querySelector('main').textContent.includes('12.345')`));
+    assert.equal(await evaluate(`(() => { const section=[...document.querySelectorAll('main section')].find(s=>s.textContent.includes('Xếp Hạng Bộ Môn')); return section.textContent.includes('12.345') && !section.textContent.includes('90.000'); })()`), true);
+    // A single-day report is requested through the custom range form (quick filters start at 30 days).
+    await evaluate(`(() => { const set = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value').set;
+      for (const input of document.querySelectorAll('main form input[type=date]')) { set.call(input, ${JSON.stringify(today)}); input.dispatchEvent(new Event('input', { bubbles: true })); } })()`);
+    await click('Áp dụng', 'document.querySelector("main form")');
+    await until('daily report', () => requests.some(r => r.route === '/api/reports/revenue' && r.query.from === today && r.query.to === today));
+    checks.push('Report rankings show API sport revenue, and the daily filter sends the correct date range');
+
+    // Every detail table tab renders its own table, and a quick period filter reloads the report.
+    for (const [tab, title] of [
+      ['🥋 Danh sách Bộ môn', 'Thông số chi tiết từng bộ môn thể thao'],
+      ['🏟️ Bảng Sân & Phòng', 'Chi tiết hiệu suất từng sân & phòng tập'],
+      ['🧑‍🏫 Hiệu suất HLV', 'Khối lượng giảng dạy và tỷ lệ lấp đầy theo HLV'],
+      ['📋 Lịch sử & Đăng ký', 'Bảng đối soát doanh thu theo kỳ'],
+      ['🏅 Bảng Lớp học', 'Chi tiết thứ hạng từng lớp học']
+    ]) {
+      await pressInMain(tab);
+      await until(`report table ${tab}`, () => mainHas(title));
+    }
+    const revenueCalls = requests.filter(r => r.route === '/api/reports/revenue').length;
+    await pressInMain('Năm nay');
+    await until('yearly report', () => requests.filter(r => r.route === '/api/reports/revenue').length > revenueCalls);
+    // The report also requests the previous period (for growth rates), so look for the current-year call among the new ones.
+    const yearlyCalls = requests.filter(r => r.route === '/api/reports/revenue').slice(revenueCalls);
+    assert.ok(yearlyCalls.some(r => r.query.from === `${today.slice(0, 4)}-01-01` && r.query.to === today), 'Yearly filter must request revenue from 1 January');
+    checks.push('Reports: all five detail tables render and the yearly quick filter reloads from 1 January');
+
+
+    // Role and permission configuration is admin-only (#/admin/roles-permissions); managers must not reach it.
+    const permissionRequestsBefore = requests.filter(r => r.route.includes('/permissions')).length;
+    await evaluate(`location.hash = '#/manager/roles-permissions'`);
+    await until('manager roles route unavailable', () => evaluate(`document.body.innerText.includes('404') && !document.querySelector('main input[type=checkbox]')`));
+    assert.equal(requests.filter(r => r.route.includes('/permissions')).length, permissionRequestsBefore);
+    checks.push('Managers can no longer open role and permission configuration, which is admin-only');
   }
   if (reportsOnly) {
     await until('dashboard net revenue', () => evaluate(`document.querySelector('main').textContent.includes('3.200.000đ')`));
@@ -338,30 +461,9 @@ async function verifyReportPeriods(hash) {
   await verifyReportPeriods('#/manager/reports');
 
   if (!reportsOnly) {
-    await route('#/manager/roles-permissions', 'Phân Quyền Theo Vai Trò');
-    assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Theo Từng Người')`), true);
-    await until('individual permissions', () => evaluate(`document.querySelector('main')?.textContent.includes('Coach Yoga') && document.querySelector('main')?.textContent.includes('Lưu quyền cho tài khoản này')`));
-    await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
-    await click('Lưu quyền cho tài khoản này', 'document.querySelector("main")');
-    await until('individual permission API save', () => requests.some(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT'));
-    assert.deepEqual(requests.find(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT').body.capabilityIds, []);
-    checks.push('An individual account can receive a restricted permission override through the backend API');
-
-    await click('2. Quyền Nền Theo Vai Trò (1)', 'document.querySelector("main")');
-    await until('role defaults', () => evaluate(`document.querySelector('main')?.textContent.includes('Sửa một lần, áp dụng chung cho cả vai trò')`));
-    await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
-    await click('Lưu Phân Quyền Vai Trò [Coach]', 'document.querySelector("main")');
-    await until('role API save', () => requests.some(r => r.route === '/api/centers/1/roles/2/permissions' && r.method === 'PUT'));
-    assert.deepEqual(requests.find(r => r.route === '/api/centers/1/roles/2/permissions').body.capabilityIds, []);
-    await evaluate(`window.confirm = () => true`);
-    await click('Đồng bộ tất cả theo vai trò', 'document.querySelector("main")');
-    await until('role user overrides reset', () => requests.some(r => r.route === '/api/centers/1/roles/2/user-permissions' && r.method === 'DELETE'));
-    assert.equal(await evaluate(`Object.keys(localStorage).some(key => key.startsWith('scms_user_perm_override_'))`), false);
-    checks.push('Role defaults save once and bulk synchronization removes individual overrides without local-storage authorization');
-
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, session);
-    for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', classes[0].name], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói'], ['roles-permissions', 'Phân Quyền Theo Vai Trò']]) await route(`#/manager/${hash}`, text);
-    checks.push('All seven affected manager routes render at a mobile viewport');
+    for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', 'Lớp chờ công bố'], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói']]) await route(`#/manager/${hash}`, text);
+    checks.push('All six affected manager routes render at a mobile viewport');
   }
   if (reportsOnly) {
     await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, session);

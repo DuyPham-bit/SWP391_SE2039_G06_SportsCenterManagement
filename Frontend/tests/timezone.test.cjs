@@ -4,7 +4,7 @@ const { execFileSync } = require('node:child_process');
 const { pathToFileURL } = require('node:url');
 const path = require('node:path');
 
-const viewUrl = pathToFileURL(path.join(__dirname, '../src/features/coach/coachProfessionalView.js')).href;
+const viewUrl = pathToFileURL(path.join(__dirname, '../src/entities/coach/lib/coachProfessionalView.js')).href;
 const timezones = ['Asia/Ho_Chi_Minh', 'UTC', 'America/Los_Angeles', 'Asia/Tokyo', 'Pacific/Kiritimati'];
 
 for (const timezone of timezones) {
@@ -27,8 +27,8 @@ for (const timezone of timezones) {
   });
 }
 
-const timeUrl = pathToFileURL(path.join(__dirname, '../src/utils/dateTime.js')).href;
-const memberUrl = pathToFileURL(path.join(__dirname, '../src/features/member/memberOverview.js')).href;
+const timeUrl = pathToFileURL(path.join(__dirname, '../src/shared/lib/dateTime.js')).href;
+const memberUrl = pathToFileURL(path.join(__dirname, '../src/entities/member/lib/memberOverview.js')).href;
 
 for (const timezone of timezones) {
   test(`Vietnam midnight, SQL timestamps and form inputs stay consistent in ${timezone}`, () => {
@@ -76,23 +76,28 @@ for (const timezone of timezones) {
       import * as time from ${JSON.stringify(timeUrl)};
       const require = createRequire(${JSON.stringify(__filename)});
       const { transformSync } = require('esbuild');
-      const root = ${JSON.stringify(path.join(__dirname, '../src/features'))};
-      function load(relative, exports) {
-        const source = readFileSync(root + '/' + relative, 'utf8') + '\\nexport { ' + exports + ' };';
+      const root = ${JSON.stringify(path.join(__dirname, '../src'))};
+      // Evaluate a source module; relative imports are loaded the same way, dateTime uses the real module.
+      function load(relative) {
+        const source = readFileSync(root + '/' + relative, 'utf8');
         const module = { exports: {} };
-        const context = createContext({ Date, Intl, module, require: id => id.includes('utils/dateTime') ? time : {} });
+        const dir = relative.split('/').slice(0, -1);
+        const resolve = id => id.split('/').reduce((parts, seg) => seg === '..' ? parts.slice(0, -1) : seg === '.' ? parts : [...parts, seg], dir).join('/');
+        const context = createContext({ Date, Intl, module, require: id => id.endsWith('lib/dateTime.js') ? time : load(resolve(id)) });
         runInContext(transformSync(source, { format: 'cjs', loader: 'jsx' }).code, context);
         return module.exports;
       }
-      const grids = ['member/ClassScheduleView.jsx', 'coach/TeachingSchedule.jsx'].map(file => {
-        const calendar = load(file, 'parseIsoDate, formatIsoDate, getWeekDays, getMonthCalendarGrid');
+      // Both schedule pages share shared/lib/calendar.js and keep their own month grid.
+      const calendar = load('shared/lib/calendar.js');
+      const grids = ['pages/member-class-schedule/lib/calendarView.js', 'pages/coach-teaching-schedule/lib/calendarView.js'].map(file => {
+        const view = load(file);
         return {
           date: calendar.formatIsoDate(calendar.parseIsoDate('2026-11-01')),
           week: calendar.getWeekDays(calendar.parseIsoDate('2026-11-01')).map(calendar.formatIsoDate),
-          month: calendar.getMonthCalendarGrid(2026, 10).map(calendar.formatIsoDate)
+          month: view.getMonthCalendarGrid(2026, 10).map(calendar.formatIsoDate)
         };
       });
-      const attendance = load('coach/Attendance.jsx', 'getMondayOfDate, getWeekDays, toIsoDate');
+      const attendance = load('pages/coach-attendance/lib/attendanceCalendar.js');
       console.log(JSON.stringify({ grids,
         attendance: attendance.getWeekDays(attendance.getMondayOfDate(time.parseCalendarDate('2026-11-01'))).map(attendance.toIsoDate)
       }));
