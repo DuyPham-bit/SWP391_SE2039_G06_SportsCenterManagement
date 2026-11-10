@@ -60,7 +60,7 @@ public sealed class ReportService(
             .Concat(refundRows.Select(item => item.InvoiceId)).Distinct().ToArray();
         var invoiceItems = await _unitOfWork.Context.InvoiceItems.AsNoTracking()
             .Where(item => invoiceIds.Contains(item.InvoiceId))
-            .Select(item => new { item.InvoiceId, item.SubscriptionId, item.EnrollmentId })
+            .Select(item => new { item.InvoiceId, item.SubscriptionId, item.EnrollmentId, item.Amount })
             .ToListAsync(cancellationToken);
         var subscriptionIds = invoiceItems.Where(item => item.SubscriptionId.HasValue)
             .Select(item => item.SubscriptionId!.Value).Distinct().ToArray();
@@ -82,40 +82,63 @@ public sealed class ReportService(
             join sport in _unitOfWork.Context.Sports on cls.SportId equals sport.Id
             where cls.CenterId == centerId && booking.SubscriptionId.HasValue
                 && subscriptionIds.Contains(booking.SubscriptionId.Value)
-                && (booking.Status == "Booked" || booking.Status == "CancelledLate")
+                && (booking.Status == FlowStatuses.BookingBooked || booking.Status == FlowStatuses.BookingCancelledLate)
             select new { booking.SubscriptionId, SportId = sport.Id, SportName = sport.Name })
             .Distinct().ToListAsync(cancellationToken);
 
         var buckets = new Dictionary<(long? Id, string Name), (decimal Gross, decimal Refunds)>();
-        (long? Id, string Name)[] Targets(long invoiceId)
+        var unallocatedTarget = ((long?)null, "Chưa phân bổ");
+        var itemsByInvoice = invoiceItems.ToLookup(item => item.InvoiceId);
+
+        // Môn của một dòng hóa đơn: ghi danh lớp trực tiếp, hoặc gói tập (qua lớp/lượt đặt dùng gói đó).
+        (long? Id, string Name)[] ItemSports(long? enrollmentId, long? subscriptionId) =>
+            enrollmentSports.Where(row => (enrollmentId.HasValue && row.Id == enrollmentId.Value)
+                    || (subscriptionId.HasValue && row.SubscriptionId == subscriptionId))
+                .Select(row => ((long?)row.SportId, row.SportName))
+                .Concat(bookingSports.Where(row => subscriptionId.HasValue && row.SubscriptionId == subscriptionId)
+                    .Select(row => ((long?)row.SportId, row.SportName)))
+                .Distinct().ToArray();
+
+        // Mỗi khoản thu/hoàn được chia cho các dòng hóa đơn theo tỷ lệ giá từng dòng,
+        // sau đó chia đều cho các môn của dòng đó; dòng không xác định được môn vào "Chưa phân bổ".
+        IEnumerable<((long? Id, string Name) Target, decimal Amount)> Allocate(long invoiceId, decimal amount)
         {
-            var items = invoiceItems.Where(item => item.InvoiceId == invoiceId).ToArray();
-            var directIds = items.Where(item => item.EnrollmentId.HasValue).Select(item => item.EnrollmentId!.Value).ToHashSet();
-            var subs = items.Where(item => item.SubscriptionId.HasValue).Select(item => item.SubscriptionId!.Value).ToHashSet();
-            var sports = enrollmentSports.Where(item => directIds.Contains(item.Id)
-                    || (item.SubscriptionId.HasValue && subs.Contains(item.SubscriptionId.Value)))
-                .Select(item => (item.SportId, item.SportName))
-                .Concat(bookingSports.Where(item => subs.Contains(item.SubscriptionId!.Value))
-                    .Select(item => (item.SportId, item.SportName))).Distinct().ToArray();
-            return sports.Length > 0 ? sports.Select(item => ((long?)item.SportId, item.SportName)).ToArray()
-                : new[] { ((long?)null, "Chưa phân bổ") };
+            var items = itemsByInvoice[invoiceId].ToArray();
+            var itemsTotal = items.Sum(item => item.Amount);
+            if (items.Length == 0)
+            {
+                yield return (unallocatedTarget, amount);
+                yield break;
+            }
+            foreach (var item in items)
+            {
+                var itemAmount = itemsTotal > 0 ? amount * item.Amount / itemsTotal : amount / items.Length;
+                var sports = ItemSports(item.EnrollmentId, item.SubscriptionId);
+                if (sports.Length == 0)
+                {
+                    yield return (unallocatedTarget, itemAmount);
+                    continue;
+                }
+                foreach (var sport in sports)
+                {
+                    yield return (sport, itemAmount / sports.Length);
+                }
+            }
         }
         foreach (var payment in payments)
         {
-            var targets = Targets(payment.InvoiceId);
-            foreach (var target in targets)
+            foreach (var (target, amount) in Allocate(payment.InvoiceId, payment.Amount))
             {
                 var current = buckets.GetValueOrDefault(target);
-                buckets[target] = (current.Gross + payment.Amount / targets.Length, current.Refunds);
+                buckets[target] = (current.Gross + amount, current.Refunds);
             }
         }
         foreach (var refund in refundRows)
         {
-            var targets = Targets(refund.InvoiceId);
-            foreach (var target in targets)
+            foreach (var (target, amount) in Allocate(refund.InvoiceId, refund.Amount))
             {
                 var current = buckets.GetValueOrDefault(target);
-                buckets[target] = (current.Gross, current.Refunds + refund.Amount / targets.Length);
+                buckets[target] = (current.Gross, current.Refunds + amount);
             }
         }
 
@@ -180,10 +203,12 @@ public sealed class ReportService(
             .Select(s => s.MemberId).Distinct().Count(m => !activeMemberIds.Contains(m));
         var inactiveMembers = Math.Max(0, totalMembers - activeMembers);
 
-        // Sales are recognized on full payment; revenue follows actual collections and refunds.
+        // Sales are recognized on full payment and drop out once the invoice is fully refunded;
+        // revenue follows actual collections and refunds.
         var sales = await (from item in db.InvoiceItems.AsNoTracking()
             join invoice in db.Invoices on item.InvoiceId equals invoice.Id
             where invoice.CenterId == centerId && item.PackageId.HasValue && item.SubscriptionId.HasValue
+                && invoice.Status != "Refunded"
                 && invoice.PaidAt >= startUtc && invoice.PaidAt < endUtc
             select new { PackageId = item.PackageId!.Value, item.SubscriptionId }).Distinct().ToListAsync(cancellationToken);
         var collected = await (from payment in db.Payments.AsNoTracking()

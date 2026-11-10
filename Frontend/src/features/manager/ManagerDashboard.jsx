@@ -1,6 +1,7 @@
 import { parseApiDate } from '../../utils/dateTime.js';
 import { useCountUp } from '../../utils/useCountUp.js';
 import React, { useEffect, useState, useMemo } from 'react';
+import { reportDate } from '../../services/reportFileData.js';
 import { reportApi, systemApi } from '../../services/api.js';
 import { LoadingSpinner } from '../../components/common/Table.js';
 import { useLanguage } from '../../context/LanguageContext.jsx';
@@ -605,10 +606,13 @@ export function ManagerDashboard() {
                     <span className="material-symbols-outlined text-[20px]">payments</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1 truncate">
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1">
                   {isEn
-                    ? `Gross: ${grossRevenue.toLocaleString('vi-VN')}đ`
-                    : `Tổng thu ${grossRevenue.toLocaleString('vi-VN')}đ${refundedRevenue > 0 ? ` · Hoàn ${refundedRevenue.toLocaleString('vi-VN')}đ` : ''}`}
+                    ? `Collected ${grossRevenue.toLocaleString('vi-VN')}đ − Refunded ${refundedRevenue.toLocaleString('vi-VN')}đ`
+                    : `Đã thu ${grossRevenue.toLocaleString('vi-VN')}đ − Đã hoàn ${refundedRevenue.toLocaleString('vi-VN')}đ`}
+                </p>
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1" title={isEn ? 'Collections use payment dates; refunds use processing dates.' : 'Tiền thu tính theo ngày thanh toán; tiền hoàn tính theo ngày xử lý.'}>
+                  {reportDate(metrics?.from)} → {reportDate(metrics?.to)}
                 </p>
               </div>
               <div className="mt-2 -mb-1">

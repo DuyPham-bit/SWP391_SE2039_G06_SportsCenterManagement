@@ -892,63 +892,72 @@ function reportGrowthRate(currentValue, previousValue) {
   return Number((((current - previous) / Math.abs(previous)) * 100).toFixed(1));
 }
 
+function getReportPeriodRange(period = '30D') {
+  const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+  const year = Number(today.slice(0, 4));
+  const month = Number(today.slice(5, 7));
+  let from = `${today.slice(0, 7)}-01`;
+  let to = today;
+  let groupBy = 'day';
+  if (period === '30D' || period === 'LAST_30_DAYS') {
+    const d = new Date(`${today}T00:00:00Z`);
+    d.setUTCDate(d.getUTCDate() - 29);
+    from = d.toISOString().slice(0, 10);
+    to = today;
+    groupBy = 'day';
+  } else if (period === 'DAY') {
+    from = today;
+    to = today;
+    groupBy = 'day';
+  } else if (period === 'WEEK') {
+    const current = new Date(`${today}T00:00:00Z`);
+    const mondayOffset = (current.getUTCDay() + 6) % 7;
+    current.setUTCDate(current.getUTCDate() - mondayOffset);
+    from = current.toISOString().slice(0, 10);
+    to = today;
+    groupBy = 'day';
+  } else if (period === 'LAST_MONTH' || period === 'PREV_MONTH') {
+    const prevMonth = month === 1 ? 12 : month - 1;
+    const prevYear = month === 1 ? year - 1 : year;
+    const lastDayOfPrevMonth = new Date(Date.UTC(prevYear, prevMonth, 0)).getUTCDate();
+    from = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`;
+    to = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(lastDayOfPrevMonth).padStart(2, '0')}`;
+    groupBy = 'day';
+  } else if (period === 'MONTH' || period === 'THIS_MONTH') {
+    from = `${today.slice(0, 7)}-01`;
+    to = today;
+    groupBy = 'day';
+  } else if (period === 'QUARTER') {
+    const firstQuarterMonth = Math.floor((month - 1) / 3) * 3 + 1;
+    from = `${year}-${String(firstQuarterMonth).padStart(2, '0')}-01`;
+    to = today;
+    groupBy = 'day';
+  } else if (period === 'YEAR') {
+    from = `${year}-01-01`;
+    to = today;
+    groupBy = 'month';
+  } else if (typeof period === 'object' && period !== null) {
+    from = period.from || from;
+    to = period.to || to;
+    groupBy = period.groupBy || 'day';
+  }
+  const startDate = new Date(`${from}T00:00:00Z`), endDate = new Date(`${to}T00:00:00Z`);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(to || '')
+      || !Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime())
+      || startDate.toISOString().slice(0, 10) !== from || endDate.toISOString().slice(0, 10) !== to
+      || from > to || (endDate - startDate) / 86400000 > 365 || !['day', 'month'].includes(groupBy)) {
+    throw new Error('Chọn khoảng ngày hợp lệ, tối đa 366 ngày, nhóm theo ngày hoặc tháng.');
+  }
+  return { from, to, groupBy };
+}
+
 export const reportApi = {
+  getPeriodRange: getReportPeriodRange,
+
   async getOverview(period = '30D', { centerId: explicitCenterId } = {}) {
     const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
-    const year = Number(today.slice(0, 4));
-    const month = Number(today.slice(5, 7));
-    let from = `${today.slice(0, 7)}-01`;
-    let to = today;
-    let groupBy = 'day';
-    if (period === '30D' || period === 'LAST_30_DAYS') {
-      const d = new Date(`${today}T00:00:00Z`);
-      d.setUTCDate(d.getUTCDate() - 29);
-      from = d.toISOString().slice(0, 10);
-      to = today;
-      groupBy = 'day';
-    } else if (period === 'DAY') {
-      from = today;
-      to = today;
-      groupBy = 'day';
-    } else if (period === 'WEEK') {
-      const current = new Date(`${today}T00:00:00Z`);
-      const mondayOffset = (current.getUTCDay() + 6) % 7;
-      current.setUTCDate(current.getUTCDate() - mondayOffset);
-      from = current.toISOString().slice(0, 10);
-      to = today;
-      groupBy = 'day';
-    } else if (period === 'LAST_MONTH' || period === 'PREV_MONTH') {
-      const prevMonth = month === 1 ? 12 : month - 1;
-      const prevYear = month === 1 ? year - 1 : year;
-      const lastDayOfPrevMonth = new Date(Date.UTC(prevYear, prevMonth, 0)).getUTCDate();
-      from = `${prevYear}-${String(prevMonth).padStart(2, '0')}-01`;
-      to = `${prevYear}-${String(prevMonth).padStart(2, '0')}-${String(lastDayOfPrevMonth).padStart(2, '0')}`;
-      groupBy = 'day';
-    } else if (period === 'MONTH' || period === 'THIS_MONTH') {
-      from = `${today.slice(0, 7)}-01`;
-      to = today;
-      groupBy = 'day';
-    } else if (period === 'QUARTER') {
-      const firstQuarterMonth = Math.floor((month - 1) / 3) * 3 + 1;
-      from = `${year}-${String(firstQuarterMonth).padStart(2, '0')}-01`;
-      to = today;
-      groupBy = 'day';
-    } else if (period === 'YEAR') {
-      from = `${year}-01-01`;
-      to = today;
-      groupBy = 'month';
-    } else if (typeof period === 'object' && period !== null) {
-      from = period.from || from;
-      to = period.to || to;
-      groupBy = period.groupBy || 'day';
-    }
+    const { from, to, groupBy } = getReportPeriodRange(period);
     const startDate = new Date(`${from}T00:00:00Z`), endDate = new Date(`${to}T00:00:00Z`);
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(from || '') || !/^\d{4}-\d{2}-\d{2}$/.test(to || '')
-        || !Number.isFinite(startDate.getTime()) || !Number.isFinite(endDate.getTime())
-        || startDate.toISOString().slice(0, 10) !== from || endDate.toISOString().slice(0, 10) !== to
-        || from > to || (endDate - startDate) / 86400000 > 365 || !['day', 'month'].includes(groupBy)) {
-      throw new Error('Chọn khoảng ngày hợp lệ, tối đa 366 ngày, nhóm theo ngày hoặc tháng.');
-    }
     const scopedCenterId = Number(explicitCenterId ?? centerId());
     if (!Number.isSafeInteger(scopedCenterId) || scopedCenterId <= 0) {
       throw new Error('Cơ sở dùng để lập báo cáo không hợp lệ.');
@@ -1187,13 +1196,14 @@ export const reportApi = {
   },
 
   async getSystemOverview(period = 'MONTH', centers = []) {
+    const range = getReportPeriodRange(period);
     const validCenters = centers
       .map(center => ({ id: Number(center.id), name: center.name || `Cơ sở ${center.id}` }))
       .filter(center => Number.isSafeInteger(center.id) && center.id > 0);
     if (!validCenters.length) throw new Error('Chưa có cơ sở hợp lệ để lập báo cáo toàn hệ thống.');
     const scopedReports = await Promise.all(validCenters.map(async center => ({
       center,
-      report: await reportApi.getOverview(period, { centerId: center.id })
+      report: await reportApi.getOverview(range, { centerId: center.id })
     })));
     return mergeCenterReports(scopedReports);
   }
@@ -1258,15 +1268,24 @@ function mergeCenterReports(scopedReports) {
       const key = sport.sportId ?? sport.name ?? 'unallocated';
       const current = revenueSportMap.get(key) || {};
       for (const [field, value] of Object.entries(sport)) {
-        if (typeof value === 'number' && field !== 'sportId') current[field] = Number(current[field] || 0) + value;
-        else if (current[field] == null) current[field] = value;
+        // Tỷ trọng (%) không cộng được giữa các cơ sở; tính lại từ doanh thu thuần đã gộp bên dưới.
+        if (typeof value === 'number' && field !== 'sportId' && field !== 'share') current[field] = Number(current[field] || 0) + value;
+        else if (current[field] == null && field !== 'share') current[field] = value;
       }
+      if (!('sportId' in current)) current.sportId = sport.sportId ?? null;
       revenueSportMap.set(key, current);
     }
   }
+  const mergedSportRevenue = [...revenueSportMap.values()];
+  const mergedSportNet = mergedSportRevenue.reduce((total, sport) => total + Number(sport.net || 0), 0);
+  for (const sport of mergedSportRevenue) {
+    sport.share = mergedSportNet > 0 ? Math.round((Number(sport.net || 0) / mergedSportNet) * 10000) / 100 : 0;
+  }
+  mergedSportRevenue.sort((a, b) => Number(b.net || 0) - Number(a.net || 0));
   const totalCapacity = topSports.reduce((total, sport) => total + Number(sport.capacity || 0), 0);
   const totalBooked = topSports.reduce((total, sport) => total + Number(sport.booked || 0), 0);
-  const highestRevenueSport = [...revenueSportMap.values()].sort((a, b) => Number(b.net || b.revenue || 0) - Number(a.net || a.revenue || 0))[0] || null;
+  // Giống báo cáo từng cơ sở: "Chưa phân bổ" không phải là một bộ môn để xếp hạng.
+  const highestRevenueSport = mergedSportRevenue.find(sport => sport.sportId != null) || null;
   const centerSummaries = scopedReports.map(({ center, report }) => ({
     centerId: center.id,
     centerName: center.name,
@@ -1306,7 +1325,7 @@ function mergeCenterReports(scopedReports) {
     previousNewMembers: sum('previousNewMembers'),
     memberGrowth: reportGrowthRate(sum('newMembers'), sum('previousNewMembers')),
     revenuePeriods: mergePeriods('revenuePeriods'),
-    revenueBySport: [...revenueSportMap.values()], allocatedSportRevenue: sum('allocatedSportRevenue'),
+    revenueBySport: mergedSportRevenue, allocatedSportRevenue: sum('allocatedSportRevenue'),
     unallocatedSportRevenue: sum('unallocatedSportRevenue'),
     utilizationBySport: topSports.map(item => ({ name: item.name, capacity: item.capacity, booked: item.booked, percentage: item.percentage })),
     topSports, topClasses, topRooms, coaches,

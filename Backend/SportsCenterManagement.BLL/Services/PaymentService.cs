@@ -30,6 +30,8 @@ public sealed class PaymentService(
     private readonly IMoMoService _moMoService = moMoService;
     private readonly IConfiguration _configuration = configuration;
     private readonly ILogger<PaymentService> _logger = logger ?? NullLogger<PaymentService>.Instance;
+    // VNPay links expire after 15 minutes; 5 extra minutes covers a payment finished right at the deadline.
+    private const int VnPayAbandonedAttemptMinutes = 20;
 
     public async Task<string> CreatePaymentUrlAsync(
         long memberId,
@@ -139,6 +141,16 @@ public sealed class PaymentService(
         catch (BusinessException)
         {
             throw;
+        }
+        catch (MomoRequestRejectedException rejected)
+        {
+            _logger.LogWarning(rejected,
+                "MoMo rejected payment creation. PaymentId={PaymentId} GatewayReference={GatewayReference} HttpStatus={HttpStatus}",
+                payment.Id, payment.GatewayReference, rejected.StatusCode);
+            await SetPaymentStatusAsync(payment.Id, "Failed",
+                $"MoMo từ chối yêu cầu tạo link (HTTP {rejected.StatusCode}); chưa phát sinh giao dịch.", CancellationToken.None);
+            throw new BusinessException(HttpStatusCode.ServiceUnavailable,
+                "Cổng MoMo đang từ chối kết nối từ máy chủ. Hóa đơn chưa bị trừ tiền; vui lòng thanh toán bằng VNPay hoặc thử lại sau.");
         }
         catch (Exception exception)
         {
@@ -732,9 +744,11 @@ public sealed class PaymentService(
                 throw BusinessException.BadRequest("Sau khi hoàn trên máy POS, cần gửi ExternalRefundReference.");
             }
 
+            // Approved = hoàn tiền thủ công đã chuyển khoản; phải giữ chỗ như Succeeded để không hoàn trùng.
             var reserved = await _unitOfWork.Context.PaymentRefunds
                 .Where(candidate => candidate.PaymentId == payment.Id &&
-                                    (candidate.Status == "Pending" || candidate.Status == "Succeeded"))
+                                    (candidate.Status == "Pending" || candidate.Status == "Approved" ||
+                                     candidate.Status == "Succeeded"))
                 .SumAsync(candidate => (decimal?)candidate.Amount, cancellationToken) ?? 0m;
             var refundable = payment.Amount - reserved;
             if (request.Amount <= 0 || request.Amount > refundable)
@@ -1496,6 +1510,30 @@ public sealed class PaymentService(
         {
             throw BusinessException.Conflict($"{provider} chỉ nhận số tiền VND nguyên; số dư hóa đơn đang có phần thập phân.");
         }
+        // A VNPay link expires after 15 minutes (vnp_ExpireDate), so an abandoned attempt (popup closed
+        // without returning) can never complete. Close it so the member can retry; a late signed success
+        // callback still marks it Succeeded in CompleteGatewayPaymentAsync.
+        var vnPayLinkCutoff = DateTime.UtcNow.AddMinutes(-VnPayAbandonedAttemptMinutes);
+        var abandonedVnPayAttempts = await _unitOfWork.Context.Payments
+            .Where(candidate => candidate.InvoiceId == invoice.Id &&
+                                candidate.PaymentStatus == "Pending" &&
+                                candidate.PaymentMethod == "VNPAY" &&
+                                candidate.GatewayPaymentUrl != null &&
+                                candidate.AttemptedAt < vnPayLinkCutoff)
+            .ToListAsync(cancellationToken);
+        if (abandonedVnPayAttempts.Count > 0)
+        {
+            var expiredAt = DateTime.UtcNow;
+            foreach (var abandoned in abandonedVnPayAttempts)
+            {
+                abandoned.PaymentStatus = "Failed";
+                abandoned.Note = "Link VNPay đã hết hạn mà không nhận được kết quả; đóng để cho phép thanh toán lại.";
+                _unitOfWork.Context.AuditLogs.Add(CreateAudit(null, "Payment.GatewayLinkExpired", "Payment", abandoned.Id,
+                    new { abandoned.GatewayReference, abandoned.AttemptedAt }, expiredAt));
+            }
+            await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+        }
+
         var pendingPayments = await _unitOfWork.Context.Payments
             .Where(candidate => candidate.InvoiceId == invoice.Id && candidate.PaymentStatus == "Pending")
             .OrderByDescending(candidate => candidate.Id)

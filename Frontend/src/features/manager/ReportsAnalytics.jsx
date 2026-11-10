@@ -2,6 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { adminApi, reportApi } from '../../services/api.js';
 import { createReportCsv } from '../../services/reportExport.js';
 import { downloadReportFile } from '../../services/reportFiles.js';
+import { reportDate } from '../../services/reportFileData.js';
 import { StatCard } from '../../components/common/StatCard.jsx';
 import { LoadingSpinner } from '../../components/common/Table.jsx';
 import { useToast } from '../../context/ToastContext.jsx';
@@ -56,9 +57,8 @@ export function ReportsAnalytics({ adminMode = false }) {
   const isEn = language === 'en';
   const { showError } = useToast();
   const [period, setPeriod] = useState('MONTH');
-  const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
-  const [range, setRange] = useState({ from: `${today.slice(0, 7)}-01`, to: today, groupBy: 'day' });
-  const [selection, setSelection] = useState('MONTH');
+  const [selection, setSelection] = useState(() => reportApi.getPeriodRange('MONTH'));
+  const [range, setRange] = useState(() => ({ ...selection }));
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -77,6 +77,7 @@ export function ReportsAnalytics({ adminMode = false }) {
   const [classSportFilter, setClassSportFilter] = useState('ALL');
   const [classSortBy, setClassSortBy] = useState('booked'); // booked | occupancy | sessions
   const [roomSortBy, setRoomSortBy] = useState('booked'); // booked | sessions | occupancy
+  const hasPendingRange = range.from !== selection.from || range.to !== selection.to || range.groupBy !== selection.groupBy;
 
   const periodLabel = useMemo(() => {
     const mapEn = { DAY: 'Today', WEEK: 'This Week', MONTH: 'This Month', QUARTER: 'This Quarter', YEAR: 'This Year', CUSTOM: 'Custom Range' };
@@ -255,7 +256,7 @@ export function ReportsAnalytics({ adminMode = false }) {
                 : (isEn ? 'REVENUE & OPERATIONAL ANALYTICS REPORT' : 'BÁO CÁO DOANH THU & THỐNG KÊ HOẠT ĐỘNG')}
             </h1>
             <p className="text-xs text-slate-600 mt-1">
-              {isEn ? 'Period:' : 'Kỳ báo cáo:'} <strong>{range.from}</strong> → <strong>{range.to}</strong> ({periodLabel})
+              {isEn ? 'Period:' : 'Kỳ báo cáo:'} <strong>{metrics?.from}</strong> → <strong>{metrics?.to}</strong> ({periodLabel})
             </p>
           </div>
           <div className="text-right text-xs text-slate-600">
@@ -383,8 +384,10 @@ export function ReportsAnalytics({ adminMode = false }) {
                   : 'bg-slate-50 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700'
               }`}
               onClick={() => {
+                const nextRange = reportApi.getPeriodRange(id);
                 setPeriod(id);
-                setSelection(id);
+                setSelection(nextRange);
+                setRange({ ...nextRange });
               }}
             >
               {label}
@@ -396,18 +399,22 @@ export function ReportsAnalytics({ adminMode = false }) {
           className="flex flex-wrap items-center gap-2"
           onSubmit={e => {
             e.preventDefault();
-            if (range.from && range.to && range.from > range.to) {
+            let nextRange;
+            try {
+              nextRange = reportApi.getPeriodRange(range);
+            } catch (error) {
               showError({
                 message: isEn
-                  ? 'Invalid date range: Start date must be earlier than or equal to End date.'
-                  : 'Khoảng ngày không hợp lệ: Từ ngày phải nhỏ hơn hoặc bằng Đến ngày.',
+                  ? 'Choose valid dates, up to 366 days, grouped by day or month.'
+                  : error.message,
                 code: 'VAL-REPORT-DATE',
                 proposedHandling: isEn ? 'Please adjust the date range.' : 'Vui lòng chọn lại khoảng thời gian tra cứu.'
               });
               return;
             }
             setPeriod('CUSTOM');
-            setSelection({ ...range });
+            setSelection(nextRange);
+            setRange({ ...nextRange });
           }}
         >
           <div className="flex items-center gap-1.5 bg-slate-50 dark:bg-slate-800 px-2.5 py-1.5 rounded-xl border border-slate-200 dark:border-slate-700 text-xs">
@@ -443,6 +450,12 @@ export function ReportsAnalytics({ adminMode = false }) {
             {isEn ? 'Apply' : 'Áp dụng'}
           </button>
         </form>
+        <p className="w-full text-xs text-slate-600 dark:text-slate-300" aria-live="polite">
+          {isEn ? 'Report period: ' : 'Kỳ báo cáo: '}
+          {reportDate(metrics?.from || selection.from)} → {reportDate(metrics?.to || selection.to)}
+          {' · '}{isEn ? 'Collections use payment dates; refunds use processing dates.' : 'Tiền thu tính theo ngày thanh toán; tiền hoàn tính theo ngày xử lý.'}
+          {hasPendingRange && <strong className="ml-2">{isEn ? 'Date changes have not been applied.' : 'Thay đổi khoảng ngày chưa được áp dụng.'}</strong>}
+        </p>
       </div>
 
       {loading ? (
@@ -590,10 +603,10 @@ export function ReportsAnalytics({ adminMode = false }) {
                 <h3 className="text-xl lg:text-2xl font-black font-chivo text-slate-900 dark:text-white">
                   {`${Number(metrics.netRevenue || 0).toLocaleString('vi-VN')}đ`}
                 </h3>
-                <p className="text-[11px] text-slate-400 dark:text-slate-500 mt-1 truncate max-w-[200px]">
+                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1">
                   {isEn
-                    ? `Gross ${Number(metrics.grossRevenue || 0).toLocaleString('vi-VN')}đ · ref ${Number(metrics.refundedRevenue || 0).toLocaleString('vi-VN')}đ`
-                    : `Thu ${Number(metrics.grossRevenue || 0).toLocaleString('vi-VN')}đ · hoàn ${Number(metrics.refundedRevenue || 0).toLocaleString('vi-VN')}đ`}
+                    ? `Collected ${Number(metrics.grossRevenue || 0).toLocaleString('vi-VN')}đ − Refunded ${Number(metrics.refundedRevenue || 0).toLocaleString('vi-VN')}đ`
+                    : `Đã thu ${Number(metrics.grossRevenue || 0).toLocaleString('vi-VN')}đ − Đã hoàn ${Number(metrics.refundedRevenue || 0).toLocaleString('vi-VN')}đ`}
                 </p>
               </div>
               <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-[#2D6A4F] to-[#24828F] text-white flex items-center justify-center shadow-md shadow-[#2D6A4F]/25 shrink-0">

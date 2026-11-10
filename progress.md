@@ -1,5 +1,12 @@
 # Progress: Olympic Sports Arena Visual Identity, Production Hardening & Full-Flow Verification
 
+## Landing sync — 2026-11-04
+
+- User expanded scope from images-only to full landing content (text/layout/image references), excluding business data.
+- Standalone CLI supports read-only inspection/preview, explicit full-content mode, reviewed plan hash, transactional apply, durable backup and guarded rollback.
+- Final checks: 11 planner and 16 real PostgreSQL integration checks passed; CLI build has 0 warnings/errors. Actual Render preview is safely blocked by the old-schema guard.
+- Read-only Render preflight: landing setting absent; uploaded_media.storage_key absent. Application/schema deployment must be confirmed before transfer. No Render writes, migration, upload, commit or push for this tool.
+
 ## Active delivery — PostgreSQL merge, 2026-11-04
 
 - Backup pushed: dome-94/fix/learn-docker at cce0a47.
@@ -48,3 +55,12 @@
    - Frontend Suite: 145/145 PASS (100%).
    - Backend Solution Build: 0 warnings, 0 errors.
    - Frontend Production Build: 0 errors, bundle synced to `Backend/SportsCenterManagement.API/wwwroot`.
+## Report period/refund repair — 2026-11-06
+
+- Inspected shared reports, dashboard, exports, payment/refund aggregation and existing regression harnesses.
+- Completed regression-first repair for stale quick-filter inputs, print metadata and incomplete dashboard revenue breakdown.
+- Preserve existing unrelated landing-image work and prior planning-file content.
+- Verification: `npm --prefix Frontend test` passed 161/161; report-focused Chrome passed 9 checks across manager desktop/mobile and Admin system/center scopes using local fixtures.
+- Backend solution build passed with 0 warnings/errors. `npm --prefix Frontend run build:api` passed and refreshed the embedded frontend; Vite reports its large export-library chunk warning.
+- Regression evidence: new period resolver test failed before implementation; final focused tests also cover refund totals, validation, leap years and year transitions. Browser checks assert applied print dates while a custom range is still a draft.
+- Limitations: the general manager browser suite fails at the unrelated weekly-calendar selector; Graphify remains unavailable; screenshot gross-total discrepancy cannot be reconciled without the running database.
