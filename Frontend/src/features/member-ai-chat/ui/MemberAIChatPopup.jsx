@@ -132,35 +132,35 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     return () => controller.abort();
   }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Initialize bubble position if null
-  useEffect(() => {
-    if (!bubblePos && typeof window !== 'undefined') {
-      const defaultX = Math.max(16, window.innerWidth - 76);
-      const defaultY = Math.max(16, window.innerHeight - 86);
-      setBubblePos({ x: defaultX, y: defaultY });
+  const clampBubblePos = (pos) => {
+    if (!pos || typeof window === 'undefined' || typeof pos.x !== 'number' || typeof pos.y !== 'number' || isNaN(pos.x) || isNaN(pos.y)) {
+      return null;
     }
-  }, []);
+    const x = Math.min(Math.max(12, pos.x), window.innerWidth - 68);
+    const y = Math.min(Math.max(12, pos.y), window.innerHeight - 68);
+    return { x, y };
+  };
 
-  // Clamping positions on window resize
+  const clampWindowPos = (pos) => {
+    if (!pos || typeof window === 'undefined' || typeof pos.x !== 'number' || typeof pos.y !== 'number' || isNaN(pos.x) || isNaN(pos.y)) {
+      return null;
+    }
+    const width = Math.min(420, window.innerWidth - 32);
+    const height = Math.min(600, window.innerHeight - 80);
+    const x = Math.min(Math.max(8, pos.x), window.innerWidth - width - 8);
+    const y = Math.min(Math.max(8, pos.y), window.innerHeight - height - 8);
+    return { x, y };
+  };
+
+  // Clamping positions on mount and on window resize to ensure widget is never off-screen
   useEffect(() => {
-    const handleResize = () => {
-      setBubblePos(prev => {
-        if (!prev) return prev;
-        const x = Math.min(Math.max(12, prev.x), window.innerWidth - 68);
-        const y = Math.min(Math.max(12, prev.y), window.innerHeight - 68);
-        return { x, y };
-      });
-      setWindowPos(prev => {
-        if (!prev) return prev;
-        const width = Math.min(420, window.innerWidth - 32);
-        const height = Math.min(600, window.innerHeight - 80);
-        const x = Math.min(Math.max(8, prev.x), window.innerWidth - width - 8);
-        const y = Math.min(Math.max(8, prev.y), window.innerHeight - height - 8);
-        return { x, y };
-      });
+    const performClamp = () => {
+      setBubblePos(prev => clampBubblePos(prev));
+      setWindowPos(prev => clampWindowPos(prev));
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    performClamp();
+    window.addEventListener('resize', performClamp);
+    return () => window.removeEventListener('resize', performClamp);
   }, []);
 
   // Drag handler for floating bubble / minimized bar
@@ -315,7 +315,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       localStorage.removeItem('scms_chat_bubble_pos');
       localStorage.removeItem('scms_chat_window_pos');
     } catch {}
-    setBubblePos({ x: Math.max(16, window.innerWidth - 76), y: Math.max(16, window.innerHeight - 86) });
+    setBubblePos(null);
     setWindowPos(null);
   };
 

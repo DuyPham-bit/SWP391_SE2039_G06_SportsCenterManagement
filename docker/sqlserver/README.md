@@ -2,6 +2,6 @@
 
 - Image: `mcr.microsoft.com/mssql/server:2022-latest`
 - Cổng mặc định: `1433`
-- Database: `SportsCenterManagement`
+- Database: `SportsCenterDB`
 - Tài khoản: `sa`
 - Mật khẩu: `12345`

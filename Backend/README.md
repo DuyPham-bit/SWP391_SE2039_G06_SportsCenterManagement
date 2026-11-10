@@ -131,7 +131,7 @@ Connection string key là `ConnectionStrings:SportsCenter`. Môi trường Devel
 PowerShell, chỉ cho phiên terminal hiện tại:
 
 ```powershell
-$env:ConnectionStrings__SportsCenter = "Server=(localdb)\MSSQLLocalDB;Database=SportsCenterManagement;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
+$env:ConnectionStrings__SportsCenter = "Server=(localdb)\MSSQLLocalDB;Database=SportsCenterDB;Trusted_Connection=True;MultipleActiveResultSets=true;TrustServerCertificate=True"
 ```
 
 Không commit thông tin đăng nhập hoặc secret thật. Dùng User Secrets hoặc environment variables ngoài máy local.

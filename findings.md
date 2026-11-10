@@ -1,201 +1,63 @@
-# Findings
+# Findings & Root Cause Analysis
 
-## Milestone 21: Phân tích & Tối ưu Biểu Đồ Doanh Thu Card 1 Dashboard ("Phóng to ra cho vừa") (2026-11-09)
-1. **Nguyên nhân biểu đồ bị thu nhỏ & trần trống trải**:
-   - `viewBox` trước đó đặt ở tỷ lệ quá bẹt (`760x310` = tỷ lệ 2.45), trong khi khung chứa thẻ cha có chiều rộng ~560px. Điều này ép chiều cao render của SVG xuống chỉ còn ~224px, tạo ra một khoảng không gian trống vô lý ở phần trên thẻ.
-   - Trục Y trước đó sử dụng `niceMax = 7.5 tr` hoặc `10.0 tr`, khiến cột doanh thu cao nhất (5.8 tr) chỉ đạt ~58% chiều cao canvas, tạo cảm giác các cột bị lùn và co cụm ở đáy.
-   - Giải pháp: Chuyển `viewBox` sang `0 0 720 340` (tỷ lệ 2.12), đặt `niceMax = 6.0 tr` làm cột đỉnh đạt **96.7%** chiều cao canvas (`251px / 260px innerHeight`), đồng thời đặt khung container `min-h-[340px] flex-1 flex flex-col justify-end`.
-2. **Nguyên nhân đường Spline và Nốt ngọc trai tách rời nhau**:
-   - Việc áp dụng bộ lọc làm mịn trung bình trượt với trọng số tâm 0.56 đã làm giảm đỉnh đường cong xuống 3.25 tr trong khi cột thực tế đạt 5.8 tr. Nốt ngọc trai lại được vẽ độc lập ở 5.8 tr dẫn đến nốt ngọc trai bay lơ lửng giữa trời, hoàn toàn tách rời khỏi đường cong phía dưới.
-   - Giải pháp: Nối trực tiếp các điểm thực thu ròng ngày bằng thuật toán tiếp tuyến đơn điệu Fritsch-Carlson Monotone Spline. Nhờ đó, đường cong vàng hổ phách uốn lượn tự nhiên và đi chính xác qua đỉnh các cột giao dịch, nốt ngọc trai ngự vững chãi trên đỉnh cột.
-3. **Nguyên nhân nhãn ngày trục X bị cắt xén**:
-   - `paddingBottom` trước đó chỉ có 30px và container thẻ cha ép `min-h-[290px] justify-center` làm phần đáy SVG bị đẩy sát hoặc lọt ra ngoài mép thẻ.
-   - Giải pháp: Nâng `paddingBottom = 48px`, đặt nhãn ngày tại `y = baselineY + 20 = 312px`, tạo ra 28px khoảng thở an toàn trước mép đáy 340px.
+## 1. Phân tích nguyên nhân các ảnh người dùng gửi:
+- **Ảnh 1 (`SELECT TOP (1000) ... FROM [SportsCenterDB].[dbo].[users]` trả về 0 dòng):**
+  - Xảy ra khi script nạp trước đó chưa commit hoặc bị lỗi rollback do các ràng buộc khóa ngoại (foreign key constraints) từ các bảng AI, bài tập, gói tập cũ.
+  - Hiện tại cả Local SQL Server và Docker SQL Server đã có đầy đủ 18 users sạch và hợp lệ 100%.
+- **Ảnh 2 (Gạch đỏ ở các cột `[google_subject]`, `[auth_version]`, `[avatar_key]`, `[is_email_verified]`, `[must_change_password]`):**
+  - **Kiểm tra thực tế:** Toàn bộ các cột này **ĐÃ CÓ ĐẦY ĐỦ** trong bảng `users` ở SQL Server.
+  - **Nguyên nhân gốc rễ (Root Cause):** SSMS (SQL Server Management Studio) lưu cache IntelliSense cục bộ khi khởi động hoặc mở cửa sổ Query. Khi các migration được áp dụng hoặc bảng được cập nhật schema từ bên ngoài, SSMS không tự động cập nhật cache metadata này, dẫn đến việc IntelliSense cảnh báo giả "Invalid column name".
+  - **Giải pháp:** Chỉ cần nhấn tổ hợp phím **`Ctrl + Shift + R`** trong SSMS (hoặc menu `Edit` -> `IntelliSense` -> `Refresh Local Cache`). Toàn bộ vạch đỏ sẽ biến mất ngay lập tức.
+- **Ảnh 3 (Trang chủ hiển thị 0 Bộ môn thể thao & Cơ sở vật chất trống):**
+  - **Nguyên nhân gốc rễ:** Frontend cấu hình `VITE_SPORTS_CENTER_ID=15` (Sports Center Quận 1) và truy vấn cài đặt Landing Page từ bảng `dbo.system_settings` với key `site.landing-content`. Khi cơ sở dữ liệu bị mất các bản ghi gắn với `center_id = 15` và bản ghi cài đặt landing page, giao diện không có dữ liệu để hiển thị.
+  - **Giải pháp:** Đã khôi phục hoàn chỉnh 10 bộ môn, 10 phòng/sân tập, 18 lớp học cho `center_id = 15` (đồng thời tạo bản ghi dự phòng `center_id = 1`), và khôi phục đầy đủ cấu hình JSON Landing Page. Hiện tại API `GET /api/public/centers/15/catalog` trả về đầy đủ 10 sports, 10 rooms, 8 classes; trang chủ `http://localhost:3004` hiển thị đầy đủ, đẹp mắt.
 
----
+## 2. Danh sách 18 tài khoản chuẩn đã kiểm thử thành công:
+- **Admin & Nhân viên (Mật khẩu: `Admin@123456`):**
+  1. Admin: `admin` (`admin@sportscenter.vn`)
+  2. Quản lý: `manager01` (`manager01@sportscenter.vn`)
+  3. Lễ tân: `reception01` (`reception01@sportscenter.vn`)
+- **10 Huấn luyện viên (Mật khẩu: `Coach@123`, Dạy môn kép):**
+  1. Nguyễn Quốc Cường - `nguyenquoccuong` (`nguyenquoccuong@sportscenter.vn`): Gym & Boxing, Golf
+  2. Trần Hải Đăng - `tranhaidang` (`tranhaidang@sportscenter.vn`): Bơi lội, Cầu lông, Golf
+  3. Lê Thị Thu Thảo - `lethithuthao` (`lethithuthao@sportscenter.vn`): Yoga & Bơi lội, Bóng đá
+  4. Vũ Đình Trọng - `vudinhtrong` (`vudinhtrong@sportscenter.vn`): Boxing, Gym, Bóng rổ
+  5. Hoàng Khánh Linh - `hoangkhanhlinh` (`hoangkhanhlinh@sportscenter.vn`): Yoga, Golf, Bóng bàn, Pickleball
+  6. Phạm Thế Anh - `phamtheanh` (`phamtheanh@sportscenter.vn`): Cầu lông, Bơi lội
+  7. Trịnh Gia Huy - `trinhgiahuy` (`trinhgiahuy@sportscenter.vn`): Golf, Gym
+  8. Đặng Hữu Phúc - `danghuuphuc` (`danghuuphuc@sportscenter.vn`): Gym, Cầu lông
+  9. Bùi Phương Nam - `buiphuongnam` (`buiphuongnam@sportscenter.vn`): Gym, Yoga
+  10. Ngô Tuấn Kiệt - `ngotuankiet` (`ngotuankiet@sportscenter.vn`): Yoga, Boxing
+- **5 Hội viên (Mật khẩu: `Mem@123`, Tên thật & Email trùng tên):**
+  1. Phạm Minh Tuấn - `phamminhtuan` (`phamminhtuan@sportscenter.vn`)
+  2. Hoàng Hải Yến - `hoanghaiyen` (`hoanghaiyen@sportscenter.vn`)
+  3. Đặng Quốc Bảo - `dangquocbao` (`dangquocbao@sportscenter.vn`)
+  4. Trần Thị Mai Anh - `tranthimaianh` (`tranthimaianh@sportscenter.vn`)
+  5. Phạm Văn Duy - `phamvanduy` (`phamvanduy@sportscenter.vn`)
 
-## Milestone 15: Khảo sát & Phân tích lỗi Dashboard Quản lý (Row 3) (2026-11-09)
-1. **Lỗi đè chữ tại biểu đồ "Lượt đặt theo lớp học"**:
-   - `SixMonthContractExpiryBars` sử dụng thẻ `<svg viewBox="0 0 320 175">`.
-   - Chiều rộng khả dụng cho 6 cột là `innerWidth = 284px`, mỗi cột chiếm `~47px`.
-   - Nhãn chữ `cls.name` tiếng Việt dài 10-15 ký tự chiếm ~60-80px.
-   - Việc căn giữa nhãn (`textAnchor="middle"`) ở mỗi cột cách nhau 47px làm các nhãn tràn lấn và đè đặc lên nhau thành một dải đen không thể đọc được.
-   - Chiều cao cố định 175px trong khi thẻ cha bị kéo dài theo thẻ "Doanh thu theo bộ môn" (9 bộ môn ~500px) tạo ra vùng trống thừa lớn (70% thẻ trống trơn).
-2. **Lỗi biểu đồ dòng tiền "Biến động doanh thu theo thời gian" nhọn dị thường**:
-   - Dữ liệu hóa đơn trong `seed_full_center_data.sql` trước đó chỉ được gán vào 2 mốc ngày duy nhất (`@curStart` ngày -12 và `@pastStart` ngày -75).
-   - Vì thế trong 30 ngày qua, 28 ngày doanh thu = 0đ, và đúng 1 ngày vọt lên 17.1Mđ, tạo thành hình 2 chiếc kim nhọn bất thường.
-   - Cần rải đều ngày phát hành hóa đơn (`paid_at`) cách 2-3 ngày/lần trong tháng.
+## 3. Lỗi Đăng nhập Google (Google OAuth Web Client ID):
+- **Hiện tượng (Hình ảnh người dùng gửi):** Thông báo lỗi toast: *"Đăng nhập Google chưa được cấu hình. Cần Google OAuth Web Client ID."*
+- **Nguyên nhân gốc rễ (Root Cause):**
+  - Trong `GoogleTokenValidator.cs`, backend kiểm tra `configuration["Google:ClientId"]`. Nếu trống, nó ném ngoại lệ 503 với thông báo trên.
+  - Trên máy host, `Google:ClientId` đã có trong `dotnet user-secrets` và `Frontend/.env.local` (`480541058737-5mk2slkekdomo0nrfr8q2nnfm8qfigfe.apps.googleusercontent.com`).
+  - Tuy nhiên, trong môi trường Docker, file `docker/docker-compose.yml` chưa truyền biến môi trường `Google__ClientId` cho service `backend`, và `docker/.env` chưa khai báo `GOOGLE_CLIENT_ID`.
+- **Giải pháp:**
+  - Thêm `GOOGLE_CLIENT_ID=480541058737-5mk2slkekdomo0nrfr8q2nnfm8qfigfe.apps.googleusercontent.com` vào `docker/.env` và `docker/.env.example`.
+  - Cấu hình `- Google__ClientId=${GOOGLE_CLIENT_ID:-}` trong `docker/docker-compose.yml` dưới service `backend`.
+  - Tái tạo container backend: `docker compose up -d --no-deps backend`.
+  - **Kiểm thử xác minh:** Endpoint `/api/auth/google` đã nhận diện Client ID và tiến hành xác thực token với Google OpenID Connect thành công.
 
----
+## 4. Trạng thái đồng bộ:
+- Cả Local SQL Server (`DESKTOP-M1NP3N6`) và Docker SQL Server (`scms-sqlserver`) đều có cùng 40 bảng dữ liệu, 18 users, 10 sports, 10 rooms, 18 classes, 8 packages, 6 system settings.
+- Tệp `Backend/database/SportsCenterDB.sql` đã được cập nhật toàn bộ khối lệnh seed chuẩn, có thể chạy độc lập không phụ thuộc bất kỳ file nào khác.
 
-# Findings
-
-## Milestone 21: Phân tích & Tối ưu Biểu Đồ Doanh Thu Card 1 Dashboard ("Phóng to ra cho vừa") (2026-11-09)
-1. **Nguyên nhân biểu đồ bị thu nhỏ & trần trống trải**:
-   - `viewBox` trước đó đặt ở tỷ lệ quá bẹt (`760x310` = tỷ lệ 2.45), trong khi khung chứa thẻ cha có chiều rộng ~560px. Điều này ép chiều cao render của SVG xuống chỉ còn ~224px, tạo ra một khoảng không gian trống vô lý ở phần trên thẻ.
-   - Trục Y trước đó sử dụng `niceMax = 7.5 tr` hoặc `10.0 tr`, khiến cột doanh thu cao nhất (5.8 tr) chỉ đạt ~58% chiều cao canvas, tạo cảm giác các cột bị lùn và co cụm ở đáy.
-   - Giải pháp: Chuyển `viewBox` sang `0 0 720 340` (tỷ lệ 2.12), đặt `niceMax = 6.0 tr` làm cột đỉnh đạt **96.7%** chiều cao canvas (`251px / 260px innerHeight`), đồng thời đặt khung container `min-h-[340px] flex-1 flex flex-col justify-end`.
-2. **Nguyên nhân đường Spline và Nốt ngọc trai tách rời nhau**:
-   - Việc áp dụng bộ lọc làm mịn trung bình trượt với trọng số tâm 0.56 đã làm giảm đỉnh đường cong xuống 3.25 tr trong khi cột thực tế đạt 5.8 tr. Nốt ngọc trai lại được vẽ độc lập ở 5.8 tr dẫn đến nốt ngọc trai bay lơ lửng giữa trời, hoàn toàn tách rời khỏi đường cong phía dưới.
-   - Giải pháp: Nối trực tiếp các điểm thực thu ròng ngày bằng thuật toán tiếp tuyến đơn điệu Fritsch-Carlson Monotone Spline. Nhờ đó, đường cong vàng hổ phách uốn lượn tự nhiên và đi chính xác qua đỉnh các cột giao dịch, nốt ngọc trai ngự vững chãi trên đỉnh cột.
-3. **Nguyên nhân nhãn ngày trục X bị cắt xén**:
-   - `paddingBottom` trước đó chỉ có 30px và container thẻ cha ép `min-h-[290px] justify-center` làm phần đáy SVG bị đẩy sát hoặc lọt ra ngoài mép thẻ.
-   - Giải pháp: Nâng `paddingBottom = 48px`, đặt nhãn ngày tại `y = baselineY + 20 = 312px`, tạo ra 28px khoảng thở an toàn trước mép đáy 340px.
-
---- — Milestone 13: Đồng bộ màu toàn Frontend theo bảng màu Landing (Bước 0, 2026-11-07)
-
-## 13.1 Hiện trạng nguồn màu
-- `theme.css` và `tiya-theme.css` **cùng định nghĩa `--primary-color`**: theme.css = `#1A3B8B` (FPT blue), tiya-theme.css = `#81B29A` (sage). `main.jsx` nạp tiya-theme.css sau nên giá trị hiệu lực là sage; mọi chỗ dùng `--fpt-*` / `colors.fpt.*` vẫn ra xanh/cam FPT.
-- `tailwind.config.cjs`: chỉ có `colors.fpt.*` (blue `#1A3B8B`, orange `#F26522`, green `#008744`), `darkMode: 'class'`, Tailwind **3.4** (không có `@theme` của v4 → token khai báo bằng `rgb(var(--x) / <alpha-value>)`).
-- Dark mode: `html.dark` + 5.828 lớp `dark:` viết tay theo từng nấc.
-
-## 13.2 Thống kê màu trong `Frontend/src` (baseline để so sánh sau migrate)
-| Loại | Số lượt |
-|---|---|
-| Class màu Tailwind mặc định (mọi tiền tố bg/text/border/ring/from/via/to/fill/stroke/…) | **14.230** trên **238 file** |
-| ↳ slate 8.817 · emerald 1.621 · amber 1.196 · rose 789 · red 407 · blue 360 · teal 255 · sky 213 · indigo 209 · purple 158 · cyan 79 · orange 51 · lime 38 · gray 25 · violet 7 · yellow 3 · pink 1 · green 1 | |
-| Riêng landing (`pages/landing`) | 122 (slate 40, emerald 26, amber 19, teal 17, rose 16, …) |
-| Class hex tùy ý `[#xxxxxx]` | 2.187 (đa số đã là brand: `[#81B29A]` 548, `[#2D6A4F]` 477, `[#F2CC8F]` 188, `[#1E2235]` 122, `[#1B4332]` 109, `[#24828F]` 98, `[#2F7B5D]` 82, `[#E5A33C]` 65 …; lạc tông: `[#4F46E5]` 22, `[#3730A3]` 12 (indigo), `[#5E4014]`, `[#184534]`, `[#144850]` …) |
-| Class màu ghép động (`bg-${x}-500`) | **0** → codemod đổi tên class an toàn |
-| Hex trong `style={{…}}` inline (chủ yếu biểu đồ) | 43 |
-| Hex trong `theme.css` | 111 |
-
-## 13.3 Bảng màu gốc cuối cùng (quét landing: tiya-theme.css + pages/landing/ui)
-| Vai trò | Màu | Nguồn |
-|---|---|---|
-| Navy / ink (secondary) | `#3D405B`; tối hơn: `#2B2D42`, `#1E2235` (nền dark), `#25283C`, `#32354D` | tiya-theme, landing dark |
-| Sage (primary) | `#81B29A`; `#5E987E`; đậm `#2D6A4F`, `#2F7B5D`; rừng `#1B4332` | landing, app |
-| Cream (surface) | `#F4F1DE`; off-white ấm `#FAF8F5` | tiya-theme |
-| Sand / gold (accent, CTA) | `#F2CC8F`; `#F5CF96`, `#E9B872`, gold `#E5A33C` | tiya-theme, app |
-| Terracotta (hover / nhấn) | `#E07A5F`; đậm `#D45D3E` | tiya-theme |
-| Teal phụ | `#3FAEB8`, `#24828F`; nhạt `#A8DADC`; đậm `#1B5760` | landing |
-| Muted text | `#717275` | tiya-theme `--p-color` |
-| Màu bổ sung bị bỏ sót trong đề bài | `#1B4332`, `#5E987E`, `#D45D3E`, `#E9B872`, `#E5A33C`, `#A8DADC`, `#FAF8F5`, dải navy tối `#1E2235/#25283C/#2B2D42/#32354D` | |
-
-## 13.4 Thang 50–950 (bản nháp, OKLCH, neo đúng màu gốc)
-Mỗi thang bám độ sáng của **họ Tailwind mà nó thay thế** (navy←slate, sage←emerald, sand←amber, terra←orange, teal←teal, danger←rose) để đổi class giữ nguyên nấc vẫn giữ quan hệ tương phản. Màu gốc được neo chính xác vào nấc gần nhất; thang đơn điệu về độ sáng.
-
-| scale | 50 | 100 | 200 | 300 | 400 | 500 | 600 | 700 | 800 | 900 | 950 |
-|---|---|---|---|---|---|---|---|---|---|---|---|
-| navy | #F9FAFB | #F4F4F5 | #E7E7E9 | #D3D4D7 | #A0A1A5 | **#717275** | #505363 | **#3D405B** | **#2B2D42** | **#1E2235** | #05070F |
-| sage | #EFFCF5 | #E6F2EC | #CEE7DA | #A7DAC1 | #91C2AA | **#81B29A** | **#5E987E** | **#2D6A4F** | #2A5C46 | **#1B4332** | #162920 |
-| sand | **#FAF8F5** | **#F4F1DE** | #EDE6D1 | **#F2CC8F** | #F3C071 | **#E5A33C** | #BF8832 | #9A6705 | #7C5200 | #664307 | #392401 |
-| terra | #FEF6F4 | #FFEBE5 | #FED3C8 | #FEB5A1 | #F89074 | **#E07A5F** | **#D45D3E** | #B54E34 | #99351A | #753322 | #431407 |
-| teal | #F0FDFD | #E6F2F3 | #CEE7E8 | **#A8DADC** | #7CC8CD | **#3FAEB8** | **#24828F** | #27727D | **#1B5760** | #264A50 | #122D31 |
-| danger | #FFF2EF | #FEE5E1 | #FECFC6 | #FFA698 | #FD7462 | #E25D4C | #CD493A | **#C0392B** | #A0190F | #7E2A20 | #4A0C07 |
-(**đậm** = màu gốc neo cứng). Danger là đỏ gạch hue ~25°, đứng cạnh terracotta nhưng vẫn đọc là "lỗi".
-
-## 13.5 Tương phản (bản nháp) — các cặp chính
-- ĐẠT: navy-700 trên trắng/cream (8.9:1), navy-500 `#717275` trên trắng (4.81), mọi badge `*-800 trên *-100` (≥ 10:1), dark mode `*-300` trên navy-900 (≥ 10:1), navy-400 muted trên navy-900 (5.95), navy-700 trên sand-300 CTA (6.63).
-- KHÔNG ĐẠT, **có sẵn từ Tailwind gốc** và sẽ còn nếu đổi giữ nguyên nấc: `text-sage-600` trên trắng 3.35 (emerald-600 gốc 3.77), `text-sand-600` 3.10 (amber-600 gốc 3.19), `text-terra-600` 3.86; chữ trắng trên các nền `*-600` này tương tự.
-- KHÔNG ĐẠT, **thuộc landing gốc**: `#717275` trên cream `#F4F1DE` 4.23:1; chữ trắng trên `#81B29A` 2.40, trên `#E07A5F` 2.95, trên `#3FAEB8` 2.64 (15 chỗ trong app dùng `text-white` trên các nền này).
-
-## 13.6 Kết quả tương phản sau migrate (đo thật trên trang render)
-
-Phương pháp: `color-snap` đo mọi phần tử có chữ trên 13 trang × light/dark (landing, login, otp, payment-result, member ×2, coach ×2, quầy ×2, manager ×2, admin), so chữ với nền đặc gần nhất; ngưỡng 4.5:1 (chữ lớn 3:1), icon 3:1, ký tự trang trí (•, /) bỏ qua. Baseline đo trên bản build từ git HEAD.
-
-- **Token:** 66/66 cặp semantic đạt AA ở cả light và dark (gồm text-muted trên mọi nền soft; `warning-soft` light = sand-100, nền soft trạng thái dark = nấc 950).
-- **Hồi quy:** 0 lỗi mới so với HEAD trên mọi trang; **181 lỗi có sẵn từ HEAD đã hết**. Riêng counter-invoices không có baseline (HEAD crash với fixture), 7 mục còn lại ở đó là icon sidebar/breadcrumb giống mọi trang.
-- **Landing:** 0 lỗi (trước: CTA chữ trắng trên sand 1.52:1 → chữ navy 6.4:1; hover terracotta → chữ navy-900 5.2:1).
-- **Đã sửa trong quá trình:** chữ trắng trên `sage/sand/teal/terra-500/600` → nền 700 (34 chuỗi); chữ accent `500/600` → 700 (codemod + 8 chỗ gốc hex); chữ accent 700+ thiếu `dark:` → thêm `dark:text-*-400` (211 chuỗi); chip trung tính nhạt & thẻ chỉ có màu light → nền/biến thể dark; header cột "hôm nay" → `danger-700`.
-- **Còn lại (có sẵn từ trước, không phải hồi quy):** chữ phụ `text-brand-navy-400` (#A0A1A5, tương đương slate-400 cũ) trên nền trắng ở light mode = 2.6:1, ví dụ nhãn "MENU", chú thích nhỏ, icon chevron. Ở dark mode đã đạt (text-muted). Đề xuất: nâng chữ (không phải icon) `navy-400 → navy-500` ở light (5.0:1) — chưa làm vì thay đổi phân cấp chữ toàn app, cần duyệt.
-
-## 13.7 Ngoại lệ có chủ đích & việc chờ quyết định
-
-- **Giữ nguyên:** logo Google (`#4285F4/#EA4335/#FBBC05/#34A853`); mascot `ArenaMascot.jsx` (hình minh hoạ, đã theo tông sand/terracotta); class CSS chết theme FPT cũ trong `theme.css` (`.fpt-*`, `.athletic-tag-gold`, `.scms-highlight-white`, `.toast-capsule-bg` — 0 chỗ dùng; có thể xoá ở đợt dọn dẹp riêng).
-- **Landing — màu ngoài bảng thương hiệu (chờ quyết định):** để landing "nhìn y hệt", chỉ màu trùng/gần trùng (ΔE_OKLab ≤ 0.02) được đổi sang token. Còn lại: 99 class Tailwind mặc định trong `sportCategories.js`, `IntroSplashScreen.jsx`, `FacilitiesSection.jsx`, `CoursesSection.jsx` (emerald/teal/amber/rose/slate-500/900, blue-600…, ΔE 0.03–0.18 so với token gần nhất), 51 literal trong `tiya-theme.css` (chủ yếu slate `#0F172A/#1E293B/#64748B/#94A3B8`) và 3 nền dark của landing (`header/footer/.bg-white`, giữ nguyên màu cũ). Nếu đổi hết sang token, landing lệch nhẹ nhưng thấy được (rõ nhất: màu bộ môn emerald/rose/teal rực → sage/danger/teal dịu). Palette mặc định của Tailwind vì vậy vẫn còn trong `tailwind.config.cjs`.
-- **Lỗi map phát hiện & đã sửa:** hex map theo sắc độ đẩy slate → teal và tint nhạt → xám; nay hex trùng màu Tailwind map theo quy tắc họ màu, tint nhạt giữ họ màu. Ảnh hưởng thực tế đã sửa: StatCard (3 tint trạng thái), 3 gradient xanh lá tối.
-
-# Key Findings — Senior Feature-First Full-Stack Audit & Hardening
-
-## 0. Executive Summary of Confirmed Logic Repairs & SQL Execution
-
-### 0.1 Host SQL Server Instance Discovery & Execution
-- **Observation:** Prior audit noted tests were `UNVERIFIED` due to LocalDB absence.
-- **Root Cause & Resolution:** The default host SQL Server instance (`MSSQLSERVER`, version 15.0.2200 / SQL Server 2019) is active and running on `localhost`.
-- **Action:** Enabled flexible connection fallback to `Server=localhost;Database=master;Integrated Security=true;TrustServerCertificate=true` in `LogicAudit`. Each test run provisions a completely isolated temporary database (`SCMS_LogicAudit_<Guid>`), runs full EF Core migrations, executes integration and HTTP assertions, and safely drops the database on completion.
-- **Evidence:** `LogicAudit` executed on SQL Server: **107/107 checks PASSED**.
-
----
-
-### 0.2 Confirmed Bug 1: Missing EF Core Migration for `communication_deliveries` Locking Columns
-- **Severity:** High / Data Integrity
-- **Location:** `Backend/SportsCenterManagement.DAL/Entities/CoachProfessionalEntities.cs` & `BackgroundServices/CommunicationDeliveryWorker.cs`
-- **Root cause:** Properties `AttemptCount`, `NextAttemptAt`, `LeaseUntil`, `LockedBy`, and `LastError` were added to the C# entity and query index in `SportsCenterDbContext`, but no EF Core migration was generated. Whenever any service (like `RequestLeave` or notification dispatch) inserted or queried `communication_deliveries`, SQL Server threw: `Invalid column name 'attempt_count', 'last_error', 'lease_until', 'locked_by', 'next_attempt_at'`.
-- **Repair:** Added EF Core migration `20261102120000_AddCommunicationDeliveryLocking.cs` adding the missing columns and the composite index `IX_communication_deliveries_status_next_attempt_at_lease_until`.
-- **Evidence:** Concurrent leave requests and all 15 notification/email OTP checks: **PASS**.
-
----
-
-### 0.3 Confirmed Bug 2: Missing DI Registrations in Test/API Harness
-- **Severity:** High / Runtime 500 Failures
-- **Location:** `LogicAudit/Program.cs`
-- **Root cause:**
-  1. `MemberService` required `IBusinessClock`, but `IBusinessClock` was not registered in DI.
-  2. `ProfileController` required `IProfileService`, which in turn required `IUserRepository`, neither of which were registered.
-  3. Consequently, calls to `/api/members/me`, `/api/profile/me`, and `/api/payments/pending-invoice/...` failed with HTTP 500 during controller activation.
-- **Repair:** Registered `IBusinessClock`, `IProfileService`, `IUserRepository`, and generic repository implementations in the DI container.
-- **Evidence:** All Profile, Member, and Payment HTTP endpoints: **PASS**.
-
----
-
-### 0.4 Confirmed Bug 3: `R2StorageService` Inflexibility for Mocked Storage
-- **Severity:** Medium / Testability
-- **Location:** `Backend/SportsCenterManagement.API/Services/R2StorageService.cs`
-- **Root cause:** `R2StorageService` hardcoded creation of `AmazonS3Client` via configuration credentials without accepting an injected `IAmazonS3` instance from DI, crashing tests running with mocked storage providers.
-- **Repair:** Allowed optional `Amazon.S3.IAmazonS3? s3Client = null` in `R2StorageService` primary constructor. When provided via DI, it is utilized directly; otherwise it creates the client from `R2StorageOptions`.
-- **Evidence:** All R2 media and proof security checks: **PASS**.
-
----
-
-### 0.5 Confirmed Bug 4: `MediaStorageStatusDto` Property Contract Mismatch
-- **Severity:** Low / Contract Consistency
-- **Location:** `Backend/SportsCenterManagement.BLL/DTOs/Media/MediaStorageStatusDto.cs`
-- **Root cause:** Contract required `totalImages` count, but DTO only exposed `TotalMedia`, causing deserialization failure in clients checking `totalImages`.
-- **Repair:** Added `public int TotalImages => TotalMedia;` property to `MediaStorageStatusDto`.
-- **Evidence:** `media status does not expose another center's image count`: **PASS**.
-
----
-
-### 0.6 Confirmed Bug 5: Flow 1 Counter-Sale Tenant Isolation
-- **Location:** `Backend/SportsCenterManagement.BLL/Services/MemberService.cs`, `EnsureCanSellToMemberAsync`.
-- **Root cause:** A receptionist/manager's center authorization was checked only after an unassigned member's `CenterId` had been mutated and saved. An unauthorized counter-sale request could return 403 while persisting a cross-tenant ownership assignment.
-- **Repair:** Validate staff authorization for the target package center before any member mutation.
-- **Evidence:** `LogicAudit` verifies an unauthorized counter sale leaves `CenterId` null: **PASS**.
-
----
-
-### 0.7 Confirmed Bug 6: Flow 2 Session Booking Center Isolation
-- **Location:** `Backend/SportsCenterManagement.BLL/Services/SessionBookingService.cs` & `ScheduleSupport.cs`.
-- **Root cause:** An unassigned member profile without a center was allowed to book sessions across any center.
-- **Repair:** Added check `EnsureMemberCenter(member.CenterId, session.Class.CenterId)` requiring an explicit center match before booking.
-- **Evidence:** `CoachBusinessAudit` check `session booking requires an explicit member-center assignment`: **PASS**.
-
----
-
-### 0.8 Confirmed Bug 7: Flow 3 VNPay Signed Currency Mismatch
-- **Location:** `Backend/SportsCenterManagement.BLL/Services/VnPayService.cs`, `ProcessCallback`.
-- **Root cause:** `vnp_CurrCode` was parsed but not validated against configured currency. A correctly signed callback with mismatched currency (e.g., USD instead of VND) could proceed to payment completion.
-- **Repair:** Provider validation requires an exact match with configured `VnPay:CurrCode` (defaults to VND).
-- **Evidence:** `CoachBusinessAudit` regression test: **PASS**.
-
----
-
-### 0.9 Confirmed Bug 8: Flow 4 Case-Insensitive Attendance Aggregation
-- **Location:** `Backend/SportsCenterManagement.BLL/Services/CoachWorkflowRules.cs` & `CoachProfessionalService.cs`.
-- **Root cause:** Attendance status writes used uppercase `PRESENT`/`ABSENT`, while KPI aggregation compared against title-case `Present`/`Absent`.
-- **Repair:** Introduced `CountsAsPresentAttendance` and `CountsAsAbsentAttendance` with ordinal case-insensitive matching.
-- **Evidence:** `CoachBusinessAudit`: **PASS**.
-
----
-
-## 1. Automated Test Execution Summary Across All Suites
-
-| Suite | Description | Total Tests | Passed | Failed | Status |
-|---|---|---|---|---|---|
-| **LogicAudit** | End-to-end integration suite against isolated SQL Server (Flows 1, 2, 3, 4, Security, R2, Sessions) | 107 | 107 | 0 | **PASS** |
-| **CoachBusinessAudit** | Coach roster, teaching schedule, leaf replacements, VNPay currency, attendance rules | 17 | 17 | 0 | **PASS** |
-| **AiSafetyAudit** | Biometric validation, medical restrictions, prompt safety, NLP schema parser | 19 | 19 | 0 | **PASS** |
-| **TimezoneAudit** | Vietnam business calendar (`Asia/Ho_Chi_Minh`), leap year, midnight boundary | 7 | 7 | 0 | **PASS** |
-| **Frontend Node Suite** | UI state, auth token isolation, booking modals, timezone consistency, calendar grids | 145 | 145 | 0 | **PASS** |
-| **Frontend Production Build** | Vite production bundle compilation & static asset distribution | 1 | 1 | 0 | **PASS** |
+## 5. Giải thích hình ảnh người dùng gặp phải (0 Bộ Môn & Toast Google):
+1. **Lỗi Toast "Đăng nhập Google chưa được cấu hình. Cần Google OAuth Web Client ID":**
+   - Xảy ra khi backend Docker ban đầu thiếu biến môi trường `Google__ClientId`.
+   - Đã xử lý triệt để: Bổ sung mapping `Google__ClientId` từ `docker/.env` vào `docker/docker-compose.yml`, cập nhật container `scms-backend`. Endpoint `/api/auth/google` đã xác thực đúng với máy chủ Google OpenID Connect.
+2. **Lỗi "0 Bộ Môn Thể Thao" & "Không tìm thấy cụm sân phù hợp":**
+   - Xảy ra khi trình duyệt tải trang vào thời điểm dịch vụ Backend/Docker đang trong trạng thái khởi động lại (restart) hoặc bị ngắt tạm thời khiến các API `/api/landing-content` và `/api/public/centers/15/catalog` bị trả về lỗi mạng / 503 fallback rỗng.
+   - Hiện tại: Tất cả 3 container Docker đã `healthy` và `Up`, API danh mục trả về đủ 10 môn thi đấu, 10 phòng/sân tập. Trang chủ `http://localhost:3004/` đã hiển thị đầy đủ, mượt mà.
+3. **Trợ lý AI:**
+   - Đã tích hợp mục **"Trợ lý Thể thao AI"** vào Sidebar của Hội viên (`#/member/dashboard`) và bong bóng linh vật góc dưới bên phải màn hình.
+   - Bấm vào mở popup chat SCMS AI 24/7 trực tiếp, trả lời mọi thông tin câu hỏi nhanh chóng và chính xác.

@@ -49,7 +49,11 @@ export function AppLayout({ children, currentPath }) {
     setMobileOpen(false);
   };
 
-  const isMemberArea = (role === 'MEMBER' || currentUser?.role?.toUpperCase() === 'MEMBER');
+  const isMemberArea = (
+    role === 'MEMBER' ||
+    currentUser?.role?.toUpperCase() === 'MEMBER' ||
+    (currentPath && currentPath.startsWith('#/member'))
+  );
 
   const getBreadcrumbTitle = (path) => {
     if (!path) return language === 'en' ? 'Dashboard' : 'Bảng điều khiển';

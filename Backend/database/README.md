@@ -1,14 +1,21 @@
-# Database Setup & Scripts
+# Database Setup - SportsCenterDB
 
 Cơ sở dữ liệu SCMS sử dụng **SQL Server 2019/2022** và Entity Framework Core.
 
-## 🚀 Khởi tạo nhanh bằng 1 file SQL duy nhất (Khuyên dùng khi bàn giao/chấm bài)
+## Khởi tạo nhanh bằng 1 file SQL duy nhất
 
-File [`init_database.sql`](./init_database.sql) đã được gộp toàn bộ cấu trúc bảng (Schema DDL) và dữ liệu mẫu đầy đủ (Seed Data: Admin, HLV, Hội viên, Lớp học, Lịch tập, KPI):
+File [`SportsCenterDB.sql`](./SportsCenterDB.sql) chứa **toàn bộ**:
+- Schema DDL (tạo bảng, index, constraints)
+- EF Core Migrations
+- Seed Data (Admin, HLV, Hội viên, Lớp học, Lịch tập)
+- Demo Data (subscriptions, invoices, payments, check-ins, attendance)
+- Revenue Distribution (phân bố doanh thu thực tế)
 
-1. Mở file `Backend/database/init_database.sql` trong **SQL Server Management Studio (SSMS)** hoặc **Azure Data Studio**.
-2. Kết nối tới SQL Server của bạn.
-3. Nhấn **Execute (F5)**. File sẽ tự động tạo cơ sở dữ liệu `SportsCenterManagement`, tạo toàn bộ bảng và nạp dữ liệu mẫu hoàn chỉnh.
+### Cách chạy:
+
+1. Mở file `Backend/database/SportsCenterDB.sql` trong **SSMS** hoặc **Azure Data Studio**.
+2. Kết nối tới SQL Server.
+3. Nhấn **Execute (F5)**. File sẽ tự động tạo database `SportsCenterDB`, toàn bộ bảng và nạp dữ liệu mẫu hoàn chỉnh.
 
 ### Tài khoản mẫu sau khi chạy:
 - **System Admin**: `admin` / `Admin@SCMS2026!Secure` (hoặc `Admin@123456`)
@@ -18,7 +25,7 @@ File [`init_database.sql`](./init_database.sql) đã được gộp toàn bộ c
 
 ---
 
-## 🛠 Quản lý Migrations bằng EF Core (Dành cho Lập trình viên)
+## Quản lý Migrations bằng EF Core (Dành cho Lập trình viên)
 
 Từ thư mục `Backend`:
 
