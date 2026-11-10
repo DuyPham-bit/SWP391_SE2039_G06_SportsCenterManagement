@@ -1,7 +1,9 @@
 // Trích xuất ngày (ISO YYYY-MM-DD), tên lớp, tên học viên từ nội dung thông báo
 export function parseNotificationDetails(item) {
   if (!item) return {};
-  const text = (String(item.title || '') + ' ' + String(item.content || item.message || '')).trim();
+  const content = String(item.content || item.message || '').trim();
+  const title = String(item.title || '').trim();
+  const text = (title + ' ' + content).trim();
 
   // 1. Tìm ngày tháng dạng "ngày 27/10/2026" hoặc "27/10/2026" hoặc "2026-10-27"
   let isoDate = null;
@@ -16,11 +18,17 @@ export function parseNotificationDetails(item) {
     if (isoMatch) isoDate = isoMatch[1];
   }
 
-  // 2. Tìm tên lớp học sau dấu ":" ví dụ "đã đặt buổi học: Cầu lông Nâng cao Tấn công & Di chuyển, ngày..."
+  // 2. Tìm tên lớp học
+  // Ưu tiên trích xuất từ content để không bị lẫn cụm "Ca học sắp bắt đầu" trong tiêu đề
   let className = null;
-  const classMatch = text.match(/(?:buổi học|lớp|khóa học|chỗ học):\s*([^,]+)/i);
-  if (classMatch) {
-    className = classMatch[1].trim();
+  const caHocMatch = content.match(/(?:bạn có ca học|ca học|buổi tập)\s+([^,]+?)\s+ngày\s+\d{1,2}\/\d{1,2}\/\d{4}/i);
+  if (caHocMatch) {
+    className = caHocMatch[1].trim();
+  } else {
+    const colonMatch = text.match(/(?:buổi học|lớp|khóa học|chỗ học(?: của bạn đã được [^:]+)?|xác nhận chỗ học):\s*([^,]+)/i);
+    if (colonMatch) {
+      className = colonMatch[1].trim();
+    }
   }
 
   // 3. Tìm tên học viên ở đầu câu (ví dụ "Hoàng Hải Yến đã đặt...")

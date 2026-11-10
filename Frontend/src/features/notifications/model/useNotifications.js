@@ -50,17 +50,32 @@ export function useNotifications() {
     };
   }, [currentUser?.id, refresh]);
 
-  const markRead = async item => {
-    if (item.isRead || readingId !== null || readingAll || !currentUser) return;
+  const markRead = async input => {
+    if (!input || !currentUser || readingAll) return;
+    const isObj = typeof input === 'object' && input !== null;
+    const targetId = isObj ? input.id : input;
+    const currentItem = isObj ? input : items.find(n => n.id === targetId);
+    if (!targetId || currentItem?.isRead || readingId !== null) return;
+
     const userId = currentUser.id;
-    setReadingId(item.id);
+    setReadingId(targetId);
+    // Cập nhật lạc quan ngay lập tức để huy hiệu số và chấm đỏ biến mất tức thì
+    setItems(previous => previous.map(it => it.id === targetId ? { ...it, isRead: true } : it));
     try {
-      await notificationApi.markRead(item.id);
-      if (activeUserId.current !== userId) return;
-      window.dispatchEvent(new CustomEvent('scms:notification-read', { detail: { id: item.id, userId } }));
-      setError('');
-    } catch (err) { if (activeUserId.current === userId) setError(err.message || 'Không thể đánh dấu đã đọc.'); }
-    finally { if (activeUserId.current === userId) setReadingId(null); }
+      await notificationApi.markRead(targetId);
+      if (activeUserId.current === userId) {
+        window.dispatchEvent(new CustomEvent('scms:notification-read', { detail: { id: targetId, userId } }));
+        setError('');
+      }
+    } catch (err) {
+      if (activeUserId.current === userId) {
+        // Rollback nếu có lỗi thực tế
+        setItems(previous => previous.map(it => it.id === targetId ? { ...it, isRead: false } : it));
+        setError(err.message || 'Không thể đánh dấu đã đọc.');
+      }
+    } finally {
+      if (activeUserId.current === userId) setReadingId(null);
+    }
   };
 
   const markAllRead = async () => {

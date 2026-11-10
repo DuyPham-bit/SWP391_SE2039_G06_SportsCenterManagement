@@ -4,10 +4,11 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useNotifications } from '../model/useNotifications.js';
 import { formatMemberDateTime } from '../../../entities/member/index.js';
 import { translateNotificationTitle, translateNotificationContent } from '../../../shared/i18n/i18nHelper.js';
-import { notificationTarget, getNotificationActionLabel } from '../lib/notificationNavigation.js';
+import { notificationTarget, getNotificationActionLabel, parseNotificationDetails } from '../lib/notificationNavigation.js';
 
 export function NotificationInbox() {
   const [open, setOpen] = useState(false);
+  const [selectedNotification, setSelectedNotification] = useState(null);
   const containerRef = useRef(null);
   const { role } = useAuth();
   const { language } = useLanguage();
@@ -37,9 +38,9 @@ export function NotificationInbox() {
   const items = backendItems;
   const unreadCount = items.filter(n => !n.isRead).length;
 
-  const handleMarkAsRead = async (id, e) => {
+  const handleMarkAsRead = async (itemOrId, e) => {
     e?.stopPropagation();
-    await apiMarkRead(id);
+    await apiMarkRead(itemOrId);
   };
 
   const handleMarkAllRead = async () => {
@@ -136,10 +137,16 @@ export function NotificationInbox() {
                       !item.isRead ? 'bg-brand-danger-50/20 dark:bg-brand-danger-950/10' : ''
                     }`}
                     onClick={() => {
-                      if (!item.isRead) handleMarkAsRead(item.id);
+                      if (!item.isRead) handleMarkAsRead(item);
                       if (target) {
                         setOpen(false);
-                        window.location.hash = target;
+                        const details = parseNotificationDetails(item);
+                        window.dispatchEvent(new CustomEvent('scms:open-schedule-target', { detail: details }));
+                        if (window.location.hash !== target) {
+                          window.location.hash = target;
+                        }
+                      } else {
+                        setSelectedNotification(item);
                       }
                     }}
                   >
@@ -183,6 +190,65 @@ export function NotificationInbox() {
                 );
               })
             )}
+          </div>
+        </div>
+      )}
+
+      {/* Modal bung ra xem toàn bộ chi tiết thông báo nếu không có trang đích riêng */}
+      {selectedNotification && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-brand-navy-950/60 backdrop-blur-xs animate-fade-in"
+          onClick={() => setSelectedNotification(null)}
+        >
+          <div
+            className="w-full max-w-md bg-white dark:bg-brand-navy-900 rounded-3xl p-6 shadow-2xl border border-brand-navy-200/80 dark:border-brand-navy-800 space-y-4 animate-scale-up"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-brand-navy-100 dark:border-brand-navy-800">
+              <h3 className="font-chivo font-black text-base text-brand-navy-900 dark:text-brand-navy-100">
+                {isEn ? 'Notification Details' : 'Chi Tiết Thông Báo'}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setSelectedNotification(null)}
+                className="w-8 h-8 rounded-full flex items-center justify-center text-brand-navy-400 hover:text-brand-navy-700 hover:bg-brand-navy-100 dark:hover:bg-brand-navy-800 transition-colors cursor-pointer"
+                aria-label={isEn ? 'Close' : 'Đóng'}
+              >
+                <span className="material-symbols-outlined text-[18px]">close</span>
+              </button>
+            </div>
+
+            <div className="flex items-center gap-3 p-3.5 rounded-2xl bg-brand-navy-50 dark:bg-brand-navy-800/60 border border-brand-navy-200/80 dark:border-brand-navy-700">
+              <span className="w-10 h-10 rounded-full bg-brand-danger-100 text-brand-danger-600 dark:bg-brand-danger-950/60 dark:text-brand-danger-400 flex items-center justify-center shrink-0">
+                <span className="material-symbols-outlined text-[20px]">
+                  {selectedNotification.type === 'ClassReminder' ? 'alarm' : selectedNotification.type === 'Booking' ? 'calendar_today' : 'info'}
+                </span>
+              </span>
+              <div className="min-w-0 flex-1">
+                <h4 className="font-chivo font-black text-sm text-brand-navy-900 dark:text-brand-navy-100 leading-snug">
+                  {translateNotificationTitle(selectedNotification.title, language)}
+                </h4>
+                <time className="text-[11px] text-brand-navy-400 dark:text-brand-navy-500 font-mono block mt-0.5">
+                  {formatMemberDateTime(selectedNotification.createdAt)}
+                </time>
+              </div>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white dark:bg-brand-navy-950/40 border border-brand-navy-100 dark:border-brand-navy-800 text-sm text-brand-navy-800 dark:text-brand-navy-200 whitespace-pre-wrap leading-relaxed shadow-xs">
+              {translateNotificationContent(selectedNotification.content, language)}
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2 border-t border-brand-navy-100 dark:border-brand-navy-800">
+              <button
+                type="button"
+                onClick={() => setSelectedNotification(null)}
+                className="px-4 py-2 rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 hover:bg-brand-navy-50 dark:hover:bg-brand-navy-800 text-xs font-bold text-brand-navy-700 dark:text-brand-navy-200 transition-colors cursor-pointer"
+              >
+                {isEn ? 'Close' : 'Đóng'}
+              </button>
+            </div>
           </div>
         </div>
       )}
