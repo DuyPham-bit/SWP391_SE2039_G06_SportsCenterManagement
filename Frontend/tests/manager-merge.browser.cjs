@@ -10,6 +10,9 @@ const frontend = path.resolve(__dirname, '..');
 const artifacts = path.join(frontend, 'tmp/manager-merge');
 const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
 const errors = [], checks = [], requests = [];
+const reportsOnly = process.argv.includes('--reports-only');
+const previousDay = new Date(new Date(`${today}T00:00:00Z`).getTime() - 86400000).toISOString().slice(0, 10);
+let fixtureRole = 'Manager';
 const resetRequests = [], resetConfirmations = [];
 const sports = [{ id: 1, name: 'Yoga', status: 'Active' }, { id: 2, name: 'Bơi lội', status: 'Active' }];
 const rooms = [{ id: 1, name: 'Phòng kiểm thử', capacity: 30, type: 'Studio', status: 'Active' }];
@@ -40,7 +43,8 @@ const server = http.createServer(async (req, res) => {
     if (route === '/api/auth/reset-password') { resetConfirmations.push({ res, body }); return; }
     if (route === '/api/auth/login') return json(res, issueBrowserSession(req, res, 'manager-fixture-token'));
     if (browserCredential(req) !== 'manager-fixture-token') return json(res, { message: 'Unauthorized' }, 401);
-    if (route === '/api/profile/me') return json(res, { userId: 99, role: 'Manager', status: 'Active', centerId: 1, fullName: 'Manager kiểm thử', email: 'manager@example.test' });
+    if (route === '/api/profile/me') return json(res, { userId: 99, role: fixtureRole, status: 'Active', centerId: fixtureRole === 'Manager' ? 1 : null, fullName: 'Manager kiểm thử', email: 'manager@example.test' });
+    if (route === '/api/admin/centers') return json(res, [{ id: 1, name: 'Center test', status: 'Active' }]);
     if (route === '/api/access/me/capabilities') return json(res, ['manage_staff', 'manage_members', 'manage_classes', 'manage_packages', 'assign_coach', 'view_reports']);
     if (route === '/api/notifications/me') return json(res, []);
     if (route === '/api/centers/1/roles') return json(res, roleMatrix);
@@ -70,6 +74,13 @@ const server = http.createServer(async (req, res) => {
     if (route === '/api/classes/1/schedules') return json(res, [{ id: 1, dayOfWeek: 1, startTime: '08:00:00', endTime: '09:00:00', roomId: 1, status: 'Active', startDate: today, endDate: today }]);
     if (route === '/api/classes/1/coaches') { classes[0].coachId = body.coachId; classes[0].coachName = 'Coach Yoga'; return json(res, {}); }
     if (route === '/api/centers/1/membership-packages' || route === '/api/centers/1/membership-packages/all') return json(res, []);
+    if (reportsOnly && route === '/api/reports/revenue') {
+      const from = url.searchParams.get('from'), to = url.searchParams.get('to');
+      const inRange = day => day >= from && day <= to;
+      const gross = (inRange(previousDay) ? 650000 : 0) + (inRange(today) ? 3200000 : 0);
+      const refunds = inRange(today) ? 650000 : 0;
+      return json(res, { gross, refunds, net: gross - refunds, periods: [] });
+    }
     if (route === '/api/reports/revenue') return json(res, { net: 90000, gross: 100000, refunds: 10000, periods: [{ periodStart: today, net: 90000, gross: 100000, refunds: 10000 }] });
     if (route === '/api/reports/revenue-by-sport') return json(res, { allocatedNet: 12345, unallocatedNet: 77655, sports: [{ sportId: 1, sportName: 'Yoga', net: 12345, gross: 12345, refunds: 0, share: 13.7 }] });
     if (route === '/api/reports/membership') return json(res, { totalMembers: 1, activeMembers: 1, newMembers: 1, periods: [{ periodStart: today, newMembers: 1 }] });
@@ -102,13 +113,19 @@ class CDP {
       const message = JSON.parse(event.data);
       if (message.id) {
         const task = this.pending.get(message.id); this.pending.delete(message.id);
+        if (!task) return;
+        clearTimeout(task.timeout);
         if (message.error) task.reject(new Error(message.error.message)); else task.resolve(message.result);
       } else if (message.method === 'Runtime.exceptionThrown') errors.push(message.params.exceptionDetails.exception?.description || message.params.exceptionDetails.text);
     });
   }
   send(method, params = {}, sessionId) {
     const id = ++this.sequence;
-    return new Promise((resolve, reject) => { this.pending.set(id, { resolve, reject }); socket.send(JSON.stringify({ id, method, params, sessionId })); });
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => { this.pending.delete(id); reject(new Error(`CDP timed out: ${method}`)); }, 12000);
+      this.pending.set(id, { resolve, reject, timeout });
+      socket.send(JSON.stringify({ id, method, params, sessionId }));
+    });
   }
 }
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
@@ -139,6 +156,35 @@ async function closeDialog() {
   await until('dialog closed', () => evaluate(`!document.querySelector('[role=dialog]')`));
 }
 
+async function verifyReportPeriods(hash) {
+  await route(hash, 'Doanh Thu Theo Bộ Môn');
+  await until('report data', () => evaluate(`document.querySelector('main').textContent.includes('12.345')`));
+  if (!reportsOnly) assert.equal(await evaluate(`(() => { const section=[...document.querySelectorAll('main section')].find(s=>s.textContent.includes('Biểu Đồ Xếp Hạng Bộ Môn')); return section.textContent.includes('12.345') && !section.textContent.includes('90.000'); })()`), true);
+  await click('Hôm nay', 'document.querySelector("main")');
+  await until('daily report', () => requests.some(r => r.route === '/api/reports/revenue' && r.query.from === today && r.query.to === today));
+  await until('daily report loaded', () => evaluate(`!document.querySelector('#btn-print-report').disabled`));
+  assert.deepEqual(await evaluate(`Array.from(document.querySelectorAll('main input[type=date]'), input => input.value)`), [today, today], 'Quick period must update both visible date inputs');
+  const printPeriod = () => evaluate(`document.querySelector('main [class~="print:block"]').textContent`);
+  assert.ok((await printPeriod()).includes(`${today} → ${today}`), 'Printed header must use the applied daily period');
+  const requestCount = requests.filter(r => r.route === '/api/reports/revenue').length;
+  await setInput('main input[type=date]', previousDay);
+  assert.ok((await printPeriod()).includes(`${today} → ${today}`), 'Unapplied date edits must not change the printed report period');
+  assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Thay đổi khoảng ngày chưa được áp dụng.')`), true);
+  assert.equal(requests.filter(r => r.route === '/api/reports/revenue').length, requestCount);
+  await click('Áp dụng', 'document.querySelector("main")');
+  await until('custom report loaded', () => evaluate(`!document.querySelector('#btn-print-report').disabled && document.querySelector('main [class~="print:block"]').textContent.includes(${JSON.stringify(`${previousDay} → ${today}`)})`));
+  if (reportsOnly) assert.equal(await evaluate(`document.querySelector('main').textContent.includes('3.200.000đ')`), true);
+  await click('Năm nay', 'document.querySelector("main")');
+  await until('yearly report loaded', () => evaluate(`!document.querySelector('#btn-print-report').disabled && document.querySelector('main form select').value === 'month'`));
+  assert.equal(await evaluate(`document.querySelector('main input[type=date]').value`), `${today.slice(0, 4)}-01-01`);
+  await click('Hôm nay', 'document.querySelector("main")');
+  await until('daily grouping restored', () => evaluate(`!document.querySelector('#btn-print-report').disabled && document.querySelector('main form select').value === 'day'`));
+  if (reportsOnly) assert.equal(await evaluate(`document.querySelector('main').textContent.includes('2.550.000đ')`), true);
+  checks.push(`Report controls synchronize dates/grouping and print the applied period: ${hash}`);
+  if (!reportsOnly) checks.push('Report rankings show API sport revenue, and the daily filter sends the correct date range');
+
+}
+
 (async () => {
   fs.mkdirSync(artifacts, { recursive: true });
   const build = spawn(process.execPath, ['node_modules/vite/bin/vite.js', 'build', '--outDir', path.join(artifacts, 'dist')], {
@@ -164,60 +210,62 @@ async function closeDialog() {
   await cdp.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 800, deviceScaleFactor: 1, mobile: false }, session);
   await cdp.send('Page.navigate', { url: `${origin}/#/login` }, session);
   await until('login', () => evaluate(`Boolean(document.getElementById('login-email'))`));
-  await click('Quên mật khẩu?');
-  await setInput('[role=dialog] input[type=email]', 'first@example.test');
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit(); document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('reset request pending', () => resetRequests.length > 0);
-  await delay(150);
-  assert.equal(resetRequests.length, 1, 'Duplicate reset requests must be prevented');
-  assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').disabled`), true);
-  checks.push('Password reset locks the submitted account and prevents duplicate requests');
-  await closeDialog();
-  await click('Quên mật khẩu?');
-  assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').value`), '');
-  json(resetRequests[0].res, { message: 'Earlier request accepted', developmentOtp: null });
-  await delay(150);
-  assert.equal(await evaluate(`Boolean(document.querySelector('[role=dialog] input[type=email]'))`), true);
-  checks.push('Closing reset clears sensitive state and discards a delayed OTP response');
-  await setInput('[role=dialog] input[type=email]', 'second@example.test');
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('second reset request', () => resetRequests.length === 2);
-  json(resetRequests[1].res, { message: 'Current request accepted', developmentOtp: null });
-  await until('OTP form', () => evaluate(`Boolean(document.getElementById('reset-new-password'))`));
-  await setInput('[role=dialog] input[type=text]', '123456');
-  await setInput('#reset-new-password', 'Valid_Reset42!');
-  await setInput('#reset-confirm-password', 'Valid_Reset42!');
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit(); document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('confirmation pending', () => resetConfirmations.length > 0);
-  await delay(150);
-  assert.equal(resetConfirmations.length, 1, 'Duplicate confirmations must be prevented');
-  assert.equal(resetConfirmations[0].body.email, 'second@example.test');
-  assert.equal(await evaluate(`[...document.querySelectorAll('[role=dialog] button')].find(b=>b.textContent.includes('Quay lại')).disabled`), true);
-  await closeDialog();
-  await click('Quên mật khẩu?');
-  resetConfirmations[0].res.writeHead(204); resetConfirmations[0].res.end();
-  await delay(150);
-  assert.equal(await evaluate(`Boolean(document.querySelector('[role=dialog] input[type=email]'))`), true);
-  assert.equal(await evaluate(`document.getElementById('login-email').value`), '');
-  checks.push('Closing during confirmation discards late success and preserves the newly opened dialog');
-  await setInput('[role=dialog] input[type=email]', 'third@example.test');
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('third reset request', () => resetRequests.length === 3);
-  json(resetRequests[2].res, { message: 'Gateway unavailable', developmentOtp: null }, 503);
-  await until('reset retry enabled', () => evaluate(`!document.querySelector('[role=dialog] button[type=submit]').disabled`));
-  assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').value`), 'third@example.test');
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('retry reset request', () => resetRequests.length === 4);
-  json(resetRequests[3].res, { message: 'Request accepted', developmentOtp: null });
-  await until('retry OTP form', () => evaluate(`Boolean(document.getElementById('reset-new-password'))`));
-  await setInput('[role=dialog] input[type=text]', '654321');
-  await setInput('#reset-new-password', 'Valid_Reset42!');
-  await setInput('#reset-confirm-password', 'Valid_Reset42!');
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('current confirmation', () => resetConfirmations.length === 2);
-  resetConfirmations[1].res.writeHead(204); resetConfirmations[1].res.end();
-  await until('reset completed', () => evaluate(`!document.querySelector('[role=dialog]') && document.getElementById('login-email').value === 'third@example.test'`));
-  checks.push('Reset API errors keep the form retryable, and only the current completion updates login');
+  if (!reportsOnly) {
+    await click('Quên mật khẩu?');
+    await setInput('[role=dialog] input[type=email]', 'first@example.test');
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit(); document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('reset request pending', () => resetRequests.length > 0);
+    await delay(150);
+    assert.equal(resetRequests.length, 1, 'Duplicate reset requests must be prevented');
+    assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').disabled`), true);
+    checks.push('Password reset locks the submitted account and prevents duplicate requests');
+    await closeDialog();
+    await click('Quên mật khẩu?');
+    assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').value`), '');
+    json(resetRequests[0].res, { message: 'Earlier request accepted', developmentOtp: null });
+    await delay(150);
+    assert.equal(await evaluate(`Boolean(document.querySelector('[role=dialog] input[type=email]'))`), true);
+    checks.push('Closing reset clears sensitive state and discards a delayed OTP response');
+    await setInput('[role=dialog] input[type=email]', 'second@example.test');
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('second reset request', () => resetRequests.length === 2);
+    json(resetRequests[1].res, { message: 'Current request accepted', developmentOtp: null });
+    await until('OTP form', () => evaluate(`Boolean(document.getElementById('reset-new-password'))`));
+    await setInput('[role=dialog] input[type=text]', '123456');
+    await setInput('#reset-new-password', 'Valid_Reset42!');
+    await setInput('#reset-confirm-password', 'Valid_Reset42!');
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit(); document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('confirmation pending', () => resetConfirmations.length > 0);
+    await delay(150);
+    assert.equal(resetConfirmations.length, 1, 'Duplicate confirmations must be prevented');
+    assert.equal(resetConfirmations[0].body.email, 'second@example.test');
+    assert.equal(await evaluate(`[...document.querySelectorAll('[role=dialog] button')].find(b=>b.textContent.includes('Quay lại')).disabled`), true);
+    await closeDialog();
+    await click('Quên mật khẩu?');
+    resetConfirmations[0].res.writeHead(204); resetConfirmations[0].res.end();
+    await delay(150);
+    assert.equal(await evaluate(`Boolean(document.querySelector('[role=dialog] input[type=email]'))`), true);
+    assert.equal(await evaluate(`document.getElementById('login-email').value`), '');
+    checks.push('Closing during confirmation discards late success and preserves the newly opened dialog');
+    await setInput('[role=dialog] input[type=email]', 'third@example.test');
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('third reset request', () => resetRequests.length === 3);
+    json(resetRequests[2].res, { message: 'Gateway unavailable', developmentOtp: null }, 503);
+    await until('reset retry enabled', () => evaluate(`!document.querySelector('[role=dialog] button[type=submit]').disabled`));
+    assert.equal(await evaluate(`document.querySelector('[role=dialog] input[type=email]').value`), 'third@example.test');
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('retry reset request', () => resetRequests.length === 4);
+    json(resetRequests[3].res, { message: 'Request accepted', developmentOtp: null });
+    await until('retry OTP form', () => evaluate(`Boolean(document.getElementById('reset-new-password'))`));
+    await setInput('[role=dialog] input[type=text]', '654321');
+    await setInput('#reset-new-password', 'Valid_Reset42!');
+    await setInput('#reset-confirm-password', 'Valid_Reset42!');
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('current confirmation', () => resetConfirmations.length === 2);
+    resetConfirmations[1].res.writeHead(204); resetConfirmations[1].res.end();
+    await until('reset completed', () => evaluate(`!document.querySelector('[role=dialog]') && document.getElementById('login-email').value === 'third@example.test'`));
+    checks.push('Reset API errors keep the form retryable, and only the current completion updates login');
+  }
   await setInput('#login-email', 'manager@example.test'); await setInput('#login-password', 'TestPassword123!');
   await evaluate(`document.querySelector('button[type=submit]').click()`);
   await until('authenticated', () => evaluate(`location.hash === '#/manager/dashboard'`));
@@ -228,89 +276,106 @@ async function closeDialog() {
   assert.ok(requests.some(r => r.route === '/api/reports/revenue'), 'Dashboard must request report data');
   checks.push('Manager dashboard leaves its loading state after report data settles');
 
-  await route('#/manager/members', member.fullName);
-  await click('Sửa', 'document.querySelector("main")');
-  await until('member edit', () => evaluate(`Boolean(document.querySelector('[role=dialog] input[name=email]'))`));
-  assert.equal(await evaluate(`document.querySelector('[role=dialog] input[name=email]').readOnly`), true);
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('member saved', () => requests.some(r => r.route === '/api/centers/1/members/1' && r.method === 'PATCH'));
-  assert.equal(Object.hasOwn(requests.find(r => r.route === '/api/centers/1/members/1').body, 'email'), false);
-  await until('member dialog closed', () => evaluate(`!document.querySelector('[role=dialog]')`));
-  checks.push('Editing a member keeps email read-only and omits it from the API payload');
-  await until('member list refreshed', () => evaluate(`Boolean(document.querySelector('main button[title*="lịch sử"]'))`));
-  await evaluate(`document.querySelector('main button[title*="lịch sử"]').click()`);
-  await until('history error', () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes('Lỗi lịch sử kiểm thử')`));
-  subscriptionFailure = false; await click('Thử lại', 'document.querySelector("[role=dialog]")');
-  await until('history retry', () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes('Gói kiểm thử')`));
-  await closeDialog(); checks.push('Subscription history renders errors and retries successfully');
+  if (!reportsOnly) {
+    await route('#/manager/members', member.fullName);
+    await click('Sửa', 'document.querySelector("main")');
+    await until('member edit', () => evaluate(`Boolean(document.querySelector('[role=dialog] input[name=email]'))`));
+    assert.equal(await evaluate(`document.querySelector('[role=dialog] input[name=email]').readOnly`), true);
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('member saved', () => requests.some(r => r.route === '/api/centers/1/members/1' && r.method === 'PATCH'));
+    assert.equal(Object.hasOwn(requests.find(r => r.route === '/api/centers/1/members/1').body, 'email'), false);
+    await until('member dialog closed', () => evaluate(`!document.querySelector('[role=dialog]')`));
+    checks.push('Editing a member keeps email read-only and omits it from the API payload');
+    await until('member list refreshed', () => evaluate(`Boolean(document.querySelector('main button[title*="lịch sử"]'))`));
+    await evaluate(`document.querySelector('main button[title*="lịch sử"]').click()`);
+    await until('history error', () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes('Lỗi lịch sử kiểm thử')`));
+    subscriptionFailure = false; await click('Thử lại', 'document.querySelector("[role=dialog]")');
+    await until('history retry', () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes('Gói kiểm thử')`));
+    await closeDialog(); checks.push('Subscription history renders errors and retries successfully');
 
-  await route('#/manager/staff', staff.fullName);
-  await click('Sửa', 'document.querySelector("main")');
-  await until('staff edit', () => evaluate(`Boolean(document.querySelector('[role=dialog] button[aria-pressed]'))`));
-  assert.equal(await evaluate(`document.querySelector('[role=dialog] button[aria-pressed]').getAttribute('aria-pressed')`), 'true');
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('staff saved', () => requests.some(r => r.route === '/api/centers/1/staff/10' && r.method === 'PATCH'));
-  assert.deepEqual(requests.find(r => r.route === '/api/centers/1/staff/10').body.sportIds, [1]);
-  await until('staff dialog closed', () => evaluate(`!document.querySelector('[role=dialog]')`));
-  checks.push('Staff screen loads its sport catalog and preserves selected sport IDs when saving');
+    await route('#/manager/staff', staff.fullName);
+    await click('Sửa', 'document.querySelector("main")');
+    await until('staff edit', () => evaluate(`Boolean(document.querySelector('[role=dialog] button[aria-pressed]'))`));
+    assert.equal(await evaluate(`document.querySelector('[role=dialog] button[aria-pressed]').getAttribute('aria-pressed')`), 'true');
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('staff saved', () => requests.some(r => r.route === '/api/centers/1/staff/10' && r.method === 'PATCH'));
+    assert.deepEqual(requests.find(r => r.route === '/api/centers/1/staff/10').body.sportIds, [1]);
+    await until('staff dialog closed', () => evaluate(`!document.querySelector('[role=dialog]')`));
+    checks.push('Staff screen loads its sport catalog and preserves selected sport IDs when saving');
 
-  await route('#/manager/classes-rooms', classes[0].name);
-  assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`), false);
-  await click('Lịch học', 'document.querySelector("main")');
-  await until('weekly calendar', () => evaluate(`Boolean(document.querySelector('[aria-label="Lịch học theo tuần"]'))`));
-  assert.equal(await evaluate(`document.querySelector('[aria-label="Lịch học theo tuần"]').querySelectorAll('h4').length`), 7);
-  assert.equal(await evaluate(`document.querySelector('[role=dialog]').textContent.includes('08:00–09:00') && document.querySelector('[role=dialog]').textContent.includes('Phòng kiểm thử')`), true);
-  await closeDialog();
-  await evaluate(`(() => { const b=[...document.querySelectorAll('main button')].find(b=>b.textContent.includes('Lớp đã hủy')); b.click(); })()`);
-  await until('cancelled tab', () => evaluate(`document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`));
-  await click('Mở lại lớp', 'document.querySelector("main")');
-  await click('Mở lại thành bản nháp', 'document.querySelector("[role=dialog]")');
-  await until('restored', () => classes[1].status === 'Draft');
-  checks.push('Cancelled classes have a separate tab, can be restored, and schedules render all seven weekdays');
+    await route('#/manager/classes-rooms', classes[0].name);
+    assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`), false);
+    await click('Lịch học', 'document.querySelector("main")');
+    await until('weekly calendar', () => evaluate(`Boolean(document.querySelector('[aria-label="Lịch học theo tuần"]'))`));
+    assert.equal(await evaluate(`document.querySelector('[aria-label="Lịch học theo tuần"]').querySelectorAll('h4').length`), 7);
+    assert.equal(await evaluate(`document.querySelector('[role=dialog]').textContent.includes('08:00–09:00') && document.querySelector('[role=dialog]').textContent.includes('Phòng kiểm thử')`), true);
+    await closeDialog();
+    await evaluate(`(() => { const b=[...document.querySelectorAll('main button')].find(b=>b.textContent.includes('Lớp đã hủy')); b.click(); })()`);
+    await until('cancelled tab', () => evaluate(`document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`));
+    await click('Mở lại lớp', 'document.querySelector("main")');
+    await click('Mở lại thành bản nháp', 'document.querySelector("[role=dialog]")');
+    await until('restored', () => classes[1].status === 'Draft');
+    checks.push('Cancelled classes have a separate tab, can be restored, and schedules render all seven weekdays');
 
-  await route('#/manager/coach-assignment', classes[0].name);
-  await setInput('main input', classes[0].name);
-  await until('assignment search applied', () => evaluate(`!document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`));
-  await click('Phân công ngay', 'document.querySelector("main")');
-  await until('assignment dialog', () => evaluate(`Boolean(document.querySelector('[role=dialog] select'))`));
-  assert.equal(await evaluate(`document.querySelector('[role=dialog] option[value="11"]').disabled`), true);
-  assert.equal(await evaluate(`document.querySelectorAll('[role=dialog]').length`), 1);
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('coach assigned', () => classes[0].coachId === 10);
-  assert.equal(requests.find(r => r.route === '/api/classes/1/coaches').body.replacePrimary, true);
-  checks.push('Coach assignment opens one modal, disables incompatible coaches, and retains replacePrimary');
+    await route('#/manager/coach-assignment', classes[0].name);
+    await setInput('main input', classes[0].name);
+    await until('assignment search applied', () => evaluate(`!document.querySelector('main').textContent.includes('Lớp đã hủy kiểm thử')`));
+    await click('Phân công ngay', 'document.querySelector("main")');
+    await until('assignment dialog', () => evaluate(`Boolean(document.querySelector('[role=dialog] select'))`));
+    assert.equal(await evaluate(`document.querySelector('[role=dialog] option[value="11"]').disabled`), true);
+    assert.equal(await evaluate(`document.querySelectorAll('[role=dialog]').length`), 1);
+    await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
+    await until('coach assigned', () => classes[0].coachId === 10);
+    assert.equal(requests.find(r => r.route === '/api/classes/1/coaches').body.replacePrimary, true);
+    checks.push('Coach assignment opens one modal, disables incompatible coaches, and retains replacePrimary');
 
-  await route('#/manager/reports', 'Doanh Thu Theo Bộ Môn');
-  await until('report data', () => evaluate(`document.querySelector('main').textContent.includes('12.345')`));
-  assert.equal(await evaluate(`(() => { const section=[...document.querySelectorAll('main section')].find(s=>s.textContent.includes('Biểu Đồ Xếp Hạng Bộ Môn')); return section.textContent.includes('12.345') && !section.textContent.includes('90.000'); })()`), true);
-  await click('Hôm nay', 'document.querySelector("main")');
-  await until('daily report', () => requests.some(r => r.route === '/api/reports/revenue' && r.query.from === today && r.query.to === today));
-  checks.push('Report rankings show API sport revenue, and the daily filter sends the correct date range');
+  }
+  if (reportsOnly) {
+    await until('dashboard net revenue', () => evaluate(`document.querySelector('main').textContent.includes('3.200.000đ')`));
+    assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Tổng thu 3.850.000đ · Hoàn 650.000đ')`), true);
+    checks.push('Dashboard displays the complete collection/refund breakdown for the applied period');
+  }
+  await verifyReportPeriods('#/manager/reports');
 
-  await route('#/manager/roles-permissions', 'Phân Quyền Theo Vai Trò');
-  assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Theo Từng Người')`), true);
-  await until('individual permissions', () => evaluate(`document.querySelector('main')?.textContent.includes('Coach Yoga') && document.querySelector('main')?.textContent.includes('Lưu quyền cho tài khoản này')`));
-  await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
-  await click('Lưu quyền cho tài khoản này', 'document.querySelector("main")');
-  await until('individual permission API save', () => requests.some(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT'));
-  assert.deepEqual(requests.find(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT').body.capabilityIds, []);
-  checks.push('An individual account can receive a restricted permission override through the backend API');
+  if (!reportsOnly) {
+    await route('#/manager/roles-permissions', 'Phân Quyền Theo Vai Trò');
+    assert.equal(await evaluate(`document.querySelector('main').textContent.includes('Theo Từng Người')`), true);
+    await until('individual permissions', () => evaluate(`document.querySelector('main')?.textContent.includes('Coach Yoga') && document.querySelector('main')?.textContent.includes('Lưu quyền cho tài khoản này')`));
+    await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
+    await click('Lưu quyền cho tài khoản này', 'document.querySelector("main")');
+    await until('individual permission API save', () => requests.some(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT'));
+    assert.deepEqual(requests.find(r => r.route === '/api/centers/1/users/10/permissions' && r.method === 'PUT').body.capabilityIds, []);
+    checks.push('An individual account can receive a restricted permission override through the backend API');
 
-  await click('2. Quyền Nền Theo Vai Trò (1)', 'document.querySelector("main")');
-  await until('role defaults', () => evaluate(`document.querySelector('main')?.textContent.includes('Sửa một lần, áp dụng chung cho cả vai trò')`));
-  await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
-  await click('Lưu Phân Quyền Vai Trò [Coach]', 'document.querySelector("main")');
-  await until('role API save', () => requests.some(r => r.route === '/api/centers/1/roles/2/permissions' && r.method === 'PUT'));
-  assert.deepEqual(requests.find(r => r.route === '/api/centers/1/roles/2/permissions').body.capabilityIds, []);
-  await evaluate(`window.confirm = () => true`);
-  await click('Đồng bộ tất cả theo vai trò', 'document.querySelector("main")');
-  await until('role user overrides reset', () => requests.some(r => r.route === '/api/centers/1/roles/2/user-permissions' && r.method === 'DELETE'));
-  assert.equal(await evaluate(`Object.keys(localStorage).some(key => key.startsWith('scms_user_perm_override_'))`), false);
-  checks.push('Role defaults save once and bulk synchronization removes individual overrides without local-storage authorization');
+    await click('2. Quyền Nền Theo Vai Trò (1)', 'document.querySelector("main")');
+    await until('role defaults', () => evaluate(`document.querySelector('main')?.textContent.includes('Sửa một lần, áp dụng chung cho cả vai trò')`));
+    await evaluate(`document.querySelector('main input[type=checkbox]').click()`);
+    await click('Lưu Phân Quyền Vai Trò [Coach]', 'document.querySelector("main")');
+    await until('role API save', () => requests.some(r => r.route === '/api/centers/1/roles/2/permissions' && r.method === 'PUT'));
+    assert.deepEqual(requests.find(r => r.route === '/api/centers/1/roles/2/permissions').body.capabilityIds, []);
+    await evaluate(`window.confirm = () => true`);
+    await click('Đồng bộ tất cả theo vai trò', 'document.querySelector("main")');
+    await until('role user overrides reset', () => requests.some(r => r.route === '/api/centers/1/roles/2/user-permissions' && r.method === 'DELETE'));
+    assert.equal(await evaluate(`Object.keys(localStorage).some(key => key.startsWith('scms_user_perm_override_'))`), false);
+    checks.push('Role defaults save once and bulk synchronization removes individual overrides without local-storage authorization');
 
-  await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, session);
-  for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', classes[0].name], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói'], ['roles-permissions', 'Phân Quyền Theo Vai Trò']]) await route(`#/manager/${hash}`, text);
-  checks.push('All seven affected manager routes render at a mobile viewport');
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, session);
+    for (const [hash, text] of [['members', member.fullName], ['staff', staff.fullName], ['classes-rooms', classes[0].name], ['coach-assignment', classes[0].name], ['reports', 'Doanh Thu Theo Bộ Môn'], ['packages', 'Gói'], ['roles-permissions', 'Phân Quyền Theo Vai Trò']]) await route(`#/manager/${hash}`, text);
+    checks.push('All seven affected manager routes render at a mobile viewport');
+  }
+  if (reportsOnly) {
+    await cdp.send('Emulation.setDeviceMetricsOverride', { width: 375, height: 812, deviceScaleFactor: 1, mobile: true }, session);
+    await verifyReportPeriods('#/manager/reports');
+    checks.push('Manager report controls work at mobile size');
+    fixtureRole = 'Admin';
+    await cdp.send('Page.navigate', { url: `${origin}/?audit=admin#/admin/reports` }, session);
+    await until('admin report', () => evaluate(`document.querySelector('main')?.textContent.includes('Phạm vi báo cáo hệ thống') && document.querySelector('#btn-print-report') && !document.querySelector('#btn-print-report').disabled`));
+    await verifyReportPeriods('#/admin/reports');
+    await evaluate(`(() => { const input = document.querySelector('select[aria-label="Cơ sở báo cáo"]'); Object.getOwnPropertyDescriptor(HTMLSelectElement.prototype, 'value').set.call(input, '1'); input.dispatchEvent(new Event('change', { bubbles: true })); })()`);
+    await until('admin single center', () => evaluate(`document.querySelector('main')?.textContent.includes('Về tổng quan hệ thống') && !document.querySelector('#btn-print-report').disabled`));
+    await verifyReportPeriods('#/admin/reports');
+    checks.push('Admin system and individual-center reports use the applied period and refund totals');
+  }
   assert.deepEqual(errors, []);
   checks.push('No uncaught JavaScript exceptions or unexpected API endpoints');
   fs.writeFileSync(path.join(artifacts, 'report.json'), JSON.stringify({ checks, errors, api: 'Local fixtures; no live backend used', viewport: [375, 812] }, null, 2));

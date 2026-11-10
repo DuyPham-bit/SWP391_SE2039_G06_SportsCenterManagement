@@ -1,5 +1,12 @@
 # Key Findings — Senior Feature-First Full-Stack Audit & Hardening
 
+## Landing sync preflight — 2026-11-04
+
+- Render connection from the ignored local env file is reachable, but target uploaded_media has no storage_key column and target has no site.landing-content setting. Local has both.
+- Full-content transfer is authorized, but no Render mutation was performed: target must first receive the PostgreSQL/R2 backend migrations through its normal deployment, and its connection must match the supplied target DB.
+- Standalone sync tool was verified with 11 planner checks and 16 migrated-PostgreSQL checks, including empty target, ID collisions, text/layout copy, no-op repeat, stale-plan rejection, backup failure atomicity, guarded rollback and old-schema rejection.
+- Tool only writes the landing setting and metadata for referenced dashboard images; it does not migrate schemas, upload R2 files or copy business records. It remains uncommitted while deployment/database readiness is pending.
+
 ## PostgreSQL merge findings — 2026-11-04
 
 - Incoming branch flattens Backend/Backend to Backend, moves frontend providers/pages, and uses HttpOnly per-tab sessions.
@@ -99,3 +106,13 @@
 | **TimezoneAudit** | Vietnam business calendar (`Asia/Ho_Chi_Minh`), leap year, midnight boundary | 7 | 7 | 0 | **PASS** |
 | **Frontend Node Suite** | UI state, auth token isolation, booking modals, timezone consistency, calendar grids | 145 | 145 | 0 | **PASS** |
 | **Frontend Production Build** | Vite production bundle compilation & static asset distribution | 1 | 1 | 0 | **PASS** |
+## Report period/refund review — 2026-11-06
+
+- Confirmed: quick-period buttons change `period`/`selection` without updating date inputs; printed header reads draft `range` instead of loaded report dates.
+- The supplied daily screenshot has gross 3,200,000, refunds 650,000 and net 2,550,000 for November 6. This is valid processing-date cash flow when collection happened November 5.
+- The dashboard uses a different period (30 days) and its gross 4,500,000 exceeds the two supplied invoice amounts by 650,000. No database connection is configured locally; do not infer duplicate payments or rewrite accounting from screenshots.
+- Shared manager/admin API and dashboard map `net` directly; backend computes collected payments minus successful/approved refunds in their respective processing periods.
+- Fixed quick-period date/grouping synchronization and printed dates. Draft edits are explicitly marked unapplied and do not change printed metadata or trigger requests.
+- API and controls share validated Vietnam period resolution; Admin resolves one date range before aggregating centers. Dashboard shows actual dates and the complete gross/refund breakdown in both languages.
+- With fixture collections of 650,000 on the previous day and 3,200,000 today, plus a 650,000 refund today, browser checks confirm daily net 2,550,000 and combined-period net 3,200,000 for manager and Admin scopes.
+- The full manager browser harness stops before reports at its unchanged weekly-calendar selector; report-only coverage is available via `npm run test:reports:browser` and passes. Production DB reconciliation remains unavailable (no configured local connection or reachable local API/PostgreSQL).

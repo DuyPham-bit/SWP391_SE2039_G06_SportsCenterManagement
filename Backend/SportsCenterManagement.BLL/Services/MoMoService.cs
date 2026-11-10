@@ -95,7 +95,15 @@ public class MoMoService : IMoMoService
 
         if (!response.IsSuccessStatusCode)
         {
-            throw new InvalidOperationException($"Lỗi gọi sang cổng MoMo: {response.StatusCode} - {responseContent}");
+            var statusCode = (int)response.StatusCode;
+            var message = $"Lỗi gọi sang cổng MoMo: {response.StatusCode} - {responseContent}";
+            // 4xx (except 408 timeout / 429 throttling) means MoMo or its firewall refused the request,
+            // so no MoMo transaction exists and the attempt can be closed as Failed.
+            if (statusCode is >= 400 and < 500 and not 408 and not 429)
+            {
+                throw new MomoRequestRejectedException(statusCode, message);
+            }
+            throw new InvalidOperationException(message);
         }
 
         var momoResponse = JsonSerializer.Deserialize<MomoCreatePaymentResponse>(
@@ -226,4 +234,12 @@ public class MoMoService : IMoMoService
             : null;
         return new ProviderRefundResult(authenticated, status, providerRefundId, message);
     }
+}
+
+/// <summary>
+/// MoMo definitively refused a create-payment request (HTTP 4xx), so no provider transaction was created.
+/// </summary>
+public sealed class MomoRequestRejectedException(int statusCode, string message) : Exception(message)
+{
+    public int StatusCode { get; } = statusCode;
 }

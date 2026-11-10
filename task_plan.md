@@ -1,5 +1,14 @@
 # Task Plan: Olympic Sports Arena Visual Identity, Tab Clarity & Final Delivery
 
+## Landing sync — 2026-11-04 (scope expanded by user to full landing)
+
+- [x] User authorized full local landing text/layout plus R2 image references. No R2 writes or business-data imports.
+- [x] Write failing planner/full-copy tests, then implement standalone PostgreSQL CLI; dry-run remains the default.
+- [x] Require reviewed snapshot hash for apply, durable backup before commit, and guarded rollback.
+- [x] Verify ID collisions, reordered arrays, image-only preservation, full-content copy, idempotency and rollback on disposable migrated PostgreSQL DBs.
+- [x] Connect read-only to configured Render DB. It has no landing setting and lacks uploaded_media.storage_key.
+- [ ] Waiting for correct Render backend deployment/database schema before actual preview/apply. No Render writes performed.
+
 ## PostgreSQL integration delivery — 2026-11-04
 
 - [x] Backup local work to dome-94/sports-center-manager, fix/learn-docker (cce0a47).
@@ -45,3 +54,11 @@
   - `AiSafetyAudit`: 19/19 PASS.
   - `TimezoneAudit`: 7/7 PASS.
 - [x] Frontend production bundle built and synchronized to `Backend/SportsCenterManagement.API/wwwroot`.
+## Report period/refund review — 2026-11-06
+
+- Scope: shared manager/admin report filters, printed period, dashboard revenue breakdown; preserve collection/refund processing-date accounting.
+- [x] Establish the missing shared-period seam with a failing regression; verify quick-filter dates and print metadata in Chrome.
+- [x] Share validated Vietnam period resolution between report requests and controls; distinguish draft dates from applied data.
+- [x] Show applied dashboard/report period and complete gross/refund breakdown.
+- [x] Run focused/browser regressions, frontend suite/build, backend build; inspect final diff.
+- Graphify executable and supplemental named debugging/UI/TDD skills are unavailable in this environment; use targeted source inspection and the installed code-work workflow.
