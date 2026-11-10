@@ -1,7 +1,7 @@
 # SCMS - Hướng Dẫn Chạy Docker (Docker Deployment Guide)
 
 Thư mục này chứa toàn bộ cấu hình container hóa cho hệ thống **Sports Center Management System (SCMS)** gồm 3 dịch vụ đồng bộ:
-1. **sqlserver**: Microsoft SQL Server 2022.
+1. **postgres**: PostgreSQL 17.
 2. **backend**: ASP.NET Core 10 Web API.
 3. **frontend**: React (Vite) + Nginx Alpine reverse proxy.
 
@@ -21,7 +21,7 @@ docker/
 │   ├── Dockerfile           # Build Vite và chạy bằng Nginx
 │   ├── nginx.conf           # Cấu hình reverse proxy /api/ và SPA routing
 │   └── .dockerignore
-└── sqlserver/
+└── postgres/
     └── README.md            # Thông tin cơ sở dữ liệu
 ```
 
@@ -46,7 +46,7 @@ docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build
 ## 🌐 Các cổng truy cập sau khi khởi chạy:
 - **Frontend App:** [http://localhost:3004](http://localhost:3004)
 - **Backend API & Swagger:** [http://localhost:5000/swagger](http://localhost:5000/swagger)
-- **SQL Server:** `localhost,1433` (User: `sa`, Mật khẩu mặc định: `YourStrong@Password123`)
+- **PostgreSQL:** `localhost:5432` (User: `postgres`, mật khẩu: `POSTGRES_PASSWORD` trong `docker/.env`)
 
 ---
 
@@ -68,6 +68,6 @@ docker compose logs -f
 # Dừng hệ thống
 docker compose down
 
-# Dừng và xóa toàn bộ dữ liệu volume SQL
+# Dừng và xóa toàn bộ dữ liệu volume PostgreSQL
 docker compose down -v
 ```

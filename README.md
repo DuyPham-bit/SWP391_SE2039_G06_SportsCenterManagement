@@ -3,18 +3,18 @@
 Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai thư mục riêng:
 
 - `Frontend/` — React 18, Vite, port `3004`.
-- `Backend/` — repository backend ASP.NET Core Web API, SQL Server và EF Core.
+- `Backend/` — repository backend ASP.NET Core Web API, PostgreSQL và EF Core.
 
 ## Chạy local
 
-1. Cấu hình kết nối tới SQL Server đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/README.md](./Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mã seed dữ liệu nghiệp vụ đã được gỡ; ứng dụng chỉ đồng bộ schema/quyền, không tự tạo dữ liệu demo. Xem [kết nối DB thật](./Frontend/docs/real-database.md).
+1. Cấu hình kết nối tới PostgreSQL đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/README.md](./Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mã seed dữ liệu nghiệp vụ đã được gỡ; ứng dụng chỉ đồng bộ schema/quyền, không tự tạo dữ liệu demo. Xem [kết nối DB thật](./Frontend/docs/real-database.md).
 2. Chạy API từ thư mục workspace:
 
    ```powershell
    powershell -ExecutionPolicy Bypass -File .\Backend\start-shared.ps1
    ```
 
-   Script kiểm tra SQL Server `MSSQLSERVER` trước khi chạy; nếu dịch vụ đang dừng, hãy chạy `start-sql-server.bat` bằng quyền Administrator rồi chạy lại script. API dùng `http://localhost:5000`; Vite proxy `/api` đến địa chỉ này. Nếu dùng SQL Server từ xa hoặc LocalDB, chạy script với `-SkipSqlServerCheck`.
+   Script kiểm tra PostgreSQL ở cổng 5432 trước khi chạy; nếu chưa chạy, script tự khởi động container `postgres` (hoặc chạy `start-postgres.bat`). API dùng `http://localhost:5000`; Vite proxy `/api` đến địa chỉ này. Nếu dùng PostgreSQL từ xa, chạy script với `-SkipDatabaseCheck`.
 3. Sao chép `Frontend/.env.example` thành `Frontend/.env.local` và đặt `VITE_SPORTS_CENTER_ID` thành ID trung tâm thực tế trong database; biến này bắt buộc khi đăng ký hội viên mới.
 4. Cài và chạy giao diện:
 
@@ -26,7 +26,7 @@ Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai 
 
 ## Dùng chung qua Internet
 
-Muốn mọi máy nhìn thấy cùng tài khoản và dữ liệu, hãy triển khai một Frontend, một Backend API và một cơ sở dữ liệu SQL Server tập trung trên máy chủ có tên miền và HTTPS. Trình duyệt chỉ truy cập tên miền chung; không kết nối trực tiếp tới máy chủ database. Xem thông tin tổng quan và cấu hình cơ bản tại [PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md).
+Muốn mọi máy nhìn thấy cùng tài khoản và dữ liệu, hãy triển khai một Frontend, một Backend API và một cơ sở dữ liệu PostgreSQL tập trung trên máy chủ có tên miền và HTTPS. Trình duyệt chỉ truy cập tên miền chung; không kết nối trực tiếp tới máy chủ database. Xem thông tin tổng quan và cấu hình cơ bản tại [PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md).
 
 ## Các luồng đã nối API
 
@@ -42,7 +42,7 @@ Frontend xác thực bằng cookie HttpOnly chứa JWT và header chọn phiên 
 
 ## API mới và cấu hình Google/AI
 
-Giáo án chung/cá nhân, tiến độ và thông báo HLV/hội viên đã nối API lưu SQL Server. Xác thực dùng JWT HS256 qua JwtBearer, kiểm tra issuer/audience/thời hạn và tài khoản ở mỗi request; Swagger có nút Authorize. JWT nằm trong cookie HttpOnly; sessionStorage chỉ giữ mã chọn phiên riêng từng tab. F5 giữ đăng nhập và các tab có thể dùng tài khoản khác nhau; hồ sơ/quyền được tải lại từ API. API client ngoài trình duyệt vẫn dùng Bearer JWT. Chi tiết: [cơ chế phiên từng tab](./Frontend/docs/tab-session-fix.md).
+Giáo án chung/cá nhân, tiến độ và thông báo HLV/hội viên đã nối API lưu PostgreSQL. Xác thực dùng JWT HS256 qua JwtBearer, kiểm tra issuer/audience/thời hạn và tài khoản ở mỗi request; Swagger có nút Authorize. JWT nằm trong cookie HttpOnly; sessionStorage chỉ giữ mã chọn phiên riêng từng tab. F5 giữ đăng nhập và các tab có thể dùng tài khoản khác nhau; hồ sơ/quyền được tải lại từ API. API client ngoài trình duyệt vẫn dùng Bearer JWT. Chi tiết: [cơ chế phiên từng tab](./Frontend/docs/tab-session-fix.md).
 
 Member và Coach có màn hình gửi/theo dõi yêu cầu hỗ trợ; Lễ tân/Manager tiếp nhận và phản hồi trong đúng trung tâm. Hộp thư có thao tác đọc tất cả. Gói đã thanh toán nhưng chưa đến ngày hiệu lực được hiển thị riêng với gói đang dùng.
 
@@ -56,7 +56,7 @@ Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](./Backend/do
 
 Hệ thống hoạt động theo giờ Việt Nam (`Asia/Ho_Chi_Minh`, UTC+7). Timestamp lưu trong database là UTC; frontend đọc timestamp API không có offset là UTC và hiển thị theo giờ Việt Nam. Ngày nghiệp vụ (ngày sinh, ngày vào làm, ngày học, hiệu lực gói) giữ nguyên ngày Việt Nam; ô `datetime-local` nhận giờ Việt Nam. Đổi múi giờ thiết bị không làm đổi ngày/giờ hiển thị hoặc giờ đặt lịch. Backend xác thực nghiệp vụ bằng đồng hồ máy chủ; máy chủ cần được đồng bộ giờ chính xác.
 
-Docker đã cấu hình múi giờ cho backend/SQL Server và ranh giới ngày báo cáo là Việt Nam. Sau khi cập nhật, chạy `docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build` để áp dụng. Khi chạy frontend nhúng trong API, build lại bằng `npm.cmd run build:api` trong `Frontend/`.
+Docker đã cấu hình múi giờ cho backend/PostgreSQL và ranh giới ngày báo cáo là Việt Nam. Sau khi cập nhật, chạy `docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build` để áp dụng. Khi chạy frontend nhúng trong API, build lại bằng `npm.cmd run build:api` trong `Frontend/`.
 
 ## Kiểm tra
 

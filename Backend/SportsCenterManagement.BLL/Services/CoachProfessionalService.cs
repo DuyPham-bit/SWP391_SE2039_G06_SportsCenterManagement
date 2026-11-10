@@ -17,7 +17,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
     private DateTime UtcNow => timeProvider.GetUtcNow().UtcDateTime;
     private DateOnly Today => DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(UtcNow, VietnamTimeZone));
 
-    // SQL Server datetime2 does not retain DateTime.Kind. These values are stored as UTC,
+    // "timestamp without time zone" does not retain DateTime.Kind. These values are stored as UTC,
     // so restore the UTC marker before JSON serialization to emit an unambiguous trailing Z.
     private static DateTime AsUtc(DateTime value) => value.Kind == DateTimeKind.Utc
         ? value

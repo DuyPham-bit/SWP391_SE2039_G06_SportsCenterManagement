@@ -92,7 +92,7 @@ public sealed class R2StorageService(
             throw BusinessException.BadRequest("Đường dẫn ảnh hội viên không hợp lệ.");
         var fileId = MediaAccessScope.R2FileIdPrefix + key;
         var metadata = await db.UploadedMedias.SingleOrDefaultAsync(m =>
-            EF.Functions.Collate(m.DriveFileId, "Latin1_General_100_BIN2") == fileId, cancellationToken);
+            m.DriveFileId == fileId, cancellationToken);
         await S3Client.DeleteObjectAsync(new DeleteObjectRequest
         {
             BucketName = Required(_options.BucketName, nameof(_options.BucketName)),
@@ -284,10 +284,10 @@ public sealed class R2StorageService(
         }
 
         var scope = await CurrentScope(cancellationToken);
-        // Object keys are case-sensitive even when SQL Server's default collation is not.
+        // Object keys are case-sensitive; these columns use text (not citext).
         var fileId = MediaAccessScope.R2FileIdPrefix + key;
         var metadata = await db.UploadedMedias.SingleOrDefaultAsync(m =>
-            EF.Functions.Collate(m.DriveFileId, "Latin1_General_100_BIN2") == fileId, cancellationToken);
+            m.DriveFileId == fileId, cancellationToken);
         if (key.StartsWith("avatars/", StringComparison.Ordinal))
         {
             // Legacy avatars already encode their owner; no other route may use this as a business-image delete.
@@ -305,8 +305,8 @@ public sealed class R2StorageService(
                 var publicUrl = $"{_options.PublicDomain.TrimEnd('/')}/{key}";
                 var centers = await (from refund in db.PaymentRefunds join payment in db.Payments on refund.PaymentId equals payment.Id
                     join invoice in db.Invoices on payment.InvoiceId equals invoice.Id
-                    where EF.Functions.Collate(refund.TransferProofUrl!, "Latin1_General_100_BIN2") == key
-                        || EF.Functions.Collate(refund.TransferProofUrl!, "Latin1_General_100_BIN2") == publicUrl
+                    where refund.TransferProofUrl! == key
+                        || refund.TransferProofUrl! == publicUrl
                     select invoice.CenterId).Distinct().ToListAsync(cancellationToken);
                 if (centers.Any(center => center != scope.CenterId)) allowed = false;
                 else if (metadata is null) allowed = centers.Count > 0;

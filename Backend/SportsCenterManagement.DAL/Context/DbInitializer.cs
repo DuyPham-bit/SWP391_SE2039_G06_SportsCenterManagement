@@ -7,16 +7,14 @@ namespace SportsCenterManagement.DAL.Context;
 /// <summary>Initializes schema and required authorization data only.</summary>
 public static class DbInitializer
 {
-    public static async Task SeedAsync(SportsCenterDbContext context, bool baselineLegacySchema = false)
+    public static async Task SeedAsync(SportsCenterDbContext context)
     {
-        if (baselineLegacySchema) await BaselineLegacySchemaAsync(context);
         if (context.Database.IsRelational()) await context.Database.MigrateAsync();
         else await context.Database.EnsureCreatedAsync();
         await EnsureRolesAndPermissionsAsync(context);
         await EnsureAuthAndReceptionPermissionsAsync(context);
         await EnsureCompleteSportsCatalogAsync(context);
         await EnsureMembershipPackageSportsAsync(context);
-        await EnsureCommunicationDeliverySchemaAsync(context);
         await EnsureDemoBusinessDataAsync(context);
     }
 
@@ -338,58 +336,6 @@ public static class DbInitializer
         await context.SaveChangesAsync();
     }
 
-    private static async Task BaselineLegacySchemaAsync(SportsCenterDbContext context)
-    {
-        var connection = context.Database.GetDbConnection();
-        if (connection.State != System.Data.ConnectionState.Open)
-        {
-            await connection.OpenAsync();
-        }
-        await using var command = connection.CreateCommand();
-        command.CommandText = """
-            SELECT CASE WHEN OBJECT_ID(N'[dbo].[centers]', N'U') IS NULL THEN 0 ELSE 1 END
-            """;
-
-        var hasLegacySchema = Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
-        if (!hasLegacySchema)
-        {
-            return;
-        }
-
-        command.CommandText = """
-            SELECT CASE WHEN OBJECT_ID(N'[dbo].[__EFMigrationsHistory]', N'U') IS NULL THEN 0 ELSE 1 END
-            """;
-        var hasMigrationHistory = Convert.ToInt32(await command.ExecuteScalarAsync()) == 1;
-        if (!hasMigrationHistory)
-        {
-            await context.Database.ExecuteSqlRawAsync("""
-            CREATE TABLE [dbo].[__EFMigrationsHistory] (
-                [MigrationId] nvarchar(150) NOT NULL,
-                [ProductVersion] nvarchar(32) NOT NULL,
-                CONSTRAINT [PK___EFMigrationsHistory] PRIMARY KEY ([MigrationId])
-            );
-            """);
-        }
-
-        // A legacy database can have a partially populated history table; restore both baseline markers before applying later migrations.
-        await context.Database.ExecuteSqlRawAsync("""
-            IF NOT EXISTS (
-                SELECT 1 FROM [dbo].[__EFMigrationsHistory]
-                WHERE [MigrationId] = N'20260929152157_InitialCreate')
-            BEGIN
-                INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-                VALUES (N'20260929152157_InitialCreate', N'10.0.12');
-            END
-
-            IF NOT EXISTS (
-                SELECT 1 FROM [dbo].[__EFMigrationsHistory]
-                WHERE [MigrationId] = N'20260929165224_CoreFlowUniqueness')
-            BEGIN
-                INSERT INTO [dbo].[__EFMigrationsHistory] ([MigrationId], [ProductVersion])
-                VALUES (N'20260929165224_CoreFlowUniqueness', N'10.0.12');
-            END
-            """);
-    }
     private static async Task EnsureCompleteSportsCatalogAsync(SportsCenterDbContext context)
     {
         var center = await context.Centers.FirstOrDefaultAsync(c => c.Id == 15)
@@ -569,40 +515,6 @@ public static class DbInitializer
         }
     }
 
-    private static async Task EnsureCommunicationDeliverySchemaAsync(SportsCenterDbContext context)
-    {
-        await context.Database.ExecuteSqlRawAsync("""
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('communication_deliveries') AND name = 'attempt_count')
-            BEGIN
-                ALTER TABLE [communication_deliveries] ADD [attempt_count] INT NOT NULL CONSTRAINT DF_communication_deliveries_attempt_count DEFAULT 0;
-            END
-
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('communication_deliveries') AND name = 'next_attempt_at')
-            BEGIN
-                ALTER TABLE [communication_deliveries] ADD [next_attempt_at] DATETIME2 NULL;
-            END
-
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('communication_deliveries') AND name = 'lease_until')
-            BEGIN
-                ALTER TABLE [communication_deliveries] ADD [lease_until] DATETIME2 NULL;
-            END
-
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('communication_deliveries') AND name = 'locked_by')
-            BEGIN
-                ALTER TABLE [communication_deliveries] ADD [locked_by] NVARCHAR(100) NULL;
-            END
-
-            IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('communication_deliveries') AND name = 'last_error')
-            BEGIN
-                ALTER TABLE [communication_deliveries] ADD [last_error] NVARCHAR(1000) NULL;
-            END
-
-            IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID('communication_deliveries') AND name = 'IX_communication_deliveries_status_lease')
-            BEGIN
-                CREATE INDEX [IX_communication_deliveries_status_lease] ON [communication_deliveries] ([status], [next_attempt_at], [lease_until]);
-            END
-        """);
-    }
 
     private static async Task EnsureDemoBusinessDataAsync(SportsCenterDbContext context)
     {

@@ -28,65 +28,23 @@ using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Implementations;
 
-var name = "SCMS_LogicAudit_" + Guid.NewGuid().ToString("N");
-var root = Path.Combine(Path.GetTempPath(), "SCMS-LogicAudit");
-Directory.CreateDirectory(root);
-var mdf = Path.Combine(root, name + ".mdf");
-var ldf = Path.Combine(root, name + ".ldf");
-var serverConnection = Environment.GetEnvironmentVariable("SCMS_AUDIT_SQL_CONNECTION") ?? @"Server=localhost;Database=master;Integrated Security=true;TrustServerCertificate=true";
-var master = new Microsoft.Data.SqlClient.SqlConnection(serverConnection);
-try {
-    } catch {
-    master = new Microsoft.Data.SqlClient.SqlConnection(@"Server=(localdb)\MSSQLLocalDB;Database=master;Integrated Security=true;Encrypt=false");
-    }
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+var name = "scms_logicaudit_" + Guid.NewGuid().ToString("N");
+var serverConnection = Environment.GetEnvironmentVariable("SCMS_AUDIT_PG_CONNECTION")
+    ?? "Host=localhost;Port=5432;Database=postgres;Username=postgres;Password=12345";
+var master = new Npgsql.NpgsqlConnection(serverConnection);
 await master.OpenAsync();
 await using (var command = master.CreateCommand()) {
-    command.CommandText = $"CREATE DATABASE [{name}]";
+    command.CommandText = $"CREATE DATABASE \"{name}\"";
     await command.ExecuteNonQueryAsync();
 }
-var options = new DbContextOptionsBuilder<SportsCenterDbContext>()
-    .UseSqlServer(master.ConnectionString.Replace("Database=master", $"Database={name}", StringComparison.OrdinalIgnoreCase)).Options;
+var auditConnection = new Npgsql.NpgsqlConnectionStringBuilder(serverConnection) { Database = name }.ConnectionString;
+var options = new DbContextOptionsBuilder<SportsCenterDbContext>().UseNpgsql(auditConnection).Options;
 var failures = new List<string>();
 int count = 0;
-var phoneMigrationOk = false;
 try {
     await using (var db = new SportsCenterDbContext(options)) {
-        var migrations = db.Database.GetMigrations().ToArray();
-        await db.GetService<IMigrator>().MigrateAsync("20261016175228_AddCoachProfessionalWorkspace");
-        await db.Database.ExecuteSqlRawAsync("""
-            INSERT INTO dbo.roles (name, created_at) VALUES ('UpgradeFixture', SYSUTCDATETIME());
-            INSERT INTO dbo.users (username, email, password_hash, role_id, status, failed_login_attempts, created_at)
-            SELECT 'upgrade-fixture', 'upgrade@example.test', 'existing-hash', id, 'Active', 0, SYSUTCDATETIME()
-            FROM dbo.roles WHERE name = 'UpgradeFixture';
-            """);
-        await db.GetService<IMigrator>().MigrateAsync("20261025073231_AddCoachNotificationTargets");
-        await db.Database.ExecuteSqlRawAsync("""
-            INSERT INTO dbo.centers (name, address, status, created_at) VALUES ('Media upgrade center', 'Audit', 'Active', SYSUTCDATETIME());
-            INSERT INTO dbo.member_profiles (user_id, center_id, member_code, full_name, created_at)
-            SELECT u.id, c.id, 'UPGRADE-MEDIA', 'Upgrade fixture', SYSUTCDATETIME()
-            FROM dbo.users u CROSS JOIN dbo.centers c WHERE u.username = 'upgrade-fixture' AND c.name = 'Media upgrade center';
-            INSERT INTO dbo.uploaded_media (drive_file_id, file_name, mime_type, file_url, uploaded_by_user_id, created_at)
-            SELECT 'upgrade-owned', 'owned.png', 'image/png', '/uploads/upgrade-owned.png', id, SYSUTCDATETIME()
-            FROM dbo.users WHERE username = 'upgrade-fixture';
-            INSERT INTO dbo.uploaded_media (drive_file_id, file_name, mime_type, file_url, created_at)
-            VALUES ('upgrade-unowned', 'unowned.png', 'image/png', '/uploads/upgrade-unowned.png', SYSUTCDATETIME());
-            """);
-        // Phones written with the country code before the normalization migration, plus one collision.
-        await db.GetService<IMigrator>().MigrateAsync("20261108183932_AddCounterMemberActivation");
-        await db.Database.ExecuteSqlRawAsync("""
-            INSERT INTO dbo.users (username, email, password_hash, role_id, status, failed_login_attempts, created_at, phone)
-            SELECT v.username, v.username + '@upgrade.test', 'existing-hash', r.id, 'Active', 0, SYSUTCDATETIME(), v.phone
-            FROM (VALUES ('phone-plus84', '+84900000001'), ('phone-bare84', '84900000002'),
-                         ('phone-taken', '0900000003'), ('phone-collides', '+84900000003'),
-                         ('phone-foreign', '+14155550100')) AS v(username, phone)
-            CROSS JOIN dbo.roles r WHERE r.name = 'UpgradeFixture';
-            """);
         await db.Database.MigrateAsync();
-        var upgradedPhones = await db.Users.AsNoTracking().Where(u => u.Email.EndsWith("@upgrade.test"))
-            .ToDictionaryAsync(u => u.Username, u => u.Phone);
-        phoneMigrationOk = upgradedPhones["phone-plus84"] == "0900000001" && upgradedPhones["phone-bare84"] == "0900000002"
-            && upgradedPhones["phone-taken"] == "0900000003" && upgradedPhones["phone-collides"] == "+84900000003"
-            && upgradedPhones["phone-foreign"] == "+14155550100";
         var center = new Center { Name = "Test center", Address = "Test", Status = "Active", CreatedAt = DateTime.UtcNow };
         var other = new Center { Name = "Other center", Address = "Test", Status = "Active", CreatedAt = DateTime.UtcNow };
         var memberRole = new Role { Name = "Member" }; var coachRole = new Role { Name = "Coach" }; var staffRole = new Role { Name = "Receptionist" };
@@ -115,17 +73,6 @@ try {
             catch(Exception e) { failures.Add(label); Console.WriteLine("FAIL " + label + ": " + e.Message); }
             db.ChangeTracker.Clear();
         }
-        await Check("migration upgrades a populated prior schema without losing account data", async () => {
-            var upgraded = await db.Users.SingleAsync(u => u.Username == "upgrade-fixture");
-            return upgraded.PasswordHash == "existing-hash" && upgraded.AuthVersion == 0
-                && (await db.Database.GetAppliedMigrationsAsync()).Last() == migrations[^1];
-        });
-        await Check("media migration backfills a known owner's center and leaves unowned legacy files unassigned", async () => {
-            var known = await db.UploadedMedias.SingleAsync(m => m.DriveFileId == "upgrade-owned");
-            var unknown = await db.UploadedMedias.SingleAsync(m => m.DriveFileId == "upgrade-unowned");
-            var expectedCenter = await db.Centers.Where(c => c.Name == "Media upgrade center").Select(c => c.Id).SingleAsync();
-            return known.CenterId == expectedCenter && known.UploadedByUserId.HasValue && unknown.CenterId == null && unknown.UploadedByUserId == null;
-        });
         await Check("unauthorized counter sale cannot assign an unowned member to a center", async () => {
             try
             {
@@ -367,7 +314,7 @@ try {
             await using var isolated = new SportsCenterDbContext(options);
             try { return await action(new CoachProfessionalService(isolated, clock)) > 0; }
             catch (BusinessException e) when (e.StatusCode == HttpStatusCode.Conflict) { return false; }
-            catch (Exception e) when (e.GetBaseException() is Microsoft.Data.SqlClient.SqlException { Number: 1205 }) { return false; }
+            catch (Exception e) when (e.GetBaseException() is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.DeadlockDetected or Npgsql.PostgresErrorCodes.SerializationFailure }) { return false; }
         }
         await Check("two concurrent coach bookings commit at most one overlapping event", async () => {
             var request = new SaveWorkEventRequest(null, null, "Concurrent audit event", "Other",
@@ -389,7 +336,7 @@ try {
         });
         var issuer = new JwtTokenIssuer(builder.Configuration);
         builder.Services.AddSingleton(issuer);
-        builder.Services.AddDbContext<SportsCenterDbContext>(o => o.UseSqlServer(master.ConnectionString.Replace("Database=master", $"Database={name}", StringComparison.OrdinalIgnoreCase)));
+        builder.Services.AddDbContext<SportsCenterDbContext>(o => o.UseNpgsql(auditConnection));
         builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
         builder.Services.AddScoped<IUserRepository, UserRepository>();
         builder.Services.AddScoped(typeof(IGenericRepository<>), typeof(GenericRepository<>));
@@ -439,7 +386,7 @@ try {
                 context.Connection.RemoteIpAddress = address;
             try { await next(); }
             catch (BusinessException e) { context.Response.StatusCode = (int)e.StatusCode; await context.Response.WriteAsJsonAsync(new { message = e.Message }); }
-            catch (Exception e) when (e.GetBaseException() is Microsoft.Data.SqlClient.SqlException { Number: 1205 }) {
+            catch (Exception e) when (e.GetBaseException() is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.DeadlockDetected or Npgsql.PostgresErrorCodes.SerializationFailure }) {
                 context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
             }
         });
@@ -501,7 +448,6 @@ try {
                 && root.GetProperty("equipmentIssues").EnumerateArray().Any(i => i.GetProperty("title").GetString() == "Audit belt slipping"
                     && i.GetProperty("resourceName").GetString() == "Audit treadmill");
         });
-        await Check("migration normalizes +84/84 phones to 0… and leaves collisions and foreign numbers untouched", () => Task.FromResult(phoneMigrationOk));
         await RegistrationIdentityChecks.Run(db, http, mail, center.Id, Check);
         await CenterHoursChecks.Run(db, owner.Id, Check);
         await EnrollmentOptionsChecks.Run(db, Check);
@@ -512,9 +458,9 @@ try {
         await web.StopAsync();
     }
 } finally {
-    Microsoft.Data.SqlClient.SqlConnection.ClearAllPools();
+    Npgsql.NpgsqlConnection.ClearAllPools();
     await using var command = master.CreateCommand();
-    command.CommandText = $"ALTER DATABASE [{name}] SET SINGLE_USER WITH ROLLBACK IMMEDIATE; DROP DATABASE [{name}]";
+    command.CommandText = $"DROP DATABASE \"{name}\" WITH (FORCE)";
     await command.ExecuteNonQueryAsync();
     await master.DisposeAsync();
     Console.WriteLine("Isolated audit database removed.");
