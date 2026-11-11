@@ -15,7 +15,7 @@ const STEPS = [
   { id: 'class', vi: 'Chọn lớp & lịch', en: 'Class & schedule', icon: 'event_available' }
 ];
 
-function Stepper({ step, onGoTo, isEn }) {
+function Stepper({ step, onGoTo, isEn, singleCoach }) {
   const current = STEPS.findIndex(s => s.id === step);
   return (
     <nav aria-label={isEn ? 'Enrollment steps' : 'Các bước đăng ký'}>
@@ -33,10 +33,17 @@ function Stepper({ step, onGoTo, isEn }) {
               <span className={`hidden sm:inline text-sm font-bold ${active ? 'text-brand-navy-900 dark:text-white' : 'text-brand-navy-500 dark:text-brand-navy-400'}`}>{label}</span>
             </>
           );
+          const handleGoTo = () => {
+            if (s.id === 'coach' && singleCoach) {
+              onGoTo('sport');
+            } else {
+              onGoTo(s.id);
+            }
+          };
           return (
             <li key={s.id} className="flex items-center gap-2 sm:gap-3 min-w-0" aria-current={active ? 'step' : undefined}>
               {done ? (
-                <button type="button" onClick={() => onGoTo(s.id)}
+                <button type="button" onClick={handleGoTo}
                   className="flex items-center gap-2 min-h-[44px] rounded-xl px-1 hover:opacity-80 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-500"
                   aria-label={`${isEn ? 'Back to' : 'Quay lại'}: ${label}`}>
                   {content}
@@ -133,9 +140,15 @@ export function MemberEnrollment() {
 
           <section className="rounded-3xl border border-brand-navy-100 dark:border-brand-navy-800 bg-brand-navy-50/40 dark:bg-brand-navy-950/40 p-4 sm:p-6 space-y-5" aria-labelledby="enroll-heading">
             <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
-              <Stepper step={step} onGoTo={goToStep} isEn={isEn} />
+              <Stepper step={step} onGoTo={goToStep} isEn={isEn} singleCoach={!sport?.coaches || sport.coaches.length <= 1} />
               {step !== 'sport' && (
-                <button type="button" onClick={() => goToStep(step === 'class' ? 'coach' : 'sport')}
+                <button type="button" onClick={() => {
+                  if (step === 'class' && (!sport?.coaches || sport.coaches.length <= 1)) {
+                    goToStep('sport');
+                  } else {
+                    goToStep(step === 'class' ? 'coach' : 'sport');
+                  }
+                }}
                   className="self-start min-h-[44px] inline-flex items-center gap-1 px-3 rounded-xl text-sm font-bold text-brand-navy-700 dark:text-brand-navy-200 hover:bg-white dark:hover:bg-brand-navy-800 focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-500">
                   <Icon name="arrow_back" className="text-[18px]" />{isEn ? 'Back' : 'Quay lại'}
                 </button>

@@ -122,3 +122,30 @@ test('filterVisibleSports hides unstudied sports when enrolled sports exist, and
   assert.deepEqual(view.filterVisibleSports(null), []);
 });
 
+test('resolveAutoCoach returns single coach, enrolled coach, or null for multi-coach un-enrolled', () => {
+  // Sport with single coach (Gym: sportId 2 has coach 13)
+  const singleCoach = view.resolveAutoCoach(options.sports[1]);
+  assert.equal(singleCoach.coachId, 13);
+  assert.equal(singleCoach.fullName, 'HLV C');
+
+  // Sport with multiple coaches where one is enrolled (Bơi: sportId 1 has coach 11 enrolled)
+  const enrolledCoach = view.resolveAutoCoach(options.sports[0]);
+  assert.equal(enrolledCoach.coachId, 11);
+  assert.equal(enrolledCoach.fullName, 'HLV A');
+
+  // Sport with multiple coaches and none enrolled
+  const multiUnenrolled = {
+    sportId: 3,
+    name: 'Tennis',
+    coaches: [
+      { coachId: 21, fullName: 'HLV X', classes: [{ classId: 301, enrollmentId: null }] },
+      { coachId: 22, fullName: 'HLV Y', classes: [{ classId: 302, enrollmentId: null }] }
+    ]
+  };
+  assert.equal(view.resolveAutoCoach(multiUnenrolled), null);
+
+  // Handles null / empty
+  assert.equal(view.resolveAutoCoach(null), null);
+  assert.equal(view.resolveAutoCoach({ coaches: [] }), null);
+});
+

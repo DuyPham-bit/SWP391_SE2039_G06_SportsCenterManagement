@@ -68,7 +68,9 @@ export function SportStep({ sports, onChoose, isEn }) {
                 <Icon name="chevron_right" className="text-brand-navy-300 group-hover:text-brand-teal-600 transition-colors" />
               </div>
               <div className="mt-4 flex flex-wrap gap-2">
-                <Badge icon="sports_handball">{summary.coachCount} {isEn ? 'coaches' : 'HLV'}</Badge>
+                <Badge icon="sports_handball">
+                  {sport.coaches?.length === 1 ? sport.coaches[0].fullName : `${summary.coachCount} ${isEn ? 'coaches' : 'HLV'}`}
+                </Badge>
                 {summary.isEnrolled && <Badge tone="success" icon="check_circle">{isEn ? 'Enrolled' : 'Đang học'}</Badge>}
                 {!summary.isEnrolled && summary.availableCount > 0 && <Badge tone="info" icon="event_available">{summary.availableCount} {isEn ? 'open classes' : 'lớp có thể đăng ký'}</Badge>}
                 {!summary.isEnrolled && summary.availableCount === 0 && summary.blockedCode === 'SPORT_LIMIT' && <Badge tone="warning" icon="lock">{isEn ? 'Upgrade to add' : 'Cần nâng cấp gói'}</Badge>}

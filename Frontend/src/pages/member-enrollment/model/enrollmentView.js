@@ -54,6 +54,20 @@ export function filterVisibleSports(sports) {
   return enrolled.length > 0 ? enrolled : list;
 }
 
+/**
+ * Resolves the coach to automatically pick for a sport:
+ * - If the member is already enrolled with a coach in this sport, returns that enrolled coach.
+ * - If the sport only has 1 coach, returns that single coach.
+ * - Otherwise returns null so the user can choose from multiple coaches.
+ */
+export function resolveAutoCoach(sport) {
+  if (!sport || !sport.coaches || sport.coaches.length === 0) return null;
+  const enrolledCoach = sport.coaches.find(c => summarizeCoach(c).isEnrolled);
+  if (enrolledCoach) return enrolledCoach;
+  if (sport.coaches.length === 1) return sport.coaches[0];
+  return null;
+}
+
 
 export function packageUsage(subscriptions) {
   return (subscriptions || []).map(s => ({
