@@ -6,6 +6,12 @@ Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai 
 - `Backend/` — ASP.NET Core Web API, PostgreSQL (Npgsql) và EF Core.
 - `docker/` — Docker Compose chạy PostgreSQL + backend + frontend.
 
+## Nhánh và phiên bản
+
+- `main` — bản mới nhất, đồng bộ với `deploy/scms-v1.4`.
+- `deploy/scms-v1.x` — mỗi đợt phát hành một nhánh (v1.1 → v1.4). Render (backend) và Vercel (frontend) deploy theo nhánh được chọn; nhánh trước đó là điểm quay lại khi cần rollback.
+- Phát triển tiếp: tạo nhánh mới từ `main` (ví dụ `deploy/scms-v1.5`), không đẩy thẳng lên nhánh đã phát hành.
+
 ## Chạy local bằng Docker (khuyên dùng)
 
 ```powershell
@@ -42,6 +48,20 @@ Triển khai Frontend, Backend API và PostgreSQL tập trung trên máy chủ c
 - Tra cứu hội viên, thu tiền tại quầy bằng CASH/POS (cần mã chuẩn chi cho POS).
 - Khởi tạo thanh toán online qua VNPay hoặc MoMo; callback VNPay/MoMo được gửi về backend để xác minh. VietQR đã được gỡ khỏi luồng thanh toán mới.
 
+## Cập nhật v1.4
+
+- Avatar lưu trên Cloudflare R2 (`users.avatar_key`); danh sách hội viên/nhân viên trả `avatarUrl` nên Manager thấy ảnh của mọi tài khoản. Ảnh cũ chỉ còn trong trình duyệt được tự chuyển lên server ở lần đăng nhập kế tiếp.
+- Hoàn tiền: hội viên chỉ yêu cầu hoàn cho gói đã mua còn hiệu lực (kể cả gói mua trước); hoàn đủ tiền thì gói chuyển `Refunded`. Ảnh chuyển khoản mở qua API có xác thực (link R2 tạm 5 phút).
+- Trang chủ: "Khu vực tập luyện" là sơ đồ mặt bằng dựng từ bảng `rooms` (nhóm theo vị trí `Khu X • Tầng Y`, kèm sức chứa); Manager/Admin chỉnh tên, biểu tượng, màu, mô tả, vị trí, thứ tự, ẩn/hiện từng khu ở tab 5 của trang Nội dung trang chủ. Trình soạn có bản nháp lưu trên server.
+- Banner của mọi vai trò dùng chung hiệu ứng động (`.scms-hero`).
+- Hội viên: trang đăng ký môn học (tự chọn HLV khi đã xác định, chỉ hiện môn đã đăng ký), hồ sơ có giới tính/ngày sinh/trình độ; đăng nhập bằng email hoặc số điện thoại. Lễ tân tạo nhanh hội viên tại quầy với mật khẩu khởi tạo.
+- Thông báo tự đánh dấu đã đọc khi mở; route sai về trang 404.
+
+## Chức năng đang tắt
+
+- **Lương & KPI**: chưa bật vì buổi học chưa có trạng thái "Completed", KPI và bảng lương đếm buổi khác nhau, hoa hồng doanh số chưa được tính. Backend `PayrollService` vẫn giữ nguyên.
+- **Kích hoạt tài khoản qua email** và **mức ưu tiên yêu cầu hỗ trợ**: cần bảng/cột mới chưa có migration nên chưa đưa vào bản này.
+
 Frontend xác thực bằng cookie HttpOnly chứa JWT và header chọn phiên riêng từng tab, đọc lỗi Problem Details và `traceId`, đồng thời dùng `Idempotency-Key` cho thao tác thanh toán. Không dùng mock để giả lập các luồng trên.
 
 ## API mới và cấu hình Google/AI
@@ -65,10 +85,11 @@ Docker đã cấu hình múi giờ cho backend/PostgreSQL và ranh giới ngày 
 ## Kiểm tra
 
 - Trợ lý AI hội viên nhận dữ liệu công khai mới từ database của đúng trung tâm ở mỗi câu hỏi: lịch lớp Published/Scheduled, gói Active và giá VND, sân/phòng Active, địa chỉ, số điện thoại/email trung tâm và giờ mở cửa. Backend chỉ chọn các trường được phép; không gửi hồ sơ hội viên/HLV, ghi chú nội bộ, danh sách đặt chỗ, thanh toán, báo cáo, cấu hình hoặc hội thoại người khác. Ngày/tháng, ngày ISO, ngày tương đối và câu hỏi tiếp nối được xử lý theo giờ Việt Nam; khoảng truy vấn tối đa 31 ngày, tối đa 200 buổi học. Chưa có danh mục sự kiện riêng hoặc giá thuê sân trong database thì AI phải nói rõ thiếu dữ liệu. Nội dung biên tập trang chủ được lưu trong `system_settings` qua API. Trợ lý AI vẫn đọc dữ liệu nghiệp vụ Center/Room và chưa dùng nội dung biên tập này làm nguồn dữ liệu.
-- Nhắc lịch ca học: backend tự kiểm tra mỗi 15 giây và gửi thông báo trong ứng dụng khi ca học đã xác nhận còn tối đa 1 tiếng trước giờ bắt đầu (giờ Việt Nam). Chuông thông báo và hộp thư tự tải lại mỗi 15 giây khi trang đang mở. Lịch bị hủy và ca đã bắt đầu không được nhắc; lời nhắc được lưu trong database để tránh gửi trùng sau khi khởi động lại. Đặt chỗ trong vòng 1 tiếng trước ca học sẽ nhận lời nhắc ở lần kiểm tra kế tiếp. Backend cần hoạt động để tạo lời nhắc; migration `AddClassReminderKey` được áp dụng qua luồng khởi động hiện có.
+- Nhắc lịch ca học: backend tự kiểm tra mỗi 15 giây và gửi thông báo trong ứng dụng khi ca học đã xác nhận còn tối đa 1 tiếng trước giờ bắt đầu (giờ Việt Nam). Chuông thông báo và hộp thư tự tải lại mỗi 15 giây khi trang đang mở. Lịch bị hủy và ca đã bắt đầu không được nhắc; lời nhắc được lưu trong database để tránh gửi trùng sau khi khởi động lại. Đặt chỗ trong vòng 1 tiếng trước ca học sẽ nhận lời nhắc ở lần kiểm tra kế tiếp. Backend cần hoạt động để tạo lời nhắc; cột nhắc lịch đã có trong migration PostgreSQL áp dụng khi khởi động.
 - Frontend: `npm run build` trong `Frontend/`.
 - Frontend regression: `npm test` trong `Frontend/`.
 - Múi giờ: `node --test tests/timezone.test.cjs` trong `Frontend/` kiểm tra 5 múi giờ thiết bị; `dotnet run --project Backend/verification/TimezoneAudit/TimezoneAudit.csproj` từ thư mục gốc kiểm tra ranh giới ngày Việt Nam ở backend.
 - Quản lý nội dung trang chủ và media; kiểm thử Chrome: `npm.cmd run test:landing:browser` trong `Frontend/`.
 - Backend: `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` từ `Backend/`.
+- Kiểm tra avatar và ảnh chuyển khoản trên database đã deploy (chỉ đọc): đặt `SCMS_AUDIT_DB` (connection string) và tùy chọn `SCMS_AUDIT_R2_PUBLIC_DOMAIN`, rồi chạy `dotnet run --project Backend/verification/AvatarRenderAudit`.
 - Kiểm thử logic backend (console audit trong `Backend/verification/`), ví dụ: `dotnet run --project Backend/verification/ReportLogicAudit` và `dotnet run --project Backend/verification/LandingSportDescriptionAudit` (SQLite in-memory, không cần database); `PostgresMergeAudit` cần PostgreSQL local (xem README của project).
