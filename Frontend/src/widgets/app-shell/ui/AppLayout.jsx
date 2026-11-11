@@ -141,6 +141,7 @@ export function AppLayout({ children, currentPath }) {
         onOpenProfile={() => setProfileModalOpen(true)}
         onToggleSidebar={handleToggleSidebar}
         isSidebarCollapsed={desktopCollapsed}
+        isMobileOpen={mobileOpen}
       />
 
       <div className="flex-1 flex">

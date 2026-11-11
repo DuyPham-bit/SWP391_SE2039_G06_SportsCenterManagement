@@ -3,7 +3,7 @@ import { formatMemberDate } from '../../../entities/member/index.js';
 
 export function MemberKeyMetrics({ currentUser, errors, isEn, latest, membership, unread, upcoming, validityPercent }) {
   return (
-    <section aria-label={isEn ? 'Key Metrics' : 'Chỉ số trọng tâm'} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-fade-slide-up">
+    <section aria-label={isEn ? 'Key Metrics' : 'Chỉ số trọng tâm'} className="grid grid-cols-1 sm:grid-cols-2 2xl:grid-cols-4 gap-4 animate-fade-slide-up">
       {/* Metric 1: Upcoming Classes */}
       <div className="bg-white dark:bg-brand-navy-900 rounded-3xl p-5 border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-xs hover:border-brand-sage-500/50 dark:hover:border-brand-sage-500/40 transition hover-lift flex flex-col justify-between group">
         <div>

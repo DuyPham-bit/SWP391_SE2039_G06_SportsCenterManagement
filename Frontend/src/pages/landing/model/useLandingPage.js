@@ -41,18 +41,7 @@ export function useLandingPage() {
   const isManualScrollRef = useRef(false);
   const manualScrollTimerRef = useRef(null);
 
-  // Tiya cd-headline rotate-1 3D perspective flip effect
   const [showIntro, setShowIntro] = useState(true);
-  const [headlineVisible, setHeadlineVisible] = useState(true);
-  useEffect(() => {
-    const interval = setInterval(() => {
-      setHeadlineVisible(false);
-      setTimeout(() => {
-        setHeadlineVisible(true);
-      }, 350);
-    }, 4500);
-    return () => clearInterval(interval);
-  }, []);
 
   // Tiya Scroll Reveal Observer (Synchronized with Tiya animations)
   useEffect(() => {

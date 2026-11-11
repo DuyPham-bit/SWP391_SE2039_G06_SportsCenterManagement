@@ -85,7 +85,7 @@ export function MemberDashboard() {
       {/* ─────────────────────────────────────────────────────────────
           3. MAIN ASYMMETRICAL BENTO WORKSPACE (7 Cols / 5 Cols)
       ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
         {/* ═════════════════════════════════════════════════════════════
             LEFT STREAM (7 COLS): WORKOUT SCHEDULE & TRAINING SYLLABUS
         ═════════════════════════════════════════════════════════════ */}

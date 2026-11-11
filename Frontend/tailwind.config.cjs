@@ -13,6 +13,8 @@ module.exports = {
   darkMode: 'class',
   theme: {
     extend: {
+      // Tailwind 3 has no 4.5/18 steps; components use p-4.5, h-18, w-18.
+      spacing: { 4.5: '1.125rem', 18: '4.5rem' },
       colors: {
         // Brand scales derived from the landing palette (navy, sage, sand/cream, terracotta, teal) + danger.
         brand: {

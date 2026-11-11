@@ -21,7 +21,7 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
             className="px-3.5 py-2 rounded-xl bg-brand-sage-50 dark:bg-brand-sage-950/60 text-brand-sage-700 dark:text-brand-sage-300 hover:bg-brand-sage-100 dark:hover:bg-brand-sage-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-sage-200 dark:border-brand-sage-800 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
-            <span>+ Thêm Cơ Sở</span>
+            <span>Thêm Cơ Sở</span>
           </MotionButton>
           <MotionButton
             onClick={() => setShowCM(true)}
@@ -31,7 +31,7 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
             className="px-3.5 py-2 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300 hover:bg-brand-teal-100 dark:hover:bg-brand-teal-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-teal-200 dark:border-brand-teal-800 disabled:opacity-40 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">person_add</span>
-            <span>+ Tạo Manager</span>
+            <span>Tạo Manager</span>
           </MotionButton>
           <a
             href="#/admin/roles-permissions"

@@ -8,6 +8,8 @@ import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 
 const money = value => `${Number(value || 0).toLocaleString('vi-VN')} ₫`;
+const day = value => value ? value.split('-').reverse().join('/') : '';
+const packageRange = item => [day(item.packageStartDate), day(item.packageEndDate)].filter(Boolean).join(' – ');
 const statusStyle = {
   Pending: 'bg-brand-sand-50 text-brand-sand-700 border-brand-sand-200',
   Approved: 'bg-brand-sage-50 text-brand-sage-700 border-brand-sage-200',
@@ -78,8 +80,8 @@ export function MemberRefundRequests() {
       <p className="mt-2 max-w-2xl text-sm text-white/95 font-medium drop-shadow-xs">{isEn ? 'Submit your receiving bank account. A manager will verify the payment and upload transfer proof when approved.' : 'Cung cấp tài khoản nhận tiền. Quản lý sẽ kiểm tra giao dịch và tải ảnh chuyển khoản khi duyệt.'}</p>
       <p className="mt-2 max-w-2xl text-xs font-semibold text-white/85">
         {isEn
-          ? 'Successful payments with a remaining refundable balance remain eligible regardless of payment date, including packages purchased in advance.'
-          : 'Giao dịch thành công còn số dư hoàn được phép gửi yêu cầu không phụ thuộc ngày thanh toán, kể cả gói mua trước thời hạn sử dụng.'}
+          ? 'Successful payments with a remaining refundable balance are eligible while their package is still valid, including packages purchased in advance. Expired or cancelled packages cannot be refunded.'
+          : 'Giao dịch thành công còn số dư được yêu cầu hoàn khi gói tập vẫn còn hiệu lực, kể cả gói mua trước. Gói đã hết hạn hoặc đã hủy không thể hoàn tiền.'}
       </p>
       </div>
     </header>
@@ -87,12 +89,16 @@ export function MemberRefundRequests() {
     <div className="grid gap-6 xl:grid-cols-[.9fr_1.1fr]">
       <section className="rounded-2xl border border-brand-navy-200 bg-white p-5 shadow-sm dark:border-brand-navy-800 dark:bg-brand-navy-900">
         <h2 className="font-chivo text-lg font-black">{isEn ? 'Create request' : 'Gửi yêu cầu mới'}</h2>
-        {!payments.length ? <p className="mt-4 rounded-xl bg-brand-navy-50 p-4 text-sm text-brand-navy-500">{isEn ? 'No refundable successful payment is available.' : 'Hiện không có giao dịch thành công nào còn số dư có thể hoàn.'}</p> :
+        {!payments.length ? <p className="mt-4 rounded-xl bg-brand-navy-50 p-4 text-sm text-brand-navy-500">{isEn ? 'You have no purchased package that is still valid for a refund.' : 'Bạn không có gói tập đã mua nào còn hiệu lực để yêu cầu hoàn tiền.'}</p> :
           <form onSubmit={submit} className="mt-4 space-y-4">
-            <label className="block text-xs font-bold">{isEn ? 'Payment / Invoice' : 'Giao dịch / Hóa đơn'}
+            <label className="block text-xs font-bold">{isEn ? 'Purchased package' : 'Gói tập đã mua'}
               <select value={paymentId} onChange={e => setPaymentId(e.target.value)} className="mt-1 w-full rounded-xl border border-brand-navy-300 bg-white p-3 text-sm" required>
-                {payments.map(item => <option key={item.paymentId} value={item.paymentId}>{item.invoiceNumber} · {money(item.refundableAmount)} · {item.paymentMethod}</option>)}
+                {payments.map(item => <option key={item.paymentId} value={item.paymentId}>{item.packageName || item.invoiceNumber} · {money(item.refundableAmount)}</option>)}
               </select>
+              {selectedPayment && <span className="mt-1.5 block text-[11px] font-medium text-brand-navy-500 dark:text-brand-navy-400">
+                {isEn ? 'Invoice' : 'Hóa đơn'} {selectedPayment.invoiceNumber} · {selectedPayment.paymentMethod} · {isEn ? 'Paid' : 'Đã thanh toán'} {money(selectedPayment.paidAmount)}
+                {selectedPayment.packageEndDate && <> · {isEn ? 'Valid' : 'Hiệu lực'} {packageRange(selectedPayment)}</>}
+              </span>}
             </label>
             <label className="block text-xs font-bold">{isEn ? 'Refund amount' : 'Số tiền yêu cầu hoàn'}
               <input name="amount" type="number" min="1" max={selectedPayment?.refundableAmount || undefined} defaultValue={selectedPayment?.refundableAmount || ''} key={paymentId} required className="mt-1 w-full rounded-xl border border-brand-navy-300 p-3 text-sm" />

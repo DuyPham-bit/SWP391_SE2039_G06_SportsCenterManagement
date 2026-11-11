@@ -226,7 +226,7 @@ export function ReceptionistDashboard() {
                 <span className="material-symbols-outlined text-[20px]">fact_check</span>
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="text-3xl font-black text-brand-navy-900 dark:text-white tabular-nums">
                 {history.length}
               </span>
@@ -261,8 +261,8 @@ export function ReceptionistDashboard() {
                 <span className="material-symbols-outlined text-[20px]">door_sliding</span>
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-brand-navy-900 dark:text-white tracking-tight">
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="text-xl 2xl:text-2xl font-black text-brand-navy-900 dark:text-white tracking-tight whitespace-nowrap">
                 {isEn ? 'ACTIVE' : 'HOẠT ĐỘNG'}
               </span>
               <span className="px-2 py-0.5 rounded-full bg-brand-sage-50 dark:bg-brand-sage-950/50 text-brand-sage-700 dark:text-brand-sage-300 border border-brand-sage-300 dark:border-brand-sage-700 text-[10px] font-black uppercase tracking-wider">
@@ -295,8 +295,8 @@ export function ReceptionistDashboard() {
                 <span className="material-symbols-outlined text-[20px]">point_of_sale</span>
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-brand-navy-900 dark:text-white tracking-tight">
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="text-xl 2xl:text-2xl font-black text-brand-navy-900 dark:text-white tracking-tight whitespace-nowrap">
                 {isEn ? 'SẴN SÀNG' : 'SẴN SÀNG'}
               </span>
               <span className="text-xs font-semibold text-brand-navy-500 dark:text-brand-navy-400">
@@ -329,8 +329,8 @@ export function ReceptionistDashboard() {
                 <span className="material-symbols-outlined text-[20px]">support_agent</span>
               </div>
             </div>
-            <div className="mt-3 flex items-baseline gap-2">
-              <span className="text-2xl font-black text-brand-navy-900 dark:text-white tracking-tight">
+            <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
+              <span className="text-xl 2xl:text-2xl font-black text-brand-navy-900 dark:text-white tracking-tight whitespace-nowrap">
                 {isEn ? 'DESK READY' : 'BÀN TIẾP ĐÓN'}
               </span>
               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-brand-navy-50 dark:bg-brand-navy-950/50 text-brand-navy-800 dark:text-brand-navy-300 border border-brand-navy-200/80 dark:border-brand-navy-800/50">

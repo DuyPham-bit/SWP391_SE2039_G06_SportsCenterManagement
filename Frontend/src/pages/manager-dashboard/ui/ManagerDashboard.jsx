@@ -357,12 +357,7 @@ export function ManagerDashboard() {
       {/* 1. TOP MINIMALIST BREADCRUMB & CONTROLS */}
       <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
         <div>
-          <div className="flex items-center gap-1.5 text-xs text-brand-navy-400 dark:text-brand-navy-500 font-medium">
-            <span>Pages</span>
-            <span>/</span>
-            <span className="text-brand-navy-700 dark:text-brand-navy-300 font-semibold">{isEn ? 'Dashboard' : 'Bảng điều khiển'}</span>
-          </div>
-          <h1 className="text-2xl font-black font-chivo text-brand-navy-900 dark:text-white mt-0.5 tracking-tight flex items-center gap-2.5">
+          <h1 className="text-2xl font-black font-chivo text-brand-navy-900 dark:text-white tracking-tight flex flex-wrap items-center gap-2.5">
             <span>{isEn ? 'Executive Dashboard' : 'Bảng Điều Hành Trung Tâm'}</span>
             <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-sage-50 text-brand-sage-700 dark:bg-brand-sage-950/50 dark:text-brand-sage-300 border border-brand-sage-200/80 dark:border-brand-sage-800/60">
               <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse" />
@@ -462,7 +457,7 @@ export function ManagerDashboard() {
                   <span className="material-symbols-outlined text-[17px] text-brand-teal-700 dark:text-brand-teal-400 group-hover:scale-110 transition-transform">
                     person_add
                   </span>
-                  <span>{isEn ? '+ Add Member' : '+ Thêm hội viên'}</span>
+                  <span>{isEn ? 'Add Member' : 'Thêm hội viên'}</span>
                 </a>
 
                 <a
@@ -501,7 +496,7 @@ export function ManagerDashboard() {
           {/* ========================================================
               3. ROW 1: 6 TOP KPI CARDS (100% REAL DB DATA)
              ======================================================== */}
-          <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-6 gap-3.5">
+          <div className="grid grid-cols-2 md:grid-cols-3 2xl:grid-cols-6 gap-3.5">
             {/* Card 1: TỔNG HỘI VIÊN */}
             <div className="bg-white dark:bg-brand-navy-900 rounded-2xl p-4 border border-brand-navy-200/90 dark:border-brand-navy-800 shadow-xs hover-lift transition-all flex flex-col justify-between">
               <div className="flex items-start justify-between gap-2">
@@ -647,7 +642,7 @@ export function ManagerDashboard() {
           {/* ========================================================
               4. ROW 2: 4 ANALYTICS CARDS (100% REAL DB DATA)
              ======================================================== */}
-          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-4 gap-4 items-stretch">
             {/* Card 1: Trạng thái sân bãi & phòng tập (Donut Chart) */}
             <div className="bg-white dark:bg-brand-navy-900 rounded-2xl p-4 border border-brand-navy-200/90 dark:border-brand-navy-800 shadow-xs hover-lift transition-all flex flex-col justify-between">
               <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
@@ -719,9 +714,9 @@ export function ManagerDashboard() {
           {/* ========================================================
               5. ROW 3: 3 DETAILED INSIGHT CARDS (100% REAL DB DATA)
              ======================================================== */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 items-stretch">
+          <div className="grid grid-cols-1 md:grid-cols-2 2xl:grid-cols-12 gap-4 items-stretch">
             {/* Card 1 (6 cols): Biến động doanh thu theo thời gian */}
-            <section className="lg:col-span-6 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
+            <section className="md:col-span-2 2xl:col-span-6 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
                   <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">
@@ -783,7 +778,7 @@ export function ManagerDashboard() {
             </section>
 
             {/* Card 2 (3 cols): Cơ cấu doanh thu theo bộ môn */}
-            <section className="lg:col-span-3 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
+            <section className="2xl:col-span-3 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
                   <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">
@@ -800,7 +795,7 @@ export function ManagerDashboard() {
             </section>
 
             {/* Card 3 (3 cols): Lượt đặt theo lớp học */}
-            <section className="lg:col-span-3 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
+            <section className="2xl:col-span-3 bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-4 shadow-xs hover-lift transition-all flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between border-b border-brand-navy-100 dark:border-brand-navy-800 pb-2.5">
                   <h4 className="text-xs font-bold text-brand-navy-900 dark:text-white font-chivo">

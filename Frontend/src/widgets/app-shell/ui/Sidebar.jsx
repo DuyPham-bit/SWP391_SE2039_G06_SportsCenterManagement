@@ -535,20 +535,23 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             : 'lg:w-64'
         }`}
       >
-        {/* Mobile Top Header: Logo & Circle Close Button (matching reference image) */}
+        {/* Mobile close button: only while the drawer is open — it sits outside the aside's edge,
+            so rendering it when closed made it peek in at the left edge of the screen. */}
+        {isOpen && <button
+          type="button"
+          onClick={onClose}
+          className="lg:hidden absolute -right-3.5 top-4 z-50 w-7 h-7 rounded-full border border-line/90 bg-surface hover:bg-surface-muted hover:border-brand-sage-500 flex items-center justify-center text-ink-muted hover:text-brand-sage-700 dark:hover:text-brand-sage-400 transition-all cursor-pointer shadow-md hover:scale-110 active:scale-95"
+          title={language === 'vi' ? 'Thu gọn menu' : 'Collapse menu'}
+          aria-label={language === 'vi' ? 'Thu gọn menu' : 'Collapse menu'}
+        >
+          <span className="material-symbols-outlined text-[15px] select-none">
+            chevron_left
+          </span>
+        </button>}
+
+        {/* Mobile Top Header: Logo */}
         <div className="lg:hidden flex items-center justify-between px-3.5 py-3 border-b border-line bg-surface shrink-0">
           <Logo variant="auto" size="md" />
-          <button
-            type="button"
-            onClick={onClose}
-            className="w-7 h-7 rounded-full border border-line/90 bg-surface hover:bg-surface-muted hover:border-brand-sage-500 flex items-center justify-center text-ink-muted hover:text-brand-sage-700 dark:hover:text-brand-sage-400 transition-all cursor-pointer shadow-md hover:scale-110 active:scale-95"
-            title={language === 'vi' ? 'Đóng menu' : 'Close menu'}
-            aria-label="Close menu"
-          >
-            <span className="material-symbols-outlined text-[15px] select-none">
-              chevron_left
-            </span>
-          </button>
         </div>
         {/* Seamless Top Bar: display only 'MENU' as requested */}
         {isEffectiveCollapsed ? (

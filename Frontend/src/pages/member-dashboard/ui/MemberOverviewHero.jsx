@@ -22,9 +22,9 @@ export function MemberOverviewHero({
         <circle cx="860" cy="60" r="100" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
       </svg>
 
-      <div className="relative z-10 flex flex-col xl:flex-row xl:items-center justify-between gap-6">
+      <div className="relative z-10 flex flex-col 2xl:flex-row 2xl:items-center justify-between gap-6">
         {/* Athlete Profile & Status */}
-        <div className="flex items-start sm:items-center gap-5 min-w-0">
+        <div className="flex items-start sm:items-center gap-4 sm:gap-5 min-w-0">
           {/* VIP Avatar with dynamic glow */}
           <div className="relative shrink-0">
             {currentUser?.avatar ? (
@@ -67,7 +67,7 @@ export function MemberOverviewHero({
               </span>
             </div>
 
-            <h1 className="font-chivo text-2xl md:text-3xl font-black text-white mt-2 tracking-tight leading-tight break-words drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+            <h1 className="font-chivo text-2xl md:text-3xl font-black text-white mt-2 tracking-tight leading-tight break-words text-balance drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
               {greeting}, {currentUser?.fullName}!
             </h1>
 
@@ -102,12 +102,13 @@ export function MemberOverviewHero({
         </div>
 
         {/* Hero Action Toolbar (Streamlined & Non-Redundant) */}
-        <div className="flex flex-wrap items-center gap-2.5 shrink-0 pt-2 xl:pt-0">
+        {/* Mobile: [QR ........][sync] / [Book][Profile]; sm+: one wrapping row */}
+        <div className="grid grid-cols-[1fr_1fr_auto] sm:flex sm:flex-wrap items-center gap-2.5 shrink-0">
           {/* Primary Action: QR Code Gate Access */}
           <button
             type="button"
             onClick={() => setQrModalOpen(true)}
-            className="scms-shine px-5 py-3 rounded-xl bg-brand-navy-950 hover:bg-brand-navy-900 text-white font-chivo font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer group"
+            className="col-span-2 order-1 sm:order-none justify-center scms-shine px-5 py-3 rounded-xl bg-brand-navy-950 hover:bg-brand-navy-900 text-white font-chivo font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer group"
           >
             <span className="material-symbols-outlined text-[18px] text-brand-sand-300 group-hover:rotate-12 transition-transform">qr_code_scanner</span>
             <span>{isEn ? 'Gate Check-in QR' : 'Mã Check-in QR'}</span>
@@ -117,7 +118,7 @@ export function MemberOverviewHero({
           {canBook && (
             <a
               href="#/member/schedule"
-              className="scms-shine px-5 py-3 rounded-xl bg-white/90 hover:bg-white text-brand-navy-950 font-chivo font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer group"
+              className="col-span-2 order-3 sm:order-none justify-center whitespace-nowrap scms-shine px-3 sm:px-5 py-3 rounded-xl bg-white/90 hover:bg-white text-brand-navy-950 font-chivo font-bold text-xs uppercase tracking-normal sm:tracking-wider shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer group"
             >
               <span className="material-symbols-outlined text-[18px] text-brand-sage-700 group-hover:scale-110 transition-transform">event_available</span>
               <span>{isEn ? 'Book Class' : 'Đặt ca tập mới'}</span>
@@ -128,7 +129,7 @@ export function MemberOverviewHero({
           <button
             type="button"
             onClick={() => setProfileOpen(true)}
-            className="scms-shine px-4 py-3 rounded-xl bg-white/90 hover:bg-white text-brand-navy-950 font-chivo font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer"
+            className={`order-3 sm:order-none justify-center ${canBook ? '' : 'col-span-3'} scms-shine px-4 py-3 rounded-xl bg-white/90 hover:bg-white text-brand-navy-950 font-chivo font-bold text-xs uppercase tracking-wider shadow-md hover:shadow-lg transition-all duration-200 flex items-center gap-2 active:scale-95 cursor-pointer`}
             title={isEn ? 'Edit Profile' : 'Chỉnh sửa hồ sơ cá nhân'}
           >
             <span className="material-symbols-outlined text-[18px] text-brand-sage-700">badge</span>
@@ -140,7 +141,7 @@ export function MemberOverviewHero({
             type="button"
             onClick={handleSyncData}
             disabled={isRefreshing}
-            className={`p-3 rounded-xl bg-brand-navy-950/70 hover:bg-brand-navy-950 text-white transition shadow-md cursor-pointer ${
+            className={`order-2 sm:order-none flex justify-center p-3 rounded-xl bg-brand-navy-950/70 hover:bg-brand-navy-950 text-white transition shadow-md cursor-pointer ${
                 isRefreshing ? 'animate-spin' : 'hover:rotate-90 active:scale-95'
               }`}
             title={isEn ? 'Sync Data' : 'Đồng bộ dữ liệu'}

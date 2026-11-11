@@ -326,13 +326,13 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             const color = colors[idx % colors.length];
 
             return (
-              <div key={metric.id || idx} className={`bg-white p-6 rounded-[20px] border border-brand-navy-200/90 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group tiya-reveal tiya-delay-${idx + 1}`}>
+              <div key={metric.id || idx} className={`bg-white p-4 sm:p-6 rounded-[20px] border border-brand-navy-200/90 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 min-w-0 group tiya-reveal tiya-delay-${idx + 1}`}>
                 <div className={`w-12 h-12 rounded-xl ${color.bg} ${color.text} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
                   <span className="material-symbols-outlined text-[28px]">{metric.icon || 'domain'}</span>
                 </div>
-                <div>
-                  <div className="font-sans text-2xl sm:text-3xl font-bold text-slate-900">{isEn ? translateMetricValue(metric.value, true) : metric.value}</div>
-                  <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">{isEn ? translateMetricLabel(metric.label, true) : metric.label}</div>
+                <div className="min-w-0">
+                  <div className="font-sans text-2xl sm:text-3xl font-bold text-slate-900 break-words">{isEn ? translateMetricValue(metric.value, true) : metric.value}</div>
+                  <div className="text-[11px] sm:text-xs text-slate-500 font-semibold uppercase tracking-wide sm:tracking-wider mt-0.5 break-words">{isEn ? translateMetricLabel(metric.label, true) : metric.label}</div>
                 </div>
               </div>
             );
@@ -388,7 +388,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         </div>
 
         {/* RESULTS COUNT & STATUS */}
-        <div className="flex items-center justify-between mb-6 text-xs text-slate-500 font-semibold px-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-3 mb-6 text-xs text-slate-500 font-semibold px-1">
           <div>
             {isEn ? (
               <>Showing <strong>{filteredFacilities.length}</strong> / {visibleFacilities.length} courts and venues</>

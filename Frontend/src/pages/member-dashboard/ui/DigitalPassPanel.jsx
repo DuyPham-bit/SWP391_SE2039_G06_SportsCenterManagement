@@ -7,7 +7,7 @@ export function DigitalPassPanel({
   setQrModalOpen
 }) {
   return (
-    <div className="lg:col-span-5 space-y-6">
+    <div className="xl:col-span-5 space-y-6">
       {/* Panel 1: Luxury Olympic Smart Digital Pass */}
       <section
         aria-label={isEn ? 'Smart Digital Pass' : 'Thẻ hội viên thông minh'}

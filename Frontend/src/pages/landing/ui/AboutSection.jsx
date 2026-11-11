@@ -5,7 +5,7 @@ export function AboutSection({ catalog, facilitiesList, isEn, landingContent, vi
   return (
     <section className="about-section" id="ve-chung-toi">
       <div className="about-container">
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(320px, 1fr))',gap:'60px',alignItems:'start'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(min(320px, 100%), 1fr))',gap:'clamp(32px, 6vw, 60px)',alignItems:'start'}}>
           {/* Left Column */}
           <div className="tiya-reveal" style={{display:'flex',flexDirection:'column',alignItems:'flex-start'}}>
             <div className="about-badge">

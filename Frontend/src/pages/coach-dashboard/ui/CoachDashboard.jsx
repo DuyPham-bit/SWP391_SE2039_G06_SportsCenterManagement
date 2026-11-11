@@ -192,7 +192,7 @@ export function CoachDashboard() {
           <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.25" />
         </svg>
 
-        <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+        <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
             <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/30 shadow-xs">
               <span className="w-2.5 h-2.5 rounded-full bg-brand-sage-400 animate-pulse shrink-0" />
@@ -213,7 +213,7 @@ export function CoachDashboard() {
           </div>
 
           {/* 3 Khối Thống Số Trọng Tâm: Số ca dạy, Tổng học viên, Tỉ lệ chuyên cần */}
-          <div className="w-full lg:w-auto grid grid-cols-3 gap-2.5 sm:gap-3 shrink-0">
+          <div className="w-full xl:w-auto grid grid-cols-3 gap-2.5 sm:gap-3 shrink-0">
             
             {/* Thẻ 1: Số ca dạy hôm nay */}
             <div className="bg-white/15 dark:bg-brand-navy-900/40 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/25 min-w-[105px] sm:min-w-[130px] flex flex-col justify-between shadow-xs hover:bg-white/20 transition-all">
@@ -271,12 +271,12 @@ export function CoachDashboard() {
       {/* ─────────────────────────────────────────────────────────────
           2. MAIN CONTENT (Bố cục 2 Cột: Cột trái 65% - Cột phải 35%)
       ───────────────────────────────────────────────────────────── */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+      <div className="grid grid-cols-1 xl:grid-cols-12 gap-6 items-start">
 
         {/* ═══════════════════════════════════════════════════════════
             CỘT TRÁI (lg:col-span-8): LỊCH DẠY & ĐIỂM DANH HÔM NAY
         ═══════════════════════════════════════════════════════════ */}
-        <div className="lg:col-span-8 space-y-4">
+        <div className="xl:col-span-8 space-y-4">
           
           {/* Header Card & Bộ lọc Thời gian */}
           <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-brand-navy-900 p-4 sm:p-5 rounded-3xl border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-xs">
@@ -471,7 +471,7 @@ export function CoachDashboard() {
         {/* ═══════════════════════════════════════════════════════════
             CỘT PHẢI (lg:col-span-4): ĐÁNH GIÁ & GHI NHẬN TIẾN ĐỘ
         ═══════════════════════════════════════════════════════════ */}
-        <div className="lg:col-span-4 space-y-4">
+        <div className="xl:col-span-4 space-y-4">
           <div className="bg-white dark:bg-brand-navy-900 rounded-3xl border border-brand-navy-200/80 dark:border-brand-navy-800 p-5 sm:p-6 shadow-xs space-y-4">
             
             {/* Header Form + NÚT GỢI Ý AI */}
