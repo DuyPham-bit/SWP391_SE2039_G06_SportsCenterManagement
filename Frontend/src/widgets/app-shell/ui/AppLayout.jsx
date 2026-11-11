@@ -49,6 +49,26 @@ export function AppLayout({ children, currentPath }) {
     setMobileOpen(false);
   };
 
+  // Mobile drawer behaves like a modal: closes on navigation, on Esc and when the screen grows to
+  // desktop; the page behind it does not scroll while it is open.
+  React.useEffect(() => { setMobileOpen(false); }, [currentPath]);
+
+  React.useEffect(() => {
+    if (!mobileOpen) return undefined;
+    const onKey = event => { if (event.key === 'Escape') setMobileOpen(false); };
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const onDesktop = event => { if (event.matches) setMobileOpen(false); };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKey);
+    desktop.addEventListener('change', onDesktop);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey);
+      desktop.removeEventListener('change', onDesktop);
+    };
+  }, [mobileOpen]);
+
   const isMemberArea = (
     role === 'MEMBER' ||
     currentUser?.role?.toUpperCase() === 'MEMBER' ||

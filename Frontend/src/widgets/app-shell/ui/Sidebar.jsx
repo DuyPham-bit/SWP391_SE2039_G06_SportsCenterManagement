@@ -512,6 +512,8 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
 
       {/* Sidebar Container */}
       <aside
+        id="app-sidebar"
+        aria-label={language === 'vi' ? 'Menu điều hướng' : 'Navigation menu'}
         className={`fixed top-0 lg:top-16 left-0 bottom-0 bg-surface border-r border-line z-50 flex flex-col transition-all duration-300 ease-in-out select-none ${
           isOpen ? 'translate-x-0 shadow-2xl w-64' : '-translate-x-full'
         } lg:transform-none ${
@@ -520,23 +522,18 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             : 'lg:w-64'
         }`}
       >
-        {/* Mobile close button: only while the drawer is open — it sits outside the aside's edge,
-            so rendering it when closed made it peek in at the left edge of the screen. */}
-        {isOpen && <button
-          type="button"
-          onClick={onClose}
-          className="lg:hidden absolute -right-3.5 top-4 z-50 w-7 h-7 rounded-full border border-line/90 bg-surface hover:bg-surface-muted hover:border-brand-sage-500 flex items-center justify-center text-ink-muted hover:text-brand-sage-700 dark:hover:text-brand-sage-400 transition-all cursor-pointer shadow-md hover:scale-110 active:scale-95"
-          title={language === 'vi' ? 'Thu gọn menu' : 'Collapse menu'}
-          aria-label={language === 'vi' ? 'Thu gọn menu' : 'Collapse menu'}
-        >
-          <span className="material-symbols-outlined text-[15px] select-none">
-            chevron_left
-          </span>
-        </button>}
-
-        {/* Mobile Top Header: Logo */}
-        <div className="lg:hidden flex items-center justify-between px-3.5 py-3 border-b border-line bg-surface shrink-0">
+        {/* Mobile drawer header: logo + a 44px close button inside the drawer (no floating edge tab). */}
+        <div className="lg:hidden flex items-center justify-between gap-2 pl-3.5 pr-2 h-16 border-b border-line bg-surface shrink-0">
           <Logo variant="auto" size="md" />
+          <button
+            type="button"
+            onClick={onClose}
+            className="w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-ink-muted hover:text-ink hover:bg-surface-muted active:bg-surface-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-500"
+            aria-label={language === 'vi' ? 'Đóng menu' : 'Close menu'}
+            tabIndex={isOpen ? 0 : -1}
+          >
+            <span aria-hidden="true" className="material-symbols-outlined text-[24px]">close</span>
+          </button>
         </div>
         {/* Seamless Top Bar: display only 'MENU' as requested */}
         {isEffectiveCollapsed ? (
