@@ -53,9 +53,35 @@ test('coach can manually enter member biometrics from the AI recommendation pane
   assert.match(component, /coachApi\.updateMemberBiometrics\(selectedClass\.id, member\.id/);
   assert.match(component, /bioField\('heightCm'\)/);
   assert.match(component, /bioField\('weightKg'\)/);
-  assert.match(component, /bioField\('dateOfBirth'\)/);
+  assert.match(component, /bioField\('medicalNote'\)/);
+});
+
+test('coach manual entry is limited to height, weight and medical note (member owns gender/DOB/level)', () => {
+  for (const field of ['gender', 'dateOfBirth', 'fitnessLevel']) {
+    assert.doesNotMatch(component, new RegExp(`bioField\\('${field}'\\)`));
+  }
+  const body = api.match(/updateMemberBiometrics:[\s\S]*?body: \{([\s\S]*?)\}\s*\}\)/);
+  assert.ok(body, 'updateMemberBiometrics body not found');
+  assert.match(body[1], /heightCm/);
+  assert.match(body[1], /weightKg/);
+  assert.match(body[1], /medicalNote/);
+  assert.doesNotMatch(body[1], /gender|dateOfBirth|fitnessLevel/);
 });
 
 test('biometrics panel shows whether weight came from the latest training_results session log', () => {
   assert.match(component, /context\.weightSource === 'training_result'/);
+});
+
+test('saving manual metrics warns when the member already has a latest training result', () => {
+  assert.match(component, /updated\.latestResult/);
+  assert.match(component, /Đã có kết quả luyện tập gần nhất cho học viên này/);
+});
+
+test('auto-fill applies latest training result together with age, gender and level from the API', () => {
+  const autoFill = component.match(/const handleAutoFillPhysicalContext = \(\) => \{([\s\S]*?)\n  \};/);
+  assert.ok(autoFill, 'auto-fill handler not found');
+  assert.match(autoFill[1], /context\.latestResult/);
+  assert.match(autoFill[1], /context\.age/);
+  assert.match(autoFill[1], /context\.gender/);
+  assert.match(autoFill[1], /context\.fitnessLevel/);
 });

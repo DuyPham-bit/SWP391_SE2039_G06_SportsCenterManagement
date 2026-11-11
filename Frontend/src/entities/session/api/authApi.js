@@ -65,6 +65,10 @@ async function loadCurrentUser(session = getApiSession(), version = getAuthVersi
     packageExpiry: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageExpiry || null) : null,
     packageStartDate: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStartDate || null) : null,
     packageStatus: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStatus || 'INACTIVE') : null,
+    // Member-owned details used by coach AI context (age, gender, level).
+    dateOfBirth: memberProfile?.dateOfBirth || null,
+    gender: memberProfile?.gender || null,
+    fitnessLevel: memberProfile?.fitnessLevel || null,
     scheduledSubscriptions,
     mustChangePassword: false,
     emailVerified: profile.isEmailVerified !== false,
@@ -220,6 +224,23 @@ export const authApi = {
       body: { fullName: profileData.fullName, phone: profileData.phone || null, ...(avatarKey === undefined ? {} : { avatarKey }) }
     });
     assertAuthVersion(version);
+    const details = profileData.memberDetails;
+    if (details) {
+      // Gender, date of birth and fitness level live on the member profile (members/me).
+      await apiRequest('members/me', {
+        method: 'PATCH', session,
+        body: {
+          fullName: profileData.fullName,
+          email: null,
+          phone: null,
+          dateOfBirth: details.dateOfBirth || null,
+          gender: details.gender || null,
+          address: null,
+          fitnessLevel: details.fitnessLevel || null
+        }
+      });
+      assertAuthVersion(version);
+    }
     const user = await loadCurrentUser(session, version);
     if (avatarKey !== undefined) notifyAvatarChanged(user?.id, user?.avatar);
     return user;

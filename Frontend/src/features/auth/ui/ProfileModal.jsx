@@ -24,6 +24,16 @@ export function ProfileModal({ isOpen, onClose }) {
   const [fullName, setFullName] = useState(currentUser?.fullName || '');
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [savingProfile, setSavingProfile] = useState(false);
+  const isMember = currentUser?.role === 'MEMBER';
+
+  // Member-owned details (coach AI uses them for age / gender / level)
+  const [gender, setGender] = useState(currentUser?.gender || '');
+  const [dateOfBirth, setDateOfBirth] = useState(currentUser?.dateOfBirth || '');
+  const [fitnessLevel, setFitnessLevel] = useState(currentUser?.fitnessLevel || '');
+  const todayIso = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
 
   // Avatar Management State
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar || '');
@@ -38,6 +48,9 @@ export function ProfileModal({ isOpen, onClose }) {
     if (isOpen && currentUser) {
       setFullName(currentUser.fullName || '');
       setPhone(currentUser.phone || '');
+      setGender(currentUser.gender || '');
+      setDateOfBirth(currentUser.dateOfBirth || '');
+      setFitnessLevel(currentUser.fitnessLevel || '');
       setAvatarPreview(currentUser.avatar || '');
       setAvatarChanged(false);
     }
@@ -160,12 +173,17 @@ export function ProfileModal({ isOpen, onClose }) {
       showError(isEn ? 'Full name cannot be empty!' : 'Họ và tên không được để trống!');
       return;
     }
+    if (isMember && dateOfBirth && dateOfBirth > todayIso) {
+      showError(isEn ? 'Date of birth cannot be in the future!' : 'Ngày sinh không được ở tương lai!');
+      return;
+    }
     setSavingProfile(true);
     try {
       await updateProfile({
         fullName: fullName.trim(),
         phone: phone.trim(),
-        avatar: avatarChanged ? (avatarPreview || null) : currentUser?.avatar
+        avatar: avatarChanged ? (avatarPreview || null) : currentUser?.avatar,
+        ...(isMember ? { memberDetails: { gender, dateOfBirth, fitnessLevel } } : {})
       });
       setAvatarChanged(false);
       showSuccess(isEn ? 'Profile updated successfully!' : 'Cập nhật hồ sơ cá nhân thành công!');
@@ -536,6 +554,67 @@ export function ProfileModal({ isOpen, onClose }) {
               className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white"
             />
           </div>
+
+          {currentUser?.role === 'MEMBER' && (
+            <fieldset className="space-y-3 p-3 sm:p-4 rounded-xl border border-brand-sage-200 bg-brand-sage-50/50">
+              <legend className="px-1 text-xs font-bold uppercase tracking-wider text-brand-sage-800">
+                {isEn ? 'Training profile' : 'Thông tin thể trạng'}
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label htmlFor="profile-gender" className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 mb-1">
+                    {isEn ? 'Gender' : 'Giới tính'}
+                  </label>
+                  <select
+                    id="profile-gender"
+                    value={gender}
+                    onChange={e => setGender(e.target.value)}
+                    className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white cursor-pointer"
+                  >
+                    <option value="">{isEn ? '— Not set —' : '— Chưa chọn —'}</option>
+                    <option value="Male">{isEn ? 'Male' : 'Nam'}</option>
+                    <option value="Female">{isEn ? 'Female' : 'Nữ'}</option>
+                    <option value="Other">{isEn ? 'Other' : 'Khác'}</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="profile-dob" className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 mb-1">
+                    {isEn ? 'Date of birth' : 'Ngày sinh'}
+                  </label>
+                  <input
+                    id="profile-dob"
+                    type="date"
+                    max={todayIso}
+                    value={dateOfBirth}
+                    onChange={e => setDateOfBirth(e.target.value)}
+                    className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="profile-fitness-level" className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 mb-1">
+                    {isEn ? 'Fitness level' : 'Trình độ'}
+                  </label>
+                  <select
+                    id="profile-fitness-level"
+                    value={fitnessLevel}
+                    onChange={e => setFitnessLevel(e.target.value)}
+                    className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white cursor-pointer"
+                  >
+                    <option value="">{isEn ? '— Not set —' : '— Chưa chọn —'}</option>
+                    <option value="Beginner">{isEn ? 'Beginner (0-6 months)' : 'Mới bắt đầu (0-6 tháng)'}</option>
+                    <option value="Intermediate">{isEn ? 'Intermediate (6m-2y)' : 'Trung cấp (6 tháng - 2 năm)'}</option>
+                    <option value="Advanced">{isEn ? 'Advanced (2+ years)' : 'Nâng cao (trên 2 năm)'}</option>
+                    <option value="Athlete">{isEn ? 'Athlete' : 'Vận động viên'}</option>
+                  </select>
+                </div>
+              </div>
+              <p className="text-[11px] text-brand-navy-500 leading-normal">
+                {isEn
+                  ? 'Your coach uses these details (age, gender, level) to personalize your training plan.'
+                  : 'Huấn luyện viên dùng các thông tin này (tuổi, giới tính, trình độ) để cá nhân hóa giáo án cho bạn.'}
+              </p>
+            </fieldset>
+          )}
 
           {currentUser?.role === 'MEMBER' && currentUser?.packageName && (
             <div className="p-3 rounded-lg bg-brand-sage-500/10 border border-brand-sage-500/30 flex items-center justify-between text-xs">
