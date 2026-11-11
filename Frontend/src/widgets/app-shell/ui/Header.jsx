@@ -289,24 +289,28 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
           <button
             onClick={onToggleSidebar}
             type="button"
-            className="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 w-7 h-7 rounded-full border border-line/90 bg-surface hover:bg-surface-muted hover:border-brand-sage-500 items-center justify-center text-ink-muted hover:text-brand-sage-700 dark:hover:text-brand-sage-400 transition-all cursor-pointer shadow-md hover:scale-110 active:scale-95"
+            className="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 w-7 h-7 rounded-full border border-line/90 bg-surface hover:bg-surface-muted hover:border-brand-sage-500 items-center justify-center text-ink-muted hover:text-brand-sage-700 dark:hover:text-brand-sage-400 transition-all cursor-pointer shadow-md hover:scale-110 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-500 focus-visible:ring-offset-2 focus-visible:ring-offset-surface before:absolute before:-inset-2 before:content-['']"
             title={effectiveCollapsed ? (language === 'vi' ? 'Mở rộng thanh menu' : 'Expand sidebar') : (language === 'vi' ? 'Thu gọn thanh menu' : 'Collapse sidebar')}
-            aria-label={effectiveCollapsed ? 'Show sidebar' : 'Collapse sidebar'}
+            aria-label={effectiveCollapsed ? (language === 'vi' ? 'Mở rộng thanh menu' : 'Expand sidebar') : (language === 'vi' ? 'Thu gọn thanh menu' : 'Collapse sidebar')}
+            aria-controls="app-sidebar"
+            aria-expanded={!isSidebarCollapsed}
           >
-            <span className="material-symbols-outlined text-[15px] select-none">
+            <span aria-hidden="true" className="material-symbols-outlined text-[15px] select-none">
               {effectiveCollapsed ? 'chevron_right' : 'chevron_left'}
             </span>
           </button>
         </div>
 
-        {/* Mobile Hamburger Drawer Trigger (fallback) */}
+        {/* Mobile/tablet menu trigger (the only sidebar control below lg): 44px target, state exposed to AT. */}
         <button
           onClick={onToggleSidebar}
           type="button"
-          className="lg:hidden ml-2 sm:ml-3 p-2 rounded-xl text-ink-muted hover:bg-surface-muted transition-colors"
-          aria-label="Open mobile menu"
+          className="lg:hidden ml-1.5 sm:ml-3 w-11 h-11 shrink-0 rounded-xl flex items-center justify-center text-ink hover:bg-surface-muted active:bg-surface-muted transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-500"
+          aria-label={isMobileOpen ? (language === 'vi' ? 'Đóng menu' : 'Close menu') : (language === 'vi' ? 'Mở menu' : 'Open menu')}
+          aria-controls="app-sidebar"
+          aria-expanded={isMobileOpen}
         >
-          <span className="material-symbols-outlined text-[22px]">menu</span>
+          <span aria-hidden="true" className="material-symbols-outlined text-[24px]">{isMobileOpen ? 'close' : 'menu'}</span>
         </button>
       </div>
 
@@ -376,10 +380,12 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
         <button
           type="button"
           onClick={handleToggleDarkMode}
-          className="w-9 h-9 rounded-full hover:bg-surface-muted text-brand-navy-600 dark:text-brand-sand-400 flex items-center justify-center transition-colors cursor-pointer"
+          className="w-10 h-10 sm:w-9 sm:h-9 rounded-full hover:bg-surface-muted text-brand-navy-600 dark:text-brand-sand-400 flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-500"
           title={isDarkMode ? t('header.light_mode', 'Chế độ sáng') : t('header.dark_mode', 'Chế độ tối')}
+          aria-label={isDarkMode ? t('header.light_mode', 'Chế độ sáng') : t('header.dark_mode', 'Chế độ tối')}
+          aria-pressed={isDarkMode}
         >
-          <span className="material-symbols-outlined text-[20px]">
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
             {isDarkMode ? 'light_mode' : 'bedtime'}
           </span>
         </button>
@@ -388,10 +394,11 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
         <button
           type="button"
           onClick={handleToggleFullscreen}
-          className="w-9 h-9 rounded-full hover:bg-surface-muted text-ink-muted hidden sm:flex items-center justify-center transition-colors cursor-pointer"
+          className="w-9 h-9 rounded-full hover:bg-surface-muted text-ink-muted hidden sm:flex items-center justify-center transition-colors cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-500"
           title={isFullscreen ? t('header.exit_fullscreen', 'Thu nhỏ màn hình (Esc)') : t('header.fullscreen', 'Toàn màn hình')}
+          aria-label={isFullscreen ? t('header.exit_fullscreen', 'Thu nhỏ màn hình (Esc)') : t('header.fullscreen', 'Toàn màn hình')}
         >
-          <span className="material-symbols-outlined text-[20px]">
+          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
             {isFullscreen ? 'fullscreen_exit' : 'fullscreen'}
           </span>
         </button>
