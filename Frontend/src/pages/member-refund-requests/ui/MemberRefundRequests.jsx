@@ -1,7 +1,6 @@
 import { formatVietnamDateTime } from '../../../shared/lib/dateTime.js';
 import React, { useEffect, useMemo, useState } from 'react';
 import { refundApi } from '../../../entities/payment/index.js';
-import { safeHref } from '../../../shared/lib/safeUrl.js';
 import { createIdempotencyKey } from '../../../shared/api/http.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
@@ -123,7 +122,7 @@ export function MemberRefundRequests() {
             <p className="mt-1 text-sm text-brand-navy-600">{item.bankName} · {item.bankAccountNumber} · {item.bankAccountName}</p>
             <p className="mt-2 text-sm">{item.reason}</p>
             {item.reviewNote && <p className="mt-2 rounded-lg bg-brand-navy-50 p-2 text-xs text-brand-navy-600"><strong>{isEn ? 'Manager note:' : 'Ghi chú quản lý:'}</strong> {item.reviewNote}</p>}
-            {safeHref(item.transferProofUrl) && <a href={safeHref(item.transferProofUrl)} target="_blank" rel="noreferrer" className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-sage-700 dark:text-brand-sage-400 underline"><span className="material-symbols-outlined text-[16px]">receipt_long</span>{isEn ? 'View transfer proof' : 'Xem ảnh chuyển khoản'}</a>}
+            {refundApi.hasTransferProof(item.transferProofUrl) && <button type="button" onClick={() => refundApi.openTransferProof(item.transferProofUrl).catch(showError)} className="mt-3 inline-flex items-center gap-1 text-xs font-bold text-brand-sage-700 dark:text-brand-sage-400 underline"><span className="material-symbols-outlined text-[16px]">receipt_long</span>{isEn ? 'View transfer proof' : 'Xem ảnh chuyển khoản'}</button>}
           </article>)}
         </div>
       </section>

@@ -127,7 +127,6 @@ export function ManagerCoachOperations() {
 
   const tabs = [
     { id: 'leaves', label: isEn ? `Leave Approvals (${pendingLeaveCount})` : `Duyệt đơn nghỉ (${pendingLeaveCount})`, icon: 'event_busy' },
-    { id: 'compensation', label: isEn ? 'Salary & KPI Report' : 'Lương & Báo cáo KPI', icon: 'payments' },
     // Restored tabs: their data (resources, equipment issues, delivery log) comes from the DB again.
     { id: 'resources', label: isEn ? 'Equipment & Zones' : 'Tài nguyên & Thiết bị', icon: 'inventory_2' },
     { id: 'issues', label: isEn ? `Maintenance Issues (${openIssueCount})` : `Sự cố bảo trì (${openIssueCount})`, icon: 'build' },
@@ -138,7 +137,7 @@ export function ManagerCoachOperations() {
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner (Olympic Multi-stop Gradient matching Image 1) */}
       <section
-        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30"
+        className="scms-hero relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30"
         style={{
           background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 25%, #3FAEB8 48%, #81B29A 70%, #E5A33C 88%, #E5A33C 100%)'
         }}

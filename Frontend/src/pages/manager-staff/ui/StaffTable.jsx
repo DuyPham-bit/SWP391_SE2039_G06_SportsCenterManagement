@@ -59,15 +59,23 @@ export function StaffTable({
                     {/* Staff Column */}
                     <td className="py-2.5 px-3.5">
                       <div className="flex items-center gap-2.5">
-                        <div
-                          className={`w-8 h-8 rounded-full bg-gradient-to-tr ${getAvatarGradient(
-                                staff.fullName,
-                                staff.role,
-                                roleConfig
-                              )} flex items-center justify-center text-white font-black text-xs shadow-sm flex-shrink-0`}
-                        >
-                          {getInitials(staff.fullName)}
-                        </div>
+                        {staff.avatar ? (
+                          <img
+                            src={staff.avatar}
+                            alt={staff.fullName}
+                            className="w-8 h-8 rounded-full object-cover shadow-sm flex-shrink-0"
+                          />
+                        ) : (
+                          <div
+                            className={`w-8 h-8 rounded-full bg-gradient-to-tr ${getAvatarGradient(
+                                  staff.fullName,
+                                  staff.role,
+                                  roleConfig
+                                )} flex items-center justify-center text-white font-black text-xs shadow-sm flex-shrink-0`}
+                          >
+                            {getInitials(staff.fullName)}
+                          </div>
+                        )}
                         <div className="min-w-0">
                           <div className="font-bold text-brand-navy-900 dark:text-brand-navy-100 group-hover:text-brand-sage-700 dark:group-hover:text-brand-sage-500 transition-colors whitespace-nowrap text-xs">
                             {staff.fullName}

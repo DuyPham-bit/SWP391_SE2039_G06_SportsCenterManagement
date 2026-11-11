@@ -65,7 +65,6 @@ const PaymentResult = lazy(() => import('../../pages/payment-result/index.js').t
 const MemberCoachPortal = lazy(() => import('../../pages/member-coach-portal/index.js').then(m => ({ default: m.MemberCoachPortal })));
 const MySupportRequests = lazy(() => import('../../pages/my-support-requests/index.js').then(m => ({ default: m.MySupportRequests })));
 const MemberRefundRequests = lazy(() => import('../../pages/member-refund-requests/index.js').then(m => ({ default: m.MemberRefundRequests })));
-const PayrollPage = lazy(() => import('../../pages/payroll/index.js').then(m => ({ default: m.PayrollPage })));
 
 
 function Navigate({ to, replace = true }) {
@@ -289,8 +288,6 @@ function AppRouter() {
       case '#/coach/performance':
       case '#/coach/kpi':
         return renderCoachRoute(PerformanceDashboard, 'manage_coach_workspace');
-      case '#/coach/salary':
-        return renderCoachRoute(PayrollPage, 'manage_coach_workspace');
       case '#/coach/resources':
         return renderCoachRoute(CoachResources, 'manage_coach_workspace');
       case '#/coach/professional':

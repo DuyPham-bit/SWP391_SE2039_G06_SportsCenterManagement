@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { receptionApi } from '../../../entities/member/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { getPasswordPolicyError } from '../../../shared/lib/passwordPolicy.js';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const EMPTY_FORM = { fullName: '', phoneNumber: '', email: '', dateOfBirth: '', password: '' };
@@ -22,8 +23,14 @@ function validate(form) {
   if (!form.email.trim()) errors.email = 'Vui lòng nhập email.';
   else if (!EMAIL_PATTERN.test(form.email.trim())) errors.email = 'Email không đúng định dạng.';
   if (form.dateOfBirth && form.dateOfBirth > new Date().toISOString().slice(0, 10)) errors.dateOfBirth = 'Ngày sinh không được ở tương lai.';
+  // Same rules as Backend PasswordPolicy (upper/lower/digit/symbol, no email or phone inside).
   if (!form.password) errors.password = 'Vui lòng nhập mật khẩu khởi tạo.';
-  else if (form.password.length < 6) errors.password = 'Mật khẩu tối thiểu 6 ký tự.';
+  else {
+    const passwordError = getPasswordPolicyError(form.password, {
+      email: form.email.trim(), phone: normalizeVietnamesePhone(form.phoneNumber) || form.phoneNumber.trim()
+    });
+    if (passwordError) errors.password = passwordError;
+  }
   return errors;
 }
 
@@ -155,6 +162,9 @@ export function QuickCreateMemberModal({ isOpen, onClose, initialValues, onCreat
           </Field>
           <Field id="quick-member-password" label="Mật khẩu khởi tạo" required error={errors.password}>
             <input type="password" autoComplete="new-password" minLength={6} maxLength={128} {...fieldProps('password')} />
+            <p className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400 mt-1">
+              Gồm chữ hoa, chữ thường, số, ký tự đặc biệt; không chứa email hoặc số điện thoại.
+            </p>
           </Field>
         </div>
 
