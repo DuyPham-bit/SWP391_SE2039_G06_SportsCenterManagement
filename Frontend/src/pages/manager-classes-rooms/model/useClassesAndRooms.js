@@ -3,7 +3,7 @@ import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { classApi } from '../../../entities/class/index.js';
 import { roomApi } from '../../../entities/facility/index.js';
-import { splitAndSortClasses, filterRoomsForSport, filterCoachesForSport, isRoomMatchingSport, isCoachMatchingSport, validateClassFields, validateRoomFields, validateSportFields, scheduleEndTime, validateScheduleForm, WEEK_DAYS, filterClasses } from './classManagementView.js';
+import { splitAndSortClasses, filterRoomsForSport, filterCoachesForSport, isRoomMatchingSport, isCoachMatchingSport, validateClassFields, validateRoomFields, validateSportFields, scheduleEndTime, validateScheduleForm, toCenterHours, DEFAULT_CENTER_HOURS, WEEK_DAYS, filterClasses } from './classManagementView.js';
 import { todayDate, futureDate } from '../lib/scheduleTime.js';
 
 export function useClassesAndRooms() {
@@ -38,17 +38,20 @@ export function useClassesAndRooms() {
     else setLoading(true);
     setError('');
     try {
-      const [classes, rooms, sports, coaches] = await Promise.all([
+      const [classes, rooms, sports, coaches, center] = await Promise.all([
         classApi.getManagementClasses(),
         roomApi.getAll(),
         classApi.getManagementSports(),
-        classApi.getCoaches()
+        classApi.getCoaches(),
+        // Hours only refine the form; the backend still enforces them if this lookup fails.
+        classApi.getCenterHours().catch(() => null)
       ]);
       setData({
         classes: classes || [],
         rooms: rooms || [],
         sports: sports || [],
-        coaches: coaches || []
+        coaches: coaches || [],
+        centerHours: center ? toCenterHours(center) : DEFAULT_CENTER_HOURS
       });
       if (isManualRefresh) {
         showSuccess(isEn ? 'Data refreshed successfully!' : 'Đã cập nhật dữ liệu mới nhất!');
@@ -283,7 +286,7 @@ export function useClassesAndRooms() {
     } else if (modal?.type === 'sport') {
       errors = validateSportFields(form, isEn);
     } else if (modal?.type === 'schedule') {
-      const scheduleErr = validateScheduleForm(form, modal.row?.durationMinutes);
+      const scheduleErr = validateScheduleForm(form, modal.row?.durationMinutes, data.centerHours);
       if (scheduleErr) {
         setFormError(scheduleErr);
         return;

@@ -1,4 +1,3 @@
-import { getStoredAvatar } from '../../../shared/lib/avatarHelper.js';
 
 export function mapMember(member) {
   let expiryStr = null;
@@ -23,12 +22,15 @@ export function mapMember(member) {
     address: member.address,
     role: 'MEMBER',
     status: String(member.accountStatus || 'Active').toUpperCase(),
+    // Counter-created members stay "pending verification" until they open the emailed link.
+    emailVerified: member.isEmailVerified !== false,
     packageStatus: pkgStatus,
     packageName: member.packageName || 'Chưa đăng ký gói tập',
     packageExpiry: expiryStr || 'Không khả dụng',
     packageStartDate: member.packageStartDate || null,
     packageId: member.packageId || null,
     subscriptionId: member.subscriptionId || null,
-    avatar: getStoredAvatar(member.userId || member.id)
+    // Photo URL from users.avatar_key (server-side storage).
+    avatar: member.avatarUrl || null
   };
 }

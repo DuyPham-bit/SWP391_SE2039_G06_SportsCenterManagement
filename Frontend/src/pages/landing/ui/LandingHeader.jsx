@@ -103,7 +103,7 @@ export function LandingHeader({
         {/* Action / Auth Buttons */}
         <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
           {/* Minimalist Refined Language Toggle */}
-          <div className="tiya-lang-toggle" role="group" aria-label="Language selector">
+          <div className="tiya-lang-toggle tiya-navbar__desktop-only" role="group" aria-label="Language selector">
             <button
               type="button"
               onClick={() => setLanguage('vi')}
@@ -125,7 +125,7 @@ export function LandingHeader({
           </div>
 
           {isAuthenticated ? (
-            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            <div className="tiya-navbar__desktop-only" style={{display:'flex',alignItems:'center',gap:'8px'}}>
               <a
                 href={getDashboardLink()}
                 className="custom-btn"
@@ -147,7 +147,7 @@ export function LandingHeader({
               </button>
             </div>
           ) : (
-            <div style={{display:'flex',alignItems:'center',gap:'8px'}}>
+            <div className="tiya-navbar__desktop-only" style={{display:'flex',alignItems:'center',gap:'8px'}}>
               <a href="#/login" className="custom-border-btn">{isEn ? 'SIGN IN' : 'ĐĂNG NHẬP'}</a>
               <a href="#/register" className="custom-btn">
                 {isEn ? 'REGISTER' : 'ĐĂNG KÝ'}

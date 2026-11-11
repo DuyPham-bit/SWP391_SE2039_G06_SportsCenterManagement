@@ -30,7 +30,8 @@ public sealed class PasswordResetEmailSender(
         PasswordResetToken reset,
         string otp,
         CancellationToken ct,
-        string actionEn = "reset password")
+        string actionEn = "reset password",
+        string location = RequestLocation.Default)
     {
         if (!IsConfigured) return false;
         // OTPs never enter the notification inbox, database payloads, or provider response logs.
@@ -40,9 +41,7 @@ public sealed class PasswordResetEmailSender(
         };
         db.CommunicationDeliveries.Add(delivery);
         await db.SaveChangesAsync(ct);
-        var title = $"Your SCMS security code: {otp}";
-        var message = $"We received a request from Ho Chi Minh City, Vietnam to confirm the following action on your SCMS account: {actionEn}. Use this code:\n\n{otp}\n\nThis code expires in 5 minutes. If you did not request it, you can safely ignore this email.";
-        var html = BuildOtpEmailHtml(actionEn, otp, 5);
+        var (title, message, html) = BuildOtpEmail(actionEn, otp, location);
         var result = await SendCodeAsync(recipient.Email, title, message, html, $"password-reset-{reset.Id}", new
         {
             deliveryId = delivery.Id, channel = "Email", recipientUserId = recipient.Id, to = recipient.Email,
@@ -61,11 +60,10 @@ public sealed class PasswordResetEmailSender(
         return result.Success;
     }
 
-    public async Task<bool> SendVerificationAsync(EmailVerificationToken verification, string otp, CancellationToken ct)
+    public async Task<bool> SendVerificationAsync(
+        EmailVerificationToken verification, string otp, CancellationToken ct, string location = RequestLocation.Default)
     {
-        var title = $"Your SCMS security code: {otp}";
-        var message = $"We received a request from Ho Chi Minh City, Vietnam to confirm the following action on your SCMS account: confirm account registration. Use this code:\n\n{otp}\n\nThis code expires in 5 minutes. If you did not request it, you can safely ignore this email.";
-        var html = BuildOtpEmailHtml("confirm account registration", otp, 5);
+        var (title, message, html) = BuildOtpEmail("confirm account registration", otp, location);
         var result = await SendCodeAsync(verification.Email, title, message, html, $"email-verification-{verification.Id}", new
         {
             channel = "Email", to = verification.Email, title, message, html,
@@ -144,10 +142,21 @@ public sealed class PasswordResetEmailSender(
         }
     }
 
+    private const int OtpExpiryMinutes = 5;
+
+    /// <summary>Vercel-style security code email: same subject, wording and layout for text and HTML parts.</summary>
+    private static (string Title, string Message, string Html) BuildOtpEmail(string actionEn, string otp, string location)
+    {
+        var title = $"Your SCMS security code: {otp}";
+        var message = $"We received a request from {location} to confirm the following action on your SCMS account: {actionEn}. Use this code:\n\n{otp}\n\nThis code expires in {OtpExpiryMinutes} minutes. If you did not request it, you can safely ignore this email.";
+        return (title, message, BuildOtpEmailHtml(actionEn, otp, System.Net.WebUtility.HtmlEncode(location), OtpExpiryMinutes));
+    }
+
     private static string BuildOtpEmailHtml(
         string actionEn,
         string otp,
-        int expiryMinutes = 5)
+        string encodedLocation,
+        int expiryMinutes)
     {
         return $@"<!DOCTYPE html>
 <html lang=""en"">
@@ -158,7 +167,7 @@ public sealed class PasswordResetEmailSender(
 </head>
 <body style=""margin: 0; padding: 24px 0; background-color: #ffffff; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; -webkit-font-smoothing: antialiased; color: #000000; max-width: 560px;"">
   <p style=""margin: 0 0 24px 0; font-size: 14px; line-height: 24px; color: #000000;"">
-    We received a request from <strong>Ho Chi Minh City, Vietnam</strong> to confirm the following action on your SCMS account: <strong>{actionEn}</strong>. Use this code:
+    We received a request from <strong>{encodedLocation}</strong> to confirm the following action on your SCMS account: <strong>{actionEn}</strong>. Use this code:
   </p>
   <p style=""margin: 0 0 24px 0; font-size: 24px; font-weight: 700; line-height: 24px; color: #000000; letter-spacing: 0.5px;"">
     <strong>{otp}</strong>

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { adminApi } from '../../../entities/center/index.js';
 import { MotionButton } from '../../../shared/ui/MotionButton.jsx';
+import { getPasswordPolicyError } from '../../../shared/lib/passwordPolicy.js';
 
 // ─────────────────────────────────────────────────────────────
 // Modal 2: Create Manager Modal
@@ -35,7 +36,8 @@ export function ManagerModal({ centers, onClose, onSaved }) {
     if (!form.fullName.trim()) return setErr('Vui lòng nhập họ và tên Manager.');
     if (!form.username.trim()) return setErr('Vui lòng nhập tên đăng nhập.');
     if (!form.email.trim()) return setErr('Vui lòng nhập email.');
-    if (!form.password || form.password.length < 6) return setErr('Mật khẩu tối thiểu 6 ký tự.');
+    const passwordError = getPasswordPolicyError(form.password, { email: form.email.trim(), phone: form.phone.trim() });
+    if (passwordError) return setErr(passwordError);
     if (!form.centerId) return setErr('Vui lòng chọn cơ sở trực thuộc.');
 
     setSaving(true);

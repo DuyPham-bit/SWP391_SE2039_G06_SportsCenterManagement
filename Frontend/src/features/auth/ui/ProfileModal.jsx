@@ -25,6 +25,16 @@ export function ProfileModal({ isOpen, onClose }) {
   const [fullName, setFullName] = useState(currentUser?.fullName || '');
   const [phone, setPhone] = useState(currentUser?.phone || '');
   const [savingProfile, setSavingProfile] = useState(false);
+  const isMember = currentUser?.role === 'MEMBER';
+
+  // Member-owned details (coach AI uses them for age / gender / level)
+  const [gender, setGender] = useState(currentUser?.gender || '');
+  const [dateOfBirth, setDateOfBirth] = useState(currentUser?.dateOfBirth || '');
+  const [fitnessLevel, setFitnessLevel] = useState(currentUser?.fitnessLevel || '');
+  const todayIso = useMemo(() => {
+    const d = new Date();
+    return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  }, []);
 
   // Avatar Management State
   const [avatarPreview, setAvatarPreview] = useState(currentUser?.avatar || '');
@@ -40,6 +50,9 @@ export function ProfileModal({ isOpen, onClose }) {
     if (isOpen && currentUser) {
       setFullName(currentUser.fullName || '');
       setPhone(currentUser.phone || '');
+      setGender(currentUser.gender || '');
+      setDateOfBirth(currentUser.dateOfBirth || '');
+      setFitnessLevel(currentUser.fitnessLevel || '');
       setAvatarPreview(currentUser.avatar || '');
       setAvatarFile(null);
       setAvatarChanged(false);
@@ -172,6 +185,10 @@ export function ProfileModal({ isOpen, onClose }) {
       showError(isEn ? 'Full name cannot be empty!' : 'Họ và tên không được để trống!');
       return;
     }
+    if (isMember && dateOfBirth && dateOfBirth > todayIso) {
+      showError(isEn ? 'Date of birth cannot be in the future!' : 'Ngày sinh không được ở tương lai!');
+      return;
+    }
     setSavingProfile(true);
     let uploadedAvatar = null;
     try {
@@ -179,7 +196,8 @@ export function ProfileModal({ isOpen, onClose }) {
       await updateProfile({
         fullName: fullName.trim(),
         phone: phone.trim(),
-        avatarKey: uploadedAvatar?.key || (avatarChanged ? null : currentUser?.avatarKey || null)
+        avatar: avatarChanged ? (avatarPreview || null) : currentUser?.avatar,
+        ...(isMember ? { memberDetails: { gender, dateOfBirth, fitnessLevel } } : {})
       });
       setAvatarFile(null);
       setAvatarChanged(false);
@@ -326,37 +344,42 @@ export function ProfileModal({ isOpen, onClose }) {
       isOpen={isOpen}
       onClose={onClose}
       title={isEn ? "Profile & Account Security" : "Hồ Sơ & Bảo Mật Tài Khoản"}
+      maxWidth="max-w-2xl"
     >
-      {/* Tabs */}
-      <button
-        type="button"
-        onClick={() => setGoogleOpen(true)}
-        className="mb-4 px-3 py-1.5 border border-brand-navy-300 hover:bg-brand-navy-50 rounded-lg text-xs font-semibold text-brand-navy-700 transition-colors flex items-center gap-1.5 cursor-pointer"
-      >
-        <span className="material-symbols-outlined text-[16px] text-brand-danger-500">link</span>
-        <span>{isEn ? 'Link Google Account' : 'Liên kết Google'}</span>
-      </button>
+      {/* Top Header Row: Tabs & Google Link aligned together */}
+      <div className="flex flex-wrap items-center justify-between gap-2 border-b border-brand-navy-200 dark:border-brand-navy-700 pb-2 mb-4">
+        <div className="flex gap-1">
+          <button
+            type="button"
+            onClick={() => setActiveTab('profile')}
+            className={`pb-2 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+              activeTab === 'profile'
+                ? 'border-brand-sage-500 text-brand-sage-700 dark:text-brand-sage-400'
+                : 'border-transparent text-brand-navy-500 hover:text-brand-navy-800 dark:hover:text-brand-navy-200'
+            }`}
+          >
+            {isEn ? 'Personal Profile' : 'Thông Tin Cá Nhân'}
+          </button>
+          <button
+            type="button"
+            onClick={() => setActiveTab('password')}
+            className={`pb-2 px-3 text-xs font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
+              activeTab === 'password'
+                ? 'border-brand-sage-500 text-brand-sage-700 dark:text-brand-sage-400'
+                : 'border-transparent text-brand-navy-500 hover:text-brand-navy-800 dark:hover:text-brand-navy-200'
+            }`}
+          >
+            {isEn ? 'Change Password' : 'Đổi Mật Khẩu'}
+          </button>
+        </div>
 
-      <div className="flex border-b border-brand-navy-200 mb-6">
         <button
-          onClick={() => setActiveTab('profile')}
-          className={`pb-2.5 px-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-            activeTab === 'profile'
-              ? 'border-brand-sage-500 text-brand-sage-700 dark:text-brand-sage-400'
-              : 'border-transparent text-brand-navy-500 hover:text-brand-navy-800'
-          }`}
+          type="button"
+          onClick={() => setGoogleOpen(true)}
+          className="px-2.5 py-1 border border-brand-navy-300 dark:border-brand-navy-700 hover:bg-brand-navy-50 dark:hover:bg-brand-navy-800 rounded-lg text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-200 transition-colors flex items-center gap-1.5 cursor-pointer shadow-2xs"
         >
-          {isEn ? 'Personal Profile' : 'Thông Tin Cá Nhân'}
-        </button>
-        <button
-          onClick={() => setActiveTab('password')}
-          className={`pb-2.5 px-4 text-xs font-bold uppercase tracking-wider transition-all border-b-2 cursor-pointer ${
-            activeTab === 'password'
-              ? 'border-brand-sage-500 text-brand-sage-700 dark:text-brand-sage-400'
-              : 'border-transparent text-brand-navy-500 hover:text-brand-navy-800'
-          }`}
-        >
-          {isEn ? 'Change Password' : 'Đổi Mật Khẩu'}
+          <span className="material-symbols-outlined text-[16px] text-brand-danger-500">link</span>
+          <span>{isEn ? 'Link Google' : 'Liên kết Google'}</span>
         </button>
       </div>
 
@@ -372,7 +395,7 @@ export function ProfileModal({ isOpen, onClose }) {
               const file = e.dataTransfer.files?.[0];
               if (file) handleProcessImage(file);
             }}
-            className={`p-4 sm:p-5 rounded-2xl border transition-all ${
+            className={`p-3.5 sm:p-4 rounded-2xl border transition-all ${
               isDraggingAvatar
                 ? 'bg-brand-sage-500/15 border-brand-sage-500 ring-2 ring-brand-sage-500/40'
                 : 'bg-brand-navy-50 dark:bg-brand-navy-800/50 border-brand-navy-200 dark:border-brand-navy-700'
@@ -391,12 +414,12 @@ export function ProfileModal({ isOpen, onClose }) {
               }}
             />
 
-            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-4 sm:gap-5">
+            <div className="flex flex-col sm:flex-row items-center sm:items-start gap-3 sm:gap-4">
               {/* Avatar Squircle with Camera Overlay & Floating Badge */}
               <div className="relative group shrink-0">
                 <div
                   onClick={() => fileInputRef.current?.click()}
-                  className="w-20 h-20 sm:w-22 sm:h-22 rounded-2xl overflow-hidden cursor-pointer relative shadow-md ring-2 ring-brand-sage-500/50 transition-all group-hover:scale-105 select-none bg-brand-navy-200 dark:bg-brand-navy-700"
+                  className="w-16 h-16 sm:w-18 sm:h-18 rounded-2xl overflow-hidden cursor-pointer relative shadow-md ring-2 ring-brand-sage-500/50 transition-all group-hover:scale-105 select-none bg-brand-navy-200 dark:bg-brand-navy-700"
                   title={isEn ? "Click to change avatar from phone or computer" : "Nhấp để tải ảnh đại diện từ điện thoại hoặc máy tính"}
                 >
                   {avatarPreview ? (
@@ -413,8 +436,8 @@ export function ProfileModal({ isOpen, onClose }) {
 
                   {/* Hover Camera Overlay */}
                   <div className="absolute inset-0 bg-black/45 backdrop-blur-[1px] opacity-0 group-hover:opacity-100 transition-opacity flex flex-col items-center justify-center text-white">
-                    <span className="material-symbols-outlined text-[24px]">photo_camera</span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider mt-0.5">
+                    <span className="material-symbols-outlined text-[20px]">photo_camera</span>
+                    <span className="text-[9px] font-bold uppercase tracking-wider mt-0.5">
                       {isEn ? 'Change' : 'Đổi ảnh'}
                     </span>
                   </div>
@@ -422,7 +445,7 @@ export function ProfileModal({ isOpen, onClose }) {
                   {/* Processing Spinner during image compression */}
                   {isProcessingAvatar && (
                     <div className="absolute inset-0 bg-black/60 flex items-center justify-center text-white">
-                      <span className="material-symbols-outlined text-[24px] animate-spin">progress_activity</span>
+                      <span className="material-symbols-outlined text-[20px] animate-spin">progress_activity</span>
                     </div>
                   )}
                 </div>
@@ -431,18 +454,18 @@ export function ProfileModal({ isOpen, onClose }) {
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="absolute -bottom-1 -right-1 w-7 h-7 rounded-full bg-brand-navy-900 hover:bg-brand-navy-800 text-brand-sand-300 hover:text-white border-2 border-white dark:border-brand-navy-800 flex items-center justify-center shadow-md transition-transform hover:scale-110 cursor-pointer"
+                  className="absolute -bottom-1 -right-1 w-6 h-6 rounded-full bg-brand-navy-900 hover:bg-brand-navy-800 text-brand-sand-300 hover:text-white border-2 border-white dark:border-brand-navy-800 flex items-center justify-center shadow-md transition-transform hover:scale-110 cursor-pointer"
                   title={isEn ? 'Upload photo from phone or computer' : 'Tải ảnh từ điện thoại hoặc máy tính'}
                 >
-                  <span className="material-symbols-outlined text-[15px]">add_a_photo</span>
+                  <span className="material-symbols-outlined text-[13px]">add_a_photo</span>
                 </button>
               </div>
 
               {/* User Info & Avatar Controls */}
-              <div className="flex-1 min-w-0 text-center sm:text-left space-y-2">
+              <div className="flex-1 min-w-0 text-center sm:text-left space-y-1.5">
                 <div>
-                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2">
-                    <span className="font-chivo text-base font-bold text-brand-navy-900 dark:text-brand-navy-100">
+                  <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5">
+                    <span className="font-chivo text-sm sm:text-base font-bold text-brand-navy-900 dark:text-brand-navy-100">
                       {currentUser?.fullName}
                     </span>
                     <Badge variant={currentUser?.role}>{currentUser?.role}</Badge>
@@ -452,24 +475,24 @@ export function ProfileModal({ isOpen, onClose }) {
                       </span>
                     )}
                   </div>
-                  <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400 mt-0.5">{currentUser?.email}</p>
+                  <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400">{currentUser?.email}</p>
                   {currentUser?.memberCode && (
-                    <p className="text-[11px] font-semibold text-brand-sage-700 dark:text-brand-sage-500 mt-0.5">
+                    <p className="text-[11px] font-semibold text-brand-sage-700 dark:text-brand-sage-500">
                       {isEn ? `Member Code: ${currentUser.memberCode}` : `Mã thẻ: ${currentUser.memberCode}`}
                     </p>
                   )}
                 </div>
 
                 {/* Action Buttons for Avatar */}
-                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-2 pt-0.5">
+                <div className="flex flex-wrap items-center justify-center sm:justify-start gap-1.5 pt-0.5">
                   <button
                     type="button"
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isProcessingAvatar}
-                    className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-brand-navy-700 hover:bg-brand-navy-100 dark:hover:bg-brand-navy-600 text-brand-navy-700 dark:text-brand-navy-200 border border-brand-navy-300 dark:border-brand-navy-600 flex items-center gap-1.5 shadow-2xs transition-colors cursor-pointer"
+                    className="px-2.5 py-1 rounded-lg text-xs font-bold bg-white dark:bg-brand-navy-700 hover:bg-brand-navy-100 dark:hover:bg-brand-navy-600 text-brand-navy-700 dark:text-brand-navy-200 border border-brand-navy-300 dark:border-brand-navy-600 flex items-center gap-1 shadow-2xs transition-colors cursor-pointer"
                   >
-                    <span className="material-symbols-outlined text-[16px] text-brand-sage-700 dark:text-brand-sage-500">upload_file</span>
-                    <span>{isEn ? 'Choose Photo / Camera' : 'Tải ảnh từ máy / Chụp ảnh'}</span>
+                    <span className="material-symbols-outlined text-[15px] text-brand-sage-700 dark:text-brand-sage-500">upload_file</span>
+                    <span>{isEn ? 'Choose Photo' : 'Tải ảnh lên'}</span>
                   </button>
 
                   {avatarChanged && (
@@ -477,9 +500,9 @@ export function ProfileModal({ isOpen, onClose }) {
                       type="button"
                       onClick={handleQuickSaveAvatar}
                       disabled={savingAvatarOnly}
-                      className="px-3 py-1.5 rounded-lg text-xs font-bold bg-brand-sage-700 hover:bg-brand-sage-900 text-white flex items-center gap-1.5 shadow-sm transition-colors cursor-pointer"
+                      className="px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-sage-700 hover:bg-brand-sage-900 text-white flex items-center gap-1 shadow-sm transition-colors cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[16px]">check_circle</span>
+                      <span className="material-symbols-outlined text-[15px]">check_circle</span>
                       <span>{savingAvatarOnly ? (isEn ? 'Saving...' : 'Đang lưu...') : (isEn ? 'Save Photo' : 'Lưu ảnh')}</span>
                     </button>
                   )}
@@ -488,7 +511,7 @@ export function ProfileModal({ isOpen, onClose }) {
                     <button
                       type="button"
                       onClick={handleRevertAvatar}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-brand-navy-600 hover:text-brand-navy-900 hover:bg-brand-navy-200/60 dark:text-brand-navy-400 dark:hover:text-brand-navy-200 transition-colors cursor-pointer"
+                      className="px-2 py-1 rounded-lg text-xs font-semibold text-brand-navy-600 hover:text-brand-navy-900 hover:bg-brand-navy-200/60 dark:text-brand-navy-400 dark:hover:text-brand-navy-200 transition-colors cursor-pointer"
                       title={isEn ? 'Revert change' : 'Hoàn tác'}
                     >
                       {isEn ? 'Revert' : 'Hoàn tác'}
@@ -499,61 +522,124 @@ export function ProfileModal({ isOpen, onClose }) {
                     <button
                       type="button"
                       onClick={handleRemoveAvatar}
-                      className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-brand-danger-600 hover:text-brand-danger-700 hover:bg-brand-danger-50 dark:hover:bg-brand-danger-950/40 transition-colors flex items-center gap-1 cursor-pointer"
+                      className="px-2 py-1 rounded-lg text-xs font-semibold text-brand-danger-600 hover:text-brand-danger-700 hover:bg-brand-danger-50 dark:hover:bg-brand-danger-950/40 transition-colors flex items-center gap-1 cursor-pointer"
                     >
-                      <span className="material-symbols-outlined text-[15px]">delete</span>
+                      <span className="material-symbols-outlined text-[14px]">delete</span>
                       <span>{isEn ? 'Remove' : 'Gỡ ảnh'}</span>
                     </button>
                   )}
                 </div>
 
                 {/* Helper Tips */}
-                <p className="text-[11px] text-brand-navy-400 dark:text-brand-navy-500 leading-normal">
+                <p className="text-[10.5px] text-brand-navy-400 dark:text-brand-navy-500 leading-normal">
                   {isEn
-                    ? '📱 Mobile: Take a photo or pick from photo library • 💻 PC: Select JPG, PNG, WEBP. Auto-cropped & optimized.'
-                    : '📱 Điện thoại: Chụp ảnh trực tiếp hoặc chọn từ Album • 💻 Máy tính: Chọn tệp ảnh JPG, PNG, WEBP. Tự động cắt tròn chuẩn nét.'}
+                    ? '📱 Mobile: Take photo or choose from library • 💻 PC: JPG, PNG, WEBP auto-cropped.'
+                    : '📱 Điện thoại: Chụp ảnh trực tiếp hoặc chọn từ Album • 💻 Máy tính: Chọn JPG, PNG, WEBP tự động cắt tròn.'}
                 </p>
               </div>
             </div>
           </div>
 
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 mb-1">
+            <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
               {isEn ? 'Login Email (Fixed)' : 'Email đăng nhập (Cố định)'}
             </label>
             <input
               type="email"
               disabled
               value={currentUser?.email || ''}
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 bg-brand-navy-100 text-brand-navy-500 cursor-not-allowed"
+              className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 dark:border-brand-navy-700 bg-brand-navy-100 dark:bg-brand-navy-800 text-brand-navy-500 cursor-not-allowed"
             />
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 mb-1">
-              {isEn ? 'Full Name *' : 'Họ và tên *'}
-            </label>
-            <input
-              type="text"
-              required
-              value={fullName}
-              onChange={e => setFullName(e.target.value)}
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white"
-            />
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
+                {isEn ? 'Full Name *' : 'Họ và tên *'}
+              </label>
+              <input
+                type="text"
+                required
+                value={fullName}
+                onChange={e => setFullName(e.target.value)}
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 dark:border-brand-navy-700 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white dark:bg-brand-navy-800 dark:text-brand-navy-100"
+              />
+            </div>
+
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
+                {isEn ? 'Phone Number' : 'Số điện thoại'}
+              </label>
+              <input
+                type="tel"
+                value={phone}
+                onChange={e => setPhone(e.target.value)}
+                placeholder="0912 345 678"
+                className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 dark:border-brand-navy-700 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white dark:bg-brand-navy-800 dark:text-brand-navy-100"
+              />
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 mb-1">
-              {isEn ? 'Phone Number' : 'Số điện thoại'}
-            </label>
-            <input
-              type="tel"
-              value={phone}
-              onChange={e => setPhone(e.target.value)}
-              placeholder="0912 345 678"
-              className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-200 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white"
-            />
-          </div>
+          {currentUser?.role === 'MEMBER' && (
+            <fieldset className="space-y-2.5 p-3 sm:p-4 rounded-xl border border-brand-sage-200 dark:border-brand-sage-800 bg-brand-sage-50/50 dark:bg-brand-sage-950/20">
+              <legend className="px-1 text-xs font-bold uppercase tracking-wider text-brand-sage-800 dark:text-brand-sage-400">
+                {isEn ? 'Training profile' : 'Thông tin thể trạng'}
+              </legend>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="min-w-0">
+                  <label htmlFor="profile-gender" className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
+                    {isEn ? 'Gender' : 'Giới tính'}
+                  </label>
+                  <select
+                    id="profile-gender"
+                    value={gender}
+                    onChange={e => setGender(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-brand-navy-200 dark:border-brand-navy-700 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white dark:bg-brand-navy-800 dark:text-brand-navy-100 cursor-pointer"
+                  >
+                    <option value="">{isEn ? '— Not set —' : '— Chưa chọn —'}</option>
+                    <option value="Male">{isEn ? 'Male' : 'Nam'}</option>
+                    <option value="Female">{isEn ? 'Female' : 'Nữ'}</option>
+                    <option value="Other">{isEn ? 'Other' : 'Khác'}</option>
+                  </select>
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="profile-dob" className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
+                    {isEn ? 'Date of birth' : 'Ngày sinh'}
+                  </label>
+                  <input
+                    id="profile-dob"
+                    type="date"
+                    max={todayIso}
+                    value={dateOfBirth}
+                    onChange={e => setDateOfBirth(e.target.value)}
+                    className="w-full px-2.5 sm:px-3 py-2 text-sm rounded-lg border border-brand-navy-200 dark:border-brand-navy-700 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white dark:bg-brand-navy-800 dark:text-brand-navy-100"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label htmlFor="profile-fitness-level" className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1">
+                    {isEn ? 'Fitness level' : 'Trình độ'}
+                  </label>
+                  <select
+                    id="profile-fitness-level"
+                    value={fitnessLevel}
+                    onChange={e => setFitnessLevel(e.target.value)}
+                    className="w-full px-3 py-2 text-sm rounded-lg border border-brand-navy-200 dark:border-brand-navy-700 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white dark:bg-brand-navy-800 dark:text-brand-navy-100 cursor-pointer"
+                  >
+                    <option value="">{isEn ? '— Not set —' : '— Chưa chọn —'}</option>
+                    <option value="Beginner">{isEn ? 'Beginner (0-6 months)' : 'Mới bắt đầu (0-6 tháng)'}</option>
+                    <option value="Intermediate">{isEn ? 'Intermediate (6m-2y)' : 'Trung cấp (6 tháng - 2 năm)'}</option>
+                    <option value="Advanced">{isEn ? 'Advanced (2+ years)' : 'Nâng cao (trên 2 năm)'}</option>
+                    <option value="Athlete">{isEn ? 'Athlete' : 'Vận động viên'}</option>
+                  </select>
+                </div>
+              </div>
+              <p className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400 leading-normal">
+                {isEn
+                  ? 'Your coach uses these details (age, gender, level) to personalize your training plan.'
+                  : 'Huấn luyện viên dùng các thông tin này (tuổi, giới tính, trình độ) để cá nhân hóa giáo án cho bạn.'}
+              </p>
+            </fieldset>
+          )}
 
           {currentUser?.role === 'MEMBER' && currentUser?.packageName && (
             <div className="p-3 rounded-lg bg-brand-sage-500/10 border border-brand-sage-500/30 flex items-center justify-between text-xs">

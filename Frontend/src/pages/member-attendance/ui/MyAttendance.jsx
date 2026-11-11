@@ -542,18 +542,18 @@ export function MyAttendance() {
           /* DẠNG BẢNG (TABLE VIEW) - Tối ưu cho hội viên tra cứu và đối soát */
           <div className="bg-white rounded-2xl border border-brand-navy-200 shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse text-xs">
+              <table className="w-full min-w-[960px] text-left border-collapse text-xs">
                 <thead>
-                  <tr className="bg-brand-navy-50 border-b border-brand-navy-200 text-brand-navy-500 font-chivo font-black uppercase tracking-wider text-[11px]">
-                    <th className="py-3.5 px-4">{isEn ? 'Class Name' : 'Lớp Rèn Luyện'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Session Date' : 'Ngày Học'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Time Slot' : 'Khung Giờ'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Room / Court' : 'Phòng Tập'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Coach' : 'Huấn Luyện Viên'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Status' : 'Trạng Thái'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Check-in Time' : 'Giờ Quét Thẻ'}</th>
-                    <th className="py-3.5 px-4">{isEn ? 'Coach Note' : 'Ghi Chú HLV'}</th>
-                    <th className="py-3.5 px-4 text-right">{isEn ? 'View' : 'Xem'}</th>
+                  <tr className="bg-brand-navy-50 border-b border-brand-navy-200 text-brand-navy-500 font-chivo font-black uppercase tracking-wider text-[11px] whitespace-nowrap">
+                    <th className="py-3.5 px-3">{isEn ? 'Class Name' : 'Lớp Rèn Luyện'}</th>
+                    <th className="py-3.5 px-3">{isEn ? 'Session Date' : 'Ngày Học'}</th>
+                    <th className="py-3.5 px-3">{isEn ? 'Time Slot' : 'Khung Giờ'}</th>
+                    <th className="py-3.5 px-3">{isEn ? 'Room / Court' : 'Phòng Tập'}</th>
+                    <th className="py-3.5 px-3">{isEn ? 'Coach' : 'Huấn Luyện Viên'}</th>
+                    <th className="py-3.5 px-3">{isEn ? 'Status' : 'Trạng Thái'}</th>
+                    <th className="py-3.5 px-3">{isEn ? 'Check-in Time' : 'Giờ Quét Thẻ'}</th>
+                    <th className="py-3.5 px-3">{isEn ? 'Coach Note' : 'Ghi Chú HLV'}</th>
+                    <th className="py-3.5 px-3 text-right">{isEn ? 'View' : 'Xem'}</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-brand-navy-100 text-brand-navy-700">
@@ -563,28 +563,28 @@ export function MyAttendance() {
 
                     return (
                       <tr key={b.id} className="hover:bg-brand-navy-50/80 transition-colors">
-                        <td className="py-3.5 px-4">
+                        <td className="py-3.5 px-3 min-w-[180px]">
                           <div className="font-bold text-brand-navy-900 font-chivo">{translateClassName(b.className, isEn)}</div>
-                          <span className={`inline-block px-1.5 py-0.2 rounded text-[9px] font-black uppercase tracking-wide border mt-0.5 ${sportTheme.badge}`}>
+                          <span className={`inline-block px-1.5 py-0.5 rounded text-[9px] font-black uppercase tracking-wide border mt-0.5 ${sportTheme.badge}`}>
                             {sportTheme.tag}
                           </span>
                         </td>
-                        <td className="py-3.5 px-4 font-semibold text-brand-navy-900">
+                        <td className="py-3.5 px-3 whitespace-nowrap font-semibold text-brand-navy-900">
                           {formatMemberDate(b.bookingDate, isEn)}
                         </td>
-                        <td className="py-3.5 px-4 font-mono font-medium text-brand-navy-600">
+                        <td className="py-3.5 px-3 whitespace-nowrap font-mono font-medium text-brand-navy-600">
                           {b.timeSlot}
                         </td>
-                        <td className="py-3.5 px-4 text-brand-navy-600">{translateRoomName(b.roomName, isEn)}</td>
-                        <td className="py-3.5 px-4 text-brand-navy-800 font-medium">{translateCoachName(b.coachName, isEn)}</td>
-                        <td className="py-3.5 px-4">{renderAttendanceBadge(attendanceStatus)}</td>
-                        <td className="py-3.5 px-4 font-mono text-[11px] text-brand-navy-600">
+                        <td className="py-3.5 px-3 text-brand-navy-600">{translateRoomName(b.roomName, isEn)}</td>
+                        <td className="py-3.5 px-3 whitespace-nowrap text-brand-navy-800 font-medium">{translateCoachName(b.coachName, isEn)}</td>
+                        <td className="py-3.5 px-3 whitespace-nowrap">{renderAttendanceBadge(attendanceStatus)}</td>
+                        <td className="py-3.5 px-3 min-w-[90px] font-mono text-[11px] text-brand-navy-600">
                           {b.checkInTime ? formatMemberDateTime(b.checkInTime, isEn) : '—'}
                         </td>
-                        <td className="py-3.5 px-4 max-w-xs truncate text-brand-navy-600 italic">
+                        <td className="py-3.5 px-3 max-w-[180px] truncate text-brand-navy-600 italic">
                           {b.attendanceNote || '—'}
                         </td>
-                        <td className="py-3.5 px-4 text-right">
+                        <td className="py-3.5 px-3 text-right">
                           <button
                             type="button"
                             onClick={() => {

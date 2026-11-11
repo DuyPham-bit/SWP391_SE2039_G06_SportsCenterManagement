@@ -8,24 +8,24 @@ export function UpcomingWorkoutsCard({
   setCancelModalOpen, upcoming
 }) {
   return (
-    <div className="lg:col-span-7 space-y-6">
+    <div className="xl:col-span-7 space-y-6">
       {/* Card A: Upcoming Workouts Feed */}
       <section aria-label={isEn ? 'Upcoming Workouts' : 'Lịch tập sắp tới'} className="bg-white dark:bg-brand-navy-900 p-6 rounded-3xl border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-xs space-y-4 hover-lift">
-        <div className="flex items-center justify-between pb-3 border-b border-brand-navy-100 dark:border-brand-navy-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-sage-50 dark:bg-brand-sage-950/60 text-brand-sage-700 dark:text-brand-sage-400 flex items-center justify-center">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pb-3 border-b border-brand-navy-100 dark:border-brand-navy-800">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 shrink-0 rounded-xl bg-brand-sage-50 dark:bg-brand-sage-950/60 text-brand-sage-700 dark:text-brand-sage-400 flex items-center justify-center">
               <span className="material-symbols-outlined text-[18px]">schedule</span>
             </div>
             <h2 className="text-sm font-extrabold text-brand-navy-900 dark:text-white uppercase tracking-wide">
               {isEn ? 'Upcoming Workout Sessions' : 'Lịch tập sắp tới của bạn'}
             </h2>
-            <span className="px-2.5 py-0.5 rounded-full bg-brand-sage-50 dark:bg-brand-sage-950/50 text-brand-sage-700 dark:text-brand-sage-300 text-xs font-bold border border-brand-sage-200/60 dark:border-brand-sage-800/40">
+            <span className="shrink-0 whitespace-nowrap px-2.5 py-0.5 rounded-full bg-brand-sage-50 dark:bg-brand-sage-950/50 text-brand-sage-700 dark:text-brand-sage-300 text-xs font-bold border border-brand-sage-200/60 dark:border-brand-sage-800/40">
               {upcoming.length} {isEn ? 'sessions' : 'buổi'}
             </span>
           </div>
           <a
             href="#/member/bookings"
-            className="text-xs font-bold text-brand-sage-700 dark:text-brand-sage-400 hover:underline flex items-center gap-1 group"
+            className="text-xs font-bold text-brand-sage-700 dark:text-brand-sage-400 hover:underline flex items-center gap-1 group whitespace-nowrap ml-auto"
           >
             <span>{isEn ? 'Manage & Cancel' : 'Xem tất cả & Hủy'}</span>
             <span className="material-symbols-outlined text-[14px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
@@ -101,7 +101,7 @@ export function UpcomingWorkoutsCard({
                         </span>
                       </div>
 
-                      <h3 className="text-sm font-extrabold text-brand-navy-900 dark:text-white group-hover:text-brand-sage-700 dark:group-hover:text-brand-sage-400 transition truncate">
+                      <h3 className="text-sm font-extrabold text-brand-navy-900 dark:text-white group-hover:text-brand-sage-700 dark:group-hover:text-brand-sage-400 transition line-clamp-2 sm:line-clamp-1">
                         {translateClassName(booking.className, isEn)}
                       </h3>
 
@@ -148,9 +148,9 @@ export function UpcomingWorkoutsCard({
 
       {/* Card B: Training Syllabus & Coach Advice */}
       <section aria-label={isEn ? 'Training & Biometrics' : 'Giáo án & Lời khuyên HLV'} className="bg-white dark:bg-brand-navy-900 p-6 rounded-3xl border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-xs space-y-4 hover-lift">
-        <div className="flex items-center justify-between pb-3 border-b border-brand-navy-100 dark:border-brand-navy-800">
-          <div className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-xl bg-brand-navy-50 dark:bg-brand-navy-950/60 text-brand-navy-800 dark:text-brand-navy-400 flex items-center justify-center">
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2 pb-3 border-b border-brand-navy-100 dark:border-brand-navy-800">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="w-8 h-8 shrink-0 rounded-xl bg-brand-navy-50 dark:bg-brand-navy-950/60 text-brand-navy-800 dark:text-brand-navy-400 flex items-center justify-center">
               <span className="material-symbols-outlined text-[18px]">assignment</span>
             </div>
             <h2 className="text-sm font-extrabold text-brand-navy-900 dark:text-white uppercase tracking-wide">
@@ -158,7 +158,7 @@ export function UpcomingWorkoutsCard({
             </h2>
           </div>
           {canProgress && (
-            <a href="#/member/progress" className="text-xs font-bold text-brand-sage-700 dark:text-brand-sage-400 hover:underline flex items-center gap-1 group">
+            <a href="#/member/progress" className="text-xs font-bold text-brand-sage-700 dark:text-brand-sage-400 hover:underline flex items-center gap-1 group whitespace-nowrap ml-auto">
               <span>{isEn ? 'Full Progress' : 'Xem toàn bộ'}</span>
               <span className="material-symbols-outlined text-[14px] group-hover:translate-x-0.5 transition-transform">arrow_forward</span>
             </a>

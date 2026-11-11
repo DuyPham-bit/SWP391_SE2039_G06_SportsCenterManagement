@@ -20,7 +20,10 @@ public static class Responses
         string? PackageStatus = null,
         long? PackageId = null,
         long? SubscriptionId = null,
-        DateOnly? PackageStartDate = null);
+        DateOnly? PackageStartDate = null,
+        bool IsEmailVerified = true,
+        string? AvatarUrl = null,
+        string? FitnessLevel = null);
 
     public sealed record MemberSubscriptionResponse(
         long SubscriptionId,

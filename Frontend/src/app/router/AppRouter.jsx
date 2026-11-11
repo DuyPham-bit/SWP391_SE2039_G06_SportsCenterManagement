@@ -1,6 +1,9 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useAuth } from '../../entities/session/index.js';
-
+import { useLanguage } from '../../shared/i18n/LanguageContext.jsx';
+import { PageErrorBoundary } from '../../shared/ui/PageErrorBoundary.jsx';
+import { NotFoundView } from '../../pages/not-found/index.js';
+import { normalizeRouteHash, ROUTE_TYPO_MAP, isLandingRoute } from './routeNormalization.js';
 
 import { ProtectedRoute, RoleGuard } from './RoleGuard.jsx';
 import { AppLayout } from '../../widgets/app-shell/index.js';
@@ -43,6 +46,7 @@ const CoachNotifications = lazy(() => import('../../pages/coach-notifications/in
 const AIRecommendation = lazy(() => import('../../pages/coach-ai-recommendation/index.js').then(m => ({ default: m.AIRecommendation })));
 const PerformanceDashboard = lazy(() => import('../../pages/coach-performance/index.js').then(m => ({ default: m.PerformanceDashboard })));
 const CoachSalaryKPI = PerformanceDashboard;
+const CoachResources = lazy(() => import('../../pages/coach-resources/index.js').then(m => ({ default: m.CoachResources })));
 const CoachProfessionalHub = lazy(() => import('../../pages/coach-professional-hub/index.js').then(m => ({ default: m.CoachProfessionalHub })));
 const ManagerCoachOperations = lazy(() => import('../../pages/manager-coach-operations/index.js').then(m => ({ default: m.ManagerCoachOperations })));
 const ManagerSupportCommunications = lazy(() => import('../../pages/manager-support/index.js').then(m => ({ default: m.ManagerSupportCommunications })));
@@ -50,6 +54,7 @@ const ManagerSupportCommunications = lazy(() => import('../../pages/manager-supp
 // Member Pages (Lazy Loaded)
 const MemberDashboard = lazy(() => import('../../pages/member-dashboard/index.js').then(m => ({ default: m.MemberDashboard })));
 const MemberPackages = lazy(() => import('../../pages/member-packages/index.js').then(m => ({ default: m.MemberPackages })));
+const MemberEnrollment = lazy(() => import('../../pages/member-enrollment/index.js').then(m => ({ default: m.MemberEnrollment })));
 const ClassScheduleView = lazy(() => import('../../pages/member-class-schedule/index.js').then(m => ({ default: m.ClassScheduleView })));
 const MyBookings = lazy(() => import('../../pages/member-bookings/index.js').then(m => ({ default: m.MyBookings })));
 const MyProgress = lazy(() => import('../../pages/member-progress/index.js').then(m => ({ default: m.MyProgress })));
@@ -86,22 +91,21 @@ function RouteFallback() {
 }
 
 function getRouteHash() {
-  const hash = window.location.hash || '';
-  if (hash && hash !== '#/' && hash !== '#/payment-result') return hash;
-  if (window.location.pathname === '/payment-result') return '#/payment-result';
-  return hash || '#/';
+  const hash = typeof window !== 'undefined' ? window.location.hash || '' : '';
+  return normalizeRouteHash(hash);
 }
 
 function AppRouter() {
-  const { initializing, initializationError } = useAuth();
+  const { initializing, initializationError, currentUser } = useAuth();
+  const { language } = useLanguage();
   const [currentHash, setCurrentHash] = useState(getRouteHash);
 
   useEffect(() => {
     const handleHashChange = () => {
-      const hash = window.location.hash || '#/';
-      setCurrentHash(hash);
-      
-      const cleanAnchor = hash.replace(/^#\/?/, '').split('?')[0];
+      const normalized = normalizeRouteHash(window.location.hash || '#/');
+      setCurrentHash(normalized);
+
+      const cleanAnchor = normalized.replace(/^#\/?/, '').split('?')[0];
       const targetElement = document.getElementById(cleanAnchor);
       if (targetElement) {
         targetElement.scrollIntoView({ behavior: 'smooth' });
@@ -111,13 +115,14 @@ function AppRouter() {
     };
 
     window.addEventListener('hashchange', handleHashChange);
-    // A protected route can redirect before this listener is installed on reload.
-    setCurrentHash(getRouteHash());
+    // Only update if normalized hash differs from current state to prevent double render on mount
+    const initial = getRouteHash();
+    setCurrentHash(prev => (prev !== initial ? initial : prev));
     return () => window.removeEventListener('hashchange', handleHashChange);
   }, []);
 
   const path = currentHash.split('?')[0];
-  if (initializing) return <div role="status" className="p-8 text-center">Đang xác thực phiên đăng nhập...</div>;
+  if (initializing) return <RouteFallback />;
   if (initializationError) return <div role="alert" className="p-8 text-center text-brand-danger-700 dark:text-brand-danger-400">
     <p>{initializationError}</p>
     <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 rounded border">Thử lại</button>
@@ -178,21 +183,8 @@ function AppRouter() {
     </ProtectedRoute>
   );
 
-  // Check if route is a dashboard or auth route
-  const isDashboardOrAuth =
-    path.startsWith('#/admin') ||
-    path.startsWith('#/manager') ||
-    path.startsWith('#/receptionist') ||
-    path.startsWith('#/coach') ||
-    path.startsWith('#/member') ||
-    path === '#/login' ||
-    path === '#/register' ||
-    path === '#/payment-result' ||
-    path === '#/otp-demo' ||
-    path === '#/otp';
-
   const renderRouteContent = () => {
-    if (!isDashboardOrAuth) {
+    if (isLandingRoute(path)) {
       return <LandingPage />;
     }
 
@@ -297,6 +289,10 @@ function AppRouter() {
       case '#/coach/performance':
       case '#/coach/kpi':
         return renderCoachRoute(PerformanceDashboard, 'manage_coach_workspace');
+      case '#/coach/salary':
+        return renderCoachRoute(PayrollPage, 'manage_coach_workspace');
+      case '#/coach/resources':
+        return renderCoachRoute(CoachResources, 'manage_coach_workspace');
       case '#/coach/professional':
       case '#/coach/messages':
         return renderCoachRoute(CoachProfessionalHub, 'manage_coach_workspace');
@@ -310,6 +306,8 @@ function AppRouter() {
         return renderMemberRoute(MemberPackages);
       case '#/member/refunds':
         return renderMemberRoute(MemberRefundRequests);
+      case '#/member/enroll':
+        return renderMemberRoute(MemberEnrollment, 'book_class');
       case '#/member/schedule':
         return renderMemberRoute(ClassScheduleView, 'book_class');
       case '#/member/bookings':
@@ -325,45 +323,20 @@ function AppRouter() {
       case '#/member/coach-portal':
         return renderMemberRoute(MemberCoachPortal, 'use_coach_portal');
 
-      // 404 NOT FOUND ROUTE
+      // 404 NOT FOUND ROUTE: Luxury Olympic sports arena empty/not-found screen
       default:
-        return (
-          <div className="min-h-screen bg-brand-navy-50 flex items-center justify-center p-6">
-            <div className="animate-fade-slide-up bg-white p-6 sm:p-8 rounded-2xl border border-brand-navy-200 shadow-sm max-w-md w-full text-center">
-              <div className="scms-empty-icon w-16 h-16 rounded-full bg-brand-danger-100 text-brand-danger-600 flex items-center justify-center mx-auto mb-4">
-                <span className="material-symbols-outlined text-[36px]">travel_explore</span>
-              </div>
-              <h1 className="font-chivo text-2xl font-black text-brand-navy-900">404 - KHÔNG TÌM THẤY TRANG</h1>
-              <p className="text-xs text-brand-navy-500 mt-2">
-                Đường dẫn <code className="bg-brand-navy-100 text-brand-danger-600 px-1.5 py-0.5 rounded break-all">{path}</code> không tồn tại trên hệ thống SCMS.
-              </p>
-              <div className="mt-6 flex flex-col gap-2">
-                <a
-                  href="#/"
-                  className="w-full py-2.5 bg-brand-danger-600 hover:bg-brand-danger-700 text-white rounded-lg font-chivo font-bold text-xs uppercase tracking-wider transition-colors shadow"
-                >
-                  Về Trang Chủ SCMS
-                </a>
-                <a
-                  href="#/login"
-                  className="w-full py-2.5 bg-brand-navy-100 hover:bg-brand-navy-200 text-brand-navy-700 rounded-lg font-chivo font-bold text-xs uppercase tracking-wider transition-colors"
-                >
-                  Đến Trang Đăng Nhập
-                </a>
-              </div>
-            </div>
-          </div>
-        );
+        return <NotFoundView path={path} currentUser={currentUser} />;
     }
   };
 
   return (
-    <Suspense fallback={<RouteFallback />}>
-      {renderRouteContent()}
-    </Suspense>
+    <PageErrorBoundary resetKey={path} language={language}>
+      <Suspense fallback={<RouteFallback />}>
+        {renderRouteContent()}
+      </Suspense>
+    </PageErrorBoundary>
   );
 }
 
-
 export default AppRouter;
-export { AppRouter };
+export { AppRouter, normalizeRouteHash, ROUTE_TYPO_MAP, isLandingRoute };

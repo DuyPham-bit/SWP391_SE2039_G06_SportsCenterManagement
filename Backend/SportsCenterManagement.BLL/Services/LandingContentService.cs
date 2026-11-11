@@ -16,6 +16,8 @@ public sealed record LandingContentResponse(JsonElement? Content, DateTime? Upda
 public sealed class LandingContentService(SportsCenterDbContext db, IConfiguration configuration)
 {
     private const string SettingKey = "site.landing-content";
+    // Unpublished editor work, shared by every Manager/Admin and kept across devices (system_settings row).
+    private const string DraftKey = "site.landing-content.draft";
     private const int SportDescriptionMaxLength = 500; // sports.description column length
     private static readonly string[] RequiredSections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter"];
     private static readonly string[] Sections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter", "authShowcase"];
@@ -83,8 +85,39 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
         setting.UpdatedBy = userId;
         setting.UpdatedAt = DateTime.UtcNow;
         await db.SaveChangesAsync(ct);
+        // Publishing consumes the draft — only once the published content is safely stored.
+        await db.SystemSettings.Where(s => s.SettingKey == DraftKey).ExecuteDeleteAsync(ct);
         return await GetAsync(ct);
     }
+
+    public async Task<LandingContentResponse> GetDraftAsync(CancellationToken ct)
+    {
+        var draft = await db.SystemSettings.AsNoTracking().SingleOrDefaultAsync(s => s.SettingKey == DraftKey, ct);
+        if (draft?.SettingValue is null) return new(null, null);
+        using var document = JsonDocument.Parse(draft.SettingValue);
+        return new(document.RootElement.Clone(), draft.UpdatedAt);
+    }
+
+    /// <summary>Autosaved, possibly incomplete content: only shape-checked, never shown publicly.</summary>
+    public async Task<LandingContentResponse> SaveDraftAsync(JsonElement content, long userId, CancellationToken ct)
+    {
+        if (content.ValueKind != JsonValueKind.Object)
+            throw FlowException.BadRequest("Bản nháp trang chủ phải là một đối tượng JSON.");
+        var draft = await db.SystemSettings.SingleOrDefaultAsync(s => s.SettingKey == DraftKey, ct);
+        if (draft is null)
+        {
+            draft = new SystemSetting { SettingKey = DraftKey, Description = "Bản nháp nội dung trang chủ (chưa xuất bản)" };
+            db.SystemSettings.Add(draft);
+        }
+        draft.SettingValue = content.GetRawText();
+        draft.UpdatedBy = userId;
+        draft.UpdatedAt = DateTime.UtcNow;
+        await db.SaveChangesAsync(ct);
+        return new(content.Clone(), draft.UpdatedAt);
+    }
+
+    public Task DiscardDraftAsync(CancellationToken ct) =>
+        db.SystemSettings.Where(s => s.SettingKey == DraftKey).ExecuteDeleteAsync(ct);
 
     private string PublicDomain => configuration["R2Storage:PublicDomain"]?.Trim().TrimEnd('/')
         ?? throw new InvalidOperationException("R2Storage:PublicDomain is not configured.");

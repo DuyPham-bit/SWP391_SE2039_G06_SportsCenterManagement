@@ -68,10 +68,24 @@ function UKFlagIcon({ className = "w-4 h-3" }) {
   );
 }
 
-export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = false }) {
+export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = false, isMobileOpen = false }) {
   const { currentUser, role, logout } = useAuth();
   const { showSuccess, showInfo, showWarning } = useToast();
   const { language, setLanguage, t } = useLanguage();
+
+  const [isMobileScreen, setIsMobileScreen] = useState(() => {
+    return typeof window !== 'undefined' ? window.innerWidth < 1024 : false;
+  });
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsMobileScreen(typeof window !== 'undefined' ? window.innerWidth < 1024 : false);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  const effectiveCollapsed = isMobileScreen ? !isMobileOpen : isSidebarCollapsed;
 
   // State 2: Dropdown chọn ngôn ngữ
   const [showLangMenu, setShowLangMenu] = useState(false);
@@ -264,32 +278,32 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
         {/* Brand Logo Zone: smoothly transitions between full logo (w-64) and compact logo (w-20) */}
         <div
           className={`relative h-full flex items-center min-w-0 transition-all duration-300 ease-in-out border-r border-line ${
-            isSidebarCollapsed
+            effectiveCollapsed
               ? 'w-16 lg:w-20 justify-center px-0'
               : 'w-auto sm:w-56 lg:w-64 justify-start px-3 sm:px-4'
           }`}
         >
-          <Logo variant="auto" size={isSidebarCollapsed ? 'sm' : 'md'} compact={isSidebarCollapsed} />
+          <Logo variant="auto" size={effectiveCollapsed ? 'sm' : 'md'} compact={effectiveCollapsed} />
 
-          {/* Desktop Circular Edge Toggle Button: straddles the dividing border seam (thụt ra vô theo thanh menu) */}
+          {/* Circular Edge Toggle Button: straddles the dividing border seam (thụt ra vô theo thanh menu) */}
           <button
             onClick={onToggleSidebar}
             type="button"
             className="hidden lg:flex absolute -right-3.5 top-1/2 -translate-y-1/2 z-50 w-7 h-7 rounded-full border border-line/90 bg-surface hover:bg-surface-muted hover:border-brand-sage-500 items-center justify-center text-ink-muted hover:text-brand-sage-700 dark:hover:text-brand-sage-400 transition-all cursor-pointer shadow-md hover:scale-110 active:scale-95"
-            title={isSidebarCollapsed ? (language === 'vi' ? 'Mở rộng thanh menu' : 'Expand sidebar') : (language === 'vi' ? 'Thu gọn thanh menu' : 'Collapse sidebar')}
-            aria-label={isSidebarCollapsed ? 'Show sidebar' : 'Collapse sidebar'}
+            title={effectiveCollapsed ? (language === 'vi' ? 'Mở rộng thanh menu' : 'Expand sidebar') : (language === 'vi' ? 'Thu gọn thanh menu' : 'Collapse sidebar')}
+            aria-label={effectiveCollapsed ? 'Show sidebar' : 'Collapse sidebar'}
           >
             <span className="material-symbols-outlined text-[15px] select-none">
-              {isSidebarCollapsed ? 'chevron_right' : 'chevron_left'}
+              {effectiveCollapsed ? 'chevron_right' : 'chevron_left'}
             </span>
           </button>
         </div>
 
-        {/* Mobile Hamburger Drawer Trigger */}
+        {/* Mobile Hamburger Drawer Trigger (fallback) */}
         <button
           onClick={onToggleSidebar}
           type="button"
-          className="lg:hidden ml-2 p-2 rounded-xl text-ink-muted hover:bg-surface-muted transition-colors"
+          className="lg:hidden ml-2 sm:ml-3 p-2 rounded-xl text-ink-muted hover:bg-surface-muted transition-colors"
           aria-label="Open mobile menu"
         >
           <span className="material-symbols-outlined text-[22px]">menu</span>

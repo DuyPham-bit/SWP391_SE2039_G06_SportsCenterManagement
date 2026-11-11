@@ -45,7 +45,7 @@ export function AIRecommendation() {
   const { language } = useLanguage();
   const isEn = language === 'en';
 
-  const { showSuccess } = useToast();
+  const { showSuccess, showWarning } = useToast();
   const [classes, setClasses] = useState([]);
   const [classId, setClassId] = useState('');
   const [memberId, setMemberId] = useState('');
@@ -119,14 +119,6 @@ export function AIRecommendation() {
     { id: 'endurance', label: isEn ? 'Cardio & Stamina' : 'Sức bền & Thể lực tổng quát', value: isEn ? 'Cardiovascular Health & Stamina' : 'Sức bền tim mạch & Thể lực tổng quát' },
   ], [isEn]);
 
-  // Các trình độ chuẩn hóa
-  const LEVEL_PRESETS = useMemo(() => [
-    { id: 'Beginner', label: isEn ? 'Beginner (0-6 months)' : 'Beginner (Mới bắt đầu · 0-6 tháng)', value: 'Beginner' },
-    { id: 'Intermediate', label: isEn ? 'Intermediate (6m-2y)' : 'Intermediate (Trung cấp · 6 tháng - 2 năm)', value: 'Intermediate' },
-    { id: 'Advanced', label: isEn ? 'Advanced (2+ years)' : 'Advanced (Nâng cao · Trên 2 năm)', value: 'Advanced' },
-    { id: 'Athlete', label: isEn ? 'Athlete (Specialized)' : 'Athlete (Vận động viên chuyên sâu)', value: 'Athlete' },
-  ], [isEn]);
-
   const load = async () => {
     setLoading(true); setLoadError('');
     try { setClasses(await coachApi.getCoachClassesAndMembers()); }
@@ -158,13 +150,10 @@ export function AIRecommendation() {
 
   const openBioEditor = () => {
     setBioError('');
+    // HLV chỉ nhập chiều cao, cân nặng, lưu ý sức khỏe; giới tính/ngày sinh/trình độ do học viên tự cập nhật ở Profile
     setBioForm({
       heightCm: context?.heightCm ?? '',
-      // Nhập tay ghi đè cân nặng hồ sơ; mặc định lấy cân nặng hiệu lực (có thể từ nhật ký buổi tập)
-      weightKg: context?.weightKg ?? context?.profileWeightKg ?? '',
-      gender: normalizeGender(context?.gender),
-      dateOfBirth: context?.dateOfBirth || '',
-      fitnessLevel: context?.fitnessLevel || '',
+      weightKg: context?.profileWeightKg ?? context?.weightKg ?? '',
       medicalNote: context?.medicalNote || '',
     });
     setBioEditing(true);
@@ -177,9 +166,15 @@ export function AIRecommendation() {
     try {
       const updated = await coachApi.updateMemberBiometrics(selectedClass.id, member.id, bioForm);
       setContext(updated);
-      if (updated.fitnessLevel) setLevel(updated.fitnessLevel);
       setBioEditing(false);
-      showSuccess(isEn ? 'Biometrics saved' : 'Đã lưu chỉ số sinh trắc học');
+      if (updated.latestResult) {
+        // Kết quả & tiến độ tập luyện gần nhất được ưu tiên hơn chỉ số nhập tay
+        showWarning(isEn
+          ? `Saved. This student already has a latest training result (${formatIsoDate(updated.latestResult.date)}); it takes priority over manually entered metrics.`
+          : `Đã lưu chỉ số. Đã có kết quả luyện tập gần nhất cho học viên này (${formatIsoDate(updated.latestResult.date)}) — hệ thống ưu tiên dùng kết quả đó thay cho chỉ số nhập tay.`, 6000);
+      } else {
+        showSuccess(isEn ? 'Biometrics saved' : 'Đã lưu chỉ số sinh trắc học');
+      }
     } catch (saveErr) {
       setBioError(saveErr);
     } finally {
@@ -268,9 +263,23 @@ export function AIRecommendation() {
     setSelectedTagIds(tagsToSelect);
     const allItems = CONDITION_GROUPS.flatMap(g => g.items);
     const selectedTexts = tagsToSelect.map(id => allItems.find(x => x.id === id)?.text).filter(Boolean);
+    // Hồ sơ học viên từ API (tuổi theo ngày sinh, giới tính, trình độ) + kết quả tập gần nhất (ưu tiên hơn nhập tay)
+    const profileBits = [
+      context.gender ? genderLabel(context.gender, isEn) : null,
+      context.age ? (isEn ? `${context.age} years old` : `${context.age} tuổi`) : null,
+      context.fitnessLevel || null,
+    ].filter(Boolean);
+    const profileNote = profileBits.length ? `[${isEn ? 'Profile' : 'Hồ sơ học viên'}]: ${profileBits.join(', ')}` : '';
+    const latest = context.latestResult;
+    const latestNote = latest ? `[${isEn ? 'Latest training result' : 'Kết quả tập gần nhất'} ${formatIsoDate(latest.date)}]: ${[
+      latest.weight ? `${latest.weight}kg` : null,
+      latest.bodyFat ? `${latest.bodyFat}% ${isEn ? 'body fat' : 'mỡ'}` : null,
+      latest.muscleMass ? `${latest.muscleMass}kg ${isEn ? 'muscle' : 'cơ'}` : null,
+      latest.workoutResult || null,
+    ].filter(Boolean).join(' · ')}` : '';
     const baseNote = context.medicalNote ? `[Hồ sơ y tế]: ${context.medicalNote}` : '';
-    const combined = [...(baseNote ? [baseNote] : []), ...selectedTexts].join('\n• ');
-    setNotes(combined ? (combined.startsWith('• ') ? combined : '• ' + combined) : '');
+    const combined = [profileNote, latestNote, baseNote].filter(Boolean).concat(selectedTexts).join('\n• ');
+    setNotes(combined ? (combined.startsWith('• ') ? combined : '• ' + combined).slice(0, 1000) : '');
 
     if (context.fitnessLevel) {
       setLevel(context.fitnessLevel);
@@ -569,7 +578,17 @@ export function AIRecommendation() {
                         if (ev.key === 'Enter' && ev.target.tagName !== 'TEXTAREA') { ev.preventDefault(); saveBiometrics(ev); }
                       }}
                     >
-                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                      {context.latestResult && (
+                        <p role="status" className="text-[11px] text-brand-sand-800 dark:text-brand-sand-300 bg-brand-sand-50 dark:bg-brand-sand-950/30 border border-brand-sand-200 dark:border-brand-sand-800 rounded-lg px-2.5 py-1.5 flex items-start gap-1.5">
+                          <span className="material-symbols-outlined text-[15px] shrink-0">info</span>
+                          <span>
+                            {isEn
+                              ? `This student already has a latest training result (${formatIsoDate(context.latestResult.date)}). It takes priority; manual metrics are only a fallback.`
+                              : `Học viên đã có kết quả luyện tập gần nhất (${formatIsoDate(context.latestResult.date)}). Hệ thống ưu tiên kết quả đó; chỉ số nhập tay chỉ dùng khi buổi tập chưa ghi nhận.`}
+                          </span>
+                        </p>
+                      )}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
                         <label className="space-y-1">
                           <span className="font-semibold text-brand-navy-600 dark:text-brand-navy-300">{isEn ? 'Height (cm)' : 'Chiều cao (cm)'}</span>
                           <input type="number" min="80" max="250" step="0.1" inputMode="decimal" {...bioField('heightCm')} className={coachInput} />
@@ -578,35 +597,15 @@ export function AIRecommendation() {
                           <span className="font-semibold text-brand-navy-600 dark:text-brand-navy-300">{isEn ? 'Weight (kg)' : 'Cân nặng (kg)'}</span>
                           <input type="number" min="25" max="300" step="0.1" inputMode="decimal" {...bioField('weightKg')} className={coachInput} />
                         </label>
-                        <label className="space-y-1">
-                          <span className="font-semibold text-brand-navy-600 dark:text-brand-navy-300">{isEn ? 'Gender' : 'Giới tính'}</span>
-                          <select {...bioField('gender')} className={coachInput}>
-                            <option value="">{isEn ? '— Not set —' : '— Chưa chọn —'}</option>
-                            <option value="Male">{isEn ? 'Male' : 'Nam'}</option>
-                            <option value="Female">{isEn ? 'Female' : 'Nữ'}</option>
-                            <option value="Other">{isEn ? 'Other' : 'Khác'}</option>
-                          </select>
-                        </label>
-                        <label className="space-y-1">
-                          <span className="font-semibold text-brand-navy-600 dark:text-brand-navy-300">{isEn ? 'Date of birth' : 'Ngày sinh'}</span>
-                          <input type="date" {...bioField('dateOfBirth')} className={coachInput} />
-                        </label>
                         <label className="space-y-1 sm:col-span-2">
-                          <span className="font-semibold text-brand-navy-600 dark:text-brand-navy-300">{isEn ? 'Fitness level' : 'Trình độ'}</span>
-                          <select {...bioField('fitnessLevel')} className={coachInput}>
-                            <option value="">{isEn ? '— Not set —' : '— Chưa chọn —'}</option>
-                            {LEVEL_PRESETS.map(l => <option key={l.id} value={l.value}>{l.label}</option>)}
-                          </select>
-                        </label>
-                        <label className="space-y-1 sm:col-span-3">
                           <span className="font-semibold text-brand-navy-600 dark:text-brand-navy-300">{isEn ? 'Medical notes / conditions' : 'Lưu ý sức khỏe / Bệnh lý'}</span>
                           <textarea rows={2} maxLength={1000} {...bioField('medicalNote')} className={coachInput} placeholder={isEn ? 'e.g. mild knee pain, hypertension' : 'VD: đau gối nhẹ, huyết áp cao'} />
                         </label>
                       </div>
                       <p className="text-[10px] text-brand-navy-500 dark:text-brand-navy-400">
                         {isEn
-                          ? 'Weight measured in a later session log (training results) will automatically take priority over this value.'
-                          : 'Cân nặng đo trong nhật ký buổi tập (training_results) sau thời điểm này sẽ được tự động ưu tiên hơn giá trị nhập tay.'}
+                          ? 'Gender, date of birth (age) and fitness level are updated by the student on their Profile page.'
+                          : 'Giới tính, ngày sinh (tuổi) và trình độ do học viên tự cập nhật trên trang Thông tin cá nhân (Profile).'}
                       </p>
                       <CoachError message={bioError} />
                       <div className="flex justify-end gap-2">

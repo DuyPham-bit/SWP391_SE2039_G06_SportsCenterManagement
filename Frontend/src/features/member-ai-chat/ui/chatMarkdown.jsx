@@ -3,7 +3,9 @@ import React from 'react';
 // Helper to detect if a string contains corrupted characters / Mojibake from previous encodings
 export function hasCorruptedEncoding(str) {
   if (!str || typeof str !== 'string') return false;
-  return /[├│─┼┬┴└┘┐┌┤ßã¼½µ¶§©®ªº]/i.test(str);
+  // Box-drawing glyphs (CP437 mojibake) or UTF-8 bytes misread as Latin-1 ("Ã¡", "Ä‘", "á»").
+  // Plain Vietnamese letters such as "ã" (đã, xã) must not match.
+  return /[├│─┼┬┴└┘┐┌┤]|[ÃÂÄÆ][\u0080-¿‘-›]|á[»º]/.test(str);
 }
 
 // Helper to render inline markdown (bold, italic, inline code)

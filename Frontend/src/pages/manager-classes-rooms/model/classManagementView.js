@@ -10,8 +10,16 @@ export const WEEK_DAYS = Object.freeze([
 ]);
 
 const normalize = value => String(value || '').trim().toLocaleLowerCase('vi-VN');
-const CENTER_OPEN_MINUTES = 5 * 60;
-const CENTER_CLOSE_MINUTES = 22 * 60;
+// Fallback only: the real limits are the opening hours the Admin set for the center (from the DB).
+export const DEFAULT_CENTER_HOURS = Object.freeze({ open: '05:00', close: '22:00' });
+
+/** "06:00:00" / "06:00" → "06:00"; returns the defaults when the center has no hours configured. */
+export function toCenterHours(center) {
+  const pick = value => (typeof value === 'string' && /^\d{2}:\d{2}/.test(value) ? value.slice(0, 5) : null);
+  const open = pick(center?.openingTime);
+  const close = pick(center?.closingTime);
+  return open && close ? { open, close } : DEFAULT_CENTER_HOURS;
+}
 
 const timeToMinutes = value => {
   const match = /^(\d{2}):(\d{2})/.exec(String(value || ''));
@@ -128,14 +136,18 @@ export function validateSportFields(form, isEn = false) {
   return errors;
 }
 
-export function validateScheduleForm(form, maxDurationMinutes = null) {
+export function validateScheduleForm(form, maxDurationMinutes = null, centerHours = DEFAULT_CENTER_HOURS) {
   if (!form.startDate || !form.endDate) return 'Vui lòng chọn đầy đủ khoảng ngày.';
   if (form.endDate < form.startDate) return 'Ngày kết thúc không được trước ngày bắt đầu.';
   if (!form.startTime || !form.endTime || form.endTime <= form.startTime) return 'Giờ kết thúc phải sau giờ bắt đầu.';
   const start = timeToMinutes(form.startTime);
   const end = timeToMinutes(form.endTime);
   if (start === null || end === null) return 'Khung giờ học không hợp lệ.';
-  if (start < CENTER_OPEN_MINUTES || end > CENTER_CLOSE_MINUTES) return 'Lịch học phải nằm trong giờ hoạt động của trung tâm, từ 05:00 đến 22:00.';
+  const open = timeToMinutes(centerHours.open);
+  const close = timeToMinutes(centerHours.close);
+  // Same rule as the backend: a closing time at/before opening means the center runs past midnight.
+  const inside = close > open ? start >= open && end <= close : start >= open || end <= close;
+  if (!inside) return `Lịch học phải nằm trong giờ hoạt động của trung tâm, từ ${centerHours.open} đến ${centerHours.close}.`;
   const maximum = Number(maxDurationMinutes);
   if (Number.isFinite(maximum) && maximum > 0 && end - start > maximum) {
     return `Một buổi học không được vượt quá thời lượng ${maximum} phút đã thiết lập cho lớp.`;

@@ -252,48 +252,7 @@ export const SYSTEM_CAPABILITIES = [
 ];
 
 // Per-user custom permission overrides
-export function getUserCustomOverrides(centerId, userId) {
-  if (!centerId || !userId) return null;
-  try {
-    const raw = localStorage.getItem(`scms_user_perm_override_${centerId}_${userId}`);
-    return raw ? JSON.parse(raw) : null;
-  } catch {
-    return null;
-  }
-}
-
-export function saveUserCustomOverrides(centerId, userId, overrides) {
-  if (!centerId || !userId) return;
-  try {
-    if (!overrides) {
-      localStorage.removeItem(`scms_user_perm_override_${centerId}_${userId}`);
-    } else {
-      localStorage.setItem(`scms_user_perm_override_${centerId}_${userId}`, JSON.stringify(overrides));
-    }
-    window.dispatchEvent(new CustomEvent('SCMS_PERMISSIONS_CHANGED', { detail: { centerId, userId } }));
-  } catch (e) {
-    console.error('Failed to save user overrides', e);
-  }
-}
-
-export function getAllUserCustomOverrides(centerId) {
-  const result = {};
-  if (!centerId) return result;
-  try {
-    const prefix = `scms_user_perm_override_${centerId}_`;
-    for (let i = 0; i < localStorage.length; i++) {
-      const key = localStorage.key(i);
-      if (key && key.startsWith(prefix)) {
-        const userId = key.replace(prefix, '');
-        const data = JSON.parse(localStorage.getItem(key));
-        if (data) result[userId] = data;
-      }
-    }
-  } catch (e) {
-    console.error('Failed to get all user overrides', e);
-  }
-  return result;
-}
+// Per-user permission overrides are stored server-side (center user-permissions API).
 
 // Capabilities come only from the authenticated API response.
 export function getPermissionsForRole(role) {
@@ -411,6 +370,7 @@ export function getDynamicNavItems(role) {
       }
       if (perms.includes('manage_coach_workspace')) {
         items.push({ path: '#/coach/professional', icon: 'workspace_premium', label: 'Coach Professional Hub' });
+        items.push({ path: '#/coach/resources', icon: 'inventory_2', label: 'Tài Nguyên & Sự Cố' });
       }
       if (perms.includes('take_attendance')) {
         items.push({ path: '#/coach/attendance', icon: 'fact_check', label: 'Điểm Danh Lớp' });
@@ -460,6 +420,7 @@ export function getDynamicNavItems(role) {
 
       if (perms.includes('book_class')) {
         items.push({ label: 'LỊCH HỌC & ĐẶT CHỖ', isHeader: true });
+        items.push({ path: '#/member/enroll', icon: 'how_to_reg', label: 'Đăng Ký Môn & HLV' });
         items.push({ path: '#/member/schedule', icon: 'event_available', label: 'Lịch Lớp Thể Thao' });
         items.push({ path: '#/member/bookings', icon: 'bookmark_check', label: 'Lớp Đã Đặt & Hủy' });
         items.push({ path: '#/member/attendance', icon: 'fact_check', label: 'Lịch Sử Điểm Danh' });

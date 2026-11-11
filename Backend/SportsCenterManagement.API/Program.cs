@@ -79,6 +79,8 @@ builder.Services.AddScoped<ICenterScopeService, CenterScopeService>();
 builder.Services.AddScoped<IClassEnrollmentService, ClassEnrollmentService>();
 builder.Services.AddScoped<IPublicCatalogService, PublicCatalogService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
+builder.Services.AddScoped<IMemberEnrollmentOptionsService, MemberEnrollmentOptionsService>();
+builder.Services.AddSingleton<SportsCenterManagement.BLL.Common.MediaUrlBuilder>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 builder.Services.AddScoped<IStaffManagementService, StaffManagementService>();
 builder.Services.AddScoped<IAuditLogService, AuditLogService>();

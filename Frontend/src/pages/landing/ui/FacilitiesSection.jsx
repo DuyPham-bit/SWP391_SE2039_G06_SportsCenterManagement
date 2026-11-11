@@ -1,9 +1,11 @@
-import React, { useState, useMemo, useEffect, useRef } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useLandingContent } from '../../../entities/landing-content/index.js';
 import { usePublicCatalog, getLandingPresentation } from '../../../entities/catalog/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useAuth } from '../../../entities/session/index.js';
 import { getMembershipAction, getMembershipBanner, packageApi } from '../../../entities/membership/index.js';
+import { useHorizontalCarousel } from '../model/useHorizontalCarousel.js';
+import { CarouselSideArrows } from './CarouselControls.jsx';
 import {
   translateLandingContent,
   translateFacilityName,
@@ -94,12 +96,6 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     });
   }, [catalog, selectedFacility]);
 
-  // Carousel State
-  const [facilityCarouselIndex, setFacilityCarouselIndex] = useState(0);
-  const facilityCarouselRef = useRef(null);
-  const isFacilityProgrammaticScrollRef = useRef(false);
-  const facilityScrollTimeoutRef = useRef(null);
-
   const facilitiesList = landingContent.facilitiesSection.facilitiesList;
   // Lọc chỉ những cụm sân có isVisible !== false (manager chủ động ẩn/hiện)
   const visibleFacilities = useMemo(() => {
@@ -139,67 +135,15 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     });
   }, [visibleFacilities, activeCategory, searchQuery]);
 
-  const handleFacilityScroll = () => {
-    if (isFacilityProgrammaticScrollRef.current) return;
-    const el = facilityCarouselRef.current;
-    if (!el) return;
-    const scrollLeft = el.scrollLeft;
-    const maxScroll = el.scrollWidth - el.clientWidth;
-    const items = el.querySelectorAll('[data-facility-carousel-item]');
-    if (!items.length) return;
-
-    // Nếu đã cuộn gần chạm mép phải (thẻ cuối cùng đang hiển thị đầy đủ)
-    if (scrollLeft >= maxScroll - 25) {
-      setFacilityCarouselIndex(items.length - 1);
-      return;
-    }
-
-    // Tìm thẻ có mép trái gần sát vị trí đầu container nhất
-    let closestIdx = 0;
-    let minDiff = Infinity;
-    const containerLeft = el.getBoundingClientRect().left;
-
-    items.forEach((item, idx) => {
-      const itemRect = item.getBoundingClientRect();
-      const diff = Math.abs(itemRect.left - containerLeft);
-      if (diff < minDiff) {
-        minDiff = diff;
-        closestIdx = idx;
-      }
-    });
-
-    setFacilityCarouselIndex(closestIdx);
-  };
-
-  const handleScrollFacilityToIndex = (idx) => {
-    const el = facilityCarouselRef.current;
-    if (!el) return;
-    const items = el.querySelectorAll('[data-facility-carousel-item]');
-    if (!items[idx]) return;
-
-    isFacilityProgrammaticScrollRef.current = true;
-    setFacilityCarouselIndex(idx);
-
-    const targetItem = items[idx];
-    const scrollTarget = targetItem.offsetLeft - el.offsetLeft;
-
-    el.scrollTo({
-      left: Math.max(0, scrollTarget),
-      behavior: 'smooth'
-    });
-
-    if (facilityScrollTimeoutRef.current) clearTimeout(facilityScrollTimeoutRef.current);
-    facilityScrollTimeoutRef.current = setTimeout(() => {
-      isFacilityProgrammaticScrollRef.current = false;
-    }, 450);
-  };
-
-  useEffect(() => {
-    setFacilityCarouselIndex(0);
-    if (facilityCarouselRef.current) {
-      facilityCarouselRef.current.scrollTo({ left: 0, behavior: 'smooth' });
-    }
-  }, [activeCategory, searchQuery, filteredFacilities.length]);
+  const facilityCarousel = useHorizontalCarousel({
+    itemCount: filteredFacilities.length,
+    itemSelector: '[data-facility-carousel-item]',
+    resetKey: `${activeCategory}-${searchQuery}-${filteredFacilities.length}`,
+    isModalOpen: Boolean(selectedFacility),
+    autoPlayIntervalMs: 4200
+  });
+  const facilityCarouselRef = facilityCarousel.carouselRef;
+  const handleFacilityScroll = facilityCarousel.handleScroll;
 
   const handleOpenModal = (facility, initialTab = 'packages') => {
     setSelectedFacility(facility);
@@ -277,7 +221,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         >
           {/* Card Image Area */}
           <div className="tiya-course-card__image-wrap">
-            {fac.image || fac.secondaryImage ? <img src={fac.image || fac.secondaryImage} alt={displayName} loading="lazy" /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
+            {fac.image || fac.secondaryImage ? <img src={fac.image || fac.secondaryImage} alt={displayName} loading="lazy" draggable={false} /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
 
             {/* Top Bar Badges */}
             <div style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 2 }}>
@@ -350,7 +294,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     : '';
 
   return (
-    <section id="co-so-vat-chat" className="w-full bg-white text-slate-900 font-sans min-h-screen pt-20 pb-0 px-6 sm:px-10 md:px-14 lg:px-20 relative overflow-hidden flex flex-col justify-center">
+    <section id="co-so-vat-chat" className="w-full bg-[#F4F1DE] text-slate-900 font-sans min-h-screen pt-12 pb-0 px-6 sm:px-10 md:px-14 lg:px-20 relative overflow-hidden flex flex-col justify-center">
       
       {/* Decorative ambient elements */}
       <div className="pointer-events-none absolute -top-40 -right-40 w-96 h-96 bg-[var(--primary-color)]/5 rounded-full blur-3xl" />
@@ -389,13 +333,13 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             const color = colors[idx % colors.length];
 
             return (
-              <div key={metric.id || idx} className={`bg-white p-6 rounded-[20px] border border-brand-navy-200/90 shadow-sm hover:shadow-md transition-all flex items-center gap-4 group tiya-reveal tiya-delay-${idx + 1}`}>
+              <div key={metric.id || idx} className={`bg-white p-4 sm:p-6 rounded-[20px] border border-brand-navy-200/90 shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 min-w-0 group tiya-reveal tiya-delay-${idx + 1}`}>
                 <div className={`w-12 h-12 rounded-xl ${color.bg} ${color.text} flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform`}>
                   <span className="material-symbols-outlined text-[28px]">{metric.icon || 'domain'}</span>
                 </div>
-                <div>
-                  <div className="font-sans text-2xl sm:text-3xl font-bold text-slate-900">{isEn ? translateMetricValue(metric.value, true) : metric.value}</div>
-                  <div className="text-xs text-slate-500 font-semibold uppercase tracking-wider mt-0.5">{isEn ? translateMetricLabel(metric.label, true) : metric.label}</div>
+                <div className="min-w-0">
+                  <div className="font-sans text-2xl sm:text-3xl font-bold text-slate-900 break-words">{isEn ? translateMetricValue(metric.value, true) : metric.value}</div>
+                  <div className="text-[11px] sm:text-xs text-slate-500 font-semibold uppercase tracking-wide sm:tracking-wider mt-0.5 break-words">{isEn ? translateMetricLabel(metric.label, true) : metric.label}</div>
                 </div>
               </div>
             );
@@ -433,6 +377,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
               borderRadius: '100px',
               border: '1px solid rgba(0,0,0,0.1)',
               background: 'var(--white-color)',
+              color: '#0F172A',
               fontSize: '13px',
               boxShadow: '0 2px 8px rgba(0,0,0,0.03)',
               outline: 'none'
@@ -450,7 +395,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         </div>
 
         {/* RESULTS COUNT & STATUS */}
-        <div className="flex items-center justify-between mb-6 text-xs text-slate-500 font-semibold px-1">
+        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-1.5 sm:gap-3 mb-6 text-xs text-slate-500 font-semibold px-1">
           <div>
             {isEn ? (
               <>Showing <strong>{filteredFacilities.length}</strong> / {visibleFacilities.length} courts and venues</>
@@ -479,11 +424,23 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             </button>
           </div>
         ) : (
-          <div className="relative w-full mb-16">
+          <div
+            className="tiya-carousel-shell relative w-full mb-16"
+            {...facilityCarousel.containerProps}
+          >
+            <CarouselSideArrows
+              carousel={facilityCarousel}
+              isEn={isEn}
+              itemCount={filteredFacilities.length}
+              sectionLabel={isEn ? 'venue' : 'cụm sân'}
+            />
+
             {/* Scroll Track */}
             <div
               ref={facilityCarouselRef}
               onScroll={handleFacilityScroll}
+              {...facilityCarousel.trackProps}
+              className={`tiya-carousel-track ${facilityCarousel.isDragging ? 'is-dragging' : ''}`}
               style={{
                 display: 'flex',
                 gap: '24px',
@@ -498,30 +455,6 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
             >
               {filteredFacilities.map(fac => renderFacilityCard(fac, true))}
             </div>
-
-            {/* Carousel Bottom Interactive Indicator Dots */}
-            {filteredFacilities.length > 1 && (
-              <div className="tiya-carousel-dots" style={{ display: 'flex', justifyContent: 'center', gap: '8px', paddingTop: '16px' }}>
-                {filteredFacilities.map((fac, idx) => (
-                  <button
-                    key={fac.id}
-                    type="button"
-                    onClick={() => handleScrollFacilityToIndex(idx)}
-                    aria-label={`Chuyển tới cụm sân ${idx + 1}: ${fac.name}`}
-                    className={`tiya-carousel-dot ${facilityCarouselIndex === idx ? 'active' : ''}`}
-                    style={{
-                      height: '8px',
-                      borderRadius: '100px',
-                      border: 'none',
-                      cursor: 'pointer',
-                      transition: 'all 0.3s ease',
-                      width: facilityCarouselIndex === idx ? '36px' : '8px',
-                      background: facilityCarouselIndex === idx ? 'var(--primary-color)' : 'rgba(0,0,0,0.15)'
-                    }}
-                  />
-                ))}
-              </div>
-            )}
           </div>
         )}
 

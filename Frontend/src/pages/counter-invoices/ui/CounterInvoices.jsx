@@ -34,7 +34,7 @@ export function CounterInvoices() {
   const sequence = useRef(0);
 
   const { currentUser, role: authRole } = useAuth();
-  const currentRole = String(authRole || currentUser?.role || localStorage.getItem('role') || '').toUpperCase();
+  const currentRole = String(authRole || currentUser?.role || '').toUpperCase();
   const isManagerOrAdmin = currentRole === 'MANAGER' || currentRole === 'ADMIN';
   const [workspaceTab, setWorkspaceTab] = useState(() =>
     window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');

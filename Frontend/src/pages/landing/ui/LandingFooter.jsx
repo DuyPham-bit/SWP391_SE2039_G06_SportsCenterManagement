@@ -9,7 +9,7 @@ export function LandingFooter({
   return (
     <footer className="site-footer">
       <div className="footer-container tiya-reveal">
-        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(240px, 1fr))',gap:'40px',marginBottom:'36px'}}>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(auto-fit, minmax(min(240px, 100%), 1fr))',gap:'40px',marginBottom:'36px'}}>
           {/* Col 1: Brand */}
           <div>
             <div className="mb-4">

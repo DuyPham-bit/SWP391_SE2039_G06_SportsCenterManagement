@@ -24,9 +24,6 @@ export const coachApi = {
     method: 'PUT', body: {
       heightCm: data.heightCm === '' || data.heightCm == null ? null : Number(data.heightCm),
       weightKg: data.weightKg === '' || data.weightKg == null ? null : Number(data.weightKg),
-      gender: data.gender || null,
-      dateOfBirth: data.dateOfBirth || null,
-      fitnessLevel: data.fitnessLevel || null,
       medicalNote: data.medicalNote?.trim() || null
     }
   }),

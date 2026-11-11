@@ -11,6 +11,10 @@ import { useLandingContent } from '../../../entities/landing-content/index.js';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+// Login accepts what the backend accepts: email, phone number (any common spelling) or username.
+const PHONE_LOGIN_PATTERN = /^\+?[0-9 ().-]{8,20}$/;
+const USERNAME_PATTERN = /^[A-Za-z0-9._-]{3,100}$/;
+const isValidLoginIdentifier = value => EMAIL_PATTERN.test(value) || PHONE_LOGIN_PATTERN.test(value) || USERNAME_PATTERN.test(value);
 
 function readRememberedEmail() {
   try {
@@ -234,7 +238,7 @@ export function LoginPage() {
         googleButtonRef.current.innerHTML = '';
       }
 
-      const buttonWidth = Math.min(380, Math.max(260, googleButtonRef.current?.offsetWidth || 360));
+      const buttonWidth = Math.min(400, Math.max(260, googleButtonRef.current?.offsetWidth || 360));
       google.accounts.id.renderButton(googleButtonRef.current, {
         type: 'standard',
         theme: 'outline',
@@ -290,8 +294,8 @@ export function LoginPage() {
     if (isSubmitting) return;
     const email = loginEmail.trim();
     const errors = {};
-    if (!email) errors['login-email'] = 'Vui lòng nhập email của bạn.';
-    else if (!EMAIL_PATTERN.test(email)) errors['login-email'] = 'Email chưa đúng định dạng.';
+    if (!email) errors['login-email'] = 'Vui lòng nhập email hoặc số điện thoại.';
+    else if (!isValidLoginIdentifier(email)) errors['login-email'] = 'Email hoặc số điện thoại chưa đúng định dạng.';
     if (!loginPassword) errors['login-password'] = 'Vui lòng nhập mật khẩu.';
     else if (!isAsciiPassword(loginPassword)) errors['login-password'] = PASSWORD_CHARACTER_ERROR;
     if (hasValidationErrors(errors)) return;
@@ -306,7 +310,7 @@ export function LoginPage() {
       const rawMessage = error.payload?.message || error.message || 'Đăng nhập thất bại. Vui lòng thử lại.';
       const cleanMessage = rawMessage.replace(/\s*\[.*HTTP\s*\d+.*\]$/, '').trim();
       const finalMessage = (error.status === 401 || cleanMessage === 'Thông tin đăng nhập không hợp lệ.')
-        ? 'Email hoặc mật khẩu không chính xác.'
+        ? 'Email/số điện thoại hoặc mật khẩu không chính xác.'
         : (cleanMessage || 'Đăng nhập thất bại. Vui lòng thử lại.');
       setFormError(finalMessage);
     } finally {
@@ -524,7 +528,7 @@ export function LoginPage() {
         </div>
 
         {/* Khung Auth Card cao cấp nổi bật giữa màn hình */}
-        <div className="my-auto py-2 sm:py-3 w-full max-w-[430px] mx-auto z-10">
+        <div className="my-auto py-2 sm:py-3 w-full max-w-[464px] mx-auto z-10">
           <div className="bg-white rounded-3xl p-5 sm:p-8 transition-all duration-200">
             {/* Tab chuyển đổi Đăng nhập / Đăng ký Tiya Style */}
             <div className="flex gap-1 rounded-2xl bg-brand-sand-100 dark:bg-brand-navy-950 p-1 mb-5" role="group" aria-label="Chọn đăng nhập hoặc đăng ký">
@@ -600,9 +604,9 @@ export function LoginPage() {
 
             {/* Dải phân cách mỏng thanh lịch */}
             <div className="flex items-center gap-3 my-3 sm:my-4">
-              <span className="flex-1" />
+              <span className="flex-1 h-px bg-brand-navy-200" aria-hidden="true" />
               <span className="text-[13px] font-medium text-brand-navy-500">hoặc qua email</span>
-              <span className="flex-1" />
+              <span className="flex-1 h-px bg-brand-navy-200" aria-hidden="true" />
             </div>
 
             {formError && (
@@ -615,7 +619,7 @@ export function LoginPage() {
             {!isRegister ? (
               <form onSubmit={handleLoginSubmit} noValidate aria-labelledby="auth-heading" aria-busy={isSubmitting}>
                 <fieldset disabled={isSubmitting} className="space-y-3 min-w-0">
-                  <AuthField key="login-email" id="login-email" label="Email tài khoản" type="email" autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={150} placeholder="ban@example.com" required value={loginEmail} error={fieldErrors['login-email']} onChange={event => updateField('login-email', event.target.value, setLoginEmail)} />
+                  <AuthField key="login-email" id="login-email" label="Email hoặc số điện thoại" type="text" inputMode="email" autoComplete="username" autoCapitalize="none" spellCheck={false} maxLength={150} placeholder="ban@example.com hoặc 0912345678" required value={loginEmail} error={fieldErrors['login-email']} onChange={event => updateField('login-email', event.target.value, setLoginEmail)} />
                   <AuthField key="login-password" id="login-password" label="Mật khẩu" type="password" autoComplete="current-password" placeholder="Nhập mật khẩu của bạn" required value={loginPassword} error={fieldErrors['login-password']} onChange={event => updateField('login-password', event.target.value, setLoginPassword)} />
                   <div className="flex flex-wrap items-center justify-between gap-2 text-[13px] pt-0.5">
                     <label className="inline-flex items-center gap-1.5 text-brand-navy-600 cursor-pointer select-none">
@@ -639,12 +643,18 @@ export function LoginPage() {
                     <AuthField key="register-phone" id="register-phone" label="Số điện thoại" type="tel" autoComplete="tel" maxLength={20} placeholder="0901234567" value={regPhone} error={fieldErrors['register-phone']} onChange={event => updateField('register-phone', event.target.value, setRegPhone)} />
                   </div>
                   <AuthField key="register-email" id="register-email" label="Địa chỉ Email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={150} placeholder="ban@example.com" required value={regEmail} error={fieldErrors['register-email']} onChange={event => updateField('register-email', event.target.value, setRegEmail)} />
-                  <div className="grid sm:grid-cols-2 gap-2.5">
-                    <AuthField key="register-password" id="register-password" label="Mật khẩu" type="password" autoComplete="new-password" minLength={6} maxLength={128} placeholder="Tạo mật khẩu" hint="Từ 6 ký tự, có chữ hoa, thường, số và ký tự đặc biệt." required value={regPassword} error={fieldErrors['register-password']} onChange={event => updateField('register-password', event.target.value, setRegPassword)} />
-                    <AuthField key="register-confirm" id="register-confirm" label="Nhập lại mật khẩu" type="password" autoComplete="new-password" maxLength={128} placeholder="Xác nhận mật khẩu" required value={regConfirmPassword} error={fieldErrors['register-confirm']} onChange={event => updateField('register-confirm', event.target.value, setRegConfirmPassword)} />
-                  </div>
                   <div>
-                    <label htmlFor="register-agree" className="flex items-start gap-2 text-[11px] leading-4 text-brand-navy-600 cursor-pointer select-none">
+                    <div className="grid sm:grid-cols-2 gap-2.5 items-start">
+                      <AuthField key="register-password" id="register-password" label="Mật khẩu" type="password" autoComplete="new-password" minLength={6} maxLength={128} placeholder="Tạo mật khẩu" hintId="register-password-rule" required value={regPassword} error={fieldErrors['register-password']} onChange={event => updateField('register-password', event.target.value, setRegPassword)} />
+                      <AuthField key="register-confirm" id="register-confirm" label="Nhập lại mật khẩu" type="password" autoComplete="new-password" maxLength={128} placeholder="Xác nhận mật khẩu" required value={regConfirmPassword} error={fieldErrors['register-confirm']} onChange={event => updateField('register-confirm', event.target.value, setRegConfirmPassword)} />
+                    </div>
+                    <p id="register-password-rule" className="mt-1.5 flex items-center gap-1.5 text-xs leading-4 text-brand-navy-500">
+                      <span className="material-symbols-outlined text-[14px] text-brand-sage-700" aria-hidden="true">info</span>
+                      Từ 6 ký tự, có chữ hoa, thường, số và ký tự đặc biệt.
+                    </p>
+                  </div>
+                  <div className="pt-0.5">
+                    <label htmlFor="register-agree" className="flex items-start gap-2 text-xs leading-[18px] text-brand-navy-600 cursor-pointer select-none">
                       <input id="register-agree" type="checkbox" required checked={regAgree} aria-invalid={Boolean(fieldErrors['register-agree'])} aria-describedby={fieldErrors['register-agree'] ? 'register-agree-error' : undefined} onChange={event => updateField('register-agree', event.target.checked, setRegAgree)} className="w-3.5 h-3.5 shrink-0 mt-0.5 accent-[var(--primary-color)] rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]" />
                       <span>Tôi xác nhận thông tin là chính xác và đồng ý tạo tài khoản hội viên Olympic Sports Arena.</span>
                     </label>

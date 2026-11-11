@@ -49,7 +49,11 @@ export function AppLayout({ children, currentPath }) {
     setMobileOpen(false);
   };
 
-  const isMemberArea = (role === 'MEMBER' || currentUser?.role?.toUpperCase() === 'MEMBER');
+  const isMemberArea = (
+    role === 'MEMBER' ||
+    currentUser?.role?.toUpperCase() === 'MEMBER' ||
+    (currentPath && currentPath.startsWith('#/member'))
+  );
 
   const getBreadcrumbTitle = (path) => {
     if (!path) return language === 'en' ? 'Dashboard' : 'Bảng điều khiển';
@@ -137,6 +141,7 @@ export function AppLayout({ children, currentPath }) {
         onOpenProfile={() => setProfileModalOpen(true)}
         onToggleSidebar={handleToggleSidebar}
         isSidebarCollapsed={desktopCollapsed}
+        isMobileOpen={mobileOpen}
       />
 
       <div className="flex-1 flex">

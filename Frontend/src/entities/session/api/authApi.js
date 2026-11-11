@@ -1,7 +1,7 @@
 import { asArray } from '../../../shared/api/apiUtils.js';
 import { assertAuthVersion, beginAuthOperation, getAuthUser, getAuthVersion, setAuthUser } from '../../../shared/api/authState.js';
 import { apiRequest, clearApiSession, createApiSession, getApiSession, setApiSession } from '../../../shared/api/http.js';
-import { setStoredAvatar } from '../../../shared/lib/avatarHelper.js';
+import { dataUrlToFile, notifyAvatarChanged } from '../../../shared/lib/avatarHelper.js';
 
 async function loadCurrentUser(session = getApiSession(), version = getAuthVersion()) {
   if (!session) return null;
@@ -42,12 +42,34 @@ async function loadCurrentUser(session = getApiSession(), version = getAuthVersi
     packageExpiry: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageExpiry || null) : null,
     packageStartDate: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStartDate || null) : null,
     packageStatus: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageStatus || 'INACTIVE') : null,
+    // Member-owned details used by coach AI context (age, gender, level).
+    dateOfBirth: memberProfile?.dateOfBirth || null,
+    gender: memberProfile?.gender || null,
+    fitnessLevel: memberProfile?.fitnessLevel || null,
     scheduledSubscriptions,
+    mustChangePassword: false,
+    emailVerified: profile.isEmailVerified !== false,
     avatar: profile.avatar || null,
     avatarKey: profile.avatarKey || null
   };
   setAuthUser(user);
   return user;
+}
+
+/**
+ * Maps an avatar value from the UI to the profile API field:
+ * data URL → upload to storage and return its key; null/"" → "" (remove); existing URL/undefined → undefined (keep).
+ */
+async function resolveAvatarKey(value) {
+  if (value === undefined) return undefined;
+  if (!value) return '';
+  if (typeof value === 'string' && value.startsWith('data:image/')) {
+    const formData = new FormData();
+    formData.append('file', dataUrlToFile(value));
+    const uploaded = await apiRequest('r2-images/avatar', { method: 'POST', body: formData });
+    return uploaded.key;
+  }
+  return undefined;
 }
 
 async function loginAndLoad(path, body) {
@@ -88,13 +110,12 @@ export const authApi = {
     if (!Number.isSafeInteger(registeredCenterId) || registeredCenterId <= 0) {
       throw new Error('Cấu hình VITE_SPORTS_CENTER_ID thành ID trung tâm hợp lệ trước khi đăng ký hội viên.');
     }
-    const localPart = cleanEmail.split('@')[0];
-    const username = localPart.length >= 3 ? localPart : `user-${localPart}`;
     const version = beginAuthOperation();
     await apiRequest('auth/register', {
       method: 'POST', session: null,
+      // No username: the server derives a unique, valid one (the email local part may contain '+'
+      // or already exist on another domain).
       body: {
-        username,
         email: cleanEmail,
         password,
         emailOtp,
@@ -150,29 +171,39 @@ export const authApi = {
   async updateProfile(_userId, profileData) {
     const version = getAuthVersion();
     const session = getApiSession();
+    const avatarKey = await resolveAvatarKey(profileData?.avatar);
     await apiRequest('profile/me', {
       method: 'PATCH', session,
-      body: {
-        fullName: profileData.fullName,
-        phone: profileData.phone || null,
-        avatarKey: profileData.avatarKey ?? null
-      }
+      // avatarKey omitted = keep the stored photo; "" = remove; otherwise the newly uploaded key.
+      body: { fullName: profileData.fullName, phone: profileData.phone || null, ...(avatarKey === undefined ? {} : { avatarKey }) }
     });
     assertAuthVersion(version);
-    return loadCurrentUser(session, version);
+    const details = profileData.memberDetails;
+    if (details) {
+      // Gender, date of birth and fitness level live on the member profile (members/me).
+      await apiRequest('members/me', {
+        method: 'PATCH', session,
+        body: {
+          fullName: profileData.fullName,
+          email: null,
+          phone: null,
+          dateOfBirth: details.dateOfBirth || null,
+          gender: details.gender || null,
+          address: null,
+          fitnessLevel: details.fitnessLevel || null
+        }
+      });
+      assertAuthVersion(version);
+    }
+    const user = await loadCurrentUser(session, version);
+    if (avatarKey !== undefined) notifyAvatarChanged(user?.id, user?.avatar);
+    return user;
   },
 
-  async updateAvatar(userId, avatarUrl) {
-    const version = getAuthVersion();
-    const session = getApiSession();
-    setStoredAvatar(userId, avatarUrl || null);
+  /** value: new photo as data URL, null/"" to remove, or the current URL to keep. Saved in the DB. */
+  async updateAvatar(_userId, value) {
     const current = getAuthUser();
-    if (current && Number(current.id) === Number(userId)) {
-      const updated = { ...current, avatar: avatarUrl || null };
-      setAuthUser(updated);
-      return updated;
-    }
-    return loadCurrentUser(session, version);
+    return this.updateProfile(current?.id, { fullName: current?.fullName || '', phone: current?.phone || null, avatar: value ?? null });
   },
 
   getCurrentUser: loadCurrentUser,

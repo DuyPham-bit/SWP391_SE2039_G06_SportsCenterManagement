@@ -1,7 +1,6 @@
 import { mapMember } from '../../member/@x/staff.js';
 import { asArray, centerId } from '../../../shared/api/apiUtils.js';
 import { apiRequest } from '../../../shared/api/http.js';
-import { getStoredAvatar } from '../../../shared/lib/avatarHelper.js';
 
 function mapStaff(item) {
   return {
@@ -23,7 +22,7 @@ function mapStaff(item) {
     experienceYears: item.experienceYears,
     bio: item.bio,
     activeClassCount: item.activeClassCount == null ? null : Number(item.activeClassCount),
-    avatar: getStoredAvatar(item.userId)
+    avatar: item.avatarUrl || null
   };
 }
 

@@ -68,7 +68,10 @@ export function installMotion() {
   window.addEventListener('blur', release);
   window.addEventListener('scroll', release, { passive: true });
 
-  installContentSwap();
+  // Content swap mutation observer is intentionally disabled:
+  // It was intercepting post-load React renders (data arrival at ~900ms) and forcing opacity: 0,
+  // causing cards/widgets to flicker/blink shortly after page load.
+  // installContentSwap();
   installDashboardMotion();
 }
 

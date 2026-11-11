@@ -12,6 +12,7 @@ using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.CoreFlows;
 using SportsCenterManagement.BLL.DTOs.Payments;
 using SportsCenterManagement.BLL.Interfaces;
+using SportsCenterManagement.BLL.Services.Interfaces;
 using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
@@ -23,7 +24,8 @@ public sealed class PaymentService(
     IVnPayService vnPayService,
     IMoMoService moMoService,
     IConfiguration configuration,
-    ILogger<PaymentService>? logger = null) : IPaymentService
+    ILogger<PaymentService>? logger = null,
+    IBusinessClock? clock = null) : IPaymentService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IVnPayService _vnPayService = vnPayService;
@@ -32,6 +34,21 @@ public sealed class PaymentService(
     private readonly ILogger<PaymentService> _logger = logger ?? NullLogger<PaymentService>.Instance;
     // VNPay links expire after 15 minutes; 5 extra minutes covers a payment finished right at the deadline.
     private const int VnPayAbandonedAttemptMinutes = 20;
+    private readonly IBusinessClock _clock = clock ?? new BusinessClock(configuration);
+
+    // Only a payment that bought a package the member still holds (Active, not past its end date,
+    // including packages bought in advance) can be refunded. Payments with no purchased package
+    // (or whose package expired/was cancelled/refunded) are not refundable.
+    private IQueryable<long> RefundablePackagePaymentIds(DateOnly today)
+    {
+        var ctx = _unitOfWork.Context;
+        return from payment in ctx.Payments
+               where ctx.InvoiceItems.Any(item => item.InvoiceId == payment.InvoiceId && item.SubscriptionId != null &&
+                         ctx.MemberSubscriptions.Any(sub => sub.Id == item.SubscriptionId &&
+                             sub.MemberId == payment.MemberId && sub.Status == "Active" &&
+                             (sub.EndDate == null || sub.EndDate >= today)))
+               select payment.Id;
+    }
 
     public async Task<string> CreatePaymentUrlAsync(
         long memberId,
@@ -1030,10 +1047,21 @@ public sealed class PaymentService(
             .SingleOrDefaultAsync(cancellationToken)
             ?? throw BusinessException.NotFound("Không tìm thấy hồ sơ hội viên.");
 
-        var rows = await (from payment in _unitOfWork.Context.Payments.AsNoTracking()
-                          join invoice in _unitOfWork.Context.Invoices.AsNoTracking() on payment.InvoiceId equals invoice.Id
-                          where payment.MemberId == memberId && payment.PaymentStatus == "Succeeded"
+        var today = _clock.Today;
+        var refundable = RefundablePackagePaymentIds(today);
+        var ctx = _unitOfWork.Context;
+        var rows = await (from payment in ctx.Payments.AsNoTracking()
+                          join invoice in ctx.Invoices.AsNoTracking() on payment.InvoiceId equals invoice.Id
+                          where payment.MemberId == memberId && payment.PaymentStatus == "Succeeded" &&
+                                refundable.Contains(payment.Id)
                           orderby payment.PaidAt descending, payment.Id descending
+                          let package = (from item in ctx.InvoiceItems
+                                         join sub in ctx.MemberSubscriptions on item.SubscriptionId equals sub.Id
+                                         join pkg in ctx.MembershipPackages on sub.PackageId equals pkg.Id
+                                         where item.InvoiceId == invoice.Id && sub.Status == "Active" &&
+                                               (sub.EndDate == null || sub.EndDate >= today)
+                                         orderby sub.Id
+                                         select new { pkg.Name, sub.StartDate, sub.EndDate }).FirstOrDefault()
                           select new
                           {
                               payment.Id,
@@ -1041,6 +1069,9 @@ public sealed class PaymentService(
                               payment.Amount,
                               payment.PaymentMethod,
                               payment.PaidAt,
+                              PackageName = package!.Name,
+                              PackageStartDate = package.StartDate,
+                              PackageEndDate = package.EndDate,
                               Reserved = _unitOfWork.Context.PaymentRefunds
                                   .Where(refund => refund.PaymentId == payment.Id &&
                                       (refund.Status == "Pending" || refund.Status == "Approved" || refund.Status == "Succeeded"))
@@ -1049,7 +1080,8 @@ public sealed class PaymentService(
 
         return rows.Where(row => row.Amount > row.Reserved)
             .Select(row => new RefundEligiblePaymentResponse(row.Id, row.InvoiceNumber, row.Amount,
-                row.Amount - row.Reserved, row.PaymentMethod, row.PaidAt))
+                row.Amount - row.Reserved, row.PaymentMethod, row.PaidAt,
+                row.PackageName, row.PackageStartDate, row.PackageEndDate))
             .ToArray();
     }
 
@@ -1112,6 +1144,8 @@ public sealed class PaymentService(
             ?? throw BusinessException.NotFound("Không tìm thấy giao dịch thuộc hội viên hiện tại.");
         if (payment.PaymentStatus != "Succeeded")
             throw BusinessException.Conflict("Chỉ giao dịch đã thanh toán thành công mới có thể yêu cầu hoàn tiền.");
+        if (!await RefundablePackagePaymentIds(_clock.Today).ContainsAsync(payment.Id, cancellationToken))
+            throw BusinessException.Conflict("Chỉ có thể yêu cầu hoàn tiền cho gói tập bạn đã mua và còn hiệu lực.");
 
         var reserved = await _unitOfWork.Context.PaymentRefunds
             .Where(refund => refund.PaymentId == payment.Id &&

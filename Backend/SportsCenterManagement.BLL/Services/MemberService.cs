@@ -15,7 +15,8 @@ using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services;
 
-public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authService, IBusinessClock clock) : IMemberService
+public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authService, IBusinessClock clock,
+    MediaUrlBuilder? mediaUrls = null) : IMemberService
 {
     public async Task<MembersResponses.MemberProfileResponse> GetMeAsync(long userId, CancellationToken cancellationToken = default)
     {
@@ -75,6 +76,11 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
             throw new ValidationException("Giới tính không hợp lệ.");
         }
 
+        if (!CoachWorkflowRules.TryCanonicalFitnessLevel(request.FitnessLevel, out var fitnessLevel))
+        {
+            throw new ValidationException("Trình độ không hợp lệ (Beginner, Intermediate, Advanced, Athlete).");
+        }
+
         var phone = PhoneNumberNormalization.Normalize(request.Phone);
         if (phone is not null && !Regex.IsMatch(phone, @"^\+?[0-9]{8,15}$"))
         {
@@ -122,6 +128,8 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
             profile.Gender = Normalize(request.Gender);
         if (request.Address is not null)
             profile.Address = Normalize(request.Address);
+        if (fitnessLevel is not null)
+            profile.FitnessLevel = fitnessLevel;
         profile.UpdatedAt = DateTime.UtcNow;
         if (email is not null)
         {
@@ -198,6 +206,8 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         CancellationToken cancellationToken = default)
     {
         var term = query.Trim();
+        // "+84 912…" must find the stored "0912…".
+        var phoneTerm = PhoneNumberNormalization.SearchTerm(term);
         var normalizedSort = sortBy.Trim().ToLowerInvariant();
         var normalizedDirection = sortDirection.Trim().ToLowerInvariant();
         if (centerId <= 0 || (term.Length > 0 && term.Length < 2) || query.Length > 100
@@ -220,7 +230,7 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
                   && (term == "" || profile.MemberCode.Contains(term)
                       || profile.FullName.Contains(term)
                       || user.Email.Contains(term)
-                      || (user.Phone != null && user.Phone.Contains(term)))
+                      || (user.Phone != null && user.Phone.Contains(phoneTerm)))
             let normalizedName = profile.FullName.Trim()
             let reversedName = SportsCenterDbContext.Reverse(normalizedName)
             let separatorIndex = reversedName.IndexOf(" ")
@@ -235,7 +245,8 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
                 ProfileId = profile.Id,
                 Response = new MembersResponses.MemberProfileResponse(profile.Id, user.Id, profile.MemberCode, user.Username,
                     user.Email, user.Phone, profile.FullName, profile.DateOfBirth, profile.Gender,
-                    profile.Address, profile.CreatedAt, user.Status)
+                    profile.Address, profile.CreatedAt, user.Status, null, null, null, null, null, null,
+                    true, user.AvatarKey)
             };
         var totalCount = await matches.CountAsync(cancellationToken);
         var ordered = normalizedSort == "givenname"
@@ -316,6 +327,37 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
         {
             throw new UnauthorizedAccessException("Thành viên và gói tập không thuộc cùng trung tâm.");
         }
+    }
+
+    public async Task<long> GetMemberUserIdForStaffAsync(
+        long actorUserId, long centerId, long memberId, CancellationToken cancellationToken = default)
+    {
+        await EnsureCenterStaffAsync(actorUserId, centerId, cancellationToken);
+        return await unitOfWork.Context.MemberProfiles.AsNoTracking()
+            .Where(profile => profile.Id == memberId && profile.CenterId == centerId)
+            .Select(profile => (long?)profile.UserId).SingleOrDefaultAsync(cancellationToken)
+            ?? throw new KeyNotFoundException("Không tìm thấy hội viên tại trung tâm này.");
+    }
+
+    public async Task<(MembersResponses.MemberProfileResponse Member, string? PreviousKey)> SetMemberAvatarAsync(
+        long actorUserId, long centerId, long memberId, string? avatarKey, CancellationToken cancellationToken = default)
+    {
+        var userId = await GetMemberUserIdForStaffAsync(actorUserId, centerId, memberId, cancellationToken);
+        if (avatarKey is not null && (!avatarKey.StartsWith($"avatars/{userId}/", StringComparison.Ordinal)
+                                      || avatarKey.Contains("../", StringComparison.Ordinal)))
+            throw new ValidationException("Đường dẫn ảnh hội viên không hợp lệ.");
+        var profile = await unitOfWork.Repository<MemberProfile>().GetByIdAsync(memberId, cancellationToken)
+            ?? throw new KeyNotFoundException("Không tìm thấy hội viên.");
+        var user = await unitOfWork.Repository<User>().GetByIdAsync(userId, cancellationToken)
+            ?? throw new KeyNotFoundException("Không tìm thấy tài khoản.");
+        var previousKey = user.AvatarKey;
+        user.AvatarKey = avatarKey;
+        user.UpdatedAt = DateTime.UtcNow;
+        unitOfWork.Repository<User>().Update(user);
+        AuditLogWriter.Add(unitOfWork, actorUserId, centerId, "member.avatar.updated.by_staff", "User", user.Id,
+            new { HadAvatar = previousKey is not null }, new { HasAvatar = avatarKey is not null });
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return (Map(profile, user), previousKey == avatarKey ? null : previousKey);
     }
 
     public async Task EnsureCanBuyPackageAsync(long userId, long packageId, CancellationToken cancellationToken = default)
@@ -414,7 +456,8 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
             where user.Id == userId && user.Status == "Active"
             select new MembersResponses.MemberProfileResponse(profile.Id, user.Id, profile.MemberCode, user.Username,
                 user.Email, user.Phone, profile.FullName, profile.DateOfBirth, profile.Gender,
-                profile.Address, profile.CreatedAt, user.Status))
+                profile.Address, profile.CreatedAt, user.Status, null, null, null, null, null, null,
+                true, user.AvatarKey, profile.FitnessLevel))
             .SingleOrDefaultAsync(cancellationToken);
 
         if (item == null) return null;
@@ -501,16 +544,20 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
                 PackageStatus = pkgStatus,
                 PackageId = currentSub?.PackageId,
                 SubscriptionId = currentSub?.Id,
-                PackageStartDate = currentSub?.StartDate
+                PackageStartDate = currentSub?.StartDate,
+                // The SQL projection carried the raw avatar key here; expose the public URL instead.
+                AvatarUrl = mediaUrls?.PublicUrl(m.AvatarUrl)
             };
         }).ToList();
     }
 
-    private static MembersResponses.MemberProfileResponse Map(MemberProfile profile, User user)
+    private MembersResponses.MemberProfileResponse Map(MemberProfile profile, User user)
     {
         return new MembersResponses.MemberProfileResponse(profile.Id, user.Id, profile.MemberCode, user.Username,
             user.Email, user.Phone, profile.FullName, profile.DateOfBirth, profile.Gender,
-            profile.Address, profile.CreatedAt, user.Status);
+            profile.Address, profile.CreatedAt, user.Status,
+            AvatarUrl: mediaUrls?.PublicUrl(user.AvatarKey),
+            FitnessLevel: profile.FitnessLevel);
     }
 
     private static string? Normalize(string? value)

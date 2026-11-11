@@ -25,7 +25,7 @@ export function AdminHeroBanner({ TABS, loadA, loadAFn, loadC, loadCFn, loadM, l
       </svg>
 
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-        <div>
+        <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2 mb-2.5">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-white/20 text-white uppercase backdrop-blur-md border border-white/30 shadow-xs">
               <span className="w-2 h-2 rounded-full bg-brand-sage-300 animate-pulse" />
@@ -44,25 +44,25 @@ export function AdminHeroBanner({ TABS, loadA, loadAFn, loadC, loadCFn, loadM, l
         </div>
 
         {/* Quick Metrics & Refresh */}
-        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 lg:shrink-0">
           <div className="grid grid-cols-4 gap-2 sm:gap-3 bg-white/15 dark:bg-brand-navy-900/40 p-2.5 sm:p-3 rounded-2xl border border-white/25 backdrop-blur-md shadow-xs">
             <div className="text-center px-1 sm:px-2 min-w-0">
               <div className="text-lg sm:text-2xl font-black text-white">{ov?.activeCenterCount ?? '—'}</div>
-              <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-normal sm:tracking-wide font-bold leading-tight">Cơ Sở</div>
+              <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-normal sm:tracking-wide font-bold leading-tight whitespace-nowrap">Cơ Sở</div>
             </div>
             <div className="text-center px-1 sm:px-2 min-w-0 border-l border-white/20">
               <div className="text-lg sm:text-2xl font-black text-white">{ov?.activeManagerCount ?? '—'}</div>
-              <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-normal sm:tracking-wide font-bold leading-tight">Quản Lý</div>
+              <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-normal sm:tracking-wide font-bold leading-tight whitespace-nowrap">Quản Lý</div>
             </div>
             <div className="text-center px-1 sm:px-2 min-w-0 border-l border-white/20">
               <div className={`text-lg sm:text-2xl font-black ${(ov?.lockedAccountCount || 0) > 0 ? 'text-brand-sand-300' : 'text-brand-sage-300'}`}>
                 {ov?.lockedAccountCount ?? '0'}
               </div>
-              <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-normal sm:tracking-wide font-bold leading-tight">Bị Khóa</div>
+              <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-normal sm:tracking-wide font-bold leading-tight whitespace-nowrap">Bị Khóa</div>
             </div>
             <div className="text-center px-1 sm:px-2 min-w-0 border-l border-white/20">
               <div className="text-lg sm:text-2xl font-black text-white">{ov?.totalAccountCount ?? '—'}</div>
-              <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-normal sm:tracking-wide font-bold leading-tight">Tài Khoản</div>
+              <div className="text-[9px] sm:text-[10px] text-white/80 uppercase tracking-normal sm:tracking-wide font-bold leading-tight whitespace-nowrap">Tài Khoản</div>
             </div>
           </div>
 
@@ -75,7 +75,7 @@ export function AdminHeroBanner({ TABS, loadA, loadAFn, loadC, loadCFn, loadM, l
             }}
             whileHover={{ y: -1, scale: 1.02 }}
             whileTap={{ scale: 0.98 }}
-            className="flex items-center justify-center gap-2 px-4 py-3 bg-white/20 hover:bg-white/30 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all border border-white/30 backdrop-blur-md shadow-xs cursor-pointer"
+            className="flex items-center justify-center gap-2 px-4 py-3 shrink-0 whitespace-nowrap bg-white/20 hover:bg-white/30 text-white rounded-2xl text-xs font-bold uppercase tracking-wider transition-all border border-white/30 backdrop-blur-md shadow-xs cursor-pointer"
             title="Làm mới dữ liệu từ máy chủ"
           >
             <span className={`material-symbols-outlined text-[18px] ${loadOv || loadC || loadM || loadA ? 'animate-spin' : ''}`}>

@@ -123,12 +123,14 @@ export function TypewriterHeroHeading({ heroBadge, heroTitle }) {
 
       {/* 3. Hiệu ứng Typewriter gõ chữ với màu vàng đồng Warm Gold thương hiệu */}
       <div
-        className="scms-hero-typewriter mt-4 sm:mt-5 min-h-[38px] flex items-center justify-center text-xs sm:text-base md:text-lg font-bold tracking-wider uppercase text-white"
+        className="scms-hero-typewriter mt-4 sm:mt-5 min-h-[56px] sm:min-h-[38px] flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-0 text-center text-xs sm:text-base md:text-lg font-bold tracking-wider uppercase text-white"
         style={{ fontFamily: "'Archivo', 'Be Vietnam Pro', system-ui, sans-serif" }}
       >
-        <span className="text-white/85 mr-2" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
+        {/* Phones: label on its own line so the typed phrase gets the full width instead of a squeezed column. */}
+        <span className="text-white/85 sm:mr-2 whitespace-nowrap" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
           {isEn ? 'READY TO:' : 'SẴN SÀNG ĐỂ:'}
         </span>
+        <span className="inline">
         <span
           className="font-extrabold"
           style={{
@@ -139,6 +141,7 @@ export function TypewriterHeroHeading({ heroBadge, heroTitle }) {
           {displayedText}
         </span>
         <span className="scms-hero-cursor ml-1">|</span>
+        </span>
       </div>
     </div>
   );

@@ -7,6 +7,7 @@ export function ScheduleManager({
   row,
   schedules,
   rooms,
+  centerHours = { open: '05:00', close: '22:00' },
   sports = [],
   form,
   change,
@@ -484,8 +485,8 @@ export function ScheduleManager({
                   required
                   type="time"
                   name="startTime"
-                  min="05:00"
-                  max="22:00"
+                  min={centerHours.open}
+                  max={centerHours.close}
                   value={form.startTime || '08:00'}
                   onChange={handleStartTimeChange}
                   className="w-full p-2 bg-brand-navy-50 dark:bg-brand-navy-800 border border-brand-navy-300 dark:border-brand-navy-700 rounded-xl text-xs font-bold text-brand-navy-900 dark:text-brand-navy-100 focus:ring-2 focus:ring-brand-teal-600"
@@ -500,8 +501,8 @@ export function ScheduleManager({
                   required
                   type="time"
                   name="endTime"
-                  min="05:00"
-                  max="22:00"
+                  min={centerHours.open}
+                  max={centerHours.close}
                   value={form.endTime || '09:30'}
                   onChange={change}
                   className="w-full p-2 bg-brand-navy-50 dark:bg-brand-navy-800 border border-brand-navy-300 dark:border-brand-navy-700 rounded-xl text-xs font-bold text-brand-navy-900 dark:text-brand-navy-100 focus:ring-2 focus:ring-brand-teal-600"
@@ -533,8 +534,8 @@ export function ScheduleManager({
             </div>
             <p className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400">
               {isEn
-                ? `Center hours: 05:00–22:00. Maximum ${durationMinutes} minutes per session.`
-                : `Giờ trung tâm: 05:00–22:00. Tối đa ${durationMinutes} phút mỗi buổi.`}
+                ? `Center hours: ${centerHours.open}–${centerHours.close}. Maximum ${durationMinutes} minutes per session.`
+                : `Giờ trung tâm: ${centerHours.open}–${centerHours.close}. Tối đa ${durationMinutes} phút mỗi buổi.`}
             </p>
           </div>
 

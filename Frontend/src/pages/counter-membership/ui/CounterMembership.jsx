@@ -6,10 +6,15 @@ import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
 import { createIdempotencyKey } from '../../../shared/api/http.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useAuth } from '../../../entities/session/index.js';
+import { hasCapability } from '../../../entities/permission/index.js';
 import { openPaymentCheckout } from '../../../features/payment-checkout/index.js';
 
 export function CounterMembership() {
   const { language } = useLanguage();
+  const { role } = useAuth();
+  // Member search is served by a different capability than this page (lookup_member).
+  const canLookup = hasCapability(role, 'lookup_member');
   const isEn = language === 'en';
 
   const { showSuccess, showError, showInfo, showWarning } = useToast();
@@ -269,6 +274,13 @@ export function CounterMembership() {
             {isEn ? 'Select Member for Sign-up / Renewal' : 'Chọn Hội Viên Cần Đăng Ký / Gia Hạn'}
           </h2>
 
+          {!canLookup ? (
+            <p role="status" className="rounded-xl border border-brand-sand-200 dark:border-brand-sand-800 bg-brand-sand-50 dark:bg-brand-navy-800/60 p-3 text-xs text-brand-navy-700 dark:text-brand-navy-200">
+              {isEn
+                ? 'Your account is not allowed to look up members. Ask the center manager to grant "Look up member".'
+                : 'Tài khoản chưa được cấp quyền tra cứu hội viên. Vui lòng nhờ Quản lý trung tâm bật quyền "Tra cứu hội viên".'}
+            </p>
+          ) : (
           <form onSubmit={handleSearchMembers} className="flex gap-2">
             <input
               value={memberSearchQuery}
@@ -284,6 +296,7 @@ export function CounterMembership() {
               {memberSearchLoading ? (isEn ? 'Searching...' : 'Đang tìm...') : (isEn ? 'Search' : 'Tìm hội viên')}
             </button>
           </form>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {members.map(m => (

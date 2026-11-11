@@ -45,6 +45,26 @@ public sealed class LandingContentController(LandingContentService contentServic
         return Ok(result);
     }
 
+    [HttpGet("draft")]
+    [Authorize(Roles = "ADMIN,MANAGER")]
+    [ResponseCache(NoStore = true, Location = ResponseCacheLocation.None)]
+    public async Task<ActionResult<LandingContentResponse>> GetDraft(CancellationToken ct) =>
+        Ok(await contentService.GetDraftAsync(ct));
+
+    [HttpPut("draft")]
+    [Authorize(Roles = "ADMIN,MANAGER")]
+    [RequestSizeLimit(2 * 1024 * 1024)]
+    public async Task<ActionResult<LandingContentResponse>> SaveDraft(SaveRequest request, CancellationToken ct) =>
+        Ok(await contentService.SaveDraftAsync(request.Content, CurrentUserId, ct));
+
+    [HttpDelete("draft")]
+    [Authorize(Roles = "ADMIN,MANAGER")]
+    public async Task<IActionResult> DiscardDraft(CancellationToken ct)
+    {
+        await contentService.DiscardDraftAsync(ct);
+        return NoContent();
+    }
+
     // Editing a linked sport's description from the homepage needs the same center access as sport management.
     private async Task EnsureSportCenterAccessAsync(long centerId, CancellationToken ct)
     {

@@ -22,7 +22,8 @@ public sealed class AuthController(
     SportsCenterDbContext dbContext,
     JwtTokenIssuer tokenIssuer,
     IAuthService authService,
-    PasswordResetEmailSender resetEmail) : ControllerBase
+    PasswordResetEmailSender resetEmail,
+    IConfiguration configuration) : ControllerBase
 {
     [HttpPost("register")]
     [EnableRateLimiting("password-reset")]
@@ -49,7 +50,7 @@ public sealed class AuthController(
         }
         catch (DbUpdateException)
         {
-            return Conflict(new { message = "Username, email, or phone number is already in use." });
+            return Conflict(new { message = "Email hoặc số điện thoại đã được sử dụng cho một tài khoản khác." });
         }
     }
 
@@ -91,7 +92,7 @@ public sealed class AuthController(
         dbContext.EmailVerificationTokens.Add(verification);
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
-        if (!await resetEmail.SendVerificationAsync(verification, otp, cancellationToken))
+        if (!await resetEmail.SendVerificationAsync(verification, otp, cancellationToken, RequestLocation.Describe(Request, configuration)))
             return StatusCode(503, new { message = "Chưa gửi được email xác thực. Vui lòng thử lại sau." });
         return Ok(new { message = "Vui lòng kiểm tra hộp thư và thư rác để tiếp tục đăng ký. Mã xác thực có hạn 5 phút." });
     }
@@ -108,7 +109,7 @@ public sealed class AuthController(
         var loginIdentifier = request.Email.Trim();
         if (string.IsNullOrWhiteSpace(loginIdentifier))
         {
-            return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác." });
+            return Unauthorized(new { message = "Email/số điện thoại hoặc mật khẩu không chính xác." });
         }
 
         SportsCenterManagement.BLL.DTOs.Auth.Responses.AuthenticatedUser authenticated;
@@ -129,7 +130,7 @@ public sealed class AuthController(
         catch (InvalidOperationException)
         {
             // Keep unknown accounts and invalid credentials indistinguishable to callers.
-            return Unauthorized(new { message = "Email hoặc mật khẩu không chính xác." });
+            return Unauthorized(new { message = "Email/số điện thoại hoặc mật khẩu không chính xác." });
         }
 
         return Ok(CreateAuthResponse(authenticated));
@@ -191,7 +192,7 @@ public sealed class AuthController(
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        if (resetEmail.IsConfigured && !await resetEmail.SendAsync(user, reset, otp, cancellationToken))
+        if (resetEmail.IsConfigured && !await resetEmail.SendAsync(user, reset, otp, cancellationToken, location: RequestLocation.Describe(Request, configuration)))
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new { message = "Chưa gửi được mã xác thực. Vui lòng thử lại sau." });
 
         return Ok(new PasswordResetRequestResponse(
@@ -335,7 +336,7 @@ public sealed class AuthController(
         await dbContext.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        if (!await resetEmail.SendAsync(user, reset, otp, cancellationToken, "approve password change"))
+        if (!await resetEmail.SendAsync(user, reset, otp, cancellationToken, "approve password change", RequestLocation.Describe(Request, configuration)))
         {
             return StatusCode(StatusCodes.Status503ServiceUnavailable, new
             {

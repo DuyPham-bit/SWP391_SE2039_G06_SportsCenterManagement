@@ -7,6 +7,7 @@ import { aiApi } from '../../../entities/ai-chat/index.js';
 import { getMemberAIChatStorageKey } from '../../../shared/lib/memberAiChatStorage.js';
 import { hasCorruptedEncoding, parseFormattedMarkdown } from './chatMarkdown.jsx';
 import { ArenaMascot } from '../../../shared/ui/ArenaMascot.jsx';
+import { parseApiDate } from '../../../shared/lib/dateTime.js';
 // Global helper to trigger opening the AI chat popup from anywhere in the app
 export function openMemberAIChat(prompt = '') {
   window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP', { detail: { prompt } }));
@@ -27,14 +28,14 @@ export function MemberAIChatPopup() {
     id: 'welcome',
     sender: 'ai',
     text: en
-      ? `Hello **${currentUser?.fullName || 'there'}**! I am your Olympic-standard **SCMS AI Sports Assistant**. I am always ready to help you:
+      ? `Hello **${currentUser?.fullName || 'there'}**! I am your **Olympic AI Assistant**. I am always ready to help you:
 * **Look up class & swimming schedules** today and throughout the week.
 * **Consult membership packages** & member privileges.
 * **Suggest workout & nutrition plans** tailored to your fitness goals.
 * **Guide QR card check-in, scheduling & support**.
 
 What would you like to explore today?`
-      : `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi luôn sẵn sàng hỗ trợ bạn ngay trong popup này:
+      : `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý AI Olympic**. Tôi luôn sẵn sàng hỗ trợ bạn ngay trong popup này:
 * **Tra cứu lịch lớp & ca bơi** hôm nay hoặc trong tuần.
 * **Tư vấn giá gói tập** & quyền lợi hội viên.
 * **Gợi ý bài tập & chế độ dinh dưỡng** theo thể trạng.
@@ -107,35 +108,59 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
-  // Initialize bubble position if null
+  // History is stored in the DB; this tab cache is empty in a new tab or after signing in again,
+  // so reload the latest conversation from the server instead of starting from scratch.
   useEffect(() => {
-    if (!bubblePos && typeof window !== 'undefined') {
-      const defaultX = Math.max(16, window.innerWidth - 76);
-      const defaultY = Math.max(16, window.innerHeight - 86);
-      setBubblePos({ x: defaultX, y: defaultY });
-    }
-  }, []);
+    if (!userId || conversationId || messages.some(m => m.id !== 'welcome')) return undefined;
+    const controller = new AbortController();
+    aiApi.getLatest({ signal: controller.signal })
+      .then(result => {
+        if (!result?.conversationId || !Array.isArray(result.messages) || result.messages.length === 0) return;
+        const restored = result.messages
+          .filter(m => typeof m.text === 'string' && !hasCorruptedEncoding(m.text))
+          .map(m => ({
+            id: `db-${m.id}`,
+            sender: m.sender === 'user' ? 'user' : 'ai',
+            text: m.text,
+            // DB timestamps are UTC without a "Z": parseApiDate interprets them correctly.
+            time: parseApiDate(m.createdAt).toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
+          }));
+        setConversationId(String(result.conversationId));
+        setMessages([getInitialMessage(), ...restored]);
+      })
+      .catch(() => { /* keep the welcome message; history stays available on the server */ });
+    return () => controller.abort();
+  }, [userId]); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Clamping positions on window resize
+  const clampBubblePos = (pos) => {
+    if (!pos || typeof window === 'undefined' || typeof pos.x !== 'number' || typeof pos.y !== 'number' || isNaN(pos.x) || isNaN(pos.y)) {
+      return null;
+    }
+    const x = Math.min(Math.max(12, pos.x), window.innerWidth - 68);
+    const y = Math.min(Math.max(12, pos.y), window.innerHeight - 68);
+    return { x, y };
+  };
+
+  const clampWindowPos = (pos) => {
+    if (!pos || typeof window === 'undefined' || typeof pos.x !== 'number' || typeof pos.y !== 'number' || isNaN(pos.x) || isNaN(pos.y)) {
+      return null;
+    }
+    const width = Math.min(420, window.innerWidth - 32);
+    const height = Math.min(600, window.innerHeight - 80);
+    const x = Math.min(Math.max(8, pos.x), window.innerWidth - width - 8);
+    const y = Math.min(Math.max(8, pos.y), window.innerHeight - height - 8);
+    return { x, y };
+  };
+
+  // Clamping positions on mount and on window resize to ensure widget is never off-screen
   useEffect(() => {
-    const handleResize = () => {
-      setBubblePos(prev => {
-        if (!prev) return prev;
-        const x = Math.min(Math.max(12, prev.x), window.innerWidth - 68);
-        const y = Math.min(Math.max(12, prev.y), window.innerHeight - 68);
-        return { x, y };
-      });
-      setWindowPos(prev => {
-        if (!prev) return prev;
-        const width = Math.min(420, window.innerWidth - 32);
-        const height = Math.min(600, window.innerHeight - 80);
-        const x = Math.min(Math.max(8, prev.x), window.innerWidth - width - 8);
-        const y = Math.min(Math.max(8, prev.y), window.innerHeight - height - 8);
-        return { x, y };
-      });
+    const performClamp = () => {
+      setBubblePos(prev => clampBubblePos(prev));
+      setWindowPos(prev => clampWindowPos(prev));
     };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    performClamp();
+    window.addEventListener('resize', performClamp);
+    return () => window.removeEventListener('resize', performClamp);
   }, []);
 
   // Drag handler for floating bubble / minimized bar
@@ -290,7 +315,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       localStorage.removeItem('scms_chat_bubble_pos');
       localStorage.removeItem('scms_chat_window_pos');
     } catch {}
-    setBubblePos({ x: Math.max(16, window.innerWidth - 76), y: Math.max(16, window.innerHeight - 86) });
+    setBubblePos(null);
     setWindowPos(null);
   };
 
@@ -540,15 +565,15 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               setIsMinimized(false);
               setUnreadCount(0);
             }}
-            aria-label={isEn ? "Open SCMS AI Sports Assistant (Drag to reposition)" : "Mở Trợ lý Thể thao AI SCMS (Kéo để di chuyển)"}
-            className={`group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-brand-navy-900 text-white border border-brand-sage-500/60 shadow-xl hover:shadow-2xl hover:border-brand-sage-500 hover:scale-105 active:scale-95 transition-all duration-200 font-sans ${
+            aria-label={isEn ? "Open AI Assistant" : "Mở Trợ lý AI"}
+            className={`group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-brand-navy-900 text-white border border-brand-sage-500/60 shadow-xl hover:shadow-2xl hover:border-brand-sage-500 hover:scale-105 active:scale-95 transition-all duration-200 font-sans focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-500 ${
               isBubbleMoving ? 'ring-4 ring-brand-sage-500/50 shadow-2xl' : ''
             }`}
           >
             {/* Outer pulsating glow ring */}
             <span className="absolute -inset-0.5 rounded-full bg-gradient-to-tr from-brand-sage-500 via-brand-sand-300 to-brand-sage-500 opacity-30 blur-sm group-hover:opacity-75 transition duration-300 animate-pulse pointer-events-none" />
 
-            {/* Inner Icon */}
+            {/* Inner 2D Mascot */}
             <div className="relative z-10 w-full h-full rounded-full flex items-center justify-center pointer-events-none">
               <ArenaMascot size={46} active={isAsking} />
             </div>
@@ -559,7 +584,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
             </div>
 
             {/* Online Green Pulse Indicator */}
-            <span className="absolute top-0 right-0 w-3.5 h-3.5 rounded-full bg-brand-sage-500 border-2 border-brand-navy-900 shadow-sm flex items-center justify-center z-20 pointer-events-none">
+            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-brand-sage-500 border-2 border-brand-navy-900 shadow-sm flex items-center justify-center z-20 pointer-events-none">
               <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
             </span>
 
@@ -571,10 +596,10 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
             )}
 
             {/* Sleek Tooltip on hover (appears to the left) */}
-            <div className="hidden sm:flex absolute right-full mr-3 items-center gap-2 px-3 py-1.5 rounded-xl bg-brand-navy-900/95 backdrop-blur-md border border-brand-sage-500/40 text-white text-xs font-semibold whitespace-nowrap shadow-xl opacity-0 translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200">
+            <div className="hidden sm:flex absolute right-full mr-2.5 items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-navy-900/95 backdrop-blur-md border border-brand-sage-500/40 text-white text-xs font-semibold whitespace-nowrap shadow-xl opacity-0 translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0 transition-all duration-200">
               <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px] text-brand-sage-500">drag_pan</span>
-                <span>{isEn ? "SCMS AI Assistant (Drag anywhere)" : "Trợ Lý AI SCMS (Kéo để di chuyển)"}</span>
+                <span className="material-symbols-outlined text-[14px] text-brand-sage-500">auto_awesome</span>
+                <span>{isEn ? "Olympic AI" : "Trợ lý AI Olympic"}</span>
               </span>
               <span className="px-1.5 py-0.5 rounded bg-brand-sand-300 text-brand-navy-900 text-[9px] font-black uppercase tracking-wider">
                 PRO
@@ -606,13 +631,13 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                 setIsMinimized(false);
               }}
               className="no-bubble-drag flex items-center gap-2 text-left cursor-pointer hover:opacity-90 transition"
-              title={isEn ? "Click to open AI Assistant" : "Nhấn để mở lại Trợ lý AI"}
+              title={isEn ? "Click to open Olympic AI" : "Nhấn để mở lại Trợ lý AI Olympic"}
             >
               <div className="w-7 h-7 rounded-full bg-brand-navy-700 flex items-center justify-center shrink-0 border border-brand-sage-500/40">
                 <ArenaMascot size={24} active={isAsking} />
               </div>
               <span className="text-xs font-bold text-white flex items-center gap-1.5">
-                AI SCMS
+                AI Olympic
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-sage-500 animate-pulse" />
               </span>
             </button>
@@ -665,33 +690,32 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
             {/* Ambient Glow */}
             <div className="absolute top-0 right-1/4 w-32 h-16 bg-brand-sage-500/15 blur-2xl pointer-events-none" />
 
-            <div className="relative z-10 flex items-center gap-2.5 pointer-events-none">
-              <span className="material-symbols-outlined text-[16px] text-brand-navy-400 hover:text-white transition" title={isEn ? "Drag handle" : "Tay cầm kéo thả"}>
+            <div className="relative z-10 flex items-center gap-2 pointer-events-none min-w-0">
+              <span className="material-symbols-outlined text-[16px] text-brand-navy-400 hover:text-white transition shrink-0" title={isEn ? "Drag handle" : "Tay cầm kéo thả"}>
                 drag_indicator
               </span>
 
-              <div className="relative">
-                <div className="w-9 h-9 rounded-2xl bg-gradient-to-tr from-brand-sage-500 to-brand-sand-300 p-0.5 shadow-md flex items-center justify-center">
-                  <div className="w-full h-full rounded-[14px] bg-brand-navy-900 flex items-center justify-center text-white">
-                    <ArenaMascot size={30} active={isAsking} />
+              <div className="relative shrink-0">
+                <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-sage-500 to-brand-sand-300 p-0.5 shadow-md flex items-center justify-center">
+                  <div className="w-full h-full rounded-[10px] bg-brand-navy-900 flex items-center justify-center text-white">
+                    <ArenaMascot size={26} active={isAsking} />
                   </div>
                 </div>
-                <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 rounded-full bg-brand-sage-500 border-2 border-brand-navy-900 shadow" />
+                <span className="absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-brand-sage-500 border-2 border-brand-navy-900 shadow" />
               </div>
 
-              <div>
+              <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="text-xs sm:text-sm font-bold tracking-tight text-white font-sans">
-                    {isEn ? 'SCMS AI Sports Assistant' : 'Trợ Lý Thể Thao SCMS AI'}
+                  <h3 className="text-xs sm:text-sm font-bold tracking-tight text-white font-sans truncate whitespace-nowrap">
+                    {isEn ? 'Olympic AI Assistant' : 'Trợ Lý AI Olympic'}
                   </h3>
-                  <span className="px-1.5 py-0.5 rounded-full bg-brand-sand-300 text-brand-navy-900 text-[9px] font-black uppercase tracking-wider">
+                  <span className="px-1.5 py-0.5 rounded-full bg-brand-sand-300 text-brand-navy-900 text-[9px] font-black uppercase tracking-wider shrink-0">
                     PRO
                   </span>
                 </div>
-                <p className="text-[10px] text-brand-teal-300 font-medium flex items-center gap-1">
-                  <span>{isEn ? 'Olympic Standard · 24/7' : 'Chuẩn Olympic · 24/7'}</span>
-                  <span>•</span>
-                  <span className="text-brand-sand-300/80">{isEn ? 'Drag to move' : 'Kéo để di chuyển'}</span>
+                <p className="text-[10px] text-brand-teal-300 font-medium flex items-center gap-1 truncate whitespace-nowrap">
+                  <span className="w-1.5 h-1.5 rounded-full bg-brand-sage-400 shrink-0" />
+                  <span>{isEn ? 'Olympic Sports Arena · 24/7' : 'Olympic Sports Arena · 24/7'}</span>
                 </p>
               </div>
             </div>
