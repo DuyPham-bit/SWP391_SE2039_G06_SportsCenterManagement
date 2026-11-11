@@ -177,7 +177,7 @@ export function CoachDashboard() {
           1. TOP BANNER GRADIENT (Olympic Athletic Header & 3 KPIs)
       ───────────────────────────────────────────────────────────── */}
       <section
-        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-7 lg:p-8 shadow-xl shadow-brand-sage-950/15 border border-white/20 dark:border-brand-navy-800"
+        className="scms-hero relative overflow-hidden rounded-3xl text-white p-6 sm:p-7 lg:p-8 shadow-xl shadow-brand-sage-950/15 border border-white/20 dark:border-brand-navy-800"
         style={{ background: OLYMPIC_GRADIENT }}
       >
         {/* Dynamic ambient glow & sports wave overlays */}

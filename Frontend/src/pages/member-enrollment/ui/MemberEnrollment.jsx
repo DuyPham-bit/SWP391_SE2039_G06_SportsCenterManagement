@@ -114,6 +114,11 @@ export function MemberEnrollment() {
     <div className="space-y-6 animate-fade-slide-up">
       <header className="scms-hero relative rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:to-brand-sand-900 text-white p-6 sm:p-7 shadow-xl shadow-brand-teal-600/20 overflow-hidden">
         <div aria-hidden="true" className="absolute -top-16 -right-16 w-72 h-72 bg-brand-sand-300/30 rounded-full blur-3xl pointer-events-none" />
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300" aria-hidden="true">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-4">
           <div className="min-w-0">
             <h1 className="font-chivo text-2xl lg:text-3xl font-black tracking-tight">{isEn ? 'Sport Enrollment' : 'Đăng Ký Môn Học'}</h1>

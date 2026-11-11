@@ -103,7 +103,7 @@ export function ReceptionistDashboard() {
       ───────────────────────────────────────────────────────────── */}
       <section
         aria-label={isEn ? 'Front Desk Shift Overview' : 'Tổng quan ca trực lễ tân'}
-        className="relative rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-8 border border-white/30 dark:border-white/10 shadow-xl shadow-brand-teal-600/20 overflow-hidden scms-hero-static"
+        className="scms-hero relative rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-8 border border-white/30 dark:border-white/10 shadow-xl shadow-brand-teal-600/20 overflow-hidden scms-hero-static"
       >
         {/* Ambient glow (same palette as the member lookup banner); the dashboard motion layer makes it float */}
         <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent rounded-full blur-3xl pointer-events-none" />

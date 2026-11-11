@@ -315,7 +315,7 @@ export function PackageManagement() {
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner Header (Olympic Multi-stop Gradient matching Image 1) */}
       <section
-        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+        className="scms-hero relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
         style={{
           background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 25%, #3FAEB8 48%, #81B29A 70%, #E5A33C 88%, #E5A33C 100%)'
         }}

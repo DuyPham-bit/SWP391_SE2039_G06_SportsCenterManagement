@@ -405,10 +405,15 @@ export function AIRecommendation() {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* 1. Header Banner */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-900 via-brand-sage-700 to-brand-sage-500 text-white p-6 sm:p-7 shadow-xl shadow-brand-sage-700/20 border border-white/20">
+      <header className="scms-hero relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-900 via-brand-sage-700 to-brand-sage-500 text-white p-6 sm:p-7 shadow-xl shadow-brand-sage-700/20 border border-white/20">
         <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/30 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/30 to-transparent blur-3xl" />
 
+        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300" aria-hidden="true">
+          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        </svg>
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 text-brand-sage-900 text-xs font-black uppercase tracking-wider backdrop-blur-md shadow-xs">

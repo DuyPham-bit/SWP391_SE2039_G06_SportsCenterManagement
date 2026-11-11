@@ -319,7 +319,7 @@ export function CoachResources() {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* 1. Header Banner */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 shadow-xl shadow-[#24828F]/20 border border-white/30 dark:border-white/10">
+      <header className="scms-hero relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 shadow-xl shadow-[#24828F]/20 border border-white/30 dark:border-white/10">
         <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />

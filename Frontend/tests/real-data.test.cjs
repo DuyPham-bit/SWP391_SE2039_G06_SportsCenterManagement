@@ -321,3 +321,77 @@ test('open notification inbox keeps empty/error states instead of fabricating un
   assert.match(real, /Stored title/); assert.match(real, /Stored content/);
   assert.match(real, /1 mới|1 thông báo chưa đọc/);
 });
+
+test('training zones come from SQL rooms when the CMS has no zones, and published zones are kept', () => {
+  const { getLandingPresentation } = load('entities/catalog/lib/landingPresentation.js');
+  const catalog = { center: { id: 1, name: 'Center' }, sports: [], classes: [], rooms: [
+    { id: 2, name: 'Phòng Gym', capacity: 45, locationDescription: 'Khu A • Tầng 2' },
+    { id: 4, name: 'Sân Cầu lông #1', capacity: 24, locationDescription: 'Khu B • Tầng 2' },
+    { id: 8, name: 'Sân Bóng Rổ', capacity: 25, locationDescription: 'Khu B • Tầng 1' },
+    { id: 7, name: 'Sân Bóng Đá', capacity: 30, locationDescription: 'Khu Ngoài Trời' },
+    { id: 12, name: 'Phòng chưa gán vị trí', capacity: 5, locationDescription: '' }
+  ] };
+  const empty = { zonesLayout: { title: 'Khu vực tập luyện', zones: [], description: '' } };
+  assert.equal(getLandingPresentation(empty, null).zonesLayout.zones.length, 0);
+
+  const zones = getLandingPresentation(empty, catalog).zonesLayout.zones;
+  assert.equal(JSON.stringify(zones.map(zone => zone.name)), JSON.stringify(['Khu A', 'Khu B', 'Khu Ngoài Trời', 'Khu vực khác']));
+  assert.equal(JSON.stringify(zones[1].items), JSON.stringify(['Sân Cầu lông #1 · Tầng 2', 'Sân Bóng Rổ · Tầng 1']));
+  assert.equal(JSON.stringify(zones[2].items), JSON.stringify(['Sân Bóng Đá']));
+  assert.ok(zones.every(zone => zone.icon && zone.color && zone.id));
+  assert.match(getLandingPresentation(empty, catalog).zonesLayout.description, /5 phòng\/sân.*4 khu vực/);
+
+  // Zones always read the DB rooms (curated homepage cards carry no location); only an intentionally
+  // emptied facilities section hides the rooms on the map as well.
+  const emptied = getLandingPresentation({ ...empty, facilitiesSection: { facilitiesList: [], catalogSource: 'custom' } }, catalog);
+  assert.equal(emptied.zonesLayout.zones.length, 0);
+  assert.equal(emptied.zonesLayout.description, '');
+  const curated = getLandingPresentation({ ...empty, facilitiesSection: { catalogSource: 'custom', facilitiesList: [
+    { id: 'landing-swimming', name: 'Bể bơi' }
+  ] } }, catalog).zonesLayout;
+  assert.equal(JSON.stringify(curated.zones.map(zone => zone.name)), JSON.stringify(['Khu A', 'Khu B', 'Khu Ngoài Trời', 'Khu vực khác']));
+  assert.equal(curated.zones[1].rooms[0].facility.capacity, '24 người');
+
+  const custom = { zonesLayout: { zones: [{ id: 'z1', name: 'Custom', items: ['A'] }], description: 'Mô tả riêng' } };
+  const kept = getLandingPresentation(custom, catalog).zonesLayout;
+  assert.equal(JSON.stringify(kept.zones.map(zone => zone.name)), JSON.stringify(['Custom']));
+  assert.equal(kept.description, 'Mô tả riêng');
+});
+
+test('zone map: DB rooms grouped by zone with capacity, manager settings override look/position/order and can hide a zone', () => {
+  const { getLandingPresentation, buildZoneMap } = load('entities/catalog/lib/landingPresentation.js');
+  const catalog = { center: { id: 1, name: 'Center' }, sports: [], classes: [], rooms: [
+    { id: 2, name: 'Phòng Gym', capacity: 45, locationDescription: 'Khu A • Tầng 2' },
+    { id: 4, name: 'Sân Cầu lông #1', capacity: 24, locationDescription: 'Khu B • Tầng 2' },
+    { id: 8, name: 'Sân Bóng Rổ', capacity: 25, locationDescription: 'Khu B • Tầng 1' },
+    { id: 7, name: 'Sân Bóng Đá', capacity: 30, locationDescription: 'Khu Ngoài Trời' }
+  ] };
+  const base = { zonesLayout: { zones: [] } };
+  const auto = getLandingPresentation(base, catalog).zonesLayout.zones;
+  const zoneB = auto.find(zone => zone.key === 'Khu B');
+  assert.equal(zoneB.capacityTotal, 49);
+  assert.equal(JSON.stringify(zoneB.rooms.map(room => [room.id, room.name, room.detail, room.capacity])),
+    JSON.stringify([['4', 'Sân Cầu lông #1', 'Tầng 2', 24], ['8', 'Sân Bóng Rổ', 'Tầng 1', 25]]));
+
+  const settings = [
+    { id: 'zs-1', key: 'Khu Ngoài Trời', name: 'Sân ngoài trời', icon: 'sports_soccer', color: '#34D399', description: 'Cỏ nhân tạo', col: '3', row: '1', isVisible: true },
+    { id: 'zs-2', key: 'Khu A', isVisible: false },
+    { id: 'zs-3', key: 'Khu đã bị xoá khỏi DB', name: 'Cũ' }
+  ];
+  const zones = getLandingPresentation({ zonesLayout: { zones: settings } }, catalog).zonesLayout.zones;
+  // Configured zones come first in the configured order, hidden zones and settings for vanished zones are dropped.
+  assert.equal(JSON.stringify(zones.map(zone => zone.key)), JSON.stringify(['Khu Ngoài Trời', 'Khu B']));
+  assert.equal(zones[0].name, 'Sân ngoài trời');
+  assert.equal(zones[0].description, 'Cỏ nhân tạo');
+  assert.equal(zones[0].col, 3);
+  assert.equal(zones[0].row, 1);
+  assert.equal(zones[1].col, null);
+
+  // The editor sees every zone, including hidden ones, with the settings applied.
+  const { zoneRoomSource } = load('entities/catalog/lib/landingPresentation.js');
+  const editor = buildZoneMap(zoneRoomSource(base, catalog), settings, { includeHidden: true });
+  assert.equal(JSON.stringify(editor.map(zone => [zone.key, zone.isVisible])),
+    JSON.stringify([['Khu Ngoài Trời', true], ['Khu A', false], ['Khu B', true]]));
+  // Invalid map positions are ignored instead of breaking the layout.
+  assert.equal(buildZoneMap(zoneRoomSource(base, catalog), [{ key: 'Khu A', col: '9', row: 'x' }])[0].col, null);
+});

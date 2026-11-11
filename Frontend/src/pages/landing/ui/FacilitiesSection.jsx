@@ -6,6 +6,7 @@ import { useAuth } from '../../../entities/session/index.js';
 import { getMembershipAction, getMembershipBanner, packageApi } from '../../../entities/membership/index.js';
 import { useHorizontalCarousel } from '../model/useHorizontalCarousel.js';
 import { CarouselSideArrows } from './CarouselControls.jsx';
+import { ZoneMap } from '../../../widgets/zone-map/index.js';
 import {
   translateLandingContent,
   translateFacilityName,
@@ -19,8 +20,6 @@ import {
   translateAmenity,
   translateMetricLabel,
   translateMetricValue,
-  translateZoneName,
-  translateZoneItem,
   translateCapacityString,
   translateOpenHours
 } from '../../../shared/i18n/i18nHelper.js';
@@ -458,51 +457,40 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           </div>
         )}
 
-        {/* CAMPUS ARCHITECTURE & ZONE DIRECTORY (SƠ ĐỒ PHÂN BỐ KHU VỰC) */}
+        {/* CAMPUS SITE PLAN: training zones built from the DB rooms, styled by the manager's zone settings */}
         <div className="tiya-campus-directory tiya-reveal--scale">
           <div className="pointer-events-none absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-[var(--primary-color)]/10 blur-3xl" />
-          
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-5">
-              <span className="tiya-campus-directory__badge">
-                {isEn ? 'CONVENIENT SPATIAL LAYOUT' : (landingContent.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN')}
-              </span>
-              <h3 className="tiya-campus-directory__title">
-                {isEn ? 'TRAINING & MATCH ZONE MAP' : (landingContent.zonesLayout?.title || 'SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN')}
-              </h3>
-              <p className="tiya-campus-directory__desc">
-                {isEn
-                  ? '9 neatly planned courts and training studios with open corridors, clear navigation signs, and dedicated front desks for seamless booking in person or online.'
-                  : (landingContent.zonesLayout?.description || '')}
-              </p>
 
-              {/* Added Service Amenities */}
-              <div className="space-y-2.5">
-                {(landingContent.zonesLayout?.serviceAmenities || []).map((amenity, idx) => (
-                  <div key={amenity.id || idx} className="tiya-campus-amenity-item">
-                    <span className="material-symbols-outlined">{amenity.icon}</span>
-                    <span>{isEn ? translateAmenity(amenity.text, true) : amenity.text}</span>
-                  </div>
-                ))}
+          <div className="relative z-10 flex flex-col gap-6">
+            <div className="flex flex-col lg:flex-row lg:items-end lg:justify-between gap-5">
+              <div className="max-w-2xl">
+                <span className="tiya-campus-directory__badge">
+                  {isEn ? 'CONVENIENT SPATIAL LAYOUT' : (landingContent.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN')}
+                </span>
+                <h3 className="tiya-campus-directory__title">
+                  {isEn ? 'TRAINING & MATCH ZONE MAP' : (landingContent.zonesLayout?.title || 'SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN')}
+                </h3>
+                {landingContent.zonesLayout?.description && (
+                  <p className="tiya-campus-directory__desc" style={{ marginBottom: 0 }}>{landingContent.zonesLayout.description}</p>
+                )}
               </div>
+              {(landingContent.zonesLayout?.serviceAmenities || []).length > 0 && (
+                <div className="flex flex-wrap gap-2 lg:max-w-md lg:justify-end">
+                  {landingContent.zonesLayout.serviceAmenities.map((amenity, idx) => (
+                    <div key={amenity.id || idx} className="tiya-campus-amenity-item">
+                      <span className="material-symbols-outlined">{amenity.icon}</span>
+                      <span>{isEn ? translateAmenity(amenity.text, true) : amenity.text}</span>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* 4 Zones Map Columns */}
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {(landingContent.zonesLayout?.zones || []).map((zone, idx) => (
-                <div key={zone.id || idx} className="tiya-zone-card">
-                  <div className="tiya-zone-card__header" style={{ color: zone.color || '#F87171' }}>
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{zone.icon}</span>
-                    <span>{isEn ? translateZoneName(zone.name, true) : zone.name}</span>
-                  </div>
-                  <ul className="tiya-zone-card__list">
-                    {(zone.items || []).map((item, itemIdx) => (
-                      <li key={itemIdx}>• {isEn ? translateZoneItem(item, true) : item}</li>
-                    ))}
-                  </ul>
-                </div>
-              ))}
-            </div>
+            <ZoneMap
+              zones={landingContent.zonesLayout?.zones || []}
+              isEn={isEn}
+              onOpenRoom={facility => handleOpenModal(facility, 'specs')}
+            />
           </div>
         </div>
 

@@ -5,7 +5,7 @@ import { MotionButton } from '../../../shared/ui/MotionButton.jsx';
 export function AdminHeroBanner({ TABS, loadA, loadAFn, loadC, loadCFn, loadM, loadMFn, loadOv, loadOvFn, ov, switchTab, tab }) {
   return (
     <section
-      className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-7 lg:p-8 shadow-xl shadow-brand-sage-950/15 border border-white/20 dark:border-brand-navy-800"
+      className="scms-hero relative overflow-hidden rounded-3xl text-white p-6 sm:p-7 lg:p-8 shadow-xl shadow-brand-sage-950/15 border border-white/20 dark:border-brand-navy-800"
       style={{ background: OLYMPIC_GRADIENT }}
     >
       {/* Ambient atmospheric glows */}

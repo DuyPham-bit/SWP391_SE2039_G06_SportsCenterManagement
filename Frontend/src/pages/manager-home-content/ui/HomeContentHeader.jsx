@@ -6,13 +6,21 @@ export function HomeContentHeader({
 }) {
   return (
     <div
-      className="text-white rounded-3xl p-6 sm:p-8 border border-white/30 shadow-xl shadow-brand-teal-600/25 relative overflow-hidden"
+      className="scms-hero text-white rounded-3xl p-6 sm:p-8 border border-white/30 shadow-xl shadow-brand-teal-600/25 relative overflow-hidden"
       style={{
         background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 25%, #3FAEB8 48%, #81B29A 70%, #E5A33C 88%, #E5A33C 100%)'
       }}
     >
       <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/40 via-brand-sand-500/25 to-transparent blur-3xl" />
       <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/25 to-transparent blur-3xl" />
+
+      {/* Same motion lanes as the other workspace banners (animated by .scms-hero) */}
+      <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300" aria-hidden="true">
+        <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
+        <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
+        <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
+        <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
+      </svg>
 
       <div className="relative z-10 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
         <div>

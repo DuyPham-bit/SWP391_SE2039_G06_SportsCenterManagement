@@ -8,7 +8,7 @@ export function HomeContentTabs({ activeTab, handleTabChange, isEn, totalFacilit
         { id: 'whyUs', label: isEn ? '2. Why SCMS' : '2. Tại Sao Chọn SCMS', icon: 'verified', desc: isEn ? '3 Merits & 4 Stats' : '3 Ưu thế & 4 Số liệu' },
         { id: 'sports', label: isEn ? '3. Sports' : '3. Môn Thể Thao', icon: 'sports_kabaddi', desc: `${totalSports} ${isEn ? 'Sports' : 'Bộ môn'}` },
         { id: 'facilities', label: isEn ? '4. Facilities' : '4. Thẻ Cụm Sân', icon: 'stadium', desc: `${totalFacilities} ${isEn ? 'Facilities' : 'Khu liên hợp'}` },
-        { id: 'zones', label: isEn ? '5. Zones' : '5. Sơ Đồ Phân Khu', icon: 'apartment', desc: isEn ? 'Zones A-B-C' : 'Bố trí khu A-B-C' },
+        { id: 'zones', label: isEn ? '5. Zones' : '5. Sơ Đồ Phân Khu', icon: 'apartment', desc: isEn ? 'Site plan from rooms' : 'Sơ đồ từ phòng/sân' },
         { id: 'footer', label: isEn ? '6. CTA & Footer' : '6. Kêu Gọi & Footer', icon: 'contact_support', desc: isEn ? 'Events & Info' : 'Sự kiện & Liên hệ' },
         {
           id: 'authShowcase',

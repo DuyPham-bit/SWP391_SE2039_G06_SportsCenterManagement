@@ -102,7 +102,7 @@ export function PerformanceDashboard() {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* 1. Top Header Banner */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-7 shadow-xl shadow-brand-teal-600/20 border border-white/30 dark:border-white/10">
+      <header className="scms-hero relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-7 shadow-xl shadow-brand-teal-600/20 border border-white/30 dark:border-white/10">
         {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
         <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/30 to-transparent blur-3xl" />

@@ -2880,3 +2880,349 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 input[type="date"]::-webkit-calendar-picker-indicator:hover {
   opacity: 1;
 }
+/* ═════════════════════════════════════════════════════════════════════
+   ZONE MAP — training-zone site plan (landing page + home-content editor preview)
+   Zones are blocks on a 3x4 blueprint grid; the side panel lists the selected zone's rooms.
+   ═════════════════════════════════════════════════════════════════════ */
+.zmap {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  gap: 20px;
+  align-items: stretch;
+  color: #fff;
+}
+
+.zmap__plan {
+  position: relative;
+  border-radius: 20px;
+  padding: 44px 18px 52px;
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  background-color: #1f2235;
+  background-image:
+    linear-gradient(rgba(129, 178, 154, 0.09) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(129, 178, 154, 0.09) 1px, transparent 1px),
+    linear-gradient(rgba(255, 255, 255, 0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255, 255, 255, 0.035) 1px, transparent 1px);
+  background-size: 96px 96px, 96px 96px, 24px 24px, 24px 24px;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.25), 0 18px 40px -24px rgba(0, 0, 0, 0.6);
+}
+
+.zmap__compass {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.55);
+}
+
+.zmap__compass .material-symbols-outlined { font-size: 18px; }
+
+.zmap__entrance {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  translate: -50% 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: 999px;
+  border: 1px dashed rgba(242, 204, 143, 0.55);
+  color: rgb(var(--brand-sand-300));
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  background: rgba(31, 34, 53, 0.9);
+}
+
+.zmap__entrance .material-symbols-outlined { font-size: 16px; }
+
+.zmap__grid {
+  display: grid;
+  grid-template-columns: repeat(var(--zmap-cols, 3), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--zmap-rows, 3), minmax(118px, auto));
+  grid-auto-rows: minmax(118px, auto);
+  grid-auto-flow: row dense;
+  gap: 12px;
+}
+
+.zmap__zone {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+  padding: 14px 14px 12px;
+  border-radius: 14px;
+  text-align: left;
+  color: #fff;
+  cursor: pointer;
+  border: 1.5px solid color-mix(in srgb, var(--zone-color) 55%, transparent);
+  background:
+    linear-gradient(160deg, color-mix(in srgb, var(--zone-color) 30%, transparent), color-mix(in srgb, var(--zone-color) 10%, transparent)),
+    rgba(255, 255, 255, 0.03);
+  transition: transform 220ms cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 220ms ease, border-color 200ms ease;
+}
+
+.zmap__zone[data-placed] {
+  grid-column: var(--zone-col, auto);
+  grid-row: var(--zone-row, auto);
+}
+
+.zmap__zone--wide { grid-column: span 2; }
+
+.zmap__zone:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 14px 30px -16px color-mix(in srgb, var(--zone-color) 80%, black);
+}
+
+.zmap__zone.is-active {
+  border-color: var(--zone-color);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--zone-color) 35%, transparent), 0 16px 34px -18px rgba(0, 0, 0, 0.7);
+}
+
+.zmap__zone:focus-visible,
+.zmap__room:focus-visible {
+  outline: 2px solid rgb(var(--brand-sand-300));
+  outline-offset: 2px;
+}
+
+.zmap__zone-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  width: 100%;
+}
+
+.zmap__zone-icon {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 10px;
+  font-size: 18px !important;
+  background: var(--zone-color);
+  color: #1f2235;
+  flex-shrink: 0;
+}
+
+.zmap__zone-name {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  line-height: 1.25;
+  overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+}
+
+.zmap__zone-meta {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.78);
+  font-weight: 600;
+}
+
+.zmap__chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  margin-top: auto;
+}
+
+.zmap__chip {
+  max-width: 100%;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.92);
+}
+
+.zmap__chip--more { color: rgb(var(--brand-sand-300)); }
+
+.zmap__panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 20px;
+  border-radius: 20px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  border-top: 4px solid var(--zone-color);
+  min-width: 0;
+}
+
+.zmap__panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.zmap__panel-icon {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  font-size: 24px !important;
+  background: var(--zone-color);
+  color: #1f2235;
+  flex-shrink: 0;
+}
+
+.zmap__panel-title {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff !important;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.zmap__panel-sub {
+  margin: 2px 0 0;
+  font-size: 12.5px;
+  color: rgba(255, 255, 255, 0.75) !important;
+}
+
+.zmap__panel-desc {
+  margin: 0;
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: rgba(255, 255, 255, 0.88) !important;
+}
+
+.zmap__rooms {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.zmap__room {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  padding: 9px 12px;
+  border-radius: 12px;
+  text-align: left;
+  color: #fff;
+  background: rgba(0, 0, 0, 0.18);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+button.zmap__room {
+  cursor: pointer;
+  transition: background-color 180ms ease, border-color 180ms ease;
+}
+
+button.zmap__room:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: color-mix(in srgb, var(--zone-color) 60%, transparent);
+}
+
+.zmap__room-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--zone-color);
+  flex-shrink: 0;
+}
+
+.zmap__room-text {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  flex: 1;
+}
+
+.zmap__room-name {
+  font-size: 13px;
+  font-weight: 700;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.zmap__room-detail {
+  font-size: 11.5px;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.zmap__room-arrow {
+  color: rgba(255, 255, 255, 0.55);
+  font-size: 20px !important;
+}
+
+.zmap__totals {
+  margin: auto 0 0;
+  padding-top: 10px;
+  border-top: 1px dashed rgba(255, 255, 255, 0.16);
+  font-size: 12px;
+  font-weight: 600;
+  color: rgb(var(--brand-sand-300)) !important;
+}
+
+.zmap-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 28px;
+  border-radius: 16px;
+  border: 1px dashed rgba(255, 255, 255, 0.25);
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 14px;
+}
+
+/* Compact preview inside the home-content editor */
+.zmap--compact { grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); }
+.zmap--compact .zmap__grid { grid-template-rows: repeat(var(--zmap-rows, 3), minmax(76px, auto)); grid-auto-rows: minmax(76px, auto); gap: 8px; }
+.zmap--compact .zmap__zone { padding: 10px; }
+
+@media (max-width: 1023px) {
+  .zmap,
+  .zmap--compact { grid-template-columns: minmax(0, 1fr); }
+}
+
+/* Phones: two columns; manager-chosen cells are ignored so blocks never overflow. */
+@media (max-width: 639px) {
+  .zmap__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); grid-template-rows: none; }
+  .zmap__zone[data-placed] { grid-column: auto; grid-row: auto; }
+  .zmap__plan { padding: 40px 12px 50px; }
+}
+
+/* Narrow phones: one zone per row so names and room chips stay readable. */
+@media (max-width: 479px) {
+  .zmap__grid { grid-template-columns: minmax(0, 1fr); gap: 10px; }
+  .zmap__zone--wide { grid-column: auto; }
+  .zmap__plan { padding: 40px 10px 50px; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .zmap__zone,
+  .zmap__zone:hover { transition: none; transform: none; }
+}
