@@ -1,95 +1,191 @@
-# Sports Center Management
+<div align="center">
 
-Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai thư mục riêng:
+# 🏟️ Olympic Sports Arena — Sports Center Management System
 
-- `Frontend/` — React 18, Vite, port `3004`.
-- `Backend/` — ASP.NET Core Web API, PostgreSQL (Npgsql) và EF Core.
-- `docker/` — Docker Compose chạy PostgreSQL + backend + frontend.
+**Nền tảng quản lý trung tâm thể thao toàn diện: từ website giới thiệu đến vận hành hội viên, lớp học, thanh toán và báo cáo.**
 
-## Nhánh và phiên bản
+<p>
+  <img alt="React" src="https://img.shields.io/badge/React-18-61DAFB?logo=react&logoColor=white">
+  <img alt="Vite" src="https://img.shields.io/badge/Vite-5-646CFF?logo=vite&logoColor=white">
+  <img alt="Tailwind CSS" src="https://img.shields.io/badge/Tailwind_CSS-3-06B6D4?logo=tailwindcss&logoColor=white">
+  <img alt=".NET" src="https://img.shields.io/badge/.NET-10-512BD4?logo=dotnet&logoColor=white">
+  <img alt="PostgreSQL" src="https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white">
+  <img alt="Docker" src="https://img.shields.io/badge/Docker-Compose-2496ED?logo=docker&logoColor=white">
+  <img alt="License" src="https://img.shields.io/badge/License-MIT-green">
+</p>
 
-- `main` — bản mới nhất, đồng bộ với `deploy/scms-v1.4`.
-- `deploy/scms-v1.x` — mỗi đợt phát hành một nhánh (v1.1 → v1.4). Render (backend) và Vercel (frontend) deploy theo nhánh được chọn; nhánh trước đó là điểm quay lại khi cần rollback.
-- Phát triển tiếp: tạo nhánh mới từ `main` (ví dụ `deploy/scms-v1.5`), không đẩy thẳng lên nhánh đã phát hành.
+Đồ án môn **SWP391** · Lớp **SE2039** · Nhóm **G06**
 
-## Chạy local bằng Docker (khuyên dùng)
+[Tổng quan](#-tổng-quan) ·
+[Chức năng](#-chức-năng-theo-vai-trò) ·
+[Kiến trúc](#-kiến-trúc) ·
+[Bắt đầu](#-bắt-đầu-nhanh) ·
+[Triển khai](#-triển-khai) ·
+[Kiểm thử](#-kiểm-thử) ·
+[Tài liệu](#-tài-liệu)
+
+</div>
+
+---
+
+## 📌 Tổng quan
+
+**SCMS** số hóa toàn bộ hoạt động của một trung tâm thể thao đa bộ môn:
+
+- **Website công khai** giới thiệu trung tâm, bộ môn, cơ sở vật chất và sơ đồ khu vực tập luyện — nội dung do quản lý tự biên tập.
+- **Cổng làm việc theo vai trò** cho hội viên, huấn luyện viên, lễ tân, quản lý và quản trị viên, phân quyền chi tiết theo từng trung tâm.
+- **Thanh toán online** qua VNPay và MoMo, thanh toán tại quầy bằng tiền mặt/POS, hóa đơn và hoàn tiền có chứng từ.
+- **Trợ lý AI** tư vấn cho hội viên và gợi ý giáo án cho huấn luyện viên, chỉ dựa trên dữ liệu thật của trung tâm.
+
+## ✨ Chức năng theo vai trò
+
+| Vai trò | Chức năng chính |
+|---|---|
+| 👤 **Khách** | Xem trang chủ, bộ môn, cơ sở vật chất, sơ đồ khu vực; đăng ký tài khoản (xác thực OTP email) hoặc đăng nhập Google |
+| 🏃 **Hội viên** | Mua gói tập online, đăng ký môn và lớp, đặt/hủy ca tập, check-in, theo dõi tiến độ, yêu cầu hoàn tiền, gửi hỗ trợ, trò chuyện với trợ lý AI |
+| 🧑‍🏫 **Huấn luyện viên** | Lịch dạy, điểm danh, danh sách học viên, giáo án và kết quả tập, gợi ý giáo án bằng AI, đơn nghỉ/đổi ca |
+| 🛎️ **Lễ tân** | Tra cứu và tạo hội viên tại quầy, bán gói (tiền mặt/POS), đặt chỗ hộ, quản lý hóa đơn, tiếp nhận yêu cầu hỗ trợ |
+| 📊 **Quản lý** | Hội viên, nhân sự, gói tập, lớp/bộ môn/phòng, phân công HLV, duyệt đơn nghỉ, hóa đơn & hoàn tiền, báo cáo doanh thu, nội dung trang chủ |
+| 🛡️ **Quản trị viên** | Quản lý cơ sở và tài khoản quản lý, ma trận phân quyền, báo cáo toàn hệ thống, nhật ký kiểm toán |
+
+## 🏗️ Kiến trúc
+
+```mermaid
+flowchart LR
+    U([Người dùng]) --> FE[Frontend<br/>React + Vite<br/>Vercel]
+    FE -- "/api (proxy)" --> API[Backend API<br/>ASP.NET Core .NET 10<br/>Render]
+    API --> DB[(PostgreSQL)]
+    API --> R2[(Cloudflare R2<br/>ảnh, avatar, chứng từ)]
+    API --> PAY[VNPay · MoMo]
+    API --> MAIL[SMTP · Google Sign-In]
+    API --> AI[Gemini AI]
+```
+
+| Tầng | Công nghệ | Ghi chú |
+|---|---|---|
+| Frontend | React 18, Vite 5, Tailwind CSS | Kiến trúc Feature-Sliced Design: `app` · `pages` · `widgets` · `features` · `entities` · `shared` |
+| Backend | ASP.NET Core Web API (.NET 10) | 3 lớp `API` · `BLL` · `DAL`; JWT; Swagger; EF Core + Npgsql, Dapper cho báo cáo |
+| Dữ liệu | PostgreSQL, Cloudflare R2 | Migration EF Core tự áp dụng khi khởi động |
+| Tích hợp | VNPay, MoMo, MailKit (SMTP), Google Sign-In, Gemini | Thiếu cấu hình thì API báo lỗi rõ ràng, không trả dữ liệu giả |
+| Hạ tầng | Docker Compose, Render, Vercel | Local chạy toàn bộ bằng một lệnh |
+
+<details>
+<summary><b>Cấu trúc thư mục</b></summary>
+
+```text
+.
+├── Backend/
+│   ├── SportsCenterManagement.API/   # Controllers, xác thực & phân quyền, R2, email, cổng thanh toán
+│   ├── SportsCenterManagement.BLL/   # Nghiệp vụ (services), DTO, quy tắc kiểm tra
+│   ├── SportsCenterManagement.DAL/   # Entity, DbContext, migration PostgreSQL
+│   ├── verification/                 # Chương trình kiểm tra logic (audit)
+│   └── postman/                      # Bộ request mẫu
+├── Frontend/
+│   ├── src/                          # Mã nguồn React (Feature-Sliced Design)
+│   └── tests/                        # Kiểm thử Node và kiểm thử trình duyệt Chrome
+├── docker/                           # Compose, Dockerfile, cấu hình nginx
+└── docs/                             # Triển khai, nội dung trang chủ, ghi chú phát hành
+```
+
+</details>
+
+## 🚀 Bắt đầu nhanh
+
+### Yêu cầu
+
+- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (khuyên dùng), **hoặc**
+- .NET SDK 10, Node.js 20+ và PostgreSQL 16 nếu chạy không dùng Docker
+
+### Chạy bằng Docker
 
 ```powershell
 Copy-Item docker/.env.example docker/.env   # lần đầu, rồi điền giá trị thật
 docker compose --env-file docker/.env -f docker/compose.yml up -d --build
 ```
 
-Website: http://localhost:3004 — API health: http://localhost:3004/api/health. Chi tiết: [docker/README.md](./docker/README.md).
+| Dịch vụ | Địa chỉ |
+|---|---|
+| Website | http://localhost:3004 |
+| API health | http://localhost:3004/api/health |
 
-## Chạy local không dùng Docker
+Dừng hệ thống (giữ dữ liệu): `docker compose --env-file docker/.env -f docker/compose.yml down`. Chi tiết: [docker/README.md](./docker/README.md).
 
-1. Chuẩn bị PostgreSQL và cấu hình backend theo [Backend/README.md](./Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` (PostgreSQL) và `Jwt:Key` dài ít nhất 32 byte; migration được áp dụng khi khởi động.
-2. Chạy API: `dotnet run --project Backend/SportsCenterManagement.API` (cổng `http://localhost:5000`; Vite proxy `/api` đến địa chỉ này).
-3. Sao chép `Frontend/.env.example` thành `Frontend/.env.local` và đặt `VITE_SPORTS_CENTER_ID` thành ID trung tâm thực tế trong database; biến này bắt buộc khi đăng ký hội viên mới.
-4. Cài và chạy giao diện:
+<details>
+<summary><b>Chạy không dùng Docker</b></summary>
 
+1. Chuẩn bị PostgreSQL và cấu hình backend theo [Backend/README.md](./Backend/README.md) — cần `ConnectionStrings:SportsCenter` và `Jwt:Key` (ít nhất 32 byte).
+2. Chạy API:
    ```powershell
-   cd .\Frontend
+   dotnet run --project Backend/SportsCenterManagement.API   # http://localhost:5000
+   ```
+3. Sao chép `Frontend/.env.example` thành `Frontend/.env.local`, đặt `VITE_SPORTS_CENTER_ID` bằng ID trung tâm trong database.
+4. Chạy giao diện (Vite proxy `/api` tới cổng 5000):
+   ```powershell
+   cd Frontend
    npm ci
    npm run dev
    ```
 
-## Dùng chung qua Internet
+</details>
 
-Triển khai Frontend, Backend API và PostgreSQL tập trung trên máy chủ có tên miền và HTTPS. Trình duyệt chỉ truy cập tên miền chung; không kết nối trực tiếp tới database. Xem [hướng dẫn Render](./docs/Deploy.md) và [cấu hình Docker](./docker/README.md).
+### ⚙️ Cấu hình
 
-## Các luồng đã nối API
+Giá trị bí mật đặt trong `docker/.env` (local) hoặc Environment của Render — **không đưa lên GitHub**.
 
-- Đăng nhập, đăng ký hội viên có OTP xác thực email, hồ sơ, đổi mật khẩu và yêu cầu/đặt lại mật khẩu qua email.
-- Danh mục và quản lý gói tập; lịch ca tập và đặt/hủy chỗ.
-- Flow 2: quản lý lớp/phòng, tạo lịch, công bố/hủy lớp, phân công HLV, danh sách chờ, lễ tân đặt/hủy hộ và HLV xem học viên/điểm danh qua API.
-- Manager cấu hình quyền Member/Coach/Receptionist trong trung tâm; System Admin giữ ma trận quyền toàn hệ thống.
-- Manager bổ nhiệm hội viên hiện có làm HLV/lễ tân, đổi vai trò có kiểm tra phân công lớp và xuất báo cáo CSV từ dữ liệu API.
-- Tra cứu hội viên, thu tiền tại quầy bằng CASH/POS (cần mã chuẩn chi cho POS).
-- Khởi tạo thanh toán online qua VNPay hoặc MoMo; callback VNPay/MoMo được gửi về backend để xác minh. VietQR đã được gỡ khỏi luồng thanh toán mới.
+| Nhóm | Biến (Docker) | Bắt buộc |
+|---|---|---|
+| Database | `POSTGRES_PASSWORD` | ✅ |
+| Xác thực | `JWT_KEY`, `ADMIN_USERNAME`, `ADMIN_EMAIL`, `ADMIN_PASSWORD` | ✅ |
+| Trung tâm | `VITE_SPORTS_CENTER_ID` | ✅ |
+| Lưu trữ ảnh | `R2_SERVICE_URL`, `R2_ACCESS_KEY`, `R2_SECRET_KEY`, `R2_BUCKET_NAME`, `R2_PUBLIC_DOMAIN` | Cho upload ảnh |
+| Email | `EMAIL_SMTP_*` | Cho OTP và đặt lại mật khẩu |
+| Đăng nhập Google | `GOOGLE_CLIENT_ID` | Tùy chọn |
+| AI | `AI_API_KEY` | Cho trợ lý AI |
+| Thanh toán | `VNPAY_*`, `MOMO_*` | Cho thanh toán online |
 
-## Cập nhật v1.4
+## ☁️ Triển khai
 
-- Avatar lưu trên Cloudflare R2 (`users.avatar_key`); danh sách hội viên/nhân viên trả `avatarUrl` nên Manager thấy ảnh của mọi tài khoản. Ảnh cũ chỉ còn trong trình duyệt được tự chuyển lên server ở lần đăng nhập kế tiếp.
-- Hoàn tiền: hội viên chỉ yêu cầu hoàn cho gói đã mua còn hiệu lực (kể cả gói mua trước); hoàn đủ tiền thì gói chuyển `Refunded`. Ảnh chuyển khoản mở qua API có xác thực (link R2 tạm 5 phút).
-- Trang chủ: "Khu vực tập luyện" là sơ đồ mặt bằng dựng từ bảng `rooms` (nhóm theo vị trí `Khu X • Tầng Y`, kèm sức chứa); Manager/Admin chỉnh tên, biểu tượng, màu, mô tả, vị trí, thứ tự, ẩn/hiện từng khu ở tab 5 của trang Nội dung trang chủ. Trình soạn có bản nháp lưu trên server.
-- Banner của mọi vai trò dùng chung hiệu ứng động (`.scms-hero`).
-- Hội viên: trang đăng ký môn học (tự chọn HLV khi đã xác định, chỉ hiện môn đã đăng ký), hồ sơ có giới tính/ngày sinh/trình độ; đăng nhập bằng email hoặc số điện thoại. Lễ tân tạo nhanh hội viên tại quầy với mật khẩu khởi tạo.
-- Thông báo tự đánh dấu đã đọc khi mở; route sai về trang 404.
+- **Backend + PostgreSQL:** Render — [docs/Deploy.md](./docs/Deploy.md)
+- **Frontend:** Vercel, chuyển tiếp `/api` sang Render — [docs/VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md)
+- **Nhánh phát hành:** mỗi đợt phát hành một nhánh `deploy/scms-v1.x`; `main` luôn là bản mới nhất. Render và Vercel deploy theo nhánh được chọn; nhánh trước dùng để quay lại khi cần.
+- **Thay đổi từng phiên bản:** [docs/RELEASES.md](./docs/RELEASES.md)
 
-## Chức năng đang tắt
+## 🔐 Bảo mật & thời gian
 
-- **Lương & KPI**: chưa bật vì buổi học chưa có trạng thái "Completed", KPI và bảng lương đếm buổi khác nhau, hoa hồng doanh số chưa được tính. Backend `PayrollService` vẫn giữ nguyên.
-- **Kích hoạt tài khoản qua email** và **mức ưu tiên yêu cầu hỗ trợ**: cần bảng/cột mới chưa có migration nên chưa đưa vào bản này.
+- Đăng nhập bằng email, số điện thoại hoặc Google; mật khẩu băm BCrypt, có chính sách độ mạnh.
+- JWT lưu trong **cookie HttpOnly**; mỗi tab có mã phiên riêng nên các tab dùng được tài khoản khác nhau mà không lộ token cho JavaScript.
+- Phân quyền kiểm tra ở backend theo vai trò **và** theo trung tâm; thao tác thanh toán dùng `Idempotency-Key`.
+- Hệ thống chạy theo giờ Việt Nam (`Asia/Ho_Chi_Minh`): database lưu UTC, ngày nghiệp vụ giữ nguyên ngày Việt Nam dù thiết bị đặt múi giờ khác.
 
-Frontend xác thực bằng cookie HttpOnly chứa JWT và header chọn phiên riêng từng tab, đọc lỗi Problem Details và `traceId`, đồng thời dùng `Idempotency-Key` cho thao tác thanh toán. Không dùng mock để giả lập các luồng trên.
+## 🧪 Kiểm thử
 
-## API mới và cấu hình Google/AI
+| Phạm vi | Lệnh |
+|---|---|
+| Frontend build | `npm run build` *(trong `Frontend/`)* |
+| Frontend unit & regression | `npm test` *(trong `Frontend/`)* |
+| Trình duyệt Chrome | `npm run test:landing:browser` · `test:manager:browser` · `test:security:browser` *(trong `Frontend/`)* |
+| Backend build | `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` *(trong `Backend/`)* |
+| Logic backend | `dotnet run --project Backend/verification/ReportLogicAudit` — tương tự `LandingSportDescriptionAudit`, `TimezoneAudit`, `CoachBusinessAudit`, `AiSafetyAudit` (không cần database); `PostgresMergeAudit` cần PostgreSQL local |
+| Dữ liệu trên server | `dotnet run --project Backend/verification/AvatarRenderAudit` — kiểm tra **chỉ đọc** avatar và chứng từ hoàn tiền (đặt `SCMS_AUDIT_DB`, tùy chọn `SCMS_AUDIT_R2_PUBLIC_DOMAIN`) |
 
-Giáo án chung/cá nhân, tiến độ và thông báo HLV/hội viên đã nối API lưu PostgreSQL. Xác thực dùng JWT HS256 qua JwtBearer, kiểm tra issuer/audience/thời hạn và tài khoản ở mỗi request; Swagger có nút Authorize. JWT nằm trong cookie HttpOnly; sessionStorage chỉ giữ mã chọn phiên riêng từng tab. F5 giữ đăng nhập và các tab có thể dùng tài khoản khác nhau; hồ sơ/quyền được tải lại từ API. API client ngoài trình duyệt vẫn dùng Bearer JWT. Chi tiết: [cơ chế phiên từng tab](./Frontend/docs/tab-session-fix.md).
+## 🌿 Quy trình phát triển
 
-Member và Coach có màn hình gửi/theo dõi yêu cầu hỗ trợ; Lễ tân/Manager tiếp nhận và phản hồi trong đúng trung tâm. Hộp thư có thao tác đọc tất cả. Gói đã thanh toán nhưng chưa đến ngày hiệu lực được hiển thị riêng với gói đang dùng.
+1. Tạo nhánh mới từ `main` cho đợt phát hành tiếp theo, ví dụ `deploy/scms-v1.5`.
+2. Chạy kiểm thử frontend và build backend trước khi commit; chạy thử bằng Docker local.
+3. Đẩy nhánh lên repo, deploy thử, rồi cập nhật `main` khi bản phát hành ổn định.
+4. Ghi lại thay đổi vào [docs/RELEASES.md](./docs/RELEASES.md).
 
-Nếu chạy giao diện nhúng trong backend, chạy `npm.cmd run build:api` từ `Frontend/` trước khi chạy/publish backend. Lệnh này tạo lại `Backend/SportsCenterManagement.API/wwwroot` từ source frontend và thay các bundle cũ, tránh tiếp tục phục vụ bản lưu Session trước đây. Giao diện chạy bằng Vite dùng source frontend trực tiếp.
+## 📚 Tài liệu
 
-Google Login dùng ID token được xác minh ở backend. Chatbot/gợi ý giáo án cố định Gemini 3.5 Flash-Lite; API key đọc từ `AI:ApiKey` ở cấu hình backend. Khi thiếu cấu hình, API trả lỗi rõ ràng, không trả kết quả giả. Thanh toán online vẫn cần thông tin sandbox của cổng tương ứng. Member và Coach đã có giao diện/API gửi, theo dõi và bổ sung phản hồi yêu cầu hỗ trợ.
+| Tài liệu | Nội dung |
+|---|---|
+| [docs/PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md) | Tổng quan nghiệp vụ dự án |
+| [Backend/README.md](./Backend/README.md) | Cấu hình và chạy backend |
+| [Backend/docs/requirements/api-jwt-integration.md](./Backend/docs/requirements/api-jwt-integration.md) | Tích hợp API và JWT |
+| [docs/HOME_CONTENT_MEDIA.md](./docs/HOME_CONTENT_MEDIA.md) | Nội dung trang chủ và media |
+| [Frontend/docs/tab-session-fix.md](./Frontend/docs/tab-session-fix.md) | Cơ chế phiên theo tab |
+| [docs/RELEASES.md](./docs/RELEASES.md) | Ghi chú phát hành |
 
-Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](./Backend/docs/requirements/api-jwt-integration.md). Chi tiết Flow 2 trước đó: [flow2-delivery.md](./Backend/docs/requirements/flow2-delivery.md).
+## 📄 Giấy phép
 
-## Thời gian hệ thống
-
-Hệ thống hoạt động theo giờ Việt Nam (`Asia/Ho_Chi_Minh`, UTC+7). Timestamp lưu trong database là UTC; frontend đọc timestamp API không có offset là UTC và hiển thị theo giờ Việt Nam. Ngày nghiệp vụ (ngày sinh, ngày vào làm, ngày học, hiệu lực gói) giữ nguyên ngày Việt Nam; ô `datetime-local` nhận giờ Việt Nam. Đổi múi giờ thiết bị không làm đổi ngày/giờ hiển thị hoặc giờ đặt lịch. Backend xác thực nghiệp vụ bằng đồng hồ máy chủ; máy chủ cần được đồng bộ giờ chính xác.
-
-Docker đã cấu hình múi giờ cho backend/PostgreSQL và ranh giới ngày báo cáo là Việt Nam. Sau khi cập nhật, chạy `docker compose --env-file docker/.env -f docker/compose.yml up -d --build` để áp dụng. Khi chạy frontend nhúng trong API, build lại bằng `npm.cmd run build:api` trong `Frontend/`.
-
-## Kiểm tra
-
-- Trợ lý AI hội viên nhận dữ liệu công khai mới từ database của đúng trung tâm ở mỗi câu hỏi: lịch lớp Published/Scheduled, gói Active và giá VND, sân/phòng Active, địa chỉ, số điện thoại/email trung tâm và giờ mở cửa. Backend chỉ chọn các trường được phép; không gửi hồ sơ hội viên/HLV, ghi chú nội bộ, danh sách đặt chỗ, thanh toán, báo cáo, cấu hình hoặc hội thoại người khác. Ngày/tháng, ngày ISO, ngày tương đối và câu hỏi tiếp nối được xử lý theo giờ Việt Nam; khoảng truy vấn tối đa 31 ngày, tối đa 200 buổi học. Chưa có danh mục sự kiện riêng hoặc giá thuê sân trong database thì AI phải nói rõ thiếu dữ liệu. Nội dung biên tập trang chủ được lưu trong `system_settings` qua API. Trợ lý AI vẫn đọc dữ liệu nghiệp vụ Center/Room và chưa dùng nội dung biên tập này làm nguồn dữ liệu.
-- Nhắc lịch ca học: backend tự kiểm tra mỗi 15 giây và gửi thông báo trong ứng dụng khi ca học đã xác nhận còn tối đa 1 tiếng trước giờ bắt đầu (giờ Việt Nam). Chuông thông báo và hộp thư tự tải lại mỗi 15 giây khi trang đang mở. Lịch bị hủy và ca đã bắt đầu không được nhắc; lời nhắc được lưu trong database để tránh gửi trùng sau khi khởi động lại. Đặt chỗ trong vòng 1 tiếng trước ca học sẽ nhận lời nhắc ở lần kiểm tra kế tiếp. Backend cần hoạt động để tạo lời nhắc; cột nhắc lịch đã có trong migration PostgreSQL áp dụng khi khởi động.
-- Frontend: `npm run build` trong `Frontend/`.
-- Frontend regression: `npm test` trong `Frontend/`.
-- Múi giờ: `node --test tests/timezone.test.cjs` trong `Frontend/` kiểm tra 5 múi giờ thiết bị; `dotnet run --project Backend/verification/TimezoneAudit/TimezoneAudit.csproj` từ thư mục gốc kiểm tra ranh giới ngày Việt Nam ở backend.
-- Quản lý nội dung trang chủ và media; kiểm thử Chrome: `npm.cmd run test:landing:browser` trong `Frontend/`.
-- Backend: `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` từ `Backend/`.
-- Kiểm tra avatar và ảnh chuyển khoản trên database đã deploy (chỉ đọc): đặt `SCMS_AUDIT_DB` (connection string) và tùy chọn `SCMS_AUDIT_R2_PUBLIC_DOMAIN`, rồi chạy `dotnet run --project Backend/verification/AvatarRenderAudit`.
-- Kiểm thử logic backend (console audit trong `Backend/verification/`), ví dụ: `dotnet run --project Backend/verification/ReportLogicAudit` và `dotnet run --project Backend/verification/LandingSportDescriptionAudit` (SQLite in-memory, không cần database); `PostgresMergeAudit` cần PostgreSQL local (xem README của project).
+Phát hành theo giấy phép [MIT](./LICENSE).
