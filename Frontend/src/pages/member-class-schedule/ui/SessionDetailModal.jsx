@@ -7,7 +7,7 @@ import { PACKAGES_ROUTE, getSessionAction } from '../lib/sessionAction.js';
 
 export function SessionDetailModal({
   activeSession, bookedSessionIds, bookingError, bookingLoading, conflictingBooking, detailModalOpen,
-  handleExecuteBooking, handleCancelBooking, cancelLoading, entitlements, isEn, setDetailModalOpen
+  handleExecuteBooking, handleCancelBooking, handleLeaveWaitlist, cancelLoading, entitlements, isEn, setDetailModalOpen
 }) {
   return (
     <Modal
@@ -18,6 +18,8 @@ export function SessionDetailModal({
       {activeSession && (() => {
         const action = getSessionAction(activeSession, bookedSessionIds, isEn);
         const isBooked = action.state === 'ALREADY_BOOKED';
+        const isWaitlisted = action.state === 'WAITLISTED';
+        const queueLength = activeSession.waitlistCount || 0;
         const isFull = activeSession.enrolledCount >= activeSession.capacity;
         const needsPackage = action.action === 'packages';
         const cancelHours = entitlements?.cancelBeforeHours || 0;
@@ -99,6 +101,22 @@ export function SessionDetailModal({
                   window.location.hash = '#/member/bookings';
                 }}
               />
+            ) : isWaitlisted ? (
+              <BusinessAlert
+                type="info"
+                title={isEn
+                  ? `You are #${activeSession.waitlistPosition || '?'} on the waitlist`
+                  : `Bạn đang ở vị trí #${activeSession.waitlistPosition || '?'} trong danh sách chờ`}
+                code="WAITLISTED"
+                message={isEn
+                  ? `${queueLength} member(s) are waiting for this session. When a spot opens, the first eligible member is booked automatically and notified.`
+                  : `Có ${queueLength} hội viên đang chờ buổi này. Khi có chỗ trống, hội viên đầu hàng đủ điều kiện sẽ được tự động xác nhận chỗ và nhận thông báo.`}
+                actionText={isEn ? 'View My Bookings' : 'Xem danh sách vé tập'}
+                onAction={() => {
+                  setDetailModalOpen(false);
+                  window.location.hash = '#/member/bookings';
+                }}
+              />
             ) : needsPackage ? (
               <BusinessAlert
                 type="warning"
@@ -120,8 +138,8 @@ export function SessionDetailModal({
                   : 'Tất cả các vị trí tập luyện trong ca học này đã có hội viên đăng ký giữ chỗ.'}
                 proposedHandling={activeSession.allowWaitlist
                   ? (isEn
-                    ? 'Use the confirmation button below to join the waitlist. You will be notified when a spot becomes available.'
-                    : 'Nhấn nút xác nhận bên dưới để vào danh sách chờ. Hệ thống sẽ thông báo khi có chỗ trống.')
+                    ? `Use the confirmation button below to join the waitlist (${queueLength} waiting). You will be booked automatically when a spot becomes available.`
+                    : `Nhấn nút xác nhận bên dưới để vào danh sách chờ (đang có ${queueLength} người chờ). Hệ thống sẽ tự động xác nhận chỗ khi có người hủy.`)
                   : (isEn
                     ? 'Please choose another session.'
                     : 'Vui lòng chọn ca tập khác.')}
@@ -190,6 +208,17 @@ export function SessionDetailModal({
                 </button>
               )}
 
+              {isWaitlisted && activeSession.waitlistId && (
+                <button
+                  type="button"
+                  onClick={() => handleLeaveWaitlist?.(activeSession.waitlistId)}
+                  disabled={cancelLoading}
+                  className="px-6 py-2 text-xs font-bold font-chivo uppercase tracking-wider rounded-lg border border-brand-danger-600 text-brand-danger-700 hover:bg-brand-danger-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {cancelLoading ? (isEn ? 'Leaving...' : 'Đang rời...') : (isEn ? 'Leave waitlist' : 'Rời hàng chờ')}
+                </button>
+              )}
+
               {needsPackage && (
                 <button
                   type="button"
@@ -200,7 +229,7 @@ export function SessionDetailModal({
                 </button>
               )}
 
-              {!isBooked && !needsPackage && (
+              {!isBooked && !isWaitlisted && !needsPackage && (
                 <button
                   type="button"
                   onClick={() => handleExecuteBooking()}

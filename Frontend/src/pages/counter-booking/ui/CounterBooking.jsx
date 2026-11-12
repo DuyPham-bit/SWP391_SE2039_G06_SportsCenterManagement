@@ -16,6 +16,7 @@ export function CounterBooking() {
   const [selected, setSelected] = useState(null);
   const [sessions, setSessions] = useState([]);
   const [bookings, setBookings] = useState([]);
+  const [waitlist, setWaitlist] = useState([]);
   const [busy, setBusy] = useState(false);
   const [searching, setSearching] = useState(false);
 
@@ -59,10 +60,18 @@ export function CounterBooking() {
 
   const refresh = async member => {
     if (!member?.id) return;
-    const [s, b] = await Promise.all([classApi.getAll(), bookingApi.getForMember(member.id)]);
+    const [s, b, w] = await Promise.all([
+      classApi.getAll(),
+      bookingApi.getForMember(member.id),
+      bookingApi.getWaitlistForMember(member.id).catch(() => [])
+    ]);
     setSessions(s || []);
     setBookings(b || []);
+    setWaitlist(w || []);
   };
+
+  const waitlistBySession = new Map(waitlist.map(w => [w.sessionId, w]));
+  const bookedSessionIds = new Set(bookings.filter(b => b.status === 'CONFIRMED').map(b => b.sessionId));
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
@@ -263,6 +272,56 @@ export function CounterBooking() {
                   ))}
                 </div>
               )}
+
+              {/* Hàng chờ của hội viên: vị trí FIFO + lễ tân có thể rút khỏi hàng */}
+              <div className="pt-4 border-t border-brand-navy-100 dark:border-brand-navy-800 space-y-3">
+                <h3 className="font-chivo text-sm font-bold text-brand-navy-900 dark:text-white uppercase tracking-wide flex items-center gap-2">
+                  <span className="material-symbols-outlined text-[18px] text-brand-sand-500">hourglass_top</span>
+                  <span>{isEn ? `Waitlist (${waitlist.length})` : `Hàng Chờ (${waitlist.length})`}</span>
+                </h3>
+                {waitlist.length === 0 ? (
+                  <div className="py-3 text-center text-xs text-brand-navy-400 dark:text-brand-navy-500">
+                    {isEn ? 'This member is not waiting for any session.' : 'Hội viên không có trong hàng chờ buổi nào.'}
+                  </div>
+                ) : (
+                  <div className="space-y-2">
+                    {waitlist.map(w => (
+                      <div
+                        key={w.id}
+                        className="p-3 rounded-xl border border-brand-sand-300/60 bg-brand-sand-50/60 dark:bg-brand-navy-800/40 flex items-center justify-between gap-3"
+                      >
+                        <div className="min-w-0">
+                          <div className="font-chivo font-bold text-sm text-brand-navy-900 dark:text-white truncate">{w.className}</div>
+                          <div className="text-xs text-brand-navy-500 dark:text-brand-navy-400">
+                            {w.sessionDate} • {String(w.startTime || '').slice(0, 5)} - {String(w.endTime || '').slice(0, 5)}
+                            {' • '}
+                            <strong className="text-brand-sand-800 dark:text-brand-sand-300">
+                              {isEn ? `Position #${w.position}` : `Vị trí #${w.position}`}
+                            </strong>
+                          </div>
+                        </div>
+                        <button
+                          type="button"
+                          disabled={busy}
+                          onClick={() =>
+                            run(async () => {
+                              try {
+                                await bookingApi.leaveWaitlistForMember(selected.id, w.id);
+                                showSuccess(isEn ? 'Removed from waitlist' : 'Đã rút hội viên khỏi hàng chờ');
+                              } finally {
+                                await refresh(selected);
+                              }
+                            })
+                          }
+                          className="px-3 py-1.5 bg-brand-terra-500/15 hover:bg-brand-terra-500/25 text-brand-terra-700 border border-brand-terra-500/30 rounded-lg text-xs font-bold font-chivo uppercase tracking-wider shrink-0 cursor-pointer disabled:opacity-50"
+                        >
+                          {isEn ? 'Remove' : 'Rút khỏi hàng'}
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
             </div>
 
             {/* Right Column: Available Classes (7 cols) */}
@@ -282,6 +341,9 @@ export function CounterBooking() {
                 <div className="space-y-3">
                   {sessions.map(s => {
                     const isFull = s.enrolledCount >= s.capacity;
+                    const queued = waitlistBySession.get(s.sessionId || s.id);
+                    const isBooked = bookedSessionIds.has(s.sessionId || s.id);
+                    const blockedFull = isFull && !s.allowWaitlist;
                     return (
                       <div
                         key={s.id}
@@ -309,12 +371,17 @@ export function CounterBooking() {
                             <strong className={isFull ? 'text-brand-terra-700 dark:text-brand-terra-400' : 'text-brand-sage-700 dark:text-brand-sage-500'}>
                               {s.enrolledCount}/{s.capacity}
                             </strong>
+                            {s.waitlistCount > 0 && (
+                              <span className="ml-2 text-brand-sand-800 dark:text-brand-sand-300">
+                                • {isEn ? `${s.waitlistCount} waiting` : `${s.waitlistCount} người đang chờ`}
+                              </span>
+                            )}
                           </div>
                         </div>
 
                         <button
                           type="button"
-                          disabled={busy || !s.isBookable}
+                          disabled={busy || !s.isBookable || isBooked || Boolean(queued) || blockedFull}
                           onClick={() =>
                             run(async () => {
                               const r = await bookingApi.bookForMember(selected.id, s.id);
@@ -328,7 +395,15 @@ export function CounterBooking() {
                               : 'bg-brand-sage-700 hover:bg-brand-sage-900 text-white shadow-md'
                           }`}
                         >
-                          {isFull ? (isEn ? 'Join Waitlist' : 'Danh sách chờ') : (isEn ? 'Book Slot' : 'Đặt chỗ')}
+                          {isBooked
+                            ? (isEn ? 'Booked' : 'Đã đặt')
+                            : queued
+                              ? (isEn ? `Waiting #${queued.position}` : `Đang chờ #${queued.position}`)
+                              : blockedFull
+                                ? (isEn ? 'Full' : 'Hết chỗ')
+                                : isFull
+                                  ? (isEn ? 'Join Waitlist' : 'Vào danh sách chờ')
+                                  : (isEn ? 'Book Slot' : 'Đặt chỗ')}
                         </button>
                       </div>
                     );

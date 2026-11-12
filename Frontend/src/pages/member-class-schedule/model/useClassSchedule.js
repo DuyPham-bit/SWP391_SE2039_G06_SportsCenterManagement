@@ -271,6 +271,24 @@ export function useClassSchedule() {
     }
   };
 
+  // Rời hàng chờ của một buổi học (hội viên tự rời, không ảnh hưởng người khác trong hàng).
+  const handleLeaveWaitlist = async (waitlistId) => {
+    if (!waitlistId) return;
+    setCancelLoading(true);
+    setBookingError(null);
+    try {
+      await bookingApi.leaveWaitlist(waitlistId);
+      showSuccess(isEn ? 'You left the waitlist.' : 'Đã rời khỏi danh sách chờ.');
+      setDetailModalOpen(false);
+      await loadClasses();
+    } catch (err) {
+      setBookingError(err);
+      showError(err);
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   // Kiểm tra xung đột lịch với các lớp đã đặt khác của học viên
   const conflictingBooking = useMemo(() => {
     if (!activeSession || !myBookings.length) return null;
@@ -393,7 +411,7 @@ export function useClassSchedule() {
 
   return {
     DAY_LABELS, activeSession, availableCoaches, availableSports, selectedCoach, setSelectedCoach, bookedSessionIds, bookingError, bookingLoading,
-    cancelLoading, entitlements, handleCancelBooking,
+    cancelLoading, entitlements, handleCancelBooking, handleLeaveWaitlist,
     classes, classesByDate, conflictingBooking, currentDate, detailModalOpen, handleExecuteBooking,
     handleNext, handleOpenSessionDetail, handlePrev, handleToday, isEn, loading, periodTitle,
     searchQuery, selectedCalendarDate, selectedSport, selectedStatusFilter, selectedTimeSlot,

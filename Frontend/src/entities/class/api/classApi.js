@@ -52,7 +52,11 @@ function mapSession(item) {
     isBookable: Boolean(item.isBookable), allowWaitlist: Boolean(item.allowWaitlist),
     // Member-only, computed by the backend (see ClassScheduleQueryService.ResolveButtonState).
     buttonState: item.buttonState || null,
-    bookingId: item.bookingId || null
+    bookingId: item.bookingId || null,
+    // Member-only: the caller's own queue entry; waitlistCount is the queue length for everyone.
+    waitlistId: item.waitlistId || null,
+    waitlistPosition: item.waitlistPosition || null,
+    waitlistCount: Number(item.waitlistCount) || 0
   };
 }
 

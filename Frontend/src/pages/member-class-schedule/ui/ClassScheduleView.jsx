@@ -16,7 +16,7 @@ import { SessionDetailModal } from './SessionDetailModal.jsx';
 export function ClassScheduleView() {
   const {
     DAY_LABELS, activeSession, availableSports, bookedSessionIds, bookingError, bookingLoading,
-    cancelLoading, entitlements, handleCancelBooking,
+    cancelLoading, entitlements, handleCancelBooking, handleLeaveWaitlist,
     classes, classesByDate, conflictingBooking, currentDate, detailModalOpen, handleExecuteBooking,
     handleNext, handleOpenSessionDetail, handlePrev, handleToday, isEn, loading, periodTitle,
     searchQuery, selectedCalendarDate, selectedSport, selectedStatusFilter, selectedTimeSlot,
@@ -119,6 +119,7 @@ export function ClassScheduleView() {
         cancelLoading={cancelLoading}
         entitlements={entitlements}
         handleCancelBooking={handleCancelBooking}
+        handleLeaveWaitlist={handleLeaveWaitlist}
         bookedSessionIds={bookedSessionIds}
         bookingError={bookingError}
         bookingLoading={bookingLoading}

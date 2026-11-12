@@ -18,6 +18,10 @@ export function getSessionAction(cls, bookedSessionIds, isEn) {
   switch (state) {
     case 'ALREADY_BOOKED':
       return { state, label: isEn ? 'Cancel spot' : 'Hủy chỗ', action: 'detail', tone: 'booked', dimmed: false };
+    case 'WAITLISTED': {
+      const pos = cls.waitlistPosition ? ` #${cls.waitlistPosition}` : '';
+      return { state, label: isEn ? `Waitlisted${pos}` : `Đang chờ${pos}`, action: 'detail', tone: 'warn', dimmed: false };
+    }
     case 'EXPIRED':
       return { state, label: isEn ? 'Ended' : 'Đã qua', action: null, tone: 'muted', dimmed: true };
     case 'NO_VALID_PACKAGE':
@@ -50,6 +54,7 @@ export function filterSessionsByEntitlements(sessions, entitlements, bookedSessi
 
   return list.filter(cls => {
     const isBooked = cls.buttonState === 'ALREADY_BOOKED'
+      || cls.buttonState === 'WAITLISTED'
       || bookedSessionIds?.has(cls.sessionId)
       || bookedSessionIds?.has(cls.id);
     if (isBooked) return true;

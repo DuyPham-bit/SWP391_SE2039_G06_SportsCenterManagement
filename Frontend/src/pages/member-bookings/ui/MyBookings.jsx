@@ -123,7 +123,8 @@ export function MyBookings() {
       showSuccess(isEn ? `Left the waitlist for "${translateClassName(className, isEn)}".` : `Đã rời khỏi danh sách chờ của lớp "${className || ''}".`);
       await loadBookings();
     } catch (err) {
-      showError(err.message || (isEn ? 'Unable to leave waitlist.' : 'Không thể rời danh sách chờ.'));
+      showError(err?.message ? err : (isEn ? 'Unable to leave waitlist.' : 'Không thể rời danh sách chờ.'));
+      await loadBookings(); // e.g. 409: the entry was just promoted to a booking
     } finally {
       setLeavingWaitlistId(null);
     }
@@ -529,7 +530,9 @@ export function MyBookings() {
                           </span>
                           <span className="px-2 py-0.5 rounded text-[10px] font-black uppercase tracking-wider bg-brand-sand-100 text-brand-sand-800 border border-brand-sand-200 flex items-center gap-1">
                             <span className="material-symbols-outlined text-[13px]">hourglass_top</span>
-                            <span>{isEn ? 'PENDING' : 'ĐANG CHỜ DUYỆT'}</span>
+                            <span>{w.position
+                              ? (isEn ? `WAITLIST #${w.position}` : `VỊ TRÍ CHỜ #${w.position}`)
+                              : (isEn ? 'WAITLISTED' : 'ĐANG CHỜ')}</span>
                           </span>
                         </div>
                         <h3 className="font-chivo text-base font-black text-brand-navy-900">
