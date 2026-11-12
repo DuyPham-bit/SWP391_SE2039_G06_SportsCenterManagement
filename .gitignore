@@ -87,3 +87,6 @@ graphify-out/
 .taste-skill/
 .claude/
 skills-lock.json
+
+# Apps Script relay (contains secret)
+gmail-relay.gs
