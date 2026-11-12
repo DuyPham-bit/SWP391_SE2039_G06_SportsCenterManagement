@@ -63,6 +63,10 @@ export const packageApi = {
     return mapPackage(updated);
   },
 
+  async remove(id) {
+    return apiRequest(`centers/${centerId()}/membership-packages/${id}`, { method: 'DELETE' });
+  },
+
   async toggleStatus(id) {
     const target = (await this.getAll()).find(item => Number(item.id) === Number(id));
     if (!target) throw new Error('Không tìm thấy gói tập.');
