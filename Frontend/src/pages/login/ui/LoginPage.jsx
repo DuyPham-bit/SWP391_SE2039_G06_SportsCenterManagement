@@ -370,7 +370,20 @@ export function LoginPage() {
       showSuccess('Đăng ký thành công! Mã hội viên của bạn: ' + user.memberCode);
       redirectToRoleDashboard(user.role || 'MEMBER');
     } catch (error) {
-      setFormError(error.message || 'Đăng ký thất bại. Vui lòng thử lại.');
+      const message = error.payload?.message || error.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+      const duplicateField = error.payload?.field
+        || (error.status === 409 && /^Email/.test(message) ? 'email' : error.status === 409 && /^Số điện thoại/.test(message) ? 'phone' : null);
+      if (duplicateField === 'email' || duplicateField === 'phone') {
+        // Trùng email/SĐT: đóng OTP (nếu đang mở) và báo ngay dưới ô tương ứng
+        const fieldId = duplicateField === 'email' ? 'register-email' : 'register-phone';
+        setVerificationEmail('');
+        setVerificationPhone('');
+        setRegOtp('');
+        setFieldErrors(previous => ({ ...previous, [fieldId]: message }));
+        setTimeout(() => document.getElementById(fieldId)?.focus(), 0);
+      } else {
+        setFormError(message);
+      }
     } finally {
       setIsSubmitting(false);
     }
