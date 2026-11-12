@@ -21,8 +21,8 @@ test('normalizeRouteHash handles #/membe typo by auto-correcting to #/member/das
 test('normalizeRouteHash auto-corrects member subroutes and preserves query parameters', async () => {
   const { normalizeRouteHash } = await loadRouter();
 
-  assert.strictEqual(normalizeRouteHash('#/member/enrol'), '#/member/enroll');
-  assert.strictEqual(normalizeRouteHash('#/member/enrollment'), '#/member/enroll');
+  assert.strictEqual(normalizeRouteHash('#/member/enroll'), '#/member/schedule');
+  assert.strictEqual(normalizeRouteHash('#/member/enrollment'), '#/member/schedule');
   assert.strictEqual(normalizeRouteHash('#/member/pack?tab=active'), '#/member/packages?tab=active');
   assert.strictEqual(normalizeRouteHash('#/member/sched'), '#/member/schedule');
   assert.strictEqual(normalizeRouteHash('#/member/book'), '#/member/bookings');

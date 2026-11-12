@@ -8,6 +8,10 @@ import { Modal } from '../../../shared/ui/Modal.jsx';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { translatePackageName } from '../../../shared/i18n/i18nHelper.js';
 import { safeHref, safePaymentHref } from '../../../shared/lib/safeUrl.js';
+import { classApi } from '../../../entities/class/index.js';
+import { getPublicCatalog } from '../../../entities/catalog/index.js';
+import { getPurchaseMode, needsSportPicker, purchaseLabel } from '../lib/purchaseMode.js';
+import { SportPickerModal } from './SportPickerModal.jsx';
 
 const PACKAGE_PERKS = {
   basic: {
@@ -131,14 +135,24 @@ export function MemberPackages() {
   const [conflictData, setConflictData] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
+  // Current package (tier, id) decides renew / upgrade / downgrade per card.
+  const [entitlements, setEntitlements] = useState(null);
+  const [sports, setSports] = useState([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const [selectedSportIds, setSelectedSportIds] = useState([]);
+
   const loadData = async () => {
     try {
-      const [pkgs, pendings] = await Promise.all([
+      const [pkgs, pendings, ent, catalog] = await Promise.all([
         packageApi.getAll(),
-        memberApi.getMyPendingInvoices()
+        memberApi.getMyPendingInvoices(),
+        classApi.getMyEntitlements().catch(() => null),
+        getPublicCatalog().catch(() => null)
       ]);
       setPackages(pkgs.filter(p => p.status === 'ACTIVE'));
       setPendingInvoices(pendings || []);
+      setEntitlements(ent);
+      setSports(catalog?.sports || []);
     } catch (error) {
       showError(error.message || (isEn ? 'Failed to load membership packages.' : 'Không thể tải danh mục gói tập.'));
     } finally {
@@ -153,6 +167,17 @@ export function MemberPackages() {
   const handleOpenCheckout = (pkg, existingInvoiceNumber = null) => {
     setSelectedPkg(pkg);
     setActiveInvoiceNumber(existingInvoiceNumber);
+    setSelectedSportIds([]);
+    // An existing invoice already has its sports stored; only fresh new/upgrade purchases pick sports.
+    if (!existingInvoiceNumber && needsSportPicker(pkg, getPurchaseMode(pkg, entitlements))) {
+      setPickerOpen(true);
+      return;
+    }
+    setModalOpen(true);
+  };
+
+  const handleConfirmSports = () => {
+    setPickerOpen(false);
     setModalOpen(true);
   };
 
@@ -206,7 +231,8 @@ export function MemberPackages() {
         memberId: currentUser.id,
         packageId: selectedPkg.id,
         paymentMethod,
-        invoiceNumber: activeInvoiceNumber || undefined
+        invoiceNumber: activeInvoiceNumber || undefined,
+        sportIds: activeInvoiceNumber ? null : selectedSportIds
       });
       const paymentUrl = safePaymentHref(res.paymentUrl) || safeHref(res.paymentUrl);
       if (!paymentUrl) {
@@ -456,7 +482,9 @@ export function MemberPackages() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6 items-stretch pt-3">
           {packages.map((pkg, index) => {
-            const isCurrent = currentUser?.packageId === pkg.id && currentUser?.packageStatus === 'ACTIVE';
+            const mode = getPurchaseMode(pkg, entitlements);
+            const isCurrent = mode === 'renew'
+              || (!entitlements && currentUser?.packageId === pkg.id && currentUser?.packageStatus === 'ACTIVE');
             const isQueued = currentUser?.scheduledSubscriptions?.some(
               s => s.packageId === pkg.id || (s.packageName && s.packageName === pkg.name)
             );
@@ -575,7 +603,9 @@ export function MemberPackages() {
                     <span>
                       {isEn ? 'Applicable sports: ' : 'Môn áp dụng: '}
                       <strong className={`font-bold ${tone.pillStrong}`}>
-                        {resolveAllowedSports(pkg) >= 10 ? (isEn ? 'All 10 Sports (All-Access)' : 'Toàn bộ 10 môn (All-Access)') : (isEn ? `${resolveAllowedSports(pkg)} elective sports` : `${resolveAllowedSports(pkg)} môn tự chọn`)}
+                        {(pkg.isAllAccess ?? resolveAllowedSports(pkg) >= 10)
+                          ? (isEn ? `All ${sports.length || ''} Sports (All-Access)` : `Toàn bộ ${sports.length || ''} môn (All-Access)`)
+                          : (isEn ? `${resolveAllowedSports(pkg)} elective sports` : `${resolveAllowedSports(pkg)} môn tự chọn`)}
                       </strong>
                     </span>
                   </div>
@@ -625,6 +655,13 @@ export function MemberPackages() {
                       <span className="material-symbols-outlined text-[18px]" aria-hidden="true">check</span>
                       <span>{isEn ? 'Queued Sequentially' : 'Đã Đặt Nối Tiếp'}</span>
                     </button>
+                  ) : mode === 'downgrade' ? (
+                    <button
+                      disabled
+                      className="w-full min-h-12 rounded-2xl font-chivo text-sm font-bold bg-brand-navy-100 dark:bg-brand-navy-800 text-brand-navy-400 cursor-not-allowed"
+                    >
+                      {purchaseLabel(mode, isEn)}
+                    </button>
                   ) : (
                     <button
                       onClick={() => handleOpenCheckout(pkg)}
@@ -632,7 +669,7 @@ export function MemberPackages() {
                         isCurrent && !isVip && !isPro ? 'bg-brand-sage-700 hover:bg-brand-sage-800 text-white' : tone.cta
                       }`}
                     >
-                      <span>{isCurrent ? (isEn ? 'Renew Another Cycle' : 'Gia Hạn Thêm Chu Kỳ') : (isEn ? 'Subscribe Now' : 'Đăng Ký Gói Này')}</span>
+                      <span>{purchaseLabel(isCurrent ? 'renew' : mode, isEn)}</span>
                       <span className="material-symbols-outlined text-[18px] transition-transform group-hover:translate-x-1" aria-hidden="true">arrow_forward</span>
                     </button>
                   )}
@@ -642,6 +679,17 @@ export function MemberPackages() {
           })}
         </div>
       </section>
+
+      <SportPickerModal
+        isEn={isEn}
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onConfirm={handleConfirmSports}
+        pkg={selectedPkg}
+        selected={selectedSportIds}
+        setSelected={setSelectedSportIds}
+        sports={sports}
+      />
 
       {/* Checkout Modal */}
       <Modal

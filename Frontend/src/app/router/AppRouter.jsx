@@ -56,7 +56,6 @@ const ManagerSupportCommunications = lazy(() => import('../../pages/manager-supp
 // Member Pages (Lazy Loaded)
 const MemberDashboard = lazy(() => import('../../pages/member-dashboard/index.js').then(m => ({ default: m.MemberDashboard })));
 const MemberPackages = lazy(() => import('../../pages/member-packages/index.js').then(m => ({ default: m.MemberPackages })));
-const MemberEnrollment = lazy(() => import('../../pages/member-enrollment/index.js').then(m => ({ default: m.MemberEnrollment })));
 const ClassScheduleView = lazy(() => import('../../pages/member-class-schedule/index.js').then(m => ({ default: m.ClassScheduleView })));
 const MyBookings = lazy(() => import('../../pages/member-bookings/index.js').then(m => ({ default: m.MyBookings })));
 const MyProgress = lazy(() => import('../../pages/member-progress/index.js').then(m => ({ default: m.MyProgress })));
@@ -318,8 +317,6 @@ function AppRouter() {
         return renderMemberRoute(MemberPackages);
       case '#/member/refunds':
         return renderMemberRoute(MemberRefundRequests);
-      case '#/member/enroll':
-        return renderMemberRoute(MemberEnrollment, 'book_class');
       case '#/member/schedule':
         return renderMemberRoute(ClassScheduleView, 'book_class');
       case '#/member/bookings':

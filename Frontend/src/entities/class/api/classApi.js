@@ -49,7 +49,10 @@ function mapSession(item) {
     enrolledCount: item.bookedCount || 0,
     capacity: item.capacity || 0,
     status: String(item.sessionStatus || '').toUpperCase(),
-    isBookable: Boolean(item.isBookable), allowWaitlist: Boolean(item.allowWaitlist)
+    isBookable: Boolean(item.isBookable), allowWaitlist: Boolean(item.allowWaitlist),
+    // Member-only, computed by the backend (see ClassScheduleQueryService.ResolveButtonState).
+    buttonState: item.buttonState || null,
+    bookingId: item.bookingId || null
   };
 }
 
@@ -65,6 +68,8 @@ export const classApi = {
  },
  async getManagementClasses() { return asArray(await apiRequest('centers/'+centerId()+'/classes/all')); },
  // Member self-enrollment: sport → coach → class tree with per-class eligibility from the backend.
+ /** Current package entitlements: allowed sports, cancel window, active sport count. */
+ async getMyEntitlements() { return apiRequest('members/me/entitlements'); },
  async getEnrollmentOptions() { return apiRequest('members/me/enrollment-options?centerId='+centerId()); },
  async enroll(classId, subscriptionId) {
    return apiRequest('classes/'+Number(classId)+'/enrollments', { method: 'POST', body: { subscriptionId: Number(subscriptionId) } });

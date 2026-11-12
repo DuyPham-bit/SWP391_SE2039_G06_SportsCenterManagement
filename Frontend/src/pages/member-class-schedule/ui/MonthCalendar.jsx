@@ -1,5 +1,7 @@
 import React from 'react';
 import { getMonthCalendarGrid, getSportTheme } from '../lib/calendarView.js';
+import { getSessionAction } from '../lib/sessionAction.js';
+import { SessionActionButton } from './SessionActionButton.jsx';
 import { formatIsoDate } from '../../../shared/lib/calendar.js';
 import { translateClassName, translateSportName, translateCoachName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
 
@@ -115,14 +117,14 @@ export function MonthCalendar({
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
             {(classesByDate.get(selectedCalendarDate) || []).map(cls => {
               const theme = getSportTheme(cls.sportName, isEn);
-              const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
-              const isFull = cls.enrolledCount >= cls.capacity;
+              const action = getSessionAction(cls, bookedSessionIds, isEn);
+              const isBooked = action.state === 'ALREADY_BOOKED';
 
               return (
                 <div
                   key={cls.sessionId || cls.id}
                   onClick={() => handleOpenSessionDetail(cls)}
-                  className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-all hover:shadow-md flex flex-col justify-between ${
+                  className={`p-3.5 rounded-xl border text-xs cursor-pointer transition-all hover:shadow-md flex flex-col justify-between ${action.dimmed ? 'opacity-50 pointer-events-none ' : ''}${
                         isBooked
                           ? 'bg-brand-sage-50 border-brand-sage-400 shadow-xs'
                           : `${theme.bg} ${theme.border}`
@@ -147,13 +149,7 @@ export function MonthCalendar({
                     <span className="font-bold text-[11px] text-brand-navy-700">
                       {cls.enrolledCount}/{cls.capacity} {isEn ? 'spots' : 'chỗ'} ({cls.capacity - cls.enrolledCount} {isEn ? 'left' : 'trống'})
                     </span>
-                    {isBooked ? (
-                      <span className="text-[10px] font-black text-brand-sage-800 dark:text-brand-sage-400 uppercase">{isEn ? '✓ BOOKED' : '✓ ĐÃ ĐẶT CHỖ'}</span>
-                    ) : isFull ? (
-                      <span className="text-[10px] font-bold text-brand-navy-400 uppercase">{isEn ? 'FULL' : 'HẾT CHỖ'}</span>
-                    ) : (
-                      <span className="text-[10px] font-black text-brand-danger-600 uppercase hover:underline">{isEn ? 'BOOK NOW →' : 'ĐẶT CHỖ →'}</span>
-                    )}
+                    <SessionActionButton action={action} cls={cls} handleOpenSessionDetail={handleOpenSessionDetail} />
                   </div>
                 </div>
               );

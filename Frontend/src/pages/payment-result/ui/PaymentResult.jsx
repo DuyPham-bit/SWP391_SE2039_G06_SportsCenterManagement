@@ -41,8 +41,17 @@ export function PaymentResult() {
       window.close();
       return;
     }
-    window.location.href = `${window.location.origin}/#/${isAuthenticated ? 'member/packages' : 'login'}`;
+    // replace(): the gateway return URL should not stay in history (Back would re-confirm it).
+    window.location.replace(`${window.location.origin}/#/${isAuthenticated ? 'member/packages' : 'login'}`);
   };
+
+  // Successful payment: return to the packages page on its own, no extra click needed.
+  const autoReturn = !state.loading && state.result?.success === true;
+  useEffect(() => {
+    if (!autoReturn) return;
+    const timer = setTimeout(handleBackToPackages, 1500);
+    return () => clearTimeout(timer);
+  }, [autoReturn]);
 
   return (
     <main className="min-h-screen bg-brand-navy-50 flex items-center justify-center p-6">
@@ -55,6 +64,7 @@ export function PaymentResult() {
             <p className="font-bold">{state.result.success ? (isEn ? 'Payment successful' : 'Thanh toán thành công') : (isEn ? 'Transaction not yet successfully confirmed' : 'Giao dịch chưa được xác nhận thành công')}</p>
             <p className="mt-1">{state.result.message}</p>
             {state.result.invoiceNumber && <p className="mt-2">{isEn ? 'Invoice Code:' : 'Mã hóa đơn:'} <strong className="break-all">{state.result.invoiceNumber}</strong></p>}
+            {autoReturn && <p role="status" className="mt-2 text-xs font-semibold">{isEn ? 'Taking you back to your packages...' : 'Đang tự động chuyển về trang gói tập...'}</p>}
           </div>
         )}
         {!state.loading && !state.error && !state.result && (

@@ -2,6 +2,9 @@ import React from 'react';
 import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
 
+// EN keeps the published title unless it is written in Vietnamese.
+const hasVietnameseChars = (text) => /[à-ỹđ]/i.test(text || '');
+
 export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
   return (
     <section id="trang-chu" className="hero-section">
@@ -27,7 +30,7 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
           {/* Animated Headline with Slide-up & Typewriter */}
           <TypewriterHeroHeading
             heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
-            heroTitle={isEn ? '' : landingContent.heroBanner?.title}
+            heroTitle={isEn && hasVietnameseChars(landingContent.heroBanner?.title) ? '' : landingContent.heroBanner?.title}
           />
 
           {/* Subtext */}

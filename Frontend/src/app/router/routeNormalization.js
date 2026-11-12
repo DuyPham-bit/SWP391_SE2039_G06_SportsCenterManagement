@@ -11,8 +11,10 @@ export const ROUTE_TYPO_MAP = {
   '#/member/': '#/member/dashboard',
   '#/member': '#/member/dashboard',
   '#/member/dash': '#/member/dashboard',
-  '#/member/enrol': '#/member/enroll',
-  '#/member/enrollment': '#/member/enroll',
+  // Self-enrollment page was removed; old links land on the timetable.
+  '#/member/enroll': '#/member/schedule',
+  '#/member/enrol': '#/member/schedule',
+  '#/member/enrollment': '#/member/schedule',
   '#/member/pack': '#/member/packages',
   '#/member/package': '#/member/packages',
   '#/member/sched': '#/member/schedule',

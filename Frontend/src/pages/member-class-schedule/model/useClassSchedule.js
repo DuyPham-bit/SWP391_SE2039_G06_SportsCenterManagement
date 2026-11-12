@@ -7,6 +7,7 @@ import { parseCalendarDate } from '../../../shared/lib/dateTime.js';
 import { classApi } from '../../../entities/class/index.js';
 import { bookingApi } from '../../../entities/booking/index.js';
 import { translateClassName } from '../../../shared/i18n/i18nHelper.js';
+import { filterSessionsByEntitlements } from '../lib/sessionAction.js';
 
 export function useClassSchedule() {
   const { currentUser } = useAuth();
@@ -20,6 +21,8 @@ export function useClassSchedule() {
   const [classes, setClasses] = useState([]);
   const [myBookings, setMyBookings] = useState([]);
   const [bookedSessionIds, setBookedSessionIds] = useState(new Set());
+  const [entitlements, setEntitlements] = useState(null);
+  const [cancelLoading, setCancelLoading] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // --- QUẢN LÝ LỊCH VÀ CHẾ ĐỘ XEM (CALENDAR MODES) ---
@@ -30,6 +33,7 @@ export function useClassSchedule() {
 
   // --- BỘ LỌC ĐA NĂNG ---
   const [selectedSport, setSelectedSport] = useState('ALL');
+  const [selectedCoach, setSelectedCoach] = useState('ALL'); // coach name the member wants to train with
   const [selectedTimeSlot, setSelectedTimeSlot] = useState('ALL'); // ALL, MORNING (<12h), AFTERNOON (12-17h), EVENING (>17h)
   const [selectedStatusFilter, setSelectedStatusFilter] = useState('ALL'); // ALL, BOOKED_ONLY, AVAILABLE_ONLY
   const [searchQuery, setSearchQuery] = useState('');
@@ -42,19 +46,29 @@ export function useClassSchedule() {
 
   const loadClasses = async () => {
     try {
-      const [classList, bookingsList] = await Promise.all([
+      const [classList, bookingsList, entitlementData] = await Promise.all([
         classApi.getAll(),
-        currentUser ? bookingApi.getMemberBookings(currentUser.id) : []
+        currentUser ? bookingApi.getMemberBookings(currentUser.id) : [],
+        currentUser ? classApi.getMyEntitlements().catch(() => null) : null
       ]);
-      setClasses(classList || []);
-      setMyBookings(bookingsList || []);
-
+      setEntitlements(entitlementData);
+      // Older payloads have no bookingId on the session; recover it from the member's bookings.
+      const bookingIdBySession = new Map((bookingsList || [])
+        .filter(b => b.status === 'CONFIRMED' || b.status === 'BOOKED')
+        .map(b => [b.sessionId, b.id]));
       const confirmedIds = new Set(
         (bookingsList || [])
           .filter(b => b.status === 'CONFIRMED' || b.status === 'BOOKED')
           .map(b => b.sessionId || b.id)
       );
       setBookedSessionIds(confirmedIds);
+
+      // Only the member's registered sports (plus any already-booked sessions) are shown.
+      const hydratedList = (classList || [])
+        .map(c => ({ ...c, bookingId: c.bookingId || bookingIdBySession.get(c.sessionId) || null }));
+      const scopedList = filterSessionsByEntitlements(hydratedList, entitlementData, confirmedIds);
+      setClasses(scopedList);
+      setMyBookings(bookingsList || []);
 
       // Tự động căn chỉnh lịch theo tham số ?date= và ?search= nếu có từ thông báo
       const currentHash = window.location.hash || '';
@@ -67,12 +81,12 @@ export function useClassSchedule() {
         setCurrentDate(parseIsoDate(urlDate));
         setSelectedCalendarDate(urlDate);
       } else if (!currentHash.includes('?date=') && !currentHash.includes('&date=')) {
-        if (classList && classList.length > 0) {
+        if (scopedList.length > 0) {
           const todayStr = formatIsoDate(parseCalendarDate());
-          const hasToday = classList.some(c => c.sessionDate === todayStr);
-          if (!hasToday && classList[0]?.sessionDate) {
-            setCurrentDate(parseIsoDate(classList[0].sessionDate));
-            setSelectedCalendarDate(classList[0].sessionDate);
+          const hasToday = scopedList.some(c => c.sessionDate === todayStr);
+          if (!hasToday && scopedList[0]?.sessionDate) {
+            setCurrentDate(parseIsoDate(scopedList[0].sessionDate));
+            setSelectedCalendarDate(scopedList[0].sessionDate);
           }
         }
       }
@@ -239,6 +253,24 @@ export function useClassSchedule() {
     }
   };
 
+  // Hủy vé: backend chặn nếu chưa đủ CancelBeforeHours của gói.
+  const handleCancelBooking = async (bookingId) => {
+    if (!bookingId) return;
+    setCancelLoading(true);
+    setBookingError(null);
+    try {
+      const result = await bookingApi.cancelBooking(bookingId);
+      showSuccess(result?.message || (isEn ? 'Booking cancelled.' : 'Đã hủy chỗ.'));
+      setDetailModalOpen(false);
+      await loadClasses();
+    } catch (err) {
+      setBookingError(err);
+      showError(err);
+    } finally {
+      setCancelLoading(false);
+    }
+  };
+
   // Kiểm tra xung đột lịch với các lớp đã đặt khác của học viên
   const conflictingBooking = useMemo(() => {
     if (!activeSession || !myBookings.length) return null;
@@ -257,6 +289,9 @@ export function useClassSchedule() {
       if (selectedSport !== 'ALL' && !cls.sportName.includes(selectedSport)) {
         return false;
       }
+
+      // 1b. Lọc HLV hội viên muốn theo học
+      if (selectedCoach !== 'ALL' && cls.coachName !== selectedCoach) return false;
 
       // 2. Lọc khung giờ (Morning / Afternoon / Evening)
       if (selectedTimeSlot !== 'ALL') {
@@ -284,7 +319,7 @@ export function useClassSchedule() {
 
       return true;
     });
-  }, [classes, selectedSport, selectedTimeSlot, selectedStatusFilter, searchQuery, bookedSessionIds]);
+  }, [classes, selectedSport, selectedCoach, selectedTimeSlot, selectedStatusFilter, searchQuery, bookedSessionIds]);
 
   // Gom nhóm lớp học theo ngày YYYY-MM-DD
   const classesByDate = useMemo(() => {
@@ -324,20 +359,41 @@ export function useClassSchedule() {
     const booked = filteredClasses.filter(c => bookedSessionIds.has(c.sessionId) || bookedSessionIds.has(c.id)).length;
     const available = filteredClasses.filter(c => c.enrolledCount < c.capacity).length;
     const sportSet = new Set(filteredClasses.map(c => c.sportName));
-    return { total, booked, available, sportsCount: sportSet.size };
-  }, [filteredClasses, bookedSessionIds]);
+    return { total, booked, available, sportsCount: sportSet.size, sportsTotal: entitlements?.activeSportCount || null };
+  }, [filteredClasses, bookedSessionIds, entitlements]);
 
   // Danh mục môn thể thao duy nhất có trong hệ thống
   const availableSports = useMemo(() => {
     const map = new Map();
     classes.forEach(c => {
-      map.set(c.sportName, (map.get(c.sportName) || 0) + 1);
+      const entry = map.get(c.sportName) || { name: c.sportName, sportId: c.sportId, count: 0 };
+      entry.count += 1;
+      map.set(c.sportName, entry);
     });
-    return Array.from(map.entries()).map(([name, count]) => ({ name, count }));
+    return Array.from(map.values());
   }, [classes]);
 
+  // HLV đang dạy (theo môn đang chọn) kèm số ca, để hội viên chọn HLV mình muốn
+  const availableCoaches = useMemo(() => {
+    const map = new Map();
+    classes
+      .filter(c => c.coachName && (selectedSport === 'ALL' || c.sportName?.includes(selectedSport)))
+      .forEach(c => {
+        const entry = map.get(c.coachName) || { name: c.coachName, count: 0 };
+        entry.count += 1;
+        map.set(c.coachName, entry);
+      });
+    return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name, 'vi'));
+  }, [classes, selectedSport]);
+
+  // Đổi môn mà HLV đang chọn không dạy môn đó → bỏ lọc HLV
+  useEffect(() => {
+    if (selectedCoach !== 'ALL' && !availableCoaches.some(c => c.name === selectedCoach)) setSelectedCoach('ALL');
+  }, [availableCoaches, selectedCoach]);
+
   return {
-    DAY_LABELS, activeSession, availableSports, bookedSessionIds, bookingError, bookingLoading,
+    DAY_LABELS, activeSession, availableCoaches, availableSports, selectedCoach, setSelectedCoach, bookedSessionIds, bookingError, bookingLoading,
+    cancelLoading, entitlements, handleCancelBooking,
     classes, classesByDate, conflictingBooking, currentDate, detailModalOpen, handleExecuteBooking,
     handleNext, handleOpenSessionDetail, handlePrev, handleToday, isEn, loading, periodTitle,
     searchQuery, selectedCalendarDate, selectedSport, selectedStatusFilter, selectedTimeSlot,

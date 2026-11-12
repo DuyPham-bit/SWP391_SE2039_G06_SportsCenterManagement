@@ -16,11 +16,13 @@ import { SessionDetailModal } from './SessionDetailModal.jsx';
 export function ClassScheduleView() {
   const {
     DAY_LABELS, activeSession, availableSports, bookedSessionIds, bookingError, bookingLoading,
+    cancelLoading, entitlements, handleCancelBooking,
     classes, classesByDate, conflictingBooking, currentDate, detailModalOpen, handleExecuteBooking,
     handleNext, handleOpenSessionDetail, handlePrev, handleToday, isEn, loading, periodTitle,
     searchQuery, selectedCalendarDate, selectedSport, selectedStatusFilter, selectedTimeSlot,
     setCurrentDate, setDetailModalOpen, setSearchQuery, setSelectedCalendarDate, setSelectedSport,
     setSelectedStatusFilter, setSelectedTimeSlot, setViewMode, stats, viewMode, weekDays
+    , availableCoaches, selectedCoach, setSelectedCoach
   } = useClassSchedule();
 
   if (loading) return <LoadingSpinner text={isEn ? 'Syncing class schedule & spot availability...' : 'Đang đồng bộ lịch mở lớp & trạng thái vé tập...'} />;
@@ -42,6 +44,9 @@ export function ClassScheduleView() {
 
       {/* 3. Calendar Control Bar & View Mode Switcher */}
       <ScheduleToolbar
+        availableCoaches={availableCoaches}
+        selectedCoach={selectedCoach}
+        setSelectedCoach={setSelectedCoach}
         availableSports={availableSports}
         classes={classes}
         currentDate={currentDate}
@@ -111,6 +116,9 @@ export function ClassScheduleView() {
       {/* 5. MODAL XÁC NHẬN ĐẶT CHỖ & XEM CHI TIẾT CA TẬP */}
       <SessionDetailModal
         activeSession={activeSession}
+        cancelLoading={cancelLoading}
+        entitlements={entitlements}
+        handleCancelBooking={handleCancelBooking}
         bookedSessionIds={bookedSessionIds}
         bookingError={bookingError}
         bookingLoading={bookingLoading}

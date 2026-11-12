@@ -419,7 +419,6 @@ export function getDynamicNavItems(role) {
 
       if (perms.includes('book_class')) {
         items.push({ label: 'LỊCH HỌC & ĐẶT CHỖ', isHeader: true });
-        items.push({ path: '#/member/enroll', icon: 'how_to_reg', label: 'Đăng Ký Môn & HLV' });
         items.push({ path: '#/member/schedule', icon: 'event_available', label: 'Lịch Lớp Thể Thao' });
         items.push({ path: '#/member/bookings', icon: 'bookmark_check', label: 'Lớp Đã Đặt & Hủy' });
         items.push({ path: '#/member/attendance', icon: 'fact_check', label: 'Lịch Sử Điểm Danh' });

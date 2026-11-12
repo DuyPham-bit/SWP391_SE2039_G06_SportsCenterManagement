@@ -1,6 +1,8 @@
 import React from 'react';
 import { formatIsoDate } from '../../../shared/lib/calendar.js';
 import { getSportTheme } from '../lib/calendarView.js';
+import { getSessionAction } from '../lib/sessionAction.js';
+import { SessionActionButton } from './SessionActionButton.jsx';
 import { translateSportName, translateClassName, translateCoachName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
 
 export function WeekTimetable({
@@ -81,14 +83,14 @@ export function WeekTimetable({
               ) : (
                 dayClasses.map(cls => {
                   const theme = getSportTheme(cls.sportName, isEn);
-                  const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
-                  const isFull = cls.enrolledCount >= cls.capacity;
+                  const action = getSessionAction(cls, bookedSessionIds, isEn);
+                  const isBooked = action.state === 'ALREADY_BOOKED';
 
                   return (
                     <div
                       key={cls.sessionId || cls.id}
                       onClick={() => handleOpenSessionDetail(cls)}
-                      className={`p-3 rounded-xl border text-xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 space-y-2 ${
+                      className={`p-3 rounded-xl border text-xs cursor-pointer transition-all hover:shadow-md hover:-translate-y-0.5 space-y-2 ${action.dimmed ? 'opacity-50 pointer-events-none ' : ''}${
                             isBooked
                               ? 'bg-brand-sage-50/90 dark:bg-brand-sage-950/50 border-brand-sage-400 dark:border-brand-sage-600 ring-2 ring-brand-sage-500/20 shadow-xs'
                               : `${theme.bg} ${theme.border} shadow-xs`
@@ -122,27 +124,7 @@ export function WeekTimetable({
                           <span className="text-brand-navy-600">{cls.enrolledCount}/{cls.capacity} {isEn ? 'spots' : 'chỗ'}</span>
                         </div>
 
-                        {isBooked ? (
-                          <span className="inline-flex items-center gap-0.5 text-[10px] font-black uppercase text-brand-sage-800 bg-brand-sage-100 px-1.5 py-0.5 rounded border border-brand-sage-300">
-                            <span className="material-symbols-outlined text-[12px]">verified</span>
-                            <span>{isEn ? 'BOOKED' : 'ĐÃ ĐẶT'}</span>
-                          </span>
-                        ) : isFull ? (
-                          <span className="text-[10px] font-bold text-brand-navy-500 bg-brand-navy-200 px-1.5 py-0.5 rounded">
-                            {isEn ? 'FULL' : 'HẾT CHỖ'}
-                          </span>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenSessionDetail(cls);
-                            }}
-                            className="px-2 py-0.5 rounded bg-brand-danger-600 hover:bg-brand-danger-700 text-white font-bold text-[10px] uppercase tracking-wide transition-colors"
-                          >
-                            {isEn ? 'BOOK NOW' : 'ĐẶT CHỖ'}
-                          </button>
-                        )}
+                        <SessionActionButton action={action} cls={cls} handleOpenSessionDetail={handleOpenSessionDetail} />
                       </div>
                     </div>
                   );

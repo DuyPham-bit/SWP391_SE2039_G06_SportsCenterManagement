@@ -3,10 +3,11 @@ import { Modal } from '../../../shared/ui/Modal.jsx';
 import { getSportTheme } from '../lib/calendarView.js';
 import { translateSportName, translateDayOfWeek, translateClassName, translateRoomName, translateCoachName } from '../../../shared/i18n/i18nHelper.js';
 import { BusinessAlert } from '../../../shared/ui/BusinessAlert.jsx';
+import { PACKAGES_ROUTE, getSessionAction } from '../lib/sessionAction.js';
 
 export function SessionDetailModal({
   activeSession, bookedSessionIds, bookingError, bookingLoading, conflictingBooking, detailModalOpen,
-  handleExecuteBooking, isEn, setDetailModalOpen
+  handleExecuteBooking, handleCancelBooking, cancelLoading, entitlements, isEn, setDetailModalOpen
 }) {
   return (
     <Modal
@@ -15,8 +16,11 @@ export function SessionDetailModal({
       title={isEn ? 'Session Details & Booking Confirmation' : 'Chi Tiết Ca Tập & Xác Nhận Giữ Chỗ'}
     >
       {activeSession && (() => {
-        const isBooked = bookedSessionIds.has(activeSession.sessionId) || bookedSessionIds.has(activeSession.id);
+        const action = getSessionAction(activeSession, bookedSessionIds, isEn);
+        const isBooked = action.state === 'ALREADY_BOOKED';
         const isFull = activeSession.enrolledCount >= activeSession.capacity;
+        const needsPackage = action.action === 'packages';
+        const cancelHours = entitlements?.cancelBeforeHours || 0;
         const remainingSlots = Math.max(0, activeSession.capacity - activeSession.enrolledCount);
         const theme = getSportTheme(activeSession.sportName, isEn);
 
@@ -45,15 +49,24 @@ export function SessionDetailModal({
                   <strong>{translateRoomName(activeSession.roomName, isEn)}</strong>
                 </div>
                 <div>
-                  <span className="text-[10px] uppercase font-bold text-brand-navy-400 block">{isEn ? 'Coach' : 'Huấn luyện viên'}</span>
-                  <strong>{translateCoachName(activeSession.coachName, isEn)}</strong>
-                </div>
-                <div>
                   <span className="text-[10px] uppercase font-bold text-brand-navy-400 block">{isEn ? 'Available Spots' : 'Số chỗ còn trống'}</span>
                   <strong className={remainingSlots <= 3 ? 'text-brand-danger-600' : 'text-brand-navy-900'}>
                     {remainingSlots}/{activeSession.capacity} {isEn ? 'spots' : 'suất'}
                   </strong>
                 </div>
+              </div>
+            </div>
+
+            {/* HLV phụ trách ca tập — người hội viên sẽ theo học */}
+            <div className="flex items-center gap-3 p-3 rounded-xl border border-brand-teal-200 bg-white">
+              <div aria-hidden="true" className="w-11 h-11 shrink-0 rounded-xl bg-gradient-to-br from-brand-teal-500 to-brand-sage-600 text-white font-chivo font-black flex items-center justify-center">
+                {String(activeSession.coachName || '?').trim().split(/\s+/).slice(-2).map(p => p[0]).join('').toUpperCase()}
+              </div>
+              <div className="min-w-0">
+                <span className="text-[10px] uppercase font-bold text-brand-navy-400 block">{isEn ? 'Your coach for this session' : 'HLV bạn sẽ theo học'}</span>
+                <strong className="font-chivo text-sm text-brand-navy-900 truncate block">
+                  {activeSession.coachName ? translateCoachName(activeSession.coachName, isEn) : (isEn ? 'To be assigned' : 'Đang phân công')}
+                </strong>
               </div>
             </div>
 
@@ -85,6 +98,17 @@ export function SessionDetailModal({
                   setDetailModalOpen(false);
                   window.location.hash = '#/member/bookings';
                 }}
+              />
+            ) : needsPackage ? (
+              <BusinessAlert
+                type="warning"
+                title={action.state === 'SPORT_NOT_INCLUDED'
+                  ? (isEn ? 'This sport is not in your package' : 'Bộ môn này không nằm trong gói tập của bạn')
+                  : (isEn ? 'No valid package on this date' : 'Gói tập không còn hiệu lực vào ngày diễn ra lớp')}
+                code={action.state}
+                message={action.state === 'SPORT_NOT_INCLUDED'
+                  ? (isEn ? 'Upgrade to a package that includes this sport to book it.' : 'Nâng cấp lên gói có bộ môn này để đặt chỗ.')
+                  : (isEn ? 'Renew or buy a package that covers this date.' : 'Gia hạn hoặc mua gói có hiệu lực tới ngày này để đặt chỗ.')}
               />
             ) : isFull ? (
               <BusinessAlert
@@ -130,9 +154,13 @@ export function SessionDetailModal({
                 <span>{isEn ? 'Booking & Cancellation Policy:' : 'Chính sách đặt & hủy chỗ:'}</span>
               </div>
               <p>
-                {isEn
-                  ? '• Cancel at least 2 hours prior to class start to have your session credit refunded.'
-                  : '• Hủy ca học trước tối thiểu 2 giờ sẽ được hoàn lại lượt tập vào gói hội viên.'}
+                {cancelHours > 0
+                  ? (isEn
+                    ? `• Your package requires cancelling at least ${cancelHours} hours before class; later cancellations are blocked.`
+                    : `• Gói của bạn yêu cầu hủy lịch trước ít nhất ${cancelHours} giờ; sau mốc này không thể hủy.`)
+                  : (isEn
+                    ? '• Cancel at least 2 hours prior to class start to have your session credit refunded.'
+                    : '• Hủy ca học trước tối thiểu 2 giờ sẽ được hoàn lại lượt tập vào gói hội viên.')}
               </p>
               <p>
                 {isEn
@@ -151,7 +179,28 @@ export function SessionDetailModal({
                 {isEn ? 'Close' : 'Đóng'}
               </button>
 
-              {!isBooked && (
+              {isBooked && activeSession.bookingId && (
+                <button
+                  type="button"
+                  onClick={() => handleCancelBooking(activeSession.bookingId)}
+                  disabled={cancelLoading}
+                  className="px-6 py-2 text-xs font-bold font-chivo uppercase tracking-wider rounded-lg border border-brand-danger-600 text-brand-danger-700 hover:bg-brand-danger-50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {cancelLoading ? (isEn ? 'Cancelling...' : 'Đang hủy...') : (isEn ? 'Cancel spot' : 'Hủy chỗ')}
+                </button>
+              )}
+
+              {needsPackage && (
+                <button
+                  type="button"
+                  onClick={() => { setDetailModalOpen(false); window.location.hash = PACKAGES_ROUTE; }}
+                  className="px-6 py-2 text-xs font-bold font-chivo uppercase tracking-wider rounded-lg bg-brand-sand-500 hover:bg-brand-sand-600 text-brand-navy-900 shadow-md transition-colors"
+                >
+                  {action.label}
+                </button>
+              )}
+
+              {!isBooked && !needsPackage && (
                 <button
                   type="button"
                   onClick={() => handleExecuteBooking()}

@@ -3,7 +3,10 @@ import { formatIsoDate, parseIsoDate } from '../../../shared/lib/calendar.js';
 import { getSportTheme } from '../lib/calendarView.js';
 import { translateSportName } from '../../../shared/i18n/i18nHelper.js';
 
+const initialsOf = name => String(name || '?').trim().split(/\s+/).slice(-2).map(p => p[0]).join('').toUpperCase();
+
 export function ScheduleToolbar({
+  availableCoaches = [], selectedCoach = 'ALL', setSelectedCoach = () => {},
   availableSports, classes, currentDate, handleNext, handlePrev, handleToday, isEn, periodTitle,
   searchQuery, selectedSport, selectedStatusFilter, selectedTimeSlot, setCurrentDate, setSearchQuery,
   setSelectedCalendarDate, setSelectedSport, setSelectedStatusFilter, setSelectedTimeSlot,
@@ -169,6 +172,49 @@ export function ScheduleToolbar({
           );
         })}
       </div>
+
+      {/* Row 4: Coach chips — member picks the coach they want to train with */}
+      {availableCoaches.length > 0 && (
+        <div className="flex flex-wrap items-center gap-1.5 pt-1" role="group" aria-label={isEn ? 'Filter by coach' : 'Lọc theo HLV'}>
+          <span className="text-[11px] font-bold text-brand-navy-400 uppercase tracking-wider mr-1">{isEn ? 'Coach:' : 'HLV:'}</span>
+          <button
+            type="button"
+            aria-pressed={selectedCoach === 'ALL'}
+            onClick={() => setSelectedCoach('ALL')}
+            className={`px-2.5 py-1 rounded-lg text-xs font-bold font-chivo transition-all ${
+                selectedCoach === 'ALL'
+                  ? 'bg-brand-navy-900 text-white shadow-xs'
+                  : 'bg-brand-navy-100 text-brand-navy-600 hover:bg-brand-navy-200'
+              }`}
+          >
+            {isEn ? 'All coaches' : 'Tất cả HLV'}
+          </button>
+          {availableCoaches.map(c => {
+            const isSelected = selectedCoach === c.name;
+            return (
+              <button
+                key={c.name}
+                type="button"
+                aria-pressed={isSelected}
+                onClick={() => setSelectedCoach(isSelected ? 'ALL' : c.name)}
+                className={`pl-1 pr-2.5 py-1 rounded-lg text-xs font-bold font-chivo flex items-center gap-1.5 transition-all border ${
+                    isSelected
+                      ? 'bg-brand-teal-600 text-white border-brand-teal-600 shadow-xs'
+                      : 'bg-white text-brand-navy-700 border-brand-navy-200 hover:bg-brand-navy-50'
+                  }`}
+              >
+                <span aria-hidden="true" className={`w-5 h-5 rounded-md flex items-center justify-center text-[9px] font-black ${isSelected ? 'bg-white/25 text-white' : 'bg-gradient-to-br from-brand-teal-500 to-brand-sage-600 text-white'}`}>
+                  {initialsOf(c.name)}
+                </span>
+                <span>{c.name}</span>
+                <span className={`text-[10px] px-1 rounded ${isSelected ? 'bg-brand-teal-700 text-white' : 'bg-brand-navy-100 text-brand-navy-600'}`}>
+                  {c.count}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }

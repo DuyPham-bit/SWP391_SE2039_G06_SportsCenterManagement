@@ -28,7 +28,7 @@ export const memberApi = {
     return apiRequest(`centers/${centerId()}/members/${id}/status`, { method: 'PATCH', body: { status } });
   },
 
-  async subscribeOnline({ packageId, paymentMethod = 'VNPAY', invoiceNumber, cancelPendingIfAny }) {
+  async subscribeOnline({ packageId, paymentMethod = 'VNPAY', invoiceNumber, cancelPendingIfAny, sportIds }) {
     const provider = {
       VNPAY: 'create-vnpay-url',
       MOMO: 'create-momo-url'
@@ -40,7 +40,9 @@ export const memberApi = {
       body: {
         packageId: Number(packageId),
         invoiceNumber: invoiceNumber || null,
-        cancelPendingIfAny: !!cancelPendingIfAny
+        cancelPendingIfAny: !!cancelPendingIfAny,
+        // Only for new/upgrade of a non all-access package; backend ignores it on renewal.
+        sportIds: Array.isArray(sportIds) && sportIds.length ? sportIds.map(Number) : null
       }
     });
   },
