@@ -1,12 +1,9 @@
 import React from 'react';
+import { hasMojibake } from '../../../shared/lib/encodingHelper.js';
 
-// Helper to detect if a string contains corrupted characters / Mojibake from previous encodings
-export function hasCorruptedEncoding(str) {
-  if (!str || typeof str !== 'string') return false;
-  // Box-drawing glyphs (CP437 mojibake) or UTF-8 bytes misread as Latin-1 ("Ã¡", "Ä‘", "á»").
-  // Plain Vietnamese letters such as "ã" (đã, xã) must not match.
-  return /[├│─┼┬┴└┘┐┌┤]|[ÃÂÄÆ][\u0080-¿‘-›]|á[»º]/.test(str);
-}
+// Detects real mojibake only; valid Vietnamese letters such as "ã" ("đã", "mã") must pass,
+// otherwise stored chat history and the welcome message are discarded as "corrupted".
+export const hasCorruptedEncoding = hasMojibake;
 
 // Helper to render inline markdown (bold, italic, inline code)
 export function renderInlineMarkdown(text = '') {
