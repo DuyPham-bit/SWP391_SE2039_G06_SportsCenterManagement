@@ -56,8 +56,7 @@ export async function apiRequest(path, { method = 'GET', body, session = getApiS
   if (body !== undefined && !isFormData) requestHeaders.set('Content-Type', 'application/json');
   if (session) requestHeaders.set('X-SCMS-Session', session);
 
-  const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
-  const effectiveTimeout = timeoutMs ?? (isMutation ? 30000 : 15000);
+  const effectiveTimeout = timeoutMs ?? 30000;
 
   const timeoutController = typeof AbortController !== 'undefined' ? new AbortController() : null;
   let timeoutId = null;
