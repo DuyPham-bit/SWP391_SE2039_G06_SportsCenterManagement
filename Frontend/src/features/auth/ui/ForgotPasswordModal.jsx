@@ -3,6 +3,7 @@ import { authApi } from '../../../entities/session/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { PasswordInput } from './PasswordInput.jsx';
+import { OtpCodeInput } from '../../../shared/ui/OtpCode.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../../shared/lib/passwordPolicy.js';
 
 
@@ -22,6 +23,7 @@ function PasswordResetForm({ onClose, onResetSuccess }) {
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
   const [resendSeconds, setResendSeconds] = useState(0);
+  const [resetDone, setResetDone] = useState(false);
   const pendingRequest = useRef(null);
 
   useEffect(() => {
@@ -72,32 +74,6 @@ function PasswordResetForm({ onClose, onResetSuccess }) {
     }
   };
 
-  const handlePasteOtp = async () => {
-    try {
-      const text = await navigator.clipboard.readText();
-      const match = text.trim().match(/\d{6}/);
-      const digits = match ? match[0] : text.replace(/[^0-9]/g, '').slice(0, 6);
-      if (digits) {
-        setOtp(digits);
-        showInfo(`Đã dán mã: ${digits}`);
-      } else {
-        showError('Không tìm thấy mã gồm 6 chữ số trong bộ nhớ tạm.');
-      }
-    } catch {
-      showError('Không thể truy cập bộ nhớ tạm. Vui lòng dán trực tiếp (Ctrl+V).');
-    }
-  };
-
-  const handleCopyOtp = async () => {
-    if (!otp) return;
-    try {
-      await navigator.clipboard.writeText(otp);
-      showSuccess('Đã sao chép mã!');
-    } catch {
-      // fallback
-    }
-  };
-
   const handleResetPassword = async (e) => {
     e.preventDefault();
     if (pendingRequest.current) return;
@@ -126,6 +102,9 @@ function PasswordResetForm({ onClose, onResetSuccess }) {
     setLoading(true);
     try {
       await authApi.resetPassword(requestedEmail, otp.trim(), newPassword, { signal: controller.signal });
+      if (!isCurrent()) return;
+      setResetDone(true);
+      await new Promise(resolve => setTimeout(resolve, 900));
       if (!isCurrent()) return;
       showSuccess('Khôi phục mật khẩu thành công! Vui lòng đăng nhập với mật khẩu mới.');
       handleClose();
@@ -198,80 +177,13 @@ function PasswordResetForm({ onClose, onResetSuccess }) {
               </span>
             </div>
 
-            <div className="relative flex justify-center items-center my-2.5">
-              <input
+            <div className="my-3">
+              <OtpCodeInput
                 id="reset-otp"
-                autoFocus
-                type="text"
-                required
-                inputMode="numeric"
-                autoComplete="one-time-code"
-                pattern="[0-9]{6}"
-                minLength={6}
-                maxLength={6}
-                disabled={loading}
-                placeholder="Nhập 6 chữ số"
                 value={otp}
-                onChange={e => setOtp(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
-                className="absolute inset-0 w-full h-full opacity-0 z-20 cursor-pointer text-center"
+                onChange={(next) => { setOtp(next); setFormError(''); }}
+                status={resetDone ? 'success' : formError ? 'error' : loading ? 'verifying' : 'idle'}
               />
-
-              <div className="flex items-center justify-between gap-1.5 sm:gap-2.5 w-full">
-                {[0, 1, 2, 3, 4, 5].map((index) => {
-                  const digit = otp[index] || '';
-                  const isCurrent = otp.length === index;
-                  const isFilled = Boolean(digit);
-                  return (
-                    <div
-                      key={index}
-                      className={`flex-1 h-12 rounded-2xl flex items-center justify-center text-xl font-black font-mono transition-all duration-150 border-2 select-none ${
-                        isCurrent
-                          ? 'border-[var(--primary-color,#264A50)] bg-white text-[var(--primary-color,#264A50)] ring-4 ring-[var(--primary-color,#264A50)]/20 shadow-md scale-[1.04]'
-                          : isFilled
-                          ? 'border-brand-navy-300 bg-brand-navy-50/70 text-brand-navy-900 shadow-2xs'
-                          : 'border-brand-navy-200 bg-white text-brand-navy-300'
-                      }`}
-                    >
-                      {digit ? (
-                        digit
-                      ) : isCurrent ? (
-                        <span className="w-0.5 h-5 bg-[var(--primary-color,#264A50)] animate-pulse rounded-full" />
-                      ) : (
-                        <span className="w-1.5 h-1.5 rounded-full bg-brand-navy-200" />
-                      )}
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div className="flex items-center justify-between gap-2 mt-2 mb-1">
-              <button
-                type="button"
-                onClick={handlePasteOtp}
-                disabled={loading}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-brand-teal-800 bg-brand-teal-50 hover:bg-brand-teal-100 border border-brand-teal-200 transition-colors cursor-pointer"
-                title="Dán nhanh mã 6 chữ số từ email"
-              >
-                <svg className="w-3.5 h-3.5 text-brand-teal-700 dark:text-brand-teal-400" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                </svg>
-                <span>Dán mã từ email</span>
-              </button>
-
-              {otp.length === 6 && (
-                <button
-                  type="button"
-                  onClick={handleCopyOtp}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold text-brand-navy-700 bg-brand-navy-100 hover:bg-brand-navy-200 border border-brand-navy-200 transition-colors cursor-pointer"
-                  title="Sao chép mã OTP"
-                >
-                  <svg className="w-3.5 h-3.5 text-brand-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                  </svg>
-                  <span>Sao chép mã</span>
-                </button>
-              )}
             </div>
 
             <div className="mt-1 flex items-center justify-between text-xs">

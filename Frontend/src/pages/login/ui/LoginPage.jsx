@@ -6,6 +6,7 @@ import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../../shared/lib/p
 import { loadGoogleIdentity, googleClientId } from '../../../shared/lib/googleIdentity.js';
 import { AuthField, ForgotPasswordModal, GoogleLoginModal } from '../../../features/auth/index.js';
 import { Logo } from '../../../shared/ui/Logo.jsx';
+import { OtpDialogContent, OTP_CARD_CLASS } from '../../../shared/ui/OtpCode.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../../entities/membership/index.js';
 import { useLandingContent } from '../../../entities/landing-content/index.js';
 
@@ -83,6 +84,7 @@ export function LoginPage() {
   const [verificationEmail, setVerificationEmail] = useState('');
   const [verificationPhone, setVerificationPhone] = useState('');
   const [regOtp, setRegOtp] = useState('');
+  const [regOtpVerified, setRegOtpVerified] = useState(false);
   const [resendSeconds, setResendSeconds] = useState(0);
   const normalizedRegistrationPhone = regPhone.replace(/[\s().-]/g, '');
   const needsEmailCode = verificationEmail !== ''
@@ -175,6 +177,12 @@ export function LoginPage() {
       };
     }
   }, [needsEmailCode]);
+
+  // Tự động xác thực khi đã nhập đủ 6 số
+  useEffect(() => {
+    if (!needsEmailCode || regOtp.length !== 6 || isSubmitting || regOtpVerified || formError) return;
+    document.getElementById('register-form')?.requestSubmit();
+  }, [needsEmailCode, regOtp, isSubmitting, regOtpVerified, formError]);
 
   // Tích hợp Google Identity trực tiếp trên trang
   const googleButtonRef = useRef(null);
@@ -281,6 +289,12 @@ export function LoginPage() {
     setFormError('');
   };
 
+  const closeRegisterOtp = () => {
+    setVerificationEmail('');
+    setRegOtp('');
+    setFormError('');
+  };
+
   const hasValidationErrors = (errors) => {
     setFieldErrors(errors);
     setFormError('');
@@ -351,6 +365,8 @@ export function LoginPage() {
         return;
       }
       const user = await register({ fullName: regFullName.trim(), email, phone, password: regPassword, emailOtp: regOtp });
+      setRegOtpVerified(true);
+      await new Promise(resolve => setTimeout(resolve, 900));
       showSuccess('Đăng ký thành công! Mã hội viên của bạn: ' + user.memberCode);
       redirectToRoleDashboard(user.role || 'MEMBER');
     } catch (error) {
@@ -667,224 +683,34 @@ export function LoginPage() {
                       aria-modal="true"
                       aria-labelledby="otp-dialog-title"
                       onClick={(e) => {
-                        if (e.target === e.currentTarget) {
-                          setVerificationEmail('');
-                          setRegOtp('');
-                        }
+                        if (e.target === e.currentTarget && !isSubmitting) closeRegisterOtp();
                       }}
                     >
-                      {/* Modal Card - Thiết kế chuẩn ảnh 2, 3, 4 */}
+                      {/* Modal nhập mã OTP: ô xám nhạt, xanh khi đúng, đỏ khi sai */}
                       <div
                         ref={otpModalRef}
                         tabIndex={-1}
-                        className="relative w-full max-w-[420px] bg-white rounded-[36px] shadow-[0_25px_70px_-15px_rgba(61,64,91,0.2),0_0_0_1px_rgba(249,250,251,0.8)] border border-brand-navy-100/90 p-7 sm:p-9 text-center transition-all duration-300 overflow-hidden animate-scaleUp focus:outline-none"
+                        className={OTP_CARD_CLASS}
                         onClick={(e) => e.stopPropagation()}
                       >
-                        {/* Nút đóng góc phải */}
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setVerificationEmail('');
-                            setRegOtp('');
+                        <OtpDialogContent
+                          titleId="otp-dialog-title"
+                          inputId="register-otp"
+                          email={verificationEmail}
+                          code={regOtp}
+                          onCodeChange={(next) => updateField('register-otp', next, setRegOtp)}
+                          status={regOtpVerified ? 'success' : (formError || fieldErrors['register-otp']) ? 'error' : isSubmitting ? 'verifying' : 'idle'}
+                          errorText={formError || fieldErrors['register-otp']}
+                          resendSeconds={resendSeconds}
+                          onResend={handleResendVerification}
+                          onClose={closeRegisterOtp}
+                          onBack={() => {
+                            closeRegisterOtp();
+                            setTimeout(() => document.getElementById('register-email')?.focus(), 0);
                           }}
-                          aria-label="Đóng bảng xác thực"
-                          className="absolute top-5 right-5 w-8 h-8 rounded-full bg-brand-navy-50 hover:bg-brand-navy-100 text-brand-navy-400 hover:text-brand-navy-600 flex items-center justify-center transition-all hover:scale-105 active:scale-95 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-navy-700 z-10 cursor-pointer"
-                        >
-                          <span className="text-sm font-bold">✕</span>
-                        </button>
-
-                        {/* Top Lock Badge với vòng cung viền xoay (Ảnh 2 & 4) */}
-                        <div className="relative mx-auto mb-4 w-20 h-20 flex items-center justify-center">
-                          <div className="relative w-18 h-18 rounded-full bg-brand-navy-100 flex items-center justify-center shadow-inner">
-                            {/* Vòng cung viền tiến trình phía trên */}
-                            <svg className="absolute inset-0 w-full h-full -rotate-90 pointer-events-none" viewBox="0 0 72 72">
-                              <circle
-                                cx="36"
-                                cy="36"
-                                r="34"
-                                fill="none"
-                                stroke="#3D405B"
-                                strokeWidth="2.2"
-                                strokeDasharray="213"
-                                strokeDashoffset="145"
-                                strokeLinecap="round"
-                              />
-                            </svg>
-                            <svg className="w-7 h-7 text-brand-navy-700" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
-                              <rect x="3" y="11" width="18" height="11" rx="3" ry="3" />
-                              <path d="M7 11V7a5 5 0 0 1 10 0v4" />
-                              <circle cx="12" cy="16" r="1.2" fill="currentColor" />
-                            </svg>
-                          </div>
-                        </div>
-
-                        {/* Tiêu đề & Email gửi tới */}
-                        <h3 id="otp-dialog-title" className="text-2xl sm:text-[26px] font-black text-brand-navy-900 tracking-tight">
-                          Verify it's you
-                        </h3>
-                        <p role="status" className="text-xs sm:text-sm text-brand-navy-500 mt-2 mb-6 leading-relaxed font-normal">
-                          Enter the 6-digit code we just sent to <br />
-                          <strong className="font-bold text-brand-navy-900">{verificationEmail}</strong>
-                        </p>
-
-                        {/* Khối 6 Ô nhập OTP (Ảnh 2 & 4) */}
-                        <div className="relative my-4">
-                          {/* Input ẩn nhận focus, bàn phím và Paste từ clipboard */}
-                          <input
-                            id="register-otp"
-                            name="register-otp"
-                            type="text"
-                            inputMode="numeric"
-                            autoComplete="one-time-code"
-                            maxLength={6}
-                            pattern="[0-9]{6}"
-                            placeholder="Nhập 6 chữ số"
-                            required
-                            autoFocus
-                            value={regOtp}
-                            aria-invalid={Boolean(fieldErrors['register-otp'])}
-                            aria-describedby={fieldErrors['register-otp'] ? 'register-otp-error' : undefined}
-                            onChange={event => updateField('register-otp', event.target.value.replace(/[^0-9]/g, '').slice(0, 6), setRegOtp)}
-                            className="absolute inset-0 w-full h-full opacity-0 z-30 cursor-pointer text-center"
-                          />
-
-                          {/* 6 Ô hiển thị bo góc và thanh gạch chân */}
-                          <div className="flex items-center justify-between gap-2 sm:gap-2.5 w-full">
-                            {[0, 1, 2, 3, 4, 5].map((index) => {
-                              const digit = regOtp[index] || '';
-                              const isCurrent = regOtp.length === index;
-                              const isFilled = Boolean(digit);
-                              const isError = Boolean(formError || fieldErrors['register-otp']);
-
-                              let boxClass = 'bg-white border-2 border-brand-navy-800 text-brand-navy-900';
-                              let underlineClass = 'bg-brand-navy-800';
-
-                              if (isError) {
-                                boxClass = 'bg-white border-2 border-brand-danger-400 text-brand-danger-600 shadow-xs';
-                                underlineClass = 'bg-brand-danger-600';
-                              } else if (isCurrent) {
-                                boxClass = 'bg-white border-2 border-brand-navy-700 text-brand-navy-900 ring-4 ring-brand-navy-700/20 shadow-sm scale-[1.04]';
-                                underlineClass = 'bg-brand-navy-700';
-                              } else if (isFilled) {
-                                boxClass = 'bg-white border-2 border-brand-navy-800 text-brand-navy-900 shadow-xs';
-                                underlineClass = 'bg-brand-navy-800';
-                              }
-
-                              return (
-                                <div key={index} className="flex flex-col items-center flex-1">
-                                  <div
-                                    className={`w-full h-[64px] sm:h-[70px] rounded-[20px] flex items-center justify-center text-2xl sm:text-3xl font-extrabold transition-all duration-150 select-none ${boxClass}`}
-                                  >
-                                    {digit ? (
-                                      digit
-                                    ) : isCurrent ? (
-                                      <span className="w-0.5 h-6 bg-brand-navy-700 animate-pulse rounded-full" />
-                                    ) : null}
-                                  </div>
-
-                                  {/* Thanh gạch chân (Underline Bar) */}
-                                  <div className={`w-5 h-[2.5px] rounded-full mt-2 transition-all duration-200 ${underlineClass}`} />
-                                </div>
-                              );
-                            })}
-                          </div>
-                        </div>
-
-                        {/* Nút hành động nhanh: Dán mã từ email & Sao chép mã */}
-                        <div className="flex items-center justify-center gap-2 mt-2 mb-2">
-                          <button
-                            type="button"
-                            onClick={async () => {
-                              try {
-                                const text = await navigator.clipboard.readText();
-                                const match = text.trim().match(/\d{6}/);
-                                const digits = match ? match[0] : text.replace(/[^0-9]/g, '').slice(0, 6);
-                                if (digits) {
-                                  updateField('register-otp', digits, setRegOtp);
-                                }
-                              } catch {}
-                            }}
-                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-brand-navy-800 bg-brand-navy-50 hover:bg-brand-navy-100 border border-brand-navy-200 transition-colors cursor-pointer"
-                            title="Dán nhanh mã 6 chữ số từ email"
-                          >
-                            <svg className="w-3.5 h-3.5 text-brand-navy-700" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
-                            </svg>
-                            <span>Dán mã từ email</span>
-                          </button>
-                          {regOtp.length === 6 && (
-                            <button
-                              type="button"
-                              onClick={async () => {
-                                try {
-                                  await navigator.clipboard.writeText(regOtp);
-                                } catch {}
-                              }}
-                              className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full text-xs font-semibold text-brand-navy-700 bg-brand-navy-100 hover:bg-brand-navy-200 border border-brand-navy-200 transition-colors cursor-pointer"
-                              title="Sao chép mã OTP"
-                            >
-                              <svg className="w-3.5 h-3.5 text-brand-navy-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                                <path strokeLinecap="round" strokeLinejoin="round" d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
-                              </svg>
-                              <span>Sao chép mã</span>
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Thông báo lỗi dạng pill đỏ (Ảnh 4: "! That code didn't match. Try again.") */}
-                        {(formError || fieldErrors['register-otp']) && (
-                          <div role="alert" aria-live="assertive" className="flex items-center justify-center gap-1.5 text-xs sm:text-[13px] font-semibold text-brand-danger-600 mt-2 mb-3">
-                            <svg className="w-4 h-4 text-brand-danger-500 shrink-0" viewBox="0 0 24 24" fill="currentColor">
-                              <path fillRule="evenodd" d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 15v-2h2v2h-2zm0-10v6h2V7h-2z" clipRule="evenodd" />
-                            </svg>
-                            <span>{formError || fieldErrors['register-otp'] || "That code didn't match. Try again."}</span>
-                          </div>
-                        )}
-
-                        {/* Nút xác thực chính (Ảnh 2: "Verifying" xoay tròn / Ảnh 4: "Verify code") */}
-                        <div className="mt-4 mb-2">
-                          {isSubmitting ? (
-                            <button
-                              type="button"
-                              disabled
-                              className="w-full h-12 sm:h-13 rounded-2xl font-bold text-white bg-brand-navy-700 opacity-95 shadow-lg shadow-brand-navy-700/25 flex items-center justify-center gap-2 cursor-wait"
-                            >
-                              <span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                              <span className="tracking-wide">Verifying</span>
-                            </button>
-                          ) : (
-                            <button
-                              type="submit"
-                              form="register-form"
-                              disabled={isSubmitting}
-                              className="w-full h-12 sm:h-13 rounded-2xl font-bold text-white bg-brand-navy-700 hover:bg-brand-navy-800 shadow-lg shadow-brand-navy-700/25 flex items-center justify-center transition-all active:scale-[0.98] cursor-pointer"
-                            >
-                              <span>Verify code</span>
-                            </button>
-                          )}
-                        </div>
-
-                        {/* Dòng gửi lại mã ở chân modal (Ảnh 2 & 4: "Didn't get a code? ⭮ Resend in 0:xx") */}
-                        <div className="mt-3 text-xs sm:text-[13px] text-brand-navy-500 flex items-center justify-center gap-1.5" aria-live="polite">
-                          <span>Didn't get a code?</span>
-                          {resendSeconds > 0 ? (
-                            <span className="inline-flex items-center gap-1 font-medium text-brand-navy-700">
-                              <svg className="w-3.5 h-3.5 text-brand-navy-700 animate-spin" style={{ animationDuration: '3s' }} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                <path d="M21 12a9 9 0 1 1-6.219-8.56" />
-                              </svg>
-                              <span>Resend in 0:{resendSeconds < 10 ? `0${resendSeconds}` : resendSeconds}</span>
-                            </span>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={isSubmitting}
-                              onClick={handleResendVerification}
-                              className="font-bold text-brand-navy-700 hover:underline cursor-pointer focus:outline-none"
-                            >
-                              Resend now
-                            </button>
-                          )}
-                        </div>
+                          backText="Đổi email"
+                          labels={{ success: 'Mã chính xác, đang tạo tài khoản…', back: 'Quay lại sửa email' }}
+                        />
                       </div>
                     </div>,
                     document.body
