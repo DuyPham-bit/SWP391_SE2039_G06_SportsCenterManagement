@@ -3,7 +3,7 @@ import { createPortal } from 'react-dom';
 import { authApi, useAuth } from '../../../entities/session/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { OtpDialogContent, OTP_CARD_CLASS } from '../../../shared/ui/OtpCode.jsx';
+import { OtpDialogContent, OTP_CARD_CLASS, withMinDuration } from '../../../shared/ui/OtpCode.jsx';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
 import { PasswordInput } from './PasswordInput.jsx';
 import { GoogleLoginModal } from './GoogleLoginModal.jsx';
@@ -265,7 +265,7 @@ export function ProfileModal({ isOpen, onClose }) {
     setIsVerifyingOtp(true);
     setOtpError('');
     try {
-      await changePassword(currentPassword, newPassword, code);
+      await withMinDuration(changePassword(currentPassword, newPassword, code));
       setIsVerifiedOtp(true);
       showSuccess(
         isEn
@@ -281,8 +281,6 @@ export function ProfileModal({ isOpen, onClose }) {
       const msg = err.message || (isEn ? "That code didn't match. Please enter again." : "Mã xác thực không chính xác. Vui lòng nhập lại.");
       setOtpError(msg);
       setShakeKey((prev) => prev + 1);
-      // Giữ mã màu đỏ; gõ số mới sẽ tự nhập lại từ đầu
-      setTimeout(() => document.getElementById('profile-change-pwd-otp')?.focus(), 0);
     } finally {
       setIsVerifyingOtp(false);
     }
@@ -739,7 +737,7 @@ export function ProfileModal({ isOpen, onClose }) {
             }
           }}
         >
-          {/* Modal nhập mã OTP: ô xám nhạt, xanh khi đúng, đỏ khi sai */}
+          {/* Modal OTP tối: gom ô khi kiểm tra, xanh khi đúng, đỏ khi sai */}
           <div className={OTP_CARD_CLASS} onClick={(e) => e.stopPropagation()}>
             <OtpDialogContent
               titleId="profile-otp-dialog-title"
@@ -752,16 +750,27 @@ export function ProfileModal({ isOpen, onClose }) {
               resendSeconds={resendSeconds}
               onResend={handleResendOtp}
               onClose={isVerifiedOtp ? handleFinishAndProceed : () => setShowOtpModal(false)}
+              onSubmit={() => handleVerifyOtpAndChangePassword(otpCode)}
+              onContinue={handleFinishAndProceed}
+              onErrorReset={() => setOtpCode('')}
               labels={isEn ? {
-                title: 'Enter verification code',
-                sentTo: 'We sent a code to',
-                verifying: 'Checking code…',
-                success: 'Code accepted, password updated!',
-                resendIn: (s) => <>Didn't get the code?<br />Request a new one in {s}s</>,
-                resendHint: <>Didn't get the code? Check your spam folder<br />or request a new one.</>,
-                resend: 'Get a new code',
+                title: "Verify it's you",
+                sentTo: 'A 6-digit code was sent to',
+                sentToSuffix: '. Enter it below.',
+                verifying: 'Verifying code…',
+                success: 'Verified! Password updated.',
+                submit: 'Verify & change password',
+                submitting: 'Verifying…',
+                continue: 'Done',
+                noCode: "Didn't get a code?",
+                resend: 'Resend',
                 close: 'Close verification'
-              } : { success: 'Mã chính xác, đã đổi mật khẩu!' }}
+              } : {
+                title: 'Xác thực đổi mật khẩu',
+                success: 'Xác thực thành công! Đã đổi mật khẩu.',
+                submit: 'Xác thực & đổi mật khẩu',
+                continue: 'Hoàn tất'
+              }}
             />
           </div>
         </div>,

@@ -6,7 +6,7 @@ import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../../shared/lib/p
 import { loadGoogleIdentity, googleClientId } from '../../../shared/lib/googleIdentity.js';
 import { AuthField, ForgotPasswordModal, GoogleLoginModal } from '../../../features/auth/index.js';
 import { Logo } from '../../../shared/ui/Logo.jsx';
-import { OtpDialogContent, OTP_CARD_CLASS } from '../../../shared/ui/OtpCode.jsx';
+import { OtpDialogContent, OTP_CARD_CLASS, withMinDuration } from '../../../shared/ui/OtpCode.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../../entities/membership/index.js';
 import { useLandingContent } from '../../../entities/landing-content/index.js';
 
@@ -85,6 +85,7 @@ export function LoginPage() {
   const [verificationPhone, setVerificationPhone] = useState('');
   const [regOtp, setRegOtp] = useState('');
   const [regOtpVerified, setRegOtpVerified] = useState(false);
+  const [regOtpNotice, setRegOtpNotice] = useState('');
   const [resendSeconds, setResendSeconds] = useState(0);
   const normalizedRegistrationPhone = regPhone.replace(/[\s().-]/g, '');
   const needsEmailCode = verificationEmail !== ''
@@ -95,6 +96,7 @@ export function LoginPage() {
   const isRegister = activeTab === 'register';
   const lastFocusedElementRef = useRef(null);
   const otpModalRef = useRef(null);
+  const holdAuthRedirectRef = useRef(false);
 
   useEffect(() => {
     if (resendSeconds <= 0) return;
@@ -213,7 +215,8 @@ export function LoginPage() {
       window.location.hash = '#/login';
       return;
     }
-    if (isAuthenticated) redirectToRoleDashboard(role);
+    // Đang chạy animation xác thực thành công: handleRegisterSubmit tự chuyển trang sau đó
+    if (isAuthenticated && !holdAuthRedirectRef.current) redirectToRoleDashboard(role);
   }, [isAuthenticated, role, logout]);
 
   // Render nút Google Identity trực tiếp trên trang
@@ -293,6 +296,7 @@ export function LoginPage() {
     setVerificationEmail('');
     setRegOtp('');
     setFormError('');
+    setRegOtpNotice('');
   };
 
   const hasValidationErrors = (errors) => {
@@ -364,13 +368,30 @@ export function LoginPage() {
         setResendSeconds(60);
         return;
       }
-      const user = await register({ fullName: regFullName.trim(), email, phone, password: regPassword, emailOtp: regOtp });
+      holdAuthRedirectRef.current = true;
+      const user = await withMinDuration(register({ fullName: regFullName.trim(), email, phone, password: regPassword, emailOtp: regOtp }));
       setRegOtpVerified(true);
-      await new Promise(resolve => setTimeout(resolve, 900));
+      await new Promise(resolve => setTimeout(resolve, 1400));
       showSuccess('Đăng ký thành công! Mã hội viên của bạn: ' + user.memberCode);
       redirectToRoleDashboard(user.role || 'MEMBER');
     } catch (error) {
+      holdAuthRedirectRef.current = false;
       const message = error.payload?.message || error.message || 'Đăng ký thất bại. Vui lòng thử lại.';
+      if (error.payload?.code === 'OTP_INVALID' && error.payload.remainingAttempts === 0) {
+        // Sai đủ 5 lần: báo đỏ một chút rồi tự gửi mã mới
+        setFormError(message);
+        await new Promise(resolve => setTimeout(resolve, 1900));
+        try {
+          await authApi.requestEmailVerification(verificationEmail, verificationPhone);
+          setRegOtp('');
+          setFormError('');
+          setResendSeconds(60);
+          setRegOtpNotice('Bạn đã nhập sai 5 lần. Mã mới đã được gửi tới email, vui lòng nhập mã mới.');
+        } catch (resendError) {
+          setFormError(resendError.payload?.message || resendError.message || 'Không thể gửi mã mới. Vui lòng thử lại.');
+        }
+        return;
+      }
       const duplicateField = error.payload?.field
         || (error.status === 409 && /^Email/.test(message) ? 'email' : error.status === 409 && /^Số điện thoại/.test(message) ? 'phone' : null);
       if (duplicateField === 'email' || duplicateField === 'phone') {
@@ -396,6 +417,7 @@ export function LoginPage() {
     try {
       await authApi.requestEmailVerification(verificationEmail, verificationPhone);
       setRegOtp('');
+      setRegOtpNotice('');
       setResendSeconds(60);
       showSuccess('Đã yêu cầu gửi lại mã xác thực. Vui lòng kiểm tra email và thư rác.');
     } catch (error) {
@@ -699,7 +721,7 @@ export function LoginPage() {
                         if (e.target === e.currentTarget && !isSubmitting) closeRegisterOtp();
                       }}
                     >
-                      {/* Modal nhập mã OTP: ô xám nhạt, xanh khi đúng, đỏ khi sai */}
+                      {/* Modal OTP tối: 6 ô gom thành khối gradient khi kiểm tra, xanh khi đúng, đỏ khi sai */}
                       <div
                         ref={otpModalRef}
                         tabIndex={-1}
@@ -711,9 +733,12 @@ export function LoginPage() {
                           inputId="register-otp"
                           email={verificationEmail}
                           code={regOtp}
-                          onCodeChange={(next) => updateField('register-otp', next, setRegOtp)}
+                          onCodeChange={(next) => { setRegOtpNotice(''); updateField('register-otp', next, setRegOtp); }}
                           status={regOtpVerified ? 'success' : (formError || fieldErrors['register-otp']) ? 'error' : isSubmitting ? 'verifying' : 'idle'}
                           errorText={formError || fieldErrors['register-otp']}
+                          notice={regOtpNotice}
+                          onSubmit={() => document.getElementById('register-form')?.requestSubmit()}
+                          onErrorReset={() => setRegOtp('')}
                           resendSeconds={resendSeconds}
                           onResend={handleResendVerification}
                           onClose={closeRegisterOtp}
@@ -721,8 +746,7 @@ export function LoginPage() {
                             closeRegisterOtp();
                             setTimeout(() => document.getElementById('register-email')?.focus(), 0);
                           }}
-                          backText="Đổi email"
-                          labels={{ success: 'Mã chính xác, đang tạo tài khoản…', back: 'Quay lại sửa email' }}
+                          labels={{ success: 'Email đã được xác thực! Đang tạo tài khoản…', submit: 'Xác thực & tạo tài khoản' }}
                         />
                       </div>
                     </div>,
