@@ -39,7 +39,8 @@ export function PackageManagement() {
 
   const activeCount = packages.filter(p => String(p.status).toUpperCase() === 'ACTIVE').length;
   const inactiveCount = packages.length - activeCount;
-  const totalSubscribers = packages.reduce((acc, p) => acc + (p.subscriberCount || (p.hasOrders ? 1 : 0)), 0);
+  // subscriberCount = số hội viên khác nhau đang có gói còn hiệu lực (backend đã loại lượt hủy/hoàn tiền/chờ thanh toán/hết hạn).
+  const totalSubscribers = packages.reduce((acc, p) => acc + (Number(p.subscriberCount) || 0), 0);
 
   const filteredPackages = packages.filter(pkg => {
     const matchesSearch = !searchTerm || pkg.name?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -424,7 +425,7 @@ export function PackageManagement() {
 
           <div className="hidden lg:flex items-center gap-1.5 px-3 py-2 rounded-xl bg-brand-sand-50 dark:bg-brand-sand-950/40 border border-brand-sand-200/80 dark:border-brand-sand-900/60 text-brand-sand-800 dark:text-brand-sand-300 text-xs font-bold whitespace-nowrap">
             <span className="material-symbols-outlined text-[16px] text-brand-sand-700 dark:text-brand-sand-400">group</span>
-            <span>{totalSubscribers} {isEn ? 'members registered' : 'lượt hội viên'}</span>
+            <span>{totalSubscribers} {isEn ? 'active members' : 'hội viên đang dùng gói'}</span>
           </div>
         </div>
       </div>
@@ -537,15 +538,15 @@ export function PackageManagement() {
                   </span>
                   {(pkg.hasOrders || !editable) && (
                     <span
-                      title={isEn ? 'Package has active member registrations or orders' : 'Gói đã có hội viên đăng ký hoặc đặt mua'}
+                      title={isEn ? 'Members currently on this package (cancelled, refunded, unpaid and expired orders are not counted)' : 'Số hội viên đang dùng gói (không tính lượt hủy, hoàn tiền, chưa thanh toán, đã hết hạn)'}
                       className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-bold ${
                         tier.isVip || tier.isFeatured ? 'bg-brand-sand-300 text-brand-navy-950' : 'bg-brand-sand-100 text-brand-sand-800 dark:bg-brand-sand-950/60 dark:text-brand-sand-300'
                       }`}
                     >
                       <span className="material-symbols-outlined text-[14px]" aria-hidden="true">how_to_reg</span>
                       {pkg.subscriberCount > 0
-                        ? isEn ? `${pkg.subscriberCount} booked` : `${pkg.subscriberCount} người đặt`
-                        : isEn ? 'Has orders' : 'Đã có người đặt'}
+                        ? isEn ? `${pkg.subscriberCount} active` : `${pkg.subscriberCount} đang dùng`
+                        : isEn ? 'Has orders' : 'Đã có giao dịch'}
                     </span>
                   )}
                 </div>

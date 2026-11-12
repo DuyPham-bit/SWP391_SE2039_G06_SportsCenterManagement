@@ -1,6 +1,7 @@
 using System.Data;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
+using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.BLL.DTOs.MembershipPackages;
 using SportsCenterManagement.BLL.Interfaces;
@@ -193,12 +194,7 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
         if (string.Equals(previousStatus, newStatus, StringComparison.OrdinalIgnoreCase))
         {
             await transaction.CommitAsync(cancellationToken);
-            var currentSubCount = await unitOfWork.Context.MemberSubscriptions
-                .CountAsync(s => s.PackageId == package.Id, cancellationToken);
-            var currentHasInvoices = await unitOfWork.Context.InvoiceItems
-                .AnyAsync(i => i.PackageId == package.Id, cancellationToken);
-            var currentHasOrders = currentSubCount > 0 || currentHasInvoices;
-            return ToResponse(package, currentSubCount, currentHasOrders, !currentHasOrders);
+            return await ToResponseWithUsageAsync(package, cancellationToken);
         }
         package.Status = newStatus;
         package.UpdatedAt = DateTime.UtcNow;
@@ -209,12 +205,36 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
         await unitOfWork.SaveChangesAsync(cancellationToken);
         await transaction.CommitAsync(cancellationToken);
 
-        var subCount = await unitOfWork.Context.MemberSubscriptions
-            .CountAsync(s => s.PackageId == package.Id, cancellationToken);
-        var hasInvoices = await unitOfWork.Context.InvoiceItems
-            .AnyAsync(i => i.PackageId == package.Id, cancellationToken);
-        var hasOrders = subCount > 0 || hasInvoices;
-        return ToResponse(package, subCount, hasOrders, !hasOrders);
+        return await ToResponseWithUsageAsync(package, cancellationToken);
+    }
+
+    private async Task<MembershipPackageResponse> ToResponseWithUsageAsync(
+        MembershipPackage package,
+        CancellationToken cancellationToken)
+    {
+        var activeMembers = await ActiveMemberCountsAsync([package.Id], cancellationToken);
+        activeMembers.TryGetValue(package.Id, out var activeCount);
+        var hasOrders = await unitOfWork.Context.MemberSubscriptions.AnyAsync(s => s.PackageId == package.Id, cancellationToken)
+            || await unitOfWork.Context.InvoiceItems.AnyAsync(i => i.PackageId == package.Id, cancellationToken);
+        return ToResponse(package, activeCount, hasOrders, !hasOrders);
+    }
+
+    // Số hội viên khác nhau đang có gói còn hiệu lực. Lượt hủy, hoàn tiền, chờ thanh toán
+    // hoặc đã quá ngày kết thúc không được tính, để con số khớp với số người thực sự đang dùng gói.
+    private async Task<Dictionary<long, int>> ActiveMemberCountsAsync(
+        IReadOnlyCollection<long> packageIds,
+        CancellationToken cancellationToken)
+    {
+        var today = VietnamTime.Today;
+        return await unitOfWork.Context.MemberSubscriptions
+            .Where(s => packageIds.Contains(s.PackageId)
+                && s.Status == "Active"
+                && (s.EndDate == null || s.EndDate >= today))
+            .Select(s => new { s.PackageId, s.MemberId })
+            .Distinct()
+            .GroupBy(s => s.PackageId)
+            .Select(g => new { PackageId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(x => x.PackageId, x => x.Count, cancellationToken);
     }
 
     private async Task<IReadOnlyList<MembershipPackageResponse>> MapPackagesAsync(
@@ -237,11 +257,13 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
 
         var packageIds = packages.Select(package => package.Id).ToList();
 
-        var subscriptionCounts = await unitOfWork.Context.MemberSubscriptions
+        var activeMemberCounts = await ActiveMemberCountsAsync(packageIds, cancellationToken);
+        var subscribedPackageIds = (await unitOfWork.Context.MemberSubscriptions
             .Where(s => packageIds.Contains(s.PackageId))
-            .GroupBy(s => s.PackageId)
-            .Select(g => new { PackageId = g.Key, Count = g.Count() })
-            .ToDictionaryAsync(x => x.PackageId, x => x.Count, cancellationToken);
+            .Select(s => s.PackageId)
+            .Distinct()
+            .ToListAsync(cancellationToken))
+            .ToHashSet();
 
         var invoicedPackageIds = (await unitOfWork.Context.InvoiceItems
             .Where(i => i.PackageId.HasValue && packageIds.Contains(i.PackageId.Value))
@@ -252,10 +274,9 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
 
         return packages.Select(package =>
         {
-            subscriptionCounts.TryGetValue(package.Id, out var subCount);
-            var hasOrders = subCount > 0 || invoicedPackageIds.Contains(package.Id);
-            var isEditable = !hasOrders;
-            return ToResponse(package, subCount, hasOrders, isEditable);
+            activeMemberCounts.TryGetValue(package.Id, out var activeCount);
+            var hasOrders = subscribedPackageIds.Contains(package.Id) || invoicedPackageIds.Contains(package.Id);
+            return ToResponse(package, activeCount, hasOrders, !hasOrders);
         }).ToList();
     }
 
