@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { FacilitiesSection } from './FacilitiesSection.jsx';
 import { IntroSplashScreen } from './IntroSplashScreen.jsx';
 import { useLandingPage } from '../model/useLandingPage.js';
@@ -23,8 +23,18 @@ export function LandingPage() {
     sportsCarousel, sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
   } = useLandingPage();
 
+  // The landing is a light-only design. index.html adds html.dark from the OS/browser dark theme,
+  // and the app-wide html.dark rules (e.g. `h2 { color: light !important }`) turn landing headings
+  // white on white. Drop the class while the landing is mounted; restore it for the dashboard.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const wasDark = root.classList.contains('dark');
+    root.classList.remove('dark');
+    return () => { if (wasDark) root.classList.add('dark'); };
+  }, []);
+
   return (
-    <div className="landing-page-root tiya-page w-full min-h-screen">
+    <div className="landing-page-root tiya-page w-full min-h-screen" style={{ colorScheme: 'light' }}>
       {showIntro && <IntroSplashScreen onFinish={() => setShowIntro(false)} />}
       {/* LANDING HEADER (TIYA NAVBAR) */}
       <LandingHeader

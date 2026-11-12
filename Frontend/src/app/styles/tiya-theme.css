@@ -2678,27 +2678,6 @@
 
 
 /* ─────────────────────────────────────────────────────────────
-   LANDING DARK SURFACES — kept exactly as before the colour unification.
-   The app-wide automatic dark rules (theme.css) now use brand tokens; the landing keeps its original
-   dark surfaces so it looks identical. These literals belong to the landing's non-brand colours that are
-   listed in findings.md §13 (pending decision).
-───────────────────────────────────────────────────────────── */
-html.dark .landing-page-root header {
-  background-color: #0F172A !important;
-  border-color: #1E293B !important;
-}
-
-html.dark .landing-page-root footer {
-  background-color: #0B1120 !important;
-  border-color: #1E293B !important;
-}
-
-html.dark .landing-page-root .bg-white {
-  background-color: #1E293B !important;
-  border-color: #334155 !important;
-}
-
-/* ─────────────────────────────────────────────────────────────
    INTERACTIVE CAROUSEL CONTROLS (DESKTOP ARROWS + DRAG + AUTOPLAY)
 ───────────────────────────────────────────────────────────── */
 .tiya-carousel-shell {
