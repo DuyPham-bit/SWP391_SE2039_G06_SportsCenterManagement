@@ -8,6 +8,7 @@ import { AuthField, ForgotPasswordModal, GoogleLoginModal } from '../../../featu
 import { Logo } from '../../../shared/ui/Logo.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../../entities/membership/index.js';
 import { useLandingContent } from '../../../entities/landing-content/index.js';
+import { resolveHeroVideoUrl } from '../../landing/ui/heroVideo.js';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -45,6 +46,7 @@ export function LoginPage() {
   const showcaseRegisterTitle = authShowcase.registerTitle || 'Hành trình mới, \nphiên bản khỏe hơn.';
   const showcaseDescription = authShowcase.description || 'Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.';
   const showcasePosterUrl = authShowcase.posterUrl || '';
+  const authVideoUrl = authShowcase.videoUrl || resolveHeroVideoUrl(landingContent?.heroBanner);
   
   const feature1Title = authShowcase.feature1Title || 'Đặt chỗ trong 30s';
   const feature1Desc = authShowcase.feature1Desc || 'Giữ sân & lớp học 7 ngày';
@@ -380,9 +382,9 @@ export function LoginPage() {
     <button
       type="submit"
       disabled={isSubmitting}
-      className="w-full min-h-11 sm:min-h-12 py-3 px-4 sm:px-6 inline-flex items-center justify-center gap-2 rounded-full bg-[var(--custom-btn-bg-color)] hover:bg-[var(--custom-btn-bg-hover-color)] text-[var(--secondary-color)] hover:text-brand-navy-900 font-dm-sans text-sm sm:text-[15px] font-bold hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-wait transition-all duration-200 group"
+      className="w-full min-h-11 sm:min-h-12 py-3 px-4 sm:px-6 inline-flex items-center justify-center gap-2 rounded-full bg-gradient-to-r from-red-600 via-rose-600 to-red-700 hover:from-red-500 hover:via-rose-500 hover:to-red-600 text-white font-dm-sans text-sm sm:text-[15px] font-bold shadow-lg shadow-red-600/30 hover:shadow-red-600/40 hover:-translate-y-0.5 active:translate-y-0 active:scale-[0.99] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:cursor-wait transition-all duration-200 group"
     >
-      {isSubmitting && <span className="w-4 h-4 border-2 border-[var(--secondary-color)]/40 border-t-[var(--secondary-color)] rounded-full animate-spin" aria-hidden="true" />}
+      {isSubmitting && <span className="w-4 h-4 border-2 border-white/40 border-t-white rounded-full animate-spin" aria-hidden="true" />}
       <span>{isSubmitting ? (isRegister ? 'Đang xử lý...' : 'Đang đăng nhập...') : (isRegister ? (needsEmailCode ? 'Xác thực và tạo tài khoản' : 'Tiếp tục xác thực email') : 'Đăng nhập vào Olympic Sports Arena')}</span>
       {!isSubmitting && (
         <span className="material-symbols-outlined max-[399px]:!hidden text-[19px] group-hover:translate-x-1 transition-transform duration-200" aria-hidden="true">
@@ -393,81 +395,89 @@ export function LoginPage() {
   );
 
   return (
-    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-brand-sand-100 dark:bg-brand-navy-950 font-dm-sans text-brand-navy-900 lg:overflow-hidden select-text">
+    <div className="min-h-screen lg:h-screen w-full flex flex-col lg:flex-row bg-slate-100 dark:bg-brand-navy-950 font-dm-sans text-brand-navy-900 lg:overflow-hidden select-text">
       {/* ========================================================
-          CỘT TRÁI: SHOWCASE THỂ THAO ĐỈNH CAO (Cinematic Athletic Hero)
+          CỘT TRÁI: SHOWCASE THỂ THAO ĐỈNH CAO (Cinematic Athletic Hero with Video)
           ======================================================== */}
-      <aside className="hidden lg:flex lg:w-[48%] xl:w-[50%] 2xl:w-[52%] h-full relative overflow-hidden bg-brand-navy-800 text-white flex-col justify-between p-8 sm:p-10 xl:p-12 select-none shrink-0 border-r border-white/5">
-        <img
-          alt="Sports Arena"
-          loading="lazy"
-          decoding="async"
-          className="absolute inset-0 object-cover w-full h-full scale-105 transition-transform duration-1000 ease-out hover:scale-100"
-          src={showcasePosterUrl}
-        />
-        {/* Lớp phủ navy phẳng: chữ trên ảnh luôn đọc được */}
-        <div className="absolute inset-0 bg-brand-navy-900/80" />
+      <aside className="hidden lg:flex lg:w-[48%] xl:w-[50%] 2xl:w-[52%] h-full relative overflow-hidden bg-brand-navy-950 text-white flex-col justify-between p-8 sm:p-10 xl:p-12 select-none shrink-0 border-r border-white/10 shadow-2xl">
+        {/* Background Video */}
+        <video
+          autoPlay
+          loop
+          muted
+          playsInline
+          className="absolute inset-0 w-full h-full object-cover scale-105 transition-transform duration-1000 ease-out"
+          poster={showcasePosterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
+        >
+          <source src={authVideoUrl} type="video/mp4" />
+        </video>
+
+        {/* Cinematic Multi-layered Overlays */}
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-navy-950/85 via-brand-navy-900/75 to-brand-navy-950/95" />
+        <div className="absolute inset-0 bg-gradient-to-r from-brand-navy-950/90 via-brand-navy-950/40 to-transparent" />
+        <div className="absolute inset-0 backdrop-blur-[1px]" />
 
         {/* Thanh Header thương hiệu góc trên bên trái */}
         <div className="relative z-10 flex items-center justify-between gap-4">
-          <Logo variant="dark" size="lg" />
+          <Logo variant="auto" size="lg" />
 
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-brand-navy-950/50 text-[13px] font-semibold text-brand-navy-100">
-            <span className="w-2 h-2 rounded-full bg-[var(--primary-color)] animate-pulse" aria-hidden="true" />
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/15 text-[13px] font-semibold text-white shadow-sm">
+            <span className="w-2 h-2 rounded-full bg-red-500 animate-pulse shadow-[0_0_8px_rgba(239,68,68,0.9)]" aria-hidden="true" />
             <span>{showcaseBadge}</span>
           </div>
         </div>
 
         {/* Khối trung tâm: Headline nghệ thuật & Thẻ kính nổi */}
         <div className="relative z-10 py-4 max-w-xl">
-          <p className="text-base font-semibold text-[var(--custom-btn-bg-color)] mb-3">
-            {showcaseTagline}
-          </p>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-500/20 backdrop-blur-md border border-red-500/30 text-xs font-bold uppercase tracking-wider text-red-300 mb-3.5 shadow-sm">
+            <span className="material-symbols-outlined text-[14px]">sports_score</span>
+            <span>{showcaseTagline}</span>
+          </div>
 
-          <h2 className="font-dm-sans text-3xl sm:text-4xl xl:text-5xl font-bold leading-[1.15] tracking-tight text-white whitespace-pre-line">
+          <h2 className="font-dm-sans text-3xl sm:text-4xl xl:text-5xl font-extrabold leading-[1.14] tracking-tight text-white whitespace-pre-line drop-shadow-md">
             {isRegister ? (
               <>
                 {showcaseRegisterTitle.split('\n')[0]} <br />
-                <span className="text-white">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-red-200">
                   {showcaseRegisterTitle.split('\n').slice(1).join('\n') || ''}
                 </span>
               </>
             ) : (
               <>
                 {showcaseLoginTitle.split('\n')[0]} <br />
-                <span className="text-white">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-slate-100 to-red-200">
                   {showcaseLoginTitle.split('\n').slice(1).join('\n') || ''}
                 </span>
               </>
             )}
           </h2>
 
-          <p className="text-base text-brand-navy-200 mt-4 leading-relaxed max-w-lg font-normal">
+          <p className="text-base text-brand-navy-200 mt-4 leading-relaxed max-w-lg font-normal drop-shadow-sm">
             {showcaseDescription}
           </p>
 
           {/* 2 Thẻ kính Frosted Glass Cards */}
-          <div className="grid sm:grid-cols-2 gap-3 mt-6">
-            <div className="p-4 rounded-2xl bg-brand-navy-950/50 hover:bg-brand-navy-950/70 transition-colors">
-              <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-[var(--custom-btn-bg-color)]/25 text-[var(--custom-btn-bg-color)] flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">{feature1Icon}</span>
+          <div className="grid sm:grid-cols-2 gap-3.5 mt-6">
+            <div className="p-4 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/15 hover:bg-white/[0.14] hover:border-white/25 transition-all duration-300 shadow-lg group">
+              <div className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-xl bg-[var(--custom-btn-bg-color)]/20 text-[var(--custom-btn-bg-color)] flex items-center justify-center shrink-0 border border-[var(--custom-btn-bg-color)]/30 group-hover:scale-110 transition-transform shadow-inner">
+                  <span className="material-symbols-outlined text-[20px]">{feature1Icon}</span>
                 </span>
                 <div>
-                  <h4 className="text-sm font-bold text-white">{feature1Title}</h4>
-                  <p className="text-[13px] text-brand-navy-200 mt-0.5">{feature1Desc}</p>
+                  <h4 className="text-sm font-bold text-white tracking-wide">{feature1Title}</h4>
+                  <p className="text-[12.5px] text-brand-navy-200 mt-0.5 font-normal">{feature1Desc}</p>
                 </div>
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-brand-navy-950/50 hover:bg-brand-navy-950/70 transition-colors">
-              <div className="flex items-center gap-2.5">
-                <span className="w-8 h-8 rounded-xl bg-[var(--primary-color)]/25 text-[var(--primary-color)] flex items-center justify-center shrink-0">
-                  <span className="material-symbols-outlined text-[18px]">{feature2Icon}</span>
+            <div className="p-4 rounded-2xl bg-white/[0.08] backdrop-blur-md border border-white/15 hover:bg-white/[0.14] hover:border-white/25 transition-all duration-300 shadow-lg group">
+              <div className="flex items-center gap-3">
+                <span className="w-9 h-9 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center shrink-0 border border-red-500/30 group-hover:scale-110 transition-transform shadow-inner">
+                  <span className="material-symbols-outlined text-[20px]">{feature2Icon}</span>
                 </span>
                 <div>
-                  <h4 className="text-sm font-bold text-white">{feature2Title}</h4>
-                  <p className="text-[13px] text-brand-navy-200 mt-0.5">{feature2Desc}</p>
+                  <h4 className="text-sm font-bold text-white tracking-wide">{feature2Title}</h4>
+                  <p className="text-[12.5px] text-brand-navy-200 mt-0.5 font-normal">{feature2Desc}</p>
                 </div>
               </div>
             </div>
@@ -475,25 +485,25 @@ export function LoginPage() {
         </div>
 
         {/* Footer Cột trái: Thống kê số liệu */}
-        <div className="relative z-10 pt-4 flex items-center justify-between gap-6">
+        <div className="relative z-10 pt-4 flex items-center justify-between gap-6 border-t border-white/10">
           <div className="flex gap-8 sm:gap-10">
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">{stat1Value}</div>
-              <div className="text-[13px] text-brand-navy-300 font-medium mt-0.5">{stat1Label}</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{stat1Value}</div>
+              <div className="text-[12.5px] text-brand-navy-300 font-medium mt-0.5">{stat1Label}</div>
             </div>
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-white tracking-tight">{stat2Value}</div>
-              <div className="text-[13px] text-brand-navy-300 font-medium mt-0.5">{stat2Label}</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-extrabold text-white tracking-tight">{stat2Value}</div>
+              <div className="text-[12.5px] text-brand-navy-300 font-medium mt-0.5">{stat2Label}</div>
             </div>
             <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-bold text-[var(--custom-btn-bg-color)] tracking-tight">{stat3Value}</div>
-              <div className="text-[13px] text-brand-navy-300 font-medium mt-0.5">{stat3Label}</div>
+              <div className="font-dm-sans text-2xl sm:text-3xl font-extrabold text-[var(--custom-btn-bg-color)] tracking-tight">{stat3Value}</div>
+              <div className="text-[12.5px] text-brand-navy-300 font-medium mt-0.5">{stat3Label}</div>
             </div>
           </div>
 
           <a
             href="#khoa-hoc"
-            className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-navy-100 hover:text-[var(--custom-btn-bg-color)] transition-colors group"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/15 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 active:scale-95 group shadow-sm"
           >
             <span>Khám phá</span>
             <span className="material-symbols-outlined text-[17px] group-hover:translate-x-1 transition-transform" aria-hidden="true">
@@ -508,19 +518,34 @@ export function LoginPage() {
           ======================================================== */}
       <section
         aria-labelledby="auth-heading"
-        className="flex-1 h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 xl:p-10 bg-brand-navy-900 lg:bg-brand-sand-100 dark:lg:bg-brand-navy-950 relative"
+        className="flex-1 h-full flex flex-col justify-between overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 xl:p-10 bg-slate-50 dark:bg-brand-navy-950 relative"
       >
-        {/* Dưới lg cột ảnh bị ẩn: dùng chính ảnh đó làm nền, phủ navy phẳng để form nổi trên nền thương hiệu */}
-        <div aria-hidden="true" className="lg:hidden absolute inset-0 bg-cover bg-center" style={{ backgroundImage: `url(${showcasePosterUrl})` }} />
-        <div aria-hidden="true" className="lg:hidden absolute inset-0 bg-brand-navy-900/80" />
+        {/* Dưới lg cột ảnh bị ẩn: dùng video làm nền động cùng lớp phủ tối */}
+        <div aria-hidden="true" className="lg:hidden absolute inset-0 overflow-hidden pointer-events-none">
+          <video
+            autoPlay
+            loop
+            muted
+            playsInline
+            className="w-full h-full object-cover scale-105"
+            poster={showcasePosterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
+          >
+            <source src={authVideoUrl} type="video/mp4" />
+          </video>
+          <div className="absolute inset-0 bg-brand-navy-950/85 backdrop-blur-sm" />
+        </div>
+
+        {/* Ambient subtle glow lights on desktop */}
+        <div className="hidden lg:block absolute -top-24 -right-24 w-96 h-96 bg-red-500/5 rounded-full blur-3xl pointer-events-none" />
+        <div className="hidden lg:block absolute -bottom-24 -left-24 w-96 h-96 bg-amber-500/5 rounded-full blur-3xl pointer-events-none" />
 
         {/* Thanh điều hướng góc trên */}
         <div className="flex items-center justify-between w-full shrink-0 mb-1 z-10">
-          <Logo variant="dark" size="sm" className="lg:hidden" />
+          <Logo variant="auto" size="sm" className="lg:hidden" />
 
           <a
             href="#/"
-            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-full text-[13px] font-semibold text-brand-navy-700 hover:text-brand-sage-800 bg-white hover:bg-brand-sage-50 dark:hover:bg-brand-navy-700 ml-auto transition-colors duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]"
+            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-full text-[13px] font-semibold text-brand-navy-800 dark:text-brand-navy-100 bg-white/90 dark:bg-brand-navy-800/90 hover:bg-white dark:hover:bg-brand-navy-700 shadow-sm hover:shadow border border-brand-navy-200/60 dark:border-brand-navy-700 ml-auto transition-all duration-200 hover:-translate-x-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)]"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
             <span>Về trang chủ</span>
@@ -529,9 +554,9 @@ export function LoginPage() {
 
         {/* Khung Auth Card cao cấp nổi bật giữa màn hình */}
         <div className="my-auto py-2 sm:py-3 w-full max-w-[464px] mx-auto z-10">
-          <div className="bg-white rounded-3xl p-5 sm:p-8 transition-all duration-200">
+          <div className="bg-white dark:bg-brand-navy-900 rounded-3xl p-6 sm:p-8 shadow-[0_20px_50px_-12px_rgba(0,0,0,0.08)] dark:shadow-[0_25px_60px_-15px_rgba(0,0,0,0.5)] border border-slate-100 dark:border-brand-navy-800 transition-all duration-300">
             {/* Tab chuyển đổi Đăng nhập / Đăng ký Tiya Style */}
-            <div className="flex gap-1 rounded-2xl bg-brand-sand-100 dark:bg-brand-navy-950 p-1 mb-5" role="group" aria-label="Chọn đăng nhập hoặc đăng ký">
+            <div className="flex gap-1 rounded-2xl bg-slate-100 dark:bg-brand-navy-950 p-1 mb-5 border border-slate-200/60 dark:border-brand-navy-800" role="group" aria-label="Chọn đăng nhập hoặc đăng ký">
               {[{ id: 'login', label: 'Đăng nhập' }, { id: 'register', label: 'Đăng ký' }].map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -544,11 +569,11 @@ export function LoginPage() {
                     className={
                       'flex-1 min-h-10 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[var(--primary-color)] disabled:opacity-60 ' +
                       (isActive
-                        ? 'bg-brand-navy-700 text-white font-bold'
-                        : 'text-brand-navy-600 hover:text-brand-navy-900 hover:bg-white/70 dark:hover:bg-brand-navy-800 font-medium')
+                        ? 'bg-brand-navy-800 dark:bg-brand-navy-700 text-white shadow-sm'
+                        : 'text-brand-navy-600 dark:text-brand-navy-300 hover:text-brand-navy-900 dark:hover:text-white hover:bg-white/60 dark:hover:bg-brand-navy-800/60 font-medium')
                     }
                   >
-                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary-color)] inline-block" />}
+                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-red-500 inline-block shadow-[0_0_6px_rgba(239,68,68,0.8)]" />}
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -557,10 +582,10 @@ export function LoginPage() {
 
             {/* Tiêu đề & Lời chào thân thiện */}
             <div className="mb-5">
-              <h1 id="auth-heading" className="font-dm-sans text-2xl sm:text-3xl font-bold text-[var(--secondary-color)] tracking-tight leading-tight">
+              <h1 id="auth-heading" className="font-dm-sans text-2xl sm:text-3xl font-extrabold text-[var(--secondary-color)] dark:text-white tracking-tight leading-tight">
                 <span>{isRegister ? 'Gia nhập Olympic Sports Arena' : 'Chào mừng trở lại!'}</span>
               </h1>
-              <p className="text-sm text-brand-navy-600 mt-1.5 leading-snug line-clamp-2">
+              <p className="text-sm text-brand-navy-600 dark:text-brand-navy-300 mt-1.5 leading-snug line-clamp-2">
                 {isRegister
                   ? 'Tạo tài khoản để khám phá khóa học, đặt sân và bắt đầu tập luyện.'
                   : 'Đăng nhập để quản lý lịch tập, đặt sân và theo dõi tiến độ của bạn.'}
@@ -915,7 +940,7 @@ export function LoginPage() {
         <div className="text-xs text-brand-navy-200 lg:text-brand-navy-600 dark:lg:text-brand-navy-300 text-center shrink-0 py-1 leading-5 z-10 flex items-center justify-center gap-3">
           <span>
             Hỗ trợ 24/7:{' '}
-            <a href="tel:0859859367" className="font-semibold text-white lg:text-brand-navy-800 dark:lg:text-white hover:text-[var(--custom-btn-bg-color)] lg:hover:text-brand-sage-800 transition-colors rounded">
+            <a href="tel:0859859367" className="font-semibold text-white lg:text-brand-navy-800 dark:lg:text-white hover:text-[var(--primary-color)] transition-colors rounded">
               0859 859 367
             </a>
           </span>
