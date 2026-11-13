@@ -314,119 +314,274 @@ const ZONES_DATA = {
   }
 };
 
-// Procedural Canvas Texture Generators
-function createSoccerTexture(pitchType = '7') {
+// ============================================================================
+// 4. PROCEDURAL HIGH-RES COURT & SURFACE TEXTURES
+// ============================================================================
+function createSoccerTurfTexture(labelText = 'SÂN BÓNG') {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
-  canvas.height = 512;
+  canvas.width = 1024;
+  canvas.height = 1536;
   const ctx = canvas.getContext('2d');
-  const stripes = pitchType === '7' ? 10 : 8;
+
+  const stripes = 14;
+  const sh = canvas.height / stripes;
   for (let i = 0; i < stripes; i++) {
-    ctx.fillStyle = i % 2 === 0 ? '#236940' : '#2d7d4c';
-    ctx.fillRect(0, (i * 512) / stripes, 512, 512 / stripes);
+    ctx.fillStyle = i % 2 === 0 ? '#166534' : '#15803d';
+    ctx.fillRect(0, i * sh, canvas.width, sh);
   }
-  ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(18, 18, 476, 476);
+
+  const pad = 60;
+  const w = canvas.width - pad * 2;
+  const h = canvas.height - pad * 2;
+  ctx.strokeStyle = 'rgba(255,255,255,0.92)';
+  ctx.lineWidth = 10;
+  ctx.strokeRect(pad, pad, w, h);
+
   ctx.beginPath();
-  ctx.moveTo(18, 256);
-  ctx.lineTo(494, 256);
+  ctx.moveTo(pad, canvas.height / 2);
+  ctx.lineTo(canvas.width - pad, canvas.height / 2);
   ctx.stroke();
+
   ctx.beginPath();
-  ctx.arc(256, 256, pitchType === '7' ? 52 : 44, 0, Math.PI * 2);
+  ctx.arc(canvas.width / 2, canvas.height / 2, 115, 0, Math.PI * 2);
   ctx.stroke();
-  ctx.strokeRect(156, 18, 200, 70);
-  ctx.strokeRect(156, 424, 200, 70);
+
+  const boxW = w * 0.56;
+  const boxH = h * 0.16;
+  ctx.strokeRect((canvas.width - boxW) / 2, pad, boxW, boxH);
+  ctx.strokeRect((canvas.width - boxW) / 2, canvas.height - pad - boxH, boxW, boxH);
+
+  ctx.fillStyle = 'rgba(255,255,255,0.22)';
+  ctx.font = 'bold 54px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(labelText, canvas.width / 2, canvas.height / 2 - 150);
+
   const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   return tex;
 }
 
-function createPickleballTexture() {
+function createPickleballCourtTexture(label = 'PICKLEBALL') {
   const canvas = document.createElement('canvas');
   canvas.width = 512;
-  canvas.height = 512;
+  canvas.height = 1024;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#1e3a8a';
-  ctx.fillRect(0, 0, 512, 512);
-  ctx.fillStyle = '#0284c7';
-  ctx.fillRect(40, 20, 432, 472);
-  // Non-volley zone (kitchen) in lime/amber
+
+  ctx.fillStyle = '#0f766e';
+  ctx.fillRect(0, 0, 512, 1024);
+
+  const padX = 56, padY = 82;
+  const cw = 512 - padX * 2;
+  const ch = 1024 - padY * 2;
+
+  ctx.fillStyle = '#1d4ed8';
+  ctx.fillRect(padX, padY, cw, ch);
+
+  // Non-Volley Kitchen Zone
+  const kitchenH = ch * 0.32;
   ctx.fillStyle = '#ea580c';
-  ctx.fillRect(40, 196, 432, 120);
+  ctx.fillRect(padX, 512 - kitchenH / 2, cw, kitchenH);
+
   ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(40, 20, 432, 472);
-  ctx.strokeRect(40, 196, 432, 120);
+  ctx.lineWidth = 8;
+  ctx.strokeRect(padX, padY, cw, ch);
+
   ctx.beginPath();
-  ctx.moveTo(256, 20);
-  ctx.lineTo(256, 196);
-  ctx.moveTo(256, 316);
-  ctx.lineTo(256, 492);
+  ctx.moveTo(padX, 512 - kitchenH / 2);
+  ctx.lineTo(padX + cw, 512 - kitchenH / 2);
+  ctx.moveTo(padX, 512 + kitchenH / 2);
+  ctx.lineTo(padX + cw, 512 + kitchenH / 2);
+  ctx.moveTo(256, padY);
+  ctx.lineTo(256, 512 - kitchenH / 2);
+  ctx.moveTo(256, 512 + kitchenH / 2);
+  ctx.lineTo(256, padY + ch);
   ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.85)';
+  ctx.font = 'bold 28px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(label, 256, 52);
+
   const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   return tex;
 }
 
-function createBasketballTexture() {
+function createBasketballHardwoodTexture() {
   const canvas = document.createElement('canvas');
-  canvas.width = 512;
+  canvas.width = 1024;
   canvas.height = 512;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#b45309';
-  ctx.fillRect(0, 0, 512, 512);
-  ctx.fillStyle = '#d97706';
-  for (let i = 0; i < 512; i += 16) {
-    if ((i / 16) % 2 === 0) ctx.fillRect(0, i, 512, 8);
+
+  ctx.fillStyle = '#d99b52';
+  ctx.fillRect(0, 0, 1024, 512);
+  ctx.fillStyle = 'rgba(146, 64, 14, 0.16)';
+  for (let i = 0; i < 64; i++) {
+    ctx.fillRect(0, i * 8, 1024, 3);
   }
+
+  const pad = 42;
   ctx.strokeStyle = '#ffffff';
-  ctx.lineWidth = 6;
-  ctx.strokeRect(30, 20, 452, 472);
+  ctx.lineWidth = 7;
+  ctx.strokeRect(pad, pad, 1024 - pad * 2, 512 - pad * 2);
+
+  ctx.fillStyle = '#1e3a8a';
+  ctx.fillRect(pad, 176, 155, 160);
+  ctx.fillRect(1024 - pad - 155, 176, 155, 160);
+  ctx.strokeRect(pad, 176, 155, 160);
+  ctx.strokeRect(1024 - pad - 155, 176, 155, 160);
+
   ctx.beginPath();
-  ctx.moveTo(30, 256);
-  ctx.lineTo(482, 256);
+  ctx.moveTo(512, pad);
+  ctx.lineTo(512, 512 - pad);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(256, 256, 50, 0, Math.PI * 2);
+  ctx.arc(512, 256, 62, 0, Math.PI * 2);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(pad + 35, 256, 175, -Math.PI / 2.3, Math.PI / 2.3);
   ctx.stroke();
   ctx.beginPath();
-  ctx.arc(256, 50, 120, 0, Math.PI);
+  ctx.arc(1024 - pad - 35, 256, 175, Math.PI - Math.PI / 2.3, Math.PI + Math.PI / 2.3);
   ctx.stroke();
-  ctx.beginPath();
-  ctx.arc(256, 462, 120, Math.PI, Math.PI * 2);
-  ctx.stroke();
+
   const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 4;
+  tex.anisotropy = 8;
   return tex;
 }
 
-function createPoolTileTexture() {
+function createBadmintonCourtTexture(num = 1) {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 1024;
+  const ctx = canvas.getContext('2d');
+  ctx.fillStyle = '#059669';
+  ctx.fillRect(0, 0, 512, 1024);
+
+  const pad = 44;
+  ctx.strokeStyle = '#ffffff';
+  ctx.lineWidth = 6;
+  ctx.strokeRect(pad, pad, 512 - pad * 2, 1024 - pad * 2);
+  ctx.beginPath();
+  ctx.moveTo(256, pad);
+  ctx.lineTo(256, 1024 - pad);
+  ctx.moveTo(pad, 360);
+  ctx.lineTo(512 - pad, 360);
+  ctx.moveTo(pad, 664);
+  ctx.lineTo(512 - pad, 664);
+  ctx.stroke();
+
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.font = 'bold 34px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText(`SÂN CẦU LÔNG ${num}`, 256, 220);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 8;
+  return tex;
+}
+
+function createPoolTileAndWaterTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 1024, 512);
+  grad.addColorStop(0, '#0284c7');
+  grad.addColorStop(0.5, '#38bdf8');
+  grad.addColorStop(1, '#0369a1');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 512);
+
+  // 5 Swimming Lane Bottom T-Lines
+  const lanes = 5;
+  const lh = 512 / lanes;
+  ctx.fillStyle = '#0f172a';
+  for (let i = 0; i < lanes; i++) {
+    const cy = i * lh + lh / 2;
+    ctx.fillRect(70, cy - 6, 884, 12);
+  }
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 8;
+  return tex;
+}
+
+function createSolarPanelTexture() {
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+
+  // Silver anodized aluminum frame
+  ctx.fillStyle = '#cbd5e1';
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Deep monocrystalline silicon background
+  const grad = ctx.createLinearGradient(0, 0, 512, 256);
+  grad.addColorStop(0, '#0a192f');
+  grad.addColorStop(0.5, '#172a45');
+  grad.addColorStop(1, '#0f172a');
+  ctx.fillStyle = grad;
+  ctx.fillRect(10, 10, 492, 236);
+
+  // Solar cell grid lines (12x6 cells)
+  const cols = 12, rows = 6;
+  const cw = 492 / cols, ch = 236 / rows;
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
+  ctx.lineWidth = 2;
+  for (let c = 1; c < cols; c++) {
+    ctx.beginPath();
+    ctx.moveTo(10 + c * cw, 10);
+    ctx.lineTo(10 + c * cw, 246);
+    ctx.stroke();
+  }
+  for (let r = 1; r < rows; r++) {
+    ctx.beginPath();
+    ctx.moveTo(10, 10 + r * ch);
+    ctx.lineTo(502, 10 + r * ch);
+    ctx.stroke();
+  }
+
+  // Metallic diamond junction intersections
+  ctx.fillStyle = '#e2e8f0';
+  for (let c = 1; c < cols; c++) {
+    for (let r = 1; r < rows; r++) {
+      ctx.fillRect(10 + c * cw - 3, 10 + r * ch - 3, 6, 6);
+    }
+  }
+
+  const tex = new THREE.CanvasTexture(canvas);
+  tex.anisotropy = 8;
+  return tex;
+}
+
+function createChainLinkFenceTexture() {
   const canvas = document.createElement('canvas');
   canvas.width = 256;
-  canvas.height = 512;
+  canvas.height = 256;
   const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#0284c7';
-  ctx.fillRect(0, 0, 256, 512);
-  ctx.strokeStyle = '#0f172a';
-  ctx.lineWidth = 4;
-  for (let l = 1; l <= 5; l++) {
-    const x = (l * 256) / 6;
+  ctx.clearRect(0, 0, 256, 256);
+
+  ctx.strokeStyle = 'rgba(203, 213, 225, 0.65)';
+  ctx.lineWidth = 3;
+  const step = 32;
+  for (let i = -256; i <= 512; i += step) {
     ctx.beginPath();
-    ctx.setLineDash([12, 12]);
-    ctx.moveTo(x, 20);
-    ctx.lineTo(x, 492);
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i + 256, 256);
     ctx.stroke();
-    ctx.setLineDash([]);
+
     ctx.beginPath();
-    ctx.moveTo(x - 8, 40);
-    ctx.lineTo(x + 8, 40);
-    ctx.moveTo(x - 8, 472);
-    ctx.lineTo(x + 8, 472);
+    ctx.moveTo(i + 256, 0);
+    ctx.lineTo(i, 256);
     ctx.stroke();
   }
+
   const tex = new THREE.CanvasTexture(canvas);
-  tex.anisotropy = 4;
+  tex.wrapS = THREE.RepeatWrapping;
+  tex.wrapT = THREE.RepeatWrapping;
+  tex.repeat.set(8, 2);
   return tex;
 }
 
@@ -777,13 +932,19 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     baseGroup.add(crossAvenue);
 
     // ─────────────────────────────────────────────────────────────
-    // BUILDINGS & ZONES PER EXACT COORDINATES
+    // BUILDINGS & ZONES PER EXACT COORDINATES & HIGH-RES TEXTURES
     // ─────────────────────────────────────────────────────────────
     const zoneGroups = {};
+    const clickableMeshes = [];
+    const registerClickable = (mesh, zoneId) => {
+      mesh.userData.zoneId = zoneId;
+      clickableMeshes.push(mesh);
+    };
 
     // Helper for 3-Floor Buildings
-    const create3FloorBuilding = (bWidth, bDepth, wallColor, createF1, createF2, createF3) => {
+    const create3FloorBuilding = (zoneId, bWidth, bDepth, wallColor, createF1, createF2, createF3) => {
       const bGroup = new THREE.Group();
+      bGroup.userData.zoneId = zoneId;
       const floorHeight = 4.6;
       const concreteMat = new THREE.MeshStandardMaterial({ color: wallColor, roughness: 0.65, metalness: 0.1 });
       const glassMat = new THREE.MeshPhysicalMaterial({
@@ -802,9 +963,11 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       const s1 = new THREE.Mesh(new THREE.BoxGeometry(bWidth, 0.3, bDepth), concreteMat);
       s1.position.y = 0.15;
       s1.receiveShadow = true;
+      registerClickable(s1, zoneId);
       f1Group.add(s1);
       const g1 = new THREE.Mesh(new THREE.BoxGeometry(bWidth - 0.2, floorHeight - 0.4, bDepth - 0.2), glassMat);
       g1.position.y = floorHeight / 2;
+      registerClickable(g1, zoneId);
       f1Group.add(g1);
       if (createF1) createF1(f1Group, bWidth, bDepth);
 
@@ -814,9 +977,11 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       const s2 = new THREE.Mesh(new THREE.BoxGeometry(bWidth, 0.4, bDepth), concreteMat);
       s2.position.y = floorHeight;
       s2.receiveShadow = true;
+      registerClickable(s2, zoneId);
       f2Group.add(s2);
       const g2 = new THREE.Mesh(new THREE.BoxGeometry(bWidth - 0.2, floorHeight - 0.4, bDepth - 0.2), glassMat);
       g2.position.y = floorHeight + floorHeight / 2;
+      registerClickable(g2, zoneId);
       f2Group.add(g2);
       if (createF2) createF2(f2Group, bWidth, bDepth, floorHeight);
 
@@ -826,9 +991,11 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       const s3 = new THREE.Mesh(new THREE.BoxGeometry(bWidth, 0.4, bDepth), concreteMat);
       s3.position.y = floorHeight * 2;
       s3.receiveShadow = true;
+      registerClickable(s3, zoneId);
       f3Group.add(s3);
       const g3 = new THREE.Mesh(new THREE.BoxGeometry(bWidth - 0.2, floorHeight - 0.4, bDepth - 0.2), glassMat);
       g3.position.y = floorHeight * 2 + floorHeight / 2;
+      registerClickable(g3, zoneId);
       f3Group.add(g3);
       if (createF3) createF3(f3Group, bWidth, bDepth, floorHeight * 2);
 
@@ -838,6 +1005,7 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       const roofSlab = new THREE.Mesh(new THREE.BoxGeometry(bWidth + 0.6, 0.5, bDepth + 0.6), concreteMat);
       roofSlab.position.y = floorHeight * 3 + 0.25;
       roofSlab.castShadow = true;
+      registerClickable(roofSlab, zoneId);
       roofGroup.add(roofSlab);
       const acUnit = new THREE.Mesh(new THREE.BoxGeometry(3, 1.2, 2), columnMat);
       acUnit.position.set(2, floorHeight * 3 + 1, 0);
@@ -848,13 +1016,15 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     };
 
     // --- KHU B (North-West: Center -37, -30 • Size 38x24m) ---
-    const bballTex = createBasketballTexture();
-    const khuBGroup = create3FloorBuilding(38, 24, 0x475569,
+    const bballTex = createBasketballHardwoodTexture();
+    const badTex = createBadmintonCourtTexture(1);
+    const khuBGroup = create3FloorBuilding('khuB', 38, 24, 0x475569,
       (f1) => {
         // Floor 1: Basketball Court (28x15)
         const bCourt = new THREE.Mesh(new THREE.PlaneGeometry(32, 20), new THREE.MeshStandardMaterial({ map: bballTex, roughness: 0.5 }));
         bCourt.rotation.x = -Math.PI / 2;
         bCourt.position.set(0, 0.22, 0);
+        registerClickable(bCourt, 'khuB');
         f1.add(bCourt);
         // Basketball Hoops
         const hoop1 = new THREE.Mesh(new THREE.BoxGeometry(2, 3.2, 0.2), new THREE.MeshStandardMaterial({ color: 0xf97316 }));
@@ -866,9 +1036,10 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       },
       (f2, bw, bd, baseY) => {
         // Floor 2: 4 Badminton Courts
-        const badFloor = new THREE.Mesh(new THREE.PlaneGeometry(36, 22), new THREE.MeshStandardMaterial({ color: 0x15803d, roughness: 0.6 }));
+        const badFloor = new THREE.Mesh(new THREE.PlaneGeometry(36, 22), new THREE.MeshStandardMaterial({ map: badTex, roughness: 0.6 }));
         badFloor.rotation.x = -Math.PI / 2;
         badFloor.position.set(0, baseY + 0.22, 0);
+        registerClickable(badFloor, 'khuB');
         f2.add(badFloor);
       },
       (f3, bw, bd, baseY) => {
@@ -887,16 +1058,17 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     zoneGroups.khuB = khuBGroup;
 
     // --- KHU A (Mid-West: Center -37, +6 • Size 38x24m) ---
-    const poolTex = createPoolTileTexture();
-    const khuAGroup = create3FloorBuilding(38, 24, 0x1e3a5f,
+    const poolTex = createPoolTileAndWaterTexture();
+    const khuAGroup = create3FloorBuilding('khuA', 38, 24, 0x1e3a5f,
       (f1) => {
-        // Floor 1: 25m Swimming Pool
+        // Floor 1: 25m Swimming Pool with PBR Caustics & Lane Lines
         const poolWater = new THREE.Mesh(
           new THREE.PlaneGeometry(25, 14),
           new THREE.MeshPhysicalMaterial({ color: 0x06b6d4, transmission: 0.85, roughness: 0.08, transparent: true, opacity: 0.75 })
         );
         poolWater.rotation.x = -Math.PI / 2;
         poolWater.position.set(0, 0.4, 0);
+        registerClickable(poolWater, 'khuA');
         f1.add(poolWater);
 
         const poolBed = new THREE.Mesh(new THREE.PlaneGeometry(25, 14), new THREE.MeshStandardMaterial({ map: poolTex }));
@@ -909,6 +1081,7 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
         const gymFloor = new THREE.Mesh(new THREE.PlaneGeometry(36, 22), new THREE.MeshStandardMaterial({ color: 0x334155, roughness: 0.6 }));
         gymFloor.rotation.x = -Math.PI / 2;
         gymFloor.position.set(0, baseY + 0.22, 0);
+        registerClickable(gymFloor, 'khuA');
         f2.add(gymFloor);
         for (let i = -10; i <= 10; i += 5) {
           const m = new THREE.Mesh(new THREE.BoxGeometry(1.8, 1.1, 1), new THREE.MeshStandardMaterial({ color: 0xef4444 }));
@@ -931,11 +1104,12 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     zoneGroups.khuA = khuAGroup;
 
     // --- KHU C (South-West: Center -40, +35 • Size 32x18m) ---
-    const khuCGroup = create3FloorBuilding(32, 18, 0x4c1d95,
+    const khuCGroup = create3FloorBuilding('khuC', 32, 18, 0x4c1d95,
       (f1) => {
         // Floor 1: Boxing Ring & Tatami
         const ring = new THREE.Mesh(new THREE.BoxGeometry(8, 1, 8), new THREE.MeshStandardMaterial({ color: 0xbe123c }));
         ring.position.set(0, 0.5, 0);
+        registerClickable(ring, 'khuC');
         f1.add(ring);
         for (let b = -8; b <= 8; b += 4) {
           const bag = new THREE.Mesh(new THREE.CylinderGeometry(0.35, 0.35, 1.8, 8), new THREE.MeshStandardMaterial({ color: 0x111827 }));
@@ -956,6 +1130,7 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
         const yogaFloor = new THREE.Mesh(new THREE.PlaneGeometry(30, 16), new THREE.MeshStandardMaterial({ color: 0xca8a04, roughness: 0.5 }));
         yogaFloor.rotation.x = -Math.PI / 2;
         yogaFloor.position.set(0, baseY + 0.22, 0);
+        registerClickable(yogaFloor, 'khuC');
         f3.add(yogaFloor);
       }
     );
@@ -967,12 +1142,13 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     // --- CENTRAL LOBBY PAVILION (Center -5, +28 • Size 18x14m) ---
     const lobbyGroup = new THREE.Group();
     lobbyGroup.position.set(-5, 0, 28);
-    lobbyGroup.userData = { id: 'lobby' };
+    lobbyGroup.userData = { id: 'lobby', zoneId: 'lobby' };
     scene.add(lobbyGroup);
     zoneGroups.lobby = lobbyGroup;
 
     const lobbyBase = new THREE.Mesh(new THREE.BoxGeometry(18, 0.4, 14), new THREE.MeshStandardMaterial({ color: 0x334155 }));
     lobbyBase.position.y = 0.2;
+    registerClickable(lobbyBase, 'lobby');
     lobbyGroup.add(lobbyBase);
 
     const lobbyGlass = new THREE.Mesh(
@@ -980,11 +1156,13 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       new THREE.MeshPhysicalMaterial({ color: 0xe2e8f0, roughness: 0.1, transmission: 0.75, transparent: true, opacity: 0.55 })
     );
     lobbyGlass.position.y = 3.65;
+    registerClickable(lobbyGlass, 'lobby');
     lobbyGroup.add(lobbyGlass);
 
     const lobbyRoof = new THREE.Mesh(new THREE.CylinderGeometry(9, 7.5, 0.6, 24), new THREE.MeshStandardMaterial({ color: 0x0f172a, metalness: 0.6 }));
     lobbyRoof.position.y = 7.2;
     lobbyRoof.castShadow = true;
+    registerClickable(lobbyRoof, 'lobby');
     lobbyGroup.add(lobbyRoof);
 
     // Welcome Arch "Olympic Sports Area" at South-West (x: -13.5, z: 49.5)
@@ -1010,22 +1188,40 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     // 1x Sân Bóng 5 Người: Center (+15, -25), Size 20x34m
     const s5Pitch = new THREE.Mesh(
       new THREE.PlaneGeometry(20, 34),
-      new THREE.MeshStandardMaterial({ map: createSoccerTexture('5'), roughness: 0.7 })
+      new THREE.MeshStandardMaterial({ map: createSoccerTurfTexture('SÂN BÓNG 5 NGƯỜI'), roughness: 0.7 })
     );
     s5Pitch.rotation.x = -Math.PI / 2;
     s5Pitch.position.set(15, 0.05, -25);
     s5Pitch.receiveShadow = true;
+    registerClickable(s5Pitch, 'outdoor');
     outdoorGroup.add(s5Pitch);
 
     // 1x Sân Bóng 7 Người: Center (+44, -18), Size 32x48m
     const s7Pitch = new THREE.Mesh(
       new THREE.PlaneGeometry(32, 48),
-      new THREE.MeshStandardMaterial({ map: createSoccerTexture('7'), roughness: 0.7 })
+      new THREE.MeshStandardMaterial({ map: createSoccerTurfTexture('SÂN BÓNG 7 NGƯỜI'), roughness: 0.7 })
     );
     s7Pitch.rotation.x = -Math.PI / 2;
     s7Pitch.position.set(44, 0.05, -18);
     s7Pitch.receiveShadow = true;
+    registerClickable(s7Pitch, 'outdoor');
     outdoorGroup.add(s7Pitch);
+
+    // Chain-link Perimeter Fencing for Outdoor Pitches
+    const fenceMat = new THREE.MeshStandardMaterial({
+      map: createChainLinkFenceTexture(),
+      transparent: true,
+      roughness: 0.5,
+      metalness: 0.8,
+      side: THREE.DoubleSide
+    });
+    const fence5 = new THREE.Mesh(new THREE.BoxGeometry(20.4, 3, 34.4), fenceMat);
+    fence5.position.set(15, 1.5, -25);
+    outdoorGroup.add(fence5);
+
+    const fence7 = new THREE.Mesh(new THREE.BoxGeometry(32.4, 3.5, 48.4), fenceMat);
+    fence7.position.set(44, 1.75, -18);
+    outdoorGroup.add(fence7);
 
     // 3D Goals
     const goalMat = new THREE.MeshStandardMaterial({ color: 0xffffff });
@@ -1043,13 +1239,15 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     outdoorGroup.add(g4);
 
     // 4x Sân Pickleball: Centers X = +16, +28, +40, +52 at Z = +28 (each 10x20m)
-    const pbTex = createPickleballTexture();
-    const pbMat = new THREE.MeshStandardMaterial({ map: pbTex, roughness: 0.6 });
-    [16, 28, 40, 52].forEach(px => {
-      const pbMesh = new THREE.Mesh(new THREE.PlaneGeometry(10, 20), pbMat);
+    [16, 28, 40, 52].forEach((px, idx) => {
+      const pbMesh = new THREE.Mesh(
+        new THREE.PlaneGeometry(10, 20),
+        new THREE.MeshStandardMaterial({ map: createPickleballCourtTexture(`SÂN PICKLEBALL ${idx + 1}`), roughness: 0.6 })
+      );
       pbMesh.rotation.x = -Math.PI / 2;
       pbMesh.position.set(px, 0.05, 28);
       pbMesh.receiveShadow = true;
+      registerClickable(pbMesh, 'outdoor');
       outdoorGroup.add(pbMesh);
 
       // Pickleball Net
@@ -1088,7 +1286,7 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     // --- PARKING LOT (South-East: Center +38, +44 • Size 48x15.6m) ---
     const parkingGroup = new THREE.Group();
     parkingGroup.position.set(38, 0, 44);
-    parkingGroup.userData = { id: 'parking' };
+    parkingGroup.userData = { id: 'parking', zoneId: 'parking' };
     scene.add(parkingGroup);
     zoneGroups.parking = parkingGroup;
 
@@ -1099,15 +1297,19 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     parkAsphalt.rotation.x = -Math.PI / 2;
     parkAsphalt.position.y = 0.04;
     parkAsphalt.receiveShadow = true;
+    registerClickable(parkAsphalt, 'parking');
     parkingGroup.add(parkAsphalt);
 
-    // 2 Solar Carports
-    const solarMat = new THREE.MeshStandardMaterial({ color: 0x1e3a8a, metalness: 0.8, roughness: 0.2 });
+    // 2 Solar Carports with High-Res Monocrystalline Silicon Texture
+    const solarTex = createSolarPanelTexture();
+    const solarMat = new THREE.MeshStandardMaterial({ map: solarTex, metalness: 0.8, roughness: 0.2 });
     const cpNorth = new THREE.Mesh(new THREE.BoxGeometry(46, 0.3, 5), solarMat);
     cpNorth.position.set(0, 3.8, -4.5);
+    registerClickable(cpNorth, 'parking');
     parkingGroup.add(cpNorth);
     const cpSouth = new THREE.Mesh(new THREE.BoxGeometry(46, 0.3, 5), solarMat);
     cpSouth.position.set(0, 3.8, 4.5);
+    registerClickable(cpSouth, 'parking');
     parkingGroup.add(cpSouth);
 
     // 20 parking stalls & 14 parked cars
@@ -1201,8 +1403,42 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     };
     window.addEventListener('resize', handleResize);
 
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+    let downPos = { x: 0, y: 0 };
+
+    const handlePointerDown = (e) => {
+      downPos = { x: e.clientX, y: e.clientY };
+    };
+
+    const handlePointerUp = (e) => {
+      const dist = Math.hypot(e.clientX - downPos.x, e.clientY - downPos.y);
+      if (dist > 6) return;
+
+      const rect = renderer.domElement.getBoundingClientRect();
+      mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+      mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+      raycaster.setFromCamera(mouse, camera);
+      const intersects = raycaster.intersectObjects(clickableMeshes, true);
+      if (intersects.length > 0) {
+        let obj = intersects[0].object;
+        while (obj && !obj.userData?.zoneId) {
+          obj = obj.parent;
+        }
+        if (obj?.userData?.zoneId) {
+          focusZone(obj.userData.zoneId);
+        }
+      }
+    };
+
+    const domEl = renderer.domElement;
+    domEl.addEventListener('pointerdown', handlePointerDown);
+    domEl.addEventListener('pointerup', handlePointerUp);
+
     return () => {
       window.removeEventListener('resize', handleResize);
+      domEl.removeEventListener('pointerdown', handlePointerDown);
+      domEl.removeEventListener('pointerup', handlePointerUp);
       if (animFrameIdRef.current) cancelAnimationFrame(animFrameIdRef.current);
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
