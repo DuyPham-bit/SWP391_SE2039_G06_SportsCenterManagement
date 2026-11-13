@@ -13,13 +13,13 @@
 ───────────────────────────────────────────────────────────── */
 :root {
   --white-color:               #ffffff;
-  --primary-color:             rgb(var(--brand-sage-500));   /* sage #81B29A */
+  --primary-color:             rgb(var(--brand-sage-500));   /* primary red #EF4444 */
   --secondary-color:           rgb(var(--brand-navy-700));   /* navy #3D405B */
   --section-bg-color:          rgb(var(--brand-sand-100));   /* cream #F4F1DE */
   --custom-btn-bg-color:       rgb(var(--brand-sand-300));   /* sand #F2CC8F */
   --custom-btn-bg-hover-color: rgb(var(--brand-terra-500));  /* terracotta #E07A5F */
   --dark-color:                #000000;
-  --p-color:                   rgb(var(--brand-navy-500));   /* muted text #6C6D70 (was #717275; darkened for AA on cream) */
+  --p-color:                   rgb(var(--brand-navy-500));   /* muted text #6C6D70 */
   --link-hover-color:          rgb(var(--brand-terra-500));
   --scms-red:                  rgb(var(--brand-danger-700)); /* @deprecated: use --color-danger */
 
@@ -2696,6 +2696,57 @@ html.dark .landing-page-root footer {
 html.dark .landing-page-root .bg-white {
   background-color: #1E293B !important;
   border-color: #334155 !important;
+}
+
+html.dark .landing-page-root,
+html.dark .tiya-page {
+  background-color: rgb(var(--color-surface-muted)) !important;
+  color: rgb(var(--color-text)) !important;
+}
+
+html.dark .tiya-page h1,
+html.dark .tiya-page h2,
+html.dark .tiya-page h3,
+html.dark .tiya-page h4,
+html.dark .tiya-page h5,
+html.dark .tiya-page h6,
+html.dark .tiya-page strong,
+html.dark .tiya-page b {
+  color: rgb(var(--color-text-strong)) !important;
+}
+
+html.dark .tiya-page p,
+html.dark :where(.tiya-page) p {
+  color: rgb(var(--color-text-muted)) !important;
+}
+
+html.dark .tiya-dropdown-menu {
+  background-color: rgb(var(--color-surface-raised)) !important;
+  border-color: rgb(var(--color-border)) !important;
+}
+
+html.dark .tiya-dropdown-item {
+  color: rgb(var(--color-text)) !important;
+}
+
+html.dark .tiya-dropdown-item:hover {
+  background-color: rgb(var(--brand-navy-700) / 0.6) !important;
+  color: rgb(var(--color-primary)) !important;
+}
+
+html.dark .tiya-course-card {
+  background-color: rgb(var(--color-surface-raised)) !important;
+  border-color: rgb(var(--color-border)) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .tiya-course-card__title {
+  color: rgb(var(--color-text-strong)) !important;
+}
+
+html.dark .section-bg,
+html.dark .tiya-section-bg {
+  background-color: rgb(var(--color-surface-muted)) !important;
 }
 
 /* ─────────────────────────────────────────────────────────────

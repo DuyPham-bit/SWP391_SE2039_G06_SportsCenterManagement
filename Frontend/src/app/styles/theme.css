@@ -559,10 +559,11 @@ html.dark h6 {
 
 /* Dark navy text turns light, except on an element that paints its own light accent background
    (sand badge, sage chip…) without a dark: background: there the dark text is what stays readable. */
-html.dark :is(.text-brand-navy-900, .text-brand-navy-800, .text-brand-navy-700,
-  .text-slate-900, .text-slate-800):not(:is([class^="bg-brand-sand-"], [class*=" bg-brand-sand-"],
+html.dark :is(.text-brand-navy-900, .text-brand-navy-800, .text-brand-navy-700, .text-brand-navy-950,
+  .text-slate-900, .text-slate-800, .text-slate-950, .text-black):not(:is([class^="bg-brand-sand-"], [class*=" bg-brand-sand-"],
     [class^="bg-brand-sage-"], [class*=" bg-brand-sage-"],
     [class^="bg-brand-teal-"], [class*=" bg-brand-teal-"],
+    [class^="bg-brand-danger-"], [class*=" bg-brand-danger-"],
     [class^="bg-brand-terra-"], [class*=" bg-brand-terra-"]):not([class*="dark:bg-"])) {
   color: rgb(var(--color-text)) !important;
 }
@@ -591,6 +592,10 @@ html.dark .fpt-card,
 html.dark .bg-white {
   background-color: rgb(var(--color-surface-raised)) !important;
   border-color: rgb(var(--color-border)) !important;
+}
+
+html.dark .fpt-card:not([class*="text-"]),
+html.dark .bg-white:not([class*="text-"]) {
   color: rgb(var(--color-text-strong)) !important;
 }
 
@@ -602,12 +607,19 @@ html.dark .bg-brand-navy-50 {
    including translucent ones such as bg-brand-navy-50/80. Variant-prefixed classes (hover:…) are not matched. */
 html.dark :is([class^="bg-brand-navy-50/"], [class*=" bg-brand-navy-50/"],
   .bg-brand-navy-100, [class^="bg-brand-navy-100/"], [class*=" bg-brand-navy-100/"],
-  .bg-brand-navy-200, [class^="bg-brand-navy-200/"], [class*=" bg-brand-navy-200/"]):not([class*="dark:bg-"]) {
+  .bg-brand-navy-200, [class^="bg-brand-navy-200/"], [class*=" bg-brand-navy-200/"],
+  .bg-slate-50, .bg-slate-100, .bg-slate-200,
+  .bg-gray-50, .bg-gray-100, .bg-gray-200):not([class*="dark:bg-"]) {
   background-color: rgb(var(--brand-navy-700) / 0.6) !important;
 }
 
-html.dark .border-brand-navy-200,
-html.dark .border-brand-navy-100 {
+html.dark :is(.border-brand-navy-100, .border-brand-navy-200, .border-brand-navy-300,
+  .border-slate-100, .border-slate-200, .border-slate-300,
+  .border-gray-100, .border-gray-200, .border-gray-300):not([class*="dark:border-"]) {
+  border-color: rgb(var(--color-border)) !important;
+}
+
+html.dark :is(.divide-brand-navy-100, .divide-brand-navy-200, .divide-slate-100, .divide-slate-200) > :not([hidden]) ~ :not([hidden]) {
   border-color: rgb(var(--color-border)) !important;
 }
 
@@ -619,9 +631,19 @@ html.dark textarea {
   color: rgb(var(--color-text-strong)) !important;
 }
 
+html.dark input::placeholder,
+html.dark textarea::placeholder {
+  color: rgb(var(--color-text-muted)) !important;
+}
+
+html.dark tr.hover\:bg-brand-navy-50\/70:hover,
+html.dark .hover\:bg-brand-navy-50\/70:hover,
+html.dark .hover\:bg-brand-navy-50\/50:hover,
 html.dark .hover\:bg-brand-navy-50:hover,
-html.dark .hover\:bg-brand-navy-100:hover {
-  background-color: rgb(var(--color-border)) !important;
+html.dark .hover\:bg-brand-navy-100:hover,
+html.dark .hover\:bg-slate-50:hover,
+html.dark .hover\:bg-slate-100:hover {
+  background-color: rgb(var(--brand-navy-700) / 0.7) !important;
 }
 
 html.dark footer {
