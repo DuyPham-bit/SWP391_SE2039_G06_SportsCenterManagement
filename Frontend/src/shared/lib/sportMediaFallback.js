@@ -48,3 +48,4 @@ export function getSportFallbackImage(name = '', category = '') {
 export function getFacilityFallbackImage(facName = '', roomType = '') {
   return getSportFallbackImage(facName, roomType);
 }
+
