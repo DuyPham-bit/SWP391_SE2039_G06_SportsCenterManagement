@@ -7,7 +7,7 @@ Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai 
 
 ## Chạy local
 
-1. Cấu hình kết nối tới PostgreSQL đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/README.md](./Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mã seed dữ liệu nghiệp vụ đã được gỡ; ứng dụng chỉ đồng bộ schema/quyền, không tự tạo dữ liệu demo. Xem [kết nối DB thật](./Frontend/docs/real-database.md).
+1. Cấu hình kết nối tới PostgreSQL đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/README.md](./Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mặc định ứng dụng chỉ đồng bộ schema/quyền/danh mục môn; dữ liệu demo (gói, lớp, hóa đơn, thanh toán mẫu) chỉ được tạo khi đặt `Database:SeedDemoData=true`, không bật trên database thật. Xem [kết nối DB thật](./Frontend/docs/real-database.md).
 2. Chạy API từ thư mục workspace:
 
    ```powershell
