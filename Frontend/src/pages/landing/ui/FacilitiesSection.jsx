@@ -485,9 +485,9 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   href="/3d-campus.html"
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#CDBDA6]/15 hover:bg-[#CDBDA6]/25 border border-[#CDBDA6]/30 text-xs font-bold text-[#CDBDA6] transition hover-lift"
+                  className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-3.5 sm:py-2 rounded-xl bg-[#CDBDA6]/15 hover:bg-[#CDBDA6]/25 border border-[#CDBDA6]/30 text-xs sm:text-xs font-extrabold text-[#CDBDA6] transition hover-lift shadow-sm w-full sm:w-auto"
                 >
-                  <span className="material-symbols-outlined text-[17px]">view_in_ar</span>
+                  <span className="material-symbols-outlined text-[18px]">view_in_ar</span>
                   <span>{isEn ? 'Explore 3D ArchViz Model (13,000m²)' : 'Xem Mô Hình 3D Thực Tế (13.000m²)'}</span>
                 </a>
               </div>

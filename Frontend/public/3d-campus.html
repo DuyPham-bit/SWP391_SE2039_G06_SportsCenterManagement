@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>3D ArchViz Thực Tế - Tổ Hợp Thể Thao Đa Năng 13.000m²</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
@@ -10,24 +10,48 @@
   <script src="https://unpkg.com/lucide@latest"></script>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
   <style>
-    * { font-family: 'Plus Jakarta Sans', sans-serif; user-select: none; -webkit-user-select: none; }
-    body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #141622; color: #F7F5F0; }
-    #canvas-container { width: 100vw; height: 100vh; position: relative; }
+    * {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+      box-sizing: border-box;
+      -webkit-tap-highlight-color: transparent;
+    }
+    body, html {
+      margin: 0;
+      padding: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: #141622;
+      color: #F7F5F0;
+      touch-action: none;
+    }
+    #canvas-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      touch-action: none;
+    }
+    canvas {
+      touch-action: none;
+      outline: none;
+    }
 
     /* Architectural Glassmorphism UI */
     .arch-panel {
-      background: rgba(20, 22, 34, 0.86);
+      background: rgba(20, 22, 34, 0.88);
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       border: 1px solid rgba(247, 245, 240, 0.14);
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.55);
+      box-shadow: 0 16px 45px rgba(0, 0, 0, 0.55);
     }
     .arch-card {
       background: rgba(34, 38, 56, 0.72);
       border: 1px solid rgba(247, 245, 240, 0.1);
       transition: all 0.22s ease;
     }
-    .arch-card:hover {
+    .arch-card:hover, .arch-card:active {
       background: rgba(46, 52, 76, 0.9);
       border-color: rgba(229, 217, 182, 0.55);
     }
@@ -41,7 +65,10 @@
       transition: transform 0.22s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.22s;
       z-index: 10;
     }
-    .zone-marker:hover { transform: translate(-50%, -108%) scale(1.06); z-index: 30; }
+    .zone-marker:hover, .zone-marker:active {
+      transform: translate(-50%, -108%) scale(1.06);
+      z-index: 30;
+    }
     .zone-marker.active .marker-card {
       background: #E5D9B6;
       color: #141622;
@@ -51,7 +78,7 @@
     .zone-marker.active .marker-sub { color: #2b3040; font-weight: 700; }
     .marker-stem {
       width: 2px;
-      height: 24px;
+      height: 22px;
       background: linear-gradient(to bottom, #E5D9B6, rgba(229, 217, 182, 0.1));
       margin: 0 auto;
     }
@@ -63,6 +90,56 @@
       margin: -2px auto 0;
       box-shadow: 0 0 10px #E5D9B6;
     }
+
+    /* Mobile Responsive Marker Tweaks */
+    @media (max-width: 640px) {
+      .marker-card {
+        padding: 5px 9px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 4px 14px rgba(0,0,0,0.45) !important;
+      }
+      .marker-card .marker-sub { display: none !important; }
+      .marker-card .text-\[11px\] {
+        font-size: 10.5px !important;
+        font-weight: 800 !important;
+      }
+      .marker-stem { height: 14px !important; }
+      .marker-dot { width: 6px !important; height: 6px !important; }
+    }
+
+    /* Inspector Panel Mobile Bottom Sheet vs Desktop Right Drawer */
+    #inspector-panel {
+      transition: transform 0.32s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+    }
+    @media (max-width: 767px) {
+      #inspector-panel.panel-closed {
+        transform: translateY(105%) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+      #inspector-panel.panel-open {
+        transform: translateY(0) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+    }
+    @media (min-width: 768px) {
+      #inspector-panel.panel-closed {
+        transform: translateX(120%) !important;
+        opacity: 0 !important;
+        pointer-events: none !important;
+      }
+      #inspector-panel.panel-open {
+        transform: translateX(0) !important;
+        opacity: 1 !important;
+        pointer-events: auto !important;
+      }
+    }
+
+    /* Scrollbars & Touch Utilities */
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    .touch-scroll { -webkit-overflow-scrolling: touch; }
 
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
@@ -76,60 +153,92 @@
     <div id="markers-layer" class="absolute inset-0 pointer-events-none overflow-hidden z-10"></div>
 
     <!-- TOP BAR -->
-    <header class="absolute top-3 left-3 right-3 md:top-4 md:left-4 md:right-4 z-20 flex flex-wrap items-center justify-between gap-3 pointer-events-none">
-      <!-- Brand Title -->
-      <div class="arch-panel px-4 py-3 rounded-2xl pointer-events-auto flex items-center gap-3.5">
-        <div class="w-11 h-11 rounded-xl bg-[#E5D9B6]/15 border border-[#E5D9B6]/40 flex items-center justify-center text-[#E5D9B6] shrink-0">
-          <i data-lucide="compass" class="w-6 h-6"></i>
-        </div>
-        <div>
-          <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-[10px] uppercase tracking-widest text-[#E5D9B6] font-bold">Bố Trí Không Gian Thuận Tiện</span>
-            <span class="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold">ArchViz Thực Tế • 13.000 m² (130m × 100m)</span>
+    <header class="absolute top-2 left-2 right-2 md:top-4 md:left-4 md:right-4 z-20 pointer-events-none flex flex-col gap-2">
+      <!-- Main Header Row -->
+      <div class="flex items-center justify-between gap-2 w-full">
+        <!-- Brand Title (Responsive: Compact on mobile, rich on desktop) -->
+        <div class="arch-panel px-3 py-2 md:px-4 md:py-3 rounded-2xl pointer-events-auto flex items-center gap-2.5 md:gap-3.5 shadow-xl">
+          <div class="w-8 h-8 md:w-11 md:h-11 rounded-xl bg-[#E5D9B6]/15 border border-[#E5D9B6]/40 flex items-center justify-center text-[#E5D9B6] shrink-0">
+            <i data-lucide="compass" class="w-4 h-4 md:w-6 md:h-6"></i>
           </div>
-          <h1 class="text-sm md:text-lg font-extrabold text-[#F7F5F0] tracking-tight leading-snug">
-            SƠ ĐỒ 3D CÁC KHU VỰC TẬP LUYỆN
-          </h1>
+          <div class="min-w-0">
+            <div class="flex items-center gap-1.5 flex-wrap">
+              <span class="text-[9px] md:text-[10px] uppercase tracking-wider text-[#E5D9B6] font-bold hidden sm:inline">Bố Trí Không Gian Thuận Tiện</span>
+              <span class="text-[9px] md:text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-semibold whitespace-nowrap">13.000 m² (130m × 100m)</span>
+            </div>
+            <h1 class="text-xs md:text-lg font-extrabold text-[#F7F5F0] tracking-tight leading-snug truncate">
+              SƠ ĐỒ 3D CÁC KHU VỰC TẬP LUYỆN
+            </h1>
+          </div>
+        </div>
+
+        <!-- Desktop Quick Controls (hidden on mobile, visible on md+) -->
+        <div class="hidden md:flex items-center gap-2 flex-wrap pointer-events-auto">
+          <!-- View Original 2D Infographic Modal -->
+          <button onclick="toggleModal('info-modal', true)" class="arch-panel hover:border-[#E5D9B6]/60 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-2 transition">
+            <i data-lucide="layout-grid" class="w-4 h-4 text-[#E5D9B6]"></i>
+            <span>Bảng Sơ Đồ & Tiện Ích</span>
+          </button>
+
+          <!-- Camera Plan 2D vs Eye-Level vs Flycam Toggle -->
+          <button onclick="setPlan2DView()" class="arch-panel hover:border-[#E5D9B6]/60 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-1.5 transition" title="Xem mặt bằng 2D">
+            <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
+            <span>📐 Mặt Bằng 2D</span>
+          </button>
+
+          <button id="btn-cam-mode" onclick="toggleWalkMode()" class="arch-panel hover:border-[#E5D9B6]/60 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-2 transition">
+            <i data-lucide="eye" class="w-4 h-4 text-sky-400"></i>
+            <span id="cam-mode-label">Góc nhìn: Flycam 3D</span>
+          </button>
+
+          <!-- Time of Day / Lighting Switcher -->
+          <div class="arch-panel p-1.5 rounded-xl flex items-center gap-1">
+            <button id="btn-day" onclick="setLightingMode('day')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#E5D9B6] text-[#141622]">
+              ☀️ Nắng Thực Tế
+            </button>
+            <button id="btn-sunset" onclick="setLightingMode('sunset')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-[#F7F5F0]/80 hover:bg-white/10">
+              🌅 Hoàng Hôn
+            </button>
+            <button id="btn-night" onclick="setLightingMode('night')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-[#F7F5F0]/80 hover:bg-white/10">
+              💡 Đèn LED Đêm
+            </button>
+          </div>
+
+          <!-- Reset Master View -->
+          <button onclick="resetMasterView()" class="arch-panel bg-[#E5D9B6]/15 hover:bg-[#E5D9B6]/25 border-[#E5D9B6]/40 px-3.5 py-2.5 rounded-xl text-xs font-bold text-[#E5D9B6] flex items-center gap-1.5 transition">
+            <i data-lucide="maximize-2" class="w-4 h-4"></i>
+            <span>Toàn Cảnh</span>
+          </button>
+        </div>
+
+        <!-- Mobile Header Quick Buttons (visible on mobile only) -->
+        <div class="flex md:hidden items-center gap-1.5 pointer-events-auto shrink-0">
+          <button onclick="resetMasterView()" class="arch-panel bg-[#E5D9B6]/20 border-[#E5D9B6]/40 px-2.5 py-1.5 rounded-xl text-xs font-bold text-[#E5D9B6] flex items-center gap-1 shadow-lg active:scale-95 transition" title="Toàn cảnh">
+            <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
+            <span class="text-[11px]">Toàn cảnh</span>
+          </button>
+          <button onclick="toggleModal('info-modal', true)" class="arch-panel px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-1 shadow-lg active:scale-95 transition" title="Sơ đồ & Tiện ích">
+            <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-[#E5D9B6]"></i>
+            <span class="text-[11px]">Tiện ích</span>
+          </button>
         </div>
       </div>
 
-      <!-- Realistic Environment, Camera & Original Info Controls -->
-      <div class="flex items-center gap-2 flex-wrap pointer-events-auto">
-        <!-- View Original 2D Infographic Modal -->
-        <button onclick="toggleModal('info-modal', true)" class="arch-panel hover:border-[#E5D9B6]/60 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-2 transition">
-          <i data-lucide="layout-grid" class="w-4 h-4 text-[#E5D9B6]"></i>
-          <span class="hidden sm:inline">Bảng Sơ Đồ & Tiện Ích</span>
+      <!-- Mobile Horizontal Scrollable Quick Action Pill Bar (Mobile Only) -->
+      <div class="flex md:hidden items-center gap-1.5 overflow-x-auto no-scrollbar pointer-events-auto py-0.5 px-0.5">
+        <button onclick="setPlan2DView()" class="arch-panel active:bg-white/20 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-[#F7F5F0] flex items-center gap-1 whitespace-nowrap shrink-0 shadow-md">
+          <i data-lucide="map" class="w-3.5 h-3.5 text-emerald-400"></i>
+          <span>📐 2D Mặt Bằng</span>
         </button>
-
-        <!-- Camera Plan 2D vs Eye-Level vs Flycam Toggle -->
-        <button onclick="setPlan2DView()" class="arch-panel hover:border-[#E5D9B6]/60 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-1.5 transition" title="Xem mặt bằng quy hoạch thẳng đứng từ trên xuống (Kiểm tra khoảng cách các khối)">
-          <i data-lucide="map" class="w-4 h-4 text-emerald-400"></i>
-          <span>📐 Mặt Bằng 2D</span>
+        <button id="btn-cam-mode-mob" onclick="toggleWalkMode()" class="arch-panel active:bg-white/20 px-2.5 py-1.5 rounded-xl text-[11px] font-bold text-[#F7F5F0] flex items-center gap-1 whitespace-nowrap shrink-0 shadow-md">
+          <i data-lucide="eye" class="w-3.5 h-3.5 text-sky-400"></i>
+          <span id="cam-mode-label-mob">Góc nhìn</span>
         </button>
-
-        <button id="btn-cam-mode" onclick="toggleWalkMode()" class="arch-panel hover:border-[#E5D9B6]/60 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-2 transition" title="Chuyển đổi góc nhìn Flycam trên cao và góc nhìn mắt người thực tế dưới mặt đất">
-          <i data-lucide="eye" class="w-4 h-4 text-sky-400"></i>
-          <span id="cam-mode-label">Góc nhìn: Flycam 3D</span>
-        </button>
-
-        <!-- Time of Day / Lighting Switcher -->
-        <div class="arch-panel p-1.5 rounded-xl flex items-center gap-1">
-          <button id="btn-day" onclick="setLightingMode('day')" class="px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#E5D9B6] text-[#141622]">
-            ☀️ Nắng Thực Tế
-          </button>
-          <button id="btn-sunset" onclick="setLightingMode('sunset')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-[#F7F5F0]/80 hover:bg-white/10">
-            🌅 Hoàng Hôn
-          </button>
-          <button id="btn-night" onclick="setLightingMode('night')" class="px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-[#F7F5F0]/80 hover:bg-white/10">
-            💡 Đèn LED Đêm
-          </button>
+        <div class="arch-panel p-1 rounded-xl flex items-center gap-1 shrink-0 shadow-md">
+          <button id="btn-day-mob" onclick="setLightingMode('day')" class="px-2 py-1 rounded-lg text-[10px] font-bold bg-[#E5D9B6] text-[#141622]">☀️ Nắng</button>
+          <button id="btn-sunset-mob" onclick="setLightingMode('sunset')" class="px-2 py-1 rounded-lg text-[10px] font-semibold text-[#F7F5F0]/80">🌅 Chiều</button>
+          <button id="btn-night-mob" onclick="setLightingMode('night')" class="px-2 py-1 rounded-lg text-[10px] font-semibold text-[#F7F5F0]/80">💡 Đêm</button>
         </div>
-
-        <!-- Reset Master View -->
-        <button onclick="resetMasterView()" class="arch-panel bg-[#E5D9B6]/15 hover:bg-[#E5D9B6]/25 border-[#E5D9B6]/40 px-3.5 py-2.5 rounded-xl text-xs font-bold text-[#E5D9B6] flex items-center gap-1.5 transition">
-          <i data-lucide="maximize-2" class="w-4 h-4"></i>
-          <span>Toàn Cảnh</span>
-        </button>
       </div>
     </header>
 
@@ -193,15 +302,18 @@
       </div>
     </aside>
 
-    <!-- RIGHT INSPECTOR DRAWER (Opens when clicking any zone) -->
-    <aside id="inspector-panel" class="absolute right-3 md:right-4 top-20 bottom-20 z-20 w-[92vw] sm:w-96 arch-panel rounded-2xl p-5 flex flex-col justify-between transition-all duration-300 translate-x-[120%] opacity-0 pointer-events-none overflow-hidden">
-      <div class="overflow-y-auto pr-1 space-y-4">
+    <!-- INSPECTOR DRAWER (Bottom sheet on mobile, right panel on desktop) -->
+    <aside id="inspector-panel" class="panel-closed fixed md:absolute inset-x-0 bottom-0 md:inset-auto md:right-4 md:top-20 md:bottom-20 z-30 md:z-20 w-full md:w-96 max-h-[82vh] md:max-h-none arch-panel rounded-t-3xl md:rounded-2xl p-4 md:p-5 flex flex-col justify-between transition-all duration-300 ease-out border-b-0 md:border-b shadow-[0_-10px_40px_rgba(0,0,0,0.6)] md:shadow-2xl overflow-hidden">
+      <!-- Mobile Drag Handle Bar -->
+      <div class="w-12 h-1.5 rounded-full bg-white/25 mx-auto mb-2.5 shrink-0 md:hidden"></div>
+
+      <div class="overflow-y-auto pr-1 space-y-3.5 touch-scroll">
         <div class="flex items-start justify-between gap-2 border-b border-white/10 pb-3">
           <div>
             <span id="ins-badge" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#E5D9B6]/20 text-[#E5D9B6]">PHÂN KHU</span>
             <h2 id="ins-title" class="text-base md:text-lg font-extrabold text-[#F7F5F0] mt-1.5 leading-snug">Tên Khu Vực</h2>
           </div>
-          <button onclick="resetMasterView()" class="p-1.5 rounded-lg bg-white/10 hover:bg-white/20 text-slate-200 transition shrink-0" title="Đóng và về toàn cảnh">
+          <button onclick="resetMasterView()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-slate-200 flex items-center justify-center transition shrink-0" title="Đóng và về toàn cảnh">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
@@ -233,56 +345,65 @@
       </div>
 
       <!-- Bottom Actions -->
-      <div class="pt-3 border-t border-white/10 mt-3 flex items-center justify-between gap-2">
+      <div class="pt-3 border-t border-white/10 mt-3 flex items-center justify-between gap-3 shrink-0">
         <div class="text-[11px] text-slate-300">
           <span class="text-slate-400 block text-[10px]">Quy mô diện tích:</span>
           <strong id="ins-area" class="text-[#E5D9B6]">--</strong>
         </div>
-        <button onclick="openBookingModal()" class="px-4 py-2.5 rounded-xl bg-[#E5D9B6] hover:bg-[#f0e6c8] text-[#141622] font-extrabold text-xs flex items-center gap-1.5 shadow-lg transition">
+        <button onclick="openBookingModal()" class="px-5 py-2.5 rounded-xl bg-[#E5D9B6] hover:bg-[#f0e6c8] active:scale-95 text-[#141622] font-extrabold text-xs sm:text-sm flex items-center gap-2 shadow-lg transition">
           <i data-lucide="calendar-check" class="w-4 h-4"></i>
           <span>Đặt Sân Ngay</span>
         </button>
       </div>
     </aside>
 
-    <!-- BOTTOM QUICK NAVIGATION DOCK ("Bấm vô ra khu đó") -->
-    <nav class="absolute bottom-3 left-1/2 -translate-x-1/2 z-20 arch-panel p-1.5 rounded-2xl flex items-center gap-1.5 max-w-[96vw] overflow-x-auto pointer-events-auto">
-      <button onclick="resetMasterView()" id="dock-overview" class="dock-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all bg-[#E5D9B6] text-[#141622] flex items-center gap-1.5">
+    <!-- BOTTOM QUICK NAVIGATION DOCK -->
+    <nav id="bottom-dock" class="absolute bottom-2 md:bottom-3 left-1/2 -translate-x-1/2 z-20 arch-panel p-1.5 rounded-2xl flex items-center gap-1.5 max-w-[96vw] overflow-x-auto no-scrollbar dock-container pointer-events-auto transition-all duration-300 shadow-2xl">
+      <button onclick="resetMasterView()" id="dock-overview" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all bg-[#E5D9B6] text-[#141622] flex items-center gap-1.5 shrink-0">
         <i data-lucide="globe" class="w-3.5 h-3.5"></i>
-        <span>Toàn Cảnh (13.000m²)</span>
+        <span class="hidden sm:inline">Toàn Cảnh (13.000m²)</span>
+        <span class="sm:hidden">Toàn Cảnh</span>
       </button>
-      <button onclick="focusZone('khuA')" id="dock-khuA" class="dock-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
-        <span>Khu A: Bơi Lội, Gym & Fitness</span>
+      <button onclick="focusZone('khuA')" id="dock-khuA" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
+        <span class="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0"></span>
+        <span class="hidden sm:inline">Khu A: Bơi Lội, Gym & Fitness</span>
+        <span class="sm:hidden">Khu A • Bơi & Gym</span>
       </button>
-      <button onclick="focusZone('khuB')" id="dock-khuB" class="dock-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-amber-400"></span>
-        <span>Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn</span>
+      <button onclick="focusZone('khuB')" id="dock-khuB" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
+        <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
+        <span class="hidden sm:inline">Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn</span>
+        <span class="sm:hidden">Khu B • Rổ & Lông</span>
       </button>
-      <button onclick="focusZone('khuC')" id="dock-khuC" class="dock-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-rose-400"></span>
-        <span>Khu C: Võ Thuật, Boxing, Yoga & Pilates</span>
+      <button onclick="focusZone('khuC')" id="dock-khuC" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
+        <span class="w-2.5 h-2.5 rounded-full bg-rose-400 shrink-0"></span>
+        <span class="hidden sm:inline">Khu C: Võ Thuật, Boxing, Yoga & Pilates</span>
+        <span class="sm:hidden">Khu C • Võ & Yoga</span>
       </button>
-      <button onclick="focusZone('outdoor')" id="dock-outdoor" class="dock-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
-        <span>Khu Ngoài Trời: Bóng Đá & Pickleball</span>
+      <button onclick="focusZone('outdoor')" id="dock-outdoor" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
+        <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
+        <span class="hidden sm:inline">Khu Ngoài Trời: Bóng Đá & Pickleball</span>
+        <span class="sm:hidden">Ngoài Trời • Bóng Đá</span>
       </button>
-      <button onclick="focusZone('lobby')" id="dock-lobby" class="dock-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-purple-400"></span>
-        <span>Lễ Tân, Căn-Tin & Y Tế</span>
+      <button onclick="focusZone('lobby')" id="dock-lobby" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
+        <span class="w-2.5 h-2.5 rounded-full bg-purple-400 shrink-0"></span>
+        <span class="hidden sm:inline">Lễ Tân, Căn-Tin & Y Tế</span>
+        <span class="sm:hidden">Lễ Tân & Y Tế</span>
       </button>
-      <button onclick="focusZone('parking')" id="dock-parking" class="dock-btn px-3.5 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-2">
-        <span class="w-2.5 h-2.5 rounded-full bg-cyan-400"></span>
-        <span>Bãi Đỗ Ô Tô Tập Trung (20 Chỗ)</span>
+      <button onclick="focusZone('parking')" id="dock-parking" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
+        <span class="w-2.5 h-2.5 rounded-full bg-cyan-400 shrink-0"></span>
+        <span class="hidden sm:inline">Bãi Đỗ Ô Tô Tập Trung (20 Chỗ)</span>
+        <span class="sm:hidden">Bãi Đỗ Xe (20 Ô)</span>
       </button>
     </nav>
   </div>
 
     <!-- MODAL 1: ORIGINAL INFOGRAPHIC BOARD (MATCHING UPLOADED IMAGE) -->
-  <div id="info-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-5 md:p-8">
-    <div class="bg-[#202336] border border-white/10 rounded-[28px] max-w-6xl w-full max-h-[92vh] overflow-y-auto p-6 sm:p-8 md:p-10 shadow-[0_25px_60px_rgba(0,0,0,0.6)] relative text-white">
+  <div id="info-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-2 sm:p-5 md:p-8">
+    <div class="bg-[#202336] border border-white/10 rounded-2xl sm:rounded-[28px] max-w-6xl w-full max-h-[94vh] overflow-y-auto p-4 sm:p-8 md:p-10 shadow-2xl relative text-white touch-scroll">
       <!-- Close button -->
-      <button onclick="toggleModal('info-modal', false)" class="absolute top-5 right-5 w-9 h-9 rounded-full bg-white/5 hover:bg-white/15 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition">
+      <button onclick="toggleModal('info-modal', false)" class="absolute top-3.5 right-3.5 sm:top-5 sm:right-5 w-9 h-9 rounded-full bg-white/10 hover:bg-white/20 border border-white/10 flex items-center justify-center text-slate-300 hover:text-white transition z-10">
+        <i data-lucide="x" class="w-5 h-5"></i>
+      </button>
         <i data-lucide="x" class="w-5 h-5"></i>
       </button>
 
@@ -461,26 +582,26 @@
   </div>
 
 <!-- MODAL 2: ONLINE COURT BOOKING -->
-  <div id="booking-modal" class="fixed inset-0 z-50 bg-black/75 backdrop-blur-md hidden items-center justify-center p-4">
-    <div class="arch-panel rounded-3xl max-w-md w-full p-6 relative border border-[#E5D9B6]/40">
-      <button onclick="toggleModal('booking-modal', false)" class="absolute top-4 right-4 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-200">
+  <div id="booking-modal" class="fixed inset-0 z-50 bg-black/80 backdrop-blur-md hidden items-center justify-center p-3 sm:p-4">
+    <div class="arch-panel rounded-2xl sm:rounded-3xl max-w-md w-full p-4 sm:p-6 relative border border-[#E5D9B6]/40 max-h-[94vh] overflow-y-auto">
+      <button onclick="toggleModal('booking-modal', false)" class="absolute top-3.5 right-3.5 p-2 rounded-full bg-white/10 hover:bg-white/20 text-slate-200">
         <i data-lucide="x" class="w-4 h-4"></i>
       </button>
-      <div class="text-xs font-bold uppercase tracking-wider text-[#E5D9B6]">Hệ Thống Đặt Sân Online</div>
-      <h3 class="text-lg font-extrabold text-white mt-0.5 mb-4">Đặt Sân & Đăng Ký Tập Luyện</h3>
-      <form onsubmit="submitBooking(event)" class="space-y-3.5 text-xs">
+      <div class="text-[10px] sm:text-xs font-bold uppercase tracking-wider text-[#E5D9B6]">Hệ Thống Đặt Sân Online</div>
+      <h3 class="text-base sm:text-lg font-extrabold text-white mt-0.5 mb-3 sm:mb-4">Đặt Sân & Đăng Ký Tập Luyện</h3>
+      <form onsubmit="submitBooking(event)" class="space-y-3 text-xs">
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Khu vực đã chọn</label>
-          <input id="booking-zone-name" type="text" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-[#E5D9B6] font-bold">
+          <input id="booking-zone-name" type="text" readonly class="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-[#E5D9B6] font-bold text-sm sm:text-xs">
         </div>
-        <div class="grid grid-cols-2 gap-3">
+        <div class="grid grid-cols-2 gap-2.5">
           <div>
             <label class="block text-slate-300 font-semibold mb-1">Ngày tập</label>
-            <input id="booking-date" type="date" required class="w-full px-3 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white">
+            <input id="booking-date" type="date" required class="w-full px-3 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white text-sm sm:text-xs">
           </div>
           <div>
             <label class="block text-slate-300 font-semibold mb-1">Khung giờ</label>
-            <select class="w-full px-3 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white">
+            <select class="w-full px-3 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white text-sm sm:text-xs">
               <option>06:00 - 08:00 (Sáng)</option>
               <option>16:00 - 18:00 (Chiều)</option>
               <option selected>18:00 - 20:00 (Tối - Đèn LED)</option>
@@ -490,12 +611,12 @@
         </div>
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Họ tên & Số điện thoại</label>
-          <input type="text" required placeholder="Nhập SĐT để lễ tân xác nhận..." class="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white">
+          <input type="text" required placeholder="Nhập SĐT để lễ tân xác nhận..." class="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white text-base sm:text-xs">
         </div>
         <div id="booking-toast" class="hidden p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-center">
           ✅ Đặt lịch thành công! Lễ tân đã ghi nhận mã đặt sân của bạn.
         </div>
-        <button type="submit" class="w-full py-3 rounded-xl bg-[#E5D9B6] hover:bg-[#f2e8c9] text-[#141622] font-extrabold uppercase tracking-wider transition">
+        <button type="submit" class="w-full py-3 rounded-xl bg-[#E5D9B6] hover:bg-[#f2e8c9] active:scale-95 text-[#141622] font-extrabold uppercase tracking-wider text-xs sm:text-sm transition">
           Xác Nhận Đặt Sân
         </button>
       </form>
@@ -3167,7 +3288,12 @@
       });
 
       const panel = document.getElementById('inspector-panel');
-      panel.classList.remove('translate-x-[120%]', 'opacity-0', 'pointer-events-none');
+      panel.classList.remove('panel-closed', 'translate-x-[120%]', 'opacity-0', 'pointer-events-none');
+      panel.classList.add('panel-open');
+      const dock = document.getElementById('bottom-dock');
+      if (dock) {
+        dock.classList.add('max-md:opacity-0', 'max-md:pointer-events-none', 'max-md:translate-y-4');
+      }
 
       if (data.hasFloors && initialFloor > 0) {
         selectFloor(initialFloor);
@@ -3225,10 +3351,18 @@
     window.resetMasterView = function() {
       activeZoneId = null;
       isWalkMode = false;
-      document.getElementById('cam-mode-label').textContent = 'Góc nhìn: Flycam 3D';
+      const label = document.getElementById('cam-mode-label');
+      if (label) label.textContent = 'Góc nhìn: Flycam 3D';
+      const labelMob = document.getElementById('cam-mode-label-mob');
+      if (labelMob) labelMob.textContent = 'Góc nhìn';
       resetAllBuildingFloors();
       const panel = document.getElementById('inspector-panel');
-      panel.classList.add('translate-x-[120%]', 'opacity-0', 'pointer-events-none');
+      panel.classList.add('panel-closed', 'translate-x-[120%]', 'opacity-0', 'pointer-events-none');
+      panel.classList.remove('panel-open');
+      const dock = document.getElementById('bottom-dock');
+      if (dock) {
+        dock.classList.remove('max-md:opacity-0', 'max-md:pointer-events-none', 'max-md:translate-y-4');
+      }
       Object.keys(markerElements).forEach(k => markerElements[k].el.classList.remove('active'));
       document.querySelectorAll('.dock-btn').forEach(btn => btn.classList.remove('bg-[#E5D9B6]', 'text-[#141622]'));
       document.getElementById('dock-overview').classList.add('bg-[#E5D9B6]', 'text-[#141622]');
@@ -3239,7 +3373,10 @@
     window.setPlan2DView = function() {
       activeZoneId = null;
       isWalkMode = false;
-      document.getElementById('cam-mode-label').textContent = 'Góc nhìn: Mặt Bằng 2D';
+      const label = document.getElementById('cam-mode-label');
+      if (label) label.textContent = 'Góc nhìn: Mặt Bằng 2D';
+      const labelMob = document.getElementById('cam-mode-label-mob');
+      if (labelMob) labelMob.textContent = 'Mặt Bằng 2D';
       resetAllBuildingFloors();
       animateCameraTo({ x: 0, y: 0, z: 0 }, { x: 0, y: 148, z: 0.1 });
     };
@@ -3248,11 +3385,14 @@
     window.toggleWalkMode = function() {
       isWalkMode = !isWalkMode;
       const label = document.getElementById('cam-mode-label');
+      const labelMob = document.getElementById('cam-mode-label-mob');
       if (isWalkMode) {
-        label.textContent = 'Góc nhìn: Thực Tế Mặt Đất';
+        if (label) label.textContent = 'Góc nhìn: Thực Tế Mặt Đất';
+        if (labelMob) labelMob.textContent = 'Mặt Đất';
         animateCameraTo({ x: -13.0, y: 3.2, z: -15 }, { x: -13.0, y: 2.4, z: 24 });
       } else {
-        label.textContent = 'Góc nhìn: Flycam 3D';
+        if (label) label.textContent = 'Góc nhìn: Flycam 3D';
+        if (labelMob) labelMob.textContent = 'Flycam';
         resetMasterView();
       }
     };
@@ -3263,9 +3403,17 @@
     window.setLightingMode = function(mode) {
       ['day', 'sunset', 'night'].forEach(m => {
         const btn = document.getElementById('btn-' + m);
-        btn.className = m === mode
-          ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#E5D9B6] text-[#141622]'
-          : 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-[#F7F5F0]/80 hover:bg-white/10';
+        if (btn) {
+          btn.className = m === mode
+            ? 'px-3 py-1.5 rounded-lg text-xs font-bold transition-all bg-[#E5D9B6] text-[#141622]'
+            : 'px-3 py-1.5 rounded-lg text-xs font-semibold transition-all text-[#F7F5F0]/80 hover:bg-white/10';
+        }
+        const btnMob = document.getElementById('btn-' + m + '-mob');
+        if (btnMob) {
+          btnMob.className = m === mode
+            ? 'px-2 py-1 rounded-lg text-[10px] font-bold bg-[#E5D9B6] text-[#141622]'
+            : 'px-2 py-1 rounded-lg text-[10px] font-semibold text-[#F7F5F0]/80';
+        }
       });
 
       scene.environment = generateArchVizEnvMap(mode);
