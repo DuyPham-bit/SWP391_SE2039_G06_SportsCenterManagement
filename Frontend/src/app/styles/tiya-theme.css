@@ -1080,7 +1080,7 @@ html.dark .tiya-theme-toggle-btn:hover {
   border-radius: 100px;
   background: rgb(var(--brand-sage-700) / 0.12);
   border: 1px solid rgb(var(--brand-sage-700) / 0.25);
-  color: #1B4D3E; /* WCAG AAA contrast ratio > 7:1 */
+  color: rgb(var(--color-primary-hover)); /* WCAG AAA contrast ratio > 7:1 */
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -3096,3 +3096,17 @@ html.dark .tiya-carousel-autoplay-btn {
   border-color: rgb(var(--brand-navy-700)) !important;
   color: rgb(var(--brand-navy-200)) !important;
 }
+
+/* Wave transitions in Dark Mode */
+html.dark .hero-bottom-wave path {
+  fill: rgb(var(--brand-navy-900)) !important;
+}
+
+html.dark .courses-bottom-wave path {
+  fill: rgb(var(--brand-navy-950)) !important;
+}
+
+html.dark .facilities-bottom-wave path {
+  fill: rgb(var(--brand-navy-900)) !important;
+}
+
