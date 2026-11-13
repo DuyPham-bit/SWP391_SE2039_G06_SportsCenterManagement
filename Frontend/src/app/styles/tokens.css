@@ -21,17 +21,17 @@
   --brand-navy-900: 30 34 53; /* #1E2235 */
   --brand-navy-950: 5 7 15; /* #05070F */
   /* sage */
-  --brand-sage-50: 239 252 245; /* #EFFCF5 */
-  --brand-sage-100: 230 242 236; /* #E6F2EC */
-  --brand-sage-200: 206 231 218; /* #CEE7DA */
-  --brand-sage-300: 167 218 193; /* #A7DAC1 */
-  --brand-sage-400: 145 194 170; /* #91C2AA */
-  --brand-sage-500: 129 178 154; /* #81B29A */
-  --brand-sage-600: 94 152 126; /* #5E987E */
-  --brand-sage-700: 45 106 79; /* #2D6A4F */
-  --brand-sage-800: 42 92 70; /* #2A5C46 */
-  --brand-sage-900: 27 67 50; /* #1B4332 */
-  --brand-sage-950: 22 41 32; /* #162920 */
+  --brand-sage-50: 254 242 242; /* #FEF2F2 */
+  --brand-sage-100: 254 226 226; /* #FEE2E2 */
+  --brand-sage-200: 254 202 202; /* #FECACA */
+  --brand-sage-300: 252 165 165; /* #FCA5A5 */
+  --brand-sage-400: 248 113 113; /* #F87171 */
+  --brand-sage-500: 239 68 68; /* #EF4444 */
+  --brand-sage-600: 220 38 38; /* #DC2626 */
+  --brand-sage-700: 185 28 28; /* #B91C1C */
+  --brand-sage-800: 153 27 27; /* #991B1B */
+  --brand-sage-900: 127 29 29; /* #7F1D1D */
+  --brand-sage-950: 69 10 10; /* #450A0A */
   /* sand */
   --brand-sand-50: 250 248 245; /* #FAF8F5 */
   --brand-sand-100: 244 241 222; /* #F4F1DE */
@@ -82,11 +82,11 @@
   --brand-danger-950: 74 12 7; /* #4A0C07 */
 
   /* Semantic tokens (light). Components should prefer these over brand steps. */
-  --color-primary: 45 106 79; /* #2D6A4F */
-  --color-primary-hover: 27 67 50; /* #1B4332 */
-  --color-primary-soft: 230 242 236; /* #E6F2EC */
+  --color-primary: 185 28 28; /* #B91C1C */
+  --color-primary-hover: 153 27 27; /* #991B1B */
+  --color-primary-soft: 254 226 226; /* #FEE2E2 */
   --color-on-primary: 255 255 255; /* #FFFFFF */
-  --color-brand: 129 178 154; /* #81B29A */
+  --color-brand: 220 38 38; /* #DC2626 */
   --color-secondary: 61 64 91; /* #3D405B */
   --color-secondary-hover: 43 45 66; /* #2B2D42 */
   --color-on-secondary: 255 255 255; /* #FFFFFF */
@@ -113,23 +113,23 @@
   --color-focus: 36 130 143; /* #24828F */
 
   /* Categorical chart palette */
-  --color-chart-1: 94 152 126; /* #5E987E */
+  --color-chart-1: 220 38 38; /* #DC2626 */
   --color-chart-2: 61 64 91; /* #3D405B */
   --color-chart-3: 191 136 50; /* #BF8832 */
   --color-chart-4: 212 93 62; /* #D45D3E */
   --color-chart-5: 36 130 143; /* #24828F */
-  --color-chart-6: 42 92 70; /* #2A5C46 */
+  --color-chart-6: 185 28 28; /* #B91C1C */
   --color-chart-7: 108 109 112; /* #6C6D70 */
   --color-chart-8: 124 82 0; /* #7C5200 */
 }
 
 /* Dark mode: tonal, desaturated variants (not inverted). */
 html.dark {
-  --color-primary: 145 194 170; /* #91C2AA */
-  --color-primary-hover: 167 218 193; /* #A7DAC1 */
-  --color-primary-soft: 27 67 50; /* #1B4332 */
+  --color-primary: 248 113 113; /* #F87171 */
+  --color-primary-hover: 252 165 165; /* #FCA5A5 */
+  --color-primary-soft: 69 10 10; /* #450A0A */
   --color-on-primary: 30 34 53; /* #1E2235 */
-  --color-brand: 129 178 154; /* #81B29A */
+  --color-brand: 239 68 68; /* #EF4444 */
   --color-secondary: 211 212 215; /* #D3D4D7 */
   --color-secondary-hover: 231 231 233; /* #E7E7E9 */
   --color-on-secondary: 30 34 53; /* #1E2235 */
@@ -154,12 +154,12 @@ html.dark {
   --color-info: 168 218 220; /* #A8DADC */
   --color-info-soft: 18 45 49; /* #122D31 */
   --color-focus: 124 200 205; /* #7CC8CD */
-  --color-chart-1: 145 194 170; /* #91C2AA */
+  --color-chart-1: 248 113 113; /* #F87171 */
   --color-chart-2: 211 212 215; /* #D3D4D7 */
   --color-chart-3: 243 192 113; /* #F3C071 */
   --color-chart-4: 248 144 116; /* #F89074 */
   --color-chart-5: 124 200 205; /* #7CC8CD */
-  --color-chart-6: 167 218 193; /* #A7DAC1 */
+  --color-chart-6: 252 165 165; /* #FCA5A5 */
   --color-chart-7: 160 161 165; /* #A0A1A5 */
   --color-chart-8: 242 204 143; /* #F2CC8F */
 }
