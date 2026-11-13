@@ -430,6 +430,70 @@ function createPoolTileTexture() {
   return tex;
 }
 
+// Procedural HDRI-like Environment Map for Realistic Glass & Water Reflections (PMREMGenerator)
+function generateArchVizEnvMap(pmremGenerator, mode = 'day') {
+  const envScene = new THREE.Scene();
+  const skyGeo = new THREE.SphereGeometry(80, 32, 16);
+  const canvas = document.createElement('canvas');
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 256);
+
+  if (mode === 'day') {
+    grad.addColorStop(0.0, '#1d4ed8');
+    grad.addColorStop(0.45, '#93c5fd');
+    grad.addColorStop(0.52, '#f8fafc');
+    grad.addColorStop(1.0, '#334155');
+  } else if (mode === 'sunset') {
+    grad.addColorStop(0.0, '#1e1b4b');
+    grad.addColorStop(0.45, '#ea580c');
+    grad.addColorStop(0.52, '#fde047');
+    grad.addColorStop(1.0, '#1f2937');
+  } else {
+    grad.addColorStop(0.0, '#020617');
+    grad.addColorStop(0.5, '#0f172a');
+    grad.addColorStop(1.0, '#020617');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 512, 256);
+
+  const tex = new THREE.CanvasTexture(canvas);
+  const skyMat = new THREE.MeshBasicMaterial({ map: tex, side: THREE.BackSide });
+  envScene.add(new THREE.Mesh(skyGeo, skyMat));
+  const envMap = pmremGenerator.fromScene(envScene, 0.04).texture;
+  skyGeo.dispose();
+  skyMat.dispose();
+  tex.dispose();
+  return envMap;
+}
+
+function createSkyDomeTexture(mode = 'day') {
+  const canvas = document.createElement('canvas');
+  canvas.width = 1024;
+  canvas.height = 512;
+  const ctx = canvas.getContext('2d');
+  const grad = ctx.createLinearGradient(0, 0, 0, 512);
+  if (mode === 'day') {
+    grad.addColorStop(0, '#1e3a8a');
+    grad.addColorStop(0.5, '#7dd3fc');
+    grad.addColorStop(0.65, '#e0f2fe');
+    grad.addColorStop(1, '#64748b');
+  } else if (mode === 'sunset') {
+    grad.addColorStop(0, '#1e1b4b');
+    grad.addColorStop(0.45, '#c2410c');
+    grad.addColorStop(0.6, '#fb923c');
+    grad.addColorStop(1, '#1e293b');
+  } else {
+    grad.addColorStop(0, '#020617');
+    grad.addColorStop(0.6, '#090d16');
+    grad.addColorStop(1, '#020617');
+  }
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, 1024, 512);
+  return new THREE.CanvasTexture(canvas);
+}
+
 export function TrainingZones3D({ isEn = false, onBookingClick }) {
   const mountRef = useRef(null);
   const sceneRef = useRef(null);
@@ -437,6 +501,8 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
   const rendererRef = useRef(null);
   const controlsRef = useRef(null);
   const animFrameIdRef = useRef(null);
+  const pmremGenRef = useRef(null);
+  const skyDomeRef = useRef(null);
 
   const zoneGroupsRef = useRef({});
   const floodlightsRef = useRef([]);
@@ -506,6 +572,17 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     setLightingMode(mode);
     if (!dirLightRef.current || !hemiLightRef.current || !ambientLightRef.current) return;
 
+    if (skyDomeRef.current) {
+      if (skyDomeRef.current.material.map) skyDomeRef.current.material.map.dispose();
+      skyDomeRef.current.material.map = createSkyDomeTexture(mode);
+      skyDomeRef.current.material.needsUpdate = true;
+    }
+
+    if (pmremGenRef.current && sceneRef.current) {
+      if (sceneRef.current.environment) sceneRef.current.environment.dispose();
+      sceneRef.current.environment = generateArchVizEnvMap(pmremGenRef.current, mode);
+    }
+
     if (mode === 'day') {
       dirLightRef.current.color.setHex(0xfffaed);
       dirLightRef.current.intensity = 1.6;
@@ -515,7 +592,10 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       hemiLightRef.current.intensity = 0.9;
       ambientLightRef.current.color.setHex(0x334155);
       ambientLightRef.current.intensity = 0.7;
-      if (sceneRef.current) sceneRef.current.background = new THREE.Color(0x141829);
+      if (sceneRef.current) {
+        sceneRef.current.background = new THREE.Color(0x8bb8e8);
+        sceneRef.current.fog = new THREE.FogExp2(0x8bb8e8, 0.00065);
+      }
       floodlightsRef.current.forEach(l => { l.intensity = 0; });
     } else if (mode === 'sunset') {
       dirLightRef.current.color.setHex(0xf97316);
@@ -526,7 +606,10 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       hemiLightRef.current.intensity = 0.8;
       ambientLightRef.current.color.setHex(0x7c2d12);
       ambientLightRef.current.intensity = 0.6;
-      if (sceneRef.current) sceneRef.current.background = new THREE.Color(0x261423);
+      if (sceneRef.current) {
+        sceneRef.current.background = new THREE.Color(0xc2410c);
+        sceneRef.current.fog = new THREE.FogExp2(0xc2410c, 0.00085);
+      }
       floodlightsRef.current.forEach(l => { l.intensity = 0.6; });
     } else if (mode === 'night') {
       dirLightRef.current.color.setHex(0x38bdf8);
@@ -537,7 +620,10 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       hemiLightRef.current.intensity = 0.4;
       ambientLightRef.current.color.setHex(0x0b1329);
       ambientLightRef.current.intensity = 0.45;
-      if (sceneRef.current) sceneRef.current.background = new THREE.Color(0x080b14);
+      if (sceneRef.current) {
+        sceneRef.current.background = new THREE.Color(0x090d16);
+        sceneRef.current.fog = new THREE.FogExp2(0x090d16, 0.0012);
+      }
       floodlightsRef.current.forEach(l => { l.intensity = 2.4; });
     }
   }, []);
@@ -589,12 +675,12 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     const height = container.clientHeight;
 
     const scene = new THREE.Scene();
-    scene.background = new THREE.Color(0x141829);
-    scene.fog = new THREE.FogExp2(0x141829, 0.0032);
+    scene.background = new THREE.Color(0x8bb8e8);
+    scene.fog = new THREE.FogExp2(0x8bb8e8, 0.00065);
     sceneRef.current = scene;
 
     const camera = new THREE.PerspectiveCamera(42, width / height, 0.5, 850);
-    camera.position.set(0, 78, 102);
+    camera.position.set(0, 68, 104);
     cameraRef.current = camera;
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' });
@@ -602,19 +688,33 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
     renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
     renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    renderer.outputColorSpace = THREE.SRGBColorSpace;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
-    renderer.toneMappingExposure = 1.05;
+    renderer.toneMappingExposure = 1.08;
     container.appendChild(renderer.domElement);
     rendererRef.current = renderer;
 
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.06;
-    controls.maxPolarAngle = Math.PI / 2 - 0.03;
-    controls.minDistance = 8;
-    controls.maxDistance = 190;
-    controls.target.set(0, 0, 0);
+    controls.maxPolarAngle = Math.PI / 2 - 0.02;
+    controls.minDistance = 4;
+    controls.maxDistance = 185;
+    controls.target.set(0, 2, 0);
     controlsRef.current = controls;
+
+    // Procedural HDRI-like Environment Map for Realistic Glass & Water Reflections
+    const pmremGenerator = new THREE.PMREMGenerator(renderer);
+    pmremGenerator.compileEquirectangularShader();
+    pmremGenRef.current = pmremGenerator;
+
+    const skyDome = new THREE.Mesh(
+      new THREE.SphereGeometry(280, 32, 24),
+      new THREE.MeshBasicMaterial({ map: createSkyDomeTexture('day'), side: THREE.BackSide, depthWrite: false })
+    );
+    scene.add(skyDome);
+    skyDomeRef.current = skyDome;
+    scene.environment = generateArchVizEnvMap(pmremGenerator, 'day');
 
     const ambientLight = new THREE.AmbientLight(0x334155, 0.7);
     scene.add(ambientLight);
@@ -1107,6 +1207,12 @@ export function TrainingZones3D({ isEn = false, onBookingClick }) {
       if (renderer.domElement && container.contains(renderer.domElement)) {
         container.removeChild(renderer.domElement);
       }
+      if (skyDomeRef.current) {
+        if (skyDomeRef.current.material.map) skyDomeRef.current.material.map.dispose();
+        skyDomeRef.current.geometry.dispose();
+        skyDomeRef.current.material.dispose();
+      }
+      if (pmremGenRef.current) pmremGenRef.current.dispose();
       renderer.dispose();
       controls.dispose();
     };
