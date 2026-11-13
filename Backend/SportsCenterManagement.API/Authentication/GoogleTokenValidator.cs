@@ -7,16 +7,28 @@ namespace SportsCenterManagement.API.Authentication;
 
 public sealed record GoogleIdentity(string Subject, string Email, string FullName);
 
-public sealed class GoogleTokenValidator(IConfiguration configuration)
+public sealed class GoogleTokenValidator(IConfiguration configuration, ILogger<GoogleTokenValidator> logger)
 {
     private readonly ConfigurationManager<OpenIdConnectConfiguration> _metadata = new(
         "https://accounts.google.com/.well-known/openid-configuration", new OpenIdConnectConfigurationRetriever());
 
+    // FE (Vercel / .env.local / Docker) and BE (appsettings / user-secrets / env) have historically used
+    // different OAuth Web Client IDs; accept every configured one so an `aud` mismatch never blocks login.
+    private string[] AllowedClientIds() =>
+        new[] { configuration["Google:ClientId"] }
+            .Concat(configuration.GetSection("Google:AllowedClientIds").Get<string[]>() ?? [])
+            .Concat((configuration["Google:AllowedClientIdsCsv"] ?? "").Split(',', ';'))
+            .Select(x => x?.Trim())
+            .Where(x => !string.IsNullOrWhiteSpace(x))
+            .Distinct(StringComparer.Ordinal)
+            .ToArray()!;
+
     public async Task<GoogleIdentity> ValidateAsync(string idToken, CancellationToken ct)
     {
-        var clientId = configuration["Google:ClientId"];
-        if (string.IsNullOrWhiteSpace(clientId))
+        var clientIds = AllowedClientIds();
+        if (clientIds.Length == 0)
             throw new InvalidOperationException("Đăng nhập Google chưa được cấu hình. Cần Google OAuth Web Client ID.") { Data = { ["StatusCode"] = 503 } };
+        idToken = idToken?.Trim() ?? "";
         try
         {
             var metadata = await _metadata.GetConfigurationAsync(ct);
@@ -25,9 +37,10 @@ public sealed class GoogleTokenValidator(IConfiguration configuration)
             {
                 ValidateIssuerSigningKey = true, IssuerSigningKeys = metadata.SigningKeys,
                 ValidateIssuer = true, ValidIssuers = ["https://accounts.google.com", "accounts.google.com"],
-                ValidateAudience = true, ValidAudience = clientId,
+                ValidateAudience = true, ValidAudiences = clientIds,
                 ValidateLifetime = true, RequireExpirationTime = true, RequireSignedTokens = true,
-                ValidAlgorithms = [SecurityAlgorithms.RsaSha256], ClockSkew = TimeSpan.FromSeconds(30)
+                // 5 min tolerates a drifting local/server clock (IDX10222 "not yet valid").
+                ValidAlgorithms = [SecurityAlgorithms.RsaSha256], ClockSkew = TimeSpan.FromMinutes(5)
             }, out _);
             var sub = principal.FindFirst("sub")?.Value;
             var email = principal.FindFirst("email")?.Value;
@@ -43,7 +56,11 @@ public sealed class GoogleTokenValidator(IConfiguration configuration)
             throw new InvalidOperationException("Không xác minh được tài khoản Google. Vui lòng thử đăng nhập lại.") { Data = { ["StatusCode"] = 401 } };
         }
         catch (Exception ex) when (ex is SecurityTokenException or ArgumentException)
-        { throw new InvalidOperationException("ID token Google không hợp lệ hoặc đã hết hạn.") { Data = { ["StatusCode"] = 401 } }; }
+        {
+            logger.LogWarning("Google ID token rejected: {Type}: {Message}. Allowed audiences: {Audiences}",
+                ex.GetType().Name, ex.Message, string.Join(", ", clientIds));
+            throw new InvalidOperationException("ID token Google không hợp lệ hoặc đã hết hạn.") { Data = { ["StatusCode"] = 401 } };
+        }
         catch (Exception ex) when (ex is HttpRequestException or InvalidOperationException || ex is OperationCanceledException && !ct.IsCancellationRequested)
         { throw new InvalidOperationException("Không kết nối được dịch vụ xác minh Google. Vui lòng thử lại.") { Data = { ["StatusCode"] = 503 } }; }
     }
