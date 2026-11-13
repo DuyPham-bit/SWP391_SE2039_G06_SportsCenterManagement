@@ -2,6 +2,7 @@ import React from 'react';
 import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
 import { translateFacilityBadge, translateSportName, translateFacilityName, translateLocation, translateCourseHighlight, translateCoachName, translateOpenHours } from '../../../shared/i18n/i18nHelper.js';
 import { CarouselSideArrows } from './CarouselControls.jsx';
+import { getSportFallbackImage } from '../../../shared/lib/sportMediaFallback.js';
 
 export function CoursesSection({
   catalogError, catalogLoading, categoryConfig, editorialContent, facilitiesList, filteredSports,
@@ -114,17 +115,20 @@ export function CoursesSection({
                     className={`tiya-course-card ${isHighlighted ? 'highlighted' : ''}`}
                   >
                     <div className="tiya-course-card__image-wrap">
-                      {sport.image || facility.image || facility.secondaryImage ? <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" draggable={false} /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
+                      {(() => {
+                        const cardImage = sport.image || facility.image || facility.secondaryImage || getSportFallbackImage(sport.name, sport.category);
+                        return <img src={cardImage} alt={sport.name} loading="lazy" draggable={false} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />;
+                      })()}
                       <div style={{position:'absolute',top:'12px',left:'12px',right:'12px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',zIndex:2}}>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(0,0,0,0.65)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,textTransform:'uppercase',backdropFilter:'blur(4px)'}}>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(15,23,42,0.75)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,textTransform:'uppercase',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)'}}>
                           <span className="material-symbols-outlined" style={{fontSize:'13px'}}>{sport.icon}</span>
                           {isEn ? (catCfg.labelEn || catCfg.label) : catCfg.label}
                         </span>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(129,178,154,0.9)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,backdropFilter:'blur(4px)'}}>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgb(var(--color-primary) / 0.9)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,backdropFilter:'blur(6px)',boxShadow:'0 2px 8px rgb(var(--color-primary) / 0.35)'}}>
                           {isEn ? translateFacilityBadge(facility.badge, true) : (facility.badge || (isEn ? 'Court / Hall' : 'Phòng / sân'))}
                         </span>
                       </div>
-                      <div style={{position:'absolute',bottom:'10px',right:'12px',padding:'4px 12px',borderRadius:'8px',background:'rgba(0,0,0,0.7)',color:'var(--custom-btn-bg-color)',fontSize:'12px',fontWeight:700,backdropFilter:'blur(4px)'}}>
+                      <div style={{position:'absolute',bottom:'10px',right:'12px',padding:'4px 12px',borderRadius:'8px',background:'rgba(15,23,42,0.85)',color:'var(--custom-btn-bg-color)',fontSize:'12px',fontWeight:700,backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.15)'}}>
                         <a href={membershipAction.href} onClick={event => event.stopPropagation()} style={{color:'inherit'}}>{details.price}</a>
                       </div>
                     </div>

@@ -23,6 +23,7 @@ import {
   translateCapacityString,
   translateOpenHours
 } from '../../../shared/i18n/i18nHelper.js';
+import { getFacilityFallbackImage } from '../../../shared/lib/sportMediaFallback.js';
 
 export function FacilitiesSection({ externalFacility = null, onModalClose = null } = {}) {
   const { isAuthenticated, role } = useAuth();
@@ -220,21 +221,24 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         >
           {/* Card Image Area */}
           <div className="tiya-course-card__image-wrap">
-            {fac.image || fac.secondaryImage ? <img src={fac.image || fac.secondaryImage} alt={displayName} loading="lazy" draggable={false} /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
+            {(() => {
+              const facImage = fac.image || fac.secondaryImage || getFacilityFallbackImage(fac.name, fac.category);
+              return <img src={facImage} alt={displayName} loading="lazy" draggable={false} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />;
+            })()}
 
             {/* Top Bar Badges */}
             <div style={{ position: 'absolute', top: '12px', left: '12px', right: '12px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', zIndex: 2 }}>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(0,0,0,0.65)', color: 'var(--white-color)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', backdropFilter: 'blur(4px)' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(15,23,42,0.75)', color: 'var(--white-color)', fontSize: '10px', fontWeight: 700, textTransform: 'uppercase', backdropFilter: 'blur(6px)', border: '1px solid rgba(255,255,255,0.15)' }}>
                 <span className="material-symbols-outlined" style={{ fontSize: '13px' }}>{catMeta.icon}</span>
                 {catMeta.label}
               </span>
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', background: 'rgba(129,178,154,0.9)', color: 'var(--white-color)', fontSize: '10px', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
+              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', background: 'rgb(var(--color-primary) / 0.9)', color: 'var(--white-color)', fontSize: '10px', fontWeight: 700, backdropFilter: 'blur(6px)', boxShadow: '0 2px 8px rgb(var(--color-primary) / 0.35)' }}>
                 {displayBadge}
               </span>
             </div>
 
             {/* Bottom Right Price Pill */}
-            <div style={{ position: 'absolute', bottom: '10px', right: '12px', padding: '4px 12px', borderRadius: '8px', background: 'rgba(0,0,0,0.7)', color: 'var(--custom-btn-bg-color)', fontSize: '12px', fontWeight: 700, backdropFilter: 'blur(4px)' }}>
+            <div style={{ position: 'absolute', bottom: '10px', right: '12px', padding: '4px 12px', borderRadius: '8px', background: 'rgba(15,23,42,0.85)', color: 'var(--custom-btn-bg-color)', fontSize: '12px', fontWeight: 700, backdropFilter: 'blur(8px)', border: '1px solid rgba(255,255,255,0.15)' }}>
               <span style={{ color: 'inherit' }}>{displayPrice}</span>
             </div>
           </div>
@@ -653,30 +657,28 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 /* PHOTOS GALLERY TAB */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #E7E7E9', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
-                    {selectedFacility.image ? <img
-                      src={selectedFacility.image}
+                    <img
+                      src={selectedFacility.image || getFacilityFallbackImage(selectedFacility.name, selectedFacility.category)}
                       alt={selectedFacility.name}
                       style={{ width: '100%', height: '240px', objectFit: 'cover', display: 'block' }}
-                    /> : <p className="p-12 text-center text-slate-500">{isEn ? 'No venue photo available.' : 'Chưa có ảnh phòng / sân.'}</p>}
+                    />
                     <div style={{ padding: '12px 18px', background: 'var(--secondary-color)', color: 'var(--white-color)', fontSize: '12.5px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                       <span>{isEn ? `Panoramic View — ${isEn ? translateFacilityName(selectedFacility.name, true) : selectedFacility.name}` : `Góc máy toàn cảnh — ${selectedFacility.name}`}</span>
                       <span style={{ color: 'var(--custom-btn-bg-color)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>{isEn ? translateLocation(selectedFacility.location, true) : selectedFacility.location}</span>
                     </div>
                   </div>
 
-                  {selectedFacility.secondaryImage && (
-                    <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #E7E7E9', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
-                      <img
-                        src={selectedFacility.secondaryImage}
-                        alt={`${selectedFacility.name} chi tiết`}
-                        style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }}
-                      />
-                      <div style={{ padding: '12px 18px', background: 'var(--secondary-color)', color: 'var(--white-color)', fontSize: '12.5px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span>{isEn ? 'Floor surface & equipment details' : 'Chi tiết mặt sàn & trang thiết bị'}</span>
-                        <span style={{ color: 'var(--primary-color)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>{isEn ? 'SCMS Actual' : 'Thực tế SCMS'}</span>
-                      </div>
+                  <div style={{ borderRadius: '14px', overflow: 'hidden', border: '1px solid #E7E7E9', boxShadow: '0 4px 14px rgba(0,0,0,0.06)' }}>
+                    <img
+                      src={selectedFacility.secondaryImage || getFacilityFallbackImage(selectedFacility.name, 'fitness')}
+                      alt={`${selectedFacility.name} chi tiết`}
+                      style={{ width: '100%', height: '220px', objectFit: 'cover', display: 'block' }}
+                    />
+                    <div style={{ padding: '12px 18px', background: 'var(--secondary-color)', color: 'var(--white-color)', fontSize: '12.5px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span>{isEn ? 'Floor surface & equipment details' : 'Chi tiết mặt sàn & trang thiết bị'}</span>
+                      <span style={{ color: 'var(--primary-color)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>{isEn ? 'SCMS Actual' : 'Thực tế SCMS'}</span>
                     </div>
-                  )}
+                  </div>
                 </div>
               ) : (
                 /* PACKAGES & SCHEDULE TAB - CONCISE & EASY TO CHOOSE */
