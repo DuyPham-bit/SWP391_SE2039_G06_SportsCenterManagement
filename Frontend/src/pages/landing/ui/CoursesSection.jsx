@@ -16,7 +16,7 @@ export function CoursesSection({
       {!catalogLoading && !catalogError && sportsList.length === 0 && <p role="status">{isEn ? 'No sports currently active.' : 'Chưa có bộ môn đang hoạt động.'}</p>}
       <div className="courses-container">
         <div className="tiya-reveal courses-section-header">
-          <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'6px 16px',background:'rgba(129,178,154,0.15)',border:'1px solid rgba(129,178,154,0.4)',borderRadius:'100px',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'6px 16px',background:'rgb(var(--color-primary) / 0.15)',border:'1px solid rgb(var(--color-primary) / 0.4)',borderRadius:'100px',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
             <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--primary-color)',animation:'tiyaPulse 2s infinite'}} />
             {isEn ? 'PROFESSIONAL TRAINING PROGRAMS' : (landingContent.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp')}
           </div>

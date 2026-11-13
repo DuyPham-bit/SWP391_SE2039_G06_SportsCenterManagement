@@ -342,6 +342,43 @@
   font-weight: 800;
 }
 
+/* Theme Toggle Button for Landing Navbar & Mobile Drawer */
+.tiya-theme-toggle-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  padding: 0;
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.08);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  color: rgba(255, 255, 255, 0.85);
+  cursor: pointer;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
+  transition: all 0.25s ease;
+}
+
+.tiya-theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.16);
+  border-color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
+  transform: scale(1.05);
+}
+
+html.dark .tiya-theme-toggle-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.22);
+  color: #fbbf24;
+}
+
+html.dark .tiya-theme-toggle-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+  color: #fde047;
+}
+
 .tiya-brand {
   display: flex;
   align-items: center;
@@ -1124,7 +1161,7 @@
 
 /* Action Capsule Bar - Solves text truncation permanently and ensures full visibility */
 .section-bg-cta-bar {
-  background-color: #ffffff;
+  background-color: var(--white-color);
   border-radius: 100px;
   padding: 6px 6px 6px 16px;
   display: flex;
@@ -2894,4 +2931,168 @@ html.dark .landing-page-root .bg-white {
   border-color: rgb(var(--brand-sage-700));
   transform: translateY(-1px);
   outline: none;
+}
+
+/* ─────────────────────────────────────────────────────────────
+   TIYA LANDING PAGE DARK MODE SYSTEM
+   Deep Slate / Navy theme with high contrast typography & cards
+───────────────────────────────────────────────────────────── */
+html.dark .tiya-page,
+html.dark .landing-page-root {
+  background-color: rgb(var(--brand-navy-950)) !important;
+  color: rgb(var(--brand-navy-300)) !important;
+}
+
+html.dark .tiya-page h1,
+html.dark .tiya-page h2,
+html.dark .tiya-page h3,
+html.dark .tiya-page h4,
+html.dark .tiya-page h5,
+html.dark .tiya-page h6,
+html.dark .tiya-page strong,
+html.dark .tiya-page b {
+  color: #ffffff !important;
+}
+
+html.dark :where(.tiya-page) p {
+  color: rgb(var(--brand-navy-300)) !important;
+}
+
+/* About Section Dark */
+html.dark .about-section {
+  background-color: rgb(var(--brand-navy-900)) !important;
+}
+
+html.dark .about-feature-item {
+  background: rgb(var(--brand-navy-800)) !important;
+  border-color: rgb(var(--brand-navy-700)) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
+}
+
+html.dark .about-feature-title {
+  color: #ffffff !important;
+}
+
+html.dark .about-feature-desc {
+  color: rgb(var(--brand-navy-300)) !important;
+}
+
+html.dark .tiya-trust-strip {
+  background: rgb(var(--brand-navy-800)) !important;
+  border-color: rgb(var(--brand-navy-700)) !important;
+}
+
+/* Zones Section Dark */
+html.dark .section-bg-image-top-wave path {
+  fill: rgb(var(--brand-navy-900)) !important;
+}
+
+html.dark .section-bg-image-bottom-wave path {
+  fill: rgb(var(--brand-navy-950)) !important;
+}
+
+html.dark .section-bg-image-block {
+  background: rgba(30, 34, 53, 0.92) !important;
+  border-color: rgba(255, 255, 255, 0.12) !important;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
+}
+
+html.dark .section-bg-feature-chip {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.16) !important;
+  color: rgb(var(--brand-navy-100)) !important;
+}
+
+html.dark .section-bg-cta-bar {
+  background-color: rgb(var(--brand-navy-800)) !important;
+  border-color: rgb(var(--brand-navy-700)) !important;
+}
+
+html.dark .section-bg-cta-title {
+  color: #ffffff !important;
+}
+
+/* Courses Section Dark */
+html.dark .courses-section {
+  background-color: rgb(var(--brand-navy-950)) !important;
+}
+
+html.dark .courses-filter-tab {
+  background: rgb(var(--brand-navy-900)) !important;
+  border-color: rgb(var(--brand-navy-700)) !important;
+  color: rgb(var(--brand-navy-200)) !important;
+}
+
+html.dark .courses-filter-tab:hover {
+  background: rgb(var(--brand-navy-800)) !important;
+  color: #ffffff !important;
+}
+
+html.dark .courses-filter-tab.active {
+  background: var(--primary-color) !important;
+  border-color: var(--primary-color) !important;
+  color: #ffffff !important;
+}
+
+html.dark .courses-filter-tab__count {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: rgb(var(--brand-navy-200)) !important;
+}
+
+html.dark .tiya-course-card {
+  background: rgb(var(--brand-navy-900)) !important;
+  border-color: rgb(var(--brand-navy-800)) !important;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+}
+
+html.dark .tiya-course-card:hover {
+  border-color: var(--primary-color) !important;
+  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6) !important;
+}
+
+html.dark .tiya-course-card__title {
+  color: #ffffff !important;
+}
+
+html.dark .tiya-course-card:hover .tiya-course-card__title {
+  color: var(--primary-color) !important;
+}
+
+/* Dropdown Menu Dark */
+html.dark .tiya-dropdown-menu {
+  background: rgb(var(--brand-navy-900)) !important;
+  border: 1px solid rgb(var(--brand-navy-700)) !important;
+  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5) !important;
+}
+
+html.dark .tiya-dropdown-menu::before {
+  border-bottom-color: rgb(var(--brand-navy-900)) !important;
+}
+
+html.dark .tiya-dropdown-item {
+  color: rgb(var(--brand-navy-200)) !important;
+}
+
+html.dark .tiya-dropdown-item:hover,
+html.dark .tiya-dropdown-item.active {
+  background-color: rgb(var(--brand-navy-800)) !important;
+  color: var(--link-hover-color) !important;
+}
+
+/* Facilities Section Dark */
+html.dark .facilities-section-wrapper {
+  background-color: rgb(var(--brand-navy-950)) !important;
+}
+
+html.dark .facilities-section-wrapper .bg-white,
+html.dark .facilities-section-wrapper .bg-brand-sand-100 {
+  background-color: rgb(var(--brand-navy-900)) !important;
+}
+
+/* Tiya Carousel controls */
+html.dark .tiya-carousel-counter,
+html.dark .tiya-carousel-autoplay-btn {
+  background: rgb(var(--brand-navy-900)) !important;
+  border-color: rgb(var(--brand-navy-700)) !important;
+  color: rgb(var(--brand-navy-200)) !important;
 }

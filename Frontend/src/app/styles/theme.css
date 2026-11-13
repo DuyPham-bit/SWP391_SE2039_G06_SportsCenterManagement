@@ -562,6 +562,7 @@ html.dark h6 {
 html.dark :is(.text-brand-navy-900, .text-brand-navy-800, .text-brand-navy-700,
   .text-slate-900, .text-slate-800):not(:is([class^="bg-brand-sand-"], [class*=" bg-brand-sand-"],
     [class^="bg-brand-sage-"], [class*=" bg-brand-sage-"],
+    [class^="bg-brand-danger-"], [class*=" bg-brand-danger-"],
     [class^="bg-brand-teal-"], [class*=" bg-brand-teal-"],
     [class^="bg-brand-terra-"], [class*=" bg-brand-terra-"]):not([class*="dark:bg-"])) {
   color: rgb(var(--color-text)) !important;
@@ -575,7 +576,7 @@ html.dark .text-slate-400 {
   color: rgb(var(--color-text-muted)) !important;
 }
 
-html.dark header {
+html.dark header:not(.tiya-navbar) {
   background-color: rgb(var(--color-surface)) !important;
   border-color: rgb(var(--brand-navy-800)) !important;
   color: rgb(var(--color-text-strong)) !important;
@@ -588,7 +589,7 @@ html.dark aside {
 }
 
 html.dark .fpt-card,
-html.dark .bg-white {
+html.dark .bg-white:not([class*="text-"]) {
   background-color: rgb(var(--color-surface-raised)) !important;
   border-color: rgb(var(--color-border)) !important;
   color: rgb(var(--color-text-strong)) !important;
