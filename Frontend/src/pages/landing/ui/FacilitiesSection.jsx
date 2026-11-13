@@ -478,13 +478,26 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   </div>
                 ))}
               </div>
+
+              {/* 3D ArchViz Quick Link */}
+              <div className="pt-2">
+                <a
+                  href="/3d-campus.html"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-[#CDBDA6]/15 hover:bg-[#CDBDA6]/25 border border-[#CDBDA6]/30 text-xs font-bold text-[#CDBDA6] transition hover-lift"
+                >
+                  <span className="material-symbols-outlined text-[17px]">view_in_ar</span>
+                  <span>{isEn ? 'Explore 3D ArchViz Model (13,000m²)' : 'Xem Mô Hình 3D Thực Tế (13.000m²)'}</span>
+                </a>
+              </div>
             </div>
 
             {/* 4 Zones Map Columns */}
             <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
               {(landingContent.zonesLayout?.zones || []).map((zone, idx) => (
                 <div key={zone.id || idx} className="tiya-zone-card">
-                  <div className="tiya-zone-card__header" style={{ color: zone.color || '#F87171' }}>
+                  <div className="tiya-zone-card__header">
                     <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{zone.icon}</span>
                     <span>{isEn ? translateZoneName(zone.name, true) : zone.name}</span>
                   </div>
