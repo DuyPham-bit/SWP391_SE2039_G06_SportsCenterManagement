@@ -33,6 +33,7 @@ export function useMemberCheckIn() {
   const lastScannedCodeRef = useRef('');
   const lastScannedTimeRef = useRef(0);
   const scanLockRef = useRef(false);
+  const inFlightRef = useRef(false);
   // html5-qrcode giữ callback từ lúc start() -> dùng ref để luôn gọi handler mới nhất (tránh stale state)
   const onQrDecodedRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -119,6 +120,9 @@ export function useMemberCheckIn() {
       return;
     }
 
+    // One check-in request at a time, whatever triggered it (camera, file, button, Enter).
+    if (inFlightRef.current) return;
+    inFlightRef.current = true;
     setProcessing(true);
     setCheckInError(null);
     setFailedIdentifier(term);
@@ -139,6 +143,7 @@ export function useMemberCheckIn() {
       setLastCheckIn(null);
       showError(err);
     } finally {
+      inFlightRef.current = false;
       setProcessing(false);
     }
   };

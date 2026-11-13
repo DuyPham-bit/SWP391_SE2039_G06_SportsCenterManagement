@@ -32,7 +32,11 @@ export function ToastProvider({ children }) {
     // Concise auto-dismiss timing: 4s for errors, 3s for others
     const duration = customDuration ?? (type === 'error' ? 4000 : 3000);
 
-    setToasts(prev => [...prev, { id, message, type, duration }]);
+    // Skip an identical toast that is still on screen (e.g. the same scan error fired repeatedly).
+    // The timer below then removes an id that was never added, which is a no-op.
+    setToasts(prev => prev.some(t => t.message === message && t.type === type)
+      ? prev
+      : [...prev, { id, message, type, duration }]);
 
     if (duration > 0) {
       setTimeout(() => {
