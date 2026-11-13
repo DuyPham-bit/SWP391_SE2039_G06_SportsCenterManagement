@@ -15,7 +15,7 @@ export function MemberCheckIn() {
   const {
     activeScanMode, autoSubmit, cameras, checkInError, checkIns, fileInputRef, handleExecuteCheckIn,
     handleOverrideCheckIn, handleScanImageFile, handleTabChange, historyError, identifier, isEn,
-    isScanning, lastCheckIn, overrideApprover, overrideModalOpen, overrideReason, processing,
+    isScanning, isScanPaused, lastCheckIn, resumeScan, overrideApprover, overrideModalOpen, overrideReason, processing,
     scannerError, scannerLoading, selectedCameraId, setAutoSubmit, setCheckInError, setIdentifier,
     setOverrideApprover, setOverrideModalOpen, setOverrideReason, setSelectedCameraId,
     setSoundEnabled, soundEnabled, startCamera, stopCamera
@@ -86,6 +86,9 @@ export function MemberCheckIn() {
               setSelectedCameraId={setSelectedCameraId}
               startCamera={startCamera}
               stopCamera={stopCamera}
+              isScanPaused={isScanPaused}
+              processing={processing}
+              resumeScan={resumeScan}
             />
           )}
 

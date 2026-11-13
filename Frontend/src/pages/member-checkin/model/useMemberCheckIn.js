@@ -26,10 +26,15 @@ export function useMemberCheckIn() {
   const [selectedCameraId, setSelectedCameraId] = useState('');
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [autoSubmit, setAutoSubmit] = useState(true);
-  const [lastScannedCode, setLastScannedCode] = useState('');
+  // Sau mỗi lần quét được mã, camera tạm dừng cho tới khi lễ tân bấm "Quét tiếp"
+  const [isScanPaused, setIsScanPaused] = useState(false);
 
   const html5QrCodeRef = useRef(null);
+  const lastScannedCodeRef = useRef('');
   const lastScannedTimeRef = useRef(0);
+  const scanLockRef = useRef(false);
+  // html5-qrcode giữ callback từ lúc start() -> dùng ref để luôn gọi handler mới nhất (tránh stale state)
+  const onQrDecodedRef = useRef(null);
   const fileInputRef = useRef(null);
 
   // Unhappy Case Override Handling
@@ -139,27 +144,62 @@ export function useMemberCheckIn() {
   };
 
   // Triggered when a QR code is detected from camera or file
-  const onQrDecoded = (decodedRaw) => {
-    if (!decodedRaw) return;
+  const pauseCameraScan = () => {
+    const scanner = html5QrCodeRef.current;
+    try {
+      if (scanner && scanner.getState() === Html5QrcodeScannerState.SCANNING) {
+        scanner.pause(true);
+      }
+    } catch (err) {
+      console.warn('Could not pause scanner:', err);
+    }
+    // Always show "Scan next": the scan lock is held even if the camera could not pause.
+    setIsScanPaused(true);
+  };
+
+  // Lễ tân chủ động quét mã tiếp theo
+  const resumeScan = () => {
+    const scanner = html5QrCodeRef.current;
+    try {
+      if (scanner && scanner.getState() === Html5QrcodeScannerState.PAUSED) {
+        scanner.resume();
+      }
+    } catch (err) {
+      console.warn('Could not resume scanner:', err);
+    }
+    scanLockRef.current = false;
+    setIsScanPaused(false);
+  };
+
+  const onQrDecoded = async (decodedRaw, fromCamera = false) => {
+    if (!decodedRaw || scanLockRef.current) return;
     const cleanCode = extractMemberIdentifier(decodedRaw);
     if (!cleanCode) return;
 
-    // Cooldown window of 3 seconds for the identical code
+    // Bỏ qua cùng một mã trong 5 giây (kể cả sau khi bấm "Quét tiếp" mà thẻ vẫn trước camera)
     const now = Date.now();
-    if (cleanCode === lastScannedCode && now - lastScannedTimeRef.current < 3000) {
+    if (cleanCode === lastScannedCodeRef.current && now - lastScannedTimeRef.current < 5000) {
       return;
     }
+    scanLockRef.current = true;
+    if (fromCamera) pauseCameraScan();
+    lastScannedCodeRef.current = cleanCode;
     lastScannedTimeRef.current = now;
-    setLastScannedCode(cleanCode);
     setIdentifier(cleanCode);
 
-    if (autoSubmit) {
-      handleExecuteCheckIn(cleanCode);
-    } else {
-      if (soundEnabled) playScannerBeep(true);
-      showSuccess(isEn ? `Scanned code: ${cleanCode}` : `Đã quét được mã: ${cleanCode}`);
+    try {
+      if (autoSubmit) {
+        await handleExecuteCheckIn(cleanCode);
+      } else {
+        if (soundEnabled) playScannerBeep(true);
+        showSuccess(isEn ? `Scanned code: ${cleanCode}` : `Đã quét được mã: ${cleanCode}`);
+      }
+    } finally {
+      // Camera giữ khóa tới khi bấm "Quét tiếp"; quét file thì mở khóa ngay
+      if (!fromCamera) scanLockRef.current = false;
     }
   };
+  onQrDecodedRef.current = onQrDecoded;
 
   // Start Live Camera Scanning with auto-fallback for busy/IR cameras
   const startCamera = async (camId, isRetryFallback = false) => {
@@ -179,9 +219,12 @@ export function useMemberCheckIn() {
       }
       const scanner = html5QrCodeRef.current;
 
-      if (scanner.getState() === Html5QrcodeScannerState.SCANNING) {
+      const currentState = scanner.getState();
+      if (currentState === Html5QrcodeScannerState.SCANNING || currentState === Html5QrcodeScannerState.PAUSED) {
         await scanner.stop();
       }
+      scanLockRef.current = false;
+      setIsScanPaused(false);
 
       const activeCam = camId || selectedCameraId;
       const cameraConfig = activeCam ? { deviceId: { exact: activeCam } } : { facingMode: 'environment' };
@@ -194,7 +237,7 @@ export function useMemberCheckIn() {
           aspectRatio: 1.0,
         },
         (decodedText) => {
-          onQrDecoded(decodedText);
+          onQrDecodedRef.current?.(decodedText, true);
         },
         () => {
           // Frame-level scan tick
@@ -265,6 +308,8 @@ export function useMemberCheckIn() {
         console.warn('Error stopping scanner:', err);
       }
     }
+    scanLockRef.current = false;
+    setIsScanPaused(false);
     setIsScanning(false);
     setScannerLoading(false);
   };
@@ -292,9 +337,11 @@ export function useMemberCheckIn() {
       if (!scanner) {
         scanner = new Html5Qrcode(elementId);
         html5QrCodeRef.current = scanner;
-      } else if (scanner.getState() === Html5QrcodeScannerState.SCANNING) {
+      } else if ([Html5QrcodeScannerState.SCANNING, Html5QrcodeScannerState.PAUSED].includes(scanner.getState())) {
         await scanner.stop();
         setIsScanning(false);
+        setIsScanPaused(false);
+        scanLockRef.current = false;
       }
 
       const decodedText = await scanner.scanFile(file, true);
@@ -345,7 +392,7 @@ export function useMemberCheckIn() {
   return {
     activeScanMode, autoSubmit, cameras, checkInError, checkIns, fileInputRef, handleExecuteCheckIn,
     handleOverrideCheckIn, handleScanImageFile, handleTabChange, historyError, identifier, isEn,
-    isScanning, lastCheckIn, overrideApprover, overrideModalOpen, overrideReason, processing,
+    isScanning, isScanPaused, lastCheckIn, resumeScan, overrideApprover, overrideModalOpen, overrideReason, processing,
     scannerError, scannerLoading, selectedCameraId, setAutoSubmit, setCheckInError, setIdentifier,
     setOverrideApprover, setOverrideModalOpen, setOverrideReason, setSelectedCameraId,
     setSoundEnabled, soundEnabled, startCamera, stopCamera
