@@ -56,6 +56,7 @@
   letter-spacing: normal;
   text-transform: none;
   display: inline-block;
+  translate: no !important; /* Chống Google Translate dịch text ligature của icon */
   /* Reserve a 1em square so ligature names cannot widen layouts while the icon font is still loading. */
   width: 1em;
   overflow: hidden;
@@ -530,10 +531,55 @@ html.dark .athletic-tag-sage {
 
 
 /* ─────────────────────────────────────────────────────────────
-   DARK MODE THEME SYSTEM (Kích hoạt khi toggle Moon / Sun)
+   DARK MODE THEME SYSTEM & EXTENSION SHIELD
 ───────────────────────────────────────────────────────────── */
+:root {
+  color-scheme: light;
+}
+
 html.dark {
   color-scheme: dark;
+}
+
+/* Chống Dark Reader & Chrome Force Dark tự ý đảo màu hình ảnh, canvas, QR code, SVG */
+img,
+picture,
+video,
+canvas,
+svg,
+[data-no-dark-invert],
+.qr-code-container {
+  forced-color-adjust: none !important;
+}
+
+/* Chống Google Chrome Autofill phá màu input (hỗ trợ hoàn hảo cả Light & Dark Mode) */
+input:-webkit-autofill,
+input:-webkit-autofill:hover, 
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active,
+textarea:-webkit-autofill,
+textarea:-webkit-autofill:hover,
+textarea:-webkit-autofill:focus,
+select:-webkit-autofill {
+  -webkit-text-fill-color: rgb(var(--color-text, 30 34 53)) !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgb(var(--color-surface, 255 255 255)) inset !important;
+  box-shadow: 0 0 0px 1000px rgb(var(--color-surface, 255 255 255)) inset !important;
+  transition: background-color 5000s ease-in-out 0s;
+  caret-color: rgb(var(--color-text, 30 34 53)) !important;
+}
+
+html.dark input:-webkit-autofill,
+html.dark input:-webkit-autofill:hover,
+html.dark input:-webkit-autofill:focus,
+html.dark input:-webkit-autofill:active,
+html.dark textarea:-webkit-autofill,
+html.dark textarea:-webkit-autofill:hover,
+html.dark textarea:-webkit-autofill:focus,
+html.dark select:-webkit-autofill {
+  -webkit-text-fill-color: rgb(var(--color-text, 244 244 245)) !important;
+  -webkit-box-shadow: 0 0 0px 1000px rgb(var(--color-surface, 43 45 66)) inset !important;
+  box-shadow: 0 0 0px 1000px rgb(var(--color-surface, 43 45 66)) inset !important;
+  caret-color: rgb(var(--color-text, 244 244 245)) !important;
 }
 
 /*

@@ -1,7 +1,14 @@
 <!DOCTYPE html>
-<html lang="vi">
+<html lang="vi" translate="no" class="notranslate">
   <head>
     <meta charset="UTF-8" />
+    <!-- Chống Google Translate & Extension can thiệp làm hỏng React DOM -->
+    <meta name="google" content="notranslate" />
+    <meta name="googlebot" content="notranslate" />
+    <!-- Khóa Dark Reader extension không can thiệp/làm loạn màu giao diện -->
+    <meta name="darkreader-lock" />
+    <!-- Khai báo chuẩn color-scheme để browser không tự ý force dark mode lem nhem -->
+    <meta name="color-scheme" content="light dark" />
     <link rel="icon" type="image/x-icon" href="/favicon.ico?v=20261103v1" />
     <link rel="shortcut icon" href="/favicon.ico?v=20261103v1" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=20261103v1" />
@@ -39,7 +46,7 @@
     </script>
 
   </head>
-  <body class="bg-[#FAF8F5] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-[#81B29A] selection:text-white">
+  <body class="notranslate bg-[#FAF8F5] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-[#81B29A] selection:text-white">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
