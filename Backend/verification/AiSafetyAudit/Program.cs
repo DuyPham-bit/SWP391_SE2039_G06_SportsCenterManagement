@@ -414,6 +414,61 @@ Check("bad output and safety violations are retried; quota, timeout, block and o
         !SportsCenterManagement.API.Controllers.AiController.IsRetryableRecommendationFailure(Error(503));
 });
 
+// ---- Reply language detection ----
+Check("language detector recognises the member's language", () =>
+    AiLanguageDetector.Detect("can you help me slot yoga in tomorow") == "English" &&
+    AiLanguageDetector.Detect("Ngày mai có lớp yoga không?") == "Vietnamese" &&
+    AiLanguageDetector.Detect("ngay mai co lop yoga khong") == "Vietnamese" &&
+    AiLanguageDetector.Detect("明日ヨガのクラスはありますか？") == "Japanese" &&
+    AiLanguageDetector.Detect("내일 요가 수업 있어요?") == "Korean" &&
+    AiLanguageDetector.Detect("明天有瑜伽课吗？") == "Chinese" &&
+    AiLanguageDetector.Detect("Bonjour, quel est le prix du cours?") == "French" &&
+    AiLanguageDetector.Detect("Hola, ¿cuánto cuesta la clase?") == "Spanish" &&
+    AiLanguageDetector.Detect("yoga") is null && AiLanguageDetector.Detect("15:00") is null);
+Check("misspelled 'tomorow' still resolves to tomorrow", () =>
+    Window("can you help me slot yoga in tomorow") is { From.Day: 15, To.Day: 15 });
+Check("chat instruction ends with an explicit reply-language rule", () =>
+{
+    var instruction = SportsCenterManagement.API.Controllers.AiController.BuildChatInstruction("vi", "can you help me slot yoga in tomorow", "{}");
+    var fallback = SportsCenterManagement.API.Controllers.AiController.BuildChatInstruction("en", "yoga", "{}");
+    return instruction.EndsWith("Never say you can only answer in Vietnamese or any other single language.", StringComparison.Ordinal) &&
+        instruction.Contains("written in English. Your ENTIRE reply MUST be in English", StringComparison.Ordinal) &&
+        fallback.Contains("if unclear, reply in English", StringComparison.Ordinal) &&
+        !instruction.Contains("Trả lời bằng tiếng Việt", StringComparison.Ordinal);
+});
+
+// ---- Optional live check against Gemini (set AI_LIVE=1; uses the key in appsettings.Development.json) ----
+if (Environment.GetEnvironmentVariable("AI_LIVE") == "1")
+{
+    var settings = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory,
+        "../../../../../SportsCenterManagement.API/appsettings.Development.json"));
+    var liveConfig = new ConfigurationBuilder().AddJsonFile(settings).Build();
+    var gemini = new GeminiService(new HttpClient { Timeout = TimeSpan.FromSeconds(60) }, liveConfig);
+    var vietnameseHistory = new List<AiTurn>
+    {
+        new("user", "Hôm nay trung tâm mở cửa đến mấy giờ?"),
+        new("model", "Trung tâm mở cửa đến 22:00 hôm nay."),
+    };
+    string Ask(string question)
+    {
+        var turns = vietnameseHistory.Append(new AiTurn("user", question)).ToList();
+        var reply = gemini.GenerateAsync(SportsCenterManagement.API.Controllers.AiController.BuildChatInstruction("vi", question,
+            """{"center":{"name":"Sports Center Quận 1","openingTime":"06:00","closingTime":"22:00"},"schedule":{"items":[{"className":"Yoga Cơ Bản","sessionDate":"2026-11-16","startTime":"15:00","endTime":"16:00"}]}}"""),
+            turns, false, CancellationToken.None).GetAwaiter().GetResult();
+        Console.WriteLine($"LIVE [{question}] => {reply.Replace('\n', ' ')[..Math.Min(reply.Length, 160)]}");
+        return reply;
+    }
+    Check("LIVE: English question after Vietnamese history gets an English reply", () =>
+    {
+        var reply = Ask("can you help me slot yoga in tomorow");
+        // Proper names from the data ("Yoga Cơ Bản", "Quận 1") are kept as-is, so ignore them when judging the language.
+        var prose = reply.Replace("Yoga Cơ Bản", "").Replace("Sports Center Quận 1", "").Replace("Quận 1", "");
+        return AiLanguageDetector.Detect(prose) == "English" && !reply.Contains("tiếng Việt", StringComparison.OrdinalIgnoreCase);
+    });
+    Check("LIVE: Japanese question gets a Japanese reply", () => AiLanguageDetector.Detect(Ask("ヨガのクラスはいつですか？")) == "Japanese");
+    Check("LIVE: Vietnamese question still gets a Vietnamese reply", () => AiLanguageDetector.Detect(Ask("Lớp yoga học lúc mấy giờ?")) == "Vietnamese");
+}
+
 // ---- Chat language hint ----
 Check("ui language hint maps to a model-readable language with Vietnamese default", () =>
     SportsCenterManagement.API.Controllers.AiController.PreferredLanguage("en") == "English" &&

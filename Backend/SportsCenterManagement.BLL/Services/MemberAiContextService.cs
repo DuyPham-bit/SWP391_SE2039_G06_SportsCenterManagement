@@ -147,7 +147,7 @@ internal static class AiScheduleDates
         // Longer phrases first: "day after tomorrow" also contains "tomorrow".
         int? dayOffset = Regex.IsMatch(text, @"\b(ngay kia|ngay mot|day after tomorrow)\b") ? 2
             : Regex.IsMatch(text, @"\b(hom kia|day before yesterday)\b") ? -2
-            : Regex.IsMatch(text, @"\b(ngay mai|mai|tomorrow)\b") ? 1
+            : Regex.IsMatch(text, @"\b(ngay mai|mai|tomorrow|tomorow|tommorow|tommorrow|tmr)\b") ? 1
             : Regex.IsMatch(text, @"\b(hom nay|today|tonight)\b") ? 0
             : Regex.IsMatch(text, @"\b(hom qua|yesterday)\b") ? -1 : null;
         if (dayOffset.HasValue)

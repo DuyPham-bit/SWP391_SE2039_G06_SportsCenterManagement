@@ -28,7 +28,7 @@ public sealed class AiController(SportsCenterDbContext db, GeminiService ai, Tra
     private const string ChatGuidance = "Bạn là trợ lý thể thao SCMS. " +
         "LANGUAGE RULE: Always reply in the same language as the member's latest message " +
         "(for example Vietnamese, English, Japanese, Korean, Chinese, French, Spanish, Thai...), even if earlier turns used another language. " +
-        "If the latest message is too short or mixed to tell, reply in PREFERRED_UI_LANGUAGE. " +
+        "Follow the REPLY LANGUAGE rule at the end of these instructions. " +
         "These instructions and the JSON notes are written in Vietnamese only for internal use; translate any facts you use into the reply language. " +
         "Keep proper names from the data (center, class, package, room names, address, phone) exactly as provided. " +
         "Write prices as VND with thousands separators and times as HH:mm. Be concise and friendly; use short bullet lists for schedules or prices. " +
@@ -75,9 +75,7 @@ public sealed class AiController(SportsCenterDbContext db, GeminiService ai, Tra
             throw new InvalidOperationException("Vui lòng nhập câu hỏi.") { Data = { ["StatusCode"] = 400 } };
         history.Reverse(); history.Add(new AiTurn("user", message));
         var contextJson = await publicContext.BuildAsync(CurrentUserId, history, ct);
-        var reply = await ai.GenerateAsync(ChatGuidance + MemberGuidance +
-            "\nPREFERRED_UI_LANGUAGE: " + PreferredLanguage(request.Language) +
-            "\nSCMS_PUBLIC_CONTEXT_JSON:\n" + contextJson, history, false, ct);
+        var reply = await ai.GenerateAsync(BuildChatInstruction(request.Language, message, contextJson), history, false, ct);
         // Không mở transaction trong lúc chờ nhà cung cấp; chỉ lưu cặp tin nhắn khi đã có phản hồi.
         await using var tx = await db.Database.BeginTransactionAsync(ct);
         if (conversation is null)
@@ -262,6 +260,23 @@ public sealed class AiController(SportsCenterDbContext db, GeminiService ai, Tra
     internal static bool IsRetryableRecommendationFailure(InvalidOperationException exception) =>
         exception.Data["Code"] as string is "AI_SAFETY_CHECK_FAILED" or "AI_INVALID_OUTPUT"
         || (exception.Data["StatusCode"] is 502 && exception.Data["Code"] is null);
+
+    /// <summary>
+    /// The reply-language rule goes last so it outranks the Vietnamese instructions, data notes and history.
+    /// A detected language is stated explicitly; otherwise the model falls back to the UI language.
+    /// </summary>
+    internal static string BuildChatInstruction(string? uiLanguage, string latestMessage, string contextJson)
+    {
+        var detected = AiLanguageDetector.Detect(latestMessage);
+        var languageRule = detected is null
+            ? $"Reply in the language of the member's latest message; if unclear, reply in {PreferredLanguage(uiLanguage)}."
+            : $"The member's latest message is written in {detected}. Your ENTIRE reply MUST be in {detected}, " +
+              "even though these instructions, the data and earlier turns are in Vietnamese. " +
+              "Never say you can only answer in Vietnamese or any other single language.";
+        return ChatGuidance + MemberGuidance +
+            "\nSCMS_PUBLIC_CONTEXT_JSON:\n" + contextJson +
+            "\n\nREPLY LANGUAGE (highest priority): " + languageRule;
+    }
 
     /// <summary>Maps the UI language hint to a name the model understands; unknown values fall back to Vietnamese.</summary>
     internal static string PreferredLanguage(string? language) => language?.Trim().ToLowerInvariant() switch
