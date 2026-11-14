@@ -145,9 +145,9 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       setInputQuestion('');
       setReactions({});
       window.dispatchEvent(new CustomEvent('SCMS_AI_CHAT_CLEARED', { detail: { source: 'page' } }));
-      showSuccess(isEn ? 'AI Assistant conversation reloaded!' : 'Đã load lại cuộc hội thoại với Trợ lý AI!');
+      showSuccess(isEn ? 'AI Assistant conversation reloaded!' : 'Đã tải lại cuộc trò chuyện!');
     } catch (err) {
-      showError(err?.message || (isEn ? 'Unable to reload conversation. Please try again.' : 'Không thể load lại cuộc hội thoại. Vui lòng thử lại.'));
+      showError(err?.message || (isEn ? 'Unable to reload conversation. Please try again.' : 'Không thể tải lại cuộc trò chuyện. Vui lòng thử lại.'));
     } finally {
       setIsResetting(false);
     }
