@@ -1,6 +1,12 @@
 import React from 'react';
 
 export function MembersMetrics({ isEn, stats }) {
+  // pageCount is null when counts come from the server summary (whole result set).
+  const denom = stats.pageCount > 0 ? stats.pageCount : stats.total;
+  const activePct = denom > 0 ? Math.round((stats.active / denom) * 100) : 0;
+  const isPaginated = Number(stats.pageCount || 0) > 0 && Number(stats.total || 0) > Number(stats.pageCount || 0);
+  const scopeNote = isPaginated ? (isEn ? ' (current page)' : ' (trang hiện tại)') : '';
+
   return (
     <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
       {/* Total Members */}
@@ -35,11 +41,11 @@ export function MembersMetrics({ isEn, stats }) {
         <div className="mt-3 flex items-baseline gap-2">
           <span className="text-3xl font-black font-chivo text-brand-sage-700 dark:text-brand-sage-400">{stats.active}</span>
           <span className="px-2 py-0.5 rounded-full bg-brand-sage-50 dark:bg-brand-sage-950/40 text-brand-sage-700 dark:text-brand-sage-300 text-xs font-bold border border-brand-sage-200 dark:border-brand-sage-800">
-            {stats.total > 0 ? `${Math.round((stats.active / stats.total) * 100)}%` : '100%'}
+            {activePct}%
           </span>
         </div>
         <p className="mt-1 text-xs text-brand-navy-500 dark:text-brand-navy-400">
-          {isEn ? 'Verified & ready to train' : 'Tài khoản hợp lệ và sẵn sàng'}
+          {isEn ? `Verified & ready to train${scopeNote}` : `Tài khoản hợp lệ và sẵn sàng${scopeNote}`}
         </p>
       </div>
 
@@ -58,7 +64,7 @@ export function MembersMetrics({ isEn, stats }) {
           <span className="text-xs text-brand-navy-400 font-medium">{isEn ? 'active' : 'gói active'}</span>
         </div>
         <p className="mt-1 text-xs text-brand-navy-500 dark:text-brand-navy-400">
-          {isEn ? 'Eligible for check-in & booking' : 'Đủ điều kiện check-in và đặt lớp'}
+          {isEn ? `Eligible for check-in & booking${scopeNote}` : `Đủ điều kiện check-in và đặt lớp${scopeNote}`}
         </p>
       </div>
 
@@ -77,7 +83,7 @@ export function MembersMetrics({ isEn, stats }) {
           <span className="text-xs text-brand-navy-400 font-medium">{isEn ? 'suspended' : 'tạm dừng'}</span>
         </div>
         <p className="mt-1 text-xs text-brand-navy-500 dark:text-brand-navy-400">
-          {isEn ? 'Requires review to unlock' : 'Cần xác minh mở khóa'}
+          {isEn ? `Requires review to unlock${scopeNote}` : `Cần xác minh mở khóa${scopeNote}`}
         </p>
       </div>
     </div>

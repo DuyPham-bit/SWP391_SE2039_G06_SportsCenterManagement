@@ -12,9 +12,11 @@ export function OperationalInsights({ isEn, processedRooms, topClass, topRoom, t
           <span className="font-bold text-brand-sand-900 dark:text-brand-sand-300 block mb-1">
             {isEn ? '1. Expand Top Class & Court Schedule:' : '1. Mở rộng khung giờ Lớp & Sân Quán quân:'}
           </span>
-          {isEn
-            ? <>Class <strong className="text-brand-navy-900 dark:text-white">{topClass?.name || 'Top 1'}</strong> in <strong className="text-brand-navy-900 dark:text-white">{topRoom?.name || 'Top 1 Court'}</strong> has peak booking rate ({topClass?.booked || 0} bookings). Consider adding weekend or evening rush-hour sessions.</>
-            : <>Lớp <strong className="text-brand-navy-900 dark:text-white">{topClass?.name || 'Top 1'}</strong> tại <strong className="text-brand-navy-900 dark:text-white">{topRoom?.name || 'Sân Top 1'}</strong> đang có tần suất đặt cao nhất ({topClass?.booked || 0} lượt). Khuyến nghị bổ sung thêm ca tập cuối tuần hoặc giờ cao điểm buổi tối.</>}
+          {topClass
+            ? (isEn
+                ? <>Class <strong className="text-brand-navy-900 dark:text-white">{topClass.name}</strong>{topRoom?.name ? <> in <strong className="text-brand-navy-900 dark:text-white">{topRoom.name}</strong></> : null} has peak booking rate ({topClass.booked || 0} bookings). Consider adding weekend or evening rush-hour sessions.</>
+                : <>Lớp <strong className="text-brand-navy-900 dark:text-white">{topClass.name}</strong>{topRoom?.name ? <> tại <strong className="text-brand-navy-900 dark:text-white">{topRoom.name}</strong></> : null} đang có tần suất đặt cao nhất ({topClass.booked || 0} lượt). Khuyến nghị bổ sung thêm ca tập cuối tuần hoặc giờ cao điểm buổi tối.</>)
+            : (isEn ? 'Insufficient class booking data in period to recommend schedule expansion.' : 'Chưa đủ dữ liệu đặt lớp trong kỳ để đề xuất mở rộng ca.')}
         </div>
         <div className="bg-white/80 dark:bg-brand-navy-900/80 p-3.5 rounded-2xl border border-brand-sand-200/60 dark:border-brand-sand-900/40 shadow-xs">
           <span className="font-bold text-brand-sand-900 dark:text-brand-sand-300 block mb-1">

@@ -20,9 +20,11 @@ export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
     );
   }
 
-  const values = data.map(d => Number(d.net || 0));
-  const maxVal = Math.max(1, ...values);
-  const totalRevenue = values.reduce((sum, v) => sum + v, 0);
+  const grossValues = data.map(d => Number(d.gross ?? d.net ?? 0));
+  const netValues = data.map(d => Number(d.net || 0));
+  const hasRefundSpread = data.some(d => Number(d.gross ?? d.net ?? 0) !== Number(d.net || 0));
+  const maxVal = Math.max(1, ...netValues, ...(hasRefundSpread ? grossValues : []));
+  const totalRevenue = netValues.reduce((sum, v) => sum + v, 0);
 
   const chartHeight = 230;
   const chartWidth = 640;
@@ -63,12 +65,13 @@ export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
     ? `${lineD} L ${points[points.length - 1].x.toFixed(1)} ${(paddingTop + innerHeight).toFixed(1)} L ${points[0].x.toFixed(1)} ${(paddingTop + innerHeight).toFixed(1)} Z`
     : '';
 
-  // Dual secondary decorative wave curve (similar to Image 1's dual neon lines)
-  const secondaryPoints = points.map(pt => ({
-    x: pt.x,
-    y: Math.min(paddingTop + innerHeight, pt.y + 16 + Math.sin(pt.x / 40) * 10)
-  }));
-  const secondaryLineD = getSmoothPath(secondaryPoints);
+  const grossPoints = hasRefundSpread
+    ? data.map((d, i) => ({
+        x: paddingLeft + (i / Math.max(1, data.length - 1)) * innerWidth,
+        y: paddingTop + innerHeight - (Number(d.gross ?? d.net ?? 0) / maxVal) * innerHeight
+      }))
+    : [];
+  const secondaryLineD = grossPoints.length > 1 ? getSmoothPath(grossPoints) : '';
 
   const yTicks = [0, 0.33, 0.66, 1].map(pct => ({
     val: Math.round(maxVal * pct),
@@ -82,7 +85,9 @@ export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
         <div>
           <span className="text-[11px] text-brand-sage-700 dark:text-brand-sage-400 font-bold flex items-center gap-1">
             <span className="material-symbols-outlined text-[15px]">trending_up</span>
-            {isEn ? '(+12%) net revenue increase' : '(+12%) tăng trưởng doanh thu'}
+            {isEn
+              ? `${data.length} ${groupBy === 'month' ? 'months' : 'days'} recorded`
+              : `${data.length} mốc ${groupBy === 'month' ? 'tháng' : 'ngày'} thống kê`}
           </span>
           <span className="text-brand-navy-400 text-[10px] block">
             {isEn ? `Aggregated by ${groupBy}` : `Tổng hợp theo ${groupBy === 'month' ? 'tháng' : 'ngày'}`}

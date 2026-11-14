@@ -96,25 +96,33 @@ export function PerformanceGaugesRow({ isEn, metrics, setActiveTableTab, topClas
           value={metrics.occupancyRate}
           min={0}
           max={100}
-          title={isEn ? 'Satisfaction / Load' : 'Tỷ lệ lấp đầy'}
+          title={isEn ? 'Center Occupancy' : 'Tỷ lệ lấp đầy'}
           subtitle={isEn ? 'From all scheduled sessions' : 'Toàn bộ ca học đã mở'}
-          note={isEn ? 'Optimal utilization' : 'Công suất vận hành ổn định'}
+          note={
+            Number(metrics.occupancyRate || 0) >= 75
+              ? (isEn ? 'High court demand' : 'Nhu cầu tham gia cao')
+              : Number(metrics.occupancyRate || 0) >= 35
+              ? (isEn ? 'Balanced utilization' : 'Công suất vận hành ổn định')
+              : Number(metrics.totalClasses || 0) > 0
+              ? (isEn ? 'Available capacity remaining' : 'Còn nhiều chỗ trống')
+              : (isEn ? 'No scheduled sessions' : 'Chưa có ca học trong kỳ')
+          }
         />
       </div>
 
       {/* Right Card (4 cols): Radial Score Progress (Referral Tracking / Facility Load Score) */}
       <div className="min-w-0 lg:col-span-4 bg-white dark:bg-brand-navy-900 rounded-3xl p-4 border border-brand-navy-200/90 dark:border-brand-navy-800 shadow-xs hover-lift transition-all flex flex-col justify-between">
         <RadialScoreChart
-          score={Number((8.5 + Math.min(1.0, ((metrics.occupancyRate || 0) / 100) * 1.0) + (topRoom?.booked ? 0.2 : 0)).toFixed(1))}
+          score={Number((Math.min(100, Math.max(0, Number(metrics.occupancyRate || 0))) / 10).toFixed(1))}
           maxScore={10}
           title={isEn ? 'Facility Tracking' : 'Hiệu suất sân bãi'}
-          subtitle={isEn ? 'Court load & safety index' : 'Chỉ số tải & an toàn cơ sở'}
-          stat1Label={isEn ? 'Guests received' : 'Khách tiếp nhận'}
+          subtitle={isEn ? 'Utilization score (occupancy / 10)' : 'Điểm khai thác (tỷ lệ lấp đầy / 10)'}
+          stat1Label={isEn ? 'Top court bookings' : 'Lượt đặt sân #1'}
           stat1Val={`${topRoom?.booked || 0} lượt`}
           stat2Label={isEn ? 'Sessions hosted' : 'Ca đã tổ chức'}
           stat2Val={`${topRoom?.sessionsCount || 0} ca`}
-          scoreLabel={isEn ? 'Safety' : 'Điểm tải'}
-          scoreSub={isEn ? 'Total score' : 'Tổng điểm'}
+          scoreLabel={isEn ? 'Score' : 'Điểm tải'}
+          scoreSub={isEn ? 'Out of 10' : 'Thang điểm 10'}
         />
       </div>
     </div>

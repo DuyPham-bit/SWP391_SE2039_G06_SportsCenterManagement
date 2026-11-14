@@ -521,8 +521,9 @@ export function RolesPermissions() {
                   if (isSelected) roleColor = 'border-brand-navy-900 dark:border-brand-sage-500 ring-2 ring-brand-navy-900/30 dark:ring-brand-sage-500/30 bg-brand-navy-50 dark:bg-brand-navy-800/50';
                 }
 
-                // Count staff assigned to this role
-                const staffCount = staffList.filter(s => String(s.role).toUpperCase() === roleUpper).length;
+                // Count users assigned to this role (from userRows when available, fallback to staffList)
+                const roleUserCount = userRows.filter(u => u.status !== 'Deleted' && String(u.roleName).toUpperCase() === roleUpper).length;
+                const staffCount = roleUserCount || staffList.filter(s => String(s.role).toUpperCase() === roleUpper).length;
 
                 return (
                   <div
@@ -552,8 +553,8 @@ export function RolesPermissions() {
                     </p>
 
                     <div className="mt-3 pt-3 border-t border-brand-navy-100 dark:border-brand-navy-800 flex items-center justify-between text-[11px] text-brand-navy-600 dark:text-brand-navy-400">
-                      <span>{isEn ? 'Assigned Staff:' : 'Nhân sự áp dụng:'}</span>
-                      <span className="font-bold text-brand-navy-800 dark:text-white">{staffCount} {isEn ? 'staff' : 'người'}</span>
+                      <span>{roleUpper === 'MEMBER' ? (isEn ? 'Assigned Members:' : 'Hội viên áp dụng:') : (isEn ? 'Assigned Staff:' : 'Nhân sự áp dụng:')}</span>
+                      <span className="font-bold text-brand-navy-800 dark:text-white">{staffCount} {isEn ? 'users' : 'người'}</span>
                     </div>
 
                     <div className="mt-1 flex items-center justify-between text-[11px] text-brand-navy-600 dark:text-brand-navy-400">

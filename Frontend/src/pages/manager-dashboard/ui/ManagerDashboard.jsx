@@ -189,6 +189,42 @@ export function ManagerDashboard() {
         hoverCard: 'hover:border-brand-terra-400 dark:hover:border-brand-terra-600 hover:shadow-brand-terra-500/10 hover:bg-brand-terra-50/20',
         badge: 'bg-brand-terra-100/70 text-brand-terra-800 dark:bg-brand-terra-950/70 dark:text-brand-terra-300'
       }
+    },
+    {
+      path: 'invoices',
+      icon: 'receipt_long',
+      title: isEn ? 'Invoices & Collections' : 'Hóa đơn & Thu tiền',
+      description: isEn ? 'Track invoices, counter collections and settlement status.' : 'Tra cứu hóa đơn, thu tiền tại quầy và đối soát thanh toán.',
+      tag: isEn ? 'Finance' : 'Hóa đơn',
+      theme: {
+        iconBg: 'bg-brand-sage-50 dark:bg-brand-sage-950/50 text-brand-sage-700 dark:text-brand-sage-400 border border-brand-sage-200/80 dark:border-brand-sage-800/60',
+        hoverCard: 'hover:border-brand-sage-500 dark:hover:border-brand-sage-600 hover:shadow-brand-sage-500/10 hover:bg-brand-sage-500/5',
+        badge: 'bg-brand-sage-100/70 text-brand-sage-700 dark:bg-brand-sage-950/70 dark:text-brand-sage-300'
+      }
+    },
+    {
+      path: 'support-communications',
+      icon: 'campaign',
+      title: isEn ? 'Support & Broadcasts' : 'Hỗ trợ & Thông báo',
+      description: isEn ? 'Handle member support tickets and center announcements.' : 'Tiếp nhận yêu cầu hỗ trợ và gửi thông báo toàn cơ sở.',
+      tag: isEn ? 'Support' : 'Hỗ trợ',
+      theme: {
+        iconBg: 'bg-brand-teal-50 dark:bg-brand-teal-950/50 text-brand-teal-700 dark:text-brand-teal-400 border border-brand-teal-200/80 dark:border-brand-teal-800/60',
+        hoverCard: 'hover:border-brand-teal-400 dark:hover:border-brand-teal-600 hover:shadow-brand-teal-500/10 hover:bg-brand-teal-50/20',
+        badge: 'bg-brand-teal-100/70 text-brand-teal-800 dark:bg-brand-teal-950/70 dark:text-brand-teal-300'
+      }
+    },
+    {
+      path: 'payroll',
+      icon: 'account_balance_wallet',
+      title: isEn ? 'Coach & Staff Payroll' : 'Bảng lương nhân sự & HLV',
+      description: isEn ? 'Review monthly teaching hours, commission and payroll sheets.' : 'Tổng hợp công giảng dạy, hoa hồng và bảng lương định kỳ.',
+      tag: isEn ? 'Payroll' : 'Bảng lương',
+      theme: {
+        iconBg: 'bg-brand-sand-50 dark:bg-brand-sand-950/50 text-brand-sand-800 dark:text-brand-sand-400 border border-brand-sand-200/80 dark:border-brand-sand-800/60',
+        hoverCard: 'hover:border-brand-sand-400 dark:hover:border-brand-sand-600 hover:shadow-brand-sand-500/10 hover:bg-brand-sand-50/20',
+        badge: 'bg-brand-sand-100/70 text-brand-sand-800 dark:bg-brand-sand-950/70 dark:text-brand-sand-300'
+      }
     }
   ];
 
@@ -241,7 +277,12 @@ export function ManagerDashboard() {
 
   const totalRooms = metrics?.totalRooms ?? 0;
   const activeRooms = metrics?.activeRooms ?? 0;
-  const vacantRooms = Math.max(0, totalRooms - activeRooms);
+  const inactiveRooms = Math.max(0, totalRooms - activeRooms);
+  const inUseRooms = Math.min(
+    activeRooms,
+    (metrics?.topRooms || []).filter(r => Number(r.sessionsCount || 0) > 0).length
+  );
+  const idleReadyRooms = Math.max(0, activeRooms - inUseRooms);
 
   const todayCheckins = metrics?.todayCheckins ?? 0;
   const occupancyRate = Number(metrics?.occupancyRate ?? 0);
@@ -256,11 +297,12 @@ export function ManagerDashboard() {
   // Real room donut segments computed from DB
   const roomDonutData = useMemo(() => {
     const list = [];
-    if (activeRooms > 0) list.push({ label: 'Đang có lớp', value: activeRooms, color: '#81B29A' });
-    if (vacantRooms > 0) list.push({ label: 'Sẵn sàng / Trống', value: vacantRooms, color: '#3FAEB8' });
-    if (list.length === 0) list.push({ label: 'Chưa có sân', value: totalRooms || 1, color: '#6C6D70' });
+    if (inUseRooms > 0) list.push({ label: isEn ? 'Hosting classes' : 'Đang có lớp', value: inUseRooms, color: '#81B29A' });
+    if (idleReadyRooms > 0) list.push({ label: isEn ? 'Ready / Idle' : 'Sẵn sàng / Trống', value: idleReadyRooms, color: '#3FAEB8' });
+    if (inactiveRooms > 0) list.push({ label: isEn ? 'Inactive' : 'Ngưng hoạt động', value: inactiveRooms, color: '#E07A5F' });
+    if (list.length === 0) list.push({ label: isEn ? 'No courts' : 'Chưa có sân', value: totalRooms || 1, color: '#6C6D70' });
     return list;
-  }, [activeRooms, vacantRooms, totalRooms]);
+  }, [inUseRooms, idleReadyRooms, inactiveRooms, totalRooms, isEn]);
 
   // Real sport occupancy items from DB with clean 2-letter codes
   const sportOccupancyItems = useMemo(() => {
@@ -477,7 +519,7 @@ export function ManagerDashboard() {
                   <span className="material-symbols-outlined text-[17px] text-brand-sand-700 dark:text-brand-sand-400 group-hover:scale-110 transition-transform">
                     card_membership
                   </span>
-                  <span>{isEn ? 'Renew Package' : 'Gia hạn gói tập'}</span>
+                  <span>{isEn ? 'Packages & Pricing' : 'Quản lý gói tập'}</span>
                 </a>
 
                 <a
@@ -554,7 +596,7 @@ export function ManagerDashboard() {
                     {isEn ? 'AVAILABLE COURTS' : 'SÂN & PHÒNG KHẢ DỤNG'}
                   </span>
                   <h3 className="text-2xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1">
-                    <AnimatedNumber value={vacantRooms} duration={1000} />
+                    <AnimatedNumber value={activeRooms} duration={1000} />
                   </h3>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-brand-teal-700 text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -562,7 +604,7 @@ export function ManagerDashboard() {
                 </div>
               </div>
               <p className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400 mt-2 truncate relative z-10">
-                {isEn ? `${vacantRooms}/${totalRooms} courts ready` : `${vacantRooms}/${totalRooms} sân & phòng sẵn sàng`}
+                {isEn ? `${activeRooms}/${totalRooms} courts active` : `${activeRooms}/${totalRooms} sân & phòng sẵn sàng`}
               </p>
             </div>
 
@@ -654,7 +696,7 @@ export function ManagerDashboard() {
                 </span>
               </div>
               <div className="py-2 flex-1 flex items-center justify-center">
-                <RoomStatusDonutChart total={totalRooms} data={roomDonutData} activeRooms={activeRooms} vacantRooms={vacantRooms} />
+                <RoomStatusDonutChart total={totalRooms} data={roomDonutData} activeRooms={inUseRooms} vacantRooms={idleReadyRooms} readyRooms={activeRooms} />
               </div>
             </div>
 
@@ -981,7 +1023,7 @@ export function ManagerDashboard() {
           </div>
 
           {/* ========================================================
-              7. ROW 5: 10 OPERATIONAL MANAGEMENT MODULES SHORTCUTS
+              7. ROW 5: OPERATIONAL MANAGEMENT MODULES SHORTCUTS
              ======================================================== */}
           <section className="bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-5 shadow-xs space-y-4 transition-all">
             <div className="flex items-center justify-between pb-3.5 border-b border-brand-navy-100 dark:border-brand-navy-800">
@@ -994,7 +1036,7 @@ export function ManagerDashboard() {
                     {isEn ? 'Operational Management Modules' : 'Phân Hệ Nghiệp Vụ Quản Lý Vận Hành'}
                   </h2>
                   <p className="text-[11px] text-brand-navy-400 font-medium">
-                    {isEn ? 'Direct access to all 10 management workspaces' : 'Truy cập nhanh 10 phân hệ nghiệp vụ Olympic Sports Arena'}
+                    {isEn ? `Direct access to all ${shortcuts.length} management workspaces` : `Truy cập nhanh ${shortcuts.length} phân hệ nghiệp vụ Olympic Sports Arena`}
                   </p>
                 </div>
               </div>
@@ -1003,7 +1045,7 @@ export function ManagerDashboard() {
               </span>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {shortcuts.map((mod) => (
                 <a
                   key={mod.path}

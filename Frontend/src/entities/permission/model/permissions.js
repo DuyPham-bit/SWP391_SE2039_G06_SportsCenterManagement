@@ -77,11 +77,11 @@ export const SYSTEM_CAPABILITIES = [
     id: 'manage_roles',
     label: 'Cấu hình Phân quyền',
     desc: 'Thiết lập quyền hạn cho các nhóm người dùng',
-    path: '#/manager/roles-permissions',
+    path: '#/admin/roles-permissions',
     icon: 'admin_panel_settings',
     category: 'BÁO CÁO & BẢO MẬT',
     targetScreenName: 'Vai Trò & Phân Quyền',
-    defaultRole: 'MANAGER'
+    defaultRole: 'ADMIN'
   },
   {
     id: 'view_audit_logs',

@@ -109,7 +109,8 @@ export function AccountsTab({
               </thead>
               <tbody className="divide-y divide-brand-navy-100 dark:divide-brand-navy-800/80">
                 {accs.map((a) => {
-                  const isLocked = a.lockedUntil && parseApiDate(a.lockedUntil) > new Date();
+                  const isLockedByTime = Boolean(a.lockedUntil && parseApiDate(a.lockedUntil) > new Date());
+                  const isLocked = isLockedByTime || String(a.status || '').toLowerCase() === 'disabled';
                   return (
                     <tr
                       key={a.id}
@@ -121,7 +122,14 @@ export function AccountsTab({
                           <div className="w-7 h-7 rounded-lg bg-brand-navy-100 dark:bg-brand-navy-800 text-brand-navy-700 dark:text-brand-navy-300 font-black text-[11px] flex items-center justify-center uppercase">
                             {a.username?.slice(0, 2) || 'SC'}
                           </div>
-                          <span>{a.username}</span>
+                          <div>
+                            <div>{a.username}</div>
+                            {a.fullName && (
+                              <div className="text-[11px] font-medium text-brand-navy-500 dark:text-brand-navy-400">
+                                {a.fullName}
+                              </div>
+                            )}
+                          </div>
                         </div>
                       </td>
                       <td className="py-3.5 px-4 font-medium text-brand-navy-500 dark:text-brand-navy-400">{a.email}</td>
@@ -133,8 +141,10 @@ export function AccountsTab({
                         <StatusBadge status={isLocked ? 'Disabled' : a.status} />
                       </td>
                       <td className="py-3.5 px-4 text-[11px]">
-                        {isLocked ? (
+                        {isLockedByTime ? (
                           <span className="text-brand-danger-600 font-bold">{fmtDate(a.lockedUntil)}</span>
+                        ) : isLocked ? (
+                          <span className="text-brand-danger-600 font-bold">Vô hiệu hóa</span>
                         ) : (
                           <span className="text-brand-navy-400">—</span>
                         )}

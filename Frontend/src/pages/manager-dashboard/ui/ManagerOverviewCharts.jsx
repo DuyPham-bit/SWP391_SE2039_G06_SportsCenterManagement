@@ -142,14 +142,14 @@ export function MiniSparkline({ color = '#E07A5F', data = [] }) {
  * 2. TRẠNG THÁI SÂN BÃI & PHÒNG TẬP (Donut Chart + Executive Stats Strip)
  * Redesigned: Balanced height, dual-tile operational stats, high-contrast indicators.
  */
-export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacantRooms }) {
+export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacantRooms, readyRooms }) {
   const [hovered, setHovered] = useState(null);
   const size = 136;
   const strokeWidth = 18;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  const validData = Array.isArray(data) && data.length > 0 ? data : [{ label: 'Trống', value: 1, color: '#6C6D70' }];
+  const validData = Array.isArray(data) && data.length > 0 ? data : [{ label: 'Chưa có sân', value: 1, color: '#6C6D70' }];
   const sum = validData.reduce((acc, cur) => acc + (cur.value || 0), 0) || 1;
 
   let cumulativeAngle = 0;
@@ -161,8 +161,10 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
     return { ...item, strokeDasharray, strokeDashoffset, idx };
   });
 
-  const activeCount = activeRooms != null ? activeRooms : (validData.find(d => d.label.includes('lớp') || d.label.includes('dùng'))?.value || (sum > 0 ? sum : 0));
-  const vacantCount = vacantRooms != null ? vacantRooms : (validData.find(d => d.label.includes('Trống') || d.label.includes('sàng'))?.value || 0);
+  const activeCount = activeRooms != null ? activeRooms : (validData.find(d => d.label.includes('lớp') || d.label.includes('Hosting'))?.value || 0);
+  const vacantCount = vacantRooms != null ? vacantRooms : (validData.find(d => d.label.includes('Trống') || d.label.includes('Idle'))?.value || 0);
+  const readyCount = readyRooms != null ? readyRooms : Math.min(total, activeCount + vacantCount);
+  const readyPct = total > 0 ? Math.round((readyCount / total) * 100) : 0;
 
   return (
     <div className="flex flex-col justify-between h-full w-full space-y-3 pt-1">
@@ -207,7 +209,7 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
             {hovered !== null ? validData[hovered].value : <AnimatedNumber value={total} duration={1000} />}
           </strong>
           <span className="mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200/60">
-            100% Khả dụng
+            {readyPct}% Khả dụng
           </span>
         </div>
       </div>
@@ -231,7 +233,7 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
             <span className="material-symbols-outlined text-[16px]">meeting_room</span>
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] text-brand-navy-600 dark:text-brand-navy-400 font-bold block truncate">Sân trống</span>
+            <span className="text-[10px] text-brand-navy-600 dark:text-brand-navy-400 font-bold block truncate">Sẵn sàng trống</span>
             <span className="text-xs font-black text-brand-navy-900 dark:text-white block">
               <AnimatedNumber value={vacantCount} duration={1000} /> <span className="text-[10px] font-medium text-brand-navy-400">sân</span>
             </span>
@@ -243,9 +245,9 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
       <div className="text-[10.5px] font-medium text-brand-navy-500 dark:text-brand-navy-400 pt-1.5 border-t border-brand-navy-100 dark:border-brand-navy-800/80 flex items-center justify-between">
         <span className="flex items-center gap-1.5 text-teal-700 dark:text-teal-400 font-bold">
           <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
-          {total}/10 sân mở lớp
+          {activeCount}/{total} sân đang mở lớp
         </span>
-        <span className="text-[10px] font-semibold text-brand-navy-400">Sẵn sàng 100%</span>
+        <span className="text-[10px] font-semibold text-brand-navy-400">Sẵn sàng {readyPct}%</span>
       </div>
     </div>
   );
@@ -372,9 +374,16 @@ export function PeriodCollectionRadialGauge({
   const targetOffset = arcLength - progressLength;
   const currentOffset = mounted ? targetOffset : arcLength;
 
-  const bookingsVal = totalBookings || 199;
-  const classesVal = totalClasses || 87;
+  const bookingsVal = Number(totalBookings || 0);
+  const classesVal = Number(totalClasses || 0);
   const avgPerClass = classesVal > 0 ? (bookingsVal / classesVal).toFixed(1) : '0';
+  const loadLabel = clampedPercentage >= 75
+    ? 'Công suất cao'
+    : clampedPercentage >= 35
+    ? 'Ổn định'
+    : classesVal > 0
+    ? 'Còn nhiều chỗ trống'
+    : 'Chưa có ca học';
 
   return (
     <div className="flex flex-col justify-between h-full w-full space-y-3 pt-1">
@@ -422,7 +431,7 @@ export function PeriodCollectionRadialGauge({
             <AnimatedNumber value={percentage} duration={1100} decimals={percentage % 1 !== 0 ? 2 : 0} suffix="%" />
           </strong>
           <span className="text-[10px] text-amber-700 dark:text-amber-400 font-bold mt-1 px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/50 border border-amber-200/60">
-            Ổn định
+            {loadLabel}
           </span>
         </div>
       </div>
@@ -471,15 +480,17 @@ export function PeriodCollectionRadialGauge({
  */
 export function MemberDocumentsStackedBars({
   items = [],
-  totalMembers = 7,
-  activeMembers = 7,
-  membersWithPackage = 7,
+  totalMembers = 0,
+  activeMembers = 0,
+  membersWithPackage = 0,
   membersWithoutPackage = 0,
   expiredMembers = 0
 }) {
-  const total = totalMembers || 7;
-  const withPkg = membersWithPackage != null ? membersWithPackage : (items[0]?.greenVal || total);
-  const activeCount = activeMembers != null ? activeMembers : (items[1]?.greenVal || total);
+  const total = Number(totalMembers || 0);
+  const withPkg = membersWithPackage != null ? Number(membersWithPackage) : Number(items[0]?.greenVal || 0);
+  const activeCount = activeMembers != null ? Number(activeMembers) : Number(items[1]?.greenVal || 0);
+  const withPkgPct = total > 0 ? Math.min(100, Math.round((withPkg / total) * 100)) : 0;
+  const activePct = total > 0 ? Math.min(100, Math.round((activeCount / total) * 100)) : 0;
 
   return (
     <div className="flex flex-col justify-between h-full space-y-3 pt-1">
@@ -523,13 +534,13 @@ export function MemberDocumentsStackedBars({
           <div className="flex items-center justify-between text-[11px]">
             <span className="font-bold text-brand-navy-700 dark:text-brand-navy-300">Trạng thái gói</span>
             <span className="font-black text-brand-sage-700 dark:text-brand-sage-300">
-              {Math.round((withPkg / total) * 100)}% Có gói ({withPkg})
+              {withPkgPct}% Có gói ({withPkg})
             </span>
           </div>
           <div className="w-full bg-brand-navy-100 dark:bg-brand-navy-800 rounded-full h-2 overflow-hidden flex">
             <div
               className="bg-brand-sage-600 h-full rounded-full transition-all duration-500"
-              style={{ width: `${(withPkg / total) * 100}%` }}
+              style={{ width: `${withPkgPct}%` }}
             />
           </div>
         </div>
@@ -539,13 +550,13 @@ export function MemberDocumentsStackedBars({
           <div className="flex items-center justify-between text-[11px]">
             <span className="font-bold text-brand-navy-700 dark:text-brand-navy-300">Thời hạn sử dụng</span>
             <span className="font-black text-brand-teal-700 dark:text-brand-teal-300">
-              {Math.round((activeCount / total) * 100)}% Còn hạn ({activeCount})
+              {activePct}% Còn hạn ({activeCount})
             </span>
           </div>
           <div className="w-full bg-brand-navy-100 dark:bg-brand-navy-800 rounded-full h-2 overflow-hidden flex">
             <div
               className="bg-brand-teal-600 h-full rounded-full transition-all duration-500"
-              style={{ width: `${(activeCount / total) * 100}%` }}
+              style={{ width: `${activePct}%` }}
             />
           </div>
         </div>
@@ -555,9 +566,9 @@ export function MemberDocumentsStackedBars({
       <div className="pt-2 border-t border-brand-navy-100 dark:border-brand-navy-800/80 flex items-center justify-between text-[10.5px]">
         <span className="flex items-center gap-1.5 text-brand-sage-700 dark:text-brand-sage-400 font-bold">
           <span className="w-1.5 h-1.5 rounded-full bg-brand-sage-500" />
-          Giữ chân 100%
+          Hiệu lực {activePct}%
         </span>
-        <span className="text-brand-navy-400 font-semibold">{total} hội viên hoạt động tốt</span>
+        <span className="text-brand-navy-400 font-semibold">{activeCount}/{total} hội viên đang có gói</span>
       </div>
     </div>
   );

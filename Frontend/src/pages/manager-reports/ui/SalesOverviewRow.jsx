@@ -47,7 +47,7 @@ export function SalesOverviewRow({ isEn, membership, metrics, revenue }) {
         <VisionActiveUsersChart
           data={membership}
           totalUsers={metrics.totalMembers}
-          totalBookings={metrics.classStatusCounts?.Confirmed || metrics.todayCheckins || 0}
+          totalBookings={metrics.totalBookings ?? 0}
           netSales={metrics.netRevenue}
           totalSessions={metrics.totalClasses}
         />

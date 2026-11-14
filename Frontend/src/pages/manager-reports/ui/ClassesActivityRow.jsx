@@ -153,7 +153,10 @@ export function ClassesActivityRow({
                 {isEn ? 'Orders Overview' : 'Nhật Ký Vận Hành & Sự Kiện'}
               </h3>
               <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400 mt-0.5">
-                <strong className="text-brand-sage-700 dark:text-brand-sage-400 font-bold">+30% {isEn ? 'this month' : 'tháng này'}</strong> · {isEn ? 'Live activity' : 'Sự kiện đăng ký'}
+                <strong className="text-brand-sage-700 dark:text-brand-sage-400 font-bold">
+                  {metrics.totalBookings || 0} {isEn ? 'active bookings' : 'lượt đặt đang hiệu lực'}
+                </strong>{' '}
+                · {metrics.totalClasses || 0} {isEn ? 'sessions' : 'ca học'}
               </p>
             </div>
           </div>
@@ -182,10 +185,14 @@ export function ClassesActivityRow({
               </div>
               <div>
                 <p className="text-xs font-bold text-brand-navy-900 dark:text-white">
-                  {topClass ? `${topClass.name} (+${topClass.booked} chỗ)` : 'Lớp bơi K01 hoạt động'}
+                  {topClass
+                    ? `${topClass.name} (+${topClass.booked} ${isEn ? 'seats' : 'chỗ'})`
+                    : (isEn ? 'No class activity recorded' : 'Chưa có lớp hoạt động trong kỳ')}
                 </p>
                 <span className="text-[10px] text-brand-navy-400 dark:text-brand-navy-500">
-                  {topClass?.roomName || 'Bể bơi Olympic'} · {isEn ? 'High attendance' : 'Tỷ lệ tham gia cao'}
+                  {topClass
+                    ? `${topClass.roomName || (isEn ? 'Unassigned court' : 'Chưa gán sân')} · ${topClass.occupancyRate || 0}% ${isEn ? 'occupancy' : 'lấp đầy'}`
+                    : (isEn ? 'No bookings recorded in period' : 'Chưa có lượt đặt chỗ trong kỳ')}
                 </span>
               </div>
             </div>
