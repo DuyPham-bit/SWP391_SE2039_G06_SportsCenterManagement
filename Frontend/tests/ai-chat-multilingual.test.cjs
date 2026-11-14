@@ -33,3 +33,18 @@ test('chat requests send the UI language as a hint to the backend', () => {
     assert.match(source, /any language/, file);
   }
 });
+
+test('resetting member AI chat deletes server conversations and clears browser cache', () => {
+  assert.match(read('src/entities/ai-chat/api/aiApi.js'), /clearConversations:\s*\(\)\s*=>\s*apiRequest\('ai\/conversations',\s*\{\s*method:\s*'DELETE'\s*\}\)/);
+  for (const file of [
+    'src/features/member-ai-chat/ui/MemberAIChatPopup.jsx',
+    'src/pages/member-ai-assistant/ui/MemberAIAssistant.jsx',
+  ]) {
+    const source = read(file);
+    assert.match(source, /aiApi\.clearConversations\(\)/, file);
+    assert.match(source, /clearMemberAIChatStorage\(\)/, file);
+  }
+  const controller = fs.readFileSync(path.resolve(frontend, '../Backend/SportsCenterManagement.API/Controllers/AiController.cs'), 'utf8');
+  assert.match(controller, /\[HttpDelete\("ai\/conversations"\)\]/);
+  assert.match(controller, /ClearConversations/);
+});

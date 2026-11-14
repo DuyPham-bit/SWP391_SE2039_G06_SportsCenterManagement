@@ -3,6 +3,7 @@ import { useAuth } from '../../../entities/session/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { aiApi } from '../../../entities/ai-chat/index.js';
+import { clearMemberAIChatStorage } from '../../../shared/lib/memberAiChatStorage.js';
 import { parseFormattedMarkdown } from './chatMarkdown.jsx';
 import { detectSpeechLang } from '../../../shared/lib/speechLanguage.js';
 
@@ -40,6 +41,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   const [messages, setMessages] = useState([getInitialMessage()]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [isAsking, setIsAsking] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [speakingId, setSpeakingId] = useState(null);
@@ -54,6 +56,20 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   useEffect(() => {
     scrollToBottom();
   }, [messages, isAsking]);
+
+  // Keep page state synced if the popup clears conversations.
+  useEffect(() => {
+    const handleCleared = (e) => {
+      if (e.detail?.source === 'page') return;
+      setSpeakingId(null);
+      setConversationId(null);
+      setMessages([getInitialMessage()]);
+      setInputQuestion('');
+      setReactions({});
+    };
+    window.addEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
+    return () => window.removeEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
+  }, [isEn]);
 
   // Clean up speech synthesis on unmount
   useEffect(() => {
@@ -114,17 +130,27 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     }
   };
 
-  const handleResetChat = () => {
-    if (isAsking) return;
+  const handleResetChat = async () => {
+    if (isAsking || isResetting) return;
+    setIsResetting(true);
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
-    setSpeakingId(null);
-    setConversationId(null);
-    setMessages([getInitialMessage()]);
-    setInputQuestion('');
-    setIsAsking(false);
-    showSuccess(isEn ? 'AI Assistant conversation reset!' : 'Đã làm mới cuộc hội thoại với Trợ lý AI!');
+    try {
+      await aiApi.clearConversations();
+      clearMemberAIChatStorage();
+      setSpeakingId(null);
+      setConversationId(null);
+      setMessages([getInitialMessage()]);
+      setInputQuestion('');
+      setReactions({});
+      window.dispatchEvent(new CustomEvent('SCMS_AI_CHAT_CLEARED', { detail: { source: 'page' } }));
+      showSuccess(isEn ? 'AI Assistant chat history deleted!' : 'Đã xóa vĩnh viễn lịch sử hội thoại với Trợ lý AI!');
+    } catch (err) {
+      showError(err?.message || (isEn ? 'Unable to delete chat history. Please try again.' : 'Không thể xóa lịch sử hội thoại. Vui lòng thử lại.'));
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const copyMessage = (msg) => {
@@ -222,10 +248,10 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
             <button
               onClick={handleResetChat}
-              disabled={isAsking}
+              disabled={isAsking || isResetting}
               className="px-3.5 py-2.5 rounded-xl bg-white/90 hover:bg-white text-brand-navy-800 border border-white text-xs font-bold flex items-center gap-1.5 transition shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+              <span className={`material-symbols-outlined text-[18px] ${isResetting ? 'animate-spin' : ''}`}>restart_alt</span>
               <span>{isEn ? 'Reset Chat' : 'Làm mới'}</span>
             </button>
           </div>
@@ -256,10 +282,13 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           <div className="flex items-center gap-2">
             <button
               onClick={handleResetChat}
-              title={isEn ? "Reset entire conversation" : "Làm mới toàn bộ hội thoại"}
-              className="p-2 text-brand-navy-400 hover:text-brand-navy-700 hover:bg-brand-navy-200/60 rounded-xl transition"
+              disabled={isAsking || isResetting}
+              title={isEn ? "Reset and clear entire conversation" : "Xóa lịch sử và làm mới toàn bộ hội thoại"}
+              className="p-2 text-brand-navy-400 hover:text-brand-navy-700 hover:bg-brand-navy-200/60 rounded-xl transition disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
+              <span className={`material-symbols-outlined text-[18px] ${isResetting ? 'animate-spin' : ''}`}>
+                {isResetting ? 'progress_activity' : 'delete_sweep'}
+              </span>
             </button>
           </div>
         </div>

@@ -35,7 +35,11 @@ const server = http.createServer(async (req, res) => {
     if (route === '/api/profile/me') return json(res, { userId: 122, role: 'Member', status: 'Active', centerId: 1, fullName: 'Học viên AI' });
     if (route === '/api/access/me/capabilities') return json(res, ['ask_ai_assistant', 'use_coach_portal']);
     if (route === '/api/members/me') return json(res, { memberId: 22 });
-    if (route === '/api/ai/conversations/latest') return json(res, { conversationId: 5, messages: dbMessages });
+    if (route === '/api/ai/conversations/latest') return json(res, dbMessages.length ? { conversationId: 5, messages: dbMessages } : { conversationId: null, messages: [] });
+    if (route === '/api/ai/conversations' && req.method === 'DELETE') {
+      dbMessages.length = 0;
+      return json(res, null, 204);
+    }
     if (route === '/api/ai/conversations/5/messages') return json(res, dbMessages);
     if (route === '/api/ai/chat' && req.method === 'POST') {
       const next = dbMessages.length + 1;
@@ -146,6 +150,25 @@ const openPopup = () => evaluate(`window.dispatchEvent(new CustomEvent('SCMS_OPE
   await until('cached history after reload', async () => await bodyHas('Phản hồi mới') && await bodyHas('Câu trả lời cũ đã lưu trong DB'));
   assert.equal(requests.some(x => x.route === '/api/ai/conversations/latest'), false, 'tab cache should be used without refetching');
   checks.push('Same-tab reload keeps the cached Vietnamese conversation');
+
+  // Clicking Reset permanently deletes the server conversation so F5 does not bring it back.
+  requests.length = 0;
+  await evaluate(`(() => {
+    const btn = [...document.querySelectorAll('button')].find(x => x.textContent.trim() === 'restart_alt' || x.querySelector('.material-symbols-outlined')?.textContent.trim() === 'restart_alt');
+    if (!btn) throw new Error('Reset button not found');
+    btn.click();
+  })()`);
+  await until('DELETE /api/ai/conversations sent', () => requests.some(x => x.method === 'DELETE' && x.route === '/api/ai/conversations'));
+  await until('old history cleared from popup UI', async () => !(await bodyHas('Phản hồi mới')) && !(await bodyHas('Câu trả lời cũ đã lưu trong DB')));
+  requests.length = 0;
+  await evaluate(`location.reload()`);
+  await until('reloaded after reset', () => evaluate(`Boolean(document.querySelector('main'))`));
+  await delay(1500);
+  await openPopup();
+  await until('welcome message shown after F5', () => bodyHas('Trợ lý AI Olympic'));
+  assert.equal(await bodyHas('Phản hồi mới'), false, 'deleted message must not return after F5');
+  assert.equal(await bodyHas('Câu trả lời cũ đã lưu trong DB'), false, 'deleted DB history must not return after F5');
+  checks.push('Reset permanently deletes conversation and stays cleared after F5');
 
   assert.deepEqual(errors, []);
   console.log(`PASS: ${checks.length} browser checks\n${checks.map(x => `- ${x}`).join('\n')}`);

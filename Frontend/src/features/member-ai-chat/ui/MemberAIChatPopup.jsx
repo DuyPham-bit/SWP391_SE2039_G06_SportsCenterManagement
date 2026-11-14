@@ -4,7 +4,7 @@ import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { aiApi } from '../../../entities/ai-chat/index.js';
 
-import { getMemberAIChatStorageKey } from '../../../shared/lib/memberAiChatStorage.js';
+import { clearMemberAIChatStorage, getMemberAIChatStorageKey } from '../../../shared/lib/memberAiChatStorage.js';
 import { hasCorruptedEncoding, parseFormattedMarkdown } from './chatMarkdown.jsx';
 import { ArenaMascot } from '../../../shared/ui/ArenaMascot.jsx';
 import { parseApiDate } from '../../../shared/lib/dateTime.js';
@@ -74,6 +74,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   });
   const [inputQuestion, setInputQuestion] = useState('');
   const [isAsking, setIsAsking] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [conversationId, setConversationId] = useState(() => {
     try {
       return sessionStorage.getItem(storageKeyConv) || null;
@@ -112,14 +113,19 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
+  const latestAbortRef = useRef(null);
+  const latestEpochRef = useRef(0);
 
   // History is stored in the DB; this tab cache is empty in a new tab or after signing in again,
   // so reload the latest conversation from the server instead of starting from scratch.
   useEffect(() => {
     if (!userId || conversationId || messages.some(m => m.id !== 'welcome')) return undefined;
+    const epoch = ++latestEpochRef.current;
     const controller = new AbortController();
+    latestAbortRef.current = controller;
     aiApi.getLatest({ signal: controller.signal })
       .then(result => {
+        if (latestEpochRef.current !== epoch) return;
         if (!result?.conversationId || !Array.isArray(result.messages) || result.messages.length === 0) return;
         const restored = result.messages
           .filter(m => typeof m.text === 'string' && !hasCorruptedEncoding(m.text))
@@ -405,7 +411,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     }
   }, [isOpen, isMinimized]);
 
-  // Listen for global open event
+  // Listen for global open and reset events
   useEffect(() => {
     const handleOpen = (e) => {
       setIsOpen(true);
@@ -415,9 +421,25 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
         handleSend(e.detail.prompt);
       }
     };
+    const handleCleared = (e) => {
+      if (e.detail?.source === 'popup') return;
+      latestEpochRef.current += 1;
+      latestAbortRef.current?.abort();
+      clearMemberAIChatStorage();
+      setSpeakingId(null);
+      setConversationId(null);
+      setMessages([getInitialMessage()]);
+      setInputQuestion('');
+      setUnreadCount(0);
+      setReactions({});
+    };
     window.addEventListener('SCMS_OPEN_AI_POPUP', handleOpen);
-    return () => window.removeEventListener('SCMS_OPEN_AI_POPUP', handleOpen);
-  }, [conversationId, isAsking]);
+    window.addEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
+    return () => {
+      window.removeEventListener('SCMS_OPEN_AI_POPUP', handleOpen);
+      window.removeEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
+    };
+  }, [conversationId, isAsking, isEn]);
 
   // Clean up speech synthesis
   useEffect(() => {
@@ -482,25 +504,30 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     }
   };
 
-  const handleResetChat = () => {
-    if (isAsking) return;
+  const handleResetChat = async () => {
+    if (isAsking || isResetting) return;
+    setIsResetting(true);
+    latestEpochRef.current += 1;
+    latestAbortRef.current?.abort();
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
-    setSpeakingId(null);
-    setConversationId(null);
-    const initial = [getInitialMessage()];
-    setMessages(initial);
-    setInputQuestion('');
-    setIsAsking(false);
-    setUnreadCount(0);
     try {
-      sessionStorage.removeItem(storageKeyMsgs);
-      sessionStorage.removeItem(storageKeyConv);
-    } catch (e) {
-      // ignore
+      await aiApi.clearConversations();
+      clearMemberAIChatStorage();
+      setSpeakingId(null);
+      setConversationId(null);
+      setMessages([getInitialMessage()]);
+      setInputQuestion('');
+      setUnreadCount(0);
+      setReactions({});
+      window.dispatchEvent(new CustomEvent('SCMS_AI_CHAT_CLEARED', { detail: { source: 'popup' } }));
+      showSuccess(isEn ? 'Chat history deleted!' : 'Đã xóa vĩnh viễn lịch sử trò chuyện!');
+    } catch (err) {
+      showError(err?.message || (isEn ? 'Unable to delete chat history. Please try again.' : 'Không thể xóa lịch sử trò chuyện. Vui lòng thử lại.'));
+    } finally {
+      setIsResetting(false);
     }
-    showSuccess(isEn ? 'Chat conversation reset!' : 'Đã làm mới cuộc trò chuyện!');
   };
 
   const copyMessage = (msg) => {
@@ -742,10 +769,11 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
               <button
                 type="button"
                 onClick={handleResetChat}
-                title={isEn ? "Reset conversation" : "Làm mới cuộc trò chuyện"}
-                className="p-1.5 rounded-lg text-brand-navy-400 hover:text-brand-sand-300 hover:bg-white/10 transition cursor-pointer"
+                disabled={isAsking || isResetting}
+                title={isEn ? "Reset and clear conversation history" : "Xóa lịch sử và làm mới cuộc trò chuyện"}
+                className="p-1.5 rounded-lg text-brand-navy-400 hover:text-brand-sand-300 hover:bg-white/10 transition cursor-pointer disabled:opacity-50"
               >
-                <span className="material-symbols-outlined text-[17px]">restart_alt</span>
+                <span className={`material-symbols-outlined text-[17px] ${isResetting ? 'animate-spin' : ''}`}>restart_alt</span>
               </button>
 
               <button

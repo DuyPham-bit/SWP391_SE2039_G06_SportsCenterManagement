@@ -118,6 +118,32 @@ public sealed class AiController(SportsCenterDbContext db, GeminiService ai, Tra
             .Select(m => new { m.Id, Sender = m.SenderType == "User" ? "user" : "ai", Text = m.Message, m.CreatedAt }).ToListAsync(ct));
     }
 
+    /// <summary>Permanently deletes all MemberAssistant conversations and messages for the signed-in member so F5/new tabs do not restore them.</summary>
+    [HttpDelete("ai/conversations")]
+    [Authorize(Roles = "MEMBER")]
+    [CenterCapability("ask_ai_assistant")]
+    public async Task<IActionResult> ClearConversations(CancellationToken ct)
+    {
+        var conversationIds = await db.AiConversations
+            .Where(c => c.UserId == CurrentUserId && c.ConversationType == "MemberAssistant")
+            .Select(c => c.Id)
+            .ToListAsync(ct);
+        if (conversationIds.Count == 0) return NoContent();
+
+        await using var tx = await db.Database.BeginTransactionAsync(ct);
+        await db.AiMessages
+            .Where(m => conversationIds.Contains(m.ConversationId))
+            .ExecuteDeleteAsync(ct);
+        await db.AiExerciseRecommendations
+            .Where(r => r.ConversationId != null && conversationIds.Contains(r.ConversationId.Value))
+            .ExecuteUpdateAsync(setters => setters.SetProperty(r => r.ConversationId, (long?)null), ct);
+        await db.AiConversations
+            .Where(c => conversationIds.Contains(c.Id))
+            .ExecuteDeleteAsync(ct);
+        await tx.CommitAsync(ct);
+        return NoContent();
+    }
+
     [HttpPost("ai/recommendations")]
     [Authorize(Roles = "COACH")]
     [CenterCapability("get_ai_recommendation")]
