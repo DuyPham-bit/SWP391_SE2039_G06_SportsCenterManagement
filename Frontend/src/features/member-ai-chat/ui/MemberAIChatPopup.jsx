@@ -35,16 +35,12 @@ export function MemberAIChatPopup() {
 * **Suggest workout & nutrition plans** tailored to your fitness goals.
 * **Guide QR card check-in, scheduling & support**.
 
-*You can ask in any language — I will reply in the language you write in.*
-
 What would you like to explore today?`
       : `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý AI Olympic**. Tôi luôn sẵn sàng hỗ trợ bạn ngay trong popup này:
 * **Tra cứu lịch lớp & ca bơi** hôm nay hoặc trong tuần.
 * **Tư vấn giá gói tập** & quyền lợi hội viên.
 * **Gợi ý bài tập & chế độ dinh dưỡng** theo thể trạng.
 * **Hướng dẫn check-in mã thẻ, đổi lịch & hỗ trợ**.
-
-*Bạn có thể hỏi bằng bất kỳ ngôn ngữ nào — tôi sẽ trả lời bằng ngôn ngữ bạn dùng.*
 
 Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     time: new Date().toLocaleTimeString(en ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })

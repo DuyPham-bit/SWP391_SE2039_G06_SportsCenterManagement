@@ -30,7 +30,6 @@ test('chat requests send the UI language as a hint to the backend', () => {
     const source = read(file);
     assert.match(source, /aiApi\.chat\(text,\s*conversationId,\s*language\)/, file);
     assert.match(source, /detectSpeechLang\(cleanText/, file);
-    assert.match(source, /any language/, file);
   }
 });
 

@@ -23,16 +23,12 @@ export function MemberAIAssistant() {
 * **Standardized sports nutrition** before and after workouts.
 * **Gym rules, facility check-in, and rescheduling policies**.
 
-*You can ask in any language — I will reply in the language you write in.*
-
 What information would you like to explore today?`
       : `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi có thể hỗ trợ bạn tư vấn:
 * **Lịch học và đăng ký các lớp thể thao** (Bơi lội, Boxing, Cầu lông, Gym, Yoga).
 * **Kế hoạch tập luyện theo mục tiêu** (Tăng cơ, Giảm mỡ, Phục hồi thể lực).
 * **Dinh dưỡng thể thao chuẩn hóa** trước và sau giờ tập.
 * **Quy định sử dụng phòng tập, check-in và đổi lịch**.
-
-*Bạn có thể hỏi bằng bất kỳ ngôn ngữ nào — tôi sẽ trả lời bằng ngôn ngữ bạn dùng.*
 
 Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
