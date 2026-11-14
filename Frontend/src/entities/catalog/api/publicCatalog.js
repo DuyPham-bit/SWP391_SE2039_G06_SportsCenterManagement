@@ -14,10 +14,11 @@ export async function getPublicCatalog({ signal } = {}) {
 
 export function catalogFacilities(catalog, editorial = []) {
   if (!catalog) return [];
-  const hours = catalog.center.openingTime && catalog.center.closingTime
+  const hours = catalog.center?.openingTime && catalog.center?.closingTime
     ? `${catalog.center.openingTime.slice(0, 5)} - ${catalog.center.closingTime.slice(0, 5)}` : '';
-  return catalog.rooms.map(room => {
-    const media = editorial.find(item => String(item.id) === String(room.id));
+  const rooms = Array.isArray(catalog.rooms) ? catalog.rooms : [];
+  return rooms.map(room => {
+    const media = (editorial || []).find(item => String(item.id) === String(room.id));
     return {
       id: String(room.id), name: room.name, category: room.roomType || '', categoryName: room.roomType || 'Phòng / sân',
       location: room.locationDescription || '', zone: room.locationDescription || '',
@@ -32,10 +33,13 @@ export function catalogFacilities(catalog, editorial = []) {
 
 export function catalogSports(catalog, editorial = []) {
   if (!catalog) return [];
-  return catalog.sports.map(sport => {
-    const media = editorial.find(item => String(item.id) === String(sport.id));
-    const classes = catalog.classes.filter(item => item.sportId === sport.id);
-    const room = catalog.rooms.find(item => item.id === classes[0]?.roomId);
+  const sports = Array.isArray(catalog.sports) ? catalog.sports : [];
+  const classesList = Array.isArray(catalog.classes) ? catalog.classes : [];
+  const roomsList = Array.isArray(catalog.rooms) ? catalog.rooms : [];
+  return sports.map(sport => {
+    const media = (editorial || []).find(item => String(item.id) === String(sport.id));
+    const classes = classesList.filter(item => item.sportId === sport.id);
+    const room = roomsList.find(item => item.id === classes[0]?.roomId);
     return {
       id: String(sport.id), name: sport.name, icon: 'sports', category: 'Thể thao',
       facilityId: room ? String(room.id) : null, venue: room?.name || '', location: room?.locationDescription || '',

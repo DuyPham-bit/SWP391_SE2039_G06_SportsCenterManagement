@@ -22,7 +22,7 @@ export function LandingFooter({
             </p>
             <div style={{display:'inline-flex',alignItems:'center',gap:'8px',marginTop:'16px',padding:'7px 16px',background:'rgba(129,178,154,0.12)',border:'1px solid rgba(129,178,154,0.3)',borderRadius:'100px',fontSize:'12px',fontWeight:600,color:'#A7F3D0'}}>
               <span className="material-symbols-outlined" style={{fontSize:'16px',color:'#81B29A'}}>sports_score</span>
-              {visibleSports.length} {isEn ? 'disciplines' : 'bộ môn'} · {(landingContent.facilitiesSection?.facilitiesList || facilitiesList).filter(f => f.isVisible !== false).length} {isEn ? 'facilities' : 'khu tập luyện'}
+              {visibleSports?.length || 0} {isEn ? 'disciplines' : 'bộ môn'} · {((landingContent?.facilitiesSection?.facilitiesList || facilitiesList || []).filter(f => f?.isVisible !== false)).length} {isEn ? 'facilities' : 'khu tập luyện'}
             </div>
           </div>
 

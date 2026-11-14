@@ -28,22 +28,23 @@ export function sanitizeFacilityImages(fac) {
 export function getLandingPresentation(content, catalog) {
   // Published CMS entries have their own IDs and relationships. Replacing them
   // with operational IDs drops saved images, details and whole disciplines.
-  const sports = content.coursesSection?.sportsList || [];
-  const facilities = (content.facilitiesSection?.facilitiesList || []).map(sanitizeFacilityImages);
+  const safeContent = content || {};
+  const sports = safeContent.coursesSection?.sportsList || [];
+  const facilities = (safeContent.facilitiesSection?.facilitiesList || []).map(sanitizeFacilityImages);
   return {
-    ...content,
+    ...safeContent,
     heroBanner: {
-      ...content.heroBanner,
-      title: content.heroBanner?.title || catalog?.center.name || '',
-      description: content.heroBanner?.description || catalog?.center.description || ''
+      ...safeContent.heroBanner,
+      title: safeContent.heroBanner?.title || catalog?.center?.name || '',
+      description: safeContent.heroBanner?.description || catalog?.center?.description || ''
     },
     coursesSection: {
-      ...content.coursesSection,
-      sportsList: sports.length || content.coursesSection?.catalogSource === 'custom' ? sports : catalogSports(catalog)
+      ...safeContent.coursesSection,
+      sportsList: sports.length || safeContent.coursesSection?.catalogSource === 'custom' ? sports : catalogSports(catalog)
     },
     facilitiesSection: {
-      ...content.facilitiesSection,
-      facilitiesList: (facilities.length || content.facilitiesSection?.catalogSource === 'custom' ? facilities : catalogFacilities(catalog)).map(sanitizeFacilityImages)
+      ...safeContent.facilitiesSection,
+      facilitiesList: (facilities.length || safeContent.facilitiesSection?.catalogSource === 'custom' ? facilities : catalogFacilities(catalog)).map(sanitizeFacilityImages)
     }
   };
 }

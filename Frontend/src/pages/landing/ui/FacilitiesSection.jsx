@@ -25,6 +25,56 @@ import {
   translateOpenHours
 } from '../../../shared/i18n/i18nHelper.js';
 
+const FALLBACK_CAMPUS_ZONES = [
+  {
+    id: 'zone-a',
+    name: 'Khu A: Bơi Lội, Gym & Fitness',
+    icon: 'pool',
+    items: [
+      'Tầng 1: Bể bơi 4 mùa 25m trong nhà nước ấm',
+      'Tầng 2: Phòng tập Gym & Fitness',
+      'Tầng 3: Khu thay đồ & tắm tráng nóng lạnh'
+    ]
+  },
+  {
+    id: 'zone-b',
+    name: 'Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn',
+    icon: 'sports_basketball',
+    items: [
+      'Tầng 1: Sân bóng rổ tiêu chuẩn phong trào có mái che',
+      'Tầng 2: Cụm 4 sân cầu lông thảm cao su chống trượt',
+      'Tầng 3: Khu bóng bàn trong nhà với 4 bàn tập'
+    ]
+  },
+  {
+    id: 'zone-c',
+    name: 'Khu C: Võ Thuật, Boxing, Yoga & Pilates',
+    icon: 'self_improvement',
+    items: [
+      'Tầng 1: Phòng tập võ thuật & Boxing, thảm và bao cát',
+      'Tầng 3: Phòng tập Yoga & Pilates, khu thảm và máy Reformer',
+      'Tủ đồ cá nhân và khu thay đồ phục vụ học viên'
+    ]
+  },
+  {
+    id: 'zone-d',
+    name: 'Khu Ngoài Trời: Bóng Đá & Pickleball',
+    icon: 'stadium',
+    items: [
+      'Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)',
+      'Cụm 4 sân Pickleball, có lưới riêng và vạch khu vực bếp',
+      'Dàn đèn pha LED chiếu sáng ban đêm rõ nét'
+    ]
+  }
+];
+
+const FALLBACK_SERVICE_AMENITIES = [
+  { id: 'sa1', icon: 'lock', text: 'Tủ cất đồ cá nhân có chìa khóa an toàn, thuận tiện sử dụng' },
+  { id: 'sa2', icon: 'shower', text: 'Phòng thay đồ và khu vực tắm tráng nóng lạnh sạch sẽ' },
+  { id: 'sa3', icon: 'local_cafe', text: 'Quầy căn-tin nước giải khát, nước khoáng phục vụ nhanh' },
+  { id: 'sa4', icon: 'medical_services', text: 'Tủ thuốc y tế và dụng cụ sơ cứu ban đầu luôn sẵn sàng' }
+];
+
 export function FacilitiesSection({ externalFacility = null, onModalClose = null } = {}) {
   const { isAuthenticated, role } = useAuth();
   const { language } = useLanguage();
@@ -35,9 +85,9 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const { catalog, loading: catalogLoading, error: catalogError } = usePublicCatalog();
   const rawLandingContent = getLandingPresentation(editorialContent, catalog);
   const landingContent = useMemo(() => isEn ? translateLandingContent(rawLandingContent, true) : rawLandingContent, [rawLandingContent, isEn]);
-  const membershipBanner = getMembershipBanner(landingContent.ctaAndFooter, isEn);
-  const contactPhone = landingContent.ctaAndFooter?.contactPhone || catalog?.center.phone;
-  const contactEmail = landingContent.ctaAndFooter?.contactEmail || catalog?.center.email;
+  const membershipBanner = getMembershipBanner(landingContent?.ctaAndFooter, isEn);
+  const contactPhone = landingContent?.ctaAndFooter?.contactPhone || catalog?.center?.phone;
+  const contactEmail = landingContent?.ctaAndFooter?.contactEmail || catalog?.center?.email;
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFacility, setSelectedFacility] = useState(null);
@@ -162,7 +212,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     });
   }, [catalog, selectedFacility]);
 
-  const facilitiesList = landingContent.facilitiesSection.facilitiesList;
+  const facilitiesList = landingContent?.facilitiesSection?.facilitiesList || [];
   // Lọc chỉ những cụm sân có isVisible !== false (manager chủ động ẩn/hiện)
   const visibleFacilities = useMemo(() => {
     return facilitiesList.filter(f => f.isVisible !== false);
@@ -555,7 +605,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">3d_rotation</span>
-                  <span className="hidden xs:inline">{isEn ? '3D Model' : 'Mô Hình 3D'}</span>
+                  <span className="hidden sm:inline">{isEn ? '3D Model' : 'Mô Hình 3D'}</span>
                 </button>
                 <button
                   type="button"
@@ -567,7 +617,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">grid_view</span>
-                  <span className="hidden xs:inline">{isEn ? '2D Map & Info' : 'Sơ Đồ 2D'}</span>
+                  <span className="hidden sm:inline">{isEn ? '2D Map & Info' : 'Sơ Đồ 2D'}</span>
                 </button>
               </div>
 
@@ -679,7 +729,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
 
                   {/* Added Service Amenities */}
                   <div className="space-y-2.5">
-                    {(landingContent.zonesLayout?.serviceAmenities || []).map((amenity, idx) => (
+                    {((landingContent?.zonesLayout?.serviceAmenities?.length ? landingContent.zonesLayout.serviceAmenities : FALLBACK_SERVICE_AMENITIES) || []).map((amenity, idx) => (
                       <div key={amenity.id || idx} className="tiya-campus-amenity-item">
                         <span className="material-symbols-outlined">{amenity.icon}</span>
                         <span>{isEn ? translateAmenity(amenity.text, true) : amenity.text}</span>
@@ -701,7 +751,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
 
                 {/* 4 Zones Map Columns */}
                 <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {(landingContent.zonesLayout?.zones || []).map((zone, idx) => (
+                  {((landingContent?.zonesLayout?.zones?.length ? landingContent.zonesLayout.zones : FALLBACK_CAMPUS_ZONES) || []).map((zone, idx) => (
                     <div
                       key={zone.id || idx}
                       onClick={() => handleZoneSelect(zone.id === 'zone-a' ? 'khuA' : zone.id === 'zone-b' ? 'khuB' : zone.id === 'zone-c' ? 'khuC' : 'outdoor')}

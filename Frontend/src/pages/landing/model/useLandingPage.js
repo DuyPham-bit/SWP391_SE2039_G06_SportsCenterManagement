@@ -17,9 +17,9 @@ export function useLandingPage() {
   const { catalog, loading: catalogLoading, error: catalogError } = usePublicCatalog();
   const rawLandingContent = getLandingPresentation(editorialContent, catalog);
   const landingContent = useMemo(() => isEn ? translateLandingContent(rawLandingContent, true) : rawLandingContent, [rawLandingContent, isEn]);
-  const facilitiesList = landingContent.facilitiesSection.facilitiesList;
-  const catalogSportList = landingContent.coursesSection.sportsList;
-  const hours = landingContent.ctaAndFooter?.hoursWeekdays || (catalog?.center.openingTime && catalog?.center.closingTime ? catalog.center.openingTime.slice(0, 5) + ' - ' + catalog.center.closingTime.slice(0, 5) : 'Chưa cập nhật');
+  const facilitiesList = landingContent?.facilitiesSection?.facilitiesList || [];
+  const catalogSportList = landingContent?.coursesSection?.sportsList || [];
+  const hours = landingContent?.ctaAndFooter?.hoursWeekdays || (catalog?.center?.openingTime && catalog?.center?.closingTime ? catalog.center.openingTime.slice(0, 5) + ' - ' + catalog.center.closingTime.slice(0, 5) : 'Chưa cập nhật');
   const zaloPhone = normalizeZaloPhone(landingContent.ctaAndFooter?.contactZaloPhone);
   const socialContacts = [
     { label: `Zalo: ${zaloPhone}`, icon: 'chat', url: zaloPhone ? `https://zalo.me/${zaloPhone}` : '' },

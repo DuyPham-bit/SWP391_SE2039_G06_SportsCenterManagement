@@ -18,9 +18,9 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
         ref={videoRef}
         autoPlay loop muted playsInline
         className="hero-video-bg"
-        poster={landingContent.heroBanner?.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
+        poster={landingContent?.heroBanner?.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
       >
-        <source src={landingContent.heroBanner?.videoUrl || './hero-video.mp4'} type="video/mp4" />
+        <source src={landingContent?.heroBanner?.videoUrl || './hero-video.mp4'} type="video/mp4" />
       </video>
       <div className="section-overlay" />
 
@@ -29,34 +29,34 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',maxWidth:'900px',margin:'0 auto'}}>
           {/* Animated Headline with Slide-up & Typewriter */}
           <TypewriterHeroHeading
-            heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
-            heroTitle={isEn && hasVietnameseChars(landingContent.heroBanner?.title) ? '' : landingContent.heroBanner?.title}
+            heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent?.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
+            heroTitle={isEn && hasVietnameseChars(landingContent?.heroBanner?.title) ? '' : landingContent?.heroBanner?.title}
           />
 
           {/* Subtext */}
           <p className="hero-desc scms-hero-desc mt-5">
             {isEn
-              ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList.length} sports facilities and ${visibleSports.length} disciplines.`
-              : (landingContent.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList.length} cụm sân, phòng tập phục vụ ${visibleSports.length} bộ môn thể thao.`)}
+              ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList?.length || 0} sports facilities and ${visibleSports?.length || 0} disciplines.`
+              : (landingContent?.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList?.length || 0} cụm sân, phòng tập phục vụ ${visibleSports?.length || 0} bộ môn thể thao.`)}
           </p>
 
           {/* CTA Buttons */}
           <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center'}}>
-            <a href={safeHref(landingContent.heroBanner?.primaryCtaLink) || '#/register'}
+            <a href={safeHref(landingContent?.heroBanner?.primaryCtaLink) || '#/register'}
               className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
-              {isEn ? 'REGISTER NEW MEMBER' : (landingContent.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
+              {isEn ? 'REGISTER NEW MEMBER' : (landingContent?.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>arrow_forward</span>
             </a>
-            <a href={safeHref(landingContent.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
+            <a href={safeHref(landingContent?.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
               className="link">
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
-              {isEn ? `EXPLORE ${visibleSports.length} DISCIPLINES` : (landingContent.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports.length} MÔN HỌC`)}
+              {isEn ? `EXPLORE ${visibleSports?.length || 0} DISCIPLINES` : (landingContent?.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports?.length || 0} MÔN HỌC`)}
             </a>
           </div>
 
           {/* Metrics Strip */}
           <div className="tiya-metrics-strip" style={{width:'100%'}}>
-            {(landingContent.heroBanner?.metrics || []).map((metric, idx) => (
+            {(landingContent?.heroBanner?.metrics || []).map((metric, idx) => (
               <div key={metric.id || idx} className="tiya-metrics-item">
                 <span className="tiya-metrics-value">{metric.value}</span>
                 <span className="tiya-metrics-label">{metric.label}</span>

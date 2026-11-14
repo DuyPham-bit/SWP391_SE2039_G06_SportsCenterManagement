@@ -30,13 +30,13 @@ export function CoursesSection({
         <div className="tiya-reveal courses-section-header">
           <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'6px 16px',background:'rgba(129,178,154,0.15)',border:'1px solid rgba(129,178,154,0.4)',borderRadius:'100px',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
             <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--primary-color)',animation:'tiyaPulse 2s infinite'}} />
-            {isEn ? 'PROFESSIONAL TRAINING PROGRAMS' : (landingContent.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp')}
+            {isEn ? 'PROFESSIONAL TRAINING PROGRAMS' : (landingContent?.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp')}
           </div>
           <h2 className="courses-title">
-            <span>{visibleSports.length} {isEn ? 'Sports' : 'Bộ Môn'}</span> {isEn ? 'Disciplines' : (landingContent.coursesSection?.title || 'Thể Thao').replace(/^(Khóa Học|Bộ môn)\s*/i, '')}
+            <span>{visibleSports?.length || 0} {isEn ? 'Sports' : 'Bộ Môn'}</span> {isEn ? 'Disciplines' : (landingContent?.coursesSection?.title || 'Thể Thao').replace(/^(Khóa Học|Bộ môn)\s*/i, '')}
           </h2>
           <p className="courses-desc">
-            {isEn ? 'Curated athletic courses taught by certified instructors with modern facilities and structured curricula.' : (landingContent.coursesSection?.description || 'Các khóa đào tạo thể thao chuyên sâu, huấn luyện viên đạt chuẩn quốc gia.')}
+            {isEn ? 'Curated athletic courses taught by certified instructors with modern facilities and structured curricula.' : (landingContent?.coursesSection?.description || 'Các khóa đào tạo thể thao chuyên sâu, huấn luyện viên đạt chuẩn quốc gia.')}
           </p>
           <p className="text-sm text-brand-navy-600 mt-3">
             {isEn ? 'Choose a package and complete payment before booking classes. Class access depends on your package benefits and available places.' : 'Đăng ký và thanh toán gói tập trước khi đặt ca học. Quyền tham gia lớp phụ thuộc quyền lợi gói và số chỗ còn trống.'}
@@ -44,7 +44,7 @@ export function CoursesSection({
 
           {/* Trust Badges */}
           <div style={{display:'flex',flexWrap:'wrap',gap:'10px',justifyContent:'center',marginTop:'12px'}}>
-            {(landingContent.coursesSection?.trustBadges || []).map((tb, idx) => (
+            {(landingContent?.coursesSection?.trustBadges || []).map((tb, idx) => (
               <span key={tb.id || idx} style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 14px',borderRadius:'100px',background:'var(--white-color)',border:'1px solid rgba(0,0,0,0.06)',fontSize:'12px',fontWeight:600,color:'var(--p-color)',boxShadow:'0 2px 6px rgba(0,0,0,0.04)'}}>
                 <span className="material-symbols-outlined" style={{fontSize:'16px',color:'var(--primary-color)'}}>{tb.icon}</span>
                 {tb.text}

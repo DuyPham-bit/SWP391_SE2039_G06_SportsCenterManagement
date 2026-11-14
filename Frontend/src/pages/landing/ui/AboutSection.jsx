@@ -20,11 +20,11 @@ export function AboutSection({ catalog, facilitiesList, isEn, landingContent, vi
             <p className="about-desc">
               {isEn
                 ? (catalog?.center?.description || 'Modern athletic center equipped with international standard courts, certified coaching staff, and comprehensive sports training ecosystems.')
-                : (landingContent.whyUs?.description || 'Hệ thống cơ sở vật chất chuẩn quốc tế, huấn luyện viên tận tâm và phương pháp đào tạo hiện đại giúp bạn phát triển toàn diện.')}
+                : (landingContent?.whyUs?.description || 'Hệ thống cơ sở vật chất chuẩn quốc tế, huấn luyện viên tận tâm và phương pháp đào tạo hiện đại giúp bạn phát triển toàn diện.')}
             </p>
 
             <div style={{width:'100%',marginTop:'20px'}}>
-              {(landingContent.whyUs?.features?.length ? landingContent.whyUs.features : [
+              {(landingContent?.whyUs?.features?.length ? landingContent.whyUs.features : [
                 { id: 'f1', icon: 'verified', title: isEn ? 'Olympic Standard Facilities' : 'Tiêu Chuẩn Thi Đấu Olympic', description: isEn ? 'High-grade synthetic courts, anti-glare illumination, and international competition specifications.' : 'Mặt sàn cao cấp, ánh sáng chống chói và trang thiết bị đạt chuẩn thi đấu quốc tế.' },
                 { id: 'f2', icon: 'military_tech', title: isEn ? 'Certified Coaching Staff' : 'Đội Ngũ HLV Chuyên Nghiệp', description: isEn ? 'Experienced coaches holding national and international athletic certificates.' : 'Giàu kinh nghiệm thi đấu thực chiến, sở hữu chứng chỉ huấn luyện chuyên môn.' },
                 { id: 'f3', icon: 'schedule', title: isEn ? 'Smart & Flexible Booking' : 'Thời Gian Linh Hoạt & Đặt Lịch Dễ Dàng', description: isEn ? 'Easily reserve courts, sign up for classes, and manage schedules through our portal.' : 'Chủ động sắp xếp thời gian biểu rèn luyện, đăng ký trực tuyến nhanh chóng qua hệ thống.' }
@@ -61,9 +61,9 @@ export function AboutSection({ catalog, facilitiesList, isEn, landingContent, vi
           {/* Right Column: 4 Stat Cards */}
           <div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px'}}>
-              {(landingContent.whyUs?.stats?.length ? landingContent.whyUs.stats : [
-                { id: 'rooms', number: catalog?.rooms?.length || facilitiesList.length || 10, suffix: '', title: isEn ? 'ROOMS & COURTS' : 'CỤM SÂN & PHÒNG TẬP', subtitle: isEn ? 'Olympic standard' : 'Tiêu chuẩn thi đấu chuyên nghiệp', icon: 'stadium' },
-                { id: 'sports', number: visibleSports.length || 10, suffix: '', title: isEn ? 'SPORTS DISCIPLINES' : 'MÔN THỂ THAO', subtitle: isEn ? 'Diverse options for all ages' : 'Đa dạng lựa chọn cho mọi lứa tuổi', icon: 'sports' },
+              {(landingContent?.whyUs?.stats?.length ? landingContent.whyUs.stats : [
+                { id: 'rooms', number: catalog?.rooms?.length || facilitiesList?.length || 10, suffix: '', title: isEn ? 'ROOMS & COURTS' : 'CỤM SÂN & PHÒNG TẬP', subtitle: isEn ? 'Olympic standard' : 'Tiêu chuẩn thi đấu chuyên nghiệp', icon: 'stadium' },
+                { id: 'sports', number: visibleSports?.length || 10, suffix: '', title: isEn ? 'SPORTS DISCIPLINES' : 'MÔN THỂ THAO', subtitle: isEn ? 'Diverse options for all ages' : 'Đa dạng lựa chọn cho mọi lứa tuổi', icon: 'sports' },
                 { id: 'members', number: 400, suffix: '+', title: isEn ? 'ACTIVE ATHLETES' : 'HỌC VIÊN', subtitle: isEn ? 'Daily regular training' : 'Thường xuyên rèn luyện mỗi ngày', icon: 'groups' },
                 { id: 'area', number: 13000, suffix: ' m²', formatThousands: true, title: isEn ? 'TOTAL AREA' : 'DIỆN TÍCH', subtitle: isEn ? 'Modern integrated sports complex' : 'Tổ hợp liên hợp khép kín hiện đại', icon: 'domain' }
               ]).map((st, idx) => {

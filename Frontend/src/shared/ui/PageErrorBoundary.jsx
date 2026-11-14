@@ -48,6 +48,10 @@ export class PageErrorBoundary extends React.Component {
             type="button"
             onClick={() => {
               if (typeof window !== 'undefined') {
+                try {
+                  const reloadKey = 'scms_chunk_reload_' + (window.location.hash || '#/');
+                  window.sessionStorage.removeItem(reloadKey);
+                } catch {}
                 window.location.reload();
               } else {
                 this.retry();
@@ -62,6 +66,10 @@ export class PageErrorBoundary extends React.Component {
             type="button"
             onClick={() => {
               if (typeof window !== 'undefined') {
+                try {
+                  const reloadKey = 'scms_chunk_reload_' + (window.location.hash || '#/');
+                  window.sessionStorage.removeItem(reloadKey);
+                } catch {}
                 if (window.location.hash !== '#/' && window.location.hash !== '') {
                   window.location.hash = '#/';
                 } else {
