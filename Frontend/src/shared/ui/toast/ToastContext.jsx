@@ -195,12 +195,12 @@ export function ToastProvider({ children }) {
     <ToastContext.Provider value={{ showToast, showSuccess, showError, showWarning, showInfo, confirm, removeToast }}>
       {children}
 
-      {/* Sleek Floating Spatial Pill Toast (Top-Center compact pill) */}
+      {/* Sleek Floating Spatial Pill Toast (Top-Center, mobile-safe width) */}
       <div
         role="region"
         aria-live="polite"
         aria-label="Thông báo hệ thống"
-        className="fixed top-5 left-1/2 -translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none w-fit max-w-[92vw] sm:max-w-lg px-3"
+        className="fixed inset-x-3 top-[max(0.75rem,env(safe-area-inset-top))] sm:inset-x-auto sm:top-5 sm:left-1/2 sm:-translate-x-1/2 z-[9999] flex flex-col items-center gap-2 pointer-events-none sm:w-full sm:max-w-lg"
       >
         {toasts.map(t => {
           const cfg = getToastConfig(t.type);
@@ -208,7 +208,7 @@ export function ToastProvider({ children }) {
             <div
               key={t.id}
               role={t.type === 'error' ? 'alert' : 'status'}
-              className={`pointer-events-auto relative flex items-center gap-2.5 px-3.5 py-2 sm:px-4 sm:py-2 rounded-full bg-white/95 dark:bg-brand-navy-950/95 backdrop-blur-xl border ${cfg.cardBorder} ${cfg.cardShadow} shadow-lg overflow-hidden animate-toast-3d ring-1 ring-brand-navy-900/5 dark:ring-white/10 group transition-all duration-300 hover:scale-[1.01]`}
+              className={`pointer-events-auto relative flex items-center gap-2.5 w-fit max-w-full px-3.5 py-2.5 sm:px-4 sm:py-2 rounded-2xl bg-white/95 dark:bg-brand-navy-950/95 backdrop-blur-xl border ${cfg.cardBorder} ${cfg.cardShadow} shadow-lg overflow-hidden animate-toast-3d ring-1 ring-brand-navy-900/5 dark:ring-white/10 group transition-all duration-300 hover:scale-[1.01]`}
             >
               {/* 3D Top Specular Light Beam (Refraction Line) */}
               <div className="absolute inset-x-6 top-0 h-[1px] bg-gradient-to-r from-transparent via-white/80 dark:via-white/30 to-transparent pointer-events-none" />
@@ -221,7 +221,7 @@ export function ToastProvider({ children }) {
               </div>
 
               {/* Concise Message Text */}
-              <p className="text-[13px] font-medium text-ink leading-snug break-words">
+              <p className="flex-1 min-w-0 text-[13px] font-medium text-ink leading-snug break-words">
                 {t.message}
               </p>
 
@@ -229,7 +229,7 @@ export function ToastProvider({ children }) {
               <button
                 onClick={() => removeToast(t.id)}
                 aria-label="Đóng thông báo"
-                className="w-5 h-5 rounded-full flex items-center justify-center text-brand-navy-400 hover:text-ink hover:bg-brand-navy-100 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-0.5"
+                className="w-6 h-6 rounded-full flex items-center justify-center text-brand-navy-400 hover:text-ink hover:bg-brand-navy-100 dark:hover:bg-white/10 transition-colors cursor-pointer shrink-0 ml-0.5"
               >
                 <span className="material-symbols-outlined text-[14px]">close</span>
               </button>

@@ -106,6 +106,15 @@ async function loginAndLoad(path, body) {
     return { user: await loadCurrentUser(session, version) };
   } catch (error) {
     if (version === getAuthVersion()) clearApiSession();
+    if (error?.status === 401) {
+      const cookieError = new Error(
+        'Không thể duy trì phiên đăng nhập trên trình duyệt này. Vui lòng bật cookie và thử lại.'
+      );
+      cookieError.status = 401;
+      cookieError.code = 'AUTH_COOKIE_BLOCKED';
+      cookieError.cause = error;
+      throw cookieError;
+    }
     throw error;
   }
 }
