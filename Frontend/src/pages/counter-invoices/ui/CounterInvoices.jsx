@@ -543,7 +543,8 @@ export function CounterInvoices() {
                 <span className="material-symbols-outlined text-[16px]">download</span>
                 <span>{isEn ? 'Export CSV' : 'Xuất CSV'}</span>
               </button>
-              {!isManagerOrAdmin && ['Issued', 'PartiallyPaid'].includes(detail.status) && !(detail.payments || []).some(p => p.status === 'Succeeded') && (
+              {/* Void is Manager/Admin only (backend: counter-void requires MANAGER,ADMIN). */}
+              {isManagerOrAdmin && ['Issued', 'PartiallyPaid'].includes(detail.status) && !(detail.payments || []).some(p => p.status === 'Succeeded') && (
                 <button
                   className="px-4 py-2 border border-brand-danger-300 dark:border-brand-danger-800 bg-brand-danger-50 dark:bg-brand-danger-950/40 text-brand-danger-700 dark:text-brand-danger-300 hover:bg-brand-danger-100 dark:hover:bg-brand-danger-900/40 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer flex items-center gap-1.5 shadow-2xs"
                   disabled={busy}
@@ -620,7 +621,8 @@ export function CounterInvoices() {
               <p className="text-xs text-brand-navy-400 dark:text-brand-navy-500">{isEn ? 'No payment transactions recorded yet.' : 'Chưa ghi nhận thanh toán.'}</p>
             ) : (
               detail.payments.map(p => {
-                const canReconcile = !isManagerOrAdmin && ['Pending', 'ReviewRequired', 'Failed'].includes(p.status);
+                // Reconcile is Manager/Admin only (backend: {gatewayReference}/reconcile requires MANAGER,ADMIN).
+                const canReconcile = isManagerOrAdmin && ['Pending', 'ReviewRequired', 'Failed'].includes(p.status);
                 const reservedRefundAmount = (p.refunds || [])
                   .filter(r => ['Pending', 'Approved', 'Succeeded'].includes(r.status))
                   .reduce((acc, cur) => acc + cur.amount, 0);

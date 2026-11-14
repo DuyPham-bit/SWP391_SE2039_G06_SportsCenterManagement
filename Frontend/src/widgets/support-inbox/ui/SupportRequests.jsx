@@ -170,7 +170,12 @@ export function SupportRequests({ allowCreate = true, showHeader = true }) {
 
   const filteredItems = data?.items || [];
 
+  // KPI cards use server-side counts over the whole center, not the current filtered page.
   const stats = useMemo(() => {
+    const counts = data?.statusCounts;
+    if (counts) {
+      return { total: counts.total, open: counts.open, inProgress: counts.inProgress, resolved: counts.resolved };
+    }
     const items = data?.items || [];
     return {
       total: data?.totalCount || 0,

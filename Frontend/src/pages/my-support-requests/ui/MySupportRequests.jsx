@@ -140,7 +140,12 @@ export function MySupportRequests() {
   }, [data?.items, searchKeyword]);
 
   // Stats calculation
+  // KPI cards use server-side counts over all of the user's requests, not the current filtered page.
   const stats = useMemo(() => {
+    const counts = data?.statusCounts;
+    if (counts) {
+      return { total: counts.total, openCount: counts.open, inProgressCount: counts.inProgress, resolvedCount: counts.resolved };
+    }
     const total = data?.totalCount ?? 0;
     const items = data?.items ?? [];
     const openCount = items.filter(i => i.status === 'Open').length;
@@ -722,7 +727,12 @@ export function MySupportRequests() {
               ) : (
                 <div className="space-y-3">
                   {detail.messages.map(m => {
-                    const isStaff = !m.senderName || m.senderName.toLowerCase().includes('admin') || m.senderName.toLowerCase().includes('manager') || m.senderName.toLowerCase().includes('reception');
+                    // senderName is now a real full name, so decide by role/sender id instead of username text.
+                    const isStaff = m.senderRole
+                      ? !['MEMBER', 'COACH'].includes(m.senderRole)
+                      : m.senderId
+                        ? String(m.senderId) !== String(detail.request.requesterId)
+                        : (!m.senderName || /admin|manager|reception/i.test(m.senderName));
 
                     return (
                       <div

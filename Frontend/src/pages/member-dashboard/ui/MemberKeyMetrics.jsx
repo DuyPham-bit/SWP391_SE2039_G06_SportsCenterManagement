@@ -25,7 +25,9 @@ export function MemberKeyMetrics({ currentUser, errors, isEn, latest, membership
           </div>
           <p className="mt-1.5 text-[11.5px] text-brand-navy-600 dark:text-brand-navy-400 truncate">
             {upcoming.length > 0
-              ? (isEn ? `Next: ${upcoming[0].timeSlot} (${upcoming[0].bookingDate})` : `Ca gần nhất: ${upcoming[0].timeSlot}`)
+              ? (isEn
+                  ? `Next: ${upcoming[0].timeSlot} (${formatMemberDate(upcoming[0].bookingDate, isEn)})`
+                  : `Ca gần nhất: ${upcoming[0].timeSlot} (${formatMemberDate(upcoming[0].bookingDate)})`)
               : (isEn ? 'No workouts booked yet' : 'Chưa có buổi học mới')}
           </p>
         </div>
@@ -57,7 +59,7 @@ export function MemberKeyMetrics({ currentUser, errors, isEn, latest, membership
             </span>
             {membership.active && (
               <span className="text-xs font-bold text-brand-navy-500 dark:text-brand-navy-400">
-                ({membership.daysLeft} {isEn ? 'days' : 'ngày'})
+                ({membership.daysLeft}{membership.totalDays ? `/${membership.totalDays}` : ''} {isEn ? 'days' : 'ngày'})
               </span>
             )}
           </div>

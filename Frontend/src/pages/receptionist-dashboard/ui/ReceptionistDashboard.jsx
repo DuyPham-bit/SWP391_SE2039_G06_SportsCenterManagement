@@ -3,6 +3,7 @@ import { receptionApi } from '../../../entities/member/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useAuth } from '../../../entities/session/index.js';
+import { hasCapability } from '../../../entities/permission/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { getTimeGreeting } from '../../../shared/lib/greeting.js';
 import { playScannerBeep } from '../lib/scannerBeep.js';
@@ -10,10 +11,14 @@ import { playScannerBeep } from '../lib/scannerBeep.js';
 export function ReceptionistDashboard() {
   const { language } = useLanguage();
   const isEn = language === 'en';
-  const { currentUser } = useAuth();
+  const { currentUser, role } = useAuth();
+  // Same capability that guards #/receptionist/check-in and the backend check-in endpoints.
+  const canCheckIn = hasCapability(role, 'checkin_member');
   const { showSuccess, showError, showInfo } = useToast();
 
   const [history, setHistory] = useState([]);
+  // Exact daily counts from /checkins/summary; the history list is capped at 100 rows server-side.
+  const [summary, setSummary] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -24,10 +29,22 @@ export function ReceptionistDashboard() {
   const quickInputRef = useRef(null);
 
   const loadData = async (silent = false) => {
+    if (!canCheckIn) {
+      // Check-in history/summary endpoints require the same capability; skip them instead of a 403 toast.
+      setHistory([]);
+      setSummary(null);
+      setLoading(false);
+      setIsRefreshing(false);
+      return;
+    }
     if (!silent) setLoading(true);
     try {
-      const data = await receptionApi.getCheckInHistory();
+      const [data, todaySummary] = await Promise.all([
+        receptionApi.getCheckInHistory(),
+        receptionApi.getCheckInSummary().catch(() => null)
+      ]);
       setHistory(Array.isArray(data) ? data : []);
+      setSummary(todaySummary);
     } catch (e) {
       console.error(e);
       if (!silent) showError(isEn ? 'Failed to fetch check-in history.' : 'Không thể tải lịch sử check-in.');
@@ -39,7 +56,7 @@ export function ReceptionistDashboard() {
 
   useEffect(() => {
     loadData();
-  }, []);
+  }, [canCheckIn]);
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
@@ -50,7 +67,7 @@ export function ReceptionistDashboard() {
   const handleQuickCheckIn = async (e) => {
     e.preventDefault();
     const term = quickInput.trim();
-    if (!term) return;
+    if (!term || !canCheckIn) return;
 
     setCheckingIn(true);
     setLastCheckInResult(null);
@@ -84,6 +101,8 @@ export function ReceptionistDashboard() {
     }
   };
 
+  const totalToday = Number.isFinite(summary?.totalCount) ? summary.totalCount : history.length;
+
   if (loading) {
     return (
       <div className="py-24 flex flex-col items-center justify-center">
@@ -94,7 +113,16 @@ export function ReceptionistDashboard() {
 
   const greeting = getTimeGreeting(isEn);
   const staffName = currentUser?.fullName || currentUser?.name || (isEn ? 'Front Desk Officer' : 'Nhân viên Lễ tân');
-  const staffCode = currentUser?.staffCode || 'DEV-RECEPTION';
+  const staffCode = currentUser?.staffCode || (isEn ? 'Not assigned' : 'Chưa cấp');
+  const centerName = currentUser?.centerName || (isEn ? 'Unassigned center' : 'Chưa gán cơ sở');
+  // No staff roster exists yet, so the shift is derived from Vietnam local time
+  // (same cut-offs as the class schedule screens: <12h morning, <17h afternoon, else evening).
+  const vnHour = Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', hourCycle: 'h23' }).format(new Date()));
+  const shiftLabel = vnHour < 12
+    ? (isEn ? 'MORNING SHIFT' : 'CA SÁNG')
+    : vnHour < 17
+      ? (isEn ? 'AFTERNOON SHIFT' : 'CA CHIỀU')
+      : (isEn ? 'EVENING SHIFT' : 'CA TỐI');
 
   return (
     <div className="w-full space-y-6 pb-16 font-lexend max-w-[1600px] mx-auto animate-fade-slide-up transition-colors">
@@ -140,11 +168,11 @@ export function ReceptionistDashboard() {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="px-3 py-1 rounded-full bg-white/90 dark:bg-brand-navy-900/90 backdrop-blur-md text-brand-sage-900 dark:text-brand-sage-300 border border-white/80 dark:border-white/20 text-xs font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
                   <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse" />
-                  {isEn ? 'FRONT DESK CONSOLE • SHIFT 01' : 'QUẦY LỄ TÂN & ĐÓN TIẾP KHÁCH • CA 01'}
+                  {isEn ? `FRONT DESK CONSOLE • ${shiftLabel}` : `QUẦY LỄ TÂN & ĐÓN TIẾP KHÁCH • ${shiftLabel}`}
                 </span>
                 <span className="px-3 py-1 rounded-full bg-white/20 text-white border border-white/40 backdrop-blur-md text-xs font-bold flex items-center gap-1.5 shadow-xs">
                   <span className="material-symbols-outlined text-[14px] text-brand-sand-200">location_on</span>
-                  <span>{isEn ? 'Olympic Center HCM' : 'Cơ sở TP.HCM (Olympic Arena)'}</span>
+                  <span>{centerName}</span>
                 </span>
               </div>
 
@@ -228,11 +256,16 @@ export function ReceptionistDashboard() {
             </div>
             <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="text-3xl font-black text-brand-navy-900 dark:text-white tabular-nums">
-                {history.length}
+                {totalToday}
               </span>
               <span className="text-xs font-semibold text-brand-navy-500 dark:text-brand-navy-400">
-                {isEn ? 'members admitted' : 'lượt quét thành công'}
+                {isEn ? 'successful scans' : 'lượt quét thành công'}
               </span>
+              {summary && (
+                <span className="text-[11px] font-semibold text-brand-navy-400">
+                  · {summary.uniqueMembers} {isEn ? 'unique members' : 'hội viên'}
+                </span>
+              )}
             </div>
             <p className="mt-1.5 text-[11.5px] text-brand-sage-700 dark:text-brand-sage-400 flex items-center gap-1 truncate">
               <span className="w-1.5 h-1.5 rounded-full bg-brand-sage-500 animate-pulse" />
@@ -275,7 +308,10 @@ export function ReceptionistDashboard() {
           </div>
           <div className="mt-4 pt-2.5 border-t border-brand-navy-100 dark:border-brand-navy-800 flex items-center justify-between text-xs">
             <span className="text-[11px] text-brand-navy-400">
-              {isEn ? 'Validity Rate' : 'Tỷ lệ hợp lệ: 100%'}
+              {/* Failed scans are not persisted, so a "validity rate" cannot be computed honestly; show real unique visitors instead. */}
+              {summary
+                ? (isEn ? `Unique members today: ${summary.uniqueMembers}` : `Hội viên đã vào hôm nay: ${summary.uniqueMembers}`)
+                : (isEn ? 'Unique members today: —' : 'Hội viên đã vào hôm nay: —')}
             </span>
             <a href="#/receptionist/check-in" className="text-brand-teal-700 dark:text-brand-teal-400 font-extrabold hover:underline flex items-center gap-0.5">
               <span>{isEn ? 'Gate details' : 'Chi tiết cổng'}</span>
@@ -297,7 +333,7 @@ export function ReceptionistDashboard() {
             </div>
             <div className="mt-3 flex flex-wrap items-baseline gap-x-2 gap-y-1">
               <span className="text-xl 2xl:text-2xl font-black text-brand-navy-900 dark:text-white tracking-tight whitespace-nowrap">
-                {isEn ? 'SẴN SÀNG' : 'SẴN SÀNG'}
+                {isEn ? 'READY' : 'SẴN SÀNG'}
               </span>
               <span className="text-xs font-semibold text-brand-navy-500 dark:text-brand-navy-400">
                 {isEn ? 'VNPay / POS / Cash' : 'Tiền mặt & VNPay'}
@@ -519,11 +555,17 @@ export function ReceptionistDashboard() {
                 </div>
               </div>
               <span className="px-2.5 py-1 rounded-full bg-brand-navy-100 dark:bg-brand-navy-800 text-brand-navy-700 dark:text-brand-navy-300 font-mono text-xs font-bold">
-                {history.length} {isEn ? 'scans' : 'lượt'}
+                {totalToday} {isEn ? 'scans' : 'lượt'}
               </span>
             </div>
 
             {/* Instant Front Desk Fast-CheckIn Bar */}
+            {!canCheckIn ? (
+              <div className="p-3 rounded-2xl bg-brand-navy-50 dark:bg-brand-navy-800/60 border border-brand-navy-200 dark:border-brand-navy-700 text-xs text-brand-navy-600 dark:text-brand-navy-300 flex items-center gap-2">
+                <span className="material-symbols-outlined text-[18px]">lock</span>
+                <span>{isEn ? 'Your account is not permitted to check members in.' : 'Tài khoản của bạn chưa được cấp quyền check-in hội viên.'}</span>
+              </div>
+            ) : (
             <form onSubmit={handleQuickCheckIn} className="space-y-2">
               <label htmlFor="front-desk-quick-checkin" className="block text-xs font-bold text-brand-navy-700 dark:text-brand-navy-300">
                 {isEn ? '⚡ Instant Counter Verification (Barcode / ID / Phone)' : '⚡ Xác Thực Nhanh Tại Bàn (Quét mã vạch / Mã thẻ / SĐT)'}
@@ -571,6 +613,7 @@ export function ReceptionistDashboard() {
                 </button>
               </div>
             </form>
+            )}
 
             {/* Instant Feedback Callout if verified */}
             {lastCheckInResult && (

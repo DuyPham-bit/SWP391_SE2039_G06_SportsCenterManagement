@@ -37,9 +37,8 @@ export function MemberDashboard() {
   const reminders = getMemberReminders(currentUser, data.bookings, new Date(), isEn);
   const greeting = getTimeGreeting(isEn);
 
-  // Validity percentage calculation for visual progress meter
-  const daysLeftNum = membership.daysLeft || 0;
-  const validityPercent = Math.min(100, Math.max(5, Math.round((daysLeftNum / 365) * 100)));
+  // Remaining share of the current package (based on its real start/expiry dates)
+  const validityPercent = membership.remainingPercent;
 
   return (
     <div className="w-full space-y-6 pb-16 font-lexend max-w-[1600px] mx-auto animate-fade-slide-up transition-colors">

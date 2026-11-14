@@ -69,7 +69,7 @@ export function DigitalPassPanel({
               className="font-mono text-base font-black tracking-wider text-brand-sand-300 hover:text-brand-sand-200 flex items-center gap-1 mt-0.5 group/btn cursor-pointer transition"
               title={isEn ? 'Click to copy' : 'Bấm để chép mã'}
             >
-              <span>{currentUser?.memberCode || 'MEM-00000'}</span>
+              <span>{currentUser?.memberCode || (isEn ? 'Unassigned' : 'Chưa cấp')}</span>
               <span className="material-symbols-outlined text-[14px] opacity-70 group-hover/btn:opacity-100">
                 content_copy
               </span>

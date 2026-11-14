@@ -15,14 +15,15 @@ export function normalizeVietnamesePhone(value) {
   return /^0[35789][0-9]{8}$/.test(phone) ? phone : null;
 }
 
-function validate(form) {
+function validate(form, isEn) {
+  const t = (en, vi) => (isEn ? en : vi);
   const errors = {};
-  if (!form.fullName.trim()) errors.fullName = 'Vui lòng nhập họ và tên.';
-  if (!form.phoneNumber.trim()) errors.phoneNumber = 'Vui lòng nhập số điện thoại.';
-  else if (!normalizeVietnamesePhone(form.phoneNumber)) errors.phoneNumber = 'Số di động Việt Nam gồm 10 chữ số, ví dụ 0912345678.';
-  if (!form.email.trim()) errors.email = 'Vui lòng nhập email.';
-  else if (!EMAIL_PATTERN.test(form.email.trim())) errors.email = 'Email không đúng định dạng.';
-  if (form.dateOfBirth && form.dateOfBirth > new Date().toISOString().slice(0, 10)) errors.dateOfBirth = 'Ngày sinh không được ở tương lai.';
+  if (!form.fullName.trim()) errors.fullName = t('Please enter the full name.', 'Vui lòng nhập họ và tên.');
+  if (!form.phoneNumber.trim()) errors.phoneNumber = t('Please enter the phone number.', 'Vui lòng nhập số điện thoại.');
+  else if (!normalizeVietnamesePhone(form.phoneNumber)) errors.phoneNumber = t('A Vietnamese mobile number has 10 digits, e.g. 0912345678.', 'Số di động Việt Nam gồm 10 chữ số, ví dụ 0912345678.');
+  if (!form.email.trim()) errors.email = t('Please enter an email.', 'Vui lòng nhập email.');
+  else if (!EMAIL_PATTERN.test(form.email.trim())) errors.email = t('Invalid email format.', 'Email không đúng định dạng.');
+  if (form.dateOfBirth && form.dateOfBirth > new Date().toISOString().slice(0, 10)) errors.dateOfBirth = t('Date of birth cannot be in the future.', 'Ngày sinh không được ở tương lai.');
   return errors;
 }
 
@@ -81,7 +82,7 @@ export function QuickCreateMemberModal({ isOpen, onClose, initialValues, onCreat
 
   const handleSubmit = async (event) => {
     event.preventDefault();
-    const nextErrors = validate(form);
+    const nextErrors = validate(form, isEn);
     setErrors(nextErrors);
     setFormError('');
     const firstInvalid = ['fullName', 'phoneNumber', 'email', 'dateOfBirth'].find(key => nextErrors[key]);
@@ -97,16 +98,16 @@ export function QuickCreateMemberModal({ isOpen, onClose, initialValues, onCreat
       });
       if (result.emailSent) {
         startResendCooldown(result.member.id, result.resendCooldownSeconds);
-        showSuccess(`${result.message} Mã hội viên: ${result.member.memberCode}`);
+        showSuccess(`${result.message} ${isEn ? 'Member code' : 'Mã hội viên'}: ${result.member.memberCode}`);
       } else {
         showWarning(result.message);
       }
       onCreated?.(result.member, result);
       onClose();
     } catch (error) {
-      const message = error?.message || 'Không thể tạo tài khoản hội viên.';
+      const message = error?.message || (isEn ? 'Unable to create the member account.' : 'Không thể tạo tài khoản hội viên.');
       // Route duplicate messages to the matching field so the receptionist sees where to fix.
-      if (error?.status === 409 && /điện thoại/i.test(message)) setErrors({ phoneNumber: message });
+      if (error?.status === 409 && /điện thoại|phone/i.test(message)) setErrors({ phoneNumber: message });
       else if (error?.status === 409 && /email/i.test(message)) setErrors({ email: message });
       else setFormError(message);
     } finally {
@@ -123,10 +124,17 @@ export function QuickCreateMemberModal({ isOpen, onClose, initialValues, onCreat
       <form onSubmit={handleSubmit} noValidate className="space-y-4">
         <div className="p-3 rounded-xl bg-brand-sand-50 dark:bg-brand-navy-800/60 border-l-4 border-brand-sand-600 text-xs text-brand-navy-700 dark:text-brand-navy-200 flex items-start gap-2">
           <span className="material-symbols-outlined text-[18px] text-brand-sand-700 dark:text-brand-sand-300" aria-hidden="true">info</span>
-          <span>
-            Mật khẩu mặc định ban đầu của hội viên sẽ được đặt tự động bằng <strong>Số điện thoại</strong>.
-            Hệ thống gửi email để hội viên xác nhận và đổi mật khẩu mới.
-          </span>
+          {isEn ? (
+            <span>
+              The member's initial password is set automatically to their <strong>phone number</strong>.
+              The system emails the member a link to confirm the account and set a new password.
+            </span>
+          ) : (
+            <span>
+              Mật khẩu mặc định ban đầu của hội viên sẽ được đặt tự động bằng <strong>Số điện thoại</strong>.
+              Hệ thống gửi email để hội viên xác nhận và đổi mật khẩu mới.
+            </span>
+          )}
         </div>
 
         {formError && (
@@ -136,34 +144,34 @@ export function QuickCreateMemberModal({ isOpen, onClose, initialValues, onCreat
           </div>
         )}
 
-        <Field id="quick-member-fullName" label="Họ và tên" required error={errors.fullName}>
-          <input type="text" autoComplete="name" placeholder="Nguyễn Văn A" maxLength={150} {...fieldProps('fullName')} />
+        <Field id="quick-member-fullName" label={isEn ? 'Full name' : 'Họ và tên'} required error={errors.fullName}>
+          <input type="text" autoComplete="name" placeholder={isEn ? 'John Smith' : 'Nguyễn Văn A'} maxLength={150} {...fieldProps('fullName')} />
         </Field>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field id="quick-member-phoneNumber" label="Số điện thoại" required error={errors.phoneNumber}>
+          <Field id="quick-member-phoneNumber" label={isEn ? 'Phone number' : 'Số điện thoại'} required error={errors.phoneNumber}>
             <input type="tel" inputMode="tel" autoComplete="tel" placeholder="0912345678" maxLength={20} {...fieldProps('phoneNumber')} />
           </Field>
           <Field id="quick-member-email" label="Email" required error={errors.email}>
-            <input type="email" inputMode="email" autoComplete="email" placeholder="hoivien@example.com" maxLength={150} {...fieldProps('email')} />
+            <input type="email" inputMode="email" autoComplete="email" placeholder={isEn ? 'member@example.com' : 'hoivien@example.com'} maxLength={150} {...fieldProps('email')} />
           </Field>
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Field id="quick-member-gender" label="Giới tính (tùy chọn)" error={errors.gender}>
+          <Field id="quick-member-gender" label={isEn ? 'Gender (optional)' : 'Giới tính (tùy chọn)'} error={errors.gender}>
             <select {...fieldProps('gender')}>
-              <option value="">— Không chọn —</option>
-              <option value="Male">Nam</option>
-              <option value="Female">Nữ</option>
-              <option value="Other">Khác</option>
+              <option value="">{isEn ? '— Not specified —' : '— Không chọn —'}</option>
+              <option value="Male">{isEn ? 'Male' : 'Nam'}</option>
+              <option value="Female">{isEn ? 'Female' : 'Nữ'}</option>
+              <option value="Other">{isEn ? 'Other' : 'Khác'}</option>
             </select>
           </Field>
-          <Field id="quick-member-dateOfBirth" label="Ngày sinh (tùy chọn)" error={errors.dateOfBirth}>
+          <Field id="quick-member-dateOfBirth" label={isEn ? 'Date of birth (optional)' : 'Ngày sinh (tùy chọn)'} error={errors.dateOfBirth}>
             <input type="date" max={new Date().toISOString().slice(0, 10)} {...fieldProps('dateOfBirth')} />
           </Field>
         </div>
 
-        <Field id="quick-member-address" label="Địa chỉ (tùy chọn)" error={errors.address}>
+        <Field id="quick-member-address" label={isEn ? 'Address (optional)' : 'Địa chỉ (tùy chọn)'} error={errors.address}>
           <input type="text" autoComplete="street-address" maxLength={255} {...fieldProps('address')} />
         </Field>
 
@@ -185,12 +193,12 @@ export function QuickCreateMemberModal({ isOpen, onClose, initialValues, onCreat
             {saving ? (
               <>
                 <span className="material-symbols-outlined text-[16px] animate-spin" aria-hidden="true">progress_activity</span>
-                <span>Đang tạo & gửi mail...</span>
+                <span>{isEn ? 'Creating & sending email...' : 'Đang tạo & gửi mail...'}</span>
               </>
             ) : (
               <>
                 <span className="material-symbols-outlined text-[16px]" aria-hidden="true">mark_email_unread</span>
-                <span>Tạo tài khoản & Gửi mail xác nhận</span>
+                <span>{isEn ? 'Create account & send confirmation email' : 'Tạo tài khoản & Gửi mail xác nhận'}</span>
               </>
             )}
           </button>

@@ -55,6 +55,12 @@ export async function apiRequest(path, { method = 'GET', body, session = getApiS
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   if (body !== undefined && !isFormData) requestHeaders.set('Content-Type', 'application/json');
   if (session) requestHeaders.set('X-SCMS-Session', session);
+  // Lets the backend return messages in the UI language (it falls back to Vietnamese).
+  if (!requestHeaders.has('Accept-Language')) {
+    let language = 'vi';
+    try { language = localStorage.getItem('SCMS_LANGUAGE') === 'en' ? 'en' : 'vi'; } catch { /* storage blocked */ }
+    requestHeaders.set('Accept-Language', language);
+  }
 
   const effectiveTimeout = timeoutMs ?? 30000;
 

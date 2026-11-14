@@ -9,6 +9,16 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useAuth } from '../../../entities/session/index.js';
 import { hasCapability } from '../../../entities/permission/index.js';
 import { openPaymentCheckout } from '../../../features/payment-checkout/index.js';
+import { SportPickerModal } from '../../../features/sport-picker/index.js';
+import { getPublicCatalog } from '../../../entities/catalog/index.js';
+
+// Same rule as online purchase: a new/upgrade purchase of a limited package must pick its sports.
+// Renewing the member's current active package keeps the sports already stored on it (backend).
+function counterNeedsSportPicker(pkg, member) {
+  if (!pkg || pkg.isAllAccess || Number(pkg.allowedSports || 0) <= 0) return false;
+  const isRenewal = member?.packageStatus === 'ACTIVE' && String(member?.packageId) === String(pkg.id);
+  return !isRenewal;
+}
 
 export function CounterMembership() {
   const { language } = useLanguage();
@@ -32,15 +42,21 @@ export function CounterMembership() {
   const [selectedPackage, setSelectedPackage] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState('TIỀN MẶT');
   const [amountReceived, setAmountReceived] = useState('');
+  const [posApprovalCode, setPosApprovalCode] = useState('');
   const [loadError, setLoadError] = useState('');
   const [processing, setProcessing] = useState(false);
   const [receiptData, setReceiptData] = useState(null);
   const [checkoutAttempt, setCheckoutAttempt] = useState({ fingerprint: '', key: '' });
   const [pendingInvoice, setPendingInvoice] = useState(null);
+  const [sports, setSports] = useState([]);
+  const [selectedSportIds, setSelectedSportIds] = useState([]);
+  const [pickerOpen, setPickerOpen] = useState(false);
+  const needsSports = counterNeedsSportPicker(selectedPackage, selectedMember);
 
   useEffect(() => {
     async function loadInitial() {
       try {
+        getPublicCatalog().then(catalog => setSports(catalog?.sports || [])).catch(() => setSports([]));
         const pkgs = await packageApi.getAll();
         setMembers([]);
         const activePackages = pkgs.filter(p => p.status === 'ACTIVE');
@@ -76,6 +92,56 @@ export function CounterMembership() {
     setAmountReceived(String(selectedPackage?.price || ''));
   }, [selectedPackage?.id]);
 
+  // Sports picked for one member/package never carry over to another.
+  useEffect(() => {
+    setSelectedSportIds([]);
+  }, [selectedPackage?.id, selectedMember?.id]);
+
+  const handleGoToPayment = () => {
+    if (!selectedPackage) return;
+    if (needsSports) setPickerOpen(true);
+    else setStep(3);
+  };
+
+  const handleConfirmSports = () => {
+    setPickerOpen(false);
+    setStep(3);
+  };
+
+  // Re-read the member from the API so package status/expiry reflect the payment just made.
+  const refreshSelectedMember = async member => {
+    if (!member?.memberCode) return;
+    try {
+      const results = await receptionApi.lookupMember(member.memberCode);
+      const fresh = results.find(m => String(m.id) === String(member.id));
+      if (fresh) {
+        setSelectedMember(fresh);
+        setMembers(prev => prev.map(m => (String(m.id) === String(fresh.id) ? fresh : m)));
+      }
+    } catch {
+      // Stale data is only cosmetic here; the next search reloads it.
+    }
+  };
+
+  // Start a clean transaction: nothing from the previous sale may leak into the next one.
+  const handleStartNewTransaction = () => {
+    checkoutRef.current?.dispose();
+    checkoutRef.current = null;
+    setReceiptData(null);
+    setSelectedMember(null);
+    setMembers([]);
+    setMemberSearchQuery('');
+    setSelectedPackage(packages[0] || null);
+    setAmountReceived(String(packages[0]?.price || ''));
+    setPosApprovalCode('');
+    setPaymentMethod('TIỀN MẶT');
+    setSelectedSportIds([]);
+    setPendingInvoice(null);
+    setCheckoutAttempt({ fingerprint: '', key: '' });
+    setProcessing(false);
+    setStep(1);
+  };
+
   const handleSearchMembers = async event => {
     event.preventDefault();
     if (memberSearchQuery.trim().length < 2) {
@@ -100,12 +166,25 @@ export function CounterMembership() {
   const handleProcessPayment = async (overrideCancelPending = false) => {
     if (!selectedMember || !selectedPackage || processing || checkoutRef.current) return;
     const isVnPay = paymentMethod === 'VNPAY';
-    const received = isVnPay ? selectedPackage.price : Number(amountReceived);
+    const isPos = paymentMethod === 'THẺ POS';
+    const received = isVnPay || isPos ? selectedPackage.price : Number(amountReceived);
     if (!Number.isFinite(received) || received <= 0) {
       showError(isEn ? 'Please enter a valid received amount greater than 0.' : 'Nhập số tiền thực nhận lớn hơn 0.');
       return;
     }
-    const fingerprint = [selectedMember.id, selectedPackage.id, paymentMethod, received, overrideCancelPending === true].join(':');
+    if (isPos && !posApprovalCode.trim()) {
+      showError(isEn ? 'Please enter the POS approval code before confirming payment.' : 'Nhập mã chuẩn chi POS trước khi thanh toán.');
+      return;
+    }
+    const sportIds = needsSports ? selectedSportIds : null;
+    if (needsSports && selectedSportIds.length !== Number(selectedPackage.allowedSports)) {
+      showError(isEn
+        ? `Please choose exactly ${selectedPackage.allowedSports} sports for this package.`
+        : `Vui lòng chọn đúng ${selectedPackage.allowedSports} bộ môn cho gói này.`);
+      setPickerOpen(true);
+      return;
+    }
+    const fingerprint = [selectedMember.id, selectedPackage.id, paymentMethod, received, posApprovalCode.trim(), overrideCancelPending === true, [...(sportIds || [])].sort().join(',')].join(':');
     const idempotencyKey = checkoutAttempt.fingerprint === fingerprint && checkoutAttempt.key
       ? checkoutAttempt.key
       : createIdempotencyKey();
@@ -114,10 +193,13 @@ export function CounterMembership() {
     let checkout = null;
     try {
       if (isVnPay) {
+        const memberAtCheckout = selectedMember;
         checkout = openPaymentCheckout(({ cancelled, failed, closed }) => {
           checkoutRef.current = null;
           setProcessing(false);
           setCheckoutAttempt({ fingerprint: '', key: '' });
+          // The popup may have activated the package; show the member's real status.
+          refreshSelectedMember(memberAtCheckout);
           if (cancelled) showWarning(isEn ? 'VNPay payment was cancelled.' : 'Đã hủy thanh toán VNPay.');
           else if (failed) showWarning(isEn ? 'VNPay has not confirmed this payment. Check the invoice before retrying.' : 'VNPay chưa xác nhận khoản thanh toán. Hãy kiểm tra hóa đơn trước khi thử lại.');
           else if (closed) showInfo(isEn ? 'Payment window closed. Check the invoice for the latest status.' : 'Đã đóng cửa sổ thanh toán. Hãy kiểm tra hóa đơn để xem trạng thái mới nhất.');
@@ -128,10 +210,12 @@ export function CounterMembership() {
           memberId: selectedMember.id,
           packageId: selectedPackage.id,
           idempotencyKey,
-          cancelPendingIfAny: overrideCancelPending === true
+          cancelPendingIfAny: overrideCancelPending === true,
+          sportIds
         });
         if (checkoutRef.current !== checkout) return;
         if (!result.paymentUrl) throw new Error(isEn ? 'Could not generate VNPay payment link.' : 'Không thể tạo liên kết thanh toán VNPay. Vui lòng thử lại sau.');
+        setPendingInvoice(null);
         checkout.navigate(result.paymentUrl);
         return;
       }
@@ -141,8 +225,10 @@ export function CounterMembership() {
         packageId: selectedPackage.id,
         paymentMethod,
         amountReceived: received,
+        posApprovalCode: isPos ? posApprovalCode.trim() : null,
         idempotencyKey,
-        cancelPendingIfAny: overrideCancelPending === true
+        cancelPendingIfAny: overrideCancelPending === true,
+        sportIds
       });
       setReceiptData(result);
       setPendingInvoice(null);
@@ -163,21 +249,9 @@ export function CounterMembership() {
     }
   };
 
-  const handleCancelPendingAndRetry = async (invNumber) => {
-    setProcessing(true);
-    try {
-      await receptionApi.cancelPendingInvoice({
-        invoiceNumber: invNumber,
-        memberId: selectedMember?.id,
-        packageId: selectedPackage?.id
-      });
-      setPendingInvoice(null);
-      await handleProcessPayment();
-    } catch (err) {
-      showError(err.message || (isEn ? 'Failed to cancel pending invoice!' : 'Lỗi khi hủy hóa đơn chờ!'));
-      setProcessing(false);
-    }
-  };
+  // Backend cancels the pending invoice atomically when cancelPendingIfAny=true.
+  // Calling payment directly (no await before it) keeps the click gesture so the VNPay popup is not blocked.
+  const handleCancelPendingAndRetry = () => handleProcessPayment(true);
 
   if (loading) return <LoadingSpinner text={isEn ? 'Preparing counter cashier terminal...' : 'Đang chuẩn bị màn hình thu ngân...'} />;
 
@@ -405,7 +479,7 @@ export function CounterMembership() {
               {isEn ? 'Back' : 'Quay lại'}
             </button>
             <button
-              onClick={() => setStep(3)}
+              onClick={handleGoToPayment}
               disabled={!selectedPackage}
               className="px-6 py-2.5 bg-brand-sage-700 hover:bg-brand-sage-900 disabled:opacity-50 text-white font-chivo text-xs font-bold uppercase tracking-wider rounded-xl shadow-md transition-all flex items-center gap-2 hover-lift cursor-pointer"
             >
@@ -434,6 +508,17 @@ export function CounterMembership() {
               <span className="text-brand-navy-500 dark:text-brand-navy-400">{isEn ? 'Package:' : 'Gói tập lựa chọn:'}</span>
               <span className="font-bold text-brand-navy-900 dark:text-white">{selectedPackage?.name} ({selectedPackage?.durationDays} {isEn ? 'days' : 'ngày'})</span>
             </div>
+            {needsSports && (
+              <div className="flex justify-between items-center gap-3 text-xs pb-2 border-b border-brand-navy-200 dark:border-brand-navy-700">
+                <span className="text-brand-navy-500 dark:text-brand-navy-400 shrink-0">{isEn ? 'Sports:' : 'Bộ môn đăng ký:'}</span>
+                <span className="font-bold text-brand-navy-900 dark:text-white text-right">
+                  {sports.filter(s => selectedSportIds.includes(s.id)).map(s => s.name).join(', ') || '—'}
+                  <button type="button" onClick={() => setPickerOpen(true)} className="ml-2 underline text-brand-sage-700 dark:text-brand-sage-400 cursor-pointer">
+                    {isEn ? 'Change' : 'Đổi'}
+                  </button>
+                </span>
+              </div>
+            )}
             <div className="flex justify-between text-xs pb-2 border-b border-brand-navy-200 dark:border-brand-navy-700">
               <span className="text-brand-navy-500 dark:text-brand-navy-400">{isEn ? 'Base Fee:' : 'Phí dịch vụ:'}</span>
               <span className="font-bold text-brand-navy-900 dark:text-white">{selectedPackage?.price.toLocaleString()}đ</span>
@@ -463,9 +548,10 @@ export function CounterMembership() {
             <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-2">
               {isEn ? 'Payment Method *' : 'Hình thức thu tiền *'}
             </label>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               {[
                 { id: 'TIỀN MẶT', label: isEn ? 'CASH' : 'TIỀN MẶT', icon: 'payments' },
+                { id: 'THẺ POS', label: isEn ? 'POS CARD' : 'THẺ POS', icon: 'credit_card' },
                 { id: 'VNPAY', label: 'VNPAY', icon: 'qr_code_2' }
               ].map(m => (
                 <button
@@ -501,6 +587,25 @@ export function CounterMembership() {
                 />
                 <span className="block mt-1 text-[11px] text-brand-navy-500 dark:text-brand-navy-400">
                   {isEn ? 'Partial payment: pass pending until fully paid. Change will be calculated automatically.' : 'Thu một phần: gói chờ thu đủ. Tiền dư sẽ được ghi là tiền trả lại.'}
+                </span>
+              </label>
+            )}
+
+            {paymentMethod === 'THẺ POS' && (
+              <label className="block mt-3 text-xs font-bold text-brand-navy-700 dark:text-brand-navy-300">
+                {isEn ? 'POS Approval Code *' : 'Mã chuẩn chi POS *'}
+                <input
+                  aria-label={isEn ? 'POS approval code' : 'Mã chuẩn chi POS'}
+                  type="text"
+                  maxLength={100}
+                  placeholder={isEn ? 'e.g. POS-849201' : 'VD: POS-849201'}
+                  value={posApprovalCode}
+                  disabled={processing}
+                  onChange={e => setPosApprovalCode(e.target.value)}
+                  className="mt-1 w-full rounded-xl border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white p-3 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
+                />
+                <span className="block mt-1 text-[11px] text-brand-navy-500 dark:text-brand-navy-400">
+                  {isEn ? 'POS terminal collects exact total invoice amount.' : 'Quẹt thẻ POS thu đúng 100% tổng tiền hóa đơn và lưu mã chuẩn chi trên biên lai.'}
                 </span>
               </label>
             )}
@@ -546,7 +651,7 @@ export function CounterMembership() {
                 <button
                   type="button"
                   disabled={processing}
-                  onClick={() => handleCancelPendingAndRetry(pendingInvoice)}
+                  onClick={handleCancelPendingAndRetry}
                   className="px-4 py-2 bg-brand-sand-700 hover:bg-brand-sand-800 text-white font-chivo text-xs font-black uppercase tracking-wider rounded-xl shadow-md transition-all hover-lift flex items-center gap-1.5 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">cancel</span>
@@ -654,7 +759,7 @@ export function CounterMembership() {
               {isEn ? 'View / Print Invoice' : 'Xem / In hóa đơn'}
             </a>
             <button
-              onClick={() => { setStep(1); setReceiptData(null); }}
+              onClick={handleStartNewTransaction}
               className="px-5 py-2.5 bg-brand-navy-100 dark:bg-brand-navy-800 hover:bg-brand-navy-200 dark:hover:bg-brand-navy-700 text-brand-navy-800 dark:text-brand-navy-200 font-chivo text-xs font-bold uppercase tracking-wider rounded-xl transition-all hover-lift cursor-pointer"
             >
               {isEn ? 'New Transaction' : 'Thực Hiện Giao Dịch Mới'}
@@ -676,6 +781,17 @@ export function CounterMembership() {
           </div>
         </div>
       )}
+
+      <SportPickerModal
+        isEn={isEn}
+        isOpen={pickerOpen}
+        onClose={() => setPickerOpen(false)}
+        onConfirm={handleConfirmSports}
+        pkg={selectedPackage}
+        selected={selectedSportIds}
+        setSelected={setSelectedSportIds}
+        sports={sports}
+      />
     </div>
   );
 }

@@ -1,11 +1,12 @@
 import React from 'react';
 
-export function TodayCheckInsPanel({ checkIns, historyError, isEn }) {
+export function TodayCheckInsPanel({ checkIns, todayTotal, historyError, isEn }) {
+  const total = todayTotal ?? checkIns.length;
   return (
     <div id="recent-checkins-log" className="lg:col-span-5 bg-white dark:bg-brand-navy-900 p-6 rounded-2xl border border-brand-navy-200 dark:border-brand-navy-800 shadow-sm space-y-4 hover-lift transition-all">
       <div className="flex items-center justify-between pb-3 border-b border-brand-navy-100 dark:border-brand-navy-800">
         <h2 className="font-chivo text-sm font-bold text-brand-navy-900 dark:text-white uppercase tracking-wide">
-          {isEn ? `Today's Entry Scans (${checkIns.length})` : `Nhật Ký Quét Thẻ Hôm Nay (${checkIns.length})`}
+          {isEn ? `Today's Entry Scans (${total})` : `Nhật Ký Quét Thẻ Hôm Nay (${total})`}
         </h2>
         <span className="text-xs font-semibold text-brand-sage-700 dark:text-brand-sage-400 flex items-center gap-1.5">
           <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse" />

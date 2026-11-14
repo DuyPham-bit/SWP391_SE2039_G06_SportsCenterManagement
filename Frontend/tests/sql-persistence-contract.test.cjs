@@ -87,7 +87,8 @@ test('counter VNPay checkout sends the selected member to the staff-scoped endpo
     memberId: 21,
     packageId: 7,
     idempotencyKey: 'counter-vnpay-test-key',
-    cancelPendingIfAny: true
+    cancelPendingIfAny: true,
+    sportIds: ['3', 5]
   });
 
   assert.match(result.paymentUrl, /^https:\/\/sandbox\.vnpayment\.vn\//);
@@ -98,6 +99,13 @@ test('counter VNPay checkout sends the selected member to the staff-scoped endpo
   assert.deepEqual({ ...f.calls[0].options.body }, {
     memberId: 21,
     packageId: 7,
-    cancelPendingIfAny: true
+    cancelPendingIfAny: true,
+    sportIds: [3, 5]
   });
+});
+
+test('counter VNPay checkout sends null sportIds when none were picked (renewal / all-access)', async () => {
+  const f = loadApi(() => ({ paymentUrl: 'https://sandbox.vnpayment.vn/paymentv2/vpcpay.html' }));
+  await f.receptionApi.createCounterVnPayUrl({ memberId: 21, packageId: 7, idempotencyKey: 'k' });
+  assert.equal(f.calls[0].options.body.sportIds, null);
 });

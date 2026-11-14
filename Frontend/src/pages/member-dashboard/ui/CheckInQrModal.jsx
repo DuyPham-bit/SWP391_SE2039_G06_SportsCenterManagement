@@ -21,7 +21,7 @@ export function CheckInQrModal({
             {currentUser?.fullName}
           </h3>
           <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400 font-mono">
-            {isEn ? 'Card' : 'Mã thẻ'}: <strong className="text-brand-navy-800 dark:text-brand-navy-200">{currentUser?.memberCode || 'MEM-00000'}</strong> · {translatePackageName(currentUser?.packageName, isEn)}
+            {isEn ? 'Card' : 'Mã thẻ'}: <strong className="text-brand-navy-800 dark:text-brand-navy-200">{currentUser?.memberCode || (isEn ? 'Unassigned' : 'Chưa cấp')}</strong> · {translatePackageName(currentUser?.packageName, isEn)}
           </p>
         </div>
 
@@ -48,6 +48,11 @@ export function CheckInQrModal({
                   SCMS
                 </div>
               </div>
+            </div>
+          ) : !memberCode ? (
+            <div className="w-full h-full flex flex-col items-center justify-center text-xs text-brand-navy-500 text-center px-4">
+              <span className="material-symbols-outlined text-3xl mb-2">qr_code_2</span>
+              <span>{isEn ? 'No member code issued yet. Please contact the front desk.' : 'Chưa được cấp mã hội viên. Vui lòng liên hệ lễ tân.'}</span>
             </div>
           ) : (
             <div className="w-full h-full flex flex-col items-center justify-center text-xs text-brand-navy-400">

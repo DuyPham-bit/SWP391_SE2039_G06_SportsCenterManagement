@@ -44,11 +44,17 @@ export function useMemberCheckIn() {
   const [overrideApprover, setOverrideApprover] = useState(isEn ? 'Shift Manager' : 'Quản lý ca trực');
   const [failedIdentifier, setFailedIdentifier] = useState('');
   const [historyError, setHistoryError] = useState('');
+  // Exact count of today's scans; the history list itself is capped at 100 rows server-side.
+  const [todayTotal, setTodayTotal] = useState(null);
 
   const loadData = async () => {
     try {
-      const history = await receptionApi.getCheckInHistory();
+      const [history, summary] = await Promise.all([
+        receptionApi.getCheckInHistory(),
+        receptionApi.getCheckInSummary().catch(() => null)
+      ]);
       setCheckIns(history || []);
+      setTodayTotal(Number.isFinite(summary?.totalCount) ? summary.totalCount : null);
       setHistoryError('');
     } catch (error) {
       setHistoryError(error.message || (isEn ? 'Failed to load check-in log from server.' : 'Không thể tải nhật ký check-in từ hệ thống.'));
@@ -396,7 +402,7 @@ export function useMemberCheckIn() {
 
   return {
     activeScanMode, autoSubmit, cameras, checkInError, checkIns, fileInputRef, handleExecuteCheckIn,
-    handleOverrideCheckIn, handleScanImageFile, handleTabChange, historyError, identifier, isEn,
+    handleOverrideCheckIn, handleScanImageFile, handleTabChange, historyError, identifier, isEn, todayTotal,
     isScanning, isScanPaused, lastCheckIn, resumeScan, overrideApprover, overrideModalOpen, overrideReason, processing,
     scannerError, scannerLoading, selectedCameraId, setAutoSubmit, setCheckInError, setIdentifier,
     setOverrideApprover, setOverrideModalOpen, setOverrideReason, setSelectedCameraId,

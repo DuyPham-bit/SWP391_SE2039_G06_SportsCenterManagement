@@ -11,7 +11,7 @@ import { safeHref, safePaymentHref } from '../../../shared/lib/safeUrl.js';
 import { classApi } from '../../../entities/class/index.js';
 import { getPublicCatalog } from '../../../entities/catalog/index.js';
 import { getPurchaseMode, needsSportPicker, purchaseLabel } from '../lib/purchaseMode.js';
-import { SportPickerModal } from './SportPickerModal.jsx';
+import { SportPickerModal } from '../../../features/sport-picker/index.js';
 
 const PACKAGE_PERKS = {
   basic: {

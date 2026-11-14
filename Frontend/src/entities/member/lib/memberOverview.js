@@ -81,9 +81,20 @@ export function getMembershipSummary(user, now = new Date(), isEn = false) {
   const expiryTime = /^\d{4}-\d{2}-\d{2}$/.test(expiry) ? Date.parse(`${expiry}T00:00:00Z`) : NaN;
   const daysLeft = Number.isNaN(expiryTime) ? null : Math.round((expiryTime - Date.parse(`${vietnamDate(now)}T00:00:00Z`)) / DAY_MS);
   const active = user?.packageStatus === 'ACTIVE' && daysLeft !== null && daysLeft >= 0;
+  const start = String(user?.packageStartDate || '').slice(0, 10);
+  const startTime = /^\d{4}-\d{2}-\d{2}$/.test(start) ? Date.parse(`${start}T00:00:00Z`) : NaN;
+  // Inclusive day count of the current package (start..expiry); null when unknown.
+  const totalDays = Number.isNaN(startTime) || Number.isNaN(expiryTime) || expiryTime < startTime
+    ? null : Math.round((expiryTime - startTime) / DAY_MS) + 1;
+  // Share of the package still remaining, 0–100.
+  const remainingPercent = !active ? 0
+    : totalDays ? Math.min(100, Math.max(0, Math.round(((daysLeft + 1) / totalDays) * 100)))
+    : 100;
   return {
     active,
     daysLeft,
+    totalDays,
+    remainingPercent,
     label: active
       ? (isEn ? 'ACTIVE' : 'CÒN HẠN')
       : (isEn ? 'NEEDS RENEWAL' : 'CẦN GIA HẠN')

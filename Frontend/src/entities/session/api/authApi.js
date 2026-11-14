@@ -59,6 +59,8 @@ async function loadCurrentUser(session = getApiSession(), version = getAuthVersi
     status: String(profile.status || 'Active').toUpperCase(),
     memberCode: profile.memberCode,
     centerId: profile.centerId,
+    centerName: profile.centerName || null,
+    staffCode: profile.staffCode || null,
     createdAt: profile.createdAt,
     packageId: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageId || null) : null,
     packageName: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageName || 'Chưa đăng ký gói tập') : null,

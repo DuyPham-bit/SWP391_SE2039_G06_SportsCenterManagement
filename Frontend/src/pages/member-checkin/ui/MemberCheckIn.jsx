@@ -13,7 +13,7 @@ import { TodayCheckInsPanel } from './TodayCheckInsPanel.jsx';
 
 export function MemberCheckIn() {
   const {
-    activeScanMode, autoSubmit, cameras, checkInError, checkIns, fileInputRef, handleExecuteCheckIn,
+    activeScanMode, autoSubmit, cameras, checkInError, checkIns, todayTotal, fileInputRef, handleExecuteCheckIn,
     handleOverrideCheckIn, handleScanImageFile, handleTabChange, historyError, identifier, isEn,
     isScanning, isScanPaused, lastCheckIn, resumeScan, overrideApprover, overrideModalOpen, overrideReason, processing,
     scannerError, scannerLoading, selectedCameraId, setAutoSubmit, setCheckInError, setIdentifier,
@@ -286,7 +286,7 @@ export function MemberCheckIn() {
         />
 
         {/* Right Column: Today's Check-in Log (5 cols) */}
-        <TodayCheckInsPanel checkIns={checkIns} historyError={historyError} isEn={isEn} />
+        <TodayCheckInsPanel checkIns={checkIns} todayTotal={todayTotal} historyError={historyError} isEn={isEn} />
       </div>
     </div>
   );

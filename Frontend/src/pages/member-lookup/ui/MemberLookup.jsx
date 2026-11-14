@@ -345,7 +345,7 @@ export function MemberLookup() {
                         <div className="text-xs text-brand-navy-500 dark:text-brand-navy-400 mt-0.5">{selectedMember.email} • {selectedMember.phone}</div>
                         {!selectedMember.emailVerified && (
                           <div className="mt-2 flex flex-wrap items-center gap-2">
-                            <span className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400">Hội viên chưa bấm link xác nhận trong email.</span>
+                            <span className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400">{isEn ? 'The member has not clicked the confirmation link in the email yet.' : 'Hội viên chưa bấm link xác nhận trong email.'}</span>
                             {canRegister && <ResendVerificationButton memberId={selectedMember.id} size="sm" onResent={handleMemberRefreshed} />}
                           </div>
                         )}
