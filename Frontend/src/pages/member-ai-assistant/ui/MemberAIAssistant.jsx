@@ -145,9 +145,9 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       setInputQuestion('');
       setReactions({});
       window.dispatchEvent(new CustomEvent('SCMS_AI_CHAT_CLEARED', { detail: { source: 'page' } }));
-      showSuccess(isEn ? 'AI Assistant chat history deleted!' : 'Đã xóa vĩnh viễn lịch sử hội thoại với Trợ lý AI!');
+      showSuccess(isEn ? 'AI Assistant conversation reloaded!' : 'Đã load lại cuộc hội thoại với Trợ lý AI!');
     } catch (err) {
-      showError(err?.message || (isEn ? 'Unable to delete chat history. Please try again.' : 'Không thể xóa lịch sử hội thoại. Vui lòng thử lại.'));
+      showError(err?.message || (isEn ? 'Unable to reload conversation. Please try again.' : 'Không thể load lại cuộc hội thoại. Vui lòng thử lại.'));
     } finally {
       setIsResetting(false);
     }
@@ -283,7 +283,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
             <button
               onClick={handleResetChat}
               disabled={isAsking || isResetting}
-              title={isEn ? "Reset and clear entire conversation" : "Xóa lịch sử và làm mới toàn bộ hội thoại"}
+              title={isEn ? "Reload entire conversation" : "Làm mới toàn bộ hội thoại"}
               className="p-2 text-brand-navy-400 hover:text-brand-navy-700 hover:bg-brand-navy-200/60 rounded-xl transition disabled:opacity-50"
             >
               <span className={`material-symbols-outlined text-[18px] ${isResetting ? 'animate-spin' : ''}`}>
