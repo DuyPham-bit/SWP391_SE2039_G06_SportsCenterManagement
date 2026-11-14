@@ -422,17 +422,39 @@ Check("language detector recognises the member's language", () =>
     AiLanguageDetector.Detect("明日ヨガのクラスはありますか？") == "Japanese" &&
     AiLanguageDetector.Detect("내일 요가 수업 있어요?") == "Korean" &&
     AiLanguageDetector.Detect("明天有瑜伽课吗？") == "Chinese" &&
+    AiLanguageDetector.Detect("พรุ่งนี้มีคลาสโยคะไหม") == "Thai" &&
     AiLanguageDetector.Detect("Bonjour, quel est le prix du cours?") == "French" &&
     AiLanguageDetector.Detect("Hola, ¿cuánto cuesta la clase?") == "Spanish" &&
     AiLanguageDetector.Detect("yoga") is null && AiLanguageDetector.Detect("15:00") is null);
+Check("language detector honours explicit reply/translation requests", () =>
+    AiLanguageDetector.Detect("hãy nói tiếng thái") == "Thai" &&
+    AiLanguageDetector.Detect("trả lời bằng tiếng Nhật") == "Japanese" &&
+    AiLanguageDetector.Detect("dịch sang tiếng Hàn") == "Korean" &&
+    AiLanguageDetector.Detect("reply in Thai") == "Thai" &&
+    AiLanguageDetector.Detect("speak English") == "English" &&
+    AiLanguageDetector.Detect("trung tâm có lớp tiếng Anh không?") == "Vietnamese");
 Check("misspelled 'tomorow' still resolves to tomorrow", () =>
     Window("can you help me slot yoga in tomorow") is { From.Day: 15, To.Day: 15 });
 Check("chat instruction ends with an explicit reply-language rule", () =>
 {
     var instruction = SportsCenterManagement.API.Controllers.AiController.BuildChatInstruction("vi", "can you help me slot yoga in tomorow", "{}");
+    var requestedThai = SportsCenterManagement.API.Controllers.AiController.BuildChatInstruction("vi", "hãy nói tiếng thái", "{}");
+    var historyThai = SportsCenterManagement.API.Controllers.AiController.BuildChatInstruction(
+        "vi",
+        "yoga",
+        "{}",
+        [
+            new SportsCenterManagement.BLL.Services.AiTurn("user", "hãy nói tiếng thái"),
+            new SportsCenterManagement.BLL.Services.AiTurn("model", "ได้เลยครับ"),
+            new SportsCenterManagement.BLL.Services.AiTurn("user", "yoga"),
+        ]);
     var fallback = SportsCenterManagement.API.Controllers.AiController.BuildChatInstruction("en", "yoga", "{}");
     return instruction.EndsWith("Never say you can only answer in Vietnamese or any other single language.", StringComparison.Ordinal) &&
         instruction.Contains("written in English. Your ENTIRE reply MUST be in English", StringComparison.Ordinal) &&
+        requestedThai.Contains("explicitly requested to communicate in Thai. Your ENTIRE reply MUST be in Thai", StringComparison.Ordinal) &&
+        requestedThai.Contains("translate every explanation, description, package benefit", StringComparison.Ordinal) &&
+        !requestedThai.Contains("Your ENTIRE reply MUST be in Vietnamese", StringComparison.Ordinal) &&
+        historyThai.Contains("Your ENTIRE reply MUST be in Thai", StringComparison.Ordinal) &&
         fallback.Contains("if unclear, reply in English", StringComparison.Ordinal) &&
         !instruction.Contains("Trả lời bằng tiếng Việt", StringComparison.Ordinal);
 });
