@@ -572,36 +572,41 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           <div className="pointer-events-none absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-[var(--primary-color)]/10 blur-3xl" />
 
           {/* Top Control Header */}
-          <div className="relative z-10 px-4 py-3.5 sm:px-6 sm:py-4.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-[#1A1D2E]/90 backdrop-blur-md">
+          <div className="relative z-10 px-4 py-3.5 sm:px-6 sm:py-4.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-[#1A1D2E]/95 backdrop-blur-md">
             <div className="flex items-center gap-3">
-              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#CDBDA6]/15 border border-[#CDBDA6]/30 flex items-center justify-center text-[#CDBDA6] shrink-0">
-                <span className="material-symbols-outlined text-[20px] sm:text-[22px]">view_in_ar</span>
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#CDBDA6]/20 border border-[#CDBDA6]/40 flex items-center justify-center text-[#E6D7C3] shrink-0 shadow-sm">
+                <span className="material-symbols-outlined text-[22px] sm:text-[24px]">view_in_ar</span>
               </div>
               <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap">
-                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#CDBDA6]">
-                    {isEn ? 'CONVENIENT SPATIAL LAYOUT' : (landingContent.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN')}
+                <div className="flex items-center gap-2 flex-wrap mb-1">
+                  <span className="tiya-campus-3d-badge text-[10px] uppercase tracking-wider font-extrabold text-[#E6D7C3]">
+                    {isEn ? 'CONVENIENT SPATIAL LAYOUT' : (landingContent?.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN')}
                   </span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold whitespace-nowrap">
+                  <span className="tiya-campus-3d-tag text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
                     13.000 m² (130m × 100m)
                   </span>
                 </div>
-                <h3 className="text-sm sm:text-lg font-extrabold text-white tracking-tight uppercase leading-snug truncate">
-                  {isEn ? 'INTERACTIVE 3D CAMPUS MODEL' : (landingContent.zonesLayout?.title ? `MÔ HÌNH 3D: ${landingContent.zonesLayout.title}` : 'SƠ ĐỒ 3D CÁC KHU VỰC TẬP LUYỆN')}
+                <h3 className="tiya-campus-3d-title text-base sm:text-xl font-extrabold tracking-tight uppercase leading-snug truncate" style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>
+                  <span className="text-[#CDBDA6] font-black mr-2">
+                    {isEn ? '3D MODEL:' : 'MÔ HÌNH 3D:'}
+                  </span>
+                  <span className="text-white font-extrabold" style={{ color: '#FFFFFF' }}>
+                    {isEn ? 'CAMPUS SPATIAL DIRECTORY' : (landingContent?.zonesLayout?.title || 'SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN')}
+                  </span>
                 </h3>
               </div>
             </div>
 
             {/* View Mode Switcher & Fullscreen Action */}
-            <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
-              <div className="bg-[#141622] p-1 rounded-xl border border-white/10 flex items-center gap-1">
+            <div className="flex items-center gap-2 sm:gap-2.5 ml-auto shrink-0">
+              <div className="bg-[#0D0F18] p-1 rounded-xl border border-white/20 flex items-center gap-1 shadow-inner">
                 <button
                   type="button"
                   onClick={() => setDirectoryViewMode('3d')}
-                  className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                     directoryViewMode === '3d'
-                      ? 'bg-[#CDBDA6] text-[#141622] shadow'
-                      : 'text-slate-300 hover:text-white'
+                      ? 'bg-[#CDBDA6] text-[#141622] font-black shadow-md'
+                      : 'text-slate-200 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">3d_rotation</span>
@@ -610,10 +615,10 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 <button
                   type="button"
                   onClick={() => setDirectoryViewMode('2d')}
-                  className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
                     directoryViewMode === '2d'
-                      ? 'bg-[#CDBDA6] text-[#141622] shadow'
-                      : 'text-slate-300 hover:text-white'
+                      ? 'bg-[#CDBDA6] text-[#141622] font-black shadow-md'
+                      : 'text-slate-200 hover:text-white hover:bg-white/10'
                   }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">grid_view</span>
@@ -624,7 +629,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
               <button
                 type="button"
                 onClick={toggle3dFullscreen}
-                className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition active:scale-95"
+                className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white flex items-center gap-1.5 transition active:scale-95 shadow-sm"
                 title={is3dFullscreen ? (isEn ? 'Exit Fullscreen' : 'Thu nhỏ') : (isEn ? 'Fullscreen 3D' : 'Toàn màn hình')}
               >
                 <span className="material-symbols-outlined text-[18px]">
@@ -637,7 +642,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 href="/3d-campus.html"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-[#CDBDA6] flex items-center gap-1.5 transition active:scale-95"
+                className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-[#E6D7C3] hover:text-white flex items-center gap-1.5 transition active:scale-95 shadow-sm"
                 title={isEn ? 'Open in dedicated window' : 'Mở tab 3D riêng biệt'}
               >
                 <span className="material-symbols-outlined text-[18px]">open_in_new</span>
@@ -650,22 +655,23 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           {directoryViewMode === '3d' && (
             <div className="relative flex flex-col">
               {/* Quick Jump Zone Pills */}
-              <div className="relative z-10 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#141622]/95 border-b border-white/5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
-                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline whitespace-nowrap">
-                  {isEn ? 'Fast Focus:' : 'Xem Nhanh:'}
+              <div className="relative z-10 px-4 py-2.5 bg-[#0F111D] border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
+                <span className="text-[11px] font-black text-[#E6D7C3] uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
+                  <span className="material-symbols-outlined text-[15px] text-[#CDBDA6]">explore</span>
+                  <span>{isEn ? 'Fast Focus:' : 'Xem Nhanh:'}</span>
                 </span>
                 {quickZones.map(qz => (
                   <button
                     key={qz.id}
                     type="button"
                     onClick={() => handleZoneSelect(qz.id)}
-                    className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+                    className={`tiya-campus-3d-pill px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
                       activeZoneFilter === qz.id
-                        ? 'bg-[#CDBDA6] text-[#141622] font-bold shadow-sm'
-                        : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5'
+                        ? 'active'
+                        : 'inactive'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[15px]">{qz.icon}</span>
+                    <span className="material-symbols-outlined text-[16px]">{qz.icon}</span>
                     <span>{qz.label}</span>
                   </button>
                 ))}

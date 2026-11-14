@@ -144,6 +144,11 @@
     ::-webkit-scrollbar { width: 5px; height: 5px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: rgba(229, 217, 182, 0.3); border-radius: 9999px; }
+
+    /* Embedded Mode: Hide internal brand title when embedded in parent iframe showcase */
+    body.is-embedded #brand-title-box {
+      display: none !important;
+    }
   </style>
 </head>
 <body>
@@ -157,7 +162,7 @@
       <!-- Main Header Row -->
       <div class="flex items-center justify-between gap-2 w-full">
         <!-- Brand Title (Responsive: Compact on mobile, rich on desktop) -->
-        <div class="arch-panel px-3 py-2 md:px-4 md:py-3 rounded-2xl pointer-events-auto flex items-center gap-2.5 md:gap-3.5 shadow-xl">
+        <div id="brand-title-box" class="arch-panel px-3 py-2 md:px-4 md:py-3 rounded-2xl pointer-events-auto flex items-center gap-2.5 md:gap-3.5 shadow-xl">
           <div class="w-8 h-8 md:w-11 md:h-11 rounded-xl bg-[#E5D9B6]/15 border border-[#E5D9B6]/40 flex items-center justify-center text-[#E5D9B6] shrink-0">
             <i data-lucide="compass" class="w-4 h-4 md:w-6 md:h-6"></i>
           </div>
@@ -624,6 +629,13 @@
   </div>
 
   <script>
+    try {
+      if (window.self !== window.top) {
+        document.body.classList.add('is-embedded');
+      }
+    } catch (e) {
+      document.body.classList.add('is-embedded');
+    }
     if (typeof lucide !== 'undefined' && lucide && typeof lucide.createIcons === 'function') {
       lucide.createIcons();
     }

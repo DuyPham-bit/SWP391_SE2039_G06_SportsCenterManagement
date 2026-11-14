@@ -2427,11 +2427,66 @@
   background: #141622 !important;
   color: #ffffff !important;
   border-radius: 28px;
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
   position: relative;
   overflow: hidden;
   margin-bottom: 32px;
+}
+
+/* Ensure headings inside 3D showcase ALWAYS have bright crisp contrast against dark background */
+.tiya-page .tiya-campus-3d-showcase h3,
+.tiya-page .tiya-campus-3d-title,
+.tiya-campus-3d-showcase h3,
+.tiya-campus-3d-title {
+  color: #FFFFFF !important;
+  font-family: var(--headline-font-family) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.01em !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65) !important;
+}
+
+.tiya-campus-3d-badge {
+  color: #E6D7C3 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+.tiya-campus-3d-tag {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #34D399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.45) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.tiya-campus-3d-pill {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.tiya-campus-3d-pill.inactive {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #F1F5F9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  font-weight: 600 !important;
+}
+
+.tiya-campus-3d-pill.inactive:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(229, 217, 182, 0.65) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+.tiya-campus-3d-pill.active {
+  background: #CDBDA6 !important;
+  color: #141622 !important;
+  font-weight: 800 !important;
+  border: 1px solid #FFFFFF !important;
+  box-shadow: 0 2px 12px rgba(205, 189, 166, 0.4) !important;
 }
 
 .tiya-campus-3d-showcase:fullscreen {
