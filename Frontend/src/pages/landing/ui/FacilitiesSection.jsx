@@ -43,6 +43,56 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [selectedFacility, setSelectedFacility] = useState(null);
   const [activeModalTab, setActiveModalTab] = useState('packages');
   const [packages, setPackages] = useState([]);
+  const [directoryViewMode, setDirectoryViewMode] = useState('3d');
+  const [is3dLoading, setIs3dLoading] = useState(true);
+  const [is3dFullscreen, setIs3dFullscreen] = useState(false);
+  const [activeZoneFilter, setActiveZoneFilter] = useState('all');
+  const model3dContainerRef = React.useRef(null);
+  const iframeRef = React.useRef(null);
+
+  const toggle3dFullscreen = () => {
+    if (!model3dContainerRef.current) return;
+    if (!document.fullscreenElement) {
+      model3dContainerRef.current.requestFullscreen().then(() => {
+        setIs3dFullscreen(true);
+      }).catch(() => {});
+    } else {
+      document.exitFullscreen().then(() => {
+        setIs3dFullscreen(false);
+      }).catch(() => {});
+    }
+  };
+
+  useEffect(() => {
+    const handleFullscreenChange = () => {
+      setIs3dFullscreen(Boolean(document.fullscreenElement));
+    };
+    document.addEventListener('fullscreenchange', handleFullscreenChange);
+    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+  }, []);
+
+  const handleZoneSelect = (zoneId) => {
+    setActiveZoneFilter(zoneId);
+    if (directoryViewMode !== '3d') {
+      setDirectoryViewMode('3d');
+    }
+    if (iframeRef.current && iframeRef.current.contentWindow) {
+      if (zoneId === 'all') {
+        iframeRef.current.contentWindow.postMessage({ type: 'RESET_VIEW' }, '*');
+      } else {
+        iframeRef.current.contentWindow.postMessage({ type: 'FOCUS_ZONE', zoneId }, '*');
+      }
+    }
+  };
+
+  const quickZones = useMemo(() => [
+    { id: 'all', label: isEn ? 'Master View (13,000m²)' : 'Toàn Cảnh (13.000m²)', icon: 'domain' },
+    { id: 'khuA', label: isEn ? 'Zone A: Pool & Gym' : 'Khu A: Bơi & Gym', icon: 'pool' },
+    { id: 'khuB', label: isEn ? 'Zone B: Basketball & Badminton' : 'Khu B: Bóng Rổ & Cầu Lông', icon: 'sports_basketball' },
+    { id: 'khuC', label: isEn ? 'Zone C: Combat & Yoga' : 'Khu C: Võ & Yoga', icon: 'self_improvement' },
+    { id: 'outdoor', label: isEn ? 'Outdoor: Football & Pickleball' : 'Ngoài Trời: Bóng Đá & Pickleball', icon: 'stadium' },
+    { id: 'lobby', label: isEn ? 'Lobby & Clinic' : 'Sảnh Lễ Tân & Y Tế', icon: 'local_convenience_store' },
+  ], [isEn]);
 
   useEffect(() => {
     let active = true;
@@ -451,65 +501,217 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           </div>
         )}
 
-        {/* CAMPUS ARCHITECTURE & ZONE DIRECTORY (SƠ ĐỒ PHÂN BỐ KHU VỰC) */}
-        <div className="tiya-campus-directory tiya-reveal--scale">
+        {/* CAMPUS 3D ARCHITECTURE & ZONE SHOWCASE (MÔ HÌNH 3D TỔ HỢP THỂ THAO ĐA NĂNG 13.000M²) */}
+        <div ref={model3dContainerRef} className="tiya-campus-3d-showcase tiya-reveal--scale relative mb-12 rounded-3xl overflow-hidden bg-[#141622] border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
           <div className="pointer-events-none absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-[var(--primary-color)]/10 blur-3xl" />
-          
-          <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
-            <div className="lg:col-span-5">
-              <span className="tiya-campus-directory__badge">
-                {isEn ? 'CONVENIENT SPATIAL LAYOUT' : (landingContent.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN')}
-              </span>
-              <h3 className="tiya-campus-directory__title">
-                {isEn ? 'TRAINING & MATCH ZONE MAP' : (landingContent.zonesLayout?.title || 'SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN')}
-              </h3>
-              <p className="tiya-campus-directory__desc">
-                {isEn
-                  ? '9 neatly planned courts and training studios with open corridors, clear navigation signs, and dedicated front desks for seamless booking in person or online.'
-                  : (landingContent.zonesLayout?.description || '')}
-              </p>
 
-              {/* Added Service Amenities */}
-              <div className="space-y-2.5">
-                {(landingContent.zonesLayout?.serviceAmenities || []).map((amenity, idx) => (
-                  <div key={amenity.id || idx} className="tiya-campus-amenity-item">
-                    <span className="material-symbols-outlined">{amenity.icon}</span>
-                    <span>{isEn ? translateAmenity(amenity.text, true) : amenity.text}</span>
-                  </div>
+          {/* Top Control Header */}
+          <div className="relative z-10 px-4 py-3.5 sm:px-6 sm:py-4.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-[#1A1D2E]/90 backdrop-blur-md">
+            <div className="flex items-center gap-3">
+              <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-[#CDBDA6]/15 border border-[#CDBDA6]/30 flex items-center justify-center text-[#CDBDA6] shrink-0">
+                <span className="material-symbols-outlined text-[20px] sm:text-[22px]">view_in_ar</span>
+              </div>
+              <div className="min-w-0">
+                <div className="flex items-center gap-2 flex-wrap">
+                  <span className="text-[10px] uppercase tracking-wider font-extrabold text-[#CDBDA6]">
+                    {isEn ? 'CONVENIENT SPATIAL LAYOUT' : (landingContent.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN')}
+                  </span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 font-bold whitespace-nowrap">
+                    13.000 m² (130m × 100m)
+                  </span>
+                </div>
+                <h3 className="text-sm sm:text-lg font-extrabold text-white tracking-tight uppercase leading-snug truncate">
+                  {isEn ? 'INTERACTIVE 3D CAMPUS MODEL' : (landingContent.zonesLayout?.title ? `MÔ HÌNH 3D: ${landingContent.zonesLayout.title}` : 'SƠ ĐỒ 3D CÁC KHU VỰC TẬP LUYỆN')}
+                </h3>
+              </div>
+            </div>
+
+            {/* View Mode Switcher & Fullscreen Action */}
+            <div className="flex items-center gap-1.5 sm:gap-2 ml-auto shrink-0">
+              <div className="bg-[#141622] p-1 rounded-xl border border-white/10 flex items-center gap-1">
+                <button
+                  type="button"
+                  onClick={() => setDirectoryViewMode('3d')}
+                  className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    directoryViewMode === '3d'
+                      ? 'bg-[#CDBDA6] text-[#141622] shadow'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">3d_rotation</span>
+                  <span className="hidden xs:inline">{isEn ? '3D Model' : 'Mô Hình 3D'}</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setDirectoryViewMode('2d')}
+                  className={`px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
+                    directoryViewMode === '2d'
+                      ? 'bg-[#CDBDA6] text-[#141622] shadow'
+                      : 'text-slate-300 hover:text-white'
+                  }`}
+                >
+                  <span className="material-symbols-outlined text-[16px]">grid_view</span>
+                  <span className="hidden xs:inline">{isEn ? '2D Map & Info' : 'Sơ Đồ 2D'}</span>
+                </button>
+              </div>
+
+              <button
+                type="button"
+                onClick={toggle3dFullscreen}
+                className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-slate-200 flex items-center gap-1.5 transition active:scale-95"
+                title={is3dFullscreen ? (isEn ? 'Exit Fullscreen' : 'Thu nhỏ') : (isEn ? 'Fullscreen 3D' : 'Toàn màn hình')}
+              >
+                <span className="material-symbols-outlined text-[18px]">
+                  {is3dFullscreen ? 'fullscreen_exit' : 'fullscreen'}
+                </span>
+                <span className="hidden md:inline">{is3dFullscreen ? (isEn ? 'Exit' : 'Thu nhỏ') : (isEn ? 'Fullscreen' : 'Toàn màn hình')}</span>
+              </button>
+
+              <a
+                href="/3d-campus.html"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-2 sm:px-3 sm:py-1.5 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-xs font-bold text-[#CDBDA6] flex items-center gap-1.5 transition active:scale-95"
+                title={isEn ? 'Open in dedicated window' : 'Mở tab 3D riêng biệt'}
+              >
+                <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                <span className="hidden md:inline">{isEn ? 'New Tab' : 'Tab mới'}</span>
+              </a>
+            </div>
+          </div>
+
+          {/* Mode 1: 3D Interactive Model View */}
+          {directoryViewMode === '3d' && (
+            <div className="relative flex flex-col">
+              {/* Quick Jump Zone Pills */}
+              <div className="relative z-10 px-3 py-2 sm:px-4 sm:py-2.5 bg-[#141622]/95 border-b border-white/5 flex items-center gap-1.5 overflow-x-auto no-scrollbar">
+                <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider mr-1 hidden sm:inline whitespace-nowrap">
+                  {isEn ? 'Fast Focus:' : 'Xem Nhanh:'}
+                </span>
+                {quickZones.map(qz => (
+                  <button
+                    key={qz.id}
+                    type="button"
+                    onClick={() => handleZoneSelect(qz.id)}
+                    className={`px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-lg text-xs font-semibold whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
+                      activeZoneFilter === qz.id
+                        ? 'bg-[#CDBDA6] text-[#141622] font-bold shadow-sm'
+                        : 'bg-white/5 hover:bg-white/10 text-slate-300 border border-white/5'
+                    }`}
+                  >
+                    <span className="material-symbols-outlined text-[15px]">{qz.icon}</span>
+                    <span>{qz.label}</span>
+                  </button>
                 ))}
               </div>
 
-              {/* 3D ArchViz Quick Link */}
-              <div className="pt-2">
-                <a
-                  href="/3d-campus.html"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 sm:px-3.5 sm:py-2 rounded-xl bg-[#CDBDA6]/15 hover:bg-[#CDBDA6]/25 border border-[#CDBDA6]/30 text-xs sm:text-xs font-extrabold text-[#CDBDA6] transition hover-lift shadow-sm w-full sm:w-auto"
+              {/* Viewport for 3D Iframe */}
+              <div className="tiya-3d-viewport relative w-full h-[540px] sm:h-[620px] lg:h-[700px] bg-[#141622]">
+                {is3dLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141622] z-10 text-center p-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 border-3 border-[#CDBDA6]/30 border-t-[#CDBDA6] rounded-full animate-spin mb-4" />
+                    <h4 className="text-xs sm:text-sm font-extrabold text-[#F7F5F0] uppercase tracking-wider mb-1">
+                      {isEn ? 'Loading 3D Campus (13,000m²)...' : 'Đang tải mô hình 3D khuôn viên 13.000m²...'}
+                    </h4>
+                    <p className="text-[11px] sm:text-xs text-slate-400 max-w-sm">
+                      {isEn ? 'Rendering Three.js WebGL architecture, lighting and sports venues.' : 'Khởi tạo không gian kiến trúc Three.js WebGL, ánh sáng thực tế và 9 cụm sân tập.'}
+                    </p>
+                  </div>
+                )}
+
+                <iframe
+                  ref={iframeRef}
+                  src="/3d-campus.html"
+                  title="3D ArchViz Campus Model"
+                  onLoad={() => setIs3dLoading(false)}
+                  className="w-full h-full border-0 block"
+                  allow="fullscreen"
+                />
+              </div>
+
+              {/* Interactive Help Footer Bar */}
+              <div className="px-4 py-2.5 bg-[#1A1D2E]/90 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+                <div className="flex items-center gap-2">
+                  <span className="material-symbols-outlined text-emerald-400 text-[16px]">touch_app</span>
+                  <span>
+                    {isEn
+                      ? 'Drag with mouse/finger to rotate 360° • Scroll/pinch to zoom • Click buildings to inspect floor cutaways'
+                      : 'Kéo chuột/chạm để xoay 360° • Cuộn chuột để phóng to/thu nhỏ • Bấm trực tiếp vào khối nhà để xem mặt cắt từng tầng'}
+                  </span>
+                </div>
+                <button
+                  type="button"
+                  onClick={toggle3dFullscreen}
+                  className="text-[#CDBDA6] hover:underline font-semibold ml-auto hidden sm:inline"
                 >
-                  <span className="material-symbols-outlined text-[18px]">view_in_ar</span>
-                  <span>{isEn ? 'Explore 3D ArchViz Model (13,000m²)' : 'Xem Mô Hình 3D Thực Tế (13.000m²)'}</span>
-                </a>
+                  {isEn ? '⛶ Open Fullscreen Mode' : '⛶ Mở chế độ xem Toàn Màn Hình'}
+                </button>
               </div>
             </div>
+          )}
 
-            {/* 4 Zones Map Columns */}
-            <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              {(landingContent.zonesLayout?.zones || []).map((zone, idx) => (
-                <div key={zone.id || idx} className="tiya-zone-card">
-                  <div className="tiya-zone-card__header">
-                    <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{zone.icon}</span>
-                    <span>{isEn ? translateZoneName(zone.name, true) : zone.name}</span>
-                  </div>
-                  <ul className="tiya-zone-card__list">
-                    {(zone.items || []).map((item, itemIdx) => (
-                      <li key={itemIdx}>• {isEn ? translateZoneItem(item, true) : item}</li>
+          {/* Mode 2: 2D Directory & Amenities Map */}
+          {directoryViewMode === '2d' && (
+            <div className="p-6 sm:p-10 relative z-10">
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
+                <div className="lg:col-span-5">
+                  <p className="tiya-campus-directory__desc">
+                    {isEn
+                      ? '9 neatly planned courts and training studios with open corridors, clear navigation signs, and dedicated front desks for seamless booking in person or online.'
+                      : (landingContent.zonesLayout?.description || '')}
+                  </p>
+
+                  {/* Added Service Amenities */}
+                  <div className="space-y-2.5">
+                    {(landingContent.zonesLayout?.serviceAmenities || []).map((amenity, idx) => (
+                      <div key={amenity.id || idx} className="tiya-campus-amenity-item">
+                        <span className="material-symbols-outlined">{amenity.icon}</span>
+                        <span>{isEn ? translateAmenity(amenity.text, true) : amenity.text}</span>
+                      </div>
                     ))}
-                  </ul>
+                  </div>
+
+                  <div className="pt-4">
+                    <button
+                      type="button"
+                      onClick={() => setDirectoryViewMode('3d')}
+                      className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#CDBDA6] text-[#141622] text-xs font-extrabold hover:bg-[#dfd3bc] transition shadow-md w-full sm:w-auto active:scale-95"
+                    >
+                      <span className="material-symbols-outlined text-[18px]">3d_rotation</span>
+                      <span>{isEn ? 'Switch to 3D Campus Model' : 'Chuyển sang xem Mô Hình 3D Thực Tế'}</span>
+                    </button>
+                  </div>
                 </div>
-              ))}
+
+                {/* 4 Zones Map Columns */}
+                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                  {(landingContent.zonesLayout?.zones || []).map((zone, idx) => (
+                    <div
+                      key={zone.id || idx}
+                      onClick={() => handleZoneSelect(zone.id === 'zone-a' ? 'khuA' : zone.id === 'zone-b' ? 'khuB' : zone.id === 'zone-c' ? 'khuC' : 'outdoor')}
+                      className="tiya-zone-card cursor-pointer group hover:border-[#CDBDA6]/40"
+                      title={isEn ? 'Click to inspect in 3D' : 'Bấm để xem trên mô hình 3D'}
+                    >
+                      <div className="tiya-zone-card__header flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{zone.icon}</span>
+                          <span>{isEn ? translateZoneName(zone.name, true) : zone.name}</span>
+                        </div>
+                        <span className="material-symbols-outlined text-[16px] text-[#CDBDA6] opacity-0 group-hover:opacity-100 transition-opacity">
+                          view_in_ar
+                        </span>
+                      </div>
+                      <ul className="tiya-zone-card__list">
+                        {(zone.items || []).map((item, itemIdx) => (
+                          <li key={itemIdx}>• {isEn ? translateZoneItem(item, true) : item}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* CALL TO ACTION: RENTAL & EVENT BANNER (Tiya Slate Navy & Gold) */}

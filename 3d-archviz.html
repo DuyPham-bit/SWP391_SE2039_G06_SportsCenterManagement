@@ -28,8 +28,8 @@
       touch-action: none;
     }
     #canvas-container {
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       position: relative;
       touch-action: none;
     }
@@ -3556,6 +3556,23 @@
 
       renderer.render(scene, camera);
     }
+
+    // Support parent frame messaging
+    window.addEventListener('message', (event) => {
+      try {
+        const data = event.data;
+        if (!data || typeof data !== 'object') return;
+        if (data.type === 'FOCUS_ZONE' && data.zoneId && typeof window.focusZone === 'function') {
+          window.focusZone(data.zoneId, data.floor || 0);
+        } else if (data.type === 'RESET_VIEW' && typeof window.resetMasterView === 'function') {
+          window.resetMasterView();
+        } else if (data.type === 'SET_LIGHTING' && data.mode && typeof window.setLightingMode === 'function') {
+          window.setLightingMode(data.mode);
+        }
+      } catch (err) {
+        console.warn('PostMessage error in 3D campus:', err);
+      }
+    });
 
     window.onload = () => animate(performance.now());
   </script>

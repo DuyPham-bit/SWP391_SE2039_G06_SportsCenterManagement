@@ -2421,6 +2421,44 @@
 }
 
 /* ─────────────────────────────────────────────────────────────
+   3D CAMPUS ARCHITECTURE SHOWCASE (INTERACTIVE 3D VIEWER)
+───────────────────────────────────────────────────────────── */
+.tiya-campus-3d-showcase {
+  background: #141622 !important;
+  color: #ffffff !important;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+.tiya-campus-3d-showcase:fullscreen {
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #141622 !important;
+}
+
+.tiya-campus-3d-showcase:fullscreen .tiya-3d-viewport {
+  flex: 1 1 auto !important;
+  height: calc(100vh - 110px) !important;
+  max-height: none !important;
+}
+
+@media screen and (max-width: 640px) {
+  .tiya-campus-3d-showcase {
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
    CAMPUS ARCHITECTURE & ZONE DIRECTORY (HIGH CONTRAST & READABILITY)
 ───────────────────────────────────────────────────────────── */
 .tiya-campus-directory {
