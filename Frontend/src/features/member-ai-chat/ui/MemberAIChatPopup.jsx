@@ -8,6 +8,7 @@ import { getMemberAIChatStorageKey } from '../../../shared/lib/memberAiChatStora
 import { hasCorruptedEncoding, parseFormattedMarkdown } from './chatMarkdown.jsx';
 import { ArenaMascot } from '../../../shared/ui/ArenaMascot.jsx';
 import { parseApiDate } from '../../../shared/lib/dateTime.js';
+import { detectSpeechLang } from '../../../shared/lib/speechLanguage.js';
 // Global helper to trigger opening the AI chat popup from anywhere in the app
 export function openMemberAIChat(prompt = '') {
   window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP', { detail: { prompt } }));
@@ -34,12 +35,16 @@ export function MemberAIChatPopup() {
 * **Suggest workout & nutrition plans** tailored to your fitness goals.
 * **Guide QR card check-in, scheduling & support**.
 
+*You can ask in any language — I will reply in the language you write in.*
+
 What would you like to explore today?`
       : `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý AI Olympic**. Tôi luôn sẵn sàng hỗ trợ bạn ngay trong popup này:
 * **Tra cứu lịch lớp & ca bơi** hôm nay hoặc trong tuần.
 * **Tư vấn giá gói tập** & quyền lợi hội viên.
 * **Gợi ý bài tập & chế độ dinh dưỡng** theo thể trạng.
 * **Hướng dẫn check-in mã thẻ, đổi lịch & hỗ trợ**.
+
+*Bạn có thể hỏi bằng bất kỳ ngôn ngữ nào — tôi sẽ trả lời bằng ngôn ngữ bạn dùng.*
 
 Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     time: new Date().toLocaleTimeString(en ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
@@ -431,7 +436,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       id: `usr-${Date.now()}`,
       sender: 'user',
       text,
-      time: new Date().toLocaleTimeString('vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
+      time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
     };
 
     setMessages((prev) => [...prev, userMsg]);
@@ -439,7 +444,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     setIsAsking(true);
 
     try {
-      const result = await aiApi.chat(text, conversationId);
+      const result = await aiApi.chat(text, conversationId, language);
       const reply = result.reply;
       setConversationId(result.conversationId);
 
@@ -521,7 +526,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     window.speechSynthesis.cancel();
     const cleanText = msg.text.replace(/[\*`#]/g, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = isEn ? 'en-US' : 'vi-VN';
+    utterance.lang = detectSpeechLang(cleanText, isEn ? 'en-US' : 'vi-VN');
     utterance.rate = 1.0;
     utterance.onend = () => setSpeakingId(null);
     utterance.onerror = () => setSpeakingId(null);

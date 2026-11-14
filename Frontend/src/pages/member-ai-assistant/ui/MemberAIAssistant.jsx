@@ -4,6 +4,7 @@ import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { aiApi } from '../../../entities/ai-chat/index.js';
 import { parseFormattedMarkdown } from './chatMarkdown.jsx';
+import { detectSpeechLang } from '../../../shared/lib/speechLanguage.js';
 
 export function MemberAIAssistant() {
   const { currentUser } = useAuth();
@@ -21,12 +22,16 @@ export function MemberAIAssistant() {
 * **Standardized sports nutrition** before and after workouts.
 * **Gym rules, facility check-in, and rescheduling policies**.
 
+*You can ask in any language — I will reply in the language you write in.*
+
 What information would you like to explore today?`
       : `Xin chào **${currentUser?.fullName || 'bạn'}**! Tôi là **Trợ lý Thể thao AI SCMS** chuẩn Olympic. Tôi có thể hỗ trợ bạn tư vấn:
 * **Lịch học và đăng ký các lớp thể thao** (Bơi lội, Boxing, Cầu lông, Gym, Yoga).
 * **Kế hoạch tập luyện theo mục tiêu** (Tăng cơ, Giảm mỡ, Phục hồi thể lực).
 * **Dinh dưỡng thể thao chuẩn hóa** trước và sau giờ tập.
 * **Quy định sử dụng phòng tập, check-in và đổi lịch**.
+
+*Bạn có thể hỏi bằng bất kỳ ngôn ngữ nào — tôi sẽ trả lời bằng ngôn ngữ bạn dùng.*
 
 Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     time: new Date().toLocaleTimeString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh', hour: '2-digit', minute: '2-digit' })
@@ -75,7 +80,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     setIsAsking(true);
 
     try {
-      const result = await aiApi.chat(text, conversationId);
+      const result = await aiApi.chat(text, conversationId, language);
       const reply = result.reply;
       setConversationId(result.conversationId);
 
@@ -146,7 +151,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     // Clean markdown asterisks and backticks for clean speech
     const cleanText = msg.text.replace(/[\*`#]/g, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = isEn ? 'en-US' : 'vi-VN';
+    utterance.lang = detectSpeechLang(cleanText, isEn ? 'en-US' : 'vi-VN');
     utterance.rate = 1.0;
     utterance.onend = () => setSpeakingId(null);
     utterance.onerror = () => setSpeakingId(null);
