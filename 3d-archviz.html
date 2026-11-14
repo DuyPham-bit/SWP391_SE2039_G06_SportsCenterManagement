@@ -624,8 +624,11 @@
   </div>
 
   <script>
-    lucide.createIcons();
-    document.getElementById('booking-date').valueAsDate = new Date();
+    if (typeof lucide !== 'undefined' && lucide && typeof lucide.createIcons === 'function') {
+      lucide.createIcons();
+    }
+    const bookingDateEl = document.getElementById('booking-date');
+    if (bookingDateEl) bookingDateEl.valueAsDate = new Date();
 
     // ============================================================================
     // 1. STRICT NON-OVERLAPPING MASTERPLAN DATA (13.000 m² = 130m x 100m)
@@ -905,6 +908,25 @@
     // ============================================================================
     // 2. THREE.JS ARCHVIZ ENGINE & PBR ENVIRONMENT MAP (PMREMGenerator)
     // ============================================================================
+    if (typeof THREE === 'undefined') {
+      console.warn('Three.js library is not available.');
+      const fallbackContainer = document.getElementById('canvas-container');
+      if (fallbackContainer) {
+        fallbackContainer.innerHTML = `
+          <div class="flex flex-col items-center justify-center h-full text-center p-6 text-slate-300">
+            <span class="text-4xl mb-3">🏟️</span>
+            <h3 class="text-base font-bold text-white mb-1">Mô Hình 3D Tổ Hợp Thể Thao 13.000m²</h3>
+            <p class="text-xs text-slate-400 max-w-sm">Không thể tải thư viện đồ họa 3D Three.js. Vui lòng kiểm tra kết nối mạng.</p>
+          </div>`;
+      }
+      window.focusZone = () => {};
+      window.resetMasterView = () => {};
+      window.setLightingMode = () => {};
+      window.setPlan2DView = () => {};
+      window.toggleWalkMode = () => {};
+      window.selectFloor = () => {};
+      window.onload = () => {};
+    } else {
     const container = document.getElementById('canvas-container');
     const scene = new THREE.Scene();
     scene.fog = new THREE.FogExp2(0x8bb8e8, 0.00065);
@@ -3575,6 +3597,7 @@
     });
 
     window.onload = () => animate(performance.now());
+    }
   </script>
 </body>
 </html>

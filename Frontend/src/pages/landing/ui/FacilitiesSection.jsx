@@ -1,4 +1,4 @@
-import React, { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect, useRef } from 'react';
 import { useLandingContent } from '../../../entities/landing-content/index.js';
 import { usePublicCatalog, getLandingPresentation } from '../../../entities/catalog/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
@@ -47,28 +47,44 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [is3dLoading, setIs3dLoading] = useState(true);
   const [is3dFullscreen, setIs3dFullscreen] = useState(false);
   const [activeZoneFilter, setActiveZoneFilter] = useState('all');
-  const model3dContainerRef = React.useRef(null);
-  const iframeRef = React.useRef(null);
+  const model3dContainerRef = useRef(null);
+  const iframeRef = useRef(null);
 
   const toggle3dFullscreen = () => {
-    if (!model3dContainerRef.current) return;
-    if (!document.fullscreenElement) {
-      model3dContainerRef.current.requestFullscreen().then(() => {
-        setIs3dFullscreen(true);
-      }).catch(() => {});
-    } else {
-      document.exitFullscreen().then(() => {
-        setIs3dFullscreen(false);
-      }).catch(() => {});
+    const el = model3dContainerRef.current;
+    if (!el) return;
+    try {
+      const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
+      if (!isFs) {
+        if (el.requestFullscreen) {
+          el.requestFullscreen().then(() => setIs3dFullscreen(true)).catch(() => {});
+        } else if (el.webkitRequestFullscreen) {
+          el.webkitRequestFullscreen();
+          setIs3dFullscreen(true);
+        }
+      } else {
+        if (document.exitFullscreen) {
+          document.exitFullscreen().then(() => setIs3dFullscreen(false)).catch(() => {});
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+          setIs3dFullscreen(false);
+        }
+      }
+    } catch {
+      // Ignore fullscreen exceptions
     }
   };
 
   useEffect(() => {
     const handleFullscreenChange = () => {
-      setIs3dFullscreen(Boolean(document.fullscreenElement));
+      setIs3dFullscreen(Boolean(document.fullscreenElement || document.webkitFullscreenElement));
     };
     document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', handleFullscreenChange);
+      document.removeEventListener('webkitfullscreenchange', handleFullscreenChange);
+    };
   }, []);
 
   const handleZoneSelect = (zoneId) => {

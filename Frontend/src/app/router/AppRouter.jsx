@@ -8,65 +8,85 @@ import { normalizeRouteHash, ROUTE_TYPO_MAP, isLandingRoute } from './routeNorma
 import { ProtectedRoute, RoleGuard } from './RoleGuard.jsx';
 import { AppLayout } from '../../widgets/app-shell/index.js';
 
+function lazyWithRetry(componentImport) {
+  return lazy(() =>
+    componentImport().catch((error) => {
+      const isChunkError =
+        error?.name === 'ChunkLoadError' ||
+        /loading chunk|dynamically imported module|failed to fetch/i.test(error?.message || '');
+      if (isChunkError && typeof window !== 'undefined') {
+        const reloadKey = 'scms_chunk_reload_' + (window.location.hash || '#/');
+        const lastReload = parseInt(sessionStorage.getItem(reloadKey) || '0', 10);
+        if (Date.now() - lastReload > 15000) {
+          sessionStorage.setItem(reloadKey, String(Date.now()));
+          window.location.reload();
+          return new Promise(() => {});
+        }
+      }
+      throw error;
+    })
+  );
+}
+
 // Public & Auth Pages (Lazy Loaded)
-const LandingPage = lazy(() => import('../../pages/landing/index.js').then(m => ({ default: m.LandingPage })));
-const LoginPage = lazy(() => import('../../pages/login/index.js').then(m => ({ default: m.LoginPage })));
-const OtpVerification = lazy(() => import('../../pages/otp-verification/index.js').then(m => ({ default: m.OtpVerification })));
-const VerifyEmailPage = lazy(() => import('../../pages/verify-email/index.js').then(m => ({ default: m.VerifyEmailPage })));
-const InitialPasswordPage = lazy(() => import('../../pages/initial-password/index.js').then(m => ({ default: m.InitialPasswordPage })));
+const LandingPage = lazyWithRetry(() => import('../../pages/landing/index.js').then(m => ({ default: m.LandingPage })));
+const LoginPage = lazyWithRetry(() => import('../../pages/login/index.js').then(m => ({ default: m.LoginPage })));
+const OtpVerification = lazyWithRetry(() => import('../../pages/otp-verification/index.js').then(m => ({ default: m.OtpVerification })));
+const VerifyEmailPage = lazyWithRetry(() => import('../../pages/verify-email/index.js').then(m => ({ default: m.VerifyEmailPage })));
+const InitialPasswordPage = lazyWithRetry(() => import('../../pages/initial-password/index.js').then(m => ({ default: m.InitialPasswordPage })));
 
 // Manager Pages (Lazy Loaded)
-const ManagerDashboard = lazy(() => import('../../pages/manager-dashboard/index.js').then(m => ({ default: m.ManagerDashboard })));
-const StaffManagement = lazy(() => import('../../pages/manager-staff/index.js').then(m => ({ default: m.StaffManagement })));
-const MemberManagement = lazy(() => import('../../pages/manager-members/index.js').then(m => ({ default: m.MemberManagement })));
-const PackageManagement = lazy(() => import('../../pages/manager-packages/index.js').then(m => ({ default: m.PackageManagement })));
-const ClassesAndRooms = lazy(() => import('../../pages/manager-classes-rooms/index.js').then(m => ({ default: m.ClassesAndRooms })));
-const CoachAssignment = lazy(() => import('../../pages/manager-coach-assignment/index.js').then(m => ({ default: m.CoachAssignment })));
-const ReportsAnalytics = lazy(() => import('../../pages/manager-reports/index.js').then(m => ({ default: m.ReportsAnalytics })));
-const RolesPermissions = lazy(() => import('../../pages/roles-permissions/index.js').then(m => ({ default: m.RolesPermissions })));
-const AuditLogs = lazy(() => import('../../pages/audit-logs/index.js').then(m => ({ default: m.AuditLogs })));
-const HomeContentManagement = lazy(() => import('../../pages/manager-home-content/index.js').then(m => ({ default: m.HomeContentManagement })));
-const AdminDashboard = lazy(() => import('../../pages/admin-dashboard/index.js').then(m => ({ default: m.AdminDashboard })));
+const ManagerDashboard = lazyWithRetry(() => import('../../pages/manager-dashboard/index.js').then(m => ({ default: m.ManagerDashboard })));
+const StaffManagement = lazyWithRetry(() => import('../../pages/manager-staff/index.js').then(m => ({ default: m.StaffManagement })));
+const MemberManagement = lazyWithRetry(() => import('../../pages/manager-members/index.js').then(m => ({ default: m.MemberManagement })));
+const PackageManagement = lazyWithRetry(() => import('../../pages/manager-packages/index.js').then(m => ({ default: m.PackageManagement })));
+const ClassesAndRooms = lazyWithRetry(() => import('../../pages/manager-classes-rooms/index.js').then(m => ({ default: m.ClassesAndRooms })));
+const CoachAssignment = lazyWithRetry(() => import('../../pages/manager-coach-assignment/index.js').then(m => ({ default: m.CoachAssignment })));
+const ReportsAnalytics = lazyWithRetry(() => import('../../pages/manager-reports/index.js').then(m => ({ default: m.ReportsAnalytics })));
+const RolesPermissions = lazyWithRetry(() => import('../../pages/roles-permissions/index.js').then(m => ({ default: m.RolesPermissions })));
+const AuditLogs = lazyWithRetry(() => import('../../pages/audit-logs/index.js').then(m => ({ default: m.AuditLogs })));
+const HomeContentManagement = lazyWithRetry(() => import('../../pages/manager-home-content/index.js').then(m => ({ default: m.HomeContentManagement })));
+const AdminDashboard = lazyWithRetry(() => import('../../pages/admin-dashboard/index.js').then(m => ({ default: m.AdminDashboard })));
 
 // Receptionist Pages (Lazy Loaded)
-const ReceptionistDashboard = lazy(() => import('../../pages/receptionist-dashboard/index.js').then(m => ({ default: m.ReceptionistDashboard })));
-const MemberLookup = lazy(() => import('../../pages/member-lookup/index.js').then(m => ({ default: m.MemberLookup })));
-const CounterMembership = lazy(() => import('../../pages/counter-membership/index.js').then(m => ({ default: m.CounterMembership })));
-const MemberCheckIn = lazy(() => import('../../pages/member-checkin/index.js').then(m => ({ default: m.MemberCheckIn })));
-const CounterBooking = lazy(() => import('../../pages/counter-booking/index.js').then(m => ({ default: m.CounterBooking })));
-const CounterInvoices = lazy(() => import('../../pages/counter-invoices/index.js').then(m => ({ default: m.CounterInvoices })));
-const SupportRequests = lazy(() => import('../../pages/support-requests/index.js').then(m => ({ default: m.SupportRequests })));
+const ReceptionistDashboard = lazyWithRetry(() => import('../../pages/receptionist-dashboard/index.js').then(m => ({ default: m.ReceptionistDashboard })));
+const MemberLookup = lazyWithRetry(() => import('../../pages/member-lookup/index.js').then(m => ({ default: m.MemberLookup })));
+const CounterMembership = lazyWithRetry(() => import('../../pages/counter-membership/index.js').then(m => ({ default: m.CounterMembership })));
+const MemberCheckIn = lazyWithRetry(() => import('../../pages/member-checkin/index.js').then(m => ({ default: m.MemberCheckIn })));
+const CounterBooking = lazyWithRetry(() => import('../../pages/counter-booking/index.js').then(m => ({ default: m.CounterBooking })));
+const CounterInvoices = lazyWithRetry(() => import('../../pages/counter-invoices/index.js').then(m => ({ default: m.CounterInvoices })));
+const SupportRequests = lazyWithRetry(() => import('../../pages/support-requests/index.js').then(m => ({ default: m.SupportRequests })));
 
 // Coach Pages (Lazy Loaded)
-const CoachDashboard = lazy(() => import('../../pages/coach-dashboard/index.js').then(m => ({ default: m.CoachDashboard })));
-const TeachingSchedule = lazy(() => import('../../pages/coach-teaching-schedule/index.js').then(m => ({ default: m.TeachingSchedule })));
-const ClassMembers = lazy(() => import('../../pages/coach-class-members/index.js').then(m => ({ default: m.ClassMembers })));
-const Attendance = lazy(() => import('../../pages/coach-attendance/index.js').then(m => ({ default: m.Attendance })));
-const TrainingPlan = lazy(() => import('../../pages/coach-training-plan/index.js').then(m => ({ default: m.TrainingPlan })));
-const WorkoutProgress = lazy(() => import('../../pages/coach-workout-progress/index.js').then(m => ({ default: m.WorkoutProgress })));
-const CoachNotifications = lazy(() => import('../../pages/coach-notifications/index.js').then(m => ({ default: m.CoachNotifications })));
-const AIRecommendation = lazy(() => import('../../pages/coach-ai-recommendation/index.js').then(m => ({ default: m.AIRecommendation })));
-const PerformanceDashboard = lazy(() => import('../../pages/coach-performance/index.js').then(m => ({ default: m.PerformanceDashboard })));
+const CoachDashboard = lazyWithRetry(() => import('../../pages/coach-dashboard/index.js').then(m => ({ default: m.CoachDashboard })));
+const TeachingSchedule = lazyWithRetry(() => import('../../pages/coach-teaching-schedule/index.js').then(m => ({ default: m.TeachingSchedule })));
+const ClassMembers = lazyWithRetry(() => import('../../pages/coach-class-members/index.js').then(m => ({ default: m.ClassMembers })));
+const Attendance = lazyWithRetry(() => import('../../pages/coach-attendance/index.js').then(m => ({ default: m.Attendance })));
+const TrainingPlan = lazyWithRetry(() => import('../../pages/coach-training-plan/index.js').then(m => ({ default: m.TrainingPlan })));
+const WorkoutProgress = lazyWithRetry(() => import('../../pages/coach-workout-progress/index.js').then(m => ({ default: m.WorkoutProgress })));
+const CoachNotifications = lazyWithRetry(() => import('../../pages/coach-notifications/index.js').then(m => ({ default: m.CoachNotifications })));
+const AIRecommendation = lazyWithRetry(() => import('../../pages/coach-ai-recommendation/index.js').then(m => ({ default: m.AIRecommendation })));
+const PerformanceDashboard = lazyWithRetry(() => import('../../pages/coach-performance/index.js').then(m => ({ default: m.PerformanceDashboard })));
 const CoachSalaryKPI = PerformanceDashboard;
-const CoachResources = lazy(() => import('../../pages/coach-resources/index.js').then(m => ({ default: m.CoachResources })));
-const CoachProfessionalHub = lazy(() => import('../../pages/coach-professional-hub/index.js').then(m => ({ default: m.CoachProfessionalHub })));
-const ManagerCoachOperations = lazy(() => import('../../pages/manager-coach-operations/index.js').then(m => ({ default: m.ManagerCoachOperations })));
-const ManagerSupportCommunications = lazy(() => import('../../pages/manager-support/index.js').then(m => ({ default: m.ManagerSupportCommunications })));
+const CoachResources = lazyWithRetry(() => import('../../pages/coach-resources/index.js').then(m => ({ default: m.CoachResources })));
+const CoachProfessionalHub = lazyWithRetry(() => import('../../pages/coach-professional-hub/index.js').then(m => ({ default: m.CoachProfessionalHub })));
+const ManagerCoachOperations = lazyWithRetry(() => import('../../pages/manager-coach-operations/index.js').then(m => ({ default: m.ManagerCoachOperations })));
+const ManagerSupportCommunications = lazyWithRetry(() => import('../../pages/manager-support/index.js').then(m => ({ default: m.ManagerSupportCommunications })));
 
 // Member Pages (Lazy Loaded)
-const MemberDashboard = lazy(() => import('../../pages/member-dashboard/index.js').then(m => ({ default: m.MemberDashboard })));
-const MemberPackages = lazy(() => import('../../pages/member-packages/index.js').then(m => ({ default: m.MemberPackages })));
-const ClassScheduleView = lazy(() => import('../../pages/member-class-schedule/index.js').then(m => ({ default: m.ClassScheduleView })));
-const MyBookings = lazy(() => import('../../pages/member-bookings/index.js').then(m => ({ default: m.MyBookings })));
-const MyProgress = lazy(() => import('../../pages/member-progress/index.js').then(m => ({ default: m.MyProgress })));
-const MyAttendance = lazy(() => import('../../pages/member-attendance/index.js').then(m => ({ default: m.MyAttendance })));
-const MemberNotifications = lazy(() => import('../../pages/member-notifications/index.js').then(m => ({ default: m.MemberNotifications })));
-const MemberAIAssistant = lazy(() => import('../../pages/member-ai-assistant/index.js').then(m => ({ default: m.MemberAIAssistant })));
-const PaymentResult = lazy(() => import('../../pages/payment-result/index.js').then(m => ({ default: m.PaymentResult })));
-const MemberCoachPortal = lazy(() => import('../../pages/member-coach-portal/index.js').then(m => ({ default: m.MemberCoachPortal })));
-const MySupportRequests = lazy(() => import('../../pages/my-support-requests/index.js').then(m => ({ default: m.MySupportRequests })));
-const MemberRefundRequests = lazy(() => import('../../pages/member-refund-requests/index.js').then(m => ({ default: m.MemberRefundRequests })));
-const PayrollPage = lazy(() => import('../../pages/payroll/index.js').then(m => ({ default: m.PayrollPage })));
+const MemberDashboard = lazyWithRetry(() => import('../../pages/member-dashboard/index.js').then(m => ({ default: m.MemberDashboard })));
+const MemberPackages = lazyWithRetry(() => import('../../pages/member-packages/index.js').then(m => ({ default: m.MemberPackages })));
+const ClassScheduleView = lazyWithRetry(() => import('../../pages/member-class-schedule/index.js').then(m => ({ default: m.ClassScheduleView })));
+const MyBookings = lazyWithRetry(() => import('../../pages/member-bookings/index.js').then(m => ({ default: m.MyBookings })));
+const MyProgress = lazyWithRetry(() => import('../../pages/member-progress/index.js').then(m => ({ default: m.MyProgress })));
+const MyAttendance = lazyWithRetry(() => import('../../pages/member-attendance/index.js').then(m => ({ default: m.MyAttendance })));
+const MemberNotifications = lazyWithRetry(() => import('../../pages/member-notifications/index.js').then(m => ({ default: m.MemberNotifications })));
+const MemberAIAssistant = lazyWithRetry(() => import('../../pages/member-ai-assistant/index.js').then(m => ({ default: m.MemberAIAssistant })));
+const PaymentResult = lazyWithRetry(() => import('../../pages/payment-result/index.js').then(m => ({ default: m.PaymentResult })));
+const MemberCoachPortal = lazyWithRetry(() => import('../../pages/member-coach-portal/index.js').then(m => ({ default: m.MemberCoachPortal })));
+const MySupportRequests = lazyWithRetry(() => import('../../pages/my-support-requests/index.js').then(m => ({ default: m.MySupportRequests })));
+const MemberRefundRequests = lazyWithRetry(() => import('../../pages/member-refund-requests/index.js').then(m => ({ default: m.MemberRefundRequests })));
+const PayrollPage = lazyWithRetry(() => import('../../pages/payroll/index.js').then(m => ({ default: m.PayrollPage })));
 
 
 function Navigate({ to, replace = true }) {

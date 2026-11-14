@@ -46,19 +46,36 @@ export class PageErrorBoundary extends React.Component {
         <div className="flex flex-wrap items-center justify-center gap-3 w-full">
           <button
             type="button"
-            onClick={this.retry}
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                window.location.reload();
+              } else {
+                this.retry();
+              }
+            }}
             className="min-h-[44px] px-5 py-2.5 rounded-xl bg-brand-navy-900 dark:bg-brand-teal-600 text-white text-xs font-chivo font-bold hover:bg-brand-navy-800 dark:hover:bg-brand-teal-500 transition-colors shadow flex items-center justify-center gap-1.5"
           >
             <span className="material-symbols-outlined text-[18px]" aria-hidden="true">refresh</span>
             <span>{isEn ? 'Try again' : 'Thử lại'}</span>
           </button>
-          <a
-            href="#/"
+          <button
+            type="button"
+            onClick={() => {
+              if (typeof window !== 'undefined') {
+                if (window.location.hash !== '#/' && window.location.hash !== '') {
+                  window.location.hash = '#/';
+                } else {
+                  window.location.reload();
+                }
+              } else {
+                this.retry();
+              }
+            }}
             className="min-h-[44px] px-5 py-2.5 rounded-xl border border-brand-navy-200 dark:border-white/10 bg-white dark:bg-white/5 text-brand-navy-700 dark:text-slate-200 text-xs font-chivo font-bold hover:bg-brand-navy-50 dark:hover:bg-white/10 transition-colors flex items-center justify-center gap-1.5"
           >
             <span className="material-symbols-outlined text-[18px]" aria-hidden="true">home</span>
             <span>{isEn ? 'Back to Home' : 'Về Trang chủ'}</span>
-          </a>
+          </button>
         </div>
       </div>
     );
