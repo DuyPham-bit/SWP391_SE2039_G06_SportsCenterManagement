@@ -96,6 +96,8 @@ export function TrainingPlanFormModal({
             </label>
             <input
               type="date"
+              required
+              max={endDate || undefined}
               value={startDate}
               onChange={e => setStartDate(e.target.value)}
               className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-300 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white"
@@ -107,6 +109,7 @@ export function TrainingPlanFormModal({
             </label>
             <input
               type="date"
+              min={startDate || undefined}
               value={endDate}
               onChange={e => setEndDate(e.target.value)}
               className="w-full px-3.5 py-2 text-sm rounded-lg border border-brand-navy-300 focus:outline-none focus:ring-2 focus:ring-brand-sage-500 focus:border-brand-sage-500 bg-white"
