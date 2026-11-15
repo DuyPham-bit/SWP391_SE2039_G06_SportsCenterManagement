@@ -1841,6 +1841,20 @@ public sealed class PaymentService(
                 subscription.Status = "Refunded";
                 subscription.UpdatedAt = now;
             }
+
+            // A fully refunded upgrade gives back the package it replaced, if that one has not run out.
+            var refundedIds = subscriptions.Select(subscription => subscription.Id).ToList();
+            var today = ToBusinessDate(now);
+            var replaced = await _unitOfWork.Context.MemberSubscriptions
+                .Where(other => other.UpgradedBySubscriptionId != null && refundedIds.Contains(other.UpgradedBySubscriptionId.Value)
+                    && other.Status == MembershipEntitlements.StatusUpgraded && other.EndDate >= today)
+                .ToListAsync(cancellationToken);
+            foreach (var other in replaced)
+            {
+                other.Status = "Active";
+                other.UpgradedBySubscriptionId = null;
+                other.UpdatedAt = now;
+            }
         }
     }
 
@@ -2218,7 +2232,7 @@ public sealed class PaymentService(
         }
 
         // Sandbox fallback targets only the server-configured ReturnUrl to avoid open redirects.
-        if (!MoMoService.IsSandboxEndpoint(configuration["Momo:PaymentUrl"]) ||
+        if (!MoMoService.IsSandboxFallbackEnabled(configuration) ||
             !Uri.TryCreate(configuration["Momo:ReturnUrl"]?.Trim(), UriKind.Absolute, out var returnUri))
         {
             return false;

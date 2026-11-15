@@ -132,7 +132,7 @@ export function getMemberReminders(user, bookings, now = new Date(), isEn = fals
       icon: 'event'
     });
   }
-  for (const booking of bookings.filter(b => b.sessionStatus === 'CANCELLED' && b.bookingDate >= vietnamDate(now))) {
+  for (const booking of bookings.filter(b => b.sessionStatus === 'CANCELLED' && String(b.bookingDate || '').slice(0, 10) >= vietnamDate(now))) {
     reminders.push({
       id: `cancelled-${booking.id}`,
       title: isEn ? `Class Cancelled: ${translateClassName(booking.className, isEn)}` : `Buổi học đã bị hủy: ${booking.className}`,

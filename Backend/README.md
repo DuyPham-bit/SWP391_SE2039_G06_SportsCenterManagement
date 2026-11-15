@@ -43,6 +43,18 @@ dotnet ef database update --project .\SportsCenterManagement.DAL\SportsCenterMan
 dotnet run --project .\SportsCenterManagement.API\SportsCenterManagement.API.csproj
 ```
 
+`appsettings.Development.json` không chứa mật khẩu DB. Mỗi máy tự đặt chuỗi kết nối đầy đủ vào User Secrets (một lần):
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:SportsCenter" "Host=localhost;Port=5432;Database=SportsCenterDB;Username=postgres;Password=<mật khẩu>" --project .\SportsCenterManagement.API
+```
+
+Chạy unit test (xUnit, EF InMemory, không cần PostgreSQL):
+
+```powershell
+dotnet test .\SportsCenterManagement.Tests
+```
+
 API được xây bằng ASP.NET Core MVC Controllers và trả JSON; không dùng Razor Views vì repository này là backend cho frontend riêng. Các route Flow 1 đã triển khai:
 
 | Method | Route | Mục đích |

@@ -88,7 +88,7 @@ export function MyAttendance() {
     // Tỷ lệ chuyên cần Olympic = (Có mặt + Đi muộn) / Tổng số ca đã ghi nhận điểm danh
     const evaluatedTotal = present + late + absent;
     const disciplineRate =
-      evaluatedTotal > 0 ? Math.round(((present + late) / evaluatedTotal) * 100) : 100;
+      evaluatedTotal > 0 ? Math.round(((present + late) / evaluatedTotal) * 100) : 0;
 
     return { total, present, late, absent, excused, pending, disciplineRate };
   }, [history]);
@@ -119,8 +119,9 @@ export function MyAttendance() {
       }
 
       // 2. Lọc dải ngày
-      if (fromDate && b.bookingDate < fromDate) return false;
-      if (toDate && b.bookingDate > toDate) return false;
+      const dateKey = String(b.bookingDate || '').slice(0, 10);
+      if (fromDate && dateKey < fromDate) return false;
+      if (toDate && dateKey > toDate) return false;
 
       // 3. Lọc theo môn thể thao
       if (selectedSport !== 'ALL') {

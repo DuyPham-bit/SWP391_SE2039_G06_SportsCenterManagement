@@ -1185,8 +1185,12 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         if (request.MemberId.HasValue && !await db.MemberProfiles.AnyAsync(x => x.Id == request.MemberId && x.CenterId == manager.CenterId, ct))
             throw Invalid("Hội viên không thuộc trung tâm.");
         var memberId = request.MemberId;
+        // Serializable + existence check: a double-submitted form cannot credit the same sale twice.
+        await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         if (request.SubscriptionId.HasValue)
         {
+            if (await db.CoachSalesCredits.AnyAsync(x => x.SubscriptionId == request.SubscriptionId, ct))
+                throw BusinessException.Conflict("Gói hội viên này đã được ghi doanh số cho HLV.");
             var subscription = await (from sub in db.MemberSubscriptions
                 join member in db.MemberProfiles on sub.MemberId equals member.Id
                 join package in db.MembershipPackages on sub.PackageId equals package.Id
@@ -1199,7 +1203,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         var row = new CoachSalesCredit { CoachId = request.CoachId, MemberId = memberId,
             SubscriptionId = request.SubscriptionId, Amount = request.Amount, CreditedAt = request.CreditedAt.HasValue ? ToUtc(request.CreditedAt.Value) : UtcNow,
             Note = request.Note?.Trim(), CreatedBy = userId };
-        db.CoachSalesCredits.Add(row); await db.SaveChangesAsync(ct); return row.Id;
+        db.CoachSalesCredits.Add(row); await db.SaveChangesAsync(ct); await tx.CommitAsync(ct); return row.Id;
     }
 
     public async Task<long> CreateResource(long userId, CreateResourceRequest request, CancellationToken ct)

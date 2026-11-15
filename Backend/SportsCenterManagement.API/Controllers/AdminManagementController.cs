@@ -407,7 +407,13 @@ public sealed class AdminManagementController(SportsCenterDbContext db) : Contro
         if (accountId == actorId) return Conflict(new { message = "Admin không thể thực hiện thao tác bảo mật lên chính tài khoản đang dùng." });
         var account = await db.Users.SingleOrDefaultAsync(user => user.Id == accountId, ct);
         if (account is null) return NotFound(new { message = "Không tìm thấy tài khoản." });
+        if (account.Status == "Deleted")
+            return Conflict(new { message = "Tài khoản đã bị xóa, không thể thực hiện thao tác bảo mật." });
         var staffProfile = await db.StaffProfiles.SingleOrDefaultAsync(staff => staff.UserId == accountId, ct);
+        // Same rule as UpdateManager: a Manager can only be re-activated at a center that is operating.
+        if (action == "unlock" && staffProfile?.Position == RoleNames.Manager &&
+            !await db.Centers.AnyAsync(center => center.Id == staffProfile.CenterId && center.Status == "Active", ct))
+            return Conflict(new { message = "Cơ sở của Manager đang ngừng hoạt động; hãy kích hoạt cơ sở trước khi mở khóa." });
         var oldValues = new { account.Status, account.LockedUntil, account.AuthVersion };
         switch (action)
         {

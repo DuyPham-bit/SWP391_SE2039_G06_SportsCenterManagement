@@ -187,7 +187,7 @@ export function MyBookings() {
       }
 
       // 4. Lọc theo ngày
-      if (selectedDate && b.bookingDate !== selectedDate) {
+      if (selectedDate && String(b.bookingDate || '').slice(0, 10) !== selectedDate) {
         return false;
       }
 

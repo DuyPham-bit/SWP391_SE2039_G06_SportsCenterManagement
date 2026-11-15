@@ -292,10 +292,28 @@ export function useClassSchedule() {
   // Kiểm tra xung đột lịch với các lớp đã đặt khác của học viên
   const conflictingBooking = useMemo(() => {
     if (!activeSession || !myBookings.length) return null;
+    const toMinutes = (hhmm) => {
+      const [h, m] = String(hhmm || '').split(':').map(Number);
+      return Number.isFinite(h) && Number.isFinite(m) ? h * 60 + m : null;
+    };
+    const parseRange = (startTime, endTime, timeSlot) => {
+      const parts = String(timeSlot || '').split('-').map(s => s.trim());
+      const start = toMinutes(startTime || parts[0]);
+      const end = toMinutes(endTime || parts[1]);
+      return start !== null && end !== null ? { start, end } : null;
+    };
+    const activeDate = String(activeSession.sessionDate || '').slice(0, 10);
+    const activeRange = parseRange(activeSession.startTime, activeSession.endTime, activeSession.timeSlot);
+
     return myBookings.find(b => {
+      if (b.status !== 'CONFIRMED' && b.status !== 'BOOKED') return false;
+      if (b.sessionStatus === 'CANCELLED') return false;
       if ((b.sessionId || b.id) === (activeSession.sessionId || activeSession.id)) return false;
-      if (b.bookingDate !== activeSession.sessionDate) return false;
-      // Trùng ngày và giao thoa khung giờ
+      if (String(b.bookingDate || '').slice(0, 10) !== activeDate) return false;
+      const bookingRange = parseRange(b.startTime, b.endTime, b.timeSlot);
+      if (activeRange && bookingRange) {
+        return bookingRange.start < activeRange.end && activeRange.start < bookingRange.end;
+      }
       return b.timeSlot === activeSession.timeSlot;
     });
   }, [activeSession, myBookings]);
@@ -322,8 +340,9 @@ export function useClassSchedule() {
       // 3. Lọc trạng thái vé
       const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
       const isFull = cls.enrolledCount >= cls.capacity;
+      const isUnavailable = (cls.status || cls.sessionStatus) === 'CANCELLED' || cls.buttonState === 'EXPIRED' || cls.buttonState === 'NOT_OPEN';
       if (selectedStatusFilter === 'BOOKED_ONLY' && !isBooked) return false;
-      if (selectedStatusFilter === 'AVAILABLE_ONLY' && isFull) return false;
+      if (selectedStatusFilter === 'AVAILABLE_ONLY' && (isFull || isUnavailable)) return false;
 
       // 4. Tìm kiếm từ khóa
       if (searchQuery.trim()) {
@@ -375,7 +394,12 @@ export function useClassSchedule() {
   const stats = useMemo(() => {
     const total = filteredClasses.length;
     const booked = filteredClasses.filter(c => bookedSessionIds.has(c.sessionId) || bookedSessionIds.has(c.id)).length;
-    const available = filteredClasses.filter(c => c.enrolledCount < c.capacity).length;
+    const available = filteredClasses.filter(c =>
+      c.enrolledCount < c.capacity &&
+      (c.status || c.sessionStatus) !== 'CANCELLED' &&
+      c.buttonState !== 'EXPIRED' &&
+      c.buttonState !== 'NOT_OPEN'
+    ).length;
     const sportSet = new Set(filteredClasses.map(c => c.sportName));
     return { total, booked, available, sportsCount: sportSet.size, sportsTotal: entitlements?.activeSportCount || null };
   }, [filteredClasses, bookedSessionIds, entitlements]);

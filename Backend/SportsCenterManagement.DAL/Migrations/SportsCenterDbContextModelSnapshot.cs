@@ -2159,6 +2159,10 @@ namespace SportsCenterManagement.DAL.Migrations
                         .HasColumnType("timestamp without time zone")
                         .HasColumnName("updated_at");
 
+                    b.Property<long?>("UpgradedBySubscriptionId")
+                        .HasColumnType("bigint")
+                        .HasColumnName("upgraded_by_subscription_id");
+
                     b.HasKey("Id");
 
                     b.HasIndex("MemberId");
