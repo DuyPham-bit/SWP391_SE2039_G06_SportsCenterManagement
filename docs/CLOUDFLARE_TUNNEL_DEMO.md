@@ -26,7 +26,7 @@ Không public cổng SQL Server hoặc port 5000 trên router/firewall.
 1. Mở PowerShell tại thư mục gốc project và khởi động API:
 
    ```powershell
-   .\start-backend-persistent.bat
+   .\scripts\start-backend-persistent.bat
    ```
 
 2. Mở PowerShell khác, tạo Tunnel:

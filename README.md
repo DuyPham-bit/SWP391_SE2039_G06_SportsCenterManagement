@@ -14,7 +14,7 @@ Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai 
    powershell -ExecutionPolicy Bypass -File .\Backend\start-shared.ps1
    ```
 
-   Script kiểm tra PostgreSQL ở cổng 5432 trước khi chạy; nếu chưa chạy, script tự khởi động container `postgres` (hoặc chạy `start-postgres.bat`). API dùng `http://localhost:5000`; Vite proxy `/api` đến địa chỉ này. Nếu dùng PostgreSQL từ xa, chạy script với `-SkipDatabaseCheck`.
+   Script kiểm tra PostgreSQL ở cổng 5432 trước khi chạy; nếu chưa chạy, script tự khởi động container `postgres` (hoặc chạy `scripts/start-postgres.bat`). API dùng `http://localhost:5000`; Vite proxy `/api` đến địa chỉ này. Nếu dùng PostgreSQL từ xa, chạy script với `-SkipDatabaseCheck`.
 3. Sao chép `Frontend/.env.example` thành `Frontend/.env.local` và đặt `VITE_SPORTS_CENTER_ID` thành ID trung tâm thực tế trong database; biến này bắt buộc khi đăng ký hội viên mới.
 4. Cài và chạy giao diện:
 

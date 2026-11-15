@@ -125,7 +125,7 @@ Trạng thái sau khi sửa: mục 1 → `DbInitializer.SeedAsync(context, seedD
 
 ## Checklist 15 phút trước khi bảo vệ
 
-1. Bật Docker Desktop → `start-postgres.bat` → chạy LogicAudit theo `Backend/verification/LogicAudit/README.md`, chụp dòng tổng kết.
+1. Bật Docker Desktop → `scripts/start-postgres.bat` → chạy LogicAudit theo `Backend/verification/LogicAudit/README.md`, chụp dòng tổng kết.
 2. Kiểm tra Railway có biến `Jwt__Key`, `ConnectionStrings__SportsCenter`, `Bootstrap__Admin__Password`, `Cors__AllowedOrigins`.
 3. Commit hoặc bỏ 3 file FE đang sửa dở (`index.html`, `theme.css`, `main.jsx`) để demo đúng bản đã test.
 4. Mở Swagger ở môi trường dev, thử gọi 1 endpoint Manager bằng token Member để minh họa 403.

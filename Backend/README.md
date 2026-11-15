@@ -6,7 +6,7 @@ Backend cho hệ thống quản lý trung tâm thể thao. Repository hiện dù
 
 - .NET 10 / ASP.NET Core Web API
 - Entity Framework Core 10 + PostgreSQL (Npgsql)
-- PostgreSQL 17 chạy bằng Docker (`start-postgres.bat`) cho môi trường phát triển mặc định
+- PostgreSQL 17 chạy bằng Docker (`scripts/start-postgres.bat`) cho môi trường phát triển mặc định
 - Mô hình 3 tầng (Presentation - Business Logic - Data Access) kết hợp Repository Pattern & Unit of Work
 
 ```text

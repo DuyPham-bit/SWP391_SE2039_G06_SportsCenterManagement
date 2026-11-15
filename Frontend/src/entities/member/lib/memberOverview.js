@@ -1,4 +1,3 @@
-import { parseCalendarDate } from '../../../shared/lib/dateTime.js';
 import { translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -19,43 +18,6 @@ export function formatMemberDateTime(value, isEn = false) {
   const timestamp = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
   const date = new Date(timestamp);
   return Number.isNaN(date.getTime()) ? (isEn ? 'N/A' : 'Chưa có thông tin') : date.toLocaleString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-}
-
-export const DAY_LABELS = ['CHỦ NHẬT', 'THỨ 2', 'THỨ 3', 'THỨ 4', 'THỨ 5', 'THỨ 6', 'THỨ 7'];
-export const DAY_LABELS_EN = ['SUNDAY', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-
-export function parseIsoDate(dateStr) {
-  if (!dateStr) return parseCalendarDate();
-  const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d, 12));
-}
-
-export function formatIsoDate(date) {
-  if (!date) return '';
-  const d = date instanceof Date ? date : new Date(date);
-  if (Number.isNaN(d.getTime())) return '';
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-export function getMonday(date) {
-  const d = new Date(date);
-  const day = d.getUTCDay();
-  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 12));
-}
-
-export function getWeekDays(startDate) {
-  const monday = getMonday(startDate);
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const nextDay = new Date(monday);
-    nextDay.setUTCDate(monday.getUTCDate() + i);
-    days.push(nextDay);
-  }
-  return days;
 }
 
 export function bookingStart(booking) {
@@ -152,9 +114,6 @@ export function getLatestProgress(records) {
 export function formatMeasurement(value, unit, isEn = false) {
   return value === null || value === undefined || value === '' ? (isEn ? 'Not measured' : 'Chưa đo') : `${value} ${unit}`;
 }
-
-export const ATTENDANCE_LABELS = { PRESENT: 'Có mặt', LATE: 'Đi muộn', ABSENT: 'Vắng mặt', EXCUSED: 'Vắng có phép', PENDING: 'Chưa điểm danh' };
-export const ATTENDANCE_LABELS_EN = { PRESENT: 'Present', LATE: 'Late', ABSENT: 'Absent', EXCUSED: 'Excused', PENDING: 'Pending' };
 
 export const BOOKING_LABELS = {
   CONFIRMED: 'Đã xác nhận',

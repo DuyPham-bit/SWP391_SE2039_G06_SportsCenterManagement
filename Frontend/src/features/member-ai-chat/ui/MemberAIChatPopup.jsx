@@ -9,10 +9,6 @@ import { hasCorruptedEncoding, parseFormattedMarkdown } from './chatMarkdown.jsx
 import { ArenaMascot } from '../../../shared/ui/ArenaMascot.jsx';
 import { parseApiDate } from '../../../shared/lib/dateTime.js';
 import { detectSpeechLang } from '../../../shared/lib/speechLanguage.js';
-// Global helper to trigger opening the AI chat popup from anywhere in the app
-export function openMemberAIChat(prompt = '') {
-  window.dispatchEvent(new CustomEvent('SCMS_OPEN_AI_POPUP', { detail: { prompt } }));
-}
 
 export function MemberAIChatPopup() {
   const { currentUser } = useAuth();

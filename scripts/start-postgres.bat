@@ -3,7 +3,7 @@ title Khoi dong PostgreSQL (Docker)
 echo ============================================================
 echo   DANG KHOI DONG POSTGRESQL CHO PROJECT
 echo ============================================================
-cd /d "%~dp0"
+cd /d "%~dp0.."
 docker compose -f docker\docker-compose.yml --env-file docker\.env up -d postgres
 if %errorLevel% neq 0 (
     echo [LOI] Khong the khoi dong PostgreSQL. Kiem tra Docker Desktop va docker\.env.

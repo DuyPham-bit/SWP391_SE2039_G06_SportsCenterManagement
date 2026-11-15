@@ -6,25 +6,6 @@ import { NotificationInbox } from '../../../features/notifications/index.js';
 import { Logo } from '../../../shared/ui/Logo.jsx';
 import { translateCoachName } from '../../../shared/i18n/i18nHelper.js';
 
-// Thông tin cơ sở duy nhất của hệ thống trung tâm thể thao SCMS
-export const SINGLE_BRANCH = {
-  id: 'HCM',
-  nameVi: 'Cơ sở TP. Hồ Chí Minh (HCM)',
-  nameEn: 'Ho Chi Minh City Campus (HCM)',
-  code: 'HCM',
-  tagVi: 'Cơ sở chính duy nhất',
-  tagEn: 'Sole Main Campus',
-  addressVi: 'Lô E2a-7, Đường D1, Khu Công nghệ cao, TP. Thủ Đức, TP. HCM',
-  addressEn: 'Lot E2a-7, D1 Street, High-Tech Park, Thu Duc City, HCMC',
-  hotline: '(028) 7300 5588',
-  hoursVi: '06:00 - 22:00 hàng ngày',
-  hoursEn: '06:00 - 22:00 Daily',
-  statusVi: 'Đang mở cửa hoạt động',
-  statusEn: 'Currently Open',
-  facilitiesVi: '12 sân cầu lông, 4 sân tennis, 2 hồ bơi Olympic, tổ hợp Gym, Boxing & Yoga',
-  facilitiesEn: '12 badminton courts, 4 tennis courts, 2 Olympic pools, Gym, Boxing & Yoga'
-};
-
 // Ngôn ngữ hỗ trợ
 export const LANGUAGES = [
   {

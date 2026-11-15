@@ -1,15 +1,6 @@
 import React, { useState } from 'react';
 import { AnimatedNumber } from '../../../shared/lib/useCountUp.jsx';
 
-// Utility formatters
-export const formatShortVnd = (num) => {
-  const n = Number(num || 0);
-  if (n >= 1000000000) return `${(n / 1000000000).toFixed(1)} tỷ`;
-  if (n >= 1000000) return `${(n / 1000000).toFixed(1)} tr`;
-  if (n >= 1000) return `${(n / 1000).toFixed(0)}k`;
-  return `${n.toLocaleString('vi-VN')}đ`;
-};
-
 /**
  * Monotone Cubic Spline (Fritsch-Carlson) algorithm.
  * Guarantees zero overshoot/undershoot, eliminates loops and negative values,

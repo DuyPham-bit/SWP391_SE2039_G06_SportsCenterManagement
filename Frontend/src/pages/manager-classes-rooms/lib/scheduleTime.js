@@ -17,15 +17,6 @@ export const addMinutesToTime = (timeStr, minutes = 60) => {
   return `${String(newH).padStart(2, '0')}:${String(newM).padStart(2, '0')}`;
 };
 
-export const formatDisplayDate = (isoStr) => {
-  if (!isoStr) return '';
-  const parts = String(isoStr).split('-');
-  if (parts.length === 3) {
-    return `${parts[2]}/${parts[1]}/${parts[0]}`;
-  }
-  return isoStr;
-};
-
 export const getTimePeriodInfo = (startTime) => {
   const hour = parseInt(String(startTime || '0').slice(0, 2), 10);
   if (hour < 12) {

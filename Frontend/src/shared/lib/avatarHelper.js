@@ -11,19 +11,6 @@
 // from older versions until it has been migrated to the server once.
 const LEGACY_AVATAR_PREFIX = 'scms_avatar_';
 
-/** Legacy photo saved in this browser by older versions; removed once read. */
-export function takeLegacyAvatar(userId) {
-  if (!userId || typeof localStorage === 'undefined') return null;
-  try {
-    const key = `${LEGACY_AVATAR_PREFIX}${userId}`;
-    const value = localStorage.getItem(key);
-    if (value) localStorage.removeItem(key);
-    return value && value.startsWith('data:image/') ? value : null;
-  } catch {
-    return null;
-  }
-}
-
 /** Peek without removing (used to migrate a member photo only after the upload succeeds). */
 export function peekLegacyAvatar(userId) {
   if (!userId || typeof localStorage === 'undefined') return null;

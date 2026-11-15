@@ -371,8 +371,3 @@ export function useToast() {
   }
   return context;
 }
-
-export function useConfirm() {
-  const { confirm } = useToast();
-  return confirm;
-}

@@ -8,7 +8,7 @@ echo.
 set ASPNETCORE_ENVIRONMENT=Development
 set Database__SeedDemoData=false
 
-cd /d "%~dp0Backend\SportsCenterManagement.API"
+cd /d "%~dp0..\Backend\SportsCenterManagement.API"
 
 echo Dang khoi chay ASP.NET Core API tai http://localhost:5000 ...
 dotnet run --no-launch-profile --urls "http://0.0.0.0:5000"

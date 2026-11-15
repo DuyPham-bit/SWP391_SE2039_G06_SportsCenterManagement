@@ -310,23 +310,6 @@ export function translateNotificationContent(content, isEn) {
   return content;
 }
 
-/**
- * Translates recipient target string to English if isEn is true
- */
-export function translateTarget(target, isEn) {
-  if (!target || !isEn) return target || '';
-  if (target === 'Học viên được phân công') return 'Assigned students';
-  if (target === 'Toàn bộ học viên của HLV') return 'All students of Coach';
-  if (target.startsWith('Học viên:')) {
-    return target.replace('Học viên:', 'Student:');
-  }
-  if (target.startsWith('Lớp:')) {
-    const rawClass = target.replace('Lớp:', '').trim();
-    return `Class: ${translateClassName(rawClass, isEn)}`;
-  }
-  return target;
-}
-
 export const PACKAGE_NAME_MAP = {
   'Gói Basic Thể Thao': 'Basic Sports Package',
   'Gói Pro Bứt Phá': 'Pro Breakthrough Package',
