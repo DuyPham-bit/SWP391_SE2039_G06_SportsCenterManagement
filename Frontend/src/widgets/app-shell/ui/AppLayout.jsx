@@ -88,6 +88,7 @@ export function AppLayout({ children, currentPath }) {
       '#/member/dashboard': 'nav.member_dashboard',
       '#/member/schedule': 'nav.member_schedule',
       '#/member/bookings': 'nav.member_bookings',
+      '#/member/classes': 'nav.member_classes',
       '#/member/attendance': 'nav.member_attendance',
       '#/member/progress': 'nav.member_progress',
       '#/member/packages': 'nav.member_packages',

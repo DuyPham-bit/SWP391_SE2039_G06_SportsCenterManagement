@@ -52,8 +52,15 @@ public sealed class PaymentService(
         CancellationToken cancellationToken = default)
     {
         return await CreateVnPayPaymentUrlCoreAsync(
-            memberId, memberId, null, request, ipAddress, idempotencyKey, cancellationToken);
+            memberId, await GetMemberUserIdAsync(memberId, cancellationToken), null, request, ipAddress, idempotencyKey,
+            cancellationToken);
     }
+
+    /// <summary>Self-service actor is the member's User.Id, keeping idempotency scopes in one (user) namespace with staff.</summary>
+    private async Task<long> GetMemberUserIdAsync(long memberId, CancellationToken cancellationToken) =>
+        await _unitOfWork.Context.MemberProfiles.Where(profile => profile.Id == memberId)
+            .Select(profile => (long?)profile.UserId).SingleOrDefaultAsync(cancellationToken)
+        ?? throw BusinessException.NotFound("Không tìm thấy hồ sơ hội viên.");
 
     public async Task<string> CreateCounterVnPayPaymentUrlAsync(
         long staffUserId,
@@ -115,7 +122,8 @@ public sealed class PaymentService(
     {
         EnsureGatewayConfiguration("MoMo", "Momo:PartnerCode", "Momo:AccessKey", "Momo:SecretKey", "Momo:PaymentUrl", "Momo:ReturnUrl", "Momo:NotifyUrl");
         var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, memberId, null, request, "MOMO", idempotencyKey, cancellationToken);
+            memberId, await GetMemberUserIdAsync(memberId, cancellationToken), null, request, "MOMO", idempotencyKey,
+            cancellationToken);
         if (!string.IsNullOrWhiteSpace(existingLink))
         {
             return existingLink;
@@ -1398,7 +1406,7 @@ public sealed class PaymentService(
                 throw BusinessException.Forbidden("Tài khoản hội viên không hoạt động.");
             }
 
-            var effectiveActorUserId = (actorUserId == memberId || !await _unitOfWork.Context.Users.AnyAsync(u => u.Id == actorUserId, cancellationToken))
+            var effectiveActorUserId = !await _unitOfWork.Context.Users.AnyAsync(u => u.Id == actorUserId, cancellationToken)
                 ? member.UserId
                 : actorUserId;
 

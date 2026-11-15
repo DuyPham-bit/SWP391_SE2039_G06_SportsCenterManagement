@@ -137,6 +137,11 @@ export async function apiRequest(path, { method = 'GET', body, session = getApiS
         window.dispatchEvent(new Event('scms:auth-expired'));
       }
     }
+    // 403 with a live session usually means role/capabilities changed server-side (e.g. a Manager edited the
+    // center permission matrix): ask the session model to reload them so menus and route guards follow.
+    if (response.status === 403 && session && session === getApiSession() && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('scms:permissions-stale'));
+    }
     const message = expiredToken
       ? 'Phiên đăng nhập đã hết hạn hoặc quyền đã bị thu hồi. Vui lòng đăng nhập lại.'
       : payload?.detail || payload?.message || validationErrors || payload?.title ||

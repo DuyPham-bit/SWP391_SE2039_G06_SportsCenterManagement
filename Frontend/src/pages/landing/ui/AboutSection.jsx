@@ -61,12 +61,11 @@ export function AboutSection({ catalog, facilitiesList, isEn, landingContent, vi
           {/* Right Column: 4 Stat Cards */}
           <div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'20px'}}>
+              {/* CMS stats win. Without them, show only figures backed by the live catalog (never invented counts). */}
               {(landingContent?.whyUs?.stats?.length ? landingContent.whyUs.stats : [
-                { id: 'rooms', number: catalog?.rooms?.length || facilitiesList?.length || 10, suffix: '', title: isEn ? 'ROOMS & COURTS' : 'CỤM SÂN & PHÒNG TẬP', subtitle: isEn ? 'Olympic standard' : 'Tiêu chuẩn thi đấu chuyên nghiệp', icon: 'stadium' },
-                { id: 'sports', number: visibleSports?.length || 10, suffix: '', title: isEn ? 'SPORTS DISCIPLINES' : 'MÔN THỂ THAO', subtitle: isEn ? 'Diverse options for all ages' : 'Đa dạng lựa chọn cho mọi lứa tuổi', icon: 'sports' },
-                { id: 'members', number: 400, suffix: '+', title: isEn ? 'ACTIVE ATHLETES' : 'HỌC VIÊN', subtitle: isEn ? 'Daily regular training' : 'Thường xuyên rèn luyện mỗi ngày', icon: 'groups' },
-                { id: 'area', number: 13000, suffix: ' m²', formatThousands: true, title: isEn ? 'TOTAL AREA' : 'DIỆN TÍCH', subtitle: isEn ? 'Modern integrated sports complex' : 'Tổ hợp liên hợp khép kín hiện đại', icon: 'domain' }
-              ]).map((st, idx) => {
+                { id: 'rooms', number: catalog?.rooms?.length || facilitiesList?.length || 0, suffix: '', title: isEn ? 'ROOMS & COURTS' : 'CỤM SÂN & PHÒNG TẬP', subtitle: isEn ? 'Olympic standard' : 'Tiêu chuẩn thi đấu chuyên nghiệp', icon: 'stadium' },
+                { id: 'sports', number: visibleSports?.length || 0, suffix: '', title: isEn ? 'SPORTS DISCIPLINES' : 'MÔN THỂ THAO', subtitle: isEn ? 'Diverse options for all ages' : 'Đa dạng lựa chọn cho mọi lứa tuổi', icon: 'sports' }
+              ].filter(st => st.number > 0)).map((st, idx) => {
                 let title = st.title;
                 let subtitle = st.subtitle;
                 if (isEn) {

@@ -1,71 +1,206 @@
-# Sports Center Management
+# Sports Center Management (SCMS)
 
-Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai thư mục riêng:
+Phần mềm quản lý trung tâm thể thao: hội viên mua gói tập, đặt lớp học; huấn luyện viên (HLV) điểm danh, lên giáo án; lễ tân bán gói, thu tiền tại quầy; quản lý xem báo cáo.
 
-- `Frontend/` — React 18, Vite, port `3004`.
-- `Backend/` — repository backend ASP.NET Core Web API, PostgreSQL và EF Core.
+Tài liệu này dành cho **người mới**: làm theo từng bước là chạy được trên máy của bạn.
 
-## Chạy local
+---
 
-1. Cấu hình kết nối tới PostgreSQL đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/README.md](./Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mặc định ứng dụng chỉ đồng bộ schema/quyền/danh mục môn; dữ liệu demo (gói, lớp, hóa đơn, thanh toán mẫu) chỉ được tạo khi đặt `Database:SeedDemoData=true`, không bật trên database thật. Xem [kết nối DB thật](./Frontend/docs/real-database.md).
-2. Chạy API từ thư mục workspace:
+## 1. Dự án gồm những gì?
 
-   ```powershell
-   powershell -ExecutionPolicy Bypass -File .\Backend\start-shared.ps1
-   ```
+| Phần | Là gì | Địa chỉ khi chạy |
+|---|---|---|
+| `Frontend/` | Giao diện web (React) | http://localhost:3004 |
+| `Backend/` | Máy chủ API (ASP.NET Core .NET 10) | http://localhost:5000 |
+| Database | PostgreSQL, lưu toàn bộ dữ liệu | `localhost:5432` |
 
-   Script kiểm tra PostgreSQL ở cổng 5432 trước khi chạy; nếu chưa chạy, script tự khởi động container `postgres` (hoặc chạy `scripts/start-postgres.bat`). API dùng `http://localhost:5000`; Vite proxy `/api` đến địa chỉ này. Nếu dùng PostgreSQL từ xa, chạy script với `-SkipDatabaseCheck`.
-3. Sao chép `Frontend/.env.example` thành `Frontend/.env.local` và đặt `VITE_SPORTS_CENTER_ID` thành ID trung tâm thực tế trong database; biến này bắt buộc khi đăng ký hội viên mới.
-4. Cài và chạy giao diện:
+Frontend gọi Backend, Backend đọc/ghi Database. Phải có cả ba thì ứng dụng mới chạy được.
 
-   ```powershell
-   cd .\Frontend
-   npm ci
-   npm run dev
-   ```
+---
 
-## Dùng chung qua Internet
+## 2. Cài đặt công cụ (làm một lần)
 
-Muốn mọi máy nhìn thấy cùng tài khoản và dữ liệu, hãy triển khai một Frontend, một Backend API và một cơ sở dữ liệu PostgreSQL tập trung trên máy chủ có tên miền và HTTPS. Trình duyệt chỉ truy cập tên miền chung; không kết nối trực tiếp tới máy chủ database. Xem thông tin tổng quan và cấu hình cơ bản tại [PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md).
+| Công cụ | Dùng để | Tải về |
+|---|---|---|
+| **Git** | Tải mã nguồn | https://git-scm.com |
+| **Docker Desktop** | Chạy PostgreSQL (hoặc cả hệ thống) mà không cần cài tay | https://www.docker.com/products/docker-desktop |
+| **.NET SDK 10** | Chạy Backend | https://dotnet.microsoft.com/download |
+| **Node.js 18+** (kèm npm) | Chạy Frontend | https://nodejs.org |
 
-## Các luồng đã nối API
+Kiểm tra đã cài đúng chưa (mở PowerShell):
 
-- Đăng nhập, đăng ký hội viên có OTP xác thực email, hồ sơ, đổi mật khẩu và yêu cầu/đặt lại mật khẩu qua email.
-- Danh mục và quản lý gói tập; lịch ca tập và đặt/hủy chỗ.
-- Flow 2: quản lý lớp/phòng, tạo lịch, công bố/hủy lớp, phân công HLV, danh sách chờ, lễ tân đặt/hủy hộ và HLV xem học viên/điểm danh qua API.
-- Manager cấu hình quyền Member/Coach/Receptionist trong trung tâm; System Admin giữ ma trận quyền toàn hệ thống.
-- Manager bổ nhiệm hội viên hiện có làm HLV/lễ tân, đổi vai trò có kiểm tra phân công lớp và xuất báo cáo CSV từ dữ liệu API.
-- Tra cứu hội viên, thu tiền tại quầy bằng CASH/POS (cần mã chuẩn chi cho POS).
-- Khởi tạo thanh toán online qua VNPay hoặc MoMo; callback VNPay/MoMo được gửi về backend để xác minh. VietQR đã được gỡ khỏi luồng thanh toán mới.
+```powershell
+git --version
+docker --version
+dotnet --version   # phải bắt đầu bằng 10.
+node --version     # v18 trở lên
+```
 
-Frontend xác thực bằng cookie HttpOnly chứa JWT và header chọn phiên riêng từng tab, đọc lỗi Problem Details và `traceId`, đồng thời dùng `Idempotency-Key` cho thao tác thanh toán. Không dùng mock để giả lập các luồng trên.
+> Nếu chỉ dùng **Cách A (Docker)** bên dưới thì chỉ cần Git + Docker Desktop.
 
-## API mới và cấu hình Google/AI
+---
 
-Giáo án chung/cá nhân, tiến độ và thông báo HLV/hội viên đã nối API lưu PostgreSQL. Xác thực dùng JWT HS256 qua JwtBearer, kiểm tra issuer/audience/thời hạn và tài khoản ở mỗi request; Swagger có nút Authorize. JWT nằm trong cookie HttpOnly; sessionStorage chỉ giữ mã chọn phiên riêng từng tab. F5 giữ đăng nhập và các tab có thể dùng tài khoản khác nhau; hồ sơ/quyền được tải lại từ API. API client ngoài trình duyệt vẫn dùng Bearer JWT. Chi tiết: [cơ chế phiên từng tab](./Frontend/docs/tab-session-fix.md).
+## 3. Chọn cách chạy
 
-Member và Coach có màn hình gửi/theo dõi yêu cầu hỗ trợ; Lễ tân/Manager tiếp nhận và phản hồi trong đúng trung tâm. Hộp thư có thao tác đọc tất cả. Gói đã thanh toán nhưng chưa đến ngày hiệu lực được hiển thị riêng với gói đang dùng.
+| | Cách A — Docker | Cách B — Chạy từng phần (cho dev) |
+|---|---|---|
+| Phù hợp | Muốn xem/dùng thử nhanh | Muốn sửa code, thấy thay đổi ngay |
+| Cần cài | Git, Docker | Git, Docker, .NET 10, Node.js |
+| Số lệnh | 2 | ~6 |
 
-Nếu chạy giao diện nhúng trong backend, chạy `npm.cmd run build:api` từ `Frontend/` trước khi chạy/publish backend. Lệnh này tạo lại `Backend/SportsCenterManagement.API/wwwroot` từ source frontend và thay các bundle cũ, tránh tiếp tục phục vụ bản lưu Session trước đây. Giao diện chạy bằng Vite dùng source frontend trực tiếp.
+### Cách A — Chạy toàn bộ bằng Docker (dễ nhất)
 
-Google Login dùng ID token được xác minh ở backend. Chatbot/gợi ý giáo án cố định Gemini 3.5 Flash-Lite; API key đọc từ `AI:ApiKey` ở cấu hình backend. Khi thiếu cấu hình, API trả lỗi rõ ràng, không trả kết quả giả. Thanh toán online vẫn cần thông tin sandbox của cổng tương ứng. Member và Coach đã có giao diện/API gửi, theo dõi và bổ sung phản hồi yêu cầu hỗ trợ.
+**Bước 1.** Tạo file cấu hình từ file mẫu:
 
-Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](./Backend/docs/requirements/api-jwt-integration.md). Chi tiết Flow 2 trước đó: [flow2-delivery.md](./Backend/docs/requirements/flow2-delivery.md).
+```powershell
+copy docker\.env.example docker\.env
+```
 
-## Thời gian hệ thống
+**Bước 2.** Mở `docker\.env` và sửa **tối thiểu** các dòng sau (thay `replace-with-...` bằng giá trị của bạn):
 
-Hệ thống hoạt động theo giờ Việt Nam (`Asia/Ho_Chi_Minh`, UTC+7). Timestamp lưu trong database là UTC; frontend đọc timestamp API không có offset là UTC và hiển thị theo giờ Việt Nam. Ngày nghiệp vụ (ngày sinh, ngày vào làm, ngày học, hiệu lực gói) giữ nguyên ngày Việt Nam; ô `datetime-local` nhận giờ Việt Nam. Đổi múi giờ thiết bị không làm đổi ngày/giờ hiển thị hoặc giờ đặt lịch. Backend xác thực nghiệp vụ bằng đồng hồ máy chủ; máy chủ cần được đồng bộ giờ chính xác.
+| Biến | Ý nghĩa | Ví dụ |
+|---|---|---|
+| `POSTGRES_PASSWORD` | Mật khẩu database | `MyDbPass#2026` |
+| `ADMIN_USERNAME` | Tên đăng nhập quản trị viên đầu tiên | `admin` |
+| `ADMIN_EMAIL` | Email quản trị viên | `admin@example.com` |
+| `ADMIN_PASSWORD` | Mật khẩu quản trị viên | `Admin#Strong2026` |
+| `JWT_KEY` | Chuỗi bí mật ngẫu nhiên, **≥ 32 ký tự** | `k8Jq...` (32+ ký tự bất kỳ) |
+| `FRONTEND_ORIGIN` | Chạy trên máy mình thì để | `http://localhost:3004` |
 
-Docker đã cấu hình múi giờ cho backend/PostgreSQL và ranh giới ngày báo cáo là Việt Nam. Sau khi cập nhật, chạy `docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build` để áp dụng. Khi chạy frontend nhúng trong API, build lại bằng `npm.cmd run build:api` trong `Frontend/`.
+> Mật khẩu cần ≥ 6 ký tự, có **chữ hoa, chữ thường, số và ký tự đặc biệt**.
+> Email, AI, Google Login là **tùy chọn** — để trống vẫn chạy được (xem [mục 6](#6-tính-năng-tùy-chọn)).
 
-## Kiểm tra
+**Bước 3.** Khởi động:
 
-- Trợ lý AI hội viên nhận dữ liệu công khai mới từ database của đúng trung tâm ở mỗi câu hỏi: lịch lớp Published/Scheduled, gói Active và giá VND, sân/phòng Active, địa chỉ, số điện thoại/email trung tâm và giờ mở cửa. Backend chỉ chọn các trường được phép; không gửi hồ sơ hội viên/HLV, ghi chú nội bộ, danh sách đặt chỗ, thanh toán, báo cáo, cấu hình hoặc hội thoại người khác. Ngày/tháng, ngày ISO, ngày tương đối và câu hỏi tiếp nối được xử lý theo giờ Việt Nam; khoảng truy vấn tối đa 31 ngày, tối đa 200 buổi học. Chưa có danh mục sự kiện riêng hoặc giá thuê sân trong database thì AI phải nói rõ thiếu dữ liệu. Nội dung biên tập trang chủ được lưu trong `system_settings` qua API. Trợ lý AI vẫn đọc dữ liệu nghiệp vụ Center/Room và chưa dùng nội dung biên tập này làm nguồn dữ liệu.
-- Nhắc lịch ca học: backend tự kiểm tra mỗi 15 giây và gửi thông báo trong ứng dụng khi ca học đã xác nhận còn tối đa 1 tiếng trước giờ bắt đầu (giờ Việt Nam). Chuông thông báo và hộp thư tự tải lại mỗi 15 giây khi trang đang mở. Lịch bị hủy và ca đã bắt đầu không được nhắc; lời nhắc được lưu trong database để tránh gửi trùng sau khi khởi động lại. Đặt chỗ trong vòng 1 tiếng trước ca học sẽ nhận lời nhắc ở lần kiểm tra kế tiếp. Backend cần hoạt động để tạo lời nhắc; migration `AddClassReminderKey` được áp dụng qua luồng khởi động hiện có.
-- Frontend: `npm run build` trong `Frontend/`.
-- Frontend regression: `npm test` trong `Frontend/`.
-- Múi giờ: `node --test tests/timezone.test.cjs` trong `Frontend/` kiểm tra 5 múi giờ thiết bị; `dotnet run --project Backend/verification/TimezoneAudit/TimezoneAudit.csproj` từ thư mục gốc kiểm tra ranh giới ngày Việt Nam ở backend.
-- Quản lý nội dung trang chủ và media; kiểm thử Chrome: `npm.cmd run test:landing:browser` trong `Frontend/`.
-- Kiểm tra kết nối API thật và xử lý lỗi 500/proxy: [api-connection-fix.md](./Frontend/docs/api-connection-fix.md).
-- Backend: `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` từ `Backend/`.
-- Bộ test backend đã được người dùng xóa ngày 16/10/2026; solution không còn tham chiếu project test. Các thay đổi hiện tại được kiểm chứng bằng HTTP/SQL Server riêng và Chrome; xem báo cáo trong tài liệu liên kết ở trên.
+```powershell
+docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build
+```
+
+Lần đầu mất vài phút để tải và build. Xong thì mở **http://localhost:3004**.
+
+Dừng hệ thống: `docker compose -f docker/docker-compose.yml --env-file docker/.env down`
+
+### Cách B — Chạy Backend và Frontend riêng (cho developer)
+
+**Bước 1. Bật database.** Làm Bước 1–2 của Cách A để có `docker\.env`, sau đó:
+
+```powershell
+scripts\start-postgres.bat
+```
+
+**Bước 2. Cấu hình Backend** (làm một lần trên mỗi máy, lưu bằng User Secrets — không ghi vào code):
+
+```powershell
+cd Backend
+dotnet user-secrets set "ConnectionStrings:SportsCenter" "Host=localhost;Port=5432;Database=SportsCenterDB;Username=postgres;Password=<POSTGRES_PASSWORD>" --project .\SportsCenterManagement.API
+dotnet user-secrets set "Jwt:Key" "<chuỗi bí mật ≥ 32 ký tự>" --project .\SportsCenterManagement.API
+cd ..
+```
+
+Database mới tinh chưa có quản trị viên → đặt thêm 3 biến này **trong cùng cửa sổ PowerShell** trước khi chạy API (chỉ cần lần đầu):
+
+```powershell
+$env:Bootstrap__SystemAdmin__Username = "admin"
+$env:Bootstrap__SystemAdmin__Email    = "admin@example.com"
+$env:Bootstrap__SystemAdmin__Password = "Admin#Strong2026"
+```
+
+**Bước 3. Chạy Backend:**
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\Backend\start-shared.ps1
+```
+
+Script tự kiểm tra database, tự cập nhật bảng và chạy API ở http://localhost:5000. Giữ nguyên cửa sổ này.
+
+**Bước 4. Chạy Frontend** (mở cửa sổ PowerShell **mới**):
+
+```powershell
+cd Frontend
+copy .env.example .env.local
+npm ci
+npm run dev
+```
+
+Mở **http://localhost:3004**. Sửa code frontend sẽ thấy thay đổi ngay.
+
+---
+
+## 4. Lần đầu sử dụng
+
+Database mới chỉ có tài khoản quản trị viên. Làm theo thứ tự:
+
+1. **Đăng nhập System Admin** bằng `ADMIN_USERNAME` / `ADMIN_PASSWORD` đã đặt ở trên.
+2. **Tạo trung tâm** (Center) trong trang quản trị. Ghi lại **ID** của trung tâm.
+3. **Tạo tài khoản Manager** cho trung tâm đó.
+4. Mở `Frontend\.env.local`, đặt `VITE_SPORTS_CENTER_ID=<ID trung tâm>`, rồi chạy lại `npm run dev`. *(Bắt buộc để hội viên tự đăng ký được.)*
+5. **Đăng nhập Manager** → tạo gói tập, phòng, lớp học; bổ nhiệm HLV và lễ tân.
+6. Hội viên tự **đăng ký** trên trang chủ (cần cấu hình email để nhận OTP), hoặc lễ tân tạo hộ tại quầy.
+
+> Muốn có sẵn dữ liệu mẫu để thử nghiệm: đặt `Database:SeedDemoData=true` cho Backend. **Không bật trên database thật.**
+
+---
+
+## 5. Ai làm được gì?
+
+| Vai trò | Việc chính |
+|---|---|
+| **Hội viên (Member)** | Mua gói tập (VNPay/MoMo), xem lịch & đặt/hủy lớp, check-in, xem tiến độ, gửi yêu cầu hỗ trợ, hỏi trợ lý AI |
+| **HLV (Coach)** | Xem lịch dạy, điểm danh, lên giáo án (có AI gợi ý), theo dõi tiến độ học viên |
+| **Lễ tân (Receptionist)** | Tra cứu hội viên, bán gói & thu tiền tại quầy (tiền mặt/POS), đặt lớp hộ, xử lý hỗ trợ |
+| **Quản lý (Manager)** | Quản lý gói, lớp, phòng, nhân sự, phân quyền trong trung tâm; xem báo cáo, xuất CSV |
+| **System Admin** | Tạo trung tâm & Manager, quản lý quyền toàn hệ thống, xem nhật ký hoạt động |
+
+---
+
+## 6. Tính năng tùy chọn
+
+Không cấu hình thì các tính năng này báo lỗi rõ ràng, phần còn lại vẫn chạy bình thường.
+
+| Tính năng | Cần làm | Hướng dẫn |
+|---|---|---|
+| Email OTP (đăng ký, quên mật khẩu) | Điền `EMAIL_SMTP_*` (Docker) hoặc chạy `Backend\configure-email.ps1` | [security-config-mail-bootstrap.md](./Backend/docs/security-config-mail-bootstrap.md) |
+| Trợ lý AI & gợi ý giáo án | Lấy API key Gemini, điền `AI_API_KEY` / `AI:ApiKey` | [free-google-gemini-setup.md](./Backend/docs/requirements/free-google-gemini-setup.md) |
+| Đăng nhập Google | Điền `GOOGLE_CLIENT_ID` và `VITE_GOOGLE_CLIENT_ID` | [free-google-gemini-setup.md](./Backend/docs/requirements/free-google-gemini-setup.md) |
+| Thanh toán VNPay / MoMo | Thông tin tài khoản sandbox của cổng | [Backend/README.md](./Backend/README.md) |
+
+---
+
+## 7. Gặp lỗi thường gặp
+
+| Hiện tượng | Cách xử lý |
+|---|---|
+| `Khong the khoi dong PostgreSQL` | Mở Docker Desktop, đợi nó chạy xong rồi thử lại. Kiểm tra đã có `docker\.env`. |
+| Backend dừng ngay khi khởi động, báo thiếu System Admin | Database chưa có admin → đặt 3 biến `Bootstrap__SystemAdmin__*` ([Cách B, Bước 2](#cách-b--chạy-backend-và-frontend-riêng-cho-developer)). |
+| Backend báo lỗi JWT key | `Jwt:Key` / `JWT_KEY` chưa đặt hoặc ngắn hơn 32 ký tự. |
+| Port 5000 / 3004 / 5432 đang bị dùng | Tắt chương trình đang chiếm port, hoặc đổi `BACKEND_PORT` / `FRONTEND_PORT` / `POSTGRES_PORT` trong `docker\.env`. |
+| Trang web báo lỗi kết nối API / lỗi 500 | Kiểm tra cửa sổ Backend còn chạy. Xem [api-connection-fix.md](./Frontend/docs/api-connection-fix.md). |
+| Đăng ký hội viên báo lỗi trung tâm | `VITE_SPORTS_CENTER_ID` trong `Frontend\.env.local` chưa đúng ID trung tâm. |
+| Không nhận được email OTP | Chưa cấu hình SMTP (xem [mục 6](#6-tính-năng-tùy-chọn)). |
+| Ngày/giờ hiển thị lệch | Hệ thống luôn dùng giờ Việt Nam (UTC+7); kiểm tra đồng hồ máy chủ. |
+
+---
+
+## 8. Lệnh hữu ích
+
+| Việc | Lệnh | Chạy ở |
+|---|---|---|
+| Build frontend | `npm run build` | `Frontend/` |
+| Test frontend | `npm test` | `Frontend/` |
+| Build backend | `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` | `Backend/` |
+| Test backend | `dotnet test SportsCenterManagement.Tests` | `Backend/` |
+| Xem tài liệu API (Swagger) | Mở http://localhost:5000/swagger | trình duyệt |
+
+---
+
+## 9. Tìm hiểu thêm
+
+- [Ghi chú kỹ thuật](./docs/TECHNICAL_NOTES.md) — bảo mật, phiên đăng nhập, AI, múi giờ, kiểm thử chi tiết
+- [Backend/README.md](./Backend/README.md) — kiến trúc backend, danh sách API
+- [docker/README.md](./docker/README.md) — chi tiết Docker
+- [PROJECT_SUMMARY.md](./docs/PROJECT_SUMMARY.md) — tổng quan & triển khai lên Internet
+- [VERCEL_DEPLOYMENT.md](./docs/VERCEL_DEPLOYMENT.md) · [CLOUDFLARE_TUNNEL_DEMO.md](./docs/CLOUDFLARE_TUNNEL_DEMO.md) — đưa lên mạng
+
+## License
+
+[MIT](./LICENSE)

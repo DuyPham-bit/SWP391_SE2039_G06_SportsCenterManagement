@@ -7,6 +7,13 @@ export const MANAGER_DRAFT_KEY = 'SCMS_MANAGER_LANDING_DRAFT_V2';
 const AUTOSAVE_DELAY_MS = 1200;
 let timer = null;
 let pending = null;
+// Server draft version this editor is based on (null = no server draft yet).
+let draftVersion = null;
+let conflictHandler = null;
+
+export const setDraftVersion = (updatedAt) => { draftVersion = updatedAt ?? null; };
+/** Called when another Manager/Admin saved the shared draft after this editor loaded it. */
+export const onDraftConflict = (handler) => { conflictHandler = handler; };
 
 function keepLocalCopy(content) {
   try { localStorage.setItem(MANAGER_DRAFT_KEY, JSON.stringify(content)); } catch { /* storage disabled */ }
@@ -32,10 +39,12 @@ export async function flushDraft() {
   const content = pending;
   pending = null;
   try {
-    await saveLandingDraft(content);
+    const saved = await saveLandingDraft(content, draftVersion);
+    draftVersion = saved?.updatedAt ?? draftVersion;
     dropLocalCopy();
-  } catch {
+  } catch (error) {
     keepLocalCopy(content);
+    if (error?.status === 409) conflictHandler?.(error);
   }
 }
 
@@ -51,6 +60,7 @@ export const saveDraft = (updatedContent) => {
 export const clearDraft = () => {
   if (timer) { clearTimeout(timer); timer = null; }
   pending = null;
+  draftVersion = null;
   dropLocalCopy();
   void discardLandingDraft().catch(() => { /* publishing already removes it server-side */ });
 };

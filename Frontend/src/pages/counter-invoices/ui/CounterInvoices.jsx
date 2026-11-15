@@ -36,22 +36,24 @@ export function CounterInvoices() {
   const { currentUser, role: authRole } = useAuth();
   const currentRole = String(authRole || currentUser?.role || '').toUpperCase();
   const isManagerOrAdmin = currentRole === 'MANAGER' || currentRole === 'ADMIN';
-  const [workspaceTab, setWorkspaceTab] = useState(() =>
-    window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');
+  // Admin has no center: the center invoice list cannot load, so Admin only works the refund queue.
+  const isAdmin = currentRole === 'ADMIN';
+  const tabFromHash = () => (isAdmin || window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');
+  const [workspaceTab, setWorkspaceTab] = useState(tabFromHash);
 
   const changeWorkspaceTab = tab => {
+    if (isAdmin) return;
     setWorkspaceTab(tab);
     if (isManagerOrAdmin) window.location.hash = `#/manager/invoices?tab=${tab}`;
   };
 
   useEffect(() => {
     if (!isManagerOrAdmin) return undefined;
-    const syncTabFromHash = () => setWorkspaceTab(
-      window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');
+    const syncTabFromHash = () => setWorkspaceTab(tabFromHash());
     window.addEventListener('hashchange', syncTabFromHash);
     syncTabFromHash();
     return () => window.removeEventListener('hashchange', syncTabFromHash);
-  }, [isManagerOrAdmin]);
+  }, [isManagerOrAdmin, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reconcile Modal State
   const [reconcileTarget, setReconcileTarget] = useState(null);
@@ -102,6 +104,7 @@ export function CounterInvoices() {
   const reload = () => setFilter(f => ({ ...f, version: f.version + 1 }));
 
   useEffect(() => {
+    if (isAdmin) return undefined; // center-scoped list; Admin has no centerId
     let active = true;
     setLoading(true);
     setError('');
@@ -120,7 +123,7 @@ export function CounterInvoices() {
     return () => {
       active = false;
     };
-  }, [filter]);
+  }, [filter, isAdmin]);
 
   useEffect(() => () => {
     sequence.current += 1;
@@ -316,19 +319,19 @@ export function CounterInvoices() {
           {isManagerOrAdmin ? (
             <>
               <a
-                href="#/manager/dashboard"
+                href={isAdmin ? '#/admin/dashboard' : '#/manager/dashboard'}
                 className="scms-shine px-5 py-3 bg-white/90 hover:bg-white text-brand-navy-950 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px] text-brand-sage-700">dashboard</span>
                 <span>{isEn ? 'Dashboard' : 'Bảng Quản Trị'}</span>
               </a>
-              <a
+              {!isAdmin && <a
                 href="#/manager/reports"
                 className="scms-shine px-5 py-3 bg-brand-navy-950 hover:bg-brand-navy-900 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px] text-brand-sand-300">analytics</span>
                 <span>{isEn ? 'Financial Reports' : 'Báo Cáo Doanh Thu'}</span>
-              </a>
+              </a>}
             </>
           ) : (
             <>
@@ -351,7 +354,7 @@ export function CounterInvoices() {
         </div>
       </div>
 
-      {isManagerOrAdmin && (
+      {isManagerOrAdmin && !isAdmin && (
         <nav className="flex gap-2 rounded-2xl border border-brand-navy-200 bg-white p-2 shadow-sm dark:border-brand-navy-800 dark:bg-brand-navy-900">
           {[
             ['invoices', 'receipt_long', isEn ? 'Invoices' : 'Hóa đơn'],

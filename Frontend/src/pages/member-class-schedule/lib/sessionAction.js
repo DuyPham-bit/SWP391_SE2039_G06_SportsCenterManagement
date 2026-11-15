@@ -24,6 +24,8 @@ export function getSessionAction(cls, bookedSessionIds, isEn) {
     }
     case 'EXPIRED':
       return { state, label: isEn ? 'Ended' : 'Đã qua', action: null, tone: 'muted', dimmed: true };
+    case 'SUSPENDED':
+      return { state, label: isEn ? 'Booking suspended' : 'Đang bị khóa đặt lịch', action: null, tone: 'muted', dimmed: true };
     case 'NO_VALID_PACKAGE':
       return { state, label: isEn ? 'Renew to book' : 'Gia hạn gói để đặt', action: 'packages', tone: 'warn', dimmed: false };
     case 'SPORT_NOT_INCLUDED':

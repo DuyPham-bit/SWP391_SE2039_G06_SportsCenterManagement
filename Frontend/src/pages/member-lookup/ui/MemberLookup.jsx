@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { receptionApi, memberApi, formatMemberDate } from '../../../entities/member/index.js';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
+import { MemberAvatar } from '../../../shared/ui/MemberAvatar.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { CounterError, EmailVerificationBadge, QuickCreateMemberModal, ResendVerificationButton, useActivationWatcher } from '../../../features/counter-desk/index.js';
+import { CounterError, EditMemberBasicInfoModal, EmailVerificationBadge, QuickCreateMemberModal, ResendVerificationButton, useActivationWatcher } from '../../../features/counter-desk/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useAuth } from '../../../entities/session/index.js';
 import { hasCapability } from '../../../entities/permission/index.js';
@@ -31,6 +32,7 @@ export function MemberLookup() {
   // Quick-create member at counter (phone = default password, email activation link)
   const [registerModalOpen, setRegisterModalOpen] = useState(false);
   const [registerPrefill, setRegisterPrefill] = useState({});
+  const [editModalOpen, setEditModalOpen] = useState(false);
 
   // Auto-search if query parameter exists in URL
   useEffect(() => {
@@ -146,6 +148,15 @@ export function MemberLookup() {
     if (!updated) return;
     setResults(prev => prev.map(m => (m.id === updated.id ? { ...m, emailVerified: updated.emailVerified } : m)));
     setSelectedMember(prev => (prev?.id === updated.id ? { ...prev, emailVerified: updated.emailVerified } : prev));
+  };
+
+  // Only the edited fields change; package/status data in the list stays as loaded.
+  const handleBasicInfoSaved = (updated) => {
+    if (!updated) return;
+    const patch = ({ fullName, dateOfBirth, gender, emergencyContactName, emergencyContactPhone }) =>
+      ({ fullName, dateOfBirth, gender, emergencyContactName, emergencyContactPhone });
+    setResults(prev => prev.map(m => (m.id === updated.id ? { ...m, ...patch(updated) } : m)));
+    setSelectedMember(prev => (prev?.id === updated.id ? { ...prev, ...patch(updated) } : prev));
   };
 
   return (
@@ -271,10 +282,11 @@ export function MemberLookup() {
                     }`}
                   >
                     <div className="flex items-center gap-3">
-                      <img
-                        src={member.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
+                      <MemberAvatar
+                        src={member.avatar}
+                        name={member.fullName}
                         alt=""
-                        className="w-10 h-10 rounded-full object-cover border border-brand-navy-200 dark:border-brand-navy-700"
+                        className="w-10 h-10 rounded-full border border-brand-navy-200 dark:border-brand-navy-700"
                       />
                       <div className="flex-1 min-w-0">
                         <div className="font-bold text-xs text-brand-navy-900 dark:text-white truncate">{member.fullName}</div>
@@ -299,11 +311,11 @@ export function MemberLookup() {
                   <div className="flex items-start justify-between pb-6 border-b border-brand-navy-100 dark:border-brand-navy-800">
                     <div className="flex items-center gap-4">
                       <div className="relative group shrink-0">
-                        <img
-                          src={selectedMember.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=120'}
-                          alt={selectedMember.fullName}
+                        <MemberAvatar
+                          src={selectedMember.avatar}
+                          name={selectedMember.fullName}
                           onClick={() => memberAvatarInputRef.current?.click()}
-                          className="w-16 h-16 rounded-2xl object-cover border-2 border-brand-sage-500 shadow cursor-pointer transition-transform group-hover:scale-105"
+                          className="w-16 h-16 rounded-2xl border-2 border-brand-sage-500 shadow cursor-pointer transition-transform group-hover:scale-105"
                           title={isEn ? "Click to change photo from phone or computer" : "Nhấp để đổi ảnh thẻ hội viên từ máy tính/điện thoại"}
                         />
                         <button
@@ -341,6 +353,16 @@ export function MemberLookup() {
                           <h2 className="font-chivo text-xl font-black text-brand-navy-900 dark:text-white">{selectedMember.fullName}</h2>
                           <Badge variant={selectedMember.status}>{selectedMember.status}</Badge>
                           <EmailVerificationBadge verified={selectedMember.emailVerified} size="md" />
+                          {canRegister && (
+                            <button
+                              type="button"
+                              onClick={() => setEditModalOpen(true)}
+                              className="inline-flex items-center gap-1 min-h-[28px] px-2 py-1 text-[11px] font-bold uppercase tracking-wider text-brand-sage-700 dark:text-brand-sage-400 hover:bg-brand-sage-50 dark:hover:bg-brand-navy-800 rounded-lg transition-colors cursor-pointer"
+                            >
+                              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">edit</span>
+                              {isEn ? 'Edit details' : 'Sửa thông tin'}
+                            </button>
+                          )}
                         </div>
                         <div className="text-xs text-brand-navy-500 dark:text-brand-navy-400 mt-0.5">{selectedMember.email} • {selectedMember.phone}</div>
                         {!selectedMember.emailVerified && (
@@ -517,6 +539,15 @@ export function MemberLookup() {
         onClose={() => setRegisterModalOpen(false)}
         initialValues={registerPrefill}
         onCreated={handleMemberCreated}
+        isEn={isEn}
+      />
+
+      {/* Counter correction of basic details (no login phone/email) */}
+      <EditMemberBasicInfoModal
+        isOpen={editModalOpen && Boolean(selectedMember)}
+        onClose={() => setEditModalOpen(false)}
+        member={selectedMember}
+        onSaved={handleBasicInfoSaved}
         isEn={isEn}
       />
     </div>

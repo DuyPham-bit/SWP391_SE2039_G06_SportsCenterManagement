@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { coachApi, coachDate } from '../../../entities/coach/index.js';
+import { MemberAvatar } from '../../../shared/ui/MemberAvatar.jsx';
 import { useAuth } from '../../../entities/session/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { Table, LoadingSpinner } from '../../../shared/ui/Table.jsx';
@@ -240,14 +241,10 @@ export function ClassMembers() {
       header: isEn ? 'Student' : 'Học Viên',
       render: (row) => (
         <div className="flex items-center gap-3">
-          <img
-            src={row.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
-            onError={e => {
-              e.currentTarget.onerror = null;
-              e.currentTarget.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
-            }}
-            alt={row.memberName || 'Student'}
-            className="w-9 h-9 rounded-full object-cover border border-brand-navy-200 shrink-0"
+          <MemberAvatar
+            src={row.avatar}
+            name={row.memberName}
+            className="w-9 h-9 rounded-full border border-brand-navy-200 shrink-0"
           />
           <div>
             <div className="font-bold text-brand-navy-900 flex items-center gap-1.5">
@@ -496,14 +493,10 @@ export function ClassMembers() {
             {/* Header info about the member & class */}
             <div className="p-3.5 rounded-xl bg-brand-sand-50/70 border border-brand-sand-200 flex items-center justify-between gap-3">
               <div className="flex items-center gap-3">
-                <img
-                  src={activeMember.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
-                  onError={e => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100';
-                  }}
-                  alt={activeMember.memberName || 'Student'}
-                  className="w-11 h-11 rounded-full object-cover border-2 border-brand-sand-400 shrink-0"
+                <MemberAvatar
+                  src={activeMember.avatar}
+                  name={activeMember.memberName}
+                  className="w-11 h-11 rounded-full border-2 border-brand-sand-400 shrink-0"
                 />
                 <div>
                   <div className="font-bold text-brand-navy-900 text-sm flex items-center gap-1.5">

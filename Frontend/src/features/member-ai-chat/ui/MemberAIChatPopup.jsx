@@ -76,7 +76,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   });
   const [copiedId, setCopiedId] = useState(null);
   const [speakingId, setSpeakingId] = useState(null);
-  const [reactions, setReactions] = useState({});
   const [unreadCount, setUnreadCount] = useState(0);
 
   // Draggable positions
@@ -423,7 +422,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       setMessages([getInitialMessage()]);
       setInputQuestion('');
       setUnreadCount(0);
-      setReactions({});
     };
     window.addEventListener('SCMS_OPEN_AI_POPUP', handleOpen);
     window.addEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
@@ -512,7 +510,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       setMessages([getInitialMessage()]);
       setInputQuestion('');
       setUnreadCount(0);
-      setReactions({});
       window.dispatchEvent(new CustomEvent('SCMS_AI_CHAT_CLEARED', { detail: { source: 'popup' } }));
       showSuccess(isEn ? 'Conversation reloaded!' : 'Đã tải lại cuộc trò chuyện!');
     } catch (err) {
@@ -552,18 +549,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
     setSpeakingId(msg.id);
     window.speechSynthesis.speak(utterance);
-  };
-
-  const handleReaction = (msgId, type) => {
-    setReactions((prev) => ({
-      ...prev,
-      [msgId]: prev[msgId] === type ? null : type
-    }));
-    showSuccess(
-      type === 'like'
-        ? (isEn ? 'Thank you for liking this response!' : 'Cảm ơn bạn đã thích phản hồi này!')
-        : (isEn ? 'Thank you for your feedback! SCMS will improve.' : 'Cảm ơn góp ý! SCMS sẽ cải thiện tốt hơn.')
-    );
   };
 
   return (
@@ -887,32 +872,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                             {speakingId === msg.id ? 'stop_circle' : 'volume_up'}
                           </span>
                         </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleReaction(msg.id, 'like')}
-                          title={isEn ? "Helpful" : "Hữu ích"}
-                          className={`p-1 rounded transition cursor-pointer ${
-                            reactions[msg.id] === 'like'
-                              ? 'text-brand-sage-700 bg-brand-sage-50'
-                              : 'hover:text-brand-navy-800 hover:bg-brand-navy-100 text-brand-navy-400'
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[14px]">thumb_up</span>
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => handleReaction(msg.id, 'dislike')}
-                          title={isEn ? "Not satisfied" : "Chưa hài lòng"}
-                          className={`p-1 rounded transition cursor-pointer ${
-                            reactions[msg.id] === 'dislike'
-                              ? 'text-brand-danger-600 bg-brand-danger-50'
-                              : 'hover:text-brand-navy-800 hover:bg-brand-navy-100 text-brand-navy-400'
-                          }`}
-                        >
-                          <span className="material-symbols-outlined text-[14px]">thumb_down</span>
-                        </button>
+                        {/* Like/dislike removed: there is no feedback API, so the "thanks" toast was a fake action. */}
                       </div>
                     )}
                   </div>

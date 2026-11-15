@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { receptionApi } from '../../../entities/member/index.js';
+import { MemberAvatar } from '../../../shared/ui/MemberAvatar.jsx';
 import { packageApi } from '../../../entities/membership/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
@@ -384,10 +385,11 @@ export function CounterMembership() {
                 }`}
               >
                 <div className="flex items-center gap-3">
-                  <img
-                    src={m.avatar || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=100'}
+                  <MemberAvatar
+                    src={m.avatar}
+                    name={m.fullName}
                     alt=""
-                    className="w-11 h-11 rounded-full object-cover border border-brand-navy-200 dark:border-brand-navy-700"
+                    className="w-11 h-11 rounded-full border border-brand-navy-200 dark:border-brand-navy-700"
                   />
                   <div className="flex-1 min-w-0">
                     <div className="font-bold text-sm text-brand-navy-900 dark:text-white truncate">{m.fullName}</div>

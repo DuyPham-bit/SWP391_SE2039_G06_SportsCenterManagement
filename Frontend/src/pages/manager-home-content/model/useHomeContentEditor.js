@@ -2,7 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { getLandingContent, loadLandingContent, loadLandingDraft, getLegacyLandingContent, saveLandingContent, openLandingPreview } from '../../../entities/landing-content/index.js';
-import { cloneContent, saveDraft, clearDraft, readLocalDraft, flushDraft } from './draft.js';
+import { cloneContent, saveDraft, clearDraft, readLocalDraft, flushDraft, setDraftVersion, onDraftConflict } from './draft.js';
 
 export function useHomeContentEditor() {
   const { language } = useLanguage();
@@ -67,6 +67,7 @@ export function useHomeContentEditor() {
       loadLandingDraft({ signal: controller.signal }).catch(() => null)
     ]).then(([result, serverDraft]) => {
       if (!active) return;
+      setDraftVersion(serverDraft?.updatedAt);
       savedContentRef.current = cloneContent(result.content);
       const published = JSON.stringify(result.content);
       // Prefer the server draft; a local copy only exists if a previous autosave could not reach the server.
@@ -106,6 +107,17 @@ export function useHomeContentEditor() {
 
   // Save any pending autosave when the editor is left inside the app.
   useEffect(() => () => { void flushDraft(); }, []);
+
+  // Shared draft edited elsewhere: keep this editor's copy locally and tell the user instead of overwriting.
+  useEffect(() => {
+    onDraftConflict(() => addToast(
+      isEn
+        ? 'Another manager changed the draft. Your edits are kept in this browser; reload to see the latest draft.'
+        : 'Bản nháp vừa được người khác chỉnh sửa. Thay đổi của bạn vẫn được giữ trên trình duyệt này; tải lại trang để xem bản mới nhất.',
+      'warning'
+    ));
+    return () => onDraftConflict(null);
+  }, [isEn]);
 
   // Prevent accidental loss of edits when hitting F5
   useEffect(() => {

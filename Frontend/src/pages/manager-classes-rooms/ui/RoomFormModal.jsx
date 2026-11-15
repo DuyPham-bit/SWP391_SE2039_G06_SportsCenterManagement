@@ -115,6 +115,30 @@ export function RoomFormModal({ busy, fieldErrors, form, handleBlur, handleFormC
           />
         </div>
 
+        {modal?.row && (
+          <div>
+            <label htmlFor="room-status" className="block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 mb-1">
+              {isEn ? 'Status' : 'Trạng thái'}
+            </label>
+            <select
+              id="room-status"
+              name="status"
+              value={form.status || 'Active'}
+              onChange={handleFormChange}
+              className="w-full p-2.5 bg-brand-navy-50 dark:bg-brand-navy-800 border border-brand-navy-300 dark:border-brand-navy-700 rounded-xl text-sm text-brand-navy-900 dark:text-brand-navy-100 focus:ring-2 focus:ring-brand-sage-500/40 focus:border-brand-sage-500"
+            >
+              <option value="Active">{isEn ? 'Active' : 'Đang hoạt động'}</option>
+              <option value="Maintenance">{isEn ? 'Under maintenance' : 'Đang bảo trì'}</option>
+              <option value="Inactive">{isEn ? 'Inactive' : 'Ngừng sử dụng'}</option>
+            </select>
+            <p className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400 mt-1">
+              {isEn
+                ? 'A room with upcoming sessions must have them moved before it is taken out of service.'
+                : 'Phòng còn buổi học sắp tới phải chuyển lịch sang phòng khác trước khi ngừng sử dụng.'}
+            </p>
+          </div>
+        )}
+
         <div className="flex items-center justify-end gap-3 pt-3 border-t border-brand-navy-100 dark:border-brand-navy-800">
           <button
             type="button"

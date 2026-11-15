@@ -212,7 +212,8 @@ export function useClassesAndRooms() {
         name: row.name || '',
         type: row.type || '',
         capacity: row.capacity || 30,
-        location: row.location || ''
+        location: row.location || '',
+        status: row.status || 'Active'
       });
     } else {
       setForm({
@@ -364,7 +365,7 @@ export function useClassesAndRooms() {
             location: form.location ? form.location.trim() : null
           };
           if (modal.row) {
-            await roomApi.update(modal.row.id, body);
+            await roomApi.update(modal.row.id, { ...body, status: form.status || 'Active' });
           } else {
             await roomApi.create(body);
           }

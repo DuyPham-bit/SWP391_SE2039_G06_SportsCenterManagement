@@ -94,6 +94,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
               icon: 'calendar_month',
               subItems: [
                 { label: isEn ? 'Timetable' : 'Thời khóa biểu', path: '#/member/schedule' },
+                { label: isEn ? 'Join a Class' : 'Ghi danh lớp học', path: '#/member/classes' },
                 { label: isEn ? 'Booked & Cancelled' : 'Lớp đã đặt & Hủy', path: '#/member/bookings' }
               ]
             },

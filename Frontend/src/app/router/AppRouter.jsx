@@ -86,6 +86,7 @@ const PaymentResult = lazyWithRetry(() => import('../../pages/payment-result/ind
 const MemberCoachPortal = lazyWithRetry(() => import('../../pages/member-coach-portal/index.js').then(m => ({ default: m.MemberCoachPortal })));
 const MySupportRequests = lazyWithRetry(() => import('../../pages/my-support-requests/index.js').then(m => ({ default: m.MySupportRequests })));
 const MemberRefundRequests = lazyWithRetry(() => import('../../pages/member-refund-requests/index.js').then(m => ({ default: m.MemberRefundRequests })));
+const MemberClassEnrollment = lazyWithRetry(() => import('../../pages/member-class-enrollment/index.js').then(m => ({ default: m.MemberClassEnrollment })));
 const PayrollPage = lazyWithRetry(() => import('../../pages/payroll/index.js').then(m => ({ default: m.PayrollPage })));
 
 
@@ -149,11 +150,12 @@ function AppRouter() {
     <button onClick={() => window.location.reload()} className="mt-4 px-4 py-2 rounded border">Thử lại</button>
   </div>;
 
-  // Helper bọc layout & guard cho role Manager & Admin
+  // Helper bọc layout & guard cho Manager. Admin không gắn trung tâm nên chỉ được mở các route
+  // truyền rõ ['MANAGER', 'ADMIN'] (màn hình đó phải hoạt động được không cần centerId).
   const renderManagerRoute = (
     Component,
     requiredCapability,
-    allowedRoles = ['MANAGER', 'ADMIN']
+    allowedRoles = ['MANAGER']
   ) => (
     <ProtectedRoute>
       <RoleGuard allowedRoles={allowedRoles} requiredCapability={requiredCapability}>
@@ -341,6 +343,8 @@ function AppRouter() {
         return renderMemberRoute(ClassScheduleView, 'book_class');
       case '#/member/bookings':
         return renderMemberRoute(MyBookings, 'book_class');
+      case '#/member/classes':
+        return renderMemberRoute(MemberClassEnrollment, 'book_class');
       case '#/member/progress':
         return renderMemberRoute(MyProgress, 'view_my_progress');
       case '#/member/attendance':

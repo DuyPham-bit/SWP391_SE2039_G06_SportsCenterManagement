@@ -43,6 +43,24 @@ export function AuthProvider({ children }) {
     return () => window.removeEventListener('scms:auth-expired', handleExpiredToken);
   }, []);
 
+  // Reload role/capabilities after a 403. Throttled: the reload itself may hit a 403 and must not loop.
+  useEffect(() => {
+    let inFlight = false;
+    let lastRun = 0;
+    const handleStalePermissions = () => {
+      if (inFlight || Date.now() - lastRun < 15000 || !getApiSession()) return;
+      inFlight = true;
+      lastRun = Date.now();
+      const version = getAuthVersion();
+      authApi.getCurrentUser()
+        .then(user => { if (version === getAuthVersion() && user) applyUser(user); })
+        .catch(() => { /* 401 is handled by scms:auth-expired; other errors keep the current state */ })
+        .finally(() => { inFlight = false; });
+    };
+    window.addEventListener('scms:permissions-stale', handleStalePermissions);
+    return () => window.removeEventListener('scms:permissions-stale', handleStalePermissions);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const refreshUser = async () => {
     if (!currentUser) return;
     const fresh = await authApi.getCurrentUser();

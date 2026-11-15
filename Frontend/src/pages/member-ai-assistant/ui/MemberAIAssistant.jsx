@@ -41,7 +41,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   const [conversationId, setConversationId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [speakingId, setSpeakingId] = useState(null);
-  const [reactions, setReactions] = useState({}); // { [msgId]: 'like' | 'dislike' }
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -61,7 +60,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       setConversationId(null);
       setMessages([getInitialMessage()]);
       setInputQuestion('');
-      setReactions({});
     };
     window.addEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
     return () => window.removeEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
@@ -139,7 +137,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       setConversationId(null);
       setMessages([getInitialMessage()]);
       setInputQuestion('');
-      setReactions({});
       window.dispatchEvent(new CustomEvent('SCMS_AI_CHAT_CLEARED', { detail: { source: 'page' } }));
       showSuccess(isEn ? 'AI Assistant conversation reloaded!' : 'Đã tải lại cuộc trò chuyện!');
     } catch (err) {
@@ -180,14 +177,6 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
     setSpeakingId(msg.id);
     window.speechSynthesis.speak(utterance);
-  };
-
-  const handleReaction = (msgId, type) => {
-    setReactions((prev) => ({
-      ...prev,
-      [msgId]: prev[msgId] === type ? null : type
-    }));
-    showSuccess(type === 'like' ? (isEn ? 'Thank you for your feedback!' : 'Cảm ơn bạn đã đánh giá phản hồi hữu ích!') : (isEn ? 'Thank you! SCMS will improve its responses.' : 'Cảm ơn bạn! SCMS sẽ cải thiện câu trả lời tốt hơn.'));
   };
 
   return (
@@ -388,32 +377,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                           {speakingId === msg.id ? 'stop_circle' : 'volume_up'}
                         </span>
                       </button>
-
-                      {/* Reaction Thumbs Up */}
-                      <button
-                        onClick={() => handleReaction(msg.id, 'like')}
-                        title={isEn ? "Helpful response" : "Phản hồi hữu ích"}
-                        className={`p-1 rounded-lg transition ${
-                          reactions[msg.id] === 'like'
-                            ? 'text-brand-sage-700 bg-brand-sage-50'
-                            : 'hover:text-brand-navy-800 hover:bg-brand-navy-100'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[15px]">thumb_up</span>
-                      </button>
-
-                      {/* Reaction Thumbs Down */}
-                      <button
-                        onClick={() => handleReaction(msg.id, 'dislike')}
-                        title={isEn ? "Unsatisfied response" : "Phản hồi chưa hài lòng"}
-                        className={`p-1 rounded-lg transition ${
-                          reactions[msg.id] === 'dislike'
-                            ? 'text-brand-danger-600 bg-brand-danger-50'
-                            : 'hover:text-brand-navy-800 hover:bg-brand-navy-100'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[15px]">thumb_down</span>
-                      </button>
+                      {/* Like/dislike removed: there is no feedback API, so the "thanks" toast was a fake action. */}
                     </div>
                   )}
                 </div>

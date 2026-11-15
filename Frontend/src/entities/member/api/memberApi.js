@@ -24,6 +24,11 @@ export const memberApi = {
     return apiRequest(`centers/${centerId()}/members/${id}`, { method: 'PATCH', body });
   },
 
+  /** Counter (Receptionist/Manager) fix of name, birth date, gender, emergency contact. Returns the mapped member. */
+  async updateBasicInfo(id, body) {
+    return mapMember(await apiRequest(`centers/${centerId()}/members/${Number(id)}/basic-info`, { method: 'PATCH', body }));
+  },
+
   async setAccountStatus(id, status) {
     return apiRequest(`centers/${centerId()}/members/${id}/status`, { method: 'PATCH', body: { status } });
   },

@@ -105,6 +105,32 @@ export function ProgramsTab({ data, act, working, isEn }) {
     ).then((ok) => ok && e.target.reset());
   };
 
+  // Flatten homework → submissions, newest first; pending (not yet scored/reviewed) are counted separately.
+  const submissions = (data.homework || [])
+    .flatMap(h => (h.submissions || []).map(s => ({ ...s, assignmentTitle: h.title })))
+    .sort((a, b) => String(b.submittedAt || '').localeCompare(String(a.submittedAt || '')));
+  const pendingSubmissions = submissions.filter(s => s.status !== 'Reviewed' && s.score == null);
+  const memberName = id => data.clients.find(c => Number(c.id) === Number(id))?.fullName || `#${id}`;
+
+  const submitReview = (e, submissionId) => {
+    e.preventDefault();
+    const f = new FormData(e.currentTarget);
+    const rawScore = String(f.get('score') ?? '').trim();
+    const coachFeedback = String(f.get('coachFeedback') ?? '').trim();
+    // Same rule as the backend (CoachWorkflowRules.HomeworkReviewValidationError).
+    if (!rawScore && !coachFeedback) {
+      showError(isEn ? 'Enter a score or feedback first.' : 'Cần nhập điểm hoặc nhận xét trước khi lưu.');
+      return undefined;
+    }
+    return act(
+      () => coachProfessionalApi.reviewHomework(submissionId, {
+        score: rawScore ? Number(rawScore) : null,
+        coachFeedback: coachFeedback || null
+      }),
+      isEn ? 'Review saved and the student was notified.' : 'Đã lưu kết quả chấm và thông báo cho học viên.'
+    );
+  };
+
   const submitNutrition = (e) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -244,6 +270,45 @@ export function ProgramsTab({ data, act, working, isEn }) {
           </form>
         </SectionCard>
       </div>
+
+      {/* Homework review: members' submissions with score / feedback (PATCH coaches/me/homework-submissions/{id}). */}
+      <SectionCard title={isEn ? `Submissions to Review (${pendingSubmissions.length})` : `Bài nộp cần chấm (${pendingSubmissions.length})`} icon="grading">
+        {!submissions.length ? (
+          <EmptyState icon="grading" isEn={isEn}>{isEn ? 'No homework has been submitted yet.' : 'Chưa có học viên nào nộp bài.'}</EmptyState>
+        ) : (
+          <ul className="space-y-3">
+            {submissions.map(s => {
+              const reviewed = s.status === 'Reviewed' || s.score != null;
+              return (
+                <li key={s.id} className="rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 p-3 space-y-2">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2">
+                    <div>
+                      <span className="font-bold text-sm text-brand-navy-900 dark:text-white">{s.assignmentTitle}</span>
+                      <span className="text-xs text-brand-navy-500"> · {memberName(s.memberId)}</span>
+                    </div>
+                    <span className={`text-[11px] font-bold ${reviewed ? 'text-brand-sage-700' : 'text-brand-sand-700'}`}>
+                      {reviewed
+                        ? (isEn ? `Reviewed${s.score != null ? ` · ${s.score}/100` : ''}` : `Đã chấm${s.score != null ? ` · ${s.score}/100` : ''}`)
+                        : (isEn ? 'Waiting for review' : 'Chờ chấm')}
+                    </span>
+                  </div>
+                  {s.content && <p className="text-xs text-brand-navy-700 dark:text-brand-navy-200 whitespace-pre-line">{s.content}</p>}
+                  {s.coachFeedback && <p className="text-xs text-brand-sage-700 dark:text-brand-sage-400">{isEn ? 'Feedback: ' : 'Nhận xét: '}{s.coachFeedback}</p>}
+                  <form onSubmit={e => submitReview(e, s.id)} className="grid gap-2 sm:grid-cols-[110px_1fr_auto] items-start">
+                    <input name="score" type="number" min="0" max="100" step="0.5" defaultValue={s.score ?? ''}
+                      aria-label={isEn ? 'Score (0-100)' : 'Điểm (0-100)'} placeholder={isEn ? 'Score' : 'Điểm'} className={inputClass} />
+                    <input name="coachFeedback" maxLength={1000} defaultValue={s.coachFeedback || ''}
+                      aria-label={isEn ? 'Feedback' : 'Nhận xét'} placeholder={isEn ? 'Feedback for the student' : 'Nhận xét cho học viên'} className={inputClass} />
+                    <button disabled={working} className={buttonPrimary}>
+                      <span>{reviewed ? (isEn ? 'Update' : 'Cập nhật') : (isEn ? 'Save review' : 'Lưu chấm bài')}</span>
+                    </button>
+                  </form>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </SectionCard>
 
       {/* 2. Structured Workout Builder */}
       <SectionCard title={isEn ? 'Personalized Workout Builder' : 'Xây dựng giáo án cá nhân hóa theo tuần / tháng'} icon="tune">

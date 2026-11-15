@@ -216,8 +216,11 @@ export async function loadLandingDraft({ signal } = {}) {
     : null;
 }
 
-export function saveLandingDraft(content) {
-  return apiRequest('landing-content/draft', { method: 'PUT', body: { content: fixMojibake(content) } });
+/** `expectedUpdatedAt` = draft version this editor last saw; the server answers 409 if someone else saved since. */
+export function saveLandingDraft(content, expectedUpdatedAt = null) {
+  const body = { content: fixMojibake(content) };
+  if (expectedUpdatedAt) body.expectedUpdatedAt = expectedUpdatedAt;
+  return apiRequest('landing-content/draft', { method: 'PUT', body });
 }
 
 export function discardLandingDraft() {

@@ -903,10 +903,18 @@ export function AIRecommendation() {
                         <span>{tag}</span>
                       </span>
                     ))}
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-sage-50 dark:bg-brand-sage-950/40 text-brand-sage-800 dark:text-brand-sage-300 border border-brand-sage-200 dark:border-brand-sage-800 shadow-2xs">
-                      <span>📏</span>
-                      <span>BMI {context?.bmi || '22.9'} ({bmiBadge?.label || (isEn ? 'Normal' : 'Bình thường')})</span>
-                    </span>
+                    {/* Only real measurements: no height/weight means no BMI badge, never a made-up value. */}
+                    {context?.bmi ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-sage-50 dark:bg-brand-sage-950/40 text-brand-sage-800 dark:text-brand-sage-300 border border-brand-sage-200 dark:border-brand-sage-800 shadow-2xs">
+                        <span>📏</span>
+                        <span>BMI {context.bmi}{bmiBadge?.label ? ` (${bmiBadge.label})` : ''}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-navy-50 dark:bg-brand-navy-800 text-brand-navy-500 dark:text-brand-navy-300 border border-brand-navy-200 dark:border-brand-navy-700">
+                        <span>📏</span>
+                        <span>{isEn ? 'BMI: no height/weight yet' : 'BMI: chưa có chiều cao/cân nặng'}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 

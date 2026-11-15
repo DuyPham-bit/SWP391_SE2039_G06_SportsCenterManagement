@@ -140,7 +140,8 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
 
-  const validData = Array.isArray(data) && data.length > 0 ? data : [{ label: 'Chưa có sân', value: 1, color: '#6C6D70' }];
+  // No rooms yet: draw only the background track (and the 0 total) instead of a fake 100% slice.
+  const validData = Array.isArray(data) ? data.filter(item => Number(item?.value) > 0) : [];
   const sum = validData.reduce((acc, cur) => acc + (cur.value || 0), 0) || 1;
 
   let cumulativeAngle = 0;

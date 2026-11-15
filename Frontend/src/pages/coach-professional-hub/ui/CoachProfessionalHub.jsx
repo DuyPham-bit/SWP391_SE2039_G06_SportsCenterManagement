@@ -153,7 +153,7 @@ export function CoachProfessionalHub() {
                 {isEn ? 'Average Rating' : 'Đánh giá TB'}
               </span>
               <span className="text-lg font-black text-brand-sand-300 flex items-center gap-1">
-                ★ {kpiData.averageRating || '5.0'}
+                ★ {kpiData.averageRating ?? '—'}
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
@@ -161,7 +161,7 @@ export function CoachProfessionalHub() {
                 {isEn ? 'Attendance Rate' : 'Tỉ lệ chuyên cần'}
               </span>
               <span className="text-base sm:text-lg font-black text-brand-sage-300 truncate block">
-                {kpiData.attendanceRate ?? 95}%
+                {typeof kpiData.attendanceRate === 'number' ? `${kpiData.attendanceRate}%` : '—'}
               </span>
             </div>
           </div>
