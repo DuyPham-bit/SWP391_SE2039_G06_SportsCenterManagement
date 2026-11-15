@@ -77,6 +77,19 @@ function formatLogTime(timestamp, isEn) {
   }
 }
 
+/**
+ * Money for narrow KPI tiles: "1,25 tỷđ" / "400 trđ" so billions never overflow a card;
+ * the exact amount stays in the tile's title and in its detail line.
+ */
+function compactVnd(value, isEn) {
+  const n = Number(value || 0);
+  const abs = Math.abs(n);
+  const fmt = (v, digits) => v.toLocaleString(isEn ? 'en-US' : 'vi-VN', { maximumFractionDigits: digits });
+  if (abs >= 1e9) return `${fmt(n / 1e9, 2)} ${isEn ? 'B ₫' : 'tỷđ'}`;
+  if (abs >= 1e6) return `${fmt(n / 1e6, 1)} ${isEn ? 'M ₫' : 'trđ'}`;
+  return `${n.toLocaleString('vi-VN')}đ`;
+}
+
 export function ManagerDashboard() {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -636,8 +649,9 @@ export function ManagerDashboard() {
                     <span className="text-[11px] font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
                       {isEn ? 'NET REVENUE' : 'DOANH THU THỰC NHẬN'}
                     </span>
-                    <h3 className="text-2xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1">
-                      <AnimatedNumber value={netRevenue} duration={1200} suffix="đ" />
+                    <h3 className="text-lg sm:text-2xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1 truncate"
+                      title={`${Number(netRevenue || 0).toLocaleString('vi-VN')}đ`}>
+                      {compactVnd(netRevenue, isEn)}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-brand-sand-700 text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -663,8 +677,9 @@ export function ManagerDashboard() {
                     <span className="text-[11px] font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
                       {isEn ? 'TOP SPORT' : 'BỘ MÔN DOANH THU #1'}
                     </span>
-                    <h3 className="text-xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1 truncate max-w-[120px]" title={topRevenueSport?.sportName || 'Chưa có'}>
-                      {topRevenueSport ? <AnimatedNumber value={topRevenueSport.net || 0} duration={1200} suffix="đ" /> : '0đ'}
+                    <h3 className="text-lg sm:text-xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1 truncate"
+                      title={topRevenueSport ? `${topRevenueSport.sportName}: ${Number(topRevenueSport.net || 0).toLocaleString('vi-VN')}đ` : undefined}>
+                      {topRevenueSport ? compactVnd(topRevenueSport.net, isEn) : '0đ'}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-brand-sage-700 text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -770,7 +785,7 @@ export function ManagerDashboard() {
                 </div>
 
                 {/* Streamlined Executive KPI Strip (Compact & High-Density) */}
-                <div className="grid grid-cols-3 gap-2.5 pt-2.5 pb-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2.5 pb-1">
                   <div className="px-3 py-2 rounded-xl bg-brand-sand-50/80 dark:bg-brand-sand-950/50 border border-brand-sand-200/80 dark:border-brand-sand-800/60 flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-brand-sand-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
                       <span className="material-symbols-outlined text-[15px]">trending_up</span>

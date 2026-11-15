@@ -70,7 +70,7 @@ export function ManagerSupportCommunications() {
       <section className="rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-r from-brand-navy-900 via-brand-navy-900 to-brand-navy-900 text-white shadow-xl">
         <div className="p-6 sm:p-7">
           <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined text-brand-sand-300 text-[30px]">campaign</span>
+            <span className="material-symbols-outlined shrink-0 text-brand-sand-300 text-[30px]" aria-hidden="true">campaign</span>
             <div>
               <h1 className="font-chivo text-2xl md:text-3xl font-black">
                 {isEn ? 'Support & Center Communications' : 'Tiếp Nhận Hỗ Trợ & Gửi Thông Báo'}

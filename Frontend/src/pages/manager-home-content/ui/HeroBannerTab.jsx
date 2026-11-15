@@ -107,11 +107,18 @@ export function HeroBannerTab({
               </button>
             </div>
             <div className="h-36 rounded-xl overflow-hidden bg-brand-navy-900 relative border border-brand-navy-200 dark:border-brand-navy-800">
-              <img
-                src={content.heroBanner.posterUrl}
-                alt="Hero poster preview"
-                className="w-full h-full object-cover opacity-80"
-              />
+              {content.heroBanner?.posterUrl ? (
+                <img
+                  src={content.heroBanner.posterUrl}
+                  alt="Hero poster preview"
+                  className="w-full h-full object-cover opacity-80"
+                />
+              ) : (
+                // No poster yet: an empty <img src=""> renders as a broken-image icon.
+                <div className="w-full h-full flex items-center justify-center text-xs text-brand-navy-300">
+                  {isEn ? 'No poster image yet' : 'Chưa có ảnh poster'}
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-950 via-transparent to-transparent flex items-end p-3">
                 <span className="text-[11px] text-white font-bold bg-black/60 px-2 py-0.5 rounded">
                   {isEn ? 'Hero Poster Preview' : 'Xem trước Poster Banner'}
