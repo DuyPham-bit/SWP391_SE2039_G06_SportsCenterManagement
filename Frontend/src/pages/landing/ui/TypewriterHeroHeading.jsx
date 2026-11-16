@@ -92,35 +92,14 @@ export function TypewriterHeroHeading({ heroBadge, heroReady = true, heroTitle }
           lineHeight: '1.25'
         }}
       >
-        {/* Wait for published content before falling back to the default two-line headline to avoid an initial flash. */}
-        {customTitle ? (
+        {/* Wait for published content before falling back to the brand title to avoid an initial flash. */}
+        {(customTitle || heroReady) ? (
           <span className="scms-hero-line-1 block text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white break-words">
-            {customTitle}
+            {customTitle || 'OLYMPIC SPORTS ARENA'}
           </span>
-        ) : !heroReady ? (
+        ) : (
           <span className="block min-h-[3.5rem] sm:min-h-[4.5rem]" aria-hidden="true" />
-        ) : (<>
-        {/* Dòng 1: ĐI ĐẦU VỀ TẬP LUYỆN */}
-        <span className="scms-hero-line-1 block text-2xl sm:text-4xl md:text-5xl lg:text-6xl mb-2 sm:mb-3 font-black tracking-tight text-white">
-          {isEn ? 'PIONEERING IN' : 'ĐI ĐẦU VỀ TẬP LUYỆN'}
-        </span>
-
-        {/* Dòng 2: Cặp thẻ đôi cân xứng [NHÓM] & [CÁ NHÂN] tinh tế */}
-        <span className="scms-hero-line-2 flex flex-wrap items-center justify-center gap-2 sm:gap-3 text-xl sm:text-3xl md:text-4xl lg:text-5xl">
-          <span className="scms-highlight-primary">
-            {isEn ? 'GROUP' : 'NHÓM'}
-          </span>
-          <span
-            className="font-bold text-brand-sand-300 px-1"
-            style={{ textShadow: '0 2px 10px rgba(242, 204, 143, 0.4)' }}
-          >
-            &
-          </span>
-          <span className="scms-highlight-accent">
-            {isEn ? 'PERSONAL' : 'CÁ NHÂN'}
-          </span>
-        </span>
-        </>)}
+        )}
       </h1>
 
       {/* 3. Hiệu ứng Typewriter gõ chữ với màu vàng đồng Warm Gold thương hiệu */}
