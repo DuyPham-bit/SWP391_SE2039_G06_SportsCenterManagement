@@ -9,7 +9,6 @@ import { Logo } from '../../../shared/ui/Logo.jsx';
 import { OtpDialogContent, OTP_CARD_CLASS, withMinDuration } from '../../../shared/ui/OtpCode.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../../entities/membership/index.js';
 import { useLandingContent } from '../../../entities/landing-content/index.js';
-import { resolveHeroVideoUrl } from '../../landing/ui/heroVideo.js';
 
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -48,7 +47,7 @@ export function LoginPage() {
   const showcaseRegisterTitle = authShowcase.registerTitle || 'Hành trình mới, \nphiên bản khỏe hơn.';
   const showcaseDescription = authShowcase.description || 'Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.';
   const showcasePosterUrl = authShowcase.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920&auto=format&fit=crop';
-  const authVideoUrl = authShowcase.videoUrl || resolveHeroVideoUrl(landingContent?.heroBanner);
+  const authVideoUrl = authShowcase.videoUrl || landingContent?.heroBanner?.videoUrl || './hero-video.mp4';
   
   const feature1Title = authShowcase.feature1Title || 'Đặt chỗ trong 30s';
   const feature1Desc = authShowcase.feature1Desc || 'Giữ sân & lớp học 7 ngày';
