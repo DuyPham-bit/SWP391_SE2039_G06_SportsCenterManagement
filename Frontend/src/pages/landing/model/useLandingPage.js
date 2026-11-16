@@ -2,7 +2,7 @@ import { useMemo, useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../../entities/session/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { getMembershipAction } from '../../../entities/membership/index.js';
-import { useLandingContent, normalizeZaloPhone, getExternalContactUrl } from '../../../entities/landing-content/index.js';
+import { useLandingContentState, normalizeZaloPhone, getExternalContactUrl } from '../../../entities/landing-content/index.js';
 import { usePublicCatalog, getLandingPresentation } from '../../../entities/catalog/index.js';
 import { translateLandingContent, translateSportName } from '../../../shared/i18n/i18nHelper.js';
 import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
@@ -13,7 +13,7 @@ export function useLandingPage() {
   const { language, setLanguage } = useLanguage();
   const isEn = language === 'en';
   const membershipAction = getMembershipAction(isAuthenticated, role, isEn);
-  const editorialContent = useLandingContent();
+  const { content: editorialContent, loaded: editorialLoaded } = useLandingContentState();
   const { catalog, loading: catalogLoading, error: catalogError } = usePublicCatalog();
   const rawLandingContent = getLandingPresentation(editorialContent, catalog);
   const landingContent = useMemo(() => isEn ? translateLandingContent(rawLandingContent, true) : rawLandingContent, [rawLandingContent, isEn]);
@@ -40,8 +40,6 @@ export function useLandingPage() {
   const closeTimerRef = useRef(null);
   const isManualScrollRef = useRef(false);
   const manualScrollTimerRef = useRef(null);
-
-  const [showIntro, setShowIntro] = useState(true);
 
   // Tiya Scroll Reveal Observer (Synchronized with Tiya animations)
   useEffect(() => {
@@ -316,14 +314,14 @@ export function useLandingPage() {
 
   return {
     activeNav, catalog, catalogError, catalogLoading, categoryConfig, coursesDropdownRef,
-    editorialContent, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
+    editorialContent, editorialLoaded, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
     handleCoursesMouseLeave, handleNavClick, handleScrollSportsToIndex, handleSelectMenuItem,
     handleSportClick, handleSportsScroll, highlightedSportId, hours, isAuthenticated,
     isCoursesDropdownOpen, isEn, isMobileCoursesOpen, isMobileMenuOpen, isScrolled, isVideoMuted,
     landingContent, language, leftSports, logout, membershipAction, navItems, rightSports, role,
     selectedCategory, selectedFacilityForModal, selectedSportFromMenu, setIsMobileCoursesOpen,
     setIsMobileMenuOpen, setIsVideoMuted, setLanguage, setSelectedCategory,
-    setSelectedFacilityForModal, setShowIntro, showIntro, socialContacts, sportCarouselIndex,
+    setSelectedFacilityForModal, socialContacts, sportCarouselIndex,
     sportsCarousel, sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
   };
 }

@@ -15,7 +15,7 @@ const SCMS_SLOGANS_EN = [
   "TRAIN WITH PROFESSIONAL CERTIFIED COACHES"
 ];
 
-export function TypewriterHeroHeading({ heroBadge, heroTitle }) {
+export function TypewriterHeroHeading({ heroBadge, heroReady = true, heroTitle }) {
   const customTitle = typeof heroTitle === 'string' ? heroTitle.trim() : '';
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -92,11 +92,13 @@ export function TypewriterHeroHeading({ heroBadge, heroTitle }) {
           lineHeight: '1.25'
         }}
       >
-        {/* A manager-published title replaces the default two-line headline. */}
+        {/* Wait for published content before falling back to the default two-line headline to avoid an initial flash. */}
         {customTitle ? (
           <span className="scms-hero-line-1 block text-2xl sm:text-4xl md:text-5xl lg:text-6xl font-black tracking-tight text-white break-words">
             {customTitle}
           </span>
+        ) : !heroReady ? (
+          <span className="block min-h-[3.5rem] sm:min-h-[4.5rem]" aria-hidden="true" />
         ) : (<>
         {/* Dòng 1: ĐI ĐẦU VỀ TẬP LUYỆN */}
         <span className="scms-hero-line-1 block text-2xl sm:text-4xl md:text-5xl lg:text-6xl mb-2 sm:mb-3 font-black tracking-tight text-white">

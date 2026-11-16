@@ -5,7 +5,11 @@ import { safeHref } from '../../../shared/lib/safeUrl.js';
 // EN keeps the published title unless it is written in Vietnamese.
 const hasVietnameseChars = (text) => /[à-ỹđ]/i.test(text || '');
 
-export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
+export function HeroSection({ catalogLoading = false, facilitiesList, heroReady = true, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
+  const publishedMetrics = landingContent?.heroBanner?.metrics || [];
+  const hasPublishedDesc = Boolean(landingContent?.heroBanner?.description);
+  const countsReady = !catalogLoading && heroReady;
+
   return (
     <section id="trang-chu" className="hero-section">
       {/* Top Wave: #3D405B (Tiya Wave styled with compact height) */}
@@ -30,14 +34,15 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
           {/* Animated Headline with Slide-up & Typewriter */}
           <TypewriterHeroHeading
             heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent?.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
+            heroReady={heroReady}
             heroTitle={isEn && hasVietnameseChars(landingContent?.heroBanner?.title) ? '' : landingContent?.heroBanner?.title}
           />
 
           {/* Subtext */}
           <p className="hero-desc scms-hero-desc mt-5">
             {isEn
-              ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList?.length || 0} sports facilities and ${visibleSports?.length || 0} disciplines.`
-              : (landingContent?.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList?.length || 0} cụm sân, phòng tập phục vụ ${visibleSports?.length || 0} bộ môn thể thao.`)}
+              ? (countsReady ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList?.length || 0} sports facilities and ${visibleSports?.length || 0} disciplines.` : '\u00A0')
+              : (hasPublishedDesc ? landingContent.heroBanner.description : (countsReady ? `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList?.length || 0} cụm sân, phòng tập phục vụ ${visibleSports?.length || 0} bộ môn thể thao.` : '\u00A0'))}
           </p>
 
           {/* CTA Buttons */}
@@ -50,19 +55,23 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
             <a href={safeHref(landingContent?.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
               className="link">
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
-              {isEn ? `EXPLORE ${visibleSports?.length || 0} DISCIPLINES` : (landingContent?.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports?.length || 0} MÔN HỌC`)}
+              {isEn
+                ? (countsReady ? `EXPLORE ${visibleSports?.length || 0} DISCIPLINES` : 'EXPLORE DISCIPLINES')
+                : (landingContent?.heroBanner?.secondaryCtaText || (countsReady ? `KHÁM PHÁ ${visibleSports?.length || 0} MÔN HỌC` : 'KHÁM PHÁ MÔN HỌC'))}
             </a>
           </div>
 
           {/* Metrics Strip */}
-          <div className="tiya-metrics-strip" style={{width:'100%'}}>
-            {(landingContent?.heroBanner?.metrics || []).map((metric, idx) => (
-              <div key={metric.id || idx} className="tiya-metrics-item">
-                <span className="tiya-metrics-value">{metric.value}</span>
-                <span className="tiya-metrics-label">{metric.label}</span>
-              </div>
-            ))}
-          </div>
+          {publishedMetrics.length > 0 && (
+            <div className="tiya-metrics-strip" style={{width:'100%'}}>
+              {publishedMetrics.map((metric, idx) => (
+                <div key={metric.id || idx} className="tiya-metrics-item">
+                  <span className="tiya-metrics-value">{metric.value}</span>
+                  <span className="tiya-metrics-label">{metric.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div style={{display:'flex',justifyContent:'center',marginTop:'18px'}}>
             <a href="#ve-chung-toi" className="tiya-hero__scroll-cue">

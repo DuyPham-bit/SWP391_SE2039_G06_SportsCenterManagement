@@ -201,6 +201,10 @@ export function getLandingContent() {
   return fixMojibake(clone(publishedContent || DEFAULT_LANDING_CONTENT));
 }
 
+export function hasPublishedLandingContent() {
+  return publishedContent !== null;
+}
+
 export function getLegacyLandingContent() {
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
