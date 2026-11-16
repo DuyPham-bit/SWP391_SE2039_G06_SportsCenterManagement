@@ -1,14 +1,19 @@
-import React, { useLayoutEffect } from 'react';
+import React, { useLayoutEffect, useState } from 'react';
 import { FacilitiesSection } from './FacilitiesSection.jsx';
 import { useLandingPage } from '../model/useLandingPage.js';
+import { use3DExperience } from '../../../shared/lib/use3DExperience.js';
 import { LandingHeader } from './LandingHeader.jsx';
 import { HeroSection } from './HeroSection.jsx';
 import { AboutSection } from './AboutSection.jsx';
 import { ZonesSection } from './ZonesSection.jsx';
 import { CoursesSection } from './CoursesSection.jsx';
 import { LandingFooter } from './LandingFooter.jsx';
+import { Floating3DControl } from './Floating3DControl.jsx';
+import { SportModelModal3D } from './SportModelModal3D.jsx';
 
 export function LandingPage() {
+  const { is3DMode, toggle3DMode } = use3DExperience();
+  const [selectedSportFor3D, setSelectedSportFor3D] = useState(null);
   const {
     activeNav, catalog, catalogError, catalogLoading, categoryConfig, coursesDropdownRef,
     editorialContent, editorialLoaded, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
@@ -44,6 +49,7 @@ export function LandingPage() {
         handleNavClick={handleNavClick}
         handleSelectMenuItem={handleSelectMenuItem}
         isAuthenticated={isAuthenticated}
+        is3DMode={is3DMode}
         isCoursesDropdownOpen={isCoursesDropdownOpen}
         isEn={isEn}
         isMobileCoursesOpen={isMobileCoursesOpen}
@@ -59,6 +65,7 @@ export function LandingPage() {
         setIsMobileCoursesOpen={setIsMobileCoursesOpen}
         setIsMobileMenuOpen={setIsMobileMenuOpen}
         setLanguage={setLanguage}
+        toggle3DMode={toggle3DMode}
         toggleCoursesDropdown={toggleCoursesDropdown}
       />
 
@@ -69,6 +76,7 @@ export function LandingPage() {
         catalogLoading={catalogLoading}
         facilitiesList={facilitiesList}
         heroReady={editorialLoaded}
+        is3DMode={is3DMode}
         isEn={isEn}
         isVideoMuted={isVideoMuted}
         landingContent={landingContent}
@@ -92,7 +100,7 @@ export function LandingPage() {
           3. BACKGROUND IMAGE SECTION WITH FROSTED GLASS BLOCK (Tiya Signature)
           Matches 100% the user's reference screenshot!
       ───────────────────────────────────────────────────────────── */}
-      <ZonesSection facilitiesList={facilitiesList} hours={hours} isEn={isEn} />
+      <ZonesSection facilitiesList={facilitiesList} hours={hours} is3DMode={is3DMode} isEn={isEn} />
 
       {/* ─────────────────────────────────────────────────────────────
           4. COURSES CATALOG SECTION (Tiya Warm Cream #F4F1DE Background)
@@ -109,9 +117,11 @@ export function LandingPage() {
         handleSportsScroll={handleSportsScroll}
         highlightedSportId={highlightedSportId}
         hours={hours}
+        is3DMode={is3DMode}
         isEn={isEn}
         landingContent={landingContent}
         membershipAction={membershipAction}
+        onOpenSport3D={setSelectedSportFor3D}
         selectedCategory={selectedCategory}
         setSelectedCategory={setSelectedCategory}
         sportCarouselIndex={sportCarouselIndex}
@@ -149,6 +159,29 @@ export function LandingPage() {
         socialContacts={socialContacts}
         visibleSports={visibleSports}
       />
+
+      {/* ─────────────────────────────────────────────────────────────
+          7. FLOATING 3D SPATIAL CONTROL DOCK & 3D SPORT INSPECTOR MODAL
+      ───────────────────────────────────────────────────────────── */}
+      <Floating3DControl
+        is3DMode={is3DMode}
+        toggle3DMode={toggle3DMode}
+        onOpenSport3D={setSelectedSportFor3D}
+        isEn={isEn}
+      />
+
+      {selectedSportFor3D && (
+        <SportModelModal3D
+          sport={selectedSportFor3D}
+          isEn={isEn}
+          onClose={() => setSelectedSportFor3D(null)}
+          onBookingClick={() => {
+            setSelectedSportFor3D(null);
+            const el = document.getElementById('khoa-hoc');
+            if (el) el.scrollIntoView({ behavior: 'smooth' });
+          }}
+        />
+      )}
     </div>
   );
 }

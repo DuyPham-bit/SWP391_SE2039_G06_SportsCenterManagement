@@ -3007,3 +3007,31 @@
   transform: translateY(-1px);
   outline: none;
 }
+
+/* ==========================================================================
+   SCMS SPATIAL 3D EXPERIENCE MODE STYLES
+   ========================================================================== */
+.scms-3d-active .tiya-course-card {
+  transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.35s ease, border-color 0.35s ease;
+  transform-style: preserve-3d;
+  perspective: 1000px;
+}
+
+.scms-3d-active .tiya-course-card:hover {
+  transform: translateY(-8px) scale(1.02) rotateX(2deg);
+  box-shadow: 0 20px 40px -10px rgba(6, 182, 212, 0.25), 0 0 0 1px rgba(6, 182, 212, 0.35);
+}
+
+.scms-3d-active .section-bg-image-block {
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(6, 182, 212, 0.25);
+}
+
+@keyframes tiya3DGlow {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(6, 182, 212, 0.3);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(6, 182, 212, 0.6);
+  }
+}
+

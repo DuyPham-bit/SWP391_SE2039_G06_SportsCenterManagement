@@ -1,7 +1,7 @@
 import React from 'react';
 import { TrainingZones3D } from './TrainingZones3D.jsx';
 
-export function ZonesSection({ facilitiesList = [], hours, isEn = false }) {
+export function ZonesSection({ facilitiesList = [], hours, is3DMode = false, isEn = false }) {
   return (
     <section className="section-bg-image" id="khong-gian-tap-luyen">
       {/* Top Wave: White #ffffff */}
@@ -51,14 +51,20 @@ export function ZonesSection({ facilitiesList = [], hours, isEn = false }) {
             </div>
           </div>
 
-          {/* Interactive 3D Model */}
-          <TrainingZones3D
-            isEn={isEn}
-            onBookingClick={() => {
-              const el = document.getElementById('co-so-vat-chat');
-              if (el) el.scrollIntoView({ behavior: 'smooth' });
-            }}
-          />
+          {/* Interactive 3D Model with Dynamic Spatial Glow */}
+          <div className={`transition-all duration-500 rounded-3xl ${
+            is3DMode
+              ? 'ring-2 ring-cyan-400/40 shadow-[0_0_50px_rgba(6,182,212,0.25)]'
+              : ''
+          }`}>
+            <TrainingZones3D
+              isEn={isEn}
+              onBookingClick={() => {
+                const el = document.getElementById('co-so-vat-chat');
+                if (el) el.scrollIntoView({ behavior: 'smooth' });
+              }}
+            />
+          </div>
         </div>
       </div>
 
