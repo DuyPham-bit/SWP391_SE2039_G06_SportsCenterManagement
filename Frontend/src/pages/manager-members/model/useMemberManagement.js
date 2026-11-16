@@ -51,14 +51,26 @@ export function useMemberManagement() {
     };
   }, [filter, revision]);
 
-  // Derived KPI statistics
+  // KPI statistics: server summary covers every matching member (same scope as totalCount).
+  // The page-scoped fallback only applies to an older backend without `summary`.
   const stats = useMemo(() => {
     const items = data.items || [];
+    const summary = data.summary;
+    if (summary) {
+      return {
+        total: data.totalCount ?? 0,
+        pageCount: null,
+        active: summary.activeAccounts,
+        hasPackage: summary.withActivePackage,
+        disabled: summary.disabledAccounts
+      };
+    }
     const activeCount = items.filter((m) => m.accountStatus === 'Active').length;
     const packageCount = items.filter((m) => m.packageStatus === 'ACTIVE').length;
     const disabledCount = items.filter((m) => m.accountStatus !== 'Active').length;
     return {
-      total: data.totalCount || items.length,
+      total: data.totalCount ?? items.length,
+      pageCount: items.length,
       active: activeCount,
       hasPackage: packageCount,
       disabled: disabledCount

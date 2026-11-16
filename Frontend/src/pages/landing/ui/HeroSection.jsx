@@ -1,10 +1,15 @@
 import React from 'react';
 import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
-import { resolveHeroVideoUrl } from './heroVideo.js';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
 
-export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
-  const heroVideoUrl = resolveHeroVideoUrl(landingContent.heroBanner);
+// EN keeps the published title unless it is written in Vietnamese.
+const hasVietnameseChars = (text) => /[à-ỹđ]/i.test(text || '');
+
+export function HeroSection({ catalogLoading = false, facilitiesList, heroReady = true, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
+  const publishedMetrics = landingContent?.heroBanner?.metrics || [];
+  const hasPublishedDesc = Boolean(landingContent?.heroBanner?.description);
+  const countsReady = !catalogLoading && heroReady;
+
   return (
     <section id="trang-chu" className="hero-section">
       {/* Top Wave: #3D405B (Tiya Wave styled with compact height) */}
@@ -14,13 +19,12 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
 
       {/* Video Background */}
       <video
-        key={heroVideoUrl}
         ref={videoRef}
-        autoPlay loop muted={isVideoMuted} playsInline
+        autoPlay loop muted playsInline
         className="hero-video-bg"
-        poster={landingContent.heroBanner?.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
+        poster={landingContent?.heroBanner?.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
       >
-        <source src={heroVideoUrl} type="video/mp4" />
+        <source src={landingContent?.heroBanner?.videoUrl || './hero-video.mp4'} type="video/mp4" />
       </video>
       <div className="section-overlay" />
 
@@ -29,40 +33,45 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',maxWidth:'900px',margin:'0 auto'}}>
           {/* Animated Headline with Slide-up & Typewriter */}
           <TypewriterHeroHeading
-            heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
-            heroTitle={isEn ? '' : landingContent.heroBanner?.title}
+            heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent?.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
+            heroReady={heroReady}
+            heroTitle={isEn && hasVietnameseChars(landingContent?.heroBanner?.title) ? '' : landingContent?.heroBanner?.title}
           />
 
           {/* Subtext */}
           <p className="hero-desc scms-hero-desc mt-5">
             {isEn
-              ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList.length} sports facilities and ${visibleSports.length} disciplines.`
-              : (landingContent.heroBanner?.description || `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList.length} cụm sân, phòng tập phục vụ ${visibleSports.length} bộ môn thể thao.`)}
+              ? (countsReady ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList?.length || 0} sports facilities and ${visibleSports?.length || 0} disciplines.` : '\u00A0')
+              : (hasPublishedDesc ? landingContent.heroBanner.description : (countsReady ? `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList?.length || 0} cụm sân, phòng tập phục vụ ${visibleSports?.length || 0} bộ môn thể thao.` : '\u00A0'))}
           </p>
 
           {/* CTA Buttons */}
           <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center'}}>
-            <a href={safeHref(landingContent.heroBanner?.primaryCtaLink) || '#/register'}
+            <a href={safeHref(landingContent?.heroBanner?.primaryCtaLink) || '#/register'}
               className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
-              {isEn ? 'REGISTER NEW MEMBER' : (landingContent.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
+              {isEn ? 'REGISTER NEW MEMBER' : (landingContent?.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>arrow_forward</span>
             </a>
-            <a href={safeHref(landingContent.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
+            <a href={safeHref(landingContent?.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
               className="link">
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
-              {isEn ? `EXPLORE ${visibleSports.length} DISCIPLINES` : (landingContent.heroBanner?.secondaryCtaText || `KHÁM PHÁ ${visibleSports.length} MÔN HỌC`)}
+              {isEn
+                ? (countsReady ? `EXPLORE ${visibleSports?.length || 0} DISCIPLINES` : 'EXPLORE DISCIPLINES')
+                : (landingContent?.heroBanner?.secondaryCtaText || (countsReady ? `KHÁM PHÁ ${visibleSports?.length || 0} MÔN HỌC` : 'KHÁM PHÁ MÔN HỌC'))}
             </a>
           </div>
 
           {/* Metrics Strip */}
-          <div className="tiya-metrics-strip" style={{width:'100%'}}>
-            {(landingContent.heroBanner?.metrics || []).map((metric, idx) => (
-              <div key={metric.id || idx} className="tiya-metrics-item">
-                <span className="tiya-metrics-value">{metric.value}</span>
-                <span className="tiya-metrics-label">{metric.label}</span>
-              </div>
-            ))}
-          </div>
+          {publishedMetrics.length > 0 && (
+            <div className="tiya-metrics-strip" style={{width:'100%'}}>
+              {publishedMetrics.map((metric, idx) => (
+                <div key={metric.id || idx} className="tiya-metrics-item">
+                  <span className="tiya-metrics-value">{metric.value}</span>
+                  <span className="tiya-metrics-label">{metric.label}</span>
+                </div>
+              ))}
+            </div>
+          )}
 
           <div style={{display:'flex',justifyContent:'center',marginTop:'18px'}}>
             <a href="#ve-chung-toi" className="tiya-hero__scroll-cue">
@@ -74,7 +83,7 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
       </div>
 
       {/* Sound Toggle Button */}
-      {heroVideoUrl && <button
+      <button
         type="button"
         onClick={() => {
           if (videoRef.current) {
@@ -90,7 +99,7 @@ export function HeroSection({ facilitiesList, isEn, isVideoMuted, landingContent
           {isVideoMuted ? 'volume_off' : 'volume_up'}
         </span>
         {isVideoMuted ? (isEn ? 'Unmute' : 'Bật âm thanh') : (isEn ? 'Mute' : 'Tắt âm thanh')}
-      </button>}
+      </button>
 
       {/* Bottom Wave: Pure White #ffffff (Tiya Wave styled with compact height) */}
       <svg className="hero-bottom-wave" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1440 320" preserveAspectRatio="none">

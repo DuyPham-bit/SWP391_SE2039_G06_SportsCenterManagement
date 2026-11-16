@@ -2,7 +2,6 @@ import React from 'react';
 import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
 import { translateFacilityBadge, translateSportName, translateFacilityName, translateLocation, translateCourseHighlight, translateCoachName, translateOpenHours } from '../../../shared/i18n/i18nHelper.js';
 import { CarouselSideArrows } from './CarouselControls.jsx';
-import { getSportFallbackImage } from '../../../shared/lib/sportMediaFallback.js';
 
 export function CoursesSection({
   catalogError, catalogLoading, categoryConfig, editorialContent, facilitiesList, filteredSports,
@@ -12,20 +11,32 @@ export function CoursesSection({
 }) {
   return (
     <section className="courses-section" id="khoa-hoc">
-      {catalogLoading && !editorialContent.coursesSection?.sportsList?.length && <p role="status">{isEn ? 'Loading center catalog...' : 'Đang tải danh mục trung tâm...'}</p>}
-      {(editorialContent._loadError || (catalogError && !editorialContent.coursesSection?.sportsList?.length)) && <p role="alert">{editorialContent._loadError || catalogError}</p>}
-      {!catalogLoading && !catalogError && sportsList.length === 0 && <p role="status">{isEn ? 'No sports currently active.' : 'Chưa có bộ môn đang hoạt động.'}</p>}
       <div className="courses-container">
+        {catalogLoading && !editorialContent.coursesSection?.sportsList?.length && (
+          <p role="status" className="text-center text-sm text-brand-navy-600 mb-4">
+            {isEn ? 'Loading center catalog...' : 'Đang tải danh mục trung tâm...'}
+          </p>
+        )}
+        {(editorialContent._loadError || (catalogError && !editorialContent.coursesSection?.sportsList?.length)) && (
+          <div role="alert" className="max-w-2xl mx-auto mb-6 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm text-center">
+            {editorialContent._loadError || catalogError}
+          </div>
+        )}
+        {!catalogLoading && !catalogError && sportsList.length === 0 && (
+          <p role="status" className="text-center text-sm text-brand-navy-600 mb-4">
+            {isEn ? 'No sports currently active.' : 'Chưa có bộ môn đang hoạt động.'}
+          </p>
+        )}
         <div className="tiya-reveal courses-section-header">
-          <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'6px 16px',background:'rgb(var(--color-primary) / 0.15)',border:'1px solid rgb(var(--color-primary) / 0.4)',borderRadius:'100px',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
+          <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'6px 16px',background:'rgba(129,178,154,0.15)',border:'1px solid rgba(129,178,154,0.4)',borderRadius:'100px',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
             <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--primary-color)',animation:'tiyaPulse 2s infinite'}} />
-            {isEn ? 'PROFESSIONAL TRAINING PROGRAMS' : (landingContent.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp')}
+            {isEn ? 'PROFESSIONAL TRAINING PROGRAMS' : (landingContent?.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp')}
           </div>
           <h2 className="courses-title">
-            <span>{visibleSports.length} {isEn ? 'Sports' : 'Bộ Môn'}</span> {isEn ? 'Disciplines' : (landingContent.coursesSection?.title || 'Thể Thao').replace(/^(Khóa Học|Bộ môn)\s*/i, '')}
+            <span>{visibleSports?.length || 0} {isEn ? 'Sports' : 'Bộ Môn'}</span> {isEn ? 'Disciplines' : (landingContent?.coursesSection?.title || 'Thể Thao').replace(/^(Khóa Học|Bộ môn)\s*/i, '')}
           </h2>
           <p className="courses-desc">
-            {isEn ? 'Curated athletic courses taught by certified instructors with modern facilities and structured curricula.' : (landingContent.coursesSection?.description || 'Các khóa đào tạo thể thao chuyên sâu, huấn luyện viên đạt chuẩn quốc gia.')}
+            {isEn ? 'Curated athletic courses taught by certified instructors with modern facilities and structured curricula.' : (landingContent?.coursesSection?.description || 'Các khóa đào tạo thể thao chuyên sâu, huấn luyện viên đạt chuẩn quốc gia.')}
           </p>
           <p className="text-sm text-brand-navy-600 mt-3">
             {isEn ? 'Choose a package and complete payment before booking classes. Class access depends on your package benefits and available places.' : 'Đăng ký và thanh toán gói tập trước khi đặt ca học. Quyền tham gia lớp phụ thuộc quyền lợi gói và số chỗ còn trống.'}
@@ -33,7 +44,7 @@ export function CoursesSection({
 
           {/* Trust Badges */}
           <div style={{display:'flex',flexWrap:'wrap',gap:'10px',justifyContent:'center',marginTop:'12px'}}>
-            {(landingContent.coursesSection?.trustBadges || []).map((tb, idx) => (
+            {(landingContent?.coursesSection?.trustBadges || []).map((tb, idx) => (
               <span key={tb.id || idx} style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 14px',borderRadius:'100px',background:'var(--white-color)',border:'1px solid rgba(0,0,0,0.06)',fontSize:'12px',fontWeight:600,color:'var(--p-color)',boxShadow:'0 2px 6px rgba(0,0,0,0.04)'}}>
                 <span className="material-symbols-outlined" style={{fontSize:'16px',color:'var(--primary-color)'}}>{tb.icon}</span>
                 {tb.text}
@@ -101,7 +112,6 @@ export function CoursesSection({
                 labelEn: sport.category
               };
               const isHighlighted = highlightedSportId === sport.id;
-              const description = isEn ? (translateCourseHighlight(details.highlight, true) || details.highlight) : details.highlight;
 
               return (
                 <div
@@ -115,20 +125,17 @@ export function CoursesSection({
                     className={`tiya-course-card ${isHighlighted ? 'highlighted' : ''}`}
                   >
                     <div className="tiya-course-card__image-wrap">
-                      {(() => {
-                        const cardImage = sport.image || facility.image || facility.secondaryImage || getSportFallbackImage(sport.name, sport.category);
-                        return <img src={cardImage} alt={sport.name} loading="lazy" draggable={false} className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-110" />;
-                      })()}
+                      {sport.image || facility.image || facility.secondaryImage ? <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" draggable={false} /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
                       <div style={{position:'absolute',top:'12px',left:'12px',right:'12px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',zIndex:2}}>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(15,23,42,0.75)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,textTransform:'uppercase',backdropFilter:'blur(6px)',border:'1px solid rgba(255,255,255,0.15)'}}>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(0,0,0,0.65)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,textTransform:'uppercase',backdropFilter:'blur(4px)'}}>
                           <span className="material-symbols-outlined" style={{fontSize:'13px'}}>{sport.icon}</span>
                           {isEn ? (catCfg.labelEn || catCfg.label) : catCfg.label}
                         </span>
-                        <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgb(var(--color-primary) / 0.9)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,backdropFilter:'blur(6px)',boxShadow:'0 2px 8px rgb(var(--color-primary) / 0.35)'}}>
+                        <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(129,178,154,0.9)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,backdropFilter:'blur(4px)'}}>
                           {isEn ? translateFacilityBadge(facility.badge, true) : (facility.badge || (isEn ? 'Court / Hall' : 'Phòng / sân'))}
                         </span>
                       </div>
-                      <div style={{position:'absolute',bottom:'10px',right:'12px',padding:'4px 12px',borderRadius:'8px',background:'rgba(15,23,42,0.85)',color:'var(--custom-btn-bg-color)',fontSize:'12px',fontWeight:700,backdropFilter:'blur(8px)',border:'1px solid rgba(255,255,255,0.15)'}}>
+                      <div style={{position:'absolute',bottom:'10px',right:'12px',padding:'4px 12px',borderRadius:'8px',background:'rgba(0,0,0,0.7)',color:'var(--custom-btn-bg-color)',fontSize:'12px',fontWeight:700,backdropFilter:'blur(4px)'}}>
                         <a href={membershipAction.href} onClick={event => event.stopPropagation()} style={{color:'inherit'}}>{details.price}</a>
                       </div>
                     </div>
@@ -145,16 +152,11 @@ export function CoursesSection({
 
                       <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:600,color:'var(--primary-color)',marginBottom:'10px',minHeight:'20px'}}>
                         <span className="material-symbols-outlined" style={{fontSize:'15px',flexShrink:0}}>location_on</span>
-                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                          {[
-                            isEn ? translateFacilityName(facility.name || sport.venue, true) : (facility.name || sport.venue),
-                            isEn ? translateLocation(facility.location, true) : facility.location
-                          ].filter(Boolean).join(' • ')}
-                        </span>
+                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{isEn ? translateFacilityName(facility.name, true) : facility.name} • {isEn ? translateLocation(facility.location, true) : facility.location}</span>
                       </div>
 
-                      <p title={description || undefined} style={{fontSize:'13px',lineHeight:1.6,color:'var(--p-color)',marginBottom:'14px',display:'-webkit-box',WebkitLineClamp:3,WebkitBoxOrient:'vertical',overflow:'hidden',minHeight:'62px'}}>
-                        {description}
+                      <p style={{fontSize:'13px',lineHeight:1.6,color:'var(--p-color)',marginBottom:'14px',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',minHeight:'42px'}}>
+                        {isEn ? (translateCourseHighlight(details.highlight, true) || details.highlight) : details.highlight}
                       </p>
 
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'16px',fontSize:'11px',color:'var(--p-color)',minHeight:'36px'}}>

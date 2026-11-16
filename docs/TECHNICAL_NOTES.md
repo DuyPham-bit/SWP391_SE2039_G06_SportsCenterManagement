@@ -1,0 +1,74 @@
+# Ghi chú kỹ thuật
+
+> Nội dung README cũ, giữ lại cho developer. Hướng dẫn cho người mới: [README.md](../README.md).
+
+
+Workspace gộp frontend React/Vite và backend ASP.NET Core/.NET 10 thành hai thư mục riêng:
+
+- `Frontend/` — React 18, Vite, port `3004`.
+- `Backend/` — repository backend ASP.NET Core Web API, PostgreSQL và EF Core.
+
+## Chạy local
+
+1. Cấu hình kết nối tới PostgreSQL đang dùng và các khóa ứng dụng theo hướng dẫn trong [Backend/README.md](../Backend/README.md). Backend cần `ConnectionStrings:SportsCenter` và `Jwt:Key` dài ít nhất 32 byte. Mặc định ứng dụng chỉ đồng bộ schema/quyền/danh mục môn; dữ liệu demo (gói, lớp, hóa đơn, thanh toán mẫu) chỉ được tạo khi đặt `Database:SeedDemoData=true`, không bật trên database thật. Xem [kết nối DB thật](../Frontend/docs/real-database.md).
+2. Chạy API từ thư mục workspace:
+
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\Backend\start-shared.ps1
+   ```
+
+   Script kiểm tra PostgreSQL ở cổng 5432 trước khi chạy; nếu chưa chạy, script tự khởi động container `postgres` (hoặc chạy `scripts/start-postgres.bat`). API dùng `http://localhost:5000`; Vite proxy `/api` đến địa chỉ này. Nếu dùng PostgreSQL từ xa, chạy script với `-SkipDatabaseCheck`.
+3. Sao chép `Frontend/.env.example` thành `Frontend/.env.local` và đặt `VITE_SPORTS_CENTER_ID` thành ID trung tâm thực tế trong database; biến này bắt buộc khi đăng ký hội viên mới.
+4. Cài và chạy giao diện:
+
+   ```powershell
+   cd .\Frontend
+   npm ci
+   npm run dev
+   ```
+
+## Dùng chung qua Internet
+
+Muốn mọi máy nhìn thấy cùng tài khoản và dữ liệu, hãy triển khai một Frontend, một Backend API và một cơ sở dữ liệu PostgreSQL tập trung trên máy chủ có tên miền và HTTPS. Trình duyệt chỉ truy cập tên miền chung; không kết nối trực tiếp tới máy chủ database. Xem thông tin tổng quan và cấu hình cơ bản tại [PROJECT_SUMMARY.md](../docs/PROJECT_SUMMARY.md).
+
+## Các luồng đã nối API
+
+- Đăng nhập, đăng ký hội viên có OTP xác thực email, hồ sơ, đổi mật khẩu và yêu cầu/đặt lại mật khẩu qua email.
+- Danh mục và quản lý gói tập; lịch ca tập và đặt/hủy chỗ.
+- Flow 2: quản lý lớp/phòng, tạo lịch, công bố/hủy lớp, phân công HLV, danh sách chờ, lễ tân đặt/hủy hộ và HLV xem học viên/điểm danh qua API.
+- Manager cấu hình quyền Member/Coach/Receptionist trong trung tâm; System Admin giữ ma trận quyền toàn hệ thống.
+- Manager bổ nhiệm hội viên hiện có làm HLV/lễ tân, đổi vai trò có kiểm tra phân công lớp và xuất báo cáo CSV từ dữ liệu API.
+- Tra cứu hội viên, thu tiền tại quầy bằng CASH/POS (cần mã chuẩn chi cho POS).
+- Khởi tạo thanh toán online qua VNPay hoặc MoMo; callback VNPay/MoMo được gửi về backend để xác minh. VietQR đã được gỡ khỏi luồng thanh toán mới.
+
+Frontend xác thực bằng cookie HttpOnly chứa JWT và header chọn phiên riêng từng tab, đọc lỗi Problem Details và `traceId`, đồng thời dùng `Idempotency-Key` cho thao tác thanh toán. Không dùng mock để giả lập các luồng trên.
+
+## API mới và cấu hình Google/AI
+
+Giáo án chung/cá nhân, tiến độ và thông báo HLV/hội viên đã nối API lưu PostgreSQL. Xác thực dùng JWT HS256 qua JwtBearer, kiểm tra issuer/audience/thời hạn và tài khoản ở mỗi request; Swagger có nút Authorize. JWT nằm trong cookie HttpOnly; sessionStorage chỉ giữ mã chọn phiên riêng từng tab. F5 giữ đăng nhập và các tab có thể dùng tài khoản khác nhau; hồ sơ/quyền được tải lại từ API. API client ngoài trình duyệt vẫn dùng Bearer JWT. Chi tiết: [cơ chế phiên từng tab](../Frontend/docs/tab-session-fix.md).
+
+Member và Coach có màn hình gửi/theo dõi yêu cầu hỗ trợ; Lễ tân/Manager tiếp nhận và phản hồi trong đúng trung tâm. Hộp thư có thao tác đọc tất cả. Gói đã thanh toán nhưng chưa đến ngày hiệu lực được hiển thị riêng với gói đang dùng.
+
+Nếu chạy giao diện nhúng trong backend, chạy `npm.cmd run build:api` từ `Frontend/` trước khi chạy/publish backend. Lệnh này tạo lại `Backend/SportsCenterManagement.API/wwwroot` từ source frontend và thay các bundle cũ, tránh tiếp tục phục vụ bản lưu Session trước đây. Giao diện chạy bằng Vite dùng source frontend trực tiếp.
+
+Google Login dùng ID token được xác minh ở backend. Chatbot/gợi ý giáo án cố định Gemini 3.5 Flash-Lite; API key đọc từ `AI:ApiKey` ở cấu hình backend. Khi thiếu cấu hình, API trả lỗi rõ ràng, không trả kết quả giả. Thanh toán online vẫn cần thông tin sandbox của cổng tương ứng. Member và Coach đã có giao diện/API gửi, theo dõi và bổ sung phản hồi yêu cầu hỗ trợ.
+
+Chi tiết tích hợp và kiểm chứng: [api-jwt-integration.md](../Backend/docs/requirements/api-jwt-integration.md). Chi tiết Flow 2 trước đó: [flow2-delivery.md](../Backend/docs/requirements/flow2-delivery.md).
+
+## Thời gian hệ thống
+
+Hệ thống hoạt động theo giờ Việt Nam (`Asia/Ho_Chi_Minh`, UTC+7). Timestamp lưu trong database là UTC; frontend đọc timestamp API không có offset là UTC và hiển thị theo giờ Việt Nam. Ngày nghiệp vụ (ngày sinh, ngày vào làm, ngày học, hiệu lực gói) giữ nguyên ngày Việt Nam; ô `datetime-local` nhận giờ Việt Nam. Đổi múi giờ thiết bị không làm đổi ngày/giờ hiển thị hoặc giờ đặt lịch. Backend xác thực nghiệp vụ bằng đồng hồ máy chủ; máy chủ cần được đồng bộ giờ chính xác.
+
+Docker đã cấu hình múi giờ cho backend/PostgreSQL và ranh giới ngày báo cáo là Việt Nam. Sau khi cập nhật, chạy `docker compose -f docker/docker-compose.yml --env-file docker/.env up -d --build` để áp dụng. Khi chạy frontend nhúng trong API, build lại bằng `npm.cmd run build:api` trong `Frontend/`.
+
+## Kiểm tra
+
+- Trợ lý AI hội viên nhận dữ liệu công khai mới từ database của đúng trung tâm ở mỗi câu hỏi: lịch lớp Published/Scheduled, gói Active và giá VND, sân/phòng Active, địa chỉ, số điện thoại/email trung tâm và giờ mở cửa. Backend chỉ chọn các trường được phép; không gửi hồ sơ hội viên/HLV, ghi chú nội bộ, danh sách đặt chỗ, thanh toán, báo cáo, cấu hình hoặc hội thoại người khác. Ngày/tháng, ngày ISO, ngày tương đối và câu hỏi tiếp nối được xử lý theo giờ Việt Nam; khoảng truy vấn tối đa 31 ngày, tối đa 200 buổi học. Chưa có danh mục sự kiện riêng hoặc giá thuê sân trong database thì AI phải nói rõ thiếu dữ liệu. Nội dung biên tập trang chủ được lưu trong `system_settings` qua API. Trợ lý AI vẫn đọc dữ liệu nghiệp vụ Center/Room và chưa dùng nội dung biên tập này làm nguồn dữ liệu.
+- Nhắc lịch ca học: backend tự kiểm tra mỗi 15 giây và gửi thông báo trong ứng dụng khi ca học đã xác nhận còn tối đa 1 tiếng trước giờ bắt đầu (giờ Việt Nam). Chuông thông báo và hộp thư tự tải lại mỗi 15 giây khi trang đang mở. Lịch bị hủy và ca đã bắt đầu không được nhắc; lời nhắc được lưu trong database để tránh gửi trùng sau khi khởi động lại. Đặt chỗ trong vòng 1 tiếng trước ca học sẽ nhận lời nhắc ở lần kiểm tra kế tiếp. Backend cần hoạt động để tạo lời nhắc; migration `AddClassReminderKey` được áp dụng qua luồng khởi động hiện có.
+- Frontend: `npm run build` trong `Frontend/`.
+- Frontend regression: `npm test` trong `Frontend/`.
+- Múi giờ: `node --test tests/timezone.test.cjs` trong `Frontend/` kiểm tra 5 múi giờ thiết bị; `dotnet run --project Backend/verification/TimezoneAudit/TimezoneAudit.csproj` từ thư mục gốc kiểm tra ranh giới ngày Việt Nam ở backend.
+- Quản lý nội dung trang chủ và media; kiểm thử Chrome: `npm.cmd run test:landing:browser` trong `Frontend/`.
+- Kiểm tra kết nối API thật và xử lý lỗi 500/proxy: [api-connection-fix.md](../Frontend/docs/api-connection-fix.md).
+- Backend: `dotnet build SportsCenterManagement.API/SportsCenterManagement.API.csproj` từ `Backend/`.
+- Bộ test backend đã được người dùng xóa ngày 16/10/2026; solution không còn tham chiếu project test. Các thay đổi hiện tại được kiểm chứng bằng HTTP/SQL Server riêng và Chrome; xem báo cáo trong tài liệu liên kết ở trên.

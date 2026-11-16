@@ -2,6 +2,7 @@ import { apiRequest } from '../../../shared/api/http.js';
 
 function planRequest(plan) {
   return {
+    planId: plan.planId ? Number(plan.planId) : null,
     classId: Number(plan.classId), memberId: plan.memberId ? Number(plan.memberId) : null,
     title: plan.title, goal: plan.goal || null, startDate: plan.startDate,
     endDate: plan.endDate || null, fitnessCondition: plan.fitnessCondition || null,

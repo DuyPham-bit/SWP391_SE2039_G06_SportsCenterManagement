@@ -245,17 +245,15 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await openCard();
   assert.equal(await evaluate(manager, `${cardField('description')}.value`), 'Nội dung chi tiết sân mới');
   await click(manager, 'Tải/Đổi Ảnh');
-  // R2 picker: one "Chọn ảnh #<id>" button per library image.
-  await until('card media picker opens', () => evaluate(manager, `document.querySelectorAll('button[aria-label^="Chọn ảnh #"]').length === 7`));
+  await until('card media picker opens', () => evaluate(manager, `document.querySelectorAll('p[title^="photo-"]').length === 7`));
   assert.equal(await evaluate(manager, `Boolean(document.querySelector('[role="dialog"]'))`), false);
-  await evaluate(manager, `[...document.querySelectorAll('button')].find(b => b.textContent.trim() === 'Hủy').click()`);
+  await click(manager, 'Hủy bỏ');
   await until('card dialog resumes after cancelling the picker', () => evaluate(manager, `Boolean(${cardField('description')})`));
   assert.equal(await evaluate(manager, `${cardField('description')}.value`), 'Nội dung chi tiết sân mới');
   await click(manager, 'Tải/Đổi Ảnh');
-  await until('card gallery loads', () => evaluate(manager, `Boolean(document.querySelector('button[aria-label="Chọn ảnh #1"]'))`));
-  await evaluate(manager, `document.querySelector('button[aria-label="Chọn ảnh #1"]').click()`);
-  await until('gallery image selected', () => evaluate(manager, `document.querySelector('button[aria-label="Chọn ảnh #1"]').getAttribute('aria-pressed') === 'true'`));
-  await click(manager, 'Dùng ảnh này');
+  await until('card gallery loads', () => evaluate(manager, `Boolean(document.querySelector('p[title="photo-0.jpg"]'))`));
+  await evaluate(manager, `document.querySelector('p[title="photo-0.jpg"]').click()`);
+  await click(manager, 'Áp Dụng Hình Ảnh Này');
   await until('card image updated and dialog resumes', () => evaluate(manager, `${cardField('image')}?.value === ${JSON.stringify(galleryFiles[0].url)}`));
   await closeCard();
   const facilityId = await evaluate(manager, `document.querySelector('main article').dataset.cardId`);
@@ -463,9 +461,9 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
 
   await click(manager, '1. Hero Banner');
   await click(manager, 'Tải/Đổi Ảnh');
-  await until('all gallery images rendered', () => evaluate(manager, `document.querySelectorAll('button[aria-label^="Chọn ảnh #"]').length === 7`));
+  await until('all gallery images rendered', () => evaluate(manager, `document.querySelectorAll('p[title^="photo-"]').length === 7`));
   for (const file of galleryFiles.filter(file => file.mimeType === 'image/avif')) {
-    assert.equal(await evaluate(manager, `Boolean(document.querySelector(${JSON.stringify(`button[aria-label^="Chọn ảnh #"] img[src="${file.url}"]`)}))`), true);
+    assert.equal(await evaluate(manager, `Boolean(document.querySelector(${JSON.stringify(`p[title="${file.fileName}"]`)}))`), true);
   }
   checks.push('The media picker renders all seven API images, including three AVIF images.');
   assert.deepEqual(errors, []);

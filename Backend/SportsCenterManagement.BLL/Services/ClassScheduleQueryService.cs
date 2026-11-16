@@ -47,8 +47,10 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
         if (query.CenterId is { } centerId) sessions = sessions.Where(x => x.cls.CenterId == centerId);
         if (query.SportId is { } sportId) sessions = sessions.Where(x => x.cls.SportId == sportId);
         if (query.CoachId is { } coachId)
+            // Same rule as CoachSessionRules.Taught: assistants always, primary unless handed off.
             sessions = sessions.Where(x => x.session.CoachId == coachId ||
-                (x.session.CoachId == null && Db.ClassCoaches.Any(cc => cc.ClassId == x.cls.Id && cc.CoachId == coachId)));
+                Db.ClassCoaches.Any(cc => cc.ClassId == x.cls.Id && cc.CoachId == coachId
+                    && (!cc.IsPrimary || x.session.CoachId == null)));
 
         var total = await sessions.CountAsync(cancellationToken);
         var page = await sessions
@@ -61,6 +63,7 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
                 ClassId = x.cls.Id,
                 ClassName = x.cls.Name,
                 x.cls.SportId,
+                x.cls.CenterId,
                 SportName = x.sport.Name,
                 RoomId = x.session.RoomId ?? x.cls.RoomId,
                 RoomName = Db.Rooms.Where(r => r.Id == (x.session.RoomId ?? x.cls.RoomId))
@@ -90,7 +93,8 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
                             && coach.CenterId == x.cls.CenterId && coach.Status == "Active"
                             && Db.Users.Any(user => user.Id == coach.UserId && user.Status == "Active"
                                 && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)))),
-                Booked = Db.SessionBookings.Count(b => b.SessionId == x.session.Id && b.Status == FlowStatuses.BookingBooked)
+                Booked = Db.SessionBookings.Count(b => b.SessionId == x.session.Id && b.Status == FlowStatuses.BookingBooked),
+                Waiting = Db.ClassWaitlists.Count(w => w.SessionId == x.session.Id && w.Status == FlowStatuses.WaitlistWaiting)
             })
             .ToListAsync(cancellationToken);
 
@@ -110,6 +114,7 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
             .Select(x => new { x.Id, x.FullName }).ToDictionaryAsync(x => x.Id, cancellationToken);
 
         var now = ScheduleTime.VietnamNow;
+        var member = await LoadMemberContextAsync(query.MemberUserId, page.Select(p => p.Id).ToList(), cancellationToken);
         var items = page.Select(p =>
         {
             var capacity = p.RoomCapacity is { } rc ? Math.Min(p.Capacity, rc) : p.Capacity;
@@ -120,19 +125,110 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
             var effectiveCoachName = hasOverride ? overrideCoach!.FullName : primaryCoach?.FullName;
             var open = p.SessionStatus == FlowStatuses.SessionScheduled && p.ClassStatus == FlowStatuses.ClassPublished;
             var available = Math.Max(0, capacity - p.Booked);
+            var start = p.SessionDate.ToDateTime(p.StartTime);
+            var openWindow = open && p.RoomActive && p.ActivePrimaryCoach
+                && start - now >= TimeSpan.FromMinutes(30)
+                && start - now <= TimeSpan.FromDays(7);
+            var isBookable = openWindow && (available > 0 || p.AllowWaitlist);
+            long? bookingId = member is not null && member.BookingBySession.TryGetValue(p.Id, out var bid) ? bid : null;
+            WaitlistSpot? spot = member is not null && member.WaitlistBySession.TryGetValue(p.Id, out var ws) ? ws : null;
+            var buttonState = member is null ? null
+                : ResolveButtonState(member.Entitlements, bookingId.HasValue, start <= now, p.SessionDate,
+                    p.CenterId, p.SportId, available, openWindow, waitlisted: spot is not null,
+                    bookingSuspended: member.SuspendedUntil > DateTime.UtcNow);
             return new SessionScheduleItemResponse(
                 p.Id, p.ClassId, p.ClassName, p.SportId, p.SportName, p.RoomId,
                 effectiveCoachId, effectiveCoachName, p.SessionDate, p.StartTime, p.EndTime,
                 p.SessionStatus, p.ClassStatus, capacity, p.Booked, available,
-                IsBookable: open && p.RoomActive && p.ActivePrimaryCoach
-                    && p.SessionDate.ToDateTime(p.StartTime) - now >= TimeSpan.FromMinutes(30)
-                    && p.SessionDate.ToDateTime(p.StartTime) - now <= TimeSpan.FromDays(7)
-                    && (available > 0 || p.AllowWaitlist),
+                IsBookable: isBookable,
                 AllowWaitlist: p.AllowWaitlist,
-                RoomName: p.RoomName);
+                RoomName: p.RoomName,
+                ButtonState: buttonState,
+                BookingId: bookingId,
+                WaitlistId: spot?.Id,
+                WaitlistPosition: spot?.Position,
+                WaitlistCount: p.Waiting);
         }).ToList();
 
         return new PagedResult<SessionScheduleItemResponse>(items, query.Page, query.PageSize, total);
+    }
+
+    private sealed record WaitlistSpot(long Id, int Position);
+
+    private sealed record MemberContext(
+        IReadOnlyList<MembershipEntitlements.SubscriptionEntitlement> Entitlements,
+        IReadOnlyDictionary<long, long> BookingBySession,
+        IReadOnlyDictionary<long, WaitlistSpot> WaitlistBySession,
+        DateTime? SuspendedUntil);
+
+    /// <summary>Null for staff callers or users without a member profile: no ButtonState is computed.</summary>
+    private async Task<MemberContext?> LoadMemberContextAsync(long? userId, IReadOnlyList<long> sessionIds, CancellationToken ct)
+    {
+        if (userId is not { } uid) return null;
+        var profile = await Db.MemberProfiles.Where(m => m.UserId == uid)
+            .Select(m => new { m.Id, m.BookingSuspendedUntil }).FirstOrDefaultAsync(ct);
+        if (profile is null) return null;
+        var mid = profile.Id;
+        var entitlements = await MembershipEntitlements.LoadAsync(Db, mid, ScheduleTime.VietnamToday, ct);
+        var bookings = await Db.SessionBookings
+            .Where(b => b.MemberId == mid && b.Status == FlowStatuses.BookingBooked && sessionIds.Contains(b.SessionId))
+            .Select(b => new { b.SessionId, b.Id }).ToListAsync(ct);
+        var waiting = await Db.ClassWaitlists
+            .Where(w => w.MemberId == mid && w.Status == FlowStatuses.WaitlistWaiting
+                && w.SessionId != null && sessionIds.Contains(w.SessionId.Value))
+            .Select(w => new
+            {
+                SessionId = w.SessionId!.Value,
+                w.Id,
+                // Same FIFO order as the promotion (JoinedAt, then Id).
+                Position = Db.ClassWaitlists.Count(other => other.SessionId == w.SessionId
+                    && other.Status == FlowStatuses.WaitlistWaiting
+                    && (other.JoinedAt < w.JoinedAt || (other.JoinedAt == w.JoinedAt && other.Id < w.Id))) + 1
+            }).ToListAsync(ct);
+        return new MemberContext(entitlements, bookings.ToDictionary(b => b.SessionId, b => b.Id),
+            waiting.GroupBy(w => w.SessionId)
+                .ToDictionary(g => g.Key, g => new WaitlistSpot(g.First().Id, g.First().Position)),
+            profile.BookingSuspendedUntil);
+    }
+
+    /// <summary>Priority order: booked > past > waitlisted > suspended > no package > sport not included > full > not open > can book.</summary>
+    internal static string ResolveButtonState(
+        IReadOnlyList<MembershipEntitlements.SubscriptionEntitlement> entitlements, bool alreadyBooked, bool started,
+        DateOnly sessionDate, long centerId, long sportId, int availableSeats, bool openForBooking, bool waitlisted = false,
+        bool bookingSuspended = false)
+    {
+        if (alreadyBooked) return "ALREADY_BOOKED";
+        if (started) return "EXPIRED";
+        if (waitlisted) return "WAITLISTED";
+        if (bookingSuspended) return "SUSPENDED";
+        var covering = entitlements.Where(e => e.Covers(sessionDate, centerId)).ToList();
+        if (covering.Count == 0) return "NO_VALID_PACKAGE";
+        if (!covering.Any(e => e.AllowsSport(sportId))) return "SPORT_NOT_INCLUDED";
+        if (availableSeats <= 0) return "FULL";
+        return openForBooking ? "CAN_BOOK" : "NOT_OPEN";
+    }
+
+    public async Task<MemberEntitlementResponse> GetMyEntitlementsAsync(long currentUserId, CancellationToken cancellationToken = default)
+    {
+        var profile = await Db.MemberProfiles.Where(m => m.UserId == currentUserId)
+            .Select(m => new { m.Id, m.CenterId }).FirstOrDefaultAsync(cancellationToken);
+        var memberId = profile?.Id;
+        var centerId = profile?.CenterId;
+        // Global sports (CenterId null) plus the member's own center; no center yet → nothing center-specific to scope by.
+        var activeSportCount = await Db.Sports.CountAsync(s => s.Status == "Active"
+            && (centerId == null || s.CenterId == null || s.CenterId == centerId), cancellationToken);
+        var today = ScheduleTime.VietnamToday;
+        var entitlements = memberId is { } mid
+            ? await MembershipEntitlements.LoadAsync(Db, mid, today, cancellationToken)
+            : [];
+        var current = entitlements.FirstOrDefault(e => e.StartDate <= today && e.EndDate >= today);
+        if (current is null)
+            return new MemberEntitlementResponse(false, null, null, null, 0, false, 0, 0, 0, null, null, activeSportCount);
+        // Stacked renewals of the same package extend the visible end date.
+        var endDate = entitlements.Where(e => e.PackageId == current.PackageId).Max(e => e.EndDate);
+        return new MemberEntitlementResponse(true, current.SubscriptionId, current.PackageId, current.PackageName,
+            current.TierLevel, current.IsAllAccess, current.AllowedSports, current.CancelBeforeHours,
+            current.MaxFreezeDays, endDate, current.LockedToSportIds, activeSportCount);
     }
 
     public async Task<IReadOnlyList<TeachingScheduleItemResponse>> GetTeachingScheduleAsync(
@@ -167,8 +263,10 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
                 && (includeHistory || (cls.Status != FlowStatuses.ClassCancelled && cls.Status != FlowStatuses.ClassCompleted))
                 && cls.CenterId == coach.CenterId && sport.Status == "Active"
                 && Db.Centers.Any(center => center.Id == cls.CenterId && center.Status == "Active")
-                && (session.CoachId == coach.Id || (session.CoachId == null &&
-                    Db.ClassCoaches.Any(cc => cc.ClassId == cls.Id && cc.CoachId == coach.Id)))
+                // Same rule as CoachSessionRules.Taught: assistants always, primary unless handed off.
+                && (session.CoachId == coach.Id ||
+                    Db.ClassCoaches.Any(cc => cc.ClassId == cls.Id && cc.CoachId == coach.Id
+                        && (!cc.IsPrimary || session.CoachId == null)))
             orderby session.SessionDate, session.StartTime
             select new
             {

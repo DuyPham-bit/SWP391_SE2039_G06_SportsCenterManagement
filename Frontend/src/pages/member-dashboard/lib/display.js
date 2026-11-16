@@ -1,4 +1,17 @@
 import { parseCalendarDate } from '../../../shared/lib/dateTime.js';
+import { vietnamDate } from '../../../entities/member/index.js';
+
+// Plan currently in effect (today within start/end, not archived); personal plans win over class plans.
+export function getCurrentPlan(plans = [], now = new Date()) {
+  const today = vietnamDate(now);
+  const inEffect = plans.filter(p =>
+    (!p.status || p.status === 'ACTIVE')
+    && String(p.startDate || '').slice(0, 10) <= today
+    && (!p.endDate || String(p.endDate).slice(0, 10) >= today));
+  return inEffect.sort((a, b) =>
+    Number(Boolean(b.isCustom)) - Number(Boolean(a.isCustom))
+    || String(b.startDate).localeCompare(String(a.startDate)))[0] || null;
+}
 
 // Helper to determine sport meta, icon, and curated aesthetic color theme
 export function getSportMeta(className = '', spec = '', isEn = false) {

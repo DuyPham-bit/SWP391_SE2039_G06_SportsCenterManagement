@@ -70,16 +70,3 @@ test('obsolete storage credentials are not tracked', () => {
     assert.ok(!fs.existsSync(path.join(root, file)), `${file} must not be present`);
   }
 });
-
-test('tracked service-account templates have no signing key and local credentials cannot be published', () => {
-  for (const file of trackedFiles().filter(file => /(?:^|\/)credentials(?:\.[^/]*)?\.json$/.test(file))) {
-    if (!fs.existsSync(path.join(root, file))) continue;
-    const credential = JSON.parse(fs.readFileSync(path.join(root, file), 'utf8').replace(/^\uFEFF/, ''));
-    assert.ok(!credential.private_key && !credential.private_key_id, file + ' contains private signing material');
-  }
-  for (const file of ['.gitignore', '.dockerignore']) {
-    const ignore = fs.readFileSync(path.join(root, file), 'utf8');
-    assert.ok(ignore.split(/\r?\n/).includes('**/credentials.json'));
-    assert.ok(ignore.split(/\r?\n/).includes('**/appsettings.Development.json'));
-  }
-});

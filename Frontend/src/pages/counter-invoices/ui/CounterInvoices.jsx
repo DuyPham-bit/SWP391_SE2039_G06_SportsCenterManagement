@@ -36,22 +36,24 @@ export function CounterInvoices() {
   const { currentUser, role: authRole } = useAuth();
   const currentRole = String(authRole || currentUser?.role || '').toUpperCase();
   const isManagerOrAdmin = currentRole === 'MANAGER' || currentRole === 'ADMIN';
-  const [workspaceTab, setWorkspaceTab] = useState(() =>
-    window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');
+  // Admin has no center: the center invoice list cannot load, so Admin only works the refund queue.
+  const isAdmin = currentRole === 'ADMIN';
+  const tabFromHash = () => (isAdmin || window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');
+  const [workspaceTab, setWorkspaceTab] = useState(tabFromHash);
 
   const changeWorkspaceTab = tab => {
+    if (isAdmin) return;
     setWorkspaceTab(tab);
     if (isManagerOrAdmin) window.location.hash = `#/manager/invoices?tab=${tab}`;
   };
 
   useEffect(() => {
     if (!isManagerOrAdmin) return undefined;
-    const syncTabFromHash = () => setWorkspaceTab(
-      window.location.hash.includes('tab=refunds') ? 'refunds' : 'invoices');
+    const syncTabFromHash = () => setWorkspaceTab(tabFromHash());
     window.addEventListener('hashchange', syncTabFromHash);
     syncTabFromHash();
     return () => window.removeEventListener('hashchange', syncTabFromHash);
-  }, [isManagerOrAdmin]);
+  }, [isManagerOrAdmin, isAdmin]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Reconcile Modal State
   const [reconcileTarget, setReconcileTarget] = useState(null);
@@ -102,6 +104,7 @@ export function CounterInvoices() {
   const reload = () => setFilter(f => ({ ...f, version: f.version + 1 }));
 
   useEffect(() => {
+    if (isAdmin) return undefined; // center-scoped list; Admin has no centerId
     let active = true;
     setLoading(true);
     setError('');
@@ -120,7 +123,7 @@ export function CounterInvoices() {
     return () => {
       active = false;
     };
-  }, [filter]);
+  }, [filter, isAdmin]);
 
   useEffect(() => () => {
     sequence.current += 1;
@@ -316,19 +319,19 @@ export function CounterInvoices() {
           {isManagerOrAdmin ? (
             <>
               <a
-                href="#/manager/dashboard"
+                href={isAdmin ? '#/admin/dashboard' : '#/manager/dashboard'}
                 className="scms-shine px-5 py-3 bg-white/90 hover:bg-white text-brand-navy-950 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px] text-brand-sage-700">dashboard</span>
                 <span>{isEn ? 'Dashboard' : 'Bảng Quản Trị'}</span>
               </a>
-              <a
+              {!isAdmin && <a
                 href="#/manager/reports"
                 className="scms-shine px-5 py-3 bg-brand-navy-950 hover:bg-brand-navy-900 text-white rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all shadow-md hover:shadow-lg flex items-center gap-2"
               >
                 <span className="material-symbols-outlined text-[18px] text-brand-sand-300">analytics</span>
                 <span>{isEn ? 'Financial Reports' : 'Báo Cáo Doanh Thu'}</span>
-              </a>
+              </a>}
             </>
           ) : (
             <>
@@ -351,7 +354,7 @@ export function CounterInvoices() {
         </div>
       </div>
 
-      {isManagerOrAdmin && (
+      {isManagerOrAdmin && !isAdmin && (
         <nav className="flex gap-2 rounded-2xl border border-brand-navy-200 bg-white p-2 shadow-sm dark:border-brand-navy-800 dark:bg-brand-navy-900">
           {[
             ['invoices', 'receipt_long', isEn ? 'Invoices' : 'Hóa đơn'],
@@ -543,7 +546,8 @@ export function CounterInvoices() {
                 <span className="material-symbols-outlined text-[16px]">download</span>
                 <span>{isEn ? 'Export CSV' : 'Xuất CSV'}</span>
               </button>
-              {!isManagerOrAdmin && ['Issued', 'PartiallyPaid'].includes(detail.status) && !(detail.payments || []).some(p => p.status === 'Succeeded') && (
+              {/* Void is Manager/Admin only (backend: counter-void requires MANAGER,ADMIN). */}
+              {isManagerOrAdmin && ['Issued', 'PartiallyPaid'].includes(detail.status) && !(detail.payments || []).some(p => p.status === 'Succeeded') && (
                 <button
                   className="px-4 py-2 border border-brand-danger-300 dark:border-brand-danger-800 bg-brand-danger-50 dark:bg-brand-danger-950/40 text-brand-danger-700 dark:text-brand-danger-300 hover:bg-brand-danger-100 dark:hover:bg-brand-danger-900/40 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider transition-all hover-lift cursor-pointer flex items-center gap-1.5 shadow-2xs"
                   disabled={busy}
@@ -620,7 +624,8 @@ export function CounterInvoices() {
               <p className="text-xs text-brand-navy-400 dark:text-brand-navy-500">{isEn ? 'No payment transactions recorded yet.' : 'Chưa ghi nhận thanh toán.'}</p>
             ) : (
               detail.payments.map(p => {
-                const canReconcile = !isManagerOrAdmin && ['Pending', 'ReviewRequired', 'Failed'].includes(p.status);
+                // Reconcile is Manager/Admin only (backend: {gatewayReference}/reconcile requires MANAGER,ADMIN).
+                const canReconcile = isManagerOrAdmin && ['Pending', 'ReviewRequired', 'Failed'].includes(p.status);
                 const reservedRefundAmount = (p.refunds || [])
                   .filter(r => ['Pending', 'Approved', 'Succeeded'].includes(r.status))
                   .reduce((acc, cur) => acc + cur.amount, 0);

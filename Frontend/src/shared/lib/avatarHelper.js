@@ -11,19 +11,6 @@
 // from older versions until it has been migrated to the server once.
 const LEGACY_AVATAR_PREFIX = 'scms_avatar_';
 
-/** Legacy photo saved in this browser by older versions; removed once read. */
-export function takeLegacyAvatar(userId) {
-  if (!userId || typeof localStorage === 'undefined') return null;
-  try {
-    const key = `${LEGACY_AVATAR_PREFIX}${userId}`;
-    const value = localStorage.getItem(key);
-    if (value) localStorage.removeItem(key);
-    return value && value.startsWith('data:image/') ? value : null;
-  } catch {
-    return null;
-  }
-}
-
 /** Peek without removing (used to migrate a member photo only after the upload succeeds). */
 export function peekLegacyAvatar(userId) {
   if (!userId || typeof localStorage === 'undefined') return null;
@@ -75,7 +62,7 @@ export function getInitials(name = '') {
  * @param {File|Blob} file
  * @param {number} [maxSize=360]
  * @param {number} [quality=0.88]
- * @returns {Promise<{ dataUrl: string, file: File, sizeKb: number, width: number, height: number }>}
+ * @returns {Promise<{ dataUrl: string, sizeKb: number, width: number, height: number }>}
  */
 export function processAvatarFile(file, maxSize = 360, quality = 0.88) {
   return new Promise((resolve, reject) => {
@@ -135,23 +122,17 @@ export function processAvatarFile(file, maxSize = 360, quality = 0.88) {
             maxSize
           );
 
-          // Nén sang JPEG. Trả thêm File để có thể upload lên object storage,
-          // thay vì chỉ giữ data URL trong localStorage của một trình duyệt.
-          canvas.toBlob(blob => {
-            if (!blob) {
-              reject(new Error('Không thể nén ảnh đã chọn.'));
-              return;
-            }
+          // Nén sang JPEG
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          const base64Length = dataUrl.length - 'data:image/jpeg;base64,'.length;
+          const sizeKb = Math.round((base64Length * 3) / 4 / 1024);
 
-            const dataUrl = canvas.toDataURL('image/jpeg', quality);
-            resolve({
-              dataUrl,
-              file: new File([blob], 'avatar.jpg', { type: 'image/jpeg', lastModified: Date.now() }),
-              sizeKb: Math.round(blob.size / 1024),
-              width: maxSize,
-              height: maxSize
-            });
-          }, 'image/jpeg', quality);
+          resolve({
+            dataUrl,
+            sizeKb,
+            width: maxSize,
+            height: maxSize
+          });
         } catch (err) {
           reject(new Error('Lỗi khi nén và xử lý hình ảnh: ' + (err.message || '')));
         }

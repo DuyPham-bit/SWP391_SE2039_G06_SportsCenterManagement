@@ -49,6 +49,26 @@ export function AppLayout({ children, currentPath }) {
     setMobileOpen(false);
   };
 
+  // Mobile drawer behaves like a modal: closes on navigation, on Esc and when the screen grows to
+  // desktop; the page behind it does not scroll while it is open.
+  React.useEffect(() => { setMobileOpen(false); }, [currentPath]);
+
+  React.useEffect(() => {
+    if (!mobileOpen) return undefined;
+    const onKey = event => { if (event.key === 'Escape') setMobileOpen(false); };
+    const desktop = window.matchMedia('(min-width: 1024px)');
+    const onDesktop = event => { if (event.matches) setMobileOpen(false); };
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    document.addEventListener('keydown', onKey);
+    desktop.addEventListener('change', onDesktop);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener('keydown', onKey);
+      desktop.removeEventListener('change', onDesktop);
+    };
+  }, [mobileOpen]);
+
   const isMemberArea = (
     role === 'MEMBER' ||
     currentUser?.role?.toUpperCase() === 'MEMBER' ||
@@ -68,6 +88,7 @@ export function AppLayout({ children, currentPath }) {
       '#/member/dashboard': 'nav.member_dashboard',
       '#/member/schedule': 'nav.member_schedule',
       '#/member/bookings': 'nav.member_bookings',
+      '#/member/classes': 'nav.member_classes',
       '#/member/attendance': 'nav.member_attendance',
       '#/member/progress': 'nav.member_progress',
       '#/member/packages': 'nav.member_packages',
@@ -87,6 +108,7 @@ export function AppLayout({ children, currentPath }) {
       '#/coach/messages': 'nav.coach_messages',
       '#/coach/ai-recommendation': 'nav.coach_ai_recommendation',
       '#/coach/performance': 'nav.coach_performance',
+      '#/coach/salary-kpi': 'nav.coach_performance',
       '#/coach/kpi': 'nav.coach_performance',
       '#/coach/resources': 'nav.coach_resources',
       '#/coach/equipment': 'nav.coach_resources',
@@ -105,7 +127,6 @@ export function AppLayout({ children, currentPath }) {
       '#/manager/roles-permissions': 'nav.manager_roles_permissions',
       '#/manager/audit-logs': 'nav.manager_audit_logs',
       '#/manager/home-content': 'nav.manager_home_content',
-      '#/admin/reports': 'nav.admin_reports',
       // Receptionist
       '#/receptionist': 'nav.receptionist_dashboard',
       '#/receptionist/dashboard': 'nav.receptionist_dashboard',

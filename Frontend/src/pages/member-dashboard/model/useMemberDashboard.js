@@ -30,10 +30,12 @@ export function useMemberDashboard() {
   const [bookingToCancel, setBookingToCancel] = useState(null);
   const [cancelling, setCancelling] = useState(false);
 
-  const memberCode = currentUser?.memberCode || 'MEM-00001';
+  // Never fall back to a fake code: a QR for someone else's code would check in the wrong member.
+  const memberCode = currentUser?.memberCode || '';
 
   // Generate genuine scannable QR Code
   useEffect(() => {
+    setQrDataUrl('');
     if (memberCode) {
       QRCode.toDataURL(memberCode, {
         width: 320,
@@ -65,7 +67,8 @@ export function useMemberDashboard() {
       return;
     }
     setLoading(true);
-    if (typeof refreshUser === 'function') {
+    // Manual sync refreshes the user itself; only refresh here on first load.
+    if (reload === 0 && typeof refreshUser === 'function') {
       refreshUser().catch(() => {});
     }
     const sources = [
@@ -82,7 +85,7 @@ export function useMemberDashboard() {
         const key = sources[index][0];
         nextData[key] = result.status === 'fulfilled' ? result.value : [];
         if (result.status === 'rejected') {
-          nextErrors[key] = result.reason?.message || (isEn ? 'Unable to load data.' : 'Không thể tải dữ liệu.');
+          nextErrors[key] = result.reason?.message || 'Không thể tải dữ liệu.';
         }
       });
       setData(nextData);
@@ -93,14 +96,21 @@ export function useMemberDashboard() {
     return () => {
       active = false;
     };
-  }, [currentUser?.id, canBook, canProgress, reload, isEn]);
+  }, [currentUser?.id, canBook, canProgress, reload]);
 
-  const handleCopyMemberCode = () => {
-    if (!currentUser?.memberCode) return;
-    navigator.clipboard.writeText(currentUser.memberCode);
-    setCopiedCode(true);
-    showInfo(isEn ? `Member code copied: ${currentUser.memberCode}` : `Đã sao chép mã hội viên: ${currentUser.memberCode}`);
-    setTimeout(() => setCopiedCode(false), 2000);
+  const handleCopyMemberCode = async () => {
+    if (!memberCode) {
+      showError(isEn ? 'Your member code has not been issued yet.' : 'Tài khoản chưa được cấp mã hội viên.');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(memberCode);
+      setCopiedCode(true);
+      showInfo(isEn ? `Member code copied: ${memberCode}` : `Đã sao chép mã hội viên: ${memberCode}`);
+      setTimeout(() => setCopiedCode(false), 2000);
+    } catch {
+      showError(isEn ? 'Unable to copy. Please copy the code manually.' : 'Không thể sao chép, vui lòng chép mã thủ công.');
+    }
   };
 
   const handleSyncData = async () => {

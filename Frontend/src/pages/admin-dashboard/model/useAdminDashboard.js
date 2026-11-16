@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { adminApi } from '../../../entities/center/index.js';
+import { parseApiDate } from '../../../shared/lib/dateTime.js';
 
 export function useAdminDashboard({ initialSection }) {
   const [tab, setTab] = useState(initialSection || 'overview');
@@ -140,11 +141,13 @@ export function useAdminDashboard({ initialSection }) {
     setSaving('m' + m.id);
     setErr('');
     try {
-      const newStatus = m.status === 'Active' ? 'Disabled' : 'Active';
+      const isManagerActive = m.status === 'Active' && !(m.lockedUntil && parseApiDate(m.lockedUntil) > new Date());
+      const newStatus = isManagerActive ? 'Disabled' : 'Active';
       await adminApi.updateManager(m.id, { fullName: m.fullName, centerId: m.centerId, status: newStatus });
       showSuccess(`Đã chuyển tài khoản Manager "${m.fullName}" sang "${newStatus}".`);
       loadMFn();
       loadOvFn();
+      loadAFn();
     } catch (e) {
       setErr(e.message || 'Cập nhật trạng thái Manager thất bại.');
       showError(e.message || 'Cập nhật trạng thái Manager thất bại.');

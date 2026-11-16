@@ -8,30 +8,6 @@ export function LandingHeader({
   rightSports, role, selectedSportFromMenu, setIsMobileCoursesOpen, setIsMobileMenuOpen, setLanguage,
   toggleCoursesDropdown
 }) {
-  const [isDarkMode, setIsDarkMode] = React.useState(() => {
-    try {
-      const savedMode = localStorage.getItem('SCMS_THEME_MODE');
-      if (savedMode === 'dark') return true;
-      if (savedMode === 'light') return false;
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
-    } catch {
-      return false;
-    }
-  });
-
-  const toggleDarkMode = () => {
-    const nextMode = !isDarkMode;
-    setIsDarkMode(nextMode);
-    try {
-      localStorage.setItem('SCMS_THEME_MODE', nextMode ? 'dark' : 'light');
-      if (nextMode) {
-        document.documentElement.classList.add('dark');
-      } else {
-        document.documentElement.classList.remove('dark');
-      }
-    } catch {}
-  };
-
   return (
     <header
       id="site-header"
@@ -39,7 +15,7 @@ export function LandingHeader({
     >
       <div className="tiya-navbar__container">
         {/* Brand Logo - SCMS Olympic Sports Arena */}
-        <Logo variant="auto" size="lg" onClick={(e) => handleNavClick(navItems[0], e)} />
+        <Logo variant="dark" size="lg" onClick={(e) => handleNavClick(navItems[0], e)} />
 
         {/* Navigation Links */}
         <nav className="tiya-nav-menu">
@@ -126,19 +102,6 @@ export function LandingHeader({
 
         {/* Action / Auth Buttons */}
         <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
-          {/* Theme Toggle Button */}
-          <button
-            type="button"
-            onClick={toggleDarkMode}
-            className="tiya-theme-toggle-btn tiya-navbar__desktop-only"
-            aria-label={isDarkMode ? (isEn ? 'Switch to Light mode' : 'Chuyển sang Chế độ Sáng') : (isEn ? 'Switch to Dark mode' : 'Chuyển sang Chế độ Tối')}
-            title={isDarkMode ? (isEn ? 'Light Mode' : 'Chế độ Sáng') : (isEn ? 'Dark Mode' : 'Chế độ Tối')}
-          >
-            <span className="material-symbols-outlined" style={{fontSize:'18px'}}>
-              {isDarkMode ? 'light_mode' : 'dark_mode'}
-            </span>
-          </button>
-
           {/* Minimalist Refined Language Toggle */}
           <div className="tiya-lang-toggle tiya-navbar__desktop-only" role="group" aria-label="Language selector">
             <button
@@ -210,20 +173,8 @@ export function LandingHeader({
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
         <div className="tiya-mobile-drawer">
-          {/* Mobile Quick Actions: Theme & Language */}
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
-            <button
-              type="button"
-              onClick={toggleDarkMode}
-              className="tiya-theme-toggle-btn"
-              aria-label={isDarkMode ? (isEn ? 'Switch to Light mode' : 'Chuyển sang Chế độ Sáng') : (isEn ? 'Switch to Dark mode' : 'Chuyển sang Chế độ Tối')}
-              title={isDarkMode ? (isEn ? 'Light Mode' : 'Chế độ Sáng') : (isEn ? 'Dark Mode' : 'Chế độ Tối')}
-            >
-              <span className="material-symbols-outlined" style={{fontSize:'18px'}}>
-                {isDarkMode ? 'light_mode' : 'dark_mode'}
-              </span>
-            </button>
-
+          {/* Mobile Language Selector */}
+          <div style={{display:'flex',justifyContent:'flex-end',marginBottom:'12px'}}>
             <div className="tiya-lang-toggle" role="group" aria-label="Language selector">
               <button
                 type="button"

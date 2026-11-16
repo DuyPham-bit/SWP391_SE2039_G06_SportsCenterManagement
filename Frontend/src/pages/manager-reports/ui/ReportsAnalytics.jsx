@@ -20,47 +20,24 @@ import { SportsDetailTable } from './SportsDetailTable.jsx';
 import { RoomsDetailTable } from './RoomsDetailTable.jsx';
 import { CoachesDetailTable } from './CoachesDetailTable.jsx';
 import { RevenueLogTable } from './RevenueLogTable.jsx';
-import { AdminCenterComparison, AdminCenterDrilldownBar, AdminScopeSelector } from './AdminReportScope.jsx';
 
-export function ReportsAnalytics({ adminMode = false }) {
+export function ReportsAnalytics() {
   const {
-    centers, centersError, centersLoading, hasPendingRange, reportScopeLabel, selectedCenterId,
-    selection, setSelectedCenterId,
     activeTableTab, classSearch, classSortBy, classSportFilter, error, events, exportExcel,
     exportPdf, exportReport, exportingCsv, exportingPdf, exportingXlsx, isEn, loading, membership,
     metrics, period, periodLabel, processedClasses, processedRooms, range, revenue, roomSortBy,
     setActiveTableTab, setClassSearch, setClassSortBy, setClassSportFilter, setPeriod, setRange,
     setRevision, setRoomSortBy, setSelection, showError, topClass, topRevenueSport, topRoom,
     topSport
-  } = useReportsAnalytics({ adminMode });
+  } = useReportsAnalytics();
 
   return (
     <div className="space-y-6 pb-12 animate-fade-slide-up print:space-y-4 print:pb-0">
-      {adminMode && (
-        <AdminScopeSelector
-          centers={centers}
-          centersError={centersError}
-          centersLoading={centersLoading}
-          isEn={isEn}
-          selectedCenterId={selectedCenterId}
-          setSelectedCenterId={setSelectedCenterId}
-        />
-      )}
-
       {/* 0. PRINT-ONLY OFFICIAL REPORT HEADER */}
-      <PrintReportHeader
-        adminMode={adminMode}
-        isEn={isEn}
-        metrics={metrics}
-        periodLabel={periodLabel}
-        range={range}
-        reportScopeLabel={reportScopeLabel}
-      />
+      <PrintReportHeader isEn={isEn} periodLabel={periodLabel} range={range} />
 
       {/* 1. PAGE HEADER - OLYMPIC MULTI-STOP GRADIENT MATCHING IMAGE 1 */}
       <ReportsHeroBanner
-        adminMode={adminMode}
-        reportScopeLabel={reportScopeLabel}
         exportExcel={exportExcel}
         exportPdf={exportPdf}
         exportReport={exportReport}
@@ -74,12 +51,9 @@ export function ReportsAnalytics({ adminMode = false }) {
 
       {/* 2. DATE RANGE & PERIOD SELECTOR */}
       <ReportPeriodSelector
-        hasPendingRange={hasPendingRange}
         isEn={isEn}
-        metrics={metrics}
         period={period}
         range={range}
-        selection={selection}
         setPeriod={setPeriod}
         setRange={setRange}
         setSelection={setSelection}
@@ -100,14 +74,6 @@ export function ReportsAnalytics({ adminMode = false }) {
         />
       ) : metrics && (
         <>
-          {adminMode && selectedCenterId === 'ALL' && (
-            <AdminCenterComparison centers={centers} isEn={isEn} metrics={metrics} setSelectedCenterId={setSelectedCenterId} />
-          )}
-
-          {adminMode && selectedCenterId !== 'ALL' && (
-            <AdminCenterDrilldownBar isEn={isEn} reportScopeLabel={reportScopeLabel} setSelectedCenterId={setSelectedCenterId} />
-          )}
-
           {/* 3. TIER 1: EXECUTIVE TOP KPI CARDS (Vision UI 4-Card Style with Olympic Palette) */}
           <ExecutiveKpiCards isEn={isEn} metrics={metrics} />
 

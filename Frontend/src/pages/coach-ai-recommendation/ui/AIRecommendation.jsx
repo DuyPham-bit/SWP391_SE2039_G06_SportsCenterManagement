@@ -405,15 +405,10 @@ export function AIRecommendation() {
   return (
     <div className="space-y-6 animate-fadeIn">
       {/* 1. Header Banner */}
-      <header className="scms-hero relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-900 via-brand-sage-700 to-brand-sage-500 text-white p-6 sm:p-7 shadow-xl shadow-brand-sage-700/20 border border-white/20">
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-900 via-brand-sage-700 to-brand-sage-500 text-white p-6 sm:p-7 shadow-xl shadow-brand-sage-700/20 border border-white/20">
         <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/30 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/30 to-transparent blur-3xl" />
 
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300" aria-hidden="true">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-        </svg>
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
             <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 text-brand-sage-900 text-xs font-black uppercase tracking-wider backdrop-blur-md shadow-xs">
@@ -908,10 +903,18 @@ export function AIRecommendation() {
                         <span>{tag}</span>
                       </span>
                     ))}
-                    <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-sage-50 dark:bg-brand-sage-950/40 text-brand-sage-800 dark:text-brand-sage-300 border border-brand-sage-200 dark:border-brand-sage-800 shadow-2xs">
-                      <span>📏</span>
-                      <span>BMI {context?.bmi || '22.9'} ({bmiBadge?.label || (isEn ? 'Normal' : 'Bình thường')})</span>
-                    </span>
+                    {/* Only real measurements: no height/weight means no BMI badge, never a made-up value. */}
+                    {context?.bmi ? (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-sage-50 dark:bg-brand-sage-950/40 text-brand-sage-800 dark:text-brand-sage-300 border border-brand-sage-200 dark:border-brand-sage-800 shadow-2xs">
+                        <span>📏</span>
+                        <span>BMI {context.bmi}{bmiBadge?.label ? ` (${bmiBadge.label})` : ''}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-bold bg-brand-navy-50 dark:bg-brand-navy-800 text-brand-navy-500 dark:text-brand-navy-300 border border-brand-navy-200 dark:border-brand-navy-700">
+                        <span>📏</span>
+                        <span>{isEn ? 'BMI: no height/weight yet' : 'BMI: chưa có chiều cao/cân nặng'}</span>
+                      </span>
+                    )}
                   </div>
                 </div>
 

@@ -11,8 +11,7 @@ export function VisionActiveUsersChart({
   totalUsers = 0,
   totalBookings = 0,
   netSales = 0,
-  totalSessions = 0,
-  growth = null
+  totalSessions = 0
 }) {
   const { language } = useLanguage();
   const isEn = language === 'en';
@@ -38,14 +37,12 @@ export function VisionActiveUsersChart({
       <div>
         <span className="text-[11px] text-brand-sage-700 dark:text-brand-sage-400 font-bold flex items-center gap-1">
           <span className="material-symbols-outlined text-[15px]">group</span>
-          {growth == null
-            ? (isEn ? 'No comparable previous-period baseline' : 'Chưa có dữ liệu kỳ trước để so sánh')
-            : (isEn
-                ? `${growth > 0 ? '+' : ''}${growth}% new members vs previous period`
-                : `${growth > 0 ? '+' : ''}${growth}% hội viên mới so với kỳ trước`)}
+          {isEn
+            ? `${totalBookings} active bookings · ${totalSessions} sessions`
+            : `${totalBookings} lượt đặt lớp · ${totalSessions} ca học`}
         </span>
         <span className="text-brand-navy-400 text-[10px] block">
-          {isEn ? 'Daily activity & attendance volume' : 'Lưu lượng tham gia & hội viên tích cực'}
+          {isEn ? 'Daily member registrations in selected period' : 'Biến động hội viên mới theo mốc thời gian đã chọn'}
         </span>
       </div>
 

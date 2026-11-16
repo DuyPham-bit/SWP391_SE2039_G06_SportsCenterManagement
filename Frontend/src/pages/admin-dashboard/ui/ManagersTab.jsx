@@ -117,27 +117,32 @@ export function ManagersTab({
                     </span>
                   </td>
                   <td className="py-3.5 px-4">
-                    <StatusBadge status={m.status} />
+                    <StatusBadge status={m.lockedUntil && parseApiDate(m.lockedUntil) > new Date() ? 'Disabled' : m.status} />
                   </td>
                   <td className="py-3.5 px-4 text-brand-navy-400 text-[11px]">{fmtDate(m.lastLoginAt)}</td>
                   <td className="py-3.5 px-4 text-right">
-                    <MotionButton
-                      onClick={() => patchM(m)}
-                      disabled={saving === 'm' + m.id}
-                      whileHover={{ scale: 1.03 }}
-                      whileTap={{ scale: 0.97 }}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
-                            m.status === 'Active'
+                    {(() => {
+                      const isManagerActive = m.status === 'Active' && !(m.lockedUntil && parseApiDate(m.lockedUntil) > new Date());
+                      return (
+                        <MotionButton
+                          onClick={() => patchM(m)}
+                          disabled={saving === 'm' + m.id}
+                          whileHover={{ scale: 1.03 }}
+                          whileTap={{ scale: 0.97 }}
+                          className={`px-3 py-1.5 rounded-lg text-xs font-bold border transition-colors cursor-pointer ${
+                            isManagerActive
                               ? 'border-brand-danger-200 dark:border-brand-danger-800 bg-brand-danger-50 dark:bg-brand-danger-950/60 text-brand-danger-700 dark:text-brand-danger-300 hover:bg-brand-danger-100'
                               : 'border-brand-sage-200 dark:border-brand-sage-800 bg-brand-sage-50 dark:bg-brand-sage-950/60 text-brand-sage-700 dark:text-brand-sage-300 hover:bg-brand-sage-100'
                           }`}
-                    >
-                      {saving === 'm' + m.id
-                        ? '...'
-                        : m.status === 'Active'
-                        ? 'Vô Hiệu Hóa'
-                        : 'Kích Hoạt'}
-                    </MotionButton>
+                        >
+                          {saving === 'm' + m.id
+                            ? '...'
+                            : isManagerActive
+                            ? 'Vô Hiệu Hóa'
+                            : 'Kích Hoạt'}
+                        </MotionButton>
+                      );
+                    })()}
                   </td>
                 </tr>
               ))}

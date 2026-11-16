@@ -49,3 +49,14 @@ test('fixMojibake repairs nested objects and arrays recursively', () => {
   assert.equal(output.items[0].name, 'Bơi lội');
   assert.equal(output.items[1].name, 'Cầu lông');
 });
+
+test('hasMojibake accepts clean Vietnamese (ã, đã, mã) and flags real UTF-8/CP437 mojibake', () => {
+  const { hasMojibake } = require('../src/shared/lib/encodingHelper.js');
+  for (const clean of ['Câu trả lời cũ đã lưu trong DB', 'Hướng dẫn check-in mã thẻ', 'NGÃ BA', 'Những bài tập',
+    'Giá 1.500.000 VNĐ', 'Đặt lịch © SCMS', '', null]) {
+    assert.equal(hasMojibake(clean), false, String(clean));
+  }
+  for (const broken of ['PhÃ¡t triá»ƒn', 'Ä‘Ã£ lÆ°u', 'TRUNG TÃ‚M', 'háº¡n', 'Tr├ó l├╜i', 'l�i']) {
+    assert.equal(hasMojibake(broken), true, broken);
+  }
+});

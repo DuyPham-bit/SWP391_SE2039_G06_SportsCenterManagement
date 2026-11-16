@@ -123,12 +123,12 @@ export function ClientsTab({ data, act, working, isEn }) {
                   : 'border-brand-sage-200 bg-brand-sage-50/70 text-brand-sage-800 dark:bg-brand-sage-950/30 dark:text-brand-sage-200 dark:border-brand-sage-800'
               }`}>
                 <div>
-                  <strong>{client.renewal.packageName}</strong> · {isEn ? 'Expires: ' : 'Hết hạn: '}{client.renewal.endDate || '—'}
+                  <strong>{client.renewal.packageName}</strong> · {isEn ? 'Covered until: ' : 'Hiệu lực đến: '}{client.renewal.coverageEndDate || client.renewal.endDate || '—'}
                 </div>
                 <span className="font-bold">
                   {isEn
-                    ? `${client.renewal.remainingSessions ?? '∞'} sessions / ${client.renewal.daysRemaining ?? '—'} days left`
-                    : `Còn ${client.renewal.remainingSessions ?? '∞'} buổi / ${client.renewal.daysRemaining ?? '—'} ngày`}
+                    ? `${client.renewal.remainingClasses ?? client.renewal.remainingSessions ?? '∞'} classes / ${client.renewal.daysRemaining ?? '—'} days left`
+                    : `Còn ${client.renewal.remainingClasses ?? client.renewal.remainingSessions ?? '∞'} lớp / ${client.renewal.daysRemaining ?? '—'} ngày`}
                 </span>
               </div>
             )}

@@ -2,34 +2,52 @@ import { useEffect, useState } from 'react';
 import {
   getLandingContent,
   getLandingPreviewContent,
+  hasPublishedLandingContent,
   loadLandingContent,
   LANDING_CONTENT_CHANGE_EVENT,
   subscribeLandingContentRefresh
 } from '../api/landingContentService.js';
 
-export function useLandingContent() {
+export function useLandingContentState() {
   const [content, setContent] = useState(() => getLandingPreviewContent() || getLandingContent());
+  const [loaded, setLoaded] = useState(() => Boolean(getLandingPreviewContent() || hasPublishedLandingContent()));
+
   useEffect(() => {
-    if (getLandingPreviewContent()) return undefined;
+    if (getLandingPreviewContent()) {
+      setLoaded(true);
+      return undefined;
+    }
     let active = true;
     let loading = false;
     const controller = new AbortController();
-    const refresh = async () => {
-      if (loading || document.visibilityState === 'hidden') return;
+    const refresh = async (forceInitial = false) => {
+      if (loading || (!forceInitial && document.visibilityState === 'hidden')) return;
       loading = true;
       try {
         const result = await loadLandingContent({ signal: controller.signal });
-        if (active) setContent(result.content);
+        if (active) {
+          setContent(result.content);
+          setLoaded(true);
+        }
       } catch (error) {
-        if (active && error.name !== 'AbortError') setContent(previous => ({ ...previous, _loadError: error.message }));
+        if (active && error.name !== 'AbortError') {
+          setContent(previous => ({ ...previous, _loadError: error.message }));
+          setLoaded(true);
+        }
+      } finally {
+        loading = false;
       }
-      finally { loading = false; }
     };
-    const onChange = event => { if (event.detail) setContent(event.detail); };
+    const onChange = event => {
+      if (event.detail) {
+        setContent(event.detail);
+        setLoaded(true);
+      }
+    };
     window.addEventListener(LANDING_CONTENT_CHANGE_EVENT, onChange);
-    const unsubscribe = subscribeLandingContentRefresh(refresh);
-    const interval = window.setInterval(refresh, 15000);
-    refresh();
+    const unsubscribe = subscribeLandingContentRefresh(() => refresh(false));
+    const interval = window.setInterval(() => refresh(false), 15000);
+    refresh(true);
     return () => {
       active = false;
       controller.abort();
@@ -38,5 +56,10 @@ export function useLandingContent() {
       unsubscribe();
     };
   }, []);
-  return content;
+
+  return { content, loaded };
+}
+
+export function useLandingContent() {
+  return useLandingContentState().content;
 }

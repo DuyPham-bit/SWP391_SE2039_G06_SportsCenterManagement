@@ -7,7 +7,7 @@ export function ClassStatusStrip({ isEn, metrics }) {
       <div className="flex items-center gap-2">
         <span className="material-symbols-outlined text-brand-sage-700 dark:text-brand-sage-500 text-[18px]">event_seat</span>
         <strong className="text-brand-navy-900 dark:text-white">
-          {isEn ? 'Booking Status in Period:' : 'Trạng thái đăng ký trong kỳ:'}
+          {isEn ? 'Class Booking Status:' : 'Trạng thái đăng ký lớp học:'}
         </strong>
       </div>
       <div className="flex flex-wrap items-center gap-2">

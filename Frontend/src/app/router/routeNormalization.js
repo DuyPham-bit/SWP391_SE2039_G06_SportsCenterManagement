@@ -11,8 +11,10 @@ export const ROUTE_TYPO_MAP = {
   '#/member/': '#/member/dashboard',
   '#/member': '#/member/dashboard',
   '#/member/dash': '#/member/dashboard',
-  '#/member/enrol': '#/member/enroll',
-  '#/member/enrollment': '#/member/enroll',
+  // Self-enrollment page was removed; old links land on the timetable.
+  '#/member/enroll': '#/member/schedule',
+  '#/member/enrol': '#/member/schedule',
+  '#/member/enrollment': '#/member/schedule',
   '#/member/pack': '#/member/packages',
   '#/member/package': '#/member/packages',
   '#/member/sched': '#/member/schedule',
@@ -82,10 +84,11 @@ export const ROUTE_TYPO_MAP = {
  * - Syncs canonical URL to browser address bar via replaceState (if in browser)
  */
 export function normalizeRouteHash(rawHash) {
-  if (!rawHash || rawHash === '#' || rawHash === '#/') return '#/';
+  // Gateway returns to /payment-result with an empty hash; check it first so the landing intro never renders.
   if (rawHash === '#/payment-result' || (typeof window !== 'undefined' && window.location?.pathname === '/payment-result')) {
     return '#/payment-result';
   }
+  if (!rawHash || rawHash === '#' || rawHash === '#/') return '#/';
 
   const [basePart, search = ''] = rawHash.split('?');
   const trimmed = basePart.length > 2 && basePart.endsWith('/')

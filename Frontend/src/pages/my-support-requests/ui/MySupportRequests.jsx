@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { supportApi } from '../../../entities/support-request/index.js';
+import { supportApi, SupportPriorityBadge, SupportPrioritySelect } from '../../../entities/support-request/index.js';
 import { useAuth } from '../../../entities/session/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
@@ -73,6 +73,7 @@ export function MySupportRequests() {
   const [creating, setCreating] = useState(false);
   const [createSubject, setCreateSubject] = useState('');
   const [createDescription, setCreateDescription] = useState('');
+  const [createPriority, setCreatePriority] = useState('Normal');
   const [createError, setCreateError] = useState('');
   const [submittingCreate, setSubmittingCreate] = useState(false);
 
@@ -139,7 +140,12 @@ export function MySupportRequests() {
   }, [data?.items, searchKeyword]);
 
   // Stats calculation
+  // KPI cards use server-side counts over all of the user's requests, not the current filtered page.
   const stats = useMemo(() => {
+    const counts = data?.statusCounts;
+    if (counts) {
+      return { total: counts.total, openCount: counts.open, inProgressCount: counts.inProgress, resolvedCount: counts.resolved };
+    }
     const total = data?.totalCount ?? 0;
     const items = data?.items ?? [];
     const openCount = items.filter(i => i.status === 'Open').length;
@@ -204,13 +210,14 @@ export function MySupportRequests() {
     setCreateError('');
 
     try {
-      const res = await supportApi.submit({ subject, description });
+      const res = await supportApi.submit({ subject, description, priority: createPriority });
 
       if (activeUserIdRef.current === currentId) {
         showSuccess(isEn ? `Request #${res.request.id} submitted successfully!` : `Đã gửi yêu cầu #${res.request.id} thành công!`);
         setCreating(false);
         setCreateSubject('');
         setCreateDescription('');
+        setCreatePriority('Normal');
         setDetail(res);
         setActiveStatusTab('');
         setCurrentPage(1);
@@ -279,7 +286,7 @@ export function MySupportRequests() {
   return (
     <div className="space-y-6 pb-12 font-lexend">
       {/* 1. Olympic Hero Masterpiece Banner */}
-      <div className="scms-hero relative rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-8 border border-white/30 dark:border-white/10 shadow-xl shadow-brand-teal-600/20 overflow-hidden">
+      <div className="relative rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-8 border border-white/30 dark:border-white/10 shadow-xl shadow-brand-teal-600/20 overflow-hidden">
         {/* Glow ambient background accents matching Olympic logo palette */}
         <div className="pointer-events-none absolute -top-24 -right-24 w-96 h-96 bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent rounded-full blur-3xl" />
         <div className="pointer-events-none absolute -bottom-24 -left-24 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/30 to-transparent rounded-full blur-3xl" />
@@ -558,6 +565,7 @@ export function MySupportRequests() {
                     </div>
 
                     <div className="flex items-center gap-2 shrink-0 self-start sm:self-center">
+                      <SupportPriorityBadge priority={req.priority} isEn={isEn} />
                       {/* Status Badge */}
                       <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border ${statusCfg.badgeClass}`}>
                         <span className={`w-1.5 h-1.5 rounded-full ${statusCfg.dotClass} ${req.status === 'Open' ? 'animate-pulse' : ''}`} />
@@ -653,6 +661,7 @@ export function MySupportRequests() {
             </div>
 
             <div className="flex items-center gap-2 shrink-0">
+              <SupportPriorityBadge priority={detail.request.priority} isEn={isEn} />
               {/* Status Badge */}
               {(() => {
                 const s = statusConfig[detail.request.status] || statusConfig.Open;
@@ -718,7 +727,12 @@ export function MySupportRequests() {
               ) : (
                 <div className="space-y-3">
                   {detail.messages.map(m => {
-                    const isStaff = !m.senderName || m.senderName.toLowerCase().includes('admin') || m.senderName.toLowerCase().includes('manager') || m.senderName.toLowerCase().includes('reception');
+                    // senderName is now a real full name, so decide by role/sender id instead of username text.
+                    const isStaff = m.senderRole
+                      ? !['MEMBER', 'COACH'].includes(m.senderRole)
+                      : m.senderId
+                        ? String(m.senderId) !== String(detail.request.requesterId)
+                        : (!m.senderName || /admin|manager|reception/i.test(m.senderName));
 
                     return (
                       <div
@@ -897,6 +911,14 @@ export function MySupportRequests() {
                 onChange={e => setCreateSubject(e.target.value)}
                 className="w-full rounded-xl border border-brand-navy-300 p-3 text-sm focus:outline-none focus:ring-2 focus:ring-brand-danger-600 focus:border-brand-danger-600"
               />
+            </div>
+
+            {/* Priority (stored with the request; staff can adjust it) */}
+            <div className="space-y-1">
+              <label htmlFor="support-create-priority" className="text-xs font-bold text-brand-navy-700 uppercase tracking-wider">
+                {isEn ? 'Priority' : 'Mức ưu tiên'}
+              </label>
+              <SupportPrioritySelect id="support-create-priority" value={createPriority} onChange={setCreatePriority} isEn={isEn} />
             </div>
 
             {/* Description Textarea */}

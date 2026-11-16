@@ -20,6 +20,8 @@ export function mapMember(member) {
     dateOfBirth: member.dateOfBirth,
     gender: member.gender,
     address: member.address,
+    emergencyContactName: member.emergencyContactName || '',
+    emergencyContactPhone: member.emergencyContactPhone || '',
     role: 'MEMBER',
     status: String(member.accountStatus || 'Active').toUpperCase(),
     // Counter-created members stay "pending verification" until they open the emailed link.

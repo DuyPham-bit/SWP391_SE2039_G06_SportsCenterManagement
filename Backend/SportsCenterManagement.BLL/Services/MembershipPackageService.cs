@@ -50,6 +50,7 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
             Status = "Active",
             CreatedAt = now
         };
+        ApplyEntitlements(package, request, isNew: true);
 
         await unitOfWork.Repository<MembershipPackage>().AddAsync(package, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -122,6 +123,7 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
         package.AllowedSports = request.AllowedSports;
         package.Badge = Normalize(request.Badge);
         package.Features = JsonSerializer.Serialize(request.Features ?? []);
+        ApplyEntitlements(package, request, isNew: false);
         package.UpdatedAt = DateTime.UtcNow;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -215,6 +217,34 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
             .AnyAsync(i => i.PackageId == package.Id, cancellationToken);
         var hasOrders = subCount > 0 || hasInvoices;
         return ToResponse(package, subCount, hasOrders, !hasOrders);
+    }
+
+    public async Task DeletePackageAsync(
+        long actorUserId,
+        long centerId,
+        long packageId,
+        CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await unitOfWork.Context.Database.BeginTransactionAsync(
+            IsolationLevel.Serializable, cancellationToken);
+        var package = await FindPackageAsync(centerId, packageId, cancellationToken);
+        var used = await unitOfWork.Context.MemberSubscriptions.AnyAsync(s => s.PackageId == packageId, cancellationToken)
+            || await unitOfWork.Context.InvoiceItems.AnyAsync(i => i.PackageId == packageId, cancellationToken);
+        if (used)
+        {
+            var ex = new InvalidOperationException("Gói tập đã có hội viên đăng ký hoặc đặt mua, không thể xóa.");
+            ex.Data["Code"] = "PKG_HAS_ORDERS";
+            ex.Data["StatusCode"] = 409;
+            ex.Data["ProposedHandling"] = "Hãy Khóa bán gói này thay vì xóa.";
+            throw ex;
+        }
+
+        unitOfWork.Context.MembershipPackages.Remove(package);
+        AuditLogWriter.Add(unitOfWork, actorUserId, centerId, "membership_package.deleted",
+            "MembershipPackage", package.Id,
+            new { package.Name, package.Price, package.DurationDays, package.Status }, null);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await transaction.CommitAsync(cancellationToken);
     }
 
     private async Task<IReadOnlyList<MembershipPackageResponse>> MapPackagesAsync(
@@ -349,7 +379,21 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
         ParseFeatures(package.Features),
         subscriberCount,
         hasOrders,
-        isEditable);
+        isEditable,
+        package.TierLevel,
+        package.IsAllAccess,
+        package.CancelBeforeHours,
+        package.MaxFreezeDays);
+
+    /// <summary>Applies explicit entitlement values, deriving defaults from AllowedSports when absent.</summary>
+    private static void ApplyEntitlements(MembershipPackage package, SaveMembershipPackageRequest request, bool isNew)
+    {
+        var derivedTier = request.AllowedSports >= 10 ? 4 : request.AllowedSports >= 6 ? 3 : request.AllowedSports >= 3 ? 2 : 1;
+        package.TierLevel = request.TierLevel ?? (isNew ? derivedTier : package.TierLevel);
+        package.IsAllAccess = request.IsAllAccess ?? (isNew ? request.AllowedSports >= 10 : package.IsAllAccess);
+        package.CancelBeforeHours = request.CancelBeforeHours ?? package.CancelBeforeHours;
+        package.MaxFreezeDays = request.MaxFreezeDays ?? package.MaxFreezeDays;
+    }
 
     private static IReadOnlyList<string> ParseFeatures(string? features)
     {

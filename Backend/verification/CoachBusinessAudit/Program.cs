@@ -79,38 +79,40 @@ Check("blank result and unsafe metric ranges are rejected", () =>
     CoachWorkflowRules.ProgressValidationError(Progress(bodyFat: 66)) is not null &&
     CoachWorkflowRules.ProgressValidationError(Progress(muscleMass: 121)) is not null);
 
-UpdateMemberBiometricsRequest Bio(decimal? height = 170, decimal? weight = 65, string? gender = "Female",
-    DateOnly? dob = null, string? level = "Beginner") =>
-    new(height, weight, gender, dob ?? new DateOnly(2000, 1, 1), level, "Đau gối nhẹ");
+// Coach enters only height, weight and medical note; gender/DOB/level belong to the member's own profile.
+UpdateMemberBiometricsRequest Bio(decimal? height = 170, decimal? weight = 65) => new(height, weight, "Đau gối nhẹ");
 
 Check("valid manual biometrics pass validation", () =>
-    CoachWorkflowRules.BiometricsValidationError(Bio(), new DateOnly(2026, 11, 9)) is null);
+    CoachWorkflowRules.BiometricsValidationError(Bio()) is null &&
+    CoachWorkflowRules.BiometricsValidationError(Bio(null, null)) is null);
 
 Check("unsafe manual biometrics are rejected", () =>
-    CoachWorkflowRules.BiometricsValidationError(Bio(height: 50), new DateOnly(2026, 11, 9)) is not null &&
-    CoachWorkflowRules.BiometricsValidationError(Bio(weight: 301), new DateOnly(2026, 11, 9)) is not null &&
-    CoachWorkflowRules.BiometricsValidationError(Bio(gender: "Robot"), new DateOnly(2026, 11, 9)) is not null &&
-    CoachWorkflowRules.BiometricsValidationError(Bio(level: "Godlike"), new DateOnly(2026, 11, 9)) is not null &&
-    CoachWorkflowRules.BiometricsValidationError(Bio(dob: new DateOnly(2027, 1, 1)), new DateOnly(2026, 11, 9)) is not null);
+    CoachWorkflowRules.BiometricsValidationError(Bio(height: 50)) is not null &&
+    CoachWorkflowRules.BiometricsValidationError(Bio(weight: 301)) is not null);
+
+Check("member self-profile fitness level is canonicalized and unknown levels rejected", () =>
+    CoachWorkflowRules.TryCanonicalFitnessLevel(" intermediate ", out var level) && level == "Intermediate" &&
+    CoachWorkflowRules.TryCanonicalFitnessLevel(null, out var none) && none is null &&
+    !CoachWorkflowRules.TryCanonicalFitnessLevel("Godlike", out _));
 
 Check("newer training_results weight overrides older profile weight", () =>
 {
     var pick = CoachWorkflowRules.ResolveLatestWeight(55, new DateTime(2026, 10, 1, 3, 0, 0, DateTimeKind.Utc),
-        new DateOnly(2026, 11, 5), 57.5m, new DateTime(2026, 11, 5, 12, 0, 0, DateTimeKind.Utc));
+        new DateOnly(2026, 11, 5), 57.5m);
     return pick.Weight == 57.5m && pick.Source == "training_result" && pick.MeasuredOn == new DateOnly(2026, 11, 5);
 });
 
-Check("manual profile weight entered after the last session wins", () =>
+Check("latest training_results weight still wins over a manual weight saved afterwards", () =>
 {
     var pick = CoachWorkflowRules.ResolveLatestWeight(60, new DateTime(2026, 11, 8, 3, 0, 0, DateTimeKind.Utc),
-        new DateOnly(2026, 11, 5), 57.5m, new DateTime(2026, 11, 5, 12, 0, 0, DateTimeKind.Utc));
-    return pick.Weight == 60 && pick.Source == "profile";
+        new DateOnly(2026, 11, 5), 57.5m);
+    return pick.Weight == 57.5m && pick.Source == "training_result";
 });
 
 Check("profile weight is used when no session weight was measured", () =>
 {
-    var pick = CoachWorkflowRules.ResolveLatestWeight(55, null, null, null, null);
-    var none = CoachWorkflowRules.ResolveLatestWeight(null, null, null, null, null);
+    var pick = CoachWorkflowRules.ResolveLatestWeight(55, null, null, null);
+    var none = CoachWorkflowRules.ResolveLatestWeight(null, null, null, null);
     return pick.Weight == 55 && pick.Source == "profile" && none.Weight is null;
 });
 
@@ -176,48 +178,97 @@ Check("VNPay callback rejects a valid signature with a mismatched currency", () 
     return !callback.IsValidSignature && !callback.IsSuccess;
 });
 
-foreach (var scenario in new[]
+Check("MoMo sandbox rejection synthesizes signed ReturnUrl accepted by ProcessCallback and rejects tampering", () =>
 {
-    (Name: "omitted currency", Currency: (string?)null, Merchant: "AUDITTMN", Tamper: false, Status: "00", Valid: true, Success: true),
-    (Name: "VND currency", Currency: (string?)"VND", Merchant: "AUDITTMN", Tamper: false, Status: "00", Valid: true, Success: true),
-    (Name: "wrong currency", Currency: (string?)"USD", Merchant: "AUDITTMN", Tamper: false, Status: "00", Valid: false, Success: false),
-    (Name: "wrong merchant without currency", Currency: (string?)null, Merchant: "OTHER", Tamper: false, Status: "00", Valid: false, Success: false),
-    (Name: "tampered amount without currency", Currency: (string?)null, Merchant: "AUDITTMN", Tamper: true, Status: "00", Valid: false, Success: false),
-    (Name: "unsuccessful transaction without currency", Currency: (string?)null, Merchant: "AUDITTMN", Tamper: false, Status: "02", Valid: true, Success: false)
-})
-{
-    Check("VNPay callback handles " + scenario.Name, () =>
+    var config = new AuditConfiguration(new Dictionary<string, string?>
     {
-        const string secret = "audit-vnpay-secret";
-        var configuration = new AuditConfiguration(new Dictionary<string, string?>
-        {
-            ["VnPay:HashSecret"] = secret,
-            ["VnPay:TmnCode"] = "AUDITTMN",
-            ["VnPay:CurrCode"] = "VND"
-        });
-        var fields = new Dictionary<string, string>(StringComparer.Ordinal)
-        {
-            ["vnp_Amount"] = "65000000",
-            ["vnp_ResponseCode"] = "00",
-            ["vnp_TmnCode"] = scenario.Merchant,
-            ["vnp_TransactionNo"] = "15726901",
-            ["vnp_TransactionStatus"] = scenario.Status,
-            ["vnp_TxnRef"] = "PAY-DEPLOY-REGRESSION"
-        };
-        if (scenario.Currency is not null) fields["vnp_CurrCode"] = scenario.Currency;
-        // Sign independently of the production VNPay helper.
-        var raw = string.Join("&", fields.OrderBy(pair => pair.Key, StringComparer.Ordinal)
-            .Select(pair => System.Net.WebUtility.UrlEncode(pair.Key) + "=" + System.Net.WebUtility.UrlEncode(pair.Value)));
-        fields["vnp_SecureHash"] = Convert.ToHexString(
-            System.Security.Cryptography.HMACSHA512.HashData(
-                System.Text.Encoding.UTF8.GetBytes(secret), System.Text.Encoding.UTF8.GetBytes(raw)));
-        if (scenario.Tamper) fields["vnp_Amount"] = "100";
-        using var client = new HttpClient();
-        var callback = new VnPayService(configuration, client, new BusinessClock(configuration)).ProcessCallback(fields);
-        return callback.IsValidSignature == scenario.Valid && callback.IsSuccess == scenario.Success &&
-               callback.Amount == (scenario.Tamper ? 1m : 650000m);
+        ["Momo:PartnerCode"] = "MOMO",
+        ["Momo:AccessKey"] = "audit-access",
+        ["Momo:SecretKey"] = "audit-secret-key",
+        ["Momo:PaymentUrl"] = "https://test-payment.momo.vn/v2/gateway/api/create",
+        ["Momo:ReturnUrl"] = "https://app.example.test/payment-result",
+        ["Momo:NotifyUrl"] = "https://api.example.test/api/payments/momo-ipn",
+        ["Momo:AllowSandboxFallback"] = "true"
     });
-}
+    using var http = new HttpClient(new StubStatusHandler(System.Net.HttpStatusCode.Forbidden, "403 Forbidden"));
+    var momo = new MoMoService(config, http);
+
+    var created = momo.CreatePaymentUrlAsync("PAY-MOMO-AUDIT-1", 650000m, "Thanh toan hoa don SC-001").GetAwaiter().GetResult();
+    if (created.ResultCode != 0 || !Uri.TryCreate(created.PayUrl, UriKind.Absolute, out var payUri))
+        return false;
+    if (!PaymentService.IsValidMomoPayUri(payUri, config) ||
+        PaymentService.IsValidMomoPayUri(new Uri("https://evil.example/payment-result"), config))
+        return false;
+
+    var fields = payUri.Query.TrimStart('?').Split('&', StringSplitOptions.RemoveEmptyEntries)
+        .Select(pair => pair.Split('=', 2))
+        .ToDictionary(
+            pair => Uri.UnescapeDataString(pair[0]),
+            pair => pair.Length > 1 ? Uri.UnescapeDataString(pair[1]) : string.Empty,
+            StringComparer.Ordinal);
+    var callback = momo.ProcessCallback(fields);
+    if (!callback.IsValidSignature || !callback.IsSuccess || callback.OrderId != "PAY-MOMO-AUDIT-1" || callback.Amount != 650000m)
+        return false;
+
+    var tampered = new Dictionary<string, string>(fields, StringComparer.Ordinal) { ["amount"] = "1" };
+    var rejected = momo.ProcessCallback(tampered);
+    return !rejected.IsValidSignature && !rejected.IsSuccess;
+});
+
+Check("MoMo sandbox 403 without AllowSandboxFallback fails instead of faking a paid checkout", () =>
+{
+    var config = new AuditConfiguration(new Dictionary<string, string?>
+    {
+        ["Momo:PartnerCode"] = "MOMO",
+        ["Momo:AccessKey"] = "audit-access",
+        ["Momo:SecretKey"] = "audit-secret-key",
+        ["Momo:PaymentUrl"] = "https://test-payment.momo.vn/v2/gateway/api/create",
+        ["Momo:ReturnUrl"] = "https://app.example.test/payment-result",
+        ["Momo:NotifyUrl"] = "https://api.example.test/api/payments/momo-ipn"
+    });
+    if (PaymentService.IsValidMomoPayUri(new Uri("https://app.example.test/payment-result?resultCode=0"), config))
+        return false;
+    using var http = new HttpClient(new StubStatusHandler(System.Net.HttpStatusCode.Forbidden, "403"));
+    var momo = new MoMoService(config, http);
+    try
+    {
+        momo.CreatePaymentUrlAsync("PAY-MOMO-SANDBOX-OFF", 650000m, "Thanh toan hoa don SC-003").GetAwaiter().GetResult();
+        return false;
+    }
+    catch (HttpRequestException ex)
+    {
+        return ex.StatusCode == System.Net.HttpStatusCode.Forbidden;
+    }
+});
+
+Check("Production MoMo 403 does not trigger sandbox fallback and rejects non-momo PayUrl", () =>
+{
+    var prodConfig = new AuditConfiguration(new Dictionary<string, string?>
+    {
+        ["Momo:PartnerCode"] = "MOMO",
+        ["Momo:AccessKey"] = "audit-access",
+        ["Momo:SecretKey"] = "audit-secret-key",
+        ["Momo:PaymentUrl"] = "https://payment.momo.vn/v2/gateway/api/create",
+        ["Momo:ReturnUrl"] = "https://app.example.test/payment-result",
+        ["Momo:NotifyUrl"] = "https://api.example.test/api/payments/momo-ipn"
+    });
+    if (PaymentService.IsValidMomoPayUri(new Uri("https://app.example.test/payment-result?resultCode=0"), prodConfig))
+        return false;
+    if (!PaymentService.IsValidMomoPayUri(new Uri("https://test-payment.momo.vn/v2/gateway/pay?t=abc"), prodConfig))
+        return false;
+
+    using var http = new HttpClient(new StubStatusHandler(System.Net.HttpStatusCode.Forbidden, "403"));
+    var momo = new MoMoService(prodConfig, http);
+    try
+    {
+        momo.CreatePaymentUrlAsync("PAY-MOMO-PROD-1", 650000m, "Thanh toan hoa don SC-002").GetAwaiter().GetResult();
+        return false;
+    }
+    catch (HttpRequestException ex)
+    {
+        return ex.StatusCode == System.Net.HttpStatusCode.Forbidden;
+    }
+});
 
 Console.WriteLine($"RESULT {checks - failures.Count}/{checks} checks passed");
 if (failures.Count > 0)
@@ -249,4 +300,10 @@ sealed class AuditChangeToken : IChangeToken
     {
         public void Dispose() { }
     }
+}
+
+sealed class StubStatusHandler(System.Net.HttpStatusCode status, string body) : HttpMessageHandler
+{
+    protected override Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
+        => Task.FromResult(new HttpResponseMessage(status) { Content = new StringContent(body) });
 }

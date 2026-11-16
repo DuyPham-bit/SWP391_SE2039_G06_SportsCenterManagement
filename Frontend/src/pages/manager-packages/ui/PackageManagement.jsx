@@ -309,13 +309,37 @@ export function PackageManagement() {
     }
   };
 
+  const handleDeletePackage = async pkg => {
+    const confirmed = await confirm({
+      title: isEn ? 'Delete Package' : 'Xóa gói tập',
+      message: isEn
+        ? `Delete "${pkg.name}" permanently?`
+        : `Xóa vĩnh viễn gói "${pkg.name}"?`,
+      detail: isEn
+        ? 'Nobody has registered for this package yet. This cannot be undone.'
+        : 'Gói chưa có hội viên đăng ký. Thao tác này không thể hoàn tác.',
+      confirmText: isEn ? 'Delete' : 'Xóa gói',
+      cancelText: isEn ? 'Cancel' : 'Hủy',
+      type: 'danger'
+    });
+    if (!confirmed) return;
+
+    try {
+      await packageApi.remove(pkg.id);
+      showSuccess(isEn ? `Deleted ${pkg.name}` : `Đã xóa gói ${pkg.name}`);
+      loadPackages();
+    } catch (err) {
+      showError(err);
+    }
+  };
+
   if (loading) return <LoadingSpinner text={isEn ? 'Loading membership packages...' : 'Đang tải gói tập hội viên...'} />;
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner Header (Olympic Multi-stop Gradient matching Image 1) */}
       <section
-        className="scms-hero relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
+        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30 flex flex-col md:flex-row items-start md:items-center justify-between gap-6"
         style={{
           background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 25%, #3FAEB8 48%, #81B29A 70%, #E5A33C 88%, #E5A33C 100%)'
         }}
@@ -605,6 +629,17 @@ export function PackageManagement() {
                     <span className="material-symbols-outlined text-[18px]" aria-hidden="true">content_copy</span>
                     {isEn ? 'Duplicate' : 'Nhân bản'}
                   </button>
+                  {editable && (
+                    <button
+                      type="button"
+                      onClick={() => handleDeletePackage(pkg)}
+                      title={isEn ? 'Delete: nobody has registered yet' : 'Xóa gói: chưa có hội viên đăng ký'}
+                      aria-label={isEn ? `Delete ${pkg.name}` : `Xóa gói ${pkg.name}`}
+                      className={`inline-flex items-center justify-center min-h-10 min-w-10 rounded-xl transition-colors cursor-pointer ${tier.danger}`}
+                    >
+                      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
+                    </button>
+                  )}
                   {editable ? (
                     <button
                       type="button"

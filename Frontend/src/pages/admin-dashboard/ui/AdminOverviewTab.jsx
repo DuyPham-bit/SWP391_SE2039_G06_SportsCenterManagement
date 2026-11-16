@@ -1,6 +1,7 @@
 import React from 'react';
 import { MotionButton } from '../../../shared/ui/MotionButton.jsx';
 import { StatusBadge } from './Badges.jsx';
+import { parseApiDate } from '../../../shared/lib/dateTime.js';
 
 export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShowCC, setShowCM, switchTab }) {
   return (
@@ -58,7 +59,7 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
             label: 'Cơ Sở Thể Thao',
             value: ov?.activeCenterCount ?? 0,
             sub: `${centers.length} tổng cơ sở toàn hệ thống`,
-            badge: `${centers.length ? Math.round(((ov?.activeCenterCount || 0) / centers.length) * 100) : 100}% hoạt động`,
+            badge: `${centers.length ? Math.round(((ov?.activeCenterCount || 0) / centers.length) * 100) : 0}% hoạt động`,
             color: '#81B29A',
             bgLight: 'bg-brand-sage-50 text-brand-sage-700 dark:bg-brand-sage-950/60 dark:text-brand-sage-400',
             tabId: 'centers'
@@ -68,7 +69,7 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
             label: 'Managers Đang Trực',
             value: ov?.activeManagerCount ?? 0,
             sub: `${managers.length} quản lý được bổ nhiệm`,
-            badge: `${managers.length ? Math.round(((ov?.activeManagerCount || 0) / managers.length) * 100) : 100}% trực tuyến`,
+            badge: `${managers.length ? Math.round(((ov?.activeManagerCount || 0) / managers.length) * 100) : 0}% trực tuyến`,
             color: '#3FAEB8',
             bgLight: 'bg-brand-teal-50 text-brand-teal-700 dark:bg-brand-teal-950/60 dark:text-brand-teal-400',
             tabId: 'managers'
@@ -219,7 +220,7 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
                   </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                  <StatusBadge status={m.status} />
+                  <StatusBadge status={m.lockedUntil && parseApiDate(m.lockedUntil) > new Date() ? 'Disabled' : m.status} />
                 </div>
               </div>
             ))}

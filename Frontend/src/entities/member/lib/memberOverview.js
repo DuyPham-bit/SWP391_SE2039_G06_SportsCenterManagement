@@ -1,4 +1,3 @@
-import { parseCalendarDate } from '../../../shared/lib/dateTime.js';
 import { translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
@@ -19,43 +18,6 @@ export function formatMemberDateTime(value, isEn = false) {
   const timestamp = /(?:Z|[+-]\d{2}:\d{2})$/i.test(value) ? value : `${value}Z`;
   const date = new Date(timestamp);
   return Number.isNaN(date.getTime()) ? (isEn ? 'N/A' : 'Chưa có thông tin') : date.toLocaleString(isEn ? 'en-US' : 'vi-VN', { timeZone: 'Asia/Ho_Chi_Minh' });
-}
-
-export const DAY_LABELS = ['CHỦ NHẬT', 'THỨ 2', 'THỨ 3', 'THỨ 4', 'THỨ 5', 'THỨ 6', 'THỨ 7'];
-export const DAY_LABELS_EN = ['SUNDAY', 'MON', 'TUE', 'WED', 'THU', 'FRI', 'SAT'];
-
-export function parseIsoDate(dateStr) {
-  if (!dateStr) return parseCalendarDate();
-  const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number);
-  return new Date(Date.UTC(y, m - 1, d, 12));
-}
-
-export function formatIsoDate(date) {
-  if (!date) return '';
-  const d = date instanceof Date ? date : new Date(date);
-  if (Number.isNaN(d.getTime())) return '';
-  const y = d.getUTCFullYear();
-  const m = String(d.getUTCMonth() + 1).padStart(2, '0');
-  const day = String(d.getUTCDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
-}
-
-export function getMonday(date) {
-  const d = new Date(date);
-  const day = d.getUTCDay();
-  const diff = d.getUTCDate() - day + (day === 0 ? -6 : 1);
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), diff, 12));
-}
-
-export function getWeekDays(startDate) {
-  const monday = getMonday(startDate);
-  const days = [];
-  for (let i = 0; i < 7; i++) {
-    const nextDay = new Date(monday);
-    nextDay.setUTCDate(monday.getUTCDate() + i);
-    days.push(nextDay);
-  }
-  return days;
 }
 
 export function bookingStart(booking) {
@@ -81,9 +43,20 @@ export function getMembershipSummary(user, now = new Date(), isEn = false) {
   const expiryTime = /^\d{4}-\d{2}-\d{2}$/.test(expiry) ? Date.parse(`${expiry}T00:00:00Z`) : NaN;
   const daysLeft = Number.isNaN(expiryTime) ? null : Math.round((expiryTime - Date.parse(`${vietnamDate(now)}T00:00:00Z`)) / DAY_MS);
   const active = user?.packageStatus === 'ACTIVE' && daysLeft !== null && daysLeft >= 0;
+  const start = String(user?.packageStartDate || '').slice(0, 10);
+  const startTime = /^\d{4}-\d{2}-\d{2}$/.test(start) ? Date.parse(`${start}T00:00:00Z`) : NaN;
+  // Inclusive day count of the current package (start..expiry); null when unknown.
+  const totalDays = Number.isNaN(startTime) || Number.isNaN(expiryTime) || expiryTime < startTime
+    ? null : Math.round((expiryTime - startTime) / DAY_MS) + 1;
+  // Share of the package still remaining, 0–100.
+  const remainingPercent = !active ? 0
+    : totalDays ? Math.min(100, Math.max(0, Math.round(((daysLeft + 1) / totalDays) * 100)))
+    : 100;
   return {
     active,
     daysLeft,
+    totalDays,
+    remainingPercent,
     label: active
       ? (isEn ? 'ACTIVE' : 'CÒN HẠN')
       : (isEn ? 'NEEDS RENEWAL' : 'CẦN GIA HẠN')
@@ -121,7 +94,7 @@ export function getMemberReminders(user, bookings, now = new Date(), isEn = fals
       icon: 'event'
     });
   }
-  for (const booking of bookings.filter(b => b.sessionStatus === 'CANCELLED' && b.bookingDate >= vietnamDate(now))) {
+  for (const booking of bookings.filter(b => b.sessionStatus === 'CANCELLED' && String(b.bookingDate || '').slice(0, 10) >= vietnamDate(now))) {
     reminders.push({
       id: `cancelled-${booking.id}`,
       title: isEn ? `Class Cancelled: ${translateClassName(booking.className, isEn)}` : `Buổi học đã bị hủy: ${booking.className}`,
@@ -141,9 +114,6 @@ export function getLatestProgress(records) {
 export function formatMeasurement(value, unit, isEn = false) {
   return value === null || value === undefined || value === '' ? (isEn ? 'Not measured' : 'Chưa đo') : `${value} ${unit}`;
 }
-
-export const ATTENDANCE_LABELS = { PRESENT: 'Có mặt', LATE: 'Đi muộn', ABSENT: 'Vắng mặt', EXCUSED: 'Vắng có phép', PENDING: 'Chưa điểm danh' };
-export const ATTENDANCE_LABELS_EN = { PRESENT: 'Present', LATE: 'Late', ABSENT: 'Absent', EXCUSED: 'Excused', PENDING: 'Pending' };
 
 export const BOOKING_LABELS = {
   CONFIRMED: 'Đã xác nhận',

@@ -15,11 +15,12 @@ public sealed class JwtTokenIssuer
 
     public JwtTokenIssuer(IConfiguration configuration)
     {
+        // No built-in default: a key shipped in source would let anyone forge tokens.
         var key = configuration["Jwt:Key"] ?? configuration["Jwt:SecretKey"];
         if (string.IsNullOrWhiteSpace(key) || Encoding.UTF8.GetByteCount(key) < 32)
-            throw new InvalidOperationException("Jwt:Key must be at least 256 bits.");
-        _issuer = configuration["Jwt:Issuer"] ?? throw new InvalidOperationException("Jwt:Issuer is required.");
-        _audience = configuration["Jwt:Audience"] ?? throw new InvalidOperationException("Jwt:Audience is required.");
+            throw new InvalidOperationException("Jwt:Key is not configured or shorter than 32 bytes. Set Jwt__Key (environment) or Jwt:Key (user-secrets).");
+        _issuer = configuration["Jwt:Issuer"] ?? "SportsCenterManagement.API";
+        _audience = configuration["Jwt:Audience"] ?? "SportsCenterManagement.FE";
         if (string.IsNullOrWhiteSpace(_issuer) || string.IsNullOrWhiteSpace(_audience))
             throw new InvalidOperationException("Jwt:Issuer and Jwt:Audience must not be empty.");
         _expiresMinutes = configuration.GetValue("Jwt:ExpiresMinutes", 60);

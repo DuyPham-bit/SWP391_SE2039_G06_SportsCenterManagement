@@ -98,3 +98,13 @@ export function fixMojibake(value) {
   }
   return value;
 }
+
+// Byte sequences that only appear when text is mis-decoded: UTF-8 read as Windows-1252/Latin-1
+// (e.g. "Ã¡", "Ä‘", "Æ°", "áº¡", "á»ƒ"), UTF-8 read as CP437/850 (box-drawing characters), or the
+// replacement character. A single letter such as "ã" or "Ã" is valid Vietnamese and must not match.
+const MOJIBAKE_REGEX = /[ÃÂ][\u0080-¿‘-›€™ŒœŠšŸŽžƒˆ˜]|Ä[\u0080-¿‘’]|Æ[ -¿]|á[º»]|[├│─┼┬┴└┘┐┌┤╜╗╝╚╔╩╦╠═╬]|�/;
+
+/** True when a string still contains mojibake that fixMojibake could not repair. */
+export function hasMojibake(str) {
+  return typeof str === 'string' && MOJIBAKE_REGEX.test(str);
+}

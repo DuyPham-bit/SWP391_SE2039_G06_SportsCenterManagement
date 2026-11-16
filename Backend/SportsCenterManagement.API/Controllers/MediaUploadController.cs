@@ -16,8 +16,7 @@ namespace SportsCenterManagement.API.Controllers;
 [FlowExceptionFilter]
 public sealed class MediaUploadController(
     IR2StorageService storageService,
-    SportsCenterDbContext dbContext,
-    MediaCatalogService mediaCatalog) : FlowControllerBase
+    SportsCenterDbContext dbContext) : FlowControllerBase
 {
     [HttpPost("upload")]
     [Consumes("multipart/form-data")]
@@ -37,19 +36,9 @@ public sealed class MediaUploadController(
     }
 
     [HttpGet("files")]
-    public async Task<ActionResult<List<UploadMediaResultDto>>> GetFiles([FromQuery] string? folder = null, [FromQuery] int limit = 200, CancellationToken ct = default)
+    public async Task<ActionResult<List<UploadMediaResultDto>>> GetFiles(CancellationToken ct = default)
     {
         var scope = await MediaAccessScope.ForUser(dbContext, CurrentUserId, ct);
-        if (folder == "dashboard")
-        {
-            if (!scope.IsAdmin && !scope.IsManager) return Forbid();
-            var query = dbContext.UploadedMedias.AsNoTracking().Where(m => m.StorageKey.StartsWith("dashboard/"));
-            if (!scope.IsAdmin) query = query.Where(m =>
-                (scope.CenterId.HasValue && m.CenterId == scope.CenterId) ||
-                (m.CenterId == null && m.UploadedByUserId == scope.UserId));
-            var images = await query.OrderByDescending(m => m.CreatedAt).Take(Math.Clamp(limit, 1, 200)).ToListAsync(ct);
-            return Ok(images.Select(ToDto).ToList());
-        }
         return Ok(await MediaQuery(scope).ToListAsync(ct));
     }
 
@@ -68,16 +57,17 @@ public sealed class MediaUploadController(
         return Ok(await MediaQuery(scope).Take(Math.Clamp(limit, 1, 100)).ToListAsync(ct));
     }
 
+    [HttpPost("migrate-legacy")]
+    [Authorize(Roles = "ADMIN")]
+    public async Task<ActionResult<LegacyMediaMigrationResult>> MigrateLegacyMedia(CancellationToken ct = default) =>
+        Ok(await storageService.MigrateLegacyMediaAsync(ct));
+
     private IQueryable<UploadMediaResultDto> MediaQuery(MediaAccessScope scope) =>
         scope.Library(dbContext).OrderByDescending(media => media.CreatedAt).Select(media => new UploadMediaResultDto(
             media.Id, media.DriveFileId, media.FileUrl, media.FileName, media.MimeType,
             media.FileSize, media.CreatedAt, media.FileUrl));
 
-    private UploadMediaResultDto ToDto(UploadedMedia media)
-    {
-        var isDashboard = media.StorageKey.StartsWith("dashboard/", StringComparison.Ordinal);
-        var url = isDashboard ? mediaCatalog.PublicUrl(media.StorageKey) : media.FileUrl;
-        return new(media.Id, isDashboard ? media.StorageKey : media.DriveFileId, url, media.FileName, media.MimeType,
-            media.FileSize, media.CreatedAt, url);
-    }
+    private static UploadMediaResultDto ToDto(UploadedMedia media) => new(
+        media.Id, media.DriveFileId, media.FileUrl, media.FileName, media.MimeType,
+        media.FileSize, media.CreatedAt, media.FileUrl);
 }

@@ -66,7 +66,7 @@ export function notificationTarget(item, role) {
   }
 
   // 2. Coach Leave & Leave Reviewed
-  if (type === 'CoachLeave' && ['MANAGER', 'ADMIN'].includes(normalizedRole)) return '#/manager/coach-operations?tab=leaves';
+  if (type === 'CoachLeave' && normalizedRole === 'MANAGER') return '#/manager/coach-operations?tab=leaves';
   if (type === 'CoachLeaveReviewed' && normalizedRole === 'COACH') return '#/coach/professional?tab=schedule';
 
   // 3. Coach Chat & Direct Messages
@@ -137,7 +137,7 @@ export function notificationTarget(item, role) {
   ) {
     if (normalizedRole === 'MEMBER') return '#/member/support';
     if (normalizedRole === 'COACH') return '#/coach/support';
-    if (['MANAGER', 'ADMIN'].includes(normalizedRole)) return '#/manager/support-communications';
+    if (normalizedRole === 'MANAGER') return '#/manager/support-communications';
     if (normalizedRole === 'RECEPTIONIST') return '#/receptionist/support';
   }
 
@@ -155,7 +155,7 @@ export function notificationTarget(item, role) {
 
   // 9. Equipment Issue
   if (type === 'EquipmentIssue' || title.includes('thiết bị') || title.includes('sự cố')) {
-    if (['MANAGER', 'ADMIN'].includes(normalizedRole)) return '#/manager/coach-operations?tab=equipment';
+    if (normalizedRole === 'MANAGER') return '#/manager/coach-operations?tab=equipment';
     if (normalizedRole === 'COACH') return '#/coach/professional?tab=equipment';
   }
 
@@ -175,7 +175,9 @@ export function notificationTarget(item, role) {
   // 12. Role-based fallback so user can always navigate somewhere meaningful
   if (normalizedRole === 'COACH') return '#/coach/schedule';
   if (normalizedRole === 'MEMBER') return '#/member/schedule';
-  if (['MANAGER', 'ADMIN'].includes(normalizedRole)) return '#/manager/dashboard';
+  if (normalizedRole === 'MANAGER') return '#/manager/dashboard';
+  // Admin has no center: manager screens other than invoices/payroll/home-content are not available.
+  if (['ADMIN', 'SYSTEMADMIN'].includes(normalizedRole)) return '#/admin/dashboard';
   if (normalizedRole === 'RECEPTIONIST') return '#/receptionist/dashboard';
 
   return null;

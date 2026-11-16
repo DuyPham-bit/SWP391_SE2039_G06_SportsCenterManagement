@@ -1,7 +1,7 @@
 using System.Text.Json;
+using Microsoft.EntityFrameworkCore;
 using System.Text.RegularExpressions;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Configuration;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.BLL.DTOs.Profile;
@@ -14,7 +14,6 @@ namespace SportsCenterManagement.BLL.Services;
 public sealed class ProfileService(
     IUserRepository userRepository,
     IUnitOfWork unitOfWork,
-    IConfiguration configuration,
     IObjectStorageClient? storageClient = null,
     ILogger<ProfileService>? logger = null,
     SportsCenterManagement.BLL.Common.MediaUrlBuilder? mediaUrls = null) : IProfileService
@@ -153,6 +152,9 @@ public sealed class ProfileService(
 
         var centerId = staffProfile?.CenterId ?? coachProfile?.CenterId ?? memberProfile?.CenterId;
         var fullName = memberProfile?.FullName ?? coachProfile?.FullName ?? staffProfile?.FullName ?? user.Email;
+        var centerName = centerId is null ? null : await unitOfWork.Context.Centers
+            .Where(center => center.Id == centerId).Select(center => center.Name)
+            .FirstOrDefaultAsync(ct);
 
         return new UserProfileResponse(
             user.Id,
@@ -164,9 +166,12 @@ public sealed class ProfileService(
             memberProfile?.MemberCode,
             user.CreatedAt,
             centerId,
-            string.IsNullOrWhiteSpace(user.AvatarKey) ? null
-                : $"{configuration["R2Storage:PublicDomain"]?.TrimEnd('/')}/{user.AvatarKey}",
-            user.AvatarKey);
+            mediaUrls?.PublicUrl(user.AvatarKey),
+            user.AvatarKey,
+            user.MustChangePassword,
+            user.IsEmailVerified,
+            staffProfile?.StaffCode,
+            centerName);
     }
 }
 

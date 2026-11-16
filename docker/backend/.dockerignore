@@ -1,0 +1,10 @@
+bin
+obj
+.vs
+.vscode
+.git
+App_Data/media/uploads/*
+postman
+verification
+*.user
+*.suo

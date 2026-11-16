@@ -1,6 +1,5 @@
-import React from 'react';
+import React, { useLayoutEffect } from 'react';
 import { FacilitiesSection } from './FacilitiesSection.jsx';
-import { IntroSplashScreen } from './IntroSplashScreen.jsx';
 import { useLandingPage } from '../model/useLandingPage.js';
 import { LandingHeader } from './LandingHeader.jsx';
 import { HeroSection } from './HeroSection.jsx';
@@ -12,20 +11,29 @@ import { LandingFooter } from './LandingFooter.jsx';
 export function LandingPage() {
   const {
     activeNav, catalog, catalogError, catalogLoading, categoryConfig, coursesDropdownRef,
-    editorialContent, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
+    editorialContent, editorialLoaded, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
     handleCoursesMouseLeave, handleNavClick, handleScrollSportsToIndex, handleSelectMenuItem,
     handleSportClick, handleSportsScroll, highlightedSportId, hours, isAuthenticated,
     isCoursesDropdownOpen, isEn, isMobileCoursesOpen, isMobileMenuOpen, isScrolled, isVideoMuted,
     landingContent, language, leftSports, logout, membershipAction, navItems, rightSports, role,
     selectedCategory, selectedFacilityForModal, selectedSportFromMenu, setIsMobileCoursesOpen,
     setIsMobileMenuOpen, setIsVideoMuted, setLanguage, setSelectedCategory,
-    setSelectedFacilityForModal, setShowIntro, showIntro, socialContacts, sportCarouselIndex,
+    setSelectedFacilityForModal, socialContacts, sportCarouselIndex,
     sportsCarousel, sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
   } = useLandingPage();
 
+  // The landing is a light-only design. index.html adds html.dark from the OS/browser dark theme,
+  // and the app-wide html.dark rules (e.g. `h2 { color: light !important }`) turn landing headings
+  // white on white. Drop the class while the landing is mounted; restore it for the dashboard.
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+    const wasDark = root.classList.contains('dark');
+    root.classList.remove('dark');
+    return () => { if (wasDark) root.classList.add('dark'); };
+  }, []);
+
   return (
-    <div className="landing-page-root tiya-page w-full min-h-screen">
-      {showIntro && <IntroSplashScreen onFinish={() => setShowIntro(false)} />}
+    <div className="landing-page-root tiya-page w-full min-h-screen" style={{ colorScheme: 'light' }}>
       {/* LANDING HEADER (TIYA NAVBAR) */}
       <LandingHeader
         activeNav={activeNav}
@@ -58,7 +66,9 @@ export function LandingPage() {
           1. HERO SECTION (Tiya Wave Elements with Compact Balanced Height)
       ───────────────────────────────────────────────────────────── */}
       <HeroSection
+        catalogLoading={catalogLoading}
         facilitiesList={facilitiesList}
+        heroReady={editorialLoaded}
         isEn={isEn}
         isVideoMuted={isVideoMuted}
         landingContent={landingContent}

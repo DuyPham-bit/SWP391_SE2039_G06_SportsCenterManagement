@@ -77,11 +77,11 @@ export const SYSTEM_CAPABILITIES = [
     id: 'manage_roles',
     label: 'Cấu hình Phân quyền',
     desc: 'Thiết lập quyền hạn cho các nhóm người dùng',
-    path: '#/manager/roles-permissions',
+    path: '#/admin/roles-permissions',
     icon: 'admin_panel_settings',
     category: 'BÁO CÁO & BẢO MẬT',
     targetScreenName: 'Vai Trò & Phân Quyền',
-    defaultRole: 'MANAGER'
+    defaultRole: 'ADMIN'
   },
   {
     id: 'view_audit_logs',
@@ -292,7 +292,6 @@ export function getDynamicNavItems(role) {
         { label: 'BẢO MẬT & NỘI DUNG', isHeader: true },
         { path: '#/admin/roles-permissions', icon: 'policy', label: 'Vai Trò & Phân Quyền' },
         { path: '#/admin/audit-logs', icon: 'history', label: 'Nhật Ký Audit Hệ Thống' },
-        { path: '#/admin/reports', icon: 'analytics', label: 'Báo Cáo Hệ Thống' },
         { path: '#/admin/home-content', icon: 'dashboard_customize', label: 'Nội Dung Trang Chủ' }
       ];
     }
@@ -420,7 +419,6 @@ export function getDynamicNavItems(role) {
 
       if (perms.includes('book_class')) {
         items.push({ label: 'LỊCH HỌC & ĐẶT CHỖ', isHeader: true });
-        items.push({ path: '#/member/enroll', icon: 'how_to_reg', label: 'Đăng Ký Môn & HLV' });
         items.push({ path: '#/member/schedule', icon: 'event_available', label: 'Lịch Lớp Thể Thao' });
         items.push({ path: '#/member/bookings', icon: 'bookmark_check', label: 'Lớp Đã Đặt & Hủy' });
         items.push({ path: '#/member/attendance', icon: 'fact_check', label: 'Lịch Sử Điểm Danh' });
