@@ -56,6 +56,7 @@ export const DEFAULT_LANDING_CONTENT = {
     "badge": "BỐ TRÍ KHÔNG GIAN THUẬN TIỆN",
     "title": "SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN",
     "description": "9 cụm sân bãi và phòng tập được quy hoạch gọn gàng, lối đi thông thoáng, biển báo chỉ dẫn rõ ràng. Hệ thống quầy lễ tân tiếp đón chu đáo và hỗ trợ đặt sân nhanh chóng trực tiếp hoặc online.",
+    "model3dUrl": "/3d-campus.html",
     "zones": [
       {
         "id": "zone-a",
@@ -309,4 +310,10 @@ export function subscribeLandingContentRefresh(refresh) {
     window.removeEventListener('storage', onStorage);
     window.removeEventListener('focus', refresh);
   };
+}
+
+export async function uploadCampus3dHtml(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiRequest('r2-images/campus-3d', { method: 'POST', body: formData });
 }

@@ -4,6 +4,7 @@ import { usePublicCatalog, getLandingPresentation } from '../../../entities/cata
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useAuth } from '../../../entities/session/index.js';
 import { getMembershipAction, getMembershipBanner, packageApi } from '../../../entities/membership/index.js';
+import { safeHref } from '../../../shared/lib/safeUrl.js';
 import { useHorizontalCarousel } from '../model/useHorizontalCarousel.js';
 import { CarouselSideArrows } from './CarouselControls.jsx';
 import {
@@ -88,6 +89,8 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const membershipBanner = getMembershipBanner(landingContent?.ctaAndFooter, isEn);
   const contactPhone = landingContent?.ctaAndFooter?.contactPhone || catalog?.center?.phone;
   const contactEmail = landingContent?.ctaAndFooter?.contactEmail || catalog?.center?.email;
+  const rawModel3dUrl = safeHref(landingContent?.zonesLayout?.model3dUrl);
+  const model3dUrl = rawModel3dUrl && !rawModel3dUrl.startsWith('#') ? rawModel3dUrl : '/3d-campus.html';
   const [activeCategory, setActiveCategory] = useState('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedFacility, setSelectedFacility] = useState(null);
@@ -95,6 +98,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [packages, setPackages] = useState([]);
   const [directoryViewMode, setDirectoryViewMode] = useState('3d');
   const [is3dLoading, setIs3dLoading] = useState(true);
+  useEffect(() => { setIs3dLoading(true); }, [model3dUrl]);
   const [is3dFullscreen, setIs3dFullscreen] = useState(false);
   const [activeZoneFilter, setActiveZoneFilter] = useState('all');
   const model3dContainerRef = useRef(null);
@@ -639,7 +643,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
               </button>
 
               <a
-                href="/3d-campus.html"
+                href={model3dUrl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-[#E6D7C3] hover:text-white flex items-center gap-1.5 transition active:scale-95 shadow-sm"
@@ -692,8 +696,9 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 )}
 
                 <iframe
+                  key={model3dUrl}
                   ref={iframeRef}
-                  src="/3d-campus.html"
+                  src={model3dUrl}
                   title="3D ArchViz Campus Model"
                   onLoad={() => setIs3dLoading(false)}
                   className="w-full h-full border-0 block"
