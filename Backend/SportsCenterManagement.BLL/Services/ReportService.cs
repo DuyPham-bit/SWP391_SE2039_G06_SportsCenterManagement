@@ -60,7 +60,7 @@ public sealed class ReportService(
             .Concat(refundRows.Select(item => item.InvoiceId)).Distinct().ToArray();
         var invoiceItems = await _unitOfWork.Context.InvoiceItems.AsNoTracking()
             .Where(item => invoiceIds.Contains(item.InvoiceId))
-            .Select(item => new { item.InvoiceId, item.SubscriptionId, item.EnrollmentId, item.Amount })
+            .Select(item => new { item.InvoiceId, item.SubscriptionId, item.EnrollmentId })
             .ToListAsync(cancellationToken);
         var subscriptionIds = invoiceItems.Where(item => item.SubscriptionId.HasValue)
             .Select(item => item.SubscriptionId!.Value).Distinct().ToArray();
@@ -87,58 +87,44 @@ public sealed class ReportService(
             .Distinct().ToListAsync(cancellationToken);
 
         var buckets = new Dictionary<(long? Id, string Name), (decimal Gross, decimal Refunds)>();
-        var unallocatedTarget = ((long?)null, "Chưa phân bổ");
+        // Index once so allocation stays linear in the number of payments/refunds.
         var itemsByInvoice = invoiceItems.ToLookup(item => item.InvoiceId);
-
-        // Môn của một dòng hóa đơn: ghi danh lớp trực tiếp, hoặc gói tập (qua lớp/lượt đặt dùng gói đó).
-        (long? Id, string Name)[] ItemSports(long? enrollmentId, long? subscriptionId) =>
-            enrollmentSports.Where(row => (enrollmentId.HasValue && row.Id == enrollmentId.Value)
-                    || (subscriptionId.HasValue && row.SubscriptionId == subscriptionId))
-                .Select(row => ((long?)row.SportId, row.SportName))
-                .Concat(bookingSports.Where(row => subscriptionId.HasValue && row.SubscriptionId == subscriptionId)
-                    .Select(row => ((long?)row.SportId, row.SportName)))
-                .Distinct().ToArray();
-
-        // Mỗi khoản thu/hoàn được chia cho các dòng hóa đơn theo tỷ lệ giá từng dòng,
-        // sau đó chia đều cho các môn của dòng đó; dòng không xác định được môn vào "Chưa phân bổ".
-        IEnumerable<((long? Id, string Name) Target, decimal Amount)> Allocate(long invoiceId, decimal amount)
+        var sportsByEnrollment = enrollmentSports.ToLookup(item => item.Id);
+        var sportsBySubscription = enrollmentSports.Where(item => item.SubscriptionId.HasValue)
+            .ToLookup(item => item.SubscriptionId!.Value);
+        var bookingSportsBySubscription = bookingSports.ToLookup(item => item.SubscriptionId!.Value);
+        var targetCache = new Dictionary<long, (long? Id, string Name)[]>();
+        (long? Id, string Name)[] Targets(long invoiceId)
         {
-            var items = itemsByInvoice[invoiceId].ToArray();
-            var itemsTotal = items.Sum(item => item.Amount);
-            if (items.Length == 0)
-            {
-                yield return (unallocatedTarget, amount);
-                yield break;
-            }
-            foreach (var item in items)
-            {
-                var itemAmount = itemsTotal > 0 ? amount * item.Amount / itemsTotal : amount / items.Length;
-                var sports = ItemSports(item.EnrollmentId, item.SubscriptionId);
-                if (sports.Length == 0)
-                {
-                    yield return (unallocatedTarget, itemAmount);
-                    continue;
-                }
-                foreach (var sport in sports)
-                {
-                    yield return (sport, itemAmount / sports.Length);
-                }
-            }
+            if (targetCache.TryGetValue(invoiceId, out var cached)) return cached;
+            var items = itemsByInvoice[invoiceId];
+            var directIds = items.Where(item => item.EnrollmentId.HasValue).Select(item => item.EnrollmentId!.Value).ToHashSet();
+            var subs = items.Where(item => item.SubscriptionId.HasValue).Select(item => item.SubscriptionId!.Value).ToHashSet();
+            var sports = directIds.SelectMany(id => sportsByEnrollment[id])
+                .Concat(subs.SelectMany(id => sportsBySubscription[id]))
+                .Select(item => (item.SportId, item.SportName))
+                .Concat(subs.SelectMany(id => bookingSportsBySubscription[id])
+                    .Select(item => (item.SportId, item.SportName))).Distinct().ToArray();
+            return targetCache[invoiceId] = sports.Length > 0
+                ? sports.Select(item => ((long?)item.SportId, item.SportName)).ToArray()
+                : new[] { ((long?)null, "Chưa phân bổ") };
         }
         foreach (var payment in payments)
         {
-            foreach (var (target, amount) in Allocate(payment.InvoiceId, payment.Amount))
+            var targets = Targets(payment.InvoiceId);
+            foreach (var target in targets)
             {
                 var current = buckets.GetValueOrDefault(target);
-                buckets[target] = (current.Gross + amount, current.Refunds);
+                buckets[target] = (current.Gross + payment.Amount / targets.Length, current.Refunds);
             }
         }
         foreach (var refund in refundRows)
         {
-            foreach (var (target, amount) in Allocate(refund.InvoiceId, refund.Amount))
+            var targets = Targets(refund.InvoiceId);
+            foreach (var target in targets)
             {
                 var current = buckets.GetValueOrDefault(target);
-                buckets[target] = (current.Gross, current.Refunds + amount);
+                buckets[target] = (current.Gross, current.Refunds + refund.Amount / targets.Length);
             }
         }
 
@@ -167,48 +153,40 @@ public sealed class ReportService(
         var today = DateOnly.FromDateTime(TimeZoneInfo.ConvertTimeFromUtc(DateTime.UtcNow, timeZone));
         var db = _unitOfWork.Context;
 
-        var centerMembers = await db.MemberProfiles.AsNoTracking()
-            .Where(profile => profile.CenterId == centerId)
-            .Select(profile => new { profile.Id, profile.CreatedAt })
+        var centerMembers = db.MemberProfiles.Where(profile => profile.CenterId == centerId);
+        var totalMembers = await centerMembers.CountAsync(cancellationToken);
+        var newMemberCreatedAts = await centerMembers
+            .Where(profile => profile.CreatedAt >= startUtc && profile.CreatedAt < endUtc)
+            .Select(profile => profile.CreatedAt)
             .ToListAsync(cancellationToken);
-        var totalMembers = centerMembers.Count;
 
         var packages = await db.MembershipPackages.AsNoTracking()
             .Where(p => p.CenterId == centerId)
             .Select(p => new { p.Id, p.Name, p.Price, p.DurationDays })
             .ToListAsync(cancellationToken);
 
-        var subs = await (
-            from subscription in db.MemberSubscriptions.AsNoTracking()
-            join package in db.MembershipPackages.AsNoTracking() on subscription.PackageId equals package.Id
+        // Aggregate subscription history in SQL instead of loading every subscription the center ever sold.
+        var centerSubs = from subscription in db.MemberSubscriptions
+            join package in db.MembershipPackages on subscription.PackageId equals package.Id
             where package.CenterId == centerId
-            select new {
-                subscription.Id,
-                subscription.MemberId,
-                subscription.PackageId,
-                subscription.StartDate,
-                subscription.EndDate,
-                subscription.Price,
-                subscription.Status,
-                subscription.CreatedAt
-            }).ToListAsync(cancellationToken);
-
-        var activeMemberIds = subs
-            .Where(s => s.Status == "Active" && s.StartDate <= today && s.EndDate >= today)
-            .Select(s => s.MemberId).ToHashSet();
-        var activeMembers = activeMemberIds.Count;
-
-        var expiredMembers = subs.Where(s => s.Status == "Expired" ||
-                (s.Status == "Active" && s.EndDate < today))
-            .Select(s => s.MemberId).Distinct().Count(m => !activeMemberIds.Contains(m));
+            select subscription;
+        var activeSubs = centerSubs.Where(s => s.Status == "Active" && s.StartDate <= today && s.EndDate >= today);
+        var activeMembers = await activeSubs.Select(s => s.MemberId).Distinct().CountAsync(cancellationToken);
+        var expiredMembers = await centerSubs
+            .Where(s => s.Status == "Expired" || (s.Status == "Active" && s.EndDate < today))
+            .Select(s => s.MemberId).Distinct()
+            .Where(memberId => !activeSubs.Select(s => s.MemberId).Contains(memberId))
+            .CountAsync(cancellationToken);
+        var activeSubscribersByPackage = await activeSubs
+            .GroupBy(s => s.PackageId)
+            .Select(g => new { PackageId = g.Key, Count = g.Count() })
+            .ToDictionaryAsync(row => row.PackageId, row => row.Count, cancellationToken);
         var inactiveMembers = Math.Max(0, totalMembers - activeMembers);
 
-        // Sales are recognized on full payment and drop out once the invoice is fully refunded;
-        // revenue follows actual collections and refunds.
+        // Sales are recognized on full payment; revenue follows actual collections and refunds.
         var sales = await (from item in db.InvoiceItems.AsNoTracking()
             join invoice in db.Invoices on item.InvoiceId equals invoice.Id
             where invoice.CenterId == centerId && item.PackageId.HasValue && item.SubscriptionId.HasValue
-                && invoice.Status != "Refunded"
                 && invoice.PaidAt >= startUtc && invoice.PaidAt < endUtc
             select new { PackageId = item.PackageId!.Value, item.SubscriptionId }).Distinct().ToListAsync(cancellationToken);
         var collected = await (from payment in db.Payments.AsNoTracking()
@@ -226,21 +204,20 @@ public sealed class ReportService(
                 && (refund.Status == "Succeeded" || refund.Status == "Approved") && refund.ProcessedAt >= startUtc && refund.ProcessedAt < endUtc
             select new { PackageId = item.PackageId!.Value, Amount = refund.Amount * item.Amount / invoice.Subtotal })
             .ToListAsync(cancellationToken);
+        var salesByPackage = sales.ToLookup(s => s.PackageId);
+        var collectedByPackage = collected.ToLookup(p => p.PackageId);
+        var refundedByPackage = refunded.ToLookup(p => p.PackageId);
         var packageStats = packages.Select(pkg =>
         {
-            var pkgSubs = subs.Where(s => s.PackageId == pkg.Id).ToArray();
-            var activeSubscribers = pkgSubs.Count(s => s.Status == "Active" && s.StartDate <= today && s.EndDate >= today);
-            var soldInPeriod = sales.Count(s => s.PackageId == pkg.Id);
-            var revenueInPeriod = decimal.Round(collected.Where(p => p.PackageId == pkg.Id).Sum(p => p.Amount)
-                - refunded.Where(p => p.PackageId == pkg.Id).Sum(p => p.Amount), 2);
+            var activeSubscribers = activeSubscribersByPackage.GetValueOrDefault(pkg.Id);
+            var soldInPeriod = salesByPackage[pkg.Id].Count();
+            var revenueInPeriod = decimal.Round(collectedByPackage[pkg.Id].Sum(p => p.Amount)
+                - refundedByPackage[pkg.Id].Sum(p => p.Amount), 2);
             return new MembershipPackageStatsItem(pkg.Id, pkg.Name, pkg.Price, pkg.DurationDays, activeSubscribers, soldInPeriod, revenueInPeriod);
         }).OrderByDescending(p => p.SoldInPeriod).ThenByDescending(p => p.RevenueInPeriod).ToArray();
 
-        var newMemberRows = centerMembers
-            .Where(row => row.CreatedAt >= startUtc && row.CreatedAt < endUtc)
-            .ToArray();
-        var newMembersByPeriod = newMemberRows
-            .GroupBy(row => PeriodFor(row.CreatedAt, groupBy, timeZone))
+        var newMembersByPeriod = newMemberCreatedAts
+            .GroupBy(createdAt => PeriodFor(createdAt, groupBy, timeZone))
             .ToDictionary(group => group.Key, group => group.Count());
         var periods = CreatePeriodStarts(from, to, groupBy)
             .Select(period => new MembershipReportPeriod(
@@ -249,7 +226,7 @@ public sealed class ReportService(
 
         return new MembershipReportResponse(
             centerId, from, to, timeZone.Id, totalMembers, activeMembers,
-            newMemberRows.Length, periods, expiredMembers, inactiveMembers, packageStats,
+            newMemberCreatedAts.Count, periods, expiredMembers, inactiveMembers, packageStats,
             activeMembers, inactiveMembers);
     }
 
@@ -264,6 +241,33 @@ public sealed class ReportService(
         await EnsureCenterExistsAsync(centerId, cancellationToken);
         var timeZone = GetReportTimeZone();
         var (startUtc, endUtc) = GetUtcRange(from, to, timeZone);
+        var enrollmentCounts = await (
+            from enrollment in _unitOfWork.Context.ClassEnrollments
+            join classEntity in _unitOfWork.Context.Classes on enrollment.ClassId equals classEntity.Id
+            where classEntity.CenterId == centerId
+            group enrollment by enrollment.Status into statusGroup
+            select new { Status = statusGroup.Key, Count = statusGroup.Count() })
+            .ToListAsync(cancellationToken);
+        var waitlistCounts = await (
+            from item in _unitOfWork.Context.ClassWaitlists
+            join classEntity in _unitOfWork.Context.Classes on item.ClassId equals classEntity.Id
+            where classEntity.CenterId == centerId
+            group item by item.Status into statusGroup
+            select new { Status = statusGroup.Key, Count = statusGroup.Count() })
+            .ToListAsync(cancellationToken);
+        var bookingCounts = await (
+            from booking in _unitOfWork.Context.SessionBookings
+            join session in _unitOfWork.Context.ClassSessions on booking.SessionId equals session.Id
+            join cls in _unitOfWork.Context.Classes on session.ClassId equals cls.Id
+            where cls.CenterId == centerId
+            group booking by booking.Status into statusGroup
+            select new { Status = statusGroup.Key, Count = statusGroup.Count() }).ToListAsync(cancellationToken);
+
+        var currentStatusCounts = enrollmentCounts.Concat(waitlistCounts).Concat(bookingCounts)
+            .GroupBy(row => NormalizeStatus(row.Status), StringComparer.OrdinalIgnoreCase)
+            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
+            .ToDictionary(group => group.Key, group => group.Sum(row => row.Count), StringComparer.OrdinalIgnoreCase);
+
         var enrollmentEvents = await (
             from enrollment in _unitOfWork.Context.ClassEnrollments
             join classEntity in _unitOfWork.Context.Classes on enrollment.ClassId equals classEntity.Id
@@ -290,10 +294,6 @@ public sealed class ReportService(
             .Concat(waitlistEvents.Select(row => new StatusEvent(row.Status, row.CreatedAtUtc)))
             .Concat(bookingEvents.Select(row => new StatusEvent(row.Status, row.CreatedAtUtc)))
             .ToArray();
-        var currentStatusCounts = statusEvents
-            .GroupBy(row => NormalizeStatus(row.Status), StringComparer.OrdinalIgnoreCase)
-            .OrderBy(group => group.Key, StringComparer.OrdinalIgnoreCase)
-            .ToDictionary(group => group.Key, group => group.Count(), StringComparer.OrdinalIgnoreCase);
         var statusCountsByPeriod = statusEvents
             .GroupBy(row => PeriodFor(row.CreatedAtUtc, groupBy, timeZone))
             .ToDictionary(
@@ -430,41 +430,41 @@ public sealed class ReportService(
     private const string OperationsReportSql = """
         SELECT DISTINCT personnel.UserId, personnel.Role, personnel.ProfileStatus, personnel.UserStatus
         FROM (
-            SELECT u."Id" AS UserId, r.name AS Role, sp.status AS ProfileStatus, u.status AS UserStatus
-            FROM staff_profiles AS sp
-            INNER JOIN users AS u ON u."Id" = sp.user_id
-            INNER JOIN roles AS r ON r."Id" = u.role_id
+            SELECT u.id AS UserId, r.name AS Role, sp.status AS ProfileStatus, u.status AS UserStatus
+            FROM dbo.staff_profiles AS sp
+            INNER JOIN dbo.users AS u ON u.id = sp.user_id
+            INNER JOIN dbo.roles AS r ON r.id = u.role_id
             WHERE sp.center_id = @CenterId
 
             UNION ALL
 
-            SELECT u."Id" AS UserId, r.name AS Role, cp.status AS ProfileStatus, u.status AS UserStatus
-            FROM coach_profiles AS cp
-            INNER JOIN users AS u ON u."Id" = cp.user_id
-            INNER JOIN roles AS r ON r."Id" = u.role_id
+            SELECT u.id AS UserId, r.name AS Role, cp.status AS ProfileStatus, u.status AS UserStatus
+            FROM dbo.coach_profiles AS cp
+            INNER JOIN dbo.users AS u ON u.id = cp.user_id
+            INNER JOIN dbo.roles AS r ON r.id = u.role_id
             WHERE cp.center_id = @CenterId
         ) AS personnel;
 
         SELECT
-            (SELECT CAST(COUNT(1) AS integer) FROM classes WHERE center_id = @CenterId) AS TotalClasses,
-            (SELECT CAST(COUNT(1) AS integer) FROM classes WHERE center_id = @CenterId
+            (SELECT COUNT(1)::int FROM dbo.classes WHERE center_id = @CenterId) AS TotalClasses,
+            (SELECT COUNT(1)::int FROM dbo.classes WHERE center_id = @CenterId
                 AND status NOT IN ('Cancelled', 'Completed')) AS ActiveClasses,
-            (SELECT CAST(COUNT(1) AS integer) FROM rooms WHERE center_id = @CenterId) AS TotalRooms,
-            (SELECT CAST(COUNT(1) AS integer) FROM rooms WHERE center_id = @CenterId AND status = 'Active') AS ActiveRooms;
+            (SELECT COUNT(1)::int FROM dbo.rooms WHERE center_id = @CenterId) AS TotalRooms,
+            (SELECT COUNT(1)::int FROM dbo.rooms WHERE center_id = @CenterId AND status = 'Active') AS ActiveRooms;
 
         WITH booked AS (
-            SELECT session_id, CAST(COUNT(1) AS integer) AS Booked
-            FROM session_bookings
+            SELECT session_id, COUNT(1)::int AS Booked
+            FROM dbo.session_bookings
             WHERE status = 'Booked'
             GROUP BY session_id
         )
         SELECT
-            session_row."Id" AS SessionId,
-            class_row."Id" AS ClassId,
+            session_row.id AS SessionId,
+            class_row.id AS ClassId,
             class_row.name AS ClassName,
-            sport."Id" AS SportId,
+            sport.id AS SportId,
             sport.name AS SportName,
-            room."Id" AS RoomId,
+            room.id AS RoomId,
             room.name AS RoomName,
             room.room_type AS RoomType,
             room.location_description AS RoomLocation,
@@ -473,27 +473,28 @@ public sealed class ReportService(
             COALESCE(session_coach.full_name, primary_coach.FullName, 'Chưa có Coach') AS CoachName,
             class_row.capacity AS Capacity,
             COALESCE(booked.Booked, 0) AS Booked
-        FROM class_sessions AS session_row
-        INNER JOIN classes AS class_row ON class_row."Id" = session_row.class_id
-        INNER JOIN sports AS sport ON sport."Id" = class_row.sport_id
-        LEFT JOIN rooms AS room ON room."Id" = COALESCE(session_row.room_id, class_row.room_id)
+        FROM dbo.class_sessions AS session_row
+        INNER JOIN dbo.classes AS class_row ON class_row.id = session_row.class_id
+        INNER JOIN dbo.sports AS sport ON sport.id = class_row.sport_id
+        LEFT JOIN dbo.rooms AS room ON room.id = COALESCE(session_row.room_id, class_row.room_id)
         LEFT JOIN LATERAL (
-            SELECT coach."Id" AS Id, coach.full_name AS FullName
-            FROM class_coaches AS assignment
-            INNER JOIN coach_profiles AS coach ON coach."Id" = assignment.coach_id
-            WHERE assignment.class_id = class_row."Id" AND assignment.is_primary = TRUE
-            ORDER BY assignment.coach_id LIMIT 1
+            SELECT coach.id AS Id, coach.full_name AS FullName
+            FROM dbo.class_coaches AS assignment
+            INNER JOIN dbo.coach_profiles AS coach ON coach.id = assignment.coach_id
+            WHERE assignment.class_id = class_row.id AND assignment.is_primary
+            ORDER BY assignment.coach_id
+            LIMIT 1
         ) AS primary_coach ON TRUE
-        LEFT JOIN coach_profiles AS session_coach ON session_coach."Id" = session_row.coach_id
-        LEFT JOIN booked ON booked.session_id = session_row."Id"
+        LEFT JOIN dbo.coach_profiles AS session_coach ON session_coach.id = session_row.coach_id
+        LEFT JOIN booked ON booked.session_id = session_row.id
         WHERE class_row.center_id = @CenterId
           AND session_row.session_date >= @FromDate
           AND session_row.session_date <= @ToDate
           AND session_row.session_status <> 'Cancelled';
 
-        SELECT "Id" AS Id, full_name AS FullName, coach_code AS CoachCode,
+        SELECT id AS Id, full_name AS FullName, coach_code AS CoachCode,
                specialization AS Specialization, status AS Status
-        FROM coach_profiles
+        FROM dbo.coach_profiles
         WHERE center_id = @CenterId;
         """;
 

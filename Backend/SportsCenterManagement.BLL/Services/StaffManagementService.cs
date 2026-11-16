@@ -40,6 +40,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork, IBusinessCloc
         }
 
         var term = query?.Trim();
+        var lowerTerm = term?.ToLower();
         var matches =
             from staff in unitOfWork.Context.StaffProfiles.AsNoTracking()
             join user in unitOfWork.Context.Users.AsNoTracking() on staff.UserId equals user.Id
@@ -48,11 +49,11 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork, IBusinessCloc
                 on user.Id equals coachProfile.UserId into coachProfiles
             from coach in coachProfiles.DefaultIfEmpty()
             where staff.CenterId == centerId
-                  && (term == null || term == string.Empty
-                      || staff.StaffCode.Contains(term)
-                      || staff.FullName.Contains(term)
-                      || user.Username.Contains(term)
-                      || user.Email.Contains(term))
+                  && (lowerTerm == null || lowerTerm == string.Empty
+                      || staff.StaffCode.ToLower().Contains(lowerTerm)
+                      || staff.FullName.ToLower().Contains(lowerTerm)
+                      || user.Username.ToLower().Contains(lowerTerm)
+                      || user.Email.ToLower().Contains(lowerTerm))
             let normalizedName = staff.FullName.Trim()
             let reversedName = SportsCenterDbContext.Reverse(normalizedName)
             let separatorIndex = reversedName.IndexOf(" ")
@@ -237,6 +238,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork, IBusinessCloc
         var now = DateTime.UtcNow;
         // Preserve credentials, user/member IDs and prior transactions; only add the staff assignment.
         user.RoleId = role.Id; user.UpdatedAt = now;
+        user.AuthVersion++; // member → staff: reload with the staff role on next request
         var staff = new StaffProfile { UserId = user.Id, CenterId = centerId, StaffCode = MakeCode("ST"),
             FullName = member.FullName, Position = role.Name, HireDate = request.HireDate, Status = "Active", CreatedAt = now };
         unitOfWork.Context.StaffProfiles.Add(staff);
@@ -403,7 +405,12 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork, IBusinessCloc
                     }
                 };
             role = await unitOfWork.Context.Roles.SingleAsync(r => r.Name == request.RoleName, cancellationToken);
-            user.RoleId = role.Id;
+            if (user.RoleId != role.Id)
+            {
+                user.RoleId = role.Id;
+                // Revoke open sessions so the UI reloads with the new role's menus/capabilities (401 → re-login).
+                user.AuthVersion++;
+            }
         }
         var sports = await ResolveCoachSportsAsync(centerId, role.Name, request.SportIds, cancellationToken);
         var oldStatus = user.Status;
@@ -417,6 +424,7 @@ public sealed class StaffManagementService(IUnitOfWork unitOfWork, IBusinessCloc
         user.Phone = phone;
         user.Status = request.Status;
         user.UpdatedAt = now;
+        if (oldStatus == "Active" && request.Status != "Active") user.AuthVersion++;
         if (request.Status == "Active")
         {
             user.FailedLoginAttempts = 0;

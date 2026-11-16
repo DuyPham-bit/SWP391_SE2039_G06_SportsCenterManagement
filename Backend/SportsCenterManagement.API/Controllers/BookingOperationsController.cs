@@ -37,6 +37,25 @@ public sealed class BookingOperationsController(ISessionBookingService bookings)
         return Ok(result);
     }
 
+    [Authorize(Roles = "RECEPTIONIST,MANAGER,ADMIN")]
+    [HttpGet("members/{memberId:long}/session-waitlist")]
+    [CenterCapability("lookup_member")]
+    public async Task<IActionResult> WaitlistForMember(long memberId, CancellationToken ct)
+    {
+        var userId = await bookings.ResolveMemberUserIdAsync(CurrentUserId, User.IsInRole("ADMIN"), memberId, ct);
+        return Ok(await bookings.GetMyWaitlistAsync(userId, ct));
+    }
+
+    [Authorize(Roles = "RECEPTIONIST,MANAGER,ADMIN")]
+    [HttpDelete("members/{memberId:long}/session-waitlist/{waitlistId:long}")]
+    [CenterCapability("lookup_member")]
+    public async Task<IActionResult> LeaveWaitlistForMember(long memberId, long waitlistId, CancellationToken ct)
+    {
+        var userId = await bookings.ResolveMemberUserIdAsync(CurrentUserId, User.IsInRole("ADMIN"), memberId, ct);
+        await bookings.LeaveWaitlistAsync(userId, waitlistId, ct);
+        return NoContent();
+    }
+
     [Authorize(Roles = "MEMBER")]
     [HttpGet("members/me/session-waitlist")]
     [CenterCapability("book_class")]
@@ -73,6 +92,19 @@ public sealed class BookingOperationsController(ISessionBookingService bookings)
     [NonAction]
     public async Task OnActionExecutionAsync(ActionExecutingContext context, ActionExecutionDelegate next)
     {
-        await next();
+        var executed = await next();
+        // Same mapping as SessionBookingsController: tagged business failures become 4xx, not 500.
+        if (executed.ExceptionHandled || executed.Exception is not InvalidOperationException exception ||
+            exception.Data["StatusCode"] is not int statusCode) return;
+
+        executed.Result = new ObjectResult(new
+        {
+            code = exception.Data["Code"] as string,
+            message = exception.Message,
+            detail = exception.Message,
+            proposedHandling = exception.Data["ProposedHandling"] as string,
+            isDraftPolicy = exception.Data["IsDraftPolicy"] is true
+        }) { StatusCode = statusCode };
+        executed.ExceptionHandled = true;
     }
 }

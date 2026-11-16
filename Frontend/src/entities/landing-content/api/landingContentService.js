@@ -53,11 +53,74 @@ export const DEFAULT_LANDING_CONTENT = {
     "facilitiesList": []
   },
   "zonesLayout": {
-    "badge": "KHÔNG GIAN TẬP LUYỆN",
-    "title": "Khu vực tập luyện",
-    "description": "",
-    "zones": [],
-    "serviceAmenities": []
+    "badge": "BỐ TRÍ KHÔNG GIAN THUẬN TIỆN",
+    "title": "SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN",
+    "description": "9 cụm sân bãi và phòng tập được quy hoạch gọn gàng, lối đi thông thoáng, biển báo chỉ dẫn rõ ràng. Hệ thống quầy lễ tân tiếp đón chu đáo và hỗ trợ đặt sân nhanh chóng trực tiếp hoặc online.",
+    "model3dUrl": "/3d-campus.html",
+    "zones": [
+      {
+        "id": "zone-a",
+        "name": "Khu A: Bơi Lội, Gym & Fitness",
+        "icon": "pool",
+        "items": [
+          "Tầng 1: Bể bơi 4 mùa 25m trong nhà nước ấm",
+          "Tầng 2: Phòng tập Gym & Fitness",
+          "Tầng 3: Khu thay đồ & tắm tráng nóng lạnh"
+        ]
+      },
+      {
+        "id": "zone-b",
+        "name": "Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn",
+        "icon": "sports_basketball",
+        "items": [
+          "Tầng 1: Sân bóng rổ tiêu chuẩn phong trào có mái che",
+          "Tầng 2: Cụm 4 sân cầu lông thảm cao su chống trượt",
+          "Tầng 3: Khu bóng bàn trong nhà với 4 bàn tập"
+        ]
+      },
+      {
+        "id": "zone-c",
+        "name": "Khu C: Võ Thuật, Boxing, Yoga & Pilates",
+        "icon": "self_improvement",
+        "items": [
+          "Tầng 1: Phòng tập võ thuật & Boxing, thảm và bao cát",
+          "Tầng 3: Phòng tập Yoga & Pilates, khu thảm và máy Reformer",
+          "Tủ đồ cá nhân và khu thay đồ phục vụ học viên"
+        ]
+      },
+      {
+        "id": "zone-d",
+        "name": "Khu Ngoài Trời: Bóng Đá & Pickleball",
+        "icon": "stadium",
+        "items": [
+          "Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)",
+          "Cụm 4 sân Pickleball, có lưới riêng và vạch khu vực bếp",
+          "Dàn đèn pha LED chiếu sáng ban đêm rõ nét"
+        ]
+      }
+    ],
+    "serviceAmenities": [
+      {
+        "id": "sa1",
+        "icon": "lock",
+        "text": "Tủ cất đồ cá nhân có chìa khóa an toàn, thuận tiện sử dụng"
+      },
+      {
+        "id": "sa2",
+        "icon": "shower",
+        "text": "Phòng thay đồ và khu vực tắm tráng nóng lạnh sạch sẽ"
+      },
+      {
+        "id": "sa3",
+        "icon": "local_cafe",
+        "text": "Quầy căn-tin nước giải khát, nước khoáng phục vụ nhanh"
+      },
+      {
+        "id": "sa4",
+        "icon": "medical_services",
+        "text": "Tủ thuốc y tế và dụng cụ sơ cứu ban đầu luôn sẵn sàng"
+      }
+    ]
   },
   "ctaAndFooter": {
     "ctaBadge": "LIÊN HỆ TRUNG TÂM",
@@ -88,7 +151,7 @@ export const DEFAULT_LANDING_CONTENT = {
     "loginTitle": "Tập luyện hôm nay, bứt phá mỗi ngày.",
     "registerTitle": "Hành trình mới, phiên bản khỏe hơn.",
     "description": "Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt ca học siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.",
-    "posterUrl": "",
+    "posterUrl": "https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=800&auto=format&fit=crop",
     "feature1Title": "Đặt chỗ trong 30s",
     "feature1Desc": "Đăng ký ca học theo gói",
     "feature1Icon": "bolt",
@@ -139,6 +202,10 @@ export function getLandingContent() {
   return fixMojibake(clone(publishedContent || DEFAULT_LANDING_CONTENT));
 }
 
+export function hasPublishedLandingContent() {
+  return publishedContent !== null;
+}
+
 export function getLegacyLandingContent() {
   try {
     const raw = localStorage.getItem(LEGACY_STORAGE_KEY);
@@ -154,8 +221,11 @@ export async function loadLandingDraft({ signal } = {}) {
     : null;
 }
 
-export function saveLandingDraft(content) {
-  return apiRequest('landing-content/draft', { method: 'PUT', body: { content: fixMojibake(content) } });
+/** `expectedUpdatedAt` = draft version this editor last saw; the server answers 409 if someone else saved since. */
+export function saveLandingDraft(content, expectedUpdatedAt = null) {
+  const body = { content: fixMojibake(content) };
+  if (expectedUpdatedAt) body.expectedUpdatedAt = expectedUpdatedAt;
+  return apiRequest('landing-content/draft', { method: 'PUT', body });
 }
 
 export function discardLandingDraft() {
@@ -240,4 +310,10 @@ export function subscribeLandingContentRefresh(refresh) {
     window.removeEventListener('storage', onStorage);
     window.removeEventListener('focus', refresh);
   };
+}
+
+export async function uploadCampus3dHtml(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  return apiRequest('r2-images/campus-3d', { method: 'POST', body: formData });
 }

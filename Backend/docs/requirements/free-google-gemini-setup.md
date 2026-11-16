@@ -51,12 +51,6 @@ env:
 
 Nếu triển khai trực tiếp lên Render, Railway, Azure, VPS hoặc dịch vụ tương tự, đặt biến môi trường `AI__ApiKey` trong phần cấu hình của dịch vụ. Không tạo key trong file `appsettings.json`, không ghi key thật vào `.env.example`, và không đưa key vào image Docker hoặc biến `VITE_*` vì các biến frontend sẽ bị công khai trong bundle trình duyệt.
 
-### Ảnh và thư viện media
-
-Ảnh hiện chỉ dùng Cloudflare R2. Cấu hình R2Storage__ServiceUrl, AccessKey, SecretKey, BucketName và PublicDomain qua biến môi trường; xem docs/HOME_CONTENT_MEDIA.md.
-
-Nguồn: [bảng giá Gemini](https://ai.google.dev/gemini-api/docs/pricing), [quản lý API key](https://ai.google.dev/gemini-api/docs/api-key). Giá/quota có thể thay đổi.
-
 ## 2. Tạo Google OAuth Web Client ID
 
 1. Mở [Google Cloud Console](https://console.cloud.google.com/), chọn/tạo project và cấu hình Google Auth Platform (consent screen). Nếu để Testing, thêm email dùng chấm bài vào danh sách Test users.

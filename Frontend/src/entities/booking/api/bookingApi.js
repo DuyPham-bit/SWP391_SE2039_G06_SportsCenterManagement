@@ -27,6 +27,8 @@ function mapBooking(item) {
 export const bookingApi = {
  async getWaitlist() { return asArray(await apiRequest('members/me/session-waitlist')); },
  async leaveWaitlist(id) { return apiRequest('members/me/session-waitlist/'+id, { method: 'DELETE' }); },
+ async getWaitlistForMember(id) { return asArray(await apiRequest('members/'+id+'/session-waitlist')); },
+ async leaveWaitlistForMember(id, wid) { return apiRequest('members/'+id+'/session-waitlist/'+wid, { method: 'DELETE' }); },
  async getForMember(id) { return asArray(await apiRequest('members/'+id+'/session-bookings')).map(mapBooking); },
  async bookForMember(id, sid) { return apiRequest('members/'+id+'/class-sessions/'+sid+'/bookings', { method: 'POST' }); },
  async cancelForMember(id, bid) { return apiRequest('members/'+id+'/session-bookings/'+bid, { method: 'DELETE' }); },

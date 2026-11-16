@@ -7,6 +7,8 @@ namespace SportsCenterManagement.DAL.Context;
 public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext> options)
     : DbContext(options)
 {
+    static SportsCenterDbContext() => AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
     public static string Reverse(string value) => throw new NotSupportedException("Chỉ dùng trong truy vấn LINQ được dịch sang SQL.");
 
     public DbSet<Role> Roles => Set<Role>();
@@ -21,6 +23,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<MemberProfile> MemberProfiles => Set<MemberProfile>();
     public DbSet<CoachProfile> CoachProfiles => Set<CoachProfile>();
     public DbSet<CoachSport> CoachSports => Set<CoachSport>();
+    public DbSet<SubscriptionSport> SubscriptionSports => Set<SubscriptionSport>();
     public DbSet<CoachLeave> CoachLeaves => Set<CoachLeave>();
     public DbSet<StaffProfile> StaffProfiles => Set<StaffProfile>();
     public DbSet<StaffCompensationPolicy> StaffCompensationPolicies => Set<StaffCompensationPolicy>();
@@ -30,6 +33,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<SystemSetting> SystemSettings => Set<SystemSetting>();
     public DbSet<PasswordResetToken> PasswordResetTokens => Set<PasswordResetToken>();
     public DbSet<EmailVerificationToken> EmailVerificationTokens => Set<EmailVerificationToken>();
+    public DbSet<AccountActivationToken> AccountActivationTokens => Set<AccountActivationToken>();
     public DbSet<MemberSubscription> MemberSubscriptions => Set<MemberSubscription>();
     public DbSet<ClassCoach> ClassCoaches => Set<ClassCoach>();
     public DbSet<ClassSchedule> ClassSchedules => Set<ClassSchedule>();
@@ -69,20 +73,35 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
     public DbSet<ResourceBooking> ResourceBookings => Set<ResourceBooking>();
     public DbSet<EquipmentIssue> EquipmentIssues => Set<EquipmentIssue>();
 
+    protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
+    {
+        base.OnConfiguring(optionsBuilder);
+        optionsBuilder.ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning));
+    }
+
+    protected override void ConfigureConventions(ModelConfigurationBuilder configurationBuilder)
+    {
+        // citext keeps SQL Server's case-insensitive comparisons (login, email, search, unique indexes).
+        configurationBuilder.Properties<string>().HaveColumnType("citext");
+    }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         base.OnModelCreating(modelBuilder);
-        modelBuilder.Entity<UploadedMedia>().HasIndex(m => m.StorageKey).IsUnique()
-            .HasFilter("storage_key <> ''");
+        modelBuilder.HasPostgresExtension("citext");
+        // Storage keys must match exactly (previously Latin1_General_100_BIN2).
+        modelBuilder.Entity<UploadedMedia>().Property(entity => entity.DriveFileId).HasColumnType("text");
+        modelBuilder.Entity<PaymentRefund>().Property(entity => entity.TransferProofUrl).HasColumnType("text");
 
         modelBuilder.HasDbFunction(typeof(SportsCenterDbContext).GetMethod(nameof(Reverse), new[] { typeof(string) })!)
-            .HasName("reverse")
+            .HasName("REVERSE")
             .IsBuiltIn();
 
+        modelBuilder.HasDefaultSchema("dbo");
         modelBuilder.Entity<UploadedMedia>().HasIndex(entity => new { entity.CenterId, entity.CreatedAt });
         modelBuilder.Entity<UploadedMedia>().HasIndex(entity => entity.DriveFileId);
         modelBuilder.Entity<User>().HasIndex(entity => entity.GoogleSubject).IsUnique()
-            .HasFilter("google_subject IS NOT NULL");
+            .HasFilter("\"google_subject\" IS NOT NULL");
         modelBuilder.Entity<TrainingResult>().HasOne<ClassEntity>().WithMany()
             .HasForeignKey(entity => entity.ClassId).OnDelete(DeleteBehavior.Restrict);
         modelBuilder.Entity<RolePermission>().HasKey(entity => new { entity.RoleId, entity.PermissionId });
@@ -140,12 +159,23 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .WithMany()
             .HasForeignKey(entity => entity.SportId)
             .OnDelete(DeleteBehavior.Restrict);
+        modelBuilder.Entity<SubscriptionSport>().HasKey(entity => new { entity.SubscriptionId, entity.SportId });
+        modelBuilder.Entity<SubscriptionSport>()
+            .HasOne<MemberSubscription>()
+            .WithMany()
+            .HasForeignKey(entity => entity.SubscriptionId)
+            .OnDelete(DeleteBehavior.Cascade);
+        modelBuilder.Entity<SubscriptionSport>()
+            .HasOne<Sport>()
+            .WithMany()
+            .HasForeignKey(entity => entity.SportId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<Role>().HasIndex(entity => entity.Name).IsUnique();
         modelBuilder.Entity<Permission>().HasIndex(entity => entity.Code).IsUnique();
         modelBuilder.Entity<User>().HasIndex(entity => entity.Username).IsUnique();
         modelBuilder.Entity<User>().HasIndex(entity => entity.Email).IsUnique();
-        modelBuilder.Entity<User>().HasIndex(entity => entity.Phone).IsUnique().HasFilter("phone IS NOT NULL");
+        modelBuilder.Entity<User>().HasIndex(entity => entity.Phone).IsUnique().HasFilter("\"phone\" IS NOT NULL");
         modelBuilder.Entity<MemberProfile>().HasIndex(entity => entity.UserId).IsUnique();
         modelBuilder.Entity<MemberProfile>().HasIndex(entity => entity.MemberCode).IsUnique();
         modelBuilder.Entity<MembershipPackage>().HasIndex(entity => new { entity.CenterId, entity.Name }).IsUnique();
@@ -158,7 +188,7 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
         modelBuilder.Entity<Invoice>().HasIndex(entity => entity.InvoiceNumber).IsUnique();
         modelBuilder.Entity<AuditLog>().HasIndex(entity => new { entity.CenterId, entity.CreatedAt });
         modelBuilder.Entity<Notification>().HasIndex(entity => entity.ReminderKey).IsUnique()
-            .HasFilter("reminder_key IS NOT NULL");
+            .HasFilter("\"reminder_key\" IS NOT NULL");
         modelBuilder.Entity<SessionBooking>()
             .HasIndex(entity => new { entity.SessionId, entity.MemberId })
             .IsUnique();
@@ -170,25 +200,25 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
         modelBuilder.Entity<ClassWaitlist>()
             .HasIndex(entity => new { entity.SessionId, entity.MemberId })
             .IsUnique()
-            .HasFilter("session_id IS NOT NULL AND status = 'Waiting'");
+            .HasFilter("\"session_id\" IS NOT NULL AND \"status\" = 'Waiting'");
         modelBuilder.Entity<ClassEntity>()
             .Property(entity => entity.AllowWaitlist)
             .HasDefaultValue(true);
         modelBuilder.Entity<Payment>()
             .HasIndex(entity => entity.TransactionCode)
             .IsUnique()
-            .HasFilter("transaction_code IS NOT NULL");
+            .HasFilter("\"transaction_code\" IS NOT NULL");
         modelBuilder.Entity<Payment>().HasIndex(entity => entity.GatewayReference).IsUnique()
-            .HasFilter("gateway_reference IS NOT NULL");
+            .HasFilter("\"gateway_reference\" IS NOT NULL");
         modelBuilder.Entity<Payment>().HasIndex(entity => entity.ProviderTransactionId).IsUnique()
-            .HasFilter("provider_transaction_id IS NOT NULL");
+            .HasFilter("\"provider_transaction_id\" IS NOT NULL");
         modelBuilder.Entity<Payment>().HasIndex(entity => entity.IdempotencyKey).IsUnique()
-            .HasFilter("idempotency_key IS NOT NULL");
+            .HasFilter("\"idempotency_key\" IS NOT NULL");
         modelBuilder.Entity<Invoice>().HasIndex(entity => entity.IdempotencyKey).IsUnique()
-            .HasFilter("idempotency_key IS NOT NULL");
+            .HasFilter("\"idempotency_key\" IS NOT NULL");
         modelBuilder.Entity<PaymentRefund>().HasIndex(entity => entity.IdempotencyKey).IsUnique();
         modelBuilder.Entity<PaymentRefund>().HasIndex(entity => entity.ProviderRefundId).IsUnique()
-            .HasFilter("provider_refund_id IS NOT NULL");
+            .HasFilter("\"provider_refund_id\" IS NOT NULL");
         modelBuilder.Entity<SystemSetting>().HasIndex(entity => entity.SettingKey).IsUnique();
         modelBuilder.Entity<CoachWorkEvent>().HasIndex(entity => new { entity.CoachId, entity.StartAt, entity.EndAt });
         modelBuilder.Entity<MemberHealthRecord>().HasIndex(entity => new { entity.MemberId, entity.OccurredOn });
@@ -199,10 +229,19 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
         modelBuilder.Entity<CommunicationDelivery>().HasIndex(entity => new { entity.Status, entity.NextAttemptAt, entity.LeaseUntil });
         modelBuilder.Entity<CoachCompensationPolicy>().HasIndex(entity => new { entity.CoachId, entity.EffectiveFrom });
         modelBuilder.Entity<CoachReview>().HasIndex(entity => new { entity.CoachId, entity.MemberId, entity.WorkEventId })
-            .IsUnique().HasFilter("work_event_id IS NOT NULL");
+            .IsUnique().HasFilter("\"work_event_id\" IS NOT NULL");
         modelBuilder.Entity<FacilityResource>().HasIndex(entity => new { entity.CenterId, entity.Name }).IsUnique();
         modelBuilder.Entity<ResourceBooking>().HasIndex(entity => new { entity.ResourceId, entity.StartAt, entity.EndAt });
         modelBuilder.Entity<EquipmentIssue>().HasIndex(entity => new { entity.CenterId, entity.Status, entity.ReportedAt });
+        // Report date-range filters (check-in count, revenue, refunds).
+        modelBuilder.Entity<CenterCheckin>().HasIndex(entity => new { entity.CenterId, entity.CheckInTime });
+        modelBuilder.Entity<Payment>().HasIndex(entity => entity.PaidAt);
+        modelBuilder.Entity<PaymentRefund>().HasIndex(entity => entity.ProcessedAt);
+        // At most one active Manager per center; enforced in the DB so concurrent creates/unlocks cannot both win.
+        // Named, so EF keeps the plain FK index too (a filtered index only covers active managers).
+        modelBuilder.Entity<StaffProfile>().HasIndex(entity => entity.CenterId, "IX_staff_profiles_center_id");
+        modelBuilder.Entity<StaffProfile>().HasIndex(entity => entity.CenterId, "UX_staff_profiles_active_manager_per_center")
+            .IsUnique().HasFilter("\"position\" = 'Manager' AND \"status\" = 'Active'");
 
         modelBuilder.Entity<User>()
             .HasOne<Role>()
@@ -315,6 +354,14 @@ public sealed class SportsCenterDbContext(DbContextOptions<SportsCenterDbContext
             .HasOne<User>()
             .WithMany()
             .HasForeignKey(entity => entity.UpdatedBy)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AccountActivationToken>().HasIndex(entity => entity.TokenHash).IsUnique();
+        modelBuilder.Entity<AccountActivationToken>().HasIndex(entity => new { entity.UserId, entity.CreatedAt });
+        modelBuilder.Entity<AccountActivationToken>()
+            .HasOne<User>()
+            .WithMany()
+            .HasForeignKey(entity => entity.UserId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PasswordResetToken>()

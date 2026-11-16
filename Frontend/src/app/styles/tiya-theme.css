@@ -342,43 +342,6 @@
   font-weight: 800;
 }
 
-/* Theme Toggle Button for Landing Navbar & Mobile Drawer */
-.tiya-theme-toggle-btn {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 34px;
-  height: 34px;
-  padding: 0;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.08);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.16);
-  color: rgba(255, 255, 255, 0.85);
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.18);
-  transition: all 0.25s ease;
-}
-
-.tiya-theme-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.16);
-  border-color: rgba(255, 255, 255, 0.3);
-  color: #ffffff;
-  transform: scale(1.05);
-}
-
-html.dark .tiya-theme-toggle-btn {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.22);
-  color: #fbbf24;
-}
-
-html.dark .tiya-theme-toggle-btn:hover {
-  background: rgba(255, 255, 255, 0.2);
-  color: #fde047;
-}
-
 .tiya-brand {
   display: flex;
   align-items: center;
@@ -1080,7 +1043,7 @@ html.dark .tiya-theme-toggle-btn:hover {
   border-radius: 100px;
   background: rgb(var(--brand-sage-700) / 0.12);
   border: 1px solid rgb(var(--brand-sage-700) / 0.25);
-  color: rgb(var(--color-primary-hover)); /* WCAG AAA contrast ratio > 7:1 */
+  color: #1B4D3E; /* WCAG AAA contrast ratio > 7:1 */
   font-size: 11.5px;
   font-weight: 700;
   letter-spacing: 0.12em;
@@ -1161,7 +1124,7 @@ html.dark .tiya-theme-toggle-btn:hover {
 
 /* Action Capsule Bar - Solves text truncation permanently and ensures full visibility */
 .section-bg-cta-bar {
-  background-color: var(--white-color);
+  background-color: #ffffff;
   border-radius: 100px;
   padding: 6px 6px 6px 16px;
   display: flex;
@@ -2458,90 +2421,185 @@ html.dark .tiya-theme-toggle-btn:hover {
 }
 
 /* ─────────────────────────────────────────────────────────────
+   3D CAMPUS ARCHITECTURE SHOWCASE (INTERACTIVE 3D VIEWER)
+───────────────────────────────────────────────────────────── */
+.tiya-campus-3d-showcase {
+  background: #141622 !important;
+  color: #ffffff !important;
+  border-radius: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.7);
+  position: relative;
+  overflow: hidden;
+  margin-bottom: 32px;
+}
+
+/* Ensure headings inside 3D showcase ALWAYS have bright crisp contrast against dark background */
+.tiya-page .tiya-campus-3d-showcase h3,
+.tiya-page .tiya-campus-3d-title,
+.tiya-campus-3d-showcase h3,
+.tiya-campus-3d-title {
+  color: #FFFFFF !important;
+  font-family: var(--headline-font-family) !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.01em !important;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.65) !important;
+}
+
+.tiya-campus-3d-badge {
+  color: #E6D7C3 !important;
+  font-size: 11px !important;
+  font-weight: 800 !important;
+  letter-spacing: 0.14em !important;
+  text-transform: uppercase !important;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.5) !important;
+}
+
+.tiya-campus-3d-tag {
+  background: rgba(16, 185, 129, 0.22) !important;
+  color: #34D399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.45) !important;
+  font-size: 11px !important;
+  font-weight: 700 !important;
+}
+
+.tiya-campus-3d-pill {
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.tiya-campus-3d-pill.inactive {
+  background: rgba(255, 255, 255, 0.08) !important;
+  color: #F1F5F9 !important;
+  border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  font-weight: 600 !important;
+}
+
+.tiya-campus-3d-pill.inactive:hover {
+  background: rgba(255, 255, 255, 0.18) !important;
+  border-color: rgba(229, 217, 182, 0.65) !important;
+  color: #FFFFFF !important;
+  transform: translateY(-1px);
+}
+
+.tiya-campus-3d-pill.active {
+  background: #CDBDA6 !important;
+  color: #141622 !important;
+  font-weight: 800 !important;
+  border: 1px solid #FFFFFF !important;
+  box-shadow: 0 2px 12px rgba(205, 189, 166, 0.4) !important;
+}
+
+.tiya-campus-3d-showcase:fullscreen {
+  border-radius: 0 !important;
+  border: none !important;
+  margin: 0 !important;
+  width: 100vw !important;
+  height: 100vh !important;
+  display: flex !important;
+  flex-direction: column !important;
+  background: #141622 !important;
+}
+
+.tiya-campus-3d-showcase:fullscreen .tiya-3d-viewport {
+  flex: 1 1 auto !important;
+  height: calc(100vh - 110px) !important;
+  max-height: none !important;
+}
+
+@media screen and (max-width: 640px) {
+  .tiya-campus-3d-showcase {
+    border-radius: 20px;
+    margin-bottom: 24px;
+  }
+}
+
+/* ─────────────────────────────────────────────────────────────
    CAMPUS ARCHITECTURE & ZONE DIRECTORY (HIGH CONTRAST & READABILITY)
 ───────────────────────────────────────────────────────────── */
 .tiya-campus-directory {
-  background: linear-gradient(145deg, #32354d 0%, #25283c 100%) !important;
+  background: #202336 !important;
   color: #ffffff !important;
-  border-radius: 24px;
-  padding: 44px 48px;
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.28);
+  border-radius: 28px;
+  padding: 40px 44px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 25px 60px -15px rgba(0, 0, 0, 0.6);
   position: relative;
   overflow: hidden;
   margin-bottom: 32px;
 }
 
 .tiya-campus-directory__badge {
-  color: rgb(var(--brand-sand-300)) !important;
-  font-size: 12px;
+  color: #CDBDA6 !important;
+  font-size: 11px;
   font-weight: 700;
   letter-spacing: 0.16em;
   text-transform: uppercase;
   display: block;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .tiya-campus-directory__title {
   color: #ffffff !important;
-  font-size: clamp(24px, 3vw, 32px) !important;
+  font-size: clamp(24px, 3.2vw, 36px) !important;
   font-weight: 800 !important;
-  letter-spacing: 0.02em !important;
+  letter-spacing: -0.01em !important;
   text-transform: uppercase;
-  line-height: 1.25 !important;
+  line-height: 1.15 !important;
   margin-bottom: 14px !important;
-  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.4);
+  text-shadow: none !important;
 }
 
 .tiya-campus-directory__desc {
-  color: rgba(255, 255, 255, 0.88) !important;
-  font-size: 14.5px !important;
-  line-height: 1.65 !important;
-  margin-bottom: 24px !important;
+  color: #9AA0B6 !important;
+  font-size: 13.5px !important;
+  line-height: 1.6 !important;
+  margin-bottom: 22px !important;
 }
 
 .tiya-campus-amenity-item {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 9px 14px;
-  border-radius: 10px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  gap: 14px;
+  padding: 12px 16px;
+  border-radius: 14px;
+  background: #2A2E44 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   color: #ffffff !important;
-  font-size: 13.5px;
-  font-weight: 500;
+  font-size: 13px;
+  font-weight: 400;
   transition: all 0.2s ease;
 }
 
 .tiya-campus-amenity-item:hover {
-  background: rgba(255, 255, 255, 0.1);
-  border-color: rgb(var(--brand-sand-300) / 0.35);
+  background: #343954 !important;
+  border-color: rgba(255, 255, 255, 0.12);
 }
 
 .tiya-campus-amenity-item .material-symbols-outlined {
-  color: rgb(var(--brand-sage-500));
+  color: #38D39F !important;
   font-size: 20px;
   flex-shrink: 0;
 }
 
 .tiya-campus-amenity-item span:last-child {
-  color: rgba(255, 255, 255, 0.95) !important;
+  color: #E2E8F0 !important;
+  font-size: 13px !important;
+  line-height: 1.4;
 }
 
 .tiya-zone-card {
-  padding: 18px 20px;
-  border-radius: 16px;
-  background: rgba(255, 255, 255, 0.07);
-  border: 1px solid rgba(255, 255, 255, 0.14);
+  padding: 22px 24px;
+  border-radius: 18px;
+  background: #2A2E44 !important;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   transition: all 0.25s ease;
 }
 
 .tiya-zone-card:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgb(var(--brand-sand-300) / 0.45);
+  background: #343954 !important;
+  border-color: rgba(255, 255, 255, 0.12);
   transform: translateY(-2px);
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 12px 30px rgba(0, 0, 0, 0.35);
 }
 
 /* Icons inside flex rows must keep their box, or long titles squeeze them to half a glyph. */
@@ -2552,12 +2610,19 @@ html.dark .tiya-theme-toggle-btn:hover {
 .tiya-zone-card__header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 10px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 800;
   text-transform: uppercase;
-  margin-bottom: 10px;
+  margin-bottom: 14px;
   letter-spacing: 0.04em;
+  color: #ffffff !important;
+}
+
+.tiya-zone-card__header .material-symbols-outlined {
+  color: #ffffff !important;
+  font-size: 18px;
+  flex-shrink: 0;
 }
 
 .tiya-zone-card__list {
@@ -2566,11 +2631,11 @@ html.dark .tiya-theme-toggle-btn:hover {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 5px;
+  gap: 8px;
 }
 
 .tiya-zone-card__list li {
-  color: rgba(255, 255, 255, 0.9) !important;
+  color: #CBD5E1 !important;
   font-size: 12.5px;
   line-height: 1.55;
 }
@@ -2674,6 +2739,37 @@ html.dark .tiya-theme-toggle-btn:hover {
   transform: translateY(-2px);
 }
 
+@media screen and (max-width: 680px) {
+  .tiya-rental-banner {
+    padding: 24px 20px !important;
+    border-radius: 20px !important;
+  }
+  .tiya-rental-banner__title {
+    font-size: 20px !important;
+  }
+  .tiya-rental-banner__desc {
+    font-size: 13px !important;
+    line-height: 1.55 !important;
+  }
+  .tiya-rental-banner__btn-primary,
+  .tiya-rental-banner__btn-secondary {
+    width: 100% !important;
+    padding: 12px 20px !important;
+    font-size: 12px !important;
+  }
+  .tiya-zone-card {
+    padding: 16px 18px !important;
+    border-radius: 14px !important;
+  }
+  .tiya-zone-card__header {
+    font-size: 12px !important;
+    margin-bottom: 10px !important;
+  }
+  .tiya-zone-card__list li {
+    font-size: 12px !important;
+  }
+}
+
 /* Global Safeguard for Dark Containers in Tiya Page */
 .tiya-page [class*="bg-[rgb(var(--brand-navy-700))]"] h1,
 .tiya-page [class*="bg-[rgb(var(--brand-navy-700))]"] h2,
@@ -2713,27 +2809,6 @@ html.dark .tiya-theme-toggle-btn:hover {
 }
 
 
-
-/* ─────────────────────────────────────────────────────────────
-   LANDING DARK SURFACES — kept exactly as before the colour unification.
-   The app-wide automatic dark rules (theme.css) now use brand tokens; the landing keeps its original
-   dark surfaces so it looks identical. These literals belong to the landing's non-brand colours that are
-   kept as literals on purpose.
-───────────────────────────────────────────────────────────── */
-html.dark .landing-page-root header {
-  background-color: #0F172A !important;
-  border-color: #1E293B !important;
-}
-
-html.dark .landing-page-root footer {
-  background-color: #0B1120 !important;
-  border-color: #1E293B !important;
-}
-
-html.dark .landing-page-root .bg-white {
-  background-color: #1E293B !important;
-  border-color: #334155 !important;
-}
 
 /* ─────────────────────────────────────────────────────────────
    INTERACTIVE CAROUSEL CONTROLS (DESKTOP ARROWS + DRAG + AUTOPLAY)
@@ -2932,181 +3007,3 @@ html.dark .landing-page-root .bg-white {
   transform: translateY(-1px);
   outline: none;
 }
-
-/* ─────────────────────────────────────────────────────────────
-   TIYA LANDING PAGE DARK MODE SYSTEM
-   Deep Slate / Navy theme with high contrast typography & cards
-───────────────────────────────────────────────────────────── */
-html.dark .tiya-page,
-html.dark .landing-page-root {
-  background-color: rgb(var(--brand-navy-950)) !important;
-  color: rgb(var(--brand-navy-300)) !important;
-}
-
-html.dark .tiya-page h1,
-html.dark .tiya-page h2,
-html.dark .tiya-page h3,
-html.dark .tiya-page h4,
-html.dark .tiya-page h5,
-html.dark .tiya-page h6,
-html.dark .tiya-page strong,
-html.dark .tiya-page b {
-  color: #ffffff !important;
-}
-
-html.dark :where(.tiya-page) p {
-  color: rgb(var(--brand-navy-300)) !important;
-}
-
-/* About Section Dark */
-html.dark .about-section {
-  background-color: rgb(var(--brand-navy-900)) !important;
-}
-
-html.dark .about-feature-item {
-  background: rgb(var(--brand-navy-800)) !important;
-  border-color: rgb(var(--brand-navy-700)) !important;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25) !important;
-}
-
-html.dark .about-feature-title {
-  color: #ffffff !important;
-}
-
-html.dark .about-feature-desc {
-  color: rgb(var(--brand-navy-300)) !important;
-}
-
-html.dark .tiya-trust-strip {
-  background: rgb(var(--brand-navy-800)) !important;
-  border-color: rgb(var(--brand-navy-700)) !important;
-}
-
-/* Zones Section Dark */
-html.dark .section-bg-image-top-wave path {
-  fill: rgb(var(--brand-navy-900)) !important;
-}
-
-html.dark .section-bg-image-bottom-wave path {
-  fill: rgb(var(--brand-navy-950)) !important;
-}
-
-html.dark .section-bg-image-block {
-  background: rgba(30, 34, 53, 0.92) !important;
-  border-color: rgba(255, 255, 255, 0.12) !important;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.45) !important;
-}
-
-html.dark .section-bg-feature-chip {
-  background: rgba(255, 255, 255, 0.08) !important;
-  border-color: rgba(255, 255, 255, 0.16) !important;
-  color: rgb(var(--brand-navy-100)) !important;
-}
-
-html.dark .section-bg-cta-bar {
-  background-color: rgb(var(--brand-navy-800)) !important;
-  border-color: rgb(var(--brand-navy-700)) !important;
-}
-
-html.dark .section-bg-cta-title {
-  color: #ffffff !important;
-}
-
-/* Courses Section Dark */
-html.dark .courses-section {
-  background-color: rgb(var(--brand-navy-950)) !important;
-}
-
-html.dark .courses-filter-tab {
-  background: rgb(var(--brand-navy-900)) !important;
-  border-color: rgb(var(--brand-navy-700)) !important;
-  color: rgb(var(--brand-navy-200)) !important;
-}
-
-html.dark .courses-filter-tab:hover {
-  background: rgb(var(--brand-navy-800)) !important;
-  color: #ffffff !important;
-}
-
-html.dark .courses-filter-tab.active {
-  background: var(--primary-color) !important;
-  border-color: var(--primary-color) !important;
-  color: #ffffff !important;
-}
-
-html.dark .courses-filter-tab__count {
-  background: rgba(255, 255, 255, 0.12) !important;
-  color: rgb(var(--brand-navy-200)) !important;
-}
-
-html.dark .tiya-course-card {
-  background: rgb(var(--brand-navy-900)) !important;
-  border-color: rgb(var(--brand-navy-800)) !important;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
-}
-
-html.dark .tiya-course-card:hover {
-  border-color: var(--primary-color) !important;
-  box-shadow: 0 20px 45px rgba(0, 0, 0, 0.6) !important;
-}
-
-html.dark .tiya-course-card__title {
-  color: #ffffff !important;
-}
-
-html.dark .tiya-course-card:hover .tiya-course-card__title {
-  color: var(--primary-color) !important;
-}
-
-/* Dropdown Menu Dark */
-html.dark .tiya-dropdown-menu {
-  background: rgb(var(--brand-navy-900)) !important;
-  border: 1px solid rgb(var(--brand-navy-700)) !important;
-  box-shadow: 0 1rem 3rem rgba(0, 0, 0, 0.5) !important;
-}
-
-html.dark .tiya-dropdown-menu::before {
-  border-bottom-color: rgb(var(--brand-navy-900)) !important;
-}
-
-html.dark .tiya-dropdown-item {
-  color: rgb(var(--brand-navy-200)) !important;
-}
-
-html.dark .tiya-dropdown-item:hover,
-html.dark .tiya-dropdown-item.active {
-  background-color: rgb(var(--brand-navy-800)) !important;
-  color: var(--link-hover-color) !important;
-}
-
-/* Facilities Section Dark */
-html.dark .facilities-section-wrapper {
-  background-color: rgb(var(--brand-navy-950)) !important;
-}
-
-html.dark .facilities-section-wrapper .bg-white,
-html.dark .facilities-section-wrapper .bg-brand-sand-100 {
-  background-color: rgb(var(--brand-navy-900)) !important;
-}
-
-/* Tiya Carousel controls */
-html.dark .tiya-carousel-counter,
-html.dark .tiya-carousel-autoplay-btn {
-  background: rgb(var(--brand-navy-900)) !important;
-  border-color: rgb(var(--brand-navy-700)) !important;
-  color: rgb(var(--brand-navy-200)) !important;
-}
-
-/* Wave transitions in Dark Mode */
-html.dark .hero-bottom-wave path {
-  fill: rgb(var(--brand-navy-900)) !important;
-}
-
-html.dark .courses-bottom-wave path {
-  fill: rgb(var(--brand-navy-950)) !important;
-}
-
-html.dark .facilities-bottom-wave path {
-  fill: rgb(var(--brand-navy-900)) !important;
-}
-

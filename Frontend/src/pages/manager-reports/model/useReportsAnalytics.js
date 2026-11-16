@@ -2,19 +2,18 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { reportApi } from '../../../entities/report/index.js';
-import { adminApi } from '../../../entities/center/index.js';
 import { downloadReportFile } from '../../../shared/lib/reportFiles.js';
 import { createReportCsv } from '../../../shared/lib/reportExport.js';
-import { reportDate } from '../../../shared/lib/reportFileData.js';
 
-export function useReportsAnalytics({ adminMode = false } = {}) {
+export function useReportsAnalytics() {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { showError } = useToast();
   const [period, setPeriod] = useState('30D');
-  // Every selection is normalized to { from, to, groupBy } so the UI, exports and API use the same dates.
-  const [selection, setSelection] = useState(() => reportApi.getPeriodRange('30D'));
-  const [range, setRange] = useState(() => ({ ...selection }));
+  const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
+  const thirtyDaysAgo = new Date(Date.now() + 7 * 3600000 - 29 * 86400000).toISOString().slice(0, 10);
+  const [range, setRange] = useState({ from: thirtyDaysAgo, to: today, groupBy: 'day' });
+  const [selection, setSelection] = useState('30D');
   const [metrics, setMetrics] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -22,10 +21,6 @@ export function useReportsAnalytics({ adminMode = false } = {}) {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingXlsx, setExportingXlsx] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
-  const [centers, setCenters] = useState([]);
-  const [selectedCenterId, setSelectedCenterId] = useState('ALL');
-  const [centersLoading, setCentersLoading] = useState(adminMode);
-  const [centersError, setCentersError] = useState(null);
 
   // Table filters
   const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | sports | rooms | coaches | logs
@@ -33,7 +28,6 @@ export function useReportsAnalytics({ adminMode = false } = {}) {
   const [classSportFilter, setClassSportFilter] = useState('ALL');
   const [classSortBy, setClassSortBy] = useState('booked'); // booked | occupancy | sessions
   const [roomSortBy, setRoomSortBy] = useState('booked'); // booked | sessions | occupancy
-  const hasPendingRange = range.from !== selection.from || range.to !== selection.to || range.groupBy !== selection.groupBy;
 
   const periodLabel = useMemo(() => {
     const mapEn = { '30D': 'Last 30 Days', LAST_MONTH: 'Last Month', DAY: 'Today', WEEK: 'This Week', MONTH: 'This Month', QUARTER: 'This Quarter', YEAR: 'This Year', CUSTOM: 'Custom Range' };
@@ -42,47 +36,22 @@ export function useReportsAnalytics({ adminMode = false } = {}) {
   }, [period, isEn]);
 
   useEffect(() => {
-    if (!adminMode) return undefined;
-    let active = true;
-    setCentersLoading(true);
-    setCentersError(null);
-    adminApi.getCenters()
-      .then(data => { if (active) setCenters(Array.isArray(data) ? data : []); })
-      .catch(e => { if (active) setCentersError(e); })
-      .finally(() => { if (active) setCentersLoading(false); });
-    return () => { active = false; };
-  }, [adminMode]);
-
-  useEffect(() => {
-    if (adminMode && centersLoading) return undefined;
     let active = true;
     setLoading(true);
     setError(null);
     setMetrics(null);
 
-    const request = adminMode
-      ? (selectedCenterId === 'ALL'
-          ? reportApi.getSystemOverview(selection, centers)
-          : reportApi.getOverview(selection, { centerId: Number(selectedCenterId) }))
-      : reportApi.getOverview(selection);
-    request
+    reportApi.getOverview(selection)
       .then(data => { if (active) setMetrics(data); })
       .catch(e => { if (active) setError(e); })
       .finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };
-  }, [adminMode, centers, centersLoading, selectedCenterId, selection, revision]);
-
-  const selectedCenter = centers.find(center => String(center.id) === String(selectedCenterId));
-  const reportScopeLabel = adminMode
-    ? (selectedCenterId === 'ALL'
-        ? (isEn ? `All centers (${centers.length})` : `Toàn hệ thống (${centers.length} cơ sở)`)
-        : selectedCenter?.name || (isEn ? 'Selected center' : 'Cơ sở đã chọn'))
-    : 'SCMS Olympic Sports Arena';
+  }, [selection, revision]);
 
   const exportOptions = () => ({
     language,
-    centerLabel: reportScopeLabel,
+    centerLabel: 'SCMS Olympic Sports Arena',
     generatedAt: new Date()
   });
 
@@ -158,8 +127,6 @@ export function useReportsAnalytics({ adminMode = false } = {}) {
   const topRoom = highlights.mostBookedRoom;
 
   return {
-    adminMode, centers, centersError, centersLoading, hasPendingRange, reportDate, reportScopeLabel,
-    selectedCenterId, selection, setSelectedCenterId,
     activeTableTab, classSearch, classSortBy, classSportFilter, error, events, exportExcel,
     exportPdf, exportReport, exportingCsv, exportingPdf, exportingXlsx, isEn, loading, membership,
     metrics, period, periodLabel, processedClasses, processedRooms, range, revenue, roomSortBy,

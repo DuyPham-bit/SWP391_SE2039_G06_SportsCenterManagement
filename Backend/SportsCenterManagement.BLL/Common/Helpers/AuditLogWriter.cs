@@ -1,5 +1,4 @@
 using System.Text.Json;
-using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 
@@ -15,20 +14,9 @@ public static class AuditLogWriter
         string entityType,
         long? entityId,
         object? oldValues = null,
-        object? newValues = null) =>
-        Add(unitOfWork.Context, actorUserId, centerId, action, entityType, entityId, oldValues, newValues);
-
-    public static void Add(
-        SportsCenterDbContext context,
-        long? actorUserId,
-        long? centerId,
-        string action,
-        string entityType,
-        long? entityId,
-        object? oldValues = null,
         object? newValues = null)
     {
-        context.AuditLogs.Add(new AuditLog
+        unitOfWork.Context.AuditLogs.Add(new AuditLog
         {
             UserId = actorUserId,
             CenterId = centerId,

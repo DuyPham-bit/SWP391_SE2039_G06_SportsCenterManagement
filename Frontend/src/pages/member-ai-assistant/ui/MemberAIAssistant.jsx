@@ -3,7 +3,9 @@ import { useAuth } from '../../../entities/session/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { aiApi } from '../../../entities/ai-chat/index.js';
+import { clearMemberAIChatStorage } from '../../../shared/lib/memberAiChatStorage.js';
 import { parseFormattedMarkdown } from './chatMarkdown.jsx';
+import { detectSpeechLang } from '../../../shared/lib/speechLanguage.js';
 
 export function MemberAIAssistant() {
   const { currentUser } = useAuth();
@@ -35,10 +37,10 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   const [messages, setMessages] = useState([getInitialMessage()]);
   const [inputQuestion, setInputQuestion] = useState('');
   const [isAsking, setIsAsking] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
   const [conversationId, setConversationId] = useState(null);
   const [copiedId, setCopiedId] = useState(null);
   const [speakingId, setSpeakingId] = useState(null);
-  const [reactions, setReactions] = useState({}); // { [msgId]: 'like' | 'dislike' }
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
 
@@ -49,6 +51,19 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
   useEffect(() => {
     scrollToBottom();
   }, [messages, isAsking]);
+
+  // Keep page state synced if the popup clears conversations.
+  useEffect(() => {
+    const handleCleared = (e) => {
+      if (e.detail?.source === 'page') return;
+      setSpeakingId(null);
+      setConversationId(null);
+      setMessages([getInitialMessage()]);
+      setInputQuestion('');
+    };
+    window.addEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
+    return () => window.removeEventListener('SCMS_AI_CHAT_CLEARED', handleCleared);
+  }, [isEn]);
 
   // Clean up speech synthesis on unmount
   useEffect(() => {
@@ -75,7 +90,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     setIsAsking(true);
 
     try {
-      const result = await aiApi.chat(text, conversationId);
+      const result = await aiApi.chat(text, conversationId, language);
       const reply = result.reply;
       setConversationId(result.conversationId);
 
@@ -109,17 +124,26 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     }
   };
 
-  const handleResetChat = () => {
-    if (isAsking) return;
+  const handleResetChat = async () => {
+    if (isAsking || isResetting) return;
+    setIsResetting(true);
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
-    setSpeakingId(null);
-    setConversationId(null);
-    setMessages([getInitialMessage()]);
-    setInputQuestion('');
-    setIsAsking(false);
-    showSuccess(isEn ? 'AI Assistant conversation reset!' : 'Đã làm mới cuộc hội thoại với Trợ lý AI!');
+    try {
+      await aiApi.clearConversations();
+      clearMemberAIChatStorage();
+      setSpeakingId(null);
+      setConversationId(null);
+      setMessages([getInitialMessage()]);
+      setInputQuestion('');
+      window.dispatchEvent(new CustomEvent('SCMS_AI_CHAT_CLEARED', { detail: { source: 'page' } }));
+      showSuccess(isEn ? 'AI Assistant conversation reloaded!' : 'Đã tải lại cuộc trò chuyện!');
+    } catch (err) {
+      showError(err?.message || (isEn ? 'Unable to reload conversation. Please try again.' : 'Không thể tải lại cuộc trò chuyện. Vui lòng thử lại.'));
+    } finally {
+      setIsResetting(false);
+    }
   };
 
   const copyMessage = (msg) => {
@@ -146,21 +170,13 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     // Clean markdown asterisks and backticks for clean speech
     const cleanText = msg.text.replace(/[\*`#]/g, '');
     const utterance = new SpeechSynthesisUtterance(cleanText);
-    utterance.lang = isEn ? 'en-US' : 'vi-VN';
+    utterance.lang = detectSpeechLang(cleanText, isEn ? 'en-US' : 'vi-VN');
     utterance.rate = 1.0;
     utterance.onend = () => setSpeakingId(null);
     utterance.onerror = () => setSpeakingId(null);
 
     setSpeakingId(msg.id);
     window.speechSynthesis.speak(utterance);
-  };
-
-  const handleReaction = (msgId, type) => {
-    setReactions((prev) => ({
-      ...prev,
-      [msgId]: prev[msgId] === type ? null : type
-    }));
-    showSuccess(type === 'like' ? (isEn ? 'Thank you for your feedback!' : 'Cảm ơn bạn đã đánh giá phản hồi hữu ích!') : (isEn ? 'Thank you! SCMS will improve its responses.' : 'Cảm ơn bạn! SCMS sẽ cải thiện câu trả lời tốt hơn.'));
   };
 
   return (
@@ -217,10 +233,10 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
             <button
               onClick={handleResetChat}
-              disabled={isAsking}
+              disabled={isAsking || isResetting}
               className="px-3.5 py-2.5 rounded-xl bg-white/90 hover:bg-white text-brand-navy-800 border border-white text-xs font-bold flex items-center gap-1.5 transition shadow-md active:scale-95 cursor-pointer disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[18px]">restart_alt</span>
+              <span className={`material-symbols-outlined text-[18px] ${isResetting ? 'animate-spin' : ''}`}>restart_alt</span>
               <span>{isEn ? 'Reset Chat' : 'Làm mới'}</span>
             </button>
           </div>
@@ -251,10 +267,13 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           <div className="flex items-center gap-2">
             <button
               onClick={handleResetChat}
-              title={isEn ? "Reset entire conversation" : "Làm mới toàn bộ hội thoại"}
-              className="p-2 text-brand-navy-400 hover:text-brand-navy-700 hover:bg-brand-navy-200/60 rounded-xl transition"
+              disabled={isAsking || isResetting}
+              title={isEn ? "Reload entire conversation" : "Làm mới toàn bộ hội thoại"}
+              className="p-2 text-brand-navy-400 hover:text-brand-navy-700 hover:bg-brand-navy-200/60 rounded-xl transition disabled:opacity-50"
             >
-              <span className="material-symbols-outlined text-[18px]">delete_sweep</span>
+              <span className={`material-symbols-outlined text-[18px] ${isResetting ? 'animate-spin' : ''}`}>
+                {isResetting ? 'progress_activity' : 'delete_sweep'}
+              </span>
             </button>
           </div>
         </div>
@@ -358,32 +377,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
                           {speakingId === msg.id ? 'stop_circle' : 'volume_up'}
                         </span>
                       </button>
-
-                      {/* Reaction Thumbs Up */}
-                      <button
-                        onClick={() => handleReaction(msg.id, 'like')}
-                        title={isEn ? "Helpful response" : "Phản hồi hữu ích"}
-                        className={`p-1 rounded-lg transition ${
-                          reactions[msg.id] === 'like'
-                            ? 'text-brand-sage-700 bg-brand-sage-50'
-                            : 'hover:text-brand-navy-800 hover:bg-brand-navy-100'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[15px]">thumb_up</span>
-                      </button>
-
-                      {/* Reaction Thumbs Down */}
-                      <button
-                        onClick={() => handleReaction(msg.id, 'dislike')}
-                        title={isEn ? "Unsatisfied response" : "Phản hồi chưa hài lòng"}
-                        className={`p-1 rounded-lg transition ${
-                          reactions[msg.id] === 'dislike'
-                            ? 'text-brand-danger-600 bg-brand-danger-50'
-                            : 'hover:text-brand-navy-800 hover:bg-brand-navy-100'
-                        }`}
-                      >
-                        <span className="material-symbols-outlined text-[15px]">thumb_down</span>
-                      </button>
+                      {/* Like/dislike removed: there is no feedback API, so the "thanks" toast was a fake action. */}
                     </div>
                   )}
                 </div>

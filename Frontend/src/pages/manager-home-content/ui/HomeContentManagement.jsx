@@ -1,6 +1,6 @@
 import { LandingCatalogEditor } from './LandingCatalogEditor.jsx';
 import React from 'react';
-import { R2ImagePickerModal } from '../../../shared/ui/R2ImagePickerModal.jsx';
+import { CloudMediaPickerModal } from '../../../features/media-upload/index.js';
 import { useHomeContentEditor } from '../model/useHomeContentEditor.js';
 import { HomeContentHeader } from './HomeContentHeader.jsx';
 import { HomeContentTabs } from './HomeContentTabs.jsx';
@@ -14,7 +14,7 @@ import { PublishBar } from './PublishBar.jsx';
 export function HomeContentManagement() {
   const {
     activeTab, addToast, content, deleteFacilityCard, discardKey, handleDiscardChanges,
-    handleMediaSelected, handlePreview, handleSaveAll, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
+    handlePreview, handleSaveAll, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
     mediaPickerConfig, openMediaPicker, setContent, setIsDirty, setMediaPickerConfig, setReloadKey,
     totalFacilities, totalSports, updateCatalogCards, updateContentField, visibleFacilities,
     visibleSports
@@ -169,7 +169,7 @@ export function HomeContentManagement() {
       )}
 
       {/* 4. CLOUD MEDIA PICKER MODAL */}
-      <R2ImagePickerModal
+      <CloudMediaPickerModal
         isOpen={mediaPickerConfig.isOpen}
         title={mediaPickerConfig.title}
         currentImage={mediaPickerConfig.currentUrl}
@@ -177,7 +177,11 @@ export function HomeContentManagement() {
           setMediaPickerConfig(prev => ({ ...prev, isOpen: false }));
           mediaPickerConfig.onClose?.();
         }}
-        onSelectImage={handleMediaSelected}
+        onSelectImage={(url) => {
+          if (mediaPickerConfig.callback) {
+            mediaPickerConfig.callback(url);
+          }
+        }}
       />
 
       {/* 5. STICKY FLOATING ACTION BAR FOR INSTANT SAVING */}

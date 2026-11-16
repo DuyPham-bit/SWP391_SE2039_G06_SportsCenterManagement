@@ -5,52 +5,55 @@ const vm = require('node:vm');
 const { test } = require('node:test');
 const { transformSync } = require('esbuild');
 
-function loadService(fetchImpl, service = 'r2ImageStorage.js') {
+function loadService(apiRequest, fetchImpl) {
+  const unifiedApiRequest = async (path, options) => {
+    if (options?.method === 'POST' && fetchImpl) {
+      const res = await fetchImpl(`/api/${path}`, {
+        ...options,
+        headers: { 'X-SCMS-Session': 'manager-tab' },
+        credentials: 'include'
+      });
+      return res.json ? res.json() : res;
+    }
+    return apiRequest ? apiRequest(path, options) : [];
+  };
+
   const context = vm.createContext({
-    module: { exports: {} }, FormData, File, console, fetch: fetchImpl,
-    require: () => ({ apiRequest: async (route, options) => {
-      const response = await fetchImpl('/api/' + route, options);
-      return response.json();
-    } })
+    module: { exports: {} }, FormData, console,
+    fetch: fetchImpl,
+    require: () => ({ apiRequest: unifiedApiRequest, getApiSession: () => 'manager-tab', getApiUrl: route => `/api/${route}` })
   });
-  const source = fs.readFileSync(path.join(__dirname, '../src/shared/api', service), 'utf8');
+  const source = fs.readFileSync(path.join(__dirname, '../src/shared/api/mediaApi.js'), 'utf8');
   vm.runInContext(transformSync(source, { format: 'cjs' }).code, context);
   return context.module.exports;
 }
-test('R2 upload keeps relative key distinct from derived rendering URL', async () => {
-  const api = loadService(async (url, options) => {
-    assert.equal(url, '/api/r2-images/dashboard');
-    assert.equal(options.headers, undefined);
-    assert.equal(options.body.get('file').name, 'photo.jpg');
-    return { ok: true, json: async () => ({ key: 'dashboard/example.jpg', publicUrl: 'https://cdn.example/dashboard/example.jpg' }) };
-  });
-  const result = await api.uploadDashboardImage(new File(['image'], 'photo.jpg', { type: 'image/jpeg' }));
-  assert.equal(result.key, 'dashboard/example.jpg');
-  assert.equal(result.publicUrl, 'https://cdn.example/dashboard/example.jpg');
-});
-test('reject unsupported extensions, MIME mismatch, empty and oversized files before network upload', async () => {
-  let calls = 0;
-  const api = loadService(async () => { calls++; throw new Error('unexpected upload'); });
-  for (const file of [
-    new File(['image'], 'photo.avif', { type: 'image/avif' }),
-    new File(['html'], 'photo.html', { type: 'image/jpeg' }),
-    new File([], 'photo.jpg', { type: 'image/jpeg' }),
-    new File([new Uint8Array(5 * 1024 * 1024 + 1)], 'photo.jpg', { type: 'image/jpeg' })
-  ]) await assert.rejects(api.uploadDashboardImage(file));
-  assert.equal(calls, 0);
-});
-test('network failure remains a failed upload', async () => {
-  const api = loadService(async () => { throw new Error('API offline'); });
-  await assert.rejects(api.uploadDashboardImage(new File(['image'], 'photo.webp', { type: 'image/webp' })), /API offline/);
+
+test('the cloud gallery keeps every API item including AVIF rather than limiting the list to four', async () => {
+  const files = Array.from({ length: 7 }, (_, index) => ({ fileId: `image-${index}`, fileName: `photo-${index}.${index < 4 ? 'jpg' : 'avif'}` }));
+  const api = loadService(async () => files);
+  const results = await api.fetchMediaFiles();
+  assert.equal(results.length, 7);
+  assert.equal(results.filter(file => file.fileName.endsWith('.avif')).length, 3);
 });
 
-test('refund evidence uses the shared session API and retains the private relative key', async () => {
-  const api = loadService(async (url, options) => {
-    assert.equal(url, '/api/refund-bills');
-    assert.equal(options.method, 'POST');
-    assert.equal(options.body.get('file').name, 'proof.png');
-    assert.equal(options.headers, undefined);
-    return { json: async () => ({ key: 'refund-bills/proof.png' }) };
-  }, 'refundBillStorage.js');
-  assert.equal(await api.uploadRefundBill(new File(['png'], 'proof.png', { type: 'image/png' })), 'refund-bills/proof.png');
+test('AVIF upload reaches the API while SVG and fake AVIF extensions remain rejected', async () => {
+  let requests = 0;
+  const api = loadService(async () => [], async (url, options) => {
+    requests++;
+    assert.equal(url, '/api/media/upload');
+    assert.equal(options.headers['X-SCMS-Session'], 'manager-tab');
+    assert.equal(options.headers.Authorization, undefined);
+    assert.equal(options.credentials, 'include');
+    return { ok: true, json: async () => ({ url: '/uploads/photo.avif', fileId: 'local_avif', mimeType: 'image/avif' }) };
+  });
+  const result = await api.uploadMediaFileToCloud(new File(['avif fixture'], 'photo.avif', { type: 'image/avif' }));
+  assert.equal(result.type, 'image/avif');
+  await assert.rejects(api.uploadMediaFileToCloud(new File(['svg'], 'photo.svg', { type: 'image/svg+xml' })));
+  await assert.rejects(api.uploadMediaFileToCloud(new File(['html'], 'payload.html', { type: 'image/avif' })));
+  assert.equal(requests, 1);
+});
+
+test('failed upload cannot become a successful browser-only image record', async () => {
+  const api = loadService(async () => [], async () => { throw new Error('API offline'); });
+  await assert.rejects(api.uploadMediaFileToCloud(new File(['image'], 'photo.webp', { type: 'image/webp' }), true), /API offline/);
 });

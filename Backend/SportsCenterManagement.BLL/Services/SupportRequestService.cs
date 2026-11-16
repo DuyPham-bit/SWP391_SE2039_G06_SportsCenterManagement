@@ -65,7 +65,14 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
             request.CreatedAt, request.ResolvedAt, request.RequesterId,
             member != null ? member.FullName : unitOfWork.Context.CoachProfiles.Where(item => item.UserId == request.RequesterId)
                 .Select(item => item.FullName).FirstOrDefault() ?? user.Username,
-            request.MemberId.HasValue ? "MEMBER" : "COACH", request.CenterId);
+            request.MemberId.HasValue ? "MEMBER" : "COACH", request.CenterId, request.Priority);
+
+    private static readonly string[] Priorities = ["Low", "Normal", "High", "Urgent"];
+
+    private static string ValidPriority(string? priority) =>
+        priority is null ? "Normal"
+        : Priorities.Contains(priority) ? priority
+        : throw new FlowException(400, "Mức ưu tiên chỉ nhận Low, Normal, High hoặc Urgent.");
 
     private static void Validate(string subject, string description)
     {
@@ -81,17 +88,27 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
             throw new FlowException(400, "Bộ lọc hoặc phân trang không hợp lệ.");
         if (!string.IsNullOrEmpty(status) && status is not ("Open" or "InProgress" or "Resolved"))
             throw new FlowException(400, "Trạng thái yêu cầu không hợp lệ.");
+        // KPI counts use the unfiltered scope so the cards stay stable while the list is filtered.
+        var grouped = await rows.GroupBy(request => request.Status)
+            .Select(group => new { Status = group.Key, Count = group.Count() }).ToListAsync(ct);
+        int CountOf(string value) => grouped.Where(g => g.Status == value).Sum(g => g.Count);
+        var statusCounts = new SupportStatusCounts(grouped.Sum(g => g.Count),
+            CountOf("Open"), CountOf("InProgress"), CountOf("Resolved"));
         var term = query?.Trim();
-        if (!string.IsNullOrEmpty(term)) rows = rows.Where(request => request.Subject.Contains(term)
-            || unitOfWork.Context.MemberProfiles.Any(member => member.Id == request.MemberId
-                && (member.FullName.Contains(term) || member.MemberCode.Contains(term)))
-            || unitOfWork.Context.CoachProfiles.Any(coach => coach.UserId == request.RequesterId
-                && (coach.FullName.Contains(term) || coach.CoachCode.Contains(term))));
+        if (!string.IsNullOrEmpty(term))
+        {
+            var lowerTerm = term.ToLower();
+            rows = rows.Where(request => request.Subject.ToLower().Contains(lowerTerm)
+                || unitOfWork.Context.MemberProfiles.Any(member => member.Id == request.MemberId
+                    && (member.FullName.ToLower().Contains(lowerTerm) || member.MemberCode.ToLower().Contains(lowerTerm)))
+                || unitOfWork.Context.CoachProfiles.Any(coach => coach.UserId == request.RequesterId
+                    && (coach.FullName.ToLower().Contains(lowerTerm) || coach.CoachCode.ToLower().Contains(lowerTerm))));
+        }
         if (!string.IsNullOrEmpty(status)) rows = rows.Where(request => request.Status == status);
         var count = await rows.CountAsync(ct);
         var items = await Summaries(rows.OrderByDescending(request => request.CreatedAt).ThenByDescending(request => request.Id)
             .Skip((page - 1) * pageSize).Take(pageSize)).ToListAsync(ct);
-        return new SupportPage(items, count, page, pageSize);
+        return new SupportPage(items, count, page, pageSize, statusCounts);
     }
 
     private async Task<SupportDetails> Details(IQueryable<SupportRequest> rows, long id, CancellationToken ct)
@@ -101,8 +118,14 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
         var description = await rows.Where(request => request.Id == id).Select(request => request.Description).SingleAsync(ct);
         var messages = await (from message in unitOfWork.Context.SupportRequestMessages.AsNoTracking()
             join user in unitOfWork.Context.Users.AsNoTracking() on message.SenderId equals user.Id
+            join role in unitOfWork.Context.Roles.AsNoTracking() on user.RoleId equals role.Id
             where message.RequestId == id orderby message.CreatedAt, message.Id
-            select new SupportMessage(message.Id, user.Username, message.Message, message.CreatedAt)).ToListAsync(ct);
+            select new SupportMessage(message.Id,
+                unitOfWork.Context.StaffProfiles.Where(p => p.UserId == user.Id).Select(p => p.FullName).FirstOrDefault()
+                    ?? unitOfWork.Context.MemberProfiles.Where(p => p.UserId == user.Id).Select(p => p.FullName).FirstOrDefault()
+                    ?? unitOfWork.Context.CoachProfiles.Where(p => p.UserId == user.Id).Select(p => p.FullName).FirstOrDefault()
+                    ?? user.Username,
+                message.Message, message.CreatedAt, user.Id, role.Name.ToUpper())).ToListAsync(ct);
         return new SupportDetails(summary, description, messages);
     }
 
@@ -136,6 +159,7 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
         Validate(body.Subject, body.Description);
         await using var tx = await unitOfWork.Context.Database.BeginTransactionAsync(ct);
         var request = NewRequest(actorId, requester.CenterId, requester.MemberId, body.Subject, body.Description);
+        request.Priority = ValidPriority(body.Priority);
         unitOfWork.Context.SupportRequests.Add(request);
         await unitOfWork.SaveChangesAsync(ct);
         Audit(actorId, request, "Support.Submitted");
@@ -154,6 +178,7 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
             ?? throw new FlowException(404, "Không tìm thấy thành viên tại trung tâm này.");
         await using var tx = await unitOfWork.Context.Database.BeginTransactionAsync(ct);
         var request = NewRequest(requesterId, centerId, body.MemberId, body.Subject, body.Description);
+        request.Priority = ValidPriority(body.Priority);
         request.HandledBy = actorId;
         unitOfWork.Context.SupportRequests.Add(request);
         await unitOfWork.SaveChangesAsync(ct);
@@ -176,6 +201,7 @@ public sealed class SupportRequestService(IUnitOfWork unitOfWork)
         var statusChanged = request.Status != body.Status;
         request.ResolvedAt = body.Status == "Resolved" ? request.ResolvedAt ?? DateTime.UtcNow : null;
         request.Status = body.Status;
+        if (body.Priority is not null) request.Priority = ValidPriority(body.Priority);
         request.HandledBy = actorId;
         if (!string.IsNullOrWhiteSpace(body.Note)) AddMessage(actorId, id, body.Note);
         Audit(actorId, request, "Support.Updated");

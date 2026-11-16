@@ -7,6 +7,29 @@ async function loadCurrentUser(session = getApiSession(), version = getAuthVersi
   if (!session) return null;
   const profile = await apiRequest('profile/me', { session });
   assertAuthVersion(version);
+  if (profile.mustChangePassword) {
+    // Accounts on the default (phone) password are blocked from guarded APIs until they set a new one,
+    // so only load what the forced password-change screen needs.
+    const restricted = {
+      capabilities: [],
+      id: profile.userId,
+      memberId: null,
+      email: profile.email,
+      fullName: profile.fullName,
+      phone: profile.phone || '',
+      role: String(profile.role).toUpperCase(),
+      status: String(profile.status || 'Active').toUpperCase(),
+      memberCode: profile.memberCode,
+      centerId: profile.centerId,
+      createdAt: profile.createdAt,
+      mustChangePassword: true,
+      emailVerified: profile.isEmailVerified !== false,
+      scheduledSubscriptions: [],
+      avatar: profile.avatar || null
+    };
+    setAuthUser(restricted);
+    return restricted;
+  }
   let memberId = null;
   let memberProfile = null;
   let scheduledSubscriptions = [];
@@ -36,6 +59,8 @@ async function loadCurrentUser(session = getApiSession(), version = getAuthVersi
     status: String(profile.status || 'Active').toUpperCase(),
     memberCode: profile.memberCode,
     centerId: profile.centerId,
+    centerName: profile.centerName || null,
+    staffCode: profile.staffCode || null,
     createdAt: profile.createdAt,
     packageId: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageId || null) : null,
     packageName: String(profile.role).toUpperCase() === 'MEMBER' ? (memberProfile?.packageName || 'Chưa đăng ký gói tập') : null,
@@ -49,8 +74,7 @@ async function loadCurrentUser(session = getApiSession(), version = getAuthVersi
     scheduledSubscriptions,
     mustChangePassword: false,
     emailVerified: profile.isEmailVerified !== false,
-    avatar: profile.avatar || null,
-    avatarKey: profile.avatarKey || null
+    avatar: profile.avatar || null
   };
   setAuthUser(user);
   return user;
@@ -84,6 +108,15 @@ async function loginAndLoad(path, body) {
     return { user: await loadCurrentUser(session, version) };
   } catch (error) {
     if (version === getAuthVersion()) clearApiSession();
+    if (error?.status === 401) {
+      const cookieError = new Error(
+        'Không thể duy trì phiên đăng nhập trên trình duyệt này. Vui lòng bật cookie và thử lại.'
+      );
+      cookieError.status = 401;
+      cookieError.code = 'AUTH_COOKIE_BLOCKED';
+      cookieError.cause = error;
+      throw cookieError;
+    }
     throw error;
   }
 }
@@ -136,6 +169,30 @@ export const authApi = {
 
   async linkGoogle(credential, currentPassword) {
     return apiRequest('auth/google/link', { method: 'POST', body: { idToken: credential, currentPassword } });
+  },
+
+  /** Validates an emailed activation link; resolves to { fullName, email, phone, expiresAt }. */
+  async previewActivation(token, { signal } = {}) {
+    return apiRequest('auth/verify-email/preview', { method: 'POST', session: null, signal, body: { token } });
+  },
+
+  /** Verifies the email and replaces the default password in one call. */
+  async completeActivation(token, newPassword, confirmPassword) {
+    await apiRequest('auth/verify-and-change-password', {
+      method: 'POST', session: null, body: { token, newPassword, confirmPassword }
+    });
+    return true;
+  },
+
+  /** First-login fallback for accounts still on the default password; the server rotates the session. */
+  async changeInitialPassword(currentPassword, newPassword, confirmPassword) {
+    const version = beginAuthOperation();
+    const session = getApiSession();
+    await apiRequest('auth/initial-password', {
+      method: 'POST', session, body: { currentPassword, newPassword, confirmPassword }
+    });
+    assertAuthVersion(version);
+    return loadCurrentUser(session, getAuthVersion());
   },
 
   async requestPasswordReset(email, { signal } = {}) {

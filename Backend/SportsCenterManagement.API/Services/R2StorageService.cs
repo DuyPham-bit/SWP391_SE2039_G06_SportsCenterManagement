@@ -19,6 +19,7 @@ public sealed class R2StorageService(
     SportsCenterDbContext db,
     IHttpContextAccessor httpContextAccessor,
     ILogger<R2StorageService> logger,
+    IHttpClientFactory httpClientFactory,
     Amazon.S3.IAmazonS3? s3Client = null) : IR2StorageService, IDisposable
 {
     private const long MaxFileSize = 5 * 1024 * 1024;
@@ -46,15 +47,6 @@ public sealed class R2StorageService(
     // tenant and ownership checks below.
     private IAmazonS3 S3Client => _s3Client ??= CreateS3Client(_options);
 
-    public async Task<(string ContentType, long Size)> GetMetadataAsync(string key, CancellationToken ct = default)
-    {
-        var result = await S3Client.GetObjectMetadataAsync(new GetObjectMetadataRequest
-        {
-            BucketName = Required(_options.BucketName, nameof(_options.BucketName)), Key = key
-        }, ct);
-        return (result.Headers.ContentType, result.Headers.ContentLength);
-    }
-
     public async Task<string> UploadRefundBillAsync(
         IFormFile file,
         CancellationToken cancellationToken = default) =>
@@ -73,7 +65,7 @@ public sealed class R2StorageService(
         {
             if (folder != $"avatars/{scope.UserId}") throw BusinessException.Forbidden("Không có quyền tải ảnh đại diện này.");
         }
-        else if (!scope.IsAdmin && (!scope.CenterId.HasValue || (!scope.IsManager && folder != "media")))
+        else if (!scope.IsAdmin && (!scope.IsManager || !scope.CenterId.HasValue))
             throw BusinessException.Forbidden("Tài khoản chưa được giao quyền tại trung tâm.");
         return await StoreImageAsync(file, folder, maxFileSize, scope, cancellationToken);
     }
@@ -140,6 +132,75 @@ public sealed class R2StorageService(
             await ValidateSignatureAsync(stream, extension, cancellationToken);
         }
 
+        return await PutObjectAndRecordAsync(
+            stream,
+            file.FileName,
+            file.Length,
+            folder,
+            extension,
+            contentType,
+            scope,
+            privateCache: folder == "refund-bills",
+            cancellationToken);
+    }
+
+    public async Task<string> UploadHtmlAsync(IFormFile file, CancellationToken cancellationToken = default)
+    {
+        const long maxHtmlBytes = 5 * 1024 * 1024;
+        var scope = await CurrentScope(cancellationToken);
+        if (!scope.IsAdmin && (!scope.IsManager || !scope.CenterId.HasValue))
+            throw BusinessException.Forbidden("Tài khoản chưa được giao quyền tại trung tâm.");
+        if (file.Length <= 0)
+            throw BusinessException.BadRequest("Vui lòng chọn tệp .html để tải lên.");
+        if (file.Length > maxHtmlBytes)
+            throw BusinessException.BadRequest("Tệp 3D .html không được vượt quá 5MB.");
+
+        var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+        if (extension is not (".html" or ".htm"))
+            throw BusinessException.BadRequest("Chỉ hỗ trợ tệp định dạng .html hoặc .htm.");
+        if (!string.IsNullOrWhiteSpace(file.ContentType)
+            && !file.ContentType.StartsWith("text/html", StringComparison.OrdinalIgnoreCase)
+            && !string.Equals(file.ContentType, "application/octet-stream", StringComparison.OrdinalIgnoreCase))
+            throw BusinessException.BadRequest("Content-Type của tệp không phải HTML hợp lệ.");
+
+        await using var stream = new MemoryStream((int)file.Length);
+        await file.CopyToAsync(stream, cancellationToken);
+        var bytes = stream.GetBuffer();
+        var length = (int)stream.Length;
+        if (bytes.AsSpan(0, length).IndexOf((byte)0) >= 0)
+            throw BusinessException.BadRequest("Nội dung tệp .html không hợp lệ.");
+
+        var htmlText = System.Text.Encoding.UTF8.GetString(bytes, 0, length);
+        if (!htmlText.Contains("<html", StringComparison.OrdinalIgnoreCase)
+            && !htmlText.Contains("<!doctype", StringComparison.OrdinalIgnoreCase)
+            && !htmlText.Contains("<body", StringComparison.OrdinalIgnoreCase)
+            && !htmlText.Contains("<canvas", StringComparison.OrdinalIgnoreCase))
+            throw BusinessException.BadRequest("Tệp phải chứa nội dung trang HTML hợp lệ.");
+
+        stream.Position = 0;
+        return await PutObjectAndRecordAsync(
+            stream,
+            file.FileName,
+            file.Length,
+            "campus-3d",
+            ".html",
+            "text/html; charset=utf-8",
+            scope,
+            privateCache: false,
+            cancellationToken);
+    }
+
+    private async Task<string> PutObjectAndRecordAsync(
+        Stream stream,
+        string originalFileName,
+        long fileLength,
+        string folder,
+        string extension,
+        string contentType,
+        MediaAccessScope scope,
+        bool privateCache,
+        CancellationToken cancellationToken)
+    {
         var now = timeProvider.GetUtcNow();
         var fileName = $"{now:yyyyMMddHHmmssfff}-{Guid.NewGuid():N}{extension}";
         var key = $"{folder}/{now:yyyy/MM}/{fileName}";
@@ -153,17 +214,16 @@ public sealed class R2StorageService(
             AutoCloseStream = false,
             DisablePayloadSigning = true
         };
-        request.Headers.CacheControl = folder == "refund-bills"
+        request.Headers.CacheControl = privateCache
             ? "private, no-cache, no-store, max-age=0"
             : "public, max-age=31536000, immutable";
 
         await S3Client.PutObjectAsync(request, cancellationToken);
         var media = new UploadedMedia
         {
-            StorageKey = key,
             DriveFileId = MediaAccessScope.R2FileIdPrefix + key,
-            FileName = Path.GetFileName(file.FileName), MimeType = contentType, FileSize = file.Length,
-            FileUrl = folder == "refund-bills" ? key : $"{_options.PublicDomain.TrimEnd('/')}/{key}", UploadedByUserId = scope.UserId,
+            FileName = Path.GetFileName(originalFileName), MimeType = contentType, FileSize = fileLength,
+            FileUrl = privateCache ? key : $"{_options.PublicDomain.TrimEnd('/')}/{key}", UploadedByUserId = scope.UserId,
             CenterId = scope.CenterId, CreatedAt = now.UtcDateTime
         };
         db.UploadedMedias.Add(media);
@@ -181,6 +241,108 @@ public sealed class R2StorageService(
     public Task<string> UploadMediaAsync(IFormFile file, CancellationToken cancellationToken = default) =>
         UploadImageAsync(file, "media", ImageUploadValidator.MaxFileSize, cancellationToken);
 
+    public async Task<LegacyMediaMigrationResult> MigrateLegacyMediaAsync(CancellationToken cancellationToken = default)
+    {
+        var legacyMedia = await db.UploadedMedias
+            .Where(media => !media.DriveFileId.StartsWith(MediaAccessScope.R2FileIdPrefix))
+            .OrderBy(media => media.Id)
+            .ToListAsync(cancellationToken);
+        var migrated = 0;
+        var skipped = 0;
+        var failures = new List<long>();
+        var client = httpClientFactory.CreateClient();
+
+        foreach (var media in legacyMedia)
+        {
+            if (!Uri.TryCreate(media.FileUrl, UriKind.Absolute, out var source) ||
+                source.Scheme != Uri.UriSchemeHttps ||
+                !string.Equals(source.Host, "lh3.googleusercontent.com", StringComparison.OrdinalIgnoreCase))
+            {
+                skipped++;
+                continue;
+            }
+
+            try
+            {
+                using var response = await client.GetAsync(source, HttpCompletionOption.ResponseHeadersRead, cancellationToken);
+                if (!response.IsSuccessStatusCode || response.Content.Headers.ContentLength is > ImageUploadValidator.MaxFileSize)
+                    throw new InvalidOperationException("The legacy media download was unavailable or too large.");
+
+                await using var input = await response.Content.ReadAsStreamAsync(cancellationToken);
+                await using var buffered = await ReadLegacyMediaAsync(input, cancellationToken);
+                if (buffered.Length == 0 || buffered.Length > ImageUploadValidator.MaxFileSize)
+                    throw new InvalidOperationException("The legacy media download had an invalid size.");
+                buffered.Position = 0;
+                var validated = await ImageUploadValidator.ValidateAsync(buffered, media.FileName, media.MimeType, cancellationToken);
+                var key = $"media/{media.CreatedAt:yyyy/MM}/{Guid.NewGuid():N}{Path.GetExtension(validated.FileName).ToLowerInvariant()}";
+                buffered.Position = 0;
+                await S3Client.PutObjectAsync(new PutObjectRequest
+                {
+                    BucketName = Required(_options.BucketName, nameof(_options.BucketName)),
+                    Key = key,
+                    InputStream = buffered,
+                    ContentType = validated.MimeType,
+                    AutoCloseStream = false,
+                    DisablePayloadSigning = true
+                }, cancellationToken);
+                try
+                {
+                    media.DriveFileId = MediaAccessScope.R2FileIdPrefix + key;
+                    media.FileUrl = $"{_options.PublicDomain.TrimEnd('/')}/{key}";
+                    media.WebViewLink = media.FileUrl;
+                    media.MimeType = validated.MimeType;
+                    media.FileSize = buffered.Length;
+                    await db.SaveChangesAsync(cancellationToken);
+                }
+                catch
+                {
+                    db.Entry(media).State = EntityState.Unchanged;
+                    try
+                    {
+                        await S3Client.DeleteObjectAsync(new DeleteObjectRequest
+                        {
+                            BucketName = Required(_options.BucketName, nameof(_options.BucketName)), Key = key
+                        }, CancellationToken.None);
+                    }
+                    catch (Exception cleanup)
+                    {
+                        logger.LogError(cleanup, "Could not remove R2 object after migration metadata persistence failed.");
+                    }
+                    throw;
+                }
+                migrated++;
+            }
+            catch (Exception exception) when (exception is not OperationCanceledException)
+            {
+                logger.LogError(exception, "Could not migrate legacy media {MediaId} to R2.", media.Id);
+                db.Entry(media).State = EntityState.Unchanged;
+                failures.Add(media.Id);
+            }
+        }
+
+        return new LegacyMediaMigrationResult(migrated, skipped, failures);
+    }
+
+    private static async Task<MemoryStream> ReadLegacyMediaAsync(Stream input, CancellationToken cancellationToken)
+    {
+        var buffered = new MemoryStream();
+        var bytes = new byte[81920];
+        var total = 0L;
+        int read;
+        while ((read = await input.ReadAsync(bytes, cancellationToken)) > 0)
+        {
+            total += read;
+            if (total > ImageUploadValidator.MaxFileSize)
+            {
+                await buffered.DisposeAsync();
+                throw new InvalidOperationException("The legacy media download exceeded the 50 MB limit.");
+            }
+            await buffered.WriteAsync(bytes.AsMemory(0, read), cancellationToken);
+        }
+        buffered.Position = 0;
+        return buffered;
+    }
+
     public async Task DeleteAsync(string key, CancellationToken cancellationToken = default)
     {
         if (string.IsNullOrEmpty(key) || key.Length > 250 ||
@@ -194,7 +356,7 @@ public sealed class R2StorageService(
         // Object keys are case-sensitive; these columns use text (not citext).
         var fileId = MediaAccessScope.R2FileIdPrefix + key;
         var metadata = await db.UploadedMedias.SingleOrDefaultAsync(m =>
-            m.DriveFileId == fileId || m.StorageKey == key, cancellationToken);
+            m.DriveFileId == fileId, cancellationToken);
         if (key.StartsWith("avatars/", StringComparison.Ordinal))
         {
             // Legacy avatars already encode their owner; no other route may use this as a business-image delete.
@@ -205,15 +367,15 @@ public sealed class R2StorageService(
         else
         {
             if (!scope.IsAdmin && !scope.IsManager) throw BusinessException.Forbidden("Không có quyền xóa ảnh này.");
-            var allowed = scope.IsAdmin || (scope.CenterId.HasValue && metadata?.CenterId == scope.CenterId)
-                || (metadata is not null && metadata.CenterId == null && metadata.UploadedByUserId == scope.UserId);
+            var allowed = scope.IsAdmin || (scope.CenterId.HasValue && metadata?.CenterId == scope.CenterId);
             if (!scope.IsAdmin && scope.CenterId.HasValue && key.StartsWith(RefundBillPrefix, StringComparison.Ordinal))
             {
                 // Old refund evidence has no upload metadata. Its invoice is the authoritative tenant boundary.
                 var publicUrl = $"{_options.PublicDomain.TrimEnd('/')}/{key}";
                 var centers = await (from refund in db.PaymentRefunds join payment in db.Payments on refund.PaymentId equals payment.Id
                     join invoice in db.Invoices on payment.InvoiceId equals invoice.Id
-                    where refund.TransferProofUrl == key || refund.TransferProofUrl == publicUrl
+                    where refund.TransferProofUrl! == key
+                        || refund.TransferProofUrl! == publicUrl
                     select invoice.CenterId).Distinct().ToListAsync(cancellationToken);
                 if (centers.Any(center => center != scope.CenterId)) allowed = false;
                 else if (metadata is null) allowed = centers.Count > 0;

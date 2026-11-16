@@ -1,7 +1,7 @@
 // SCMS motion layer: one place for pointer-driven 3D tilt, page-enter choreography and scroll reveal.
 // Every effect is skipped when the user asks the OS for reduced motion, and tilt only runs for a
 // real mouse (no touch), so phones keep a still, readable interface.
-import { useEffect, useLayoutEffect } from 'react';
+import { useLayoutEffect } from 'react';
 
 const TILT_SELECTOR = '.hover-lift, .scms-tilt, .tiya-course-card, .about-stat-card, .about-feature-item, .tiya-zone-card';
 const MAX_TILT_DEG = 6;
@@ -141,49 +141,6 @@ export function usePageEnter(ref, routeKey) {
     const timer = window.setTimeout(() => root.classList.remove('scms-page-enter'), PAGE_ENTER_MS);
     return () => window.clearTimeout(timer);
   }, [ref, routeKey]);
-}
-
-/**
- * Reveals elements matching `selector` inside `rootSelector` as they scroll into view.
- * Content stays visible without script or with reduced motion: only elements below the fold
- * are hidden, and only after the observer exists to show them again.
- */
-export function useScrollReveal(rootSelector, selector) {
-  useEffect(() => {
-    if (prefersReducedMotion() || typeof IntersectionObserver === 'undefined') return undefined;
-    const root = document.querySelector(rootSelector);
-    if (!root) return undefined;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (!entry.isIntersecting) return;
-          entry.target.classList.add('is-revealed');
-          observer.unobserve(entry.target);
-        });
-      },
-      { rootMargin: '0px 0px -8% 0px', threshold: 0.08 }
-    );
-
-    const track = () => {
-      root.querySelectorAll(selector).forEach((el) => {
-        if (el.dataset.scmsReveal) return;
-        el.dataset.scmsReveal = '1';
-        if (el.getBoundingClientRect().top < window.innerHeight * 0.92) return;
-        el.classList.add('scms-scroll-reveal');
-        observer.observe(el);
-      });
-    };
-
-    track();
-    // Sections fill in after the public catalog loads; pick those up too.
-    const mutations = new MutationObserver(track);
-    mutations.observe(root, { childList: true, subtree: true });
-    return () => {
-      mutations.disconnect();
-      observer.disconnect();
-    };
-  }, [rootSelector, selector]);
 }
 
 /* ───────────────────────── Dashboard motion ─────────────────────────

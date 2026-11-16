@@ -2,7 +2,7 @@ import React from 'react';
 
 export function CameraScannerPanel({
   cameras, isEn, isScanning, scannerLoading, selectedCameraId, setSelectedCameraId, startCamera,
-  stopCamera
+  stopCamera, isScanPaused, processing, resumeScan
 }) {
   return (
     <div className="space-y-4 animate-fade-slide-up">
@@ -13,8 +13,31 @@ export function CameraScannerPanel({
           className={`w-full max-w-[420px] mx-auto min-h-[280px] ${!isScanning ? 'hidden' : 'block'}`}
         />
 
+        {/* Paused after a successful scan: wait for the receptionist to scan the next card */}
+        {isScanning && isScanPaused && (
+          <div className="absolute inset-0 z-30 flex flex-col items-center justify-center gap-3 bg-black/60 backdrop-blur-sm p-6 text-center">
+            <span className="material-symbols-outlined text-4xl text-brand-sage-300">
+              {processing ? 'hourglass_top' : 'task_alt'}
+            </span>
+            <p className="text-sm font-chivo font-black text-white">
+              {processing
+                ? (isEn ? 'Processing check-in...' : 'Đang xử lý check-in...')
+                : (isEn ? 'Code scanned. Scanner paused.' : 'Đã quét mã. Camera tạm dừng.')}
+            </p>
+            <button
+              type="button"
+              disabled={processing}
+              onClick={resumeScan}
+              className="px-5 py-2.5 rounded-xl bg-brand-sage-700 hover:bg-brand-sage-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-chivo text-xs font-black uppercase tracking-wider flex items-center gap-2 cursor-pointer border border-brand-sage-500/40"
+            >
+              <span className="material-symbols-outlined text-[18px]">qr_code_scanner</span>
+              <span>{isEn ? 'Scan next' : 'Quét tiếp'}</span>
+            </button>
+          </div>
+        )}
+
         {/* Live Scanner HUD Overlay when active */}
-        {isScanning && (
+        {isScanning && !isScanPaused && (
           <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-between p-6 z-20">
             {/* Top status tag */}
             <div className="px-3 py-1 rounded-full bg-black/60 backdrop-blur-md text-brand-sage-400 border border-brand-sage-500/30 text-[11px] font-chivo font-black tracking-wider uppercase flex items-center gap-1.5">

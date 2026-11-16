@@ -31,7 +31,7 @@ export function ClassesDetailTable({
 
           {/* Sport Filter */}
           <select
-            className="text-xs font-medium border border-brand-navy-200 dark:border-brand-navy-700 rounded-xl px-2.5 py-1.5 bg-white dark:bg-brand-navy-800 text-brand-navy-800 dark:text-brand-navy-200 focus:outline-none"
+            className="max-w-full sm:max-w-[14rem] truncate text-xs font-medium border border-brand-navy-200 dark:border-brand-navy-700 rounded-xl px-2.5 py-1.5 bg-white dark:bg-brand-navy-800 text-brand-navy-800 dark:text-brand-navy-200 focus:outline-none"
             value={classSportFilter}
             onChange={e => setClassSportFilter(e.target.value)}
           >

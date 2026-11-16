@@ -1,12 +1,12 @@
 import React from 'react';
 
 export function ReportsHeroBanner({
-  adminMode = false, exportExcel, exportPdf, exportReport, exportingCsv, exportingPdf, exportingXlsx, isEn, loading,
-  metrics, reportScopeLabel
+  exportExcel, exportPdf, exportReport, exportingCsv, exportingPdf, exportingXlsx, isEn, loading,
+  metrics
 }) {
   return (
     <section
-      className="scms-hero relative overflow-hidden rounded-3xl text-white p-6 lg:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30 print:p-5 print:rounded-2xl"
+      className="relative overflow-hidden rounded-3xl text-white p-6 lg:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30 print:p-5 print:rounded-2xl"
       style={{
         background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 25%, #3FAEB8 48%, #81B29A 70%, #E5A33C 88%, #E5A33C 100%)'
       }}
@@ -31,16 +31,12 @@ export function ReportsHeroBanner({
             <span>Olympic Analytics</span>
           </div>
           <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-            {adminMode
-              ? (isEn ? 'System Reports & Analytics' : 'Báo Cáo & Phân Tích Toàn Hệ Thống')
-              : (isEn ? 'Reports & Operational Analytics' : 'Báo Cáo & Thống Kê Hoạt Động')}
+            {isEn ? 'Reports & Operational Analytics' : 'Báo Cáo & Thống Kê Hoạt Động'}
           </h1>
           <p className="text-xs sm:text-sm text-white/95 mt-1 max-w-2xl leading-relaxed font-medium drop-shadow-xs">
-            {adminMode
-              ? (isEn ? `Read-only system oversight · ${reportScopeLabel}` : `Giám sát chỉ đọc · ${reportScopeLabel}`)
-              : (isEn
-                  ? 'Visual analytics dashboard, sport market share metrics, and center-wide operational performance.'
-                  : 'Tổng hợp biểu đồ thống kê trực quan, thị phần bộ môn và hiệu suất vận hành toàn trung tâm.')}
+            {isEn
+              ? 'Visual analytics dashboard, sport market share metrics, and center-wide operational performance.'
+              : 'Tổng hợp biểu đồ thống kê trực quan, thị phần bộ môn và hiệu suất vận hành toàn trung tâm.'}
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap no-print">

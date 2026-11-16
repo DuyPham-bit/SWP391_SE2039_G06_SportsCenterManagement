@@ -18,6 +18,7 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
     private static readonly TimeSpan MinLeadTime = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan MaxLeadTime = TimeSpan.FromDays(7);
     private static readonly TimeSpan CancelCutoff = TimeSpan.FromHours(2);
+    private static readonly TimeSpan AttendanceEditWindow = TimeSpan.FromHours(24);
 
     private SportsCenterDbContext Db => unitOfWork.Context;
 
@@ -33,6 +34,12 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
             ?? throw new InvalidOperationException("Buổi học không tồn tại.") { Data = { ["StatusCode"] = 404 } }; // UH06
         var cls = await Db.Classes.SingleAsync(c => c.Id == session.ClassId, cancellationToken);
         var now = ScheduleTime.VietnamNow;
+
+        // A seat may have opened without a cancellation (capacity raised, room changed). Members
+        // already queued keep their FIFO priority, so free seats go to them before a new booker.
+        if (cls.AllowWaitlist && await Db.ClassWaitlists.AnyAsync(
+                w => w.SessionId == sessionId && w.Status == FlowStatuses.WaitlistWaiting, cancellationToken))
+            await FillOpenSeatsFromWaitlistAsync(sessionId, actorUserId ?? currentUserId, cancellationToken);
 
         // A retry after a successful response must return the existing active booking,
         // even if the member's package state changed after the original request.
@@ -120,6 +127,19 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
         if (start <= now) // UH04
             throw new InvalidOperationException("Không thể hủy buổi đã qua.") { Data = { ["StatusCode"] = 400 } };
 
+        // Package rule: block cancellation inside the package window; 0 keeps the legacy late-cancel penalty.
+        var cancelBeforeHours = booking.SubscriptionId is { } subscriptionId
+            ? await (from subscription in Db.MemberSubscriptions
+                     join package in Db.MembershipPackages on subscription.PackageId equals package.Id
+                     where subscription.Id == subscriptionId
+                     select package.CancelBeforeHours).FirstOrDefaultAsync(cancellationToken)
+            : 0;
+        if (cancelBeforeHours > 0 && start - now < TimeSpan.FromHours(cancelBeforeHours))
+            throw new InvalidOperationException($"Gói của bạn yêu cầu hủy lịch trước ít nhất {cancelBeforeHours} giờ.")
+            {
+                Data = { ["StatusCode"] = 409, ["Code"] = "BOOK-CANCEL-WINDOW" }
+            };
+
         var late = start - now < CancelCutoff; // BR-BOOK-02
         booking.Status = late ? FlowStatuses.BookingCancelledLate : FlowStatuses.BookingCancelled;
         AuditLogWriter.Add(unitOfWork, actorUserId ?? currentUserId, cls.CenterId, "CANCEL_SESSION_BOOKING", "SessionBooking", bookingId, newValues: new { IsLateCancellation = late });
@@ -154,9 +174,13 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
             from b in Db.SessionBookings
             join s in Db.ClassSessions on b.SessionId equals s.Id
             join c in Db.Classes on s.ClassId equals c.Id
-            join room in Db.Rooms on s.RoomId equals (long?)room.Id into rooms
+            // Session-level values are overrides; fall back to the class room and its primary coach.
+            let effectiveRoomId = s.RoomId ?? c.RoomId
+            let effectiveCoachId = s.CoachId ?? Db.ClassCoaches
+                .Where(cc => cc.ClassId == c.Id && cc.IsPrimary).Select(cc => (long?)cc.CoachId).FirstOrDefault()
+            join room in Db.Rooms on effectiveRoomId equals (long?)room.Id into rooms
             from room in rooms.DefaultIfEmpty()
-            join coach in Db.CoachProfiles on s.CoachId equals (long?)coach.Id into coaches
+            join coach in Db.CoachProfiles on effectiveCoachId equals (long?)coach.Id into coaches
             from coach in coaches.DefaultIfEmpty()
             join attendance in Db.Attendances on new { b.SessionId, b.MemberId }
                 equals new { attendance.SessionId, attendance.MemberId } into attendances
@@ -223,7 +247,7 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
                 && subscription.StartDate <= session.SessionDate && subscription.EndDate >= session.SessionDate
                 && package.CenterId == cls.CenterId
             orderby package.AllowedSports descending, subscription.EndDate descending
-            select new { Subscription = subscription, package.MaxClasses, package.AllowedSports }).ToListAsync(ct);
+            select new { Subscription = subscription, package.MaxClasses, package.AllowedSports, package.IsAllAccess }).ToListAsync(ct);
         if (eligibleSubscriptions.Count == 0)
             throw new InvalidOperationException("Bạn cần có gói tập còn hiệu lực tại trung tâm để đặt lịch buổi học này.")
             {
@@ -249,9 +273,16 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
                     || booking.Status == FlowStatuses.BookingCancelledLate)
             select new { ClassId = bookedSession.ClassId, bookedClass.SportId, booking.SubscriptionId }).ToListAsync(ct);
 
+        var candidateIds = eligibleSubscriptions.Select(row => row.Subscription.Id).ToList();
+        var selectedSports = await Db.SubscriptionSports.Where(row => candidateIds.Contains(row.SubscriptionId))
+            .Select(row => new { row.SubscriptionId, row.SportId }).ToListAsync(ct);
+
         MemberSubscription? selectedSubscription = null;
+        var sportExcluded = true;
         foreach (var candidate in eligibleSubscriptions)
         {
+            var picked = selectedSports.Where(row => row.SubscriptionId == candidate.Subscription.Id)
+                .Select(row => row.SportId).ToHashSet();
             var entitlements = enrollmentEntitlements
                 .Where(row => row.SubscriptionId == candidate.Subscription.Id)
                 .Concat(bookedEntitlements.Where(row => row.SubscriptionId == candidate.Subscription.Id))
@@ -261,8 +292,12 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
             var enrolledSportIds = entitlements.Select(row => row.SportId).ToHashSet();
             var classLimitAvailable = candidate.MaxClasses is null || enrolledClassIds.Contains(cls.Id)
                 || enrolledClassIds.Count < candidate.MaxClasses.Value;
-            var sportLimitAvailable = enrolledSportIds.Contains(cls.SportId)
-                || enrolledSportIds.Count < candidate.AllowedSports;
+            // Explicit selection (bought after sport picking existed) wins; older subscriptions keep the implicit rule.
+            var sportLimitAvailable = candidate.IsAllAccess
+                || (picked.Count > 0
+                    ? picked.Contains(cls.SportId)
+                    : enrolledSportIds.Contains(cls.SportId) || enrolledSportIds.Count < candidate.AllowedSports);
+            if (sportLimitAvailable) sportExcluded = false;
             if (classLimitAvailable && sportLimitAvailable)
             {
                 selectedSubscription = candidate.Subscription;
@@ -270,7 +305,9 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
             }
         }
         if (selectedSubscription is null)
-            throw new InvalidOperationException("Gói tập đã sử dụng hết số lớp hoặc môn thể thao được phép.")
+            throw new InvalidOperationException(sportExcluded
+                ? "Bộ môn này không nằm trong gói tập của bạn."
+                : "Gói tập đã sử dụng hết số lớp được phép.")
             {
                 Data =
                 {
@@ -534,7 +571,11 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
     public async Task<IReadOnlyList<MemberWaitlistItemDto>> GetMyWaitlistAsync(long userId, CancellationToken ct = default)
     {
         var items = await classRepository.GetMemberWaitlistAsync(userId, ct);
-        return items.Select(w => new MemberWaitlistItemDto(
+        var now = ScheduleTime.VietnamNow;
+        // Entries of sessions that already started or were cancelled can no longer be promoted.
+        return items.Where(w => w.SessionStatus == FlowStatuses.SessionScheduled
+                && w.SessionDate.ToDateTime(w.StartTime) > now)
+            .Select(w => new MemberWaitlistItemDto(
             w.Id,
             w.SessionId,
             w.ClassName,
@@ -542,7 +583,31 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
             w.StartTime,
             w.EndTime,
             w.Status,
-            w.JoinedAt)).ToList();
+            w.JoinedAt,
+            w.Position)).ToList();
+    }
+
+    /// <summary>
+    /// Fills every free seat of the session from its waitlist (FIFO). Used whenever seats may open up
+    /// without a member cancelling (capacity raised, room changed, a missed promotion).
+    /// Runs inside the caller's transaction; the caller commits.
+    /// </summary>
+    public async Task<int> FillOpenSeatsFromWaitlistAsync(long sessionId, long actorUserId, CancellationToken ct = default)
+    {
+        var session = await Db.ClassSessions.SingleOrDefaultAsync(s => s.Id == sessionId, ct);
+        if (session is null || session.SessionStatus != FlowStatuses.SessionScheduled) return 0;
+        var cls = await Db.Classes.SingleAsync(c => c.Id == session.ClassId, ct);
+        var now = ScheduleTime.VietnamNow;
+        if (session.SessionDate.ToDateTime(session.StartTime) <= now) return 0;
+
+        var promoted = 0;
+        while (await PromoteNextWaitlistAsync(session, cls, now, actorUserId, ct) is not null)
+        {
+            promoted++;
+            await SaveAsync(ct); // the next round recounts bookings from the database
+        }
+        await SaveAsync(ct);
+        return promoted;
     }
 
     public async Task LeaveWaitlistAsync(long userId, long waitlistId, CancellationToken ct = default)
@@ -592,8 +657,11 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
         var vietnamNow = DateTimeOffset.UtcNow.ToOffset(TimeSpan.FromHours(7)).DateTime;
         if (string.Equals(session.SessionStatus, "Cancelled", StringComparison.OrdinalIgnoreCase))
             throw new InvalidOperationException("Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.") { Data = { ["StatusCode"] = 409 } };
-        if (session.SessionDate < DateOnly.FromDateTime(vietnamNow))
-            throw new InvalidOperationException("Buổi học đã qua ngày nên không thể sửa điểm danh.") { Data = { ["StatusCode"] = 409 } };
+        // Late-evening classes must still be closable the next morning: allow edits until 24 h after the session ends.
+        var sessionEnd = session.SessionDate.ToDateTime(session.EndTime);
+        if (session.EndTime <= session.StartTime) sessionEnd = sessionEnd.AddDays(1); // ends after midnight
+        if (vietnamNow > sessionEnd + AttendanceEditWindow)
+            throw new InvalidOperationException("Đã quá 24 giờ sau khi buổi học kết thúc nên không thể sửa điểm danh.") { Data = { ["StatusCode"] = 409 } };
         if (session.SessionDate.ToDateTime(session.StartTime) > vietnamNow)
             throw new InvalidOperationException("Chỉ điểm danh khi buổi học đã bắt đầu và không bị hủy.") { Data = { ["StatusCode"] = 409 } };
 

@@ -20,19 +20,20 @@ export function ClassesActivityRow({
             </p>
           </div>
 
-          <div className="flex items-center gap-2 no-print">
-            <div className="relative">
+          {/* Wraps on phones; the sport select is capped so a long sport name cannot push the page sideways. */}
+          <div className="flex flex-wrap items-center gap-2 no-print w-full sm:w-auto">
+            <div className="relative flex-1 min-w-[9rem] sm:flex-none">
               <span className="material-symbols-outlined absolute left-2.5 top-2 text-brand-navy-400 text-[16px]">search</span>
               <input
                 type="text"
                 placeholder={isEn ? 'Filter class...' : 'Tìm lớp...'}
                 value={classSearch}
                 onChange={e => setClassSearch(e.target.value)}
-                className="pl-8 pr-3 py-1 text-xs rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
+                className="w-full pl-8 pr-3 py-1 text-xs rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-500"
               />
             </div>
             <select
-              className="text-xs font-medium border border-brand-navy-200 dark:border-brand-navy-700 rounded-xl px-2.5 py-1 bg-white dark:bg-brand-navy-800 text-brand-navy-800 dark:text-brand-navy-200 focus:outline-none"
+              className="max-w-full sm:max-w-[14rem] truncate text-xs font-medium border border-brand-navy-200 dark:border-brand-navy-700 rounded-xl px-2.5 py-1 bg-white dark:bg-brand-navy-800 text-brand-navy-800 dark:text-brand-navy-200 focus:outline-none"
               value={classSportFilter}
               onChange={e => setClassSportFilter(e.target.value)}
             >
@@ -153,7 +154,10 @@ export function ClassesActivityRow({
                 {isEn ? 'Orders Overview' : 'Nhật Ký Vận Hành & Sự Kiện'}
               </h3>
               <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400 mt-0.5">
-                <strong className="text-brand-sage-700 dark:text-brand-sage-400 font-bold">{metrics.newMembers} {isEn ? 'new members' : 'hội viên mới'}</strong> · {isEn ? 'Activity in selected period' : 'Hoạt động trong kỳ đã chọn'}
+                <strong className="text-brand-sage-700 dark:text-brand-sage-400 font-bold">
+                  {metrics.totalBookings || 0} {isEn ? 'active bookings' : 'lượt đặt đang hiệu lực'}
+                </strong>{' '}
+                · {metrics.totalClasses || 0} {isEn ? 'sessions' : 'ca học'}
               </p>
             </div>
           </div>
@@ -182,10 +186,14 @@ export function ClassesActivityRow({
               </div>
               <div>
                 <p className="text-xs font-bold text-brand-navy-900 dark:text-white">
-                  {topClass ? `${topClass.name} (+${topClass.booked} chỗ)` : 'Lớp bơi K01 hoạt động'}
+                  {topClass
+                    ? `${topClass.name} (+${topClass.booked} ${isEn ? 'seats' : 'chỗ'})`
+                    : (isEn ? 'No class activity recorded' : 'Chưa có lớp hoạt động trong kỳ')}
                 </p>
                 <span className="text-[10px] text-brand-navy-400 dark:text-brand-navy-500">
-                  {topClass?.roomName || 'Bể bơi Olympic'} · {isEn ? 'High attendance' : 'Tỷ lệ tham gia cao'}
+                  {topClass
+                    ? `${topClass.roomName || (isEn ? 'Unassigned court' : 'Chưa gán sân')} · ${topClass.occupancyRate || 0}% ${isEn ? 'occupancy' : 'lấp đầy'}`
+                    : (isEn ? 'No bookings recorded in period' : 'Chưa có lượt đặt chỗ trong kỳ')}
                 </span>
               </div>
             </div>
@@ -220,17 +228,17 @@ export function ClassesActivityRow({
               </div>
             </div>
 
-            {/* Node 5: Check-ins in the selected period */}
+            {/* Node 5: Check-in hôm nay */}
             <div className="flex items-start gap-3 relative">
               <div className="w-7 h-7 rounded-full bg-brand-danger-100 dark:bg-brand-danger-950/60 text-brand-danger-700 dark:text-brand-danger-400 border border-brand-danger-300 dark:border-brand-danger-800 flex items-center justify-center shrink-0 z-10 shadow-xs">
                 <span className="material-symbols-outlined text-[15px]">fact_check</span>
               </div>
               <div>
                 <p className="text-xs font-bold text-brand-navy-900 dark:text-white">
-                  {metrics.periodCheckins} {isEn ? 'check-ins validated in period' : 'lượt check-in hợp lệ trong kỳ'}
+                  {metrics.todayCheckins} {isEn ? 'check-in passes validated' : 'lượt check-in hợp lệ hôm nay'}
                 </p>
                 <span className="text-[10px] text-brand-navy-400 dark:text-brand-navy-500">
-                  {isEn ? `${metrics.from} to ${metrics.to}` : `Từ ${metrics.from} đến ${metrics.to}`}
+                  {isEn ? 'Realtime gate control' : 'Cổng kiểm soát thẻ hội viên'}
                 </span>
               </div>
             </div>

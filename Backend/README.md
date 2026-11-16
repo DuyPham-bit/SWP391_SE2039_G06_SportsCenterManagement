@@ -1,12 +1,12 @@
 # Sports Center Management — Backend
 
-Backend cho hệ thống quản lý trung tâm thể thao. Repository hiện dùng ASP.NET Core Web API theo kiến trúc 3 tầng chuẩn (3-Layer Architecture), EF Core và PostgreSQL (Npgsql).
+Backend cho hệ thống quản lý trung tâm thể thao. Repository hiện dùng ASP.NET Core Web API theo kiến trúc 3 tầng chuẩn (3-Layer Architecture), EF Core và PostgreSQL.
 
 ## Stack và cấu trúc 3 tầng chuẩn (3-Layer Architecture)
 
 - .NET 10 / ASP.NET Core Web API
 - Entity Framework Core 10 + PostgreSQL (Npgsql)
-- PostgreSQL chạy bằng Docker Compose (`docker/compose.yml`, cổng 5433) cho môi trường phát triển
+- PostgreSQL 17 chạy bằng Docker (`scripts/start-postgres.bat`) cho môi trường phát triển mặc định
 - Mô hình 3 tầng (Presentation - Business Logic - Data Access) kết hợp Repository Pattern & Unit of Work
 
 ```text
@@ -32,7 +32,7 @@ Backend cho hệ thống quản lý trung tâm thể thao. Repository hiện dù
 
 ## Chạy local
 
-Yêu cầu .NET SDK 10 và PostgreSQL (có thể dùng container `postgres` trong `docker/compose.yml`).
+Yêu cầu .NET SDK 10 và PostgreSQL 13+ (khuyến nghị container `postgres` trong `docker/docker-compose.yml`).
 
 Trước khi chạy các lệnh, cần cấu hình `Jwt__Key` riêng dài tối thiểu 32 byte (không có JWT secret mặc định trong source). Với database chưa có System Admin, cấu hình thêm ba biến `Bootstrap__SystemAdmin__Username`, `Bootstrap__SystemAdmin__Email`, `Bootstrap__SystemAdmin__Password` như mục **Bootstrap System Admin đầu tiên** bên dưới.
 
@@ -41,6 +41,18 @@ dotnet restore .\SWP391_SE2039_G06_SportsCenterManagement1.slnx
 dotnet tool restore
 dotnet ef database update --project .\SportsCenterManagement.DAL\SportsCenterManagement.DAL.csproj --startup-project .\SportsCenterManagement.API\SportsCenterManagement.API.csproj
 dotnet run --project .\SportsCenterManagement.API\SportsCenterManagement.API.csproj
+```
+
+`appsettings.Development.json` không chứa mật khẩu DB. Mỗi máy tự đặt chuỗi kết nối đầy đủ vào User Secrets (một lần):
+
+```powershell
+dotnet user-secrets set "ConnectionStrings:SportsCenter" "Host=localhost;Port=5432;Database=SportsCenterDB;Username=postgres;Password=<mật khẩu>" --project .\SportsCenterManagement.API
+```
+
+Chạy unit test (xUnit, EF InMemory, không cần PostgreSQL):
+
+```powershell
+dotnet test .\SportsCenterManagement.Tests
 ```
 
 API được xây bằng ASP.NET Core MVC Controllers và trả JSON; không dùng Razor Views vì repository này là backend cho frontend riêng. Các route Flow 1 đã triển khai:
@@ -126,17 +138,17 @@ Cổng được in ra khi chạy ứng dụng.
 
 ## Cấu hình database
 
-Connection string key là `ConnectionStrings:SportsCenter`. Môi trường Development dùng PostgreSQL như lệnh bên dưới (khớp container `postgres` của Docker Compose). `.env.example` chỉ là mẫu vì .NET không tự nạp file `.env`; đặt các biến cần thiết trong terminal, User Secrets hoặc cấu hình môi trường của nơi triển khai.
+Connection string key là `ConnectionStrings:SportsCenter`. Môi trường Development dùng PostgreSQL tại `localhost:5432` (xem `appsettings.Development.json`). `.env.example` chỉ là mẫu vì .NET không tự nạp file `.env`; đặt các biến cần thiết trong terminal, User Secrets hoặc cấu hình môi trường của nơi triển khai.
 
 PowerShell, chỉ cho phiên terminal hiện tại:
 
 ```powershell
-$env:ConnectionStrings__SportsCenter = "Host=localhost;Port=5433;Database=SportsCenterManagement;Username=scms;Password=<POSTGRES_PASSWORD>"
+$env:ConnectionStrings__SportsCenter = "Host=localhost;Port=5432;Database=SportsCenterDB;Username=postgres;Password=<mat-khau>"
 ```
 
 Không commit thông tin đăng nhập hoặc secret thật. Dùng User Secrets hoặc environment variables ngoài máy local.
 
-Để dùng database đã có, đặt `ConnectionStrings:SportsCenter` tới đúng instance/database của bạn. Frontend gọi API, không kết nối database trực tiếp. Mã seed dữ liệu nghiệp vụ đã được gỡ; ứng dụng chỉ đồng bộ schema/quyền, không tự thêm tài khoản, lớp, gói tập hoặc tài nguyên demo. Chạy toàn bộ hệ thống bằng Docker: [docker/README.md](../docker/README.md).
+Để dùng database đã có, đặt `ConnectionStrings:SportsCenter` tới đúng instance/database của bạn. Frontend gọi API, không kết nối database trực tiếp. Mặc định ứng dụng chỉ đồng bộ schema/quyền/danh mục môn, không tự thêm tài khoản, lớp, gói tập hoặc giao dịch demo; đặt `Database__SeedDemoData=true` chỉ trên database demo nếu muốn tạo dữ liệu mẫu (seed này gán gói, hóa đơn đã thanh toán và payment mẫu cho mọi hội viên hiện có). Cấu hình local đã kiểm tra cho workspace này và hướng dẫn chạy: [Kết nối DB thật](../Frontend/docs/real-database.md).
 
 JWT cần secret riêng dài tối thiểu 32 byte. Cấu hình bắt buộc `Jwt__Key` trước khi chạy. Có thể tạo nhanh cho phiên PowerShell hiện tại:
 

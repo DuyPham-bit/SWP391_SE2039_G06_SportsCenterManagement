@@ -55,9 +55,14 @@ export async function apiRequest(path, { method = 'GET', body, session = getApiS
   const isFormData = typeof FormData !== 'undefined' && body instanceof FormData;
   if (body !== undefined && !isFormData) requestHeaders.set('Content-Type', 'application/json');
   if (session) requestHeaders.set('X-SCMS-Session', session);
+  // Lets the backend return messages in the UI language (it falls back to Vietnamese).
+  if (!requestHeaders.has('Accept-Language')) {
+    let language = 'vi';
+    try { language = localStorage.getItem('SCMS_LANGUAGE') === 'en' ? 'en' : 'vi'; } catch { /* storage blocked */ }
+    requestHeaders.set('Accept-Language', language);
+  }
 
-  const isMutation = ['POST', 'PUT', 'DELETE', 'PATCH'].includes(method.toUpperCase());
-  const effectiveTimeout = timeoutMs ?? (isMutation ? 30000 : 15000);
+  const effectiveTimeout = timeoutMs ?? 30000;
 
   const timeoutController = typeof AbortController !== 'undefined' ? new AbortController() : null;
   let timeoutId = null;
@@ -131,6 +136,11 @@ export async function apiRequest(path, { method = 'GET', body, session = getApiS
       if (typeof window !== 'undefined') {
         window.dispatchEvent(new Event('scms:auth-expired'));
       }
+    }
+    // 403 with a live session usually means role/capabilities changed server-side (e.g. a Manager edited the
+    // center permission matrix): ask the session model to reload them so menus and route guards follow.
+    if (response.status === 403 && session && session === getApiSession() && typeof window !== 'undefined') {
+      window.dispatchEvent(new Event('scms:permissions-stale'));
     }
     const message = expiredToken
       ? 'Phiên đăng nhập đã hết hạn hoặc quyền đã bị thu hồi. Vui lòng đăng nhập lại.'

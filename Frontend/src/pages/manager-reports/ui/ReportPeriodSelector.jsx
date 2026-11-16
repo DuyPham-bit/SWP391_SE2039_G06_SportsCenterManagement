@@ -1,10 +1,6 @@
 import React from 'react';
-import { reportApi } from '../../../entities/report/index.js';
-import { reportDate } from '../../../shared/lib/reportFileData.js';
 
-export function ReportPeriodSelector({
-  hasPendingRange, isEn, metrics, period, range, selection, setPeriod, setRange, setSelection, showError
-}) {
+export function ReportPeriodSelector({ isEn, period, range, setPeriod, setRange, setSelection, showError }) {
   return (
     <div className="flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-brand-navy-900 p-4 rounded-2xl border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-sm no-print">
       <div className="flex flex-wrap items-center gap-2">
@@ -12,8 +8,6 @@ export function ReportPeriodSelector({
           {isEn ? 'Quick Period:' : 'Kỳ nhanh:'}
         </span>
         {[
-          ['DAY', isEn ? 'Today' : 'Hôm nay'],
-          ['WEEK', isEn ? 'This Week' : 'Tuần này'],
           ['30D', isEn ? '30 Days' : '30 ngày qua'],
           ['MONTH', isEn ? 'This Month' : 'Tháng này'],
           ['LAST_MONTH', isEn ? 'Last Month' : 'Tháng trước'],
@@ -28,10 +22,8 @@ export function ReportPeriodSelector({
                   : 'bg-brand-navy-50 dark:bg-brand-navy-800 text-brand-navy-700 dark:text-brand-navy-300 hover:bg-brand-navy-100 dark:hover:bg-brand-navy-700 border border-brand-navy-200 dark:border-brand-navy-700'
               }`}
             onClick={() => {
-              const nextRange = reportApi.getPeriodRange(id);
               setPeriod(id);
-              setSelection(nextRange);
-              setRange({ ...nextRange });
+              setSelection(id);
             }}
           >
             {label}
@@ -43,22 +35,18 @@ export function ReportPeriodSelector({
         className="flex flex-wrap items-center gap-2"
         onSubmit={e => {
           e.preventDefault();
-          let nextRange;
-          try {
-            nextRange = reportApi.getPeriodRange(range);
-          } catch (error) {
+          if (range.from && range.to && range.from > range.to) {
             showError({
               message: isEn
-                ? 'Choose valid dates, up to 366 days, grouped by day or month.'
-                : error.message,
+                ? 'Invalid date range: Start date must be earlier than or equal to End date.'
+                : 'Khoảng ngày không hợp lệ: Từ ngày phải nhỏ hơn hoặc bằng Đến ngày.',
               code: 'VAL-REPORT-DATE',
               proposedHandling: isEn ? 'Please adjust the date range.' : 'Vui lòng chọn lại khoảng thời gian tra cứu.'
             });
             return;
           }
           setPeriod('CUSTOM');
-          setSelection(nextRange);
-          setRange({ ...nextRange });
+          setSelection({ ...range });
         }}
       >
         <div className="flex items-center gap-1.5 bg-brand-navy-50 dark:bg-brand-navy-800 px-2.5 py-1.5 rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 text-xs">
@@ -94,12 +82,6 @@ export function ReportPeriodSelector({
           {isEn ? 'Apply' : 'Áp dụng'}
         </button>
       </form>
-      <p className="w-full text-xs text-brand-navy-600 dark:text-brand-navy-300" aria-live="polite">
-        {isEn ? 'Report period: ' : 'Kỳ báo cáo: '}
-        {reportDate(metrics?.from || selection.from)} → {reportDate(metrics?.to || selection.to)}
-        {' · '}{isEn ? 'Collections use payment dates; refunds use processing dates.' : 'Tiền thu tính theo ngày thanh toán; tiền hoàn tính theo ngày xử lý.'}
-        {hasPendingRange && <strong className="ml-2">{isEn ? 'Date changes have not been applied.' : 'Thay đổi khoảng ngày chưa được áp dụng.'}</strong>}
-      </p>
     </div>
   );
 }

@@ -2,7 +2,7 @@ import { asArray, centerId } from '../../../shared/api/apiUtils.js';
 import { getAuthUser } from '../../../shared/api/authState.js';
 import { apiRequest } from '../../../shared/api/http.js';
 
-export async function loadSessionsBetween(from, to, requestedCenterId = null) {
+export async function loadSessionsBetween(from, to) {
   const sessions = [];
   let rangeStart = from;
   while (rangeStart <= to) {
@@ -11,14 +11,11 @@ export async function loadSessionsBetween(from, to, requestedCenterId = null) {
     const rangeEnd = startDate.toISOString().slice(0, 10) < to
       ? startDate.toISOString().slice(0, 10)
       : to;
-    const pageParams = { from: rangeStart, to: rangeEnd, page: '1', pageSize: '100' };
-    if (requestedCenterId) pageParams.centerId = String(requestedCenterId);
-    const firstPage = await apiRequest(`class-sessions?${new URLSearchParams(pageParams)}`);
+    const firstPage = await apiRequest(`class-sessions?${new URLSearchParams({ from: rangeStart, to: rangeEnd, page: '1', pageSize: '100' })}`);
     sessions.push(...asArray(firstPage));
     const totalPages = Math.ceil((firstPage.totalCount || 0) / (firstPage.pageSize || 100));
     for (let page = 2; page <= totalPages; page += 1) {
-      const nextPageParams = { ...pageParams, page: String(page) };
-      const result = await apiRequest(`class-sessions?${new URLSearchParams(nextPageParams)}`);
+      const result = await apiRequest(`class-sessions?${new URLSearchParams({ from: rangeStart, to: rangeEnd, page: String(page), pageSize: '100' })}`);
       sessions.push(...asArray(result));
     }
     const nextDate = new Date(`${rangeEnd}T00:00:00Z`);
@@ -52,7 +49,14 @@ function mapSession(item) {
     enrolledCount: item.bookedCount || 0,
     capacity: item.capacity || 0,
     status: String(item.sessionStatus || '').toUpperCase(),
-    isBookable: Boolean(item.isBookable), allowWaitlist: Boolean(item.allowWaitlist)
+    isBookable: Boolean(item.isBookable), allowWaitlist: Boolean(item.allowWaitlist),
+    // Member-only, computed by the backend (see ClassScheduleQueryService.ResolveButtonState).
+    buttonState: item.buttonState || null,
+    bookingId: item.bookingId || null,
+    // Member-only: the caller's own queue entry; waitlistCount is the queue length for everyone.
+    waitlistId: item.waitlistId || null,
+    waitlistPosition: item.waitlistPosition || null,
+    waitlistCount: Number(item.waitlistCount) || 0
   };
 }
 
@@ -68,6 +72,8 @@ export const classApi = {
  },
  async getManagementClasses() { return asArray(await apiRequest('centers/'+centerId()+'/classes/all')); },
  // Member self-enrollment: sport → coach → class tree with per-class eligibility from the backend.
+ /** Current package entitlements: allowed sports, cancel window, active sport count. */
+ async getMyEntitlements() { return apiRequest('members/me/entitlements'); },
  async getEnrollmentOptions() { return apiRequest('members/me/enrollment-options?centerId='+centerId()); },
  async enroll(classId, subscriptionId) {
    return apiRequest('classes/'+Number(classId)+'/enrollments', { method: 'POST', body: { subscriptionId: Number(subscriptionId) } });

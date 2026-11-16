@@ -130,3 +130,26 @@ test('switching accounts while the response body is loading discards old private
   finishBody({ private: 'previous account' });
   await assert.rejects(pending, error => error.code === 'AUTH_SUPERSEDED');
 });
+
+test('fresh login returning 401 on profile/me reports cookie setup failure instead of expired session', async () => {
+  const store = new Map();
+  const api = tab(store, async (url) => {
+    if (String(url).endsWith('/auth/google')) {
+      return new Response(JSON.stringify({ userId: 7, role: 'MEMBER' }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json' }
+      });
+    }
+    return new Response(JSON.stringify({ message: 'Unauthorized' }), {
+      status: 401,
+      headers: { 'Content-Type': 'application/json' }
+    });
+  });
+
+  await assert.rejects(
+    api.authApi.loginWithGoogle({ credential: 'fake-id-token' }),
+    error => error.code === 'AUTH_COOKIE_BLOCKED' && error.status === 401 && /cookie/i.test(error.message)
+  );
+  assert.equal(api.getApiSession(), null);
+  assert.equal(store.size, 0);
+});

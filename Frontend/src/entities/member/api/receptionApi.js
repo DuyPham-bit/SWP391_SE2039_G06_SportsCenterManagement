@@ -71,7 +71,7 @@ export const receptionApi = {
     return asArray(await apiRequest(`receptionist/members/verification-status?${params}`, { signal }));
   },
 
-  async registerCounterPackage({ memberId, packageId, paymentMethod = 'TIỀN MẶT', amountReceived, posApprovalCode, idempotencyKey, cancelPendingIfAny = false }) {
+  async registerCounterPackage({ memberId, packageId, paymentMethod = 'TIỀN MẶT', amountReceived, posApprovalCode, idempotencyKey, cancelPendingIfAny = false, sportIds = null }) {
     const normalizedMethod = paymentMethod === 'TIỀN MẶT' ? 'CASH' : paymentMethod === 'THẺ POS' ? 'POS' : null;
     if (!normalizedMethod) throw new Error('Thanh toán tại quầy chỉ hỗ trợ phương thức tiền mặt hoặc quẹt thẻ POS.');
     if (normalizedMethod === 'POS' && !posApprovalCode?.trim()) {
@@ -88,7 +88,8 @@ export const receptionApi = {
         amountReceived: Number(amountReceived),
         posApprovalCode: posApprovalCode?.trim() || null,
         note: null,
-        cancelPendingIfAny: cancelPendingIfAny === true
+        cancelPendingIfAny: cancelPendingIfAny === true,
+        sportIds: sportIds?.length ? sportIds.map(Number) : null
       }
     });
     return {
@@ -101,14 +102,15 @@ export const receptionApi = {
     };
   },
 
-  async createCounterVnPayUrl({ memberId, packageId, idempotencyKey, cancelPendingIfAny = false }) {
+  async createCounterVnPayUrl({ memberId, packageId, idempotencyKey, cancelPendingIfAny = false, sportIds = null }) {
     return apiRequest('payments/counter-vnpay-url', {
       method: 'POST',
       headers: { 'Idempotency-Key': idempotencyKey || createIdempotencyKey() },
       body: {
         memberId: Number(memberId),
         packageId: Number(packageId),
-        cancelPendingIfAny: cancelPendingIfAny === true
+        cancelPendingIfAny: cancelPendingIfAny === true,
+        sportIds: sportIds?.length ? sportIds.map(Number) : null
       }
     });
   },
@@ -207,15 +209,15 @@ export const receptionApi = {
     return apiRequest(`centers/${centerId()}/support-requests/${Number(id)}`);
   },
 
-  async createSupportRequest({ memberId, subject, description }) {
+  async createSupportRequest({ memberId, subject, description, priority = 'Normal' }) {
     return apiRequest(`centers/${centerId()}/support-requests`, {
-      method: 'POST', body: { memberId: Number(memberId), subject: subject.trim(), description: description.trim() }
+      method: 'POST', body: { memberId: Number(memberId), subject: subject.trim(), description: description.trim(), priority }
     });
   },
 
-  async updateSupportRequest(id, { status, note }) {
+  async updateSupportRequest(id, { status, note, priority = null }) {
     return apiRequest(`centers/${centerId()}/support-requests/${Number(id)}`, {
-      method: 'PATCH', body: { status, note: note?.trim() || null }
+      method: 'PATCH', body: { status, note: note?.trim() || null, priority }
     });
   }
 };

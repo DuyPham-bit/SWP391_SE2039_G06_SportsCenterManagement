@@ -2,14 +2,17 @@ import { parseCalendarDate } from './dateTime.js';
 
 export function parseIsoDate(dateStr) {
   if (!dateStr) return parseCalendarDate();
-  const [y, m, d] = dateStr.split('-').map(Number);
+  const [y, m, d] = String(dateStr).slice(0, 10).split('-').map(Number);
   return new Date(Date.UTC(y, m - 1, d, 12));
 }
 
 export function formatIsoDate(date) {
-  const y = date.getUTCFullYear();
-  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
-  const d = String(date.getUTCDate()).padStart(2, '0');
+  if (!date) return '';
+  const value = date instanceof Date ? date : new Date(date);
+  if (Number.isNaN(value.getTime())) return '';
+  const y = value.getUTCFullYear();
+  const m = String(value.getUTCMonth() + 1).padStart(2, '0');
+  const d = String(value.getUTCDate()).padStart(2, '0');
   return `${y}-${m}-${d}`;
 }
 

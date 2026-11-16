@@ -1,6 +1,8 @@
 import React from 'react';
 import { parseIsoDate } from '../../../shared/lib/calendar.js';
 import { getSportTheme } from '../lib/calendarView.js';
+import { getSessionAction } from '../lib/sessionAction.js';
+import { SessionActionButton } from './SessionActionButton.jsx';
 import { translateSportName, translateClassName, translateCoachName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
 
 export function AgendaList({ DAY_LABELS, bookedSessionIds, classesByDate, handleOpenSessionDetail, isEn, todayStr }) {
@@ -38,14 +40,14 @@ export function AgendaList({ DAY_LABELS, bookedSessionIds, classesByDate, handle
               <div className="divide-y divide-brand-navy-100 border border-brand-navy-200 rounded-xl overflow-hidden bg-brand-navy-50/20">
                 {dayClasses.map(cls => {
                   const theme = getSportTheme(cls.sportName, isEn);
-                  const isBooked = bookedSessionIds.has(cls.sessionId) || bookedSessionIds.has(cls.id);
-                  const isFull = cls.enrolledCount >= cls.capacity;
+                  const action = getSessionAction(cls, bookedSessionIds, isEn);
+                  const isBooked = action.state === 'ALREADY_BOOKED';
 
                   return (
                     <div
                       key={cls.sessionId || cls.id}
                       onClick={() => handleOpenSessionDetail(cls)}
-                      className={`p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${
+                      className={`p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs cursor-pointer transition-colors ${action.dimmed ? 'opacity-50 pointer-events-none ' : ''}${
                             isBooked
                               ? 'bg-brand-sage-50/70 hover:bg-brand-sage-100/70'
                               : 'bg-white hover:bg-brand-navy-50'
@@ -82,32 +84,7 @@ export function AgendaList({ DAY_LABELS, bookedSessionIds, classesByDate, handle
                           </span>
                         </div>
 
-                        {isBooked ? (
-                          <button
-                            type="button"
-                            disabled
-                            className="px-3.5 py-1.5 rounded-lg font-chivo text-xs font-black uppercase bg-brand-sage-100 text-brand-sage-800 border border-brand-sage-300 flex items-center gap-1 cursor-default"
-                          >
-                            <span className="material-symbols-outlined text-[14px]">verified</span>
-                            <span>{isEn ? 'BOOKED' : 'ĐÃ ĐẶT CHỖ'}</span>
-                          </button>
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              handleOpenSessionDetail(cls);
-                            }}
-                            disabled={!cls.isBookable || isFull}
-                            className={`px-4 py-1.5 rounded-lg font-chivo text-xs font-bold uppercase transition-all shadow-xs ${
-                                  !cls.isBookable || isFull
-                                    ? 'bg-brand-navy-200 text-brand-navy-400 cursor-not-allowed'
-                                    : 'bg-brand-danger-600 hover:bg-brand-danger-700 text-white'
-                                }`}
-                          >
-                            {isFull ? (isEn ? 'Full' : 'Hết chỗ') : (isEn ? 'Book Now' : 'Đặt Chỗ')}
-                          </button>
-                        )}
+                        <SessionActionButton action={action} cls={cls} handleOpenSessionDetail={handleOpenSessionDetail} size="md" />
                       </div>
                     </div>
                   );

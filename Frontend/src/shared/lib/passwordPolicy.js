@@ -6,10 +6,6 @@ export function isAsciiPassword(value) {
   return typeof value === 'string' && !/[^\x20-\x7E]/.test(value);
 }
 
-export function assertAsciiPassword(value) {
-  if (!isAsciiPassword(value)) throw new Error(PASSWORD_CHARACTER_ERROR);
-}
-
 // Mirrors Backend PasswordPolicy so users see the same rules before submitting.
 export const PASSWORD_RULES = [
   { id: 'length', label: 'Từ 6 đến 128 ký tự, không có khoảng trắng', test: value => value.length >= 6 && value.length <= 128 && !/\s/.test(value) },

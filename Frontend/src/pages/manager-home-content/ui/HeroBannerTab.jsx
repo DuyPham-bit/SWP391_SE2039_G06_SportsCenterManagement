@@ -107,11 +107,18 @@ export function HeroBannerTab({
               </button>
             </div>
             <div className="h-36 rounded-xl overflow-hidden bg-brand-navy-900 relative border border-brand-navy-200 dark:border-brand-navy-800">
-              <img
-                src={content.heroBanner.posterUrl}
-                alt="Hero poster preview"
-                className="w-full h-full object-cover opacity-80"
-              />
+              {content.heroBanner?.posterUrl ? (
+                <img
+                  src={content.heroBanner.posterUrl}
+                  alt="Hero poster preview"
+                  className="w-full h-full object-cover opacity-80"
+                />
+              ) : (
+                // No poster yet: an empty <img src=""> renders as a broken-image icon.
+                <div className="w-full h-full flex items-center justify-center text-xs text-brand-navy-300">
+                  {isEn ? 'No poster image yet' : 'Chưa có ảnh poster'}
+                </div>
+              )}
               <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-950 via-transparent to-transparent flex items-end p-3">
                 <span className="text-[11px] text-white font-bold bg-black/60 px-2 py-0.5 rounded">
                   {isEn ? 'Hero Poster Preview' : 'Xem trước Poster Banner'}
@@ -119,7 +126,19 @@ export function HeroBannerTab({
               </div>
             </div>
           </div>
-
+
+          <div>
+            <label className="block text-xs font-bold text-brand-navy-700 dark:text-brand-navy-300 uppercase mb-1">
+              {isEn ? 'Background Video URL (MP4):' : 'Đường dẫn Video Nền (MP4):'}
+            </label>
+            <input
+              type="text"
+              value={content.heroBanner.videoUrl}
+              onChange={(e) => updateContentField('heroBanner', 'videoUrl', e.target.value)}
+              placeholder="./hero-video.mp4"
+              className="w-full px-3 py-2 rounded-xl border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white text-xs focus:ring-2 focus:ring-brand-sage-700 focus:outline-none"
+            />
+          </div>
         </div>
       </div>
 

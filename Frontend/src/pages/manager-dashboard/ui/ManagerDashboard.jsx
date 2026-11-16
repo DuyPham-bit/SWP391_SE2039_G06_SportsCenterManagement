@@ -1,7 +1,6 @@
 import { parseApiDate } from '../../../shared/lib/dateTime.js';
 import { AnimatedNumber } from '../../../shared/lib/useCountUp.jsx';
 import React, { useEffect, useState, useMemo } from 'react';
-import { reportDate } from '../../../shared/lib/reportFileData.js';
 import { reportApi } from '../../../entities/report/index.js';
 import { systemApi } from '../../../entities/permission/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
@@ -76,6 +75,19 @@ function formatLogTime(timestamp, isEn) {
   } catch {
     return timestamp;
   }
+}
+
+/**
+ * Money for narrow KPI tiles: "1,25 tỷđ" / "400 trđ" so billions never overflow a card;
+ * the exact amount stays in the tile's title and in its detail line.
+ */
+function compactVnd(value, isEn) {
+  const n = Number(value || 0);
+  const abs = Math.abs(n);
+  const fmt = (v, digits) => v.toLocaleString(isEn ? 'en-US' : 'vi-VN', { maximumFractionDigits: digits });
+  if (abs >= 1e9) return `${fmt(n / 1e9, 2)} ${isEn ? 'B ₫' : 'tỷđ'}`;
+  if (abs >= 1e6) return `${fmt(n / 1e6, 1)} ${isEn ? 'M ₫' : 'trđ'}`;
+  return `${n.toLocaleString('vi-VN')}đ`;
 }
 
 export function ManagerDashboard() {
@@ -190,6 +202,42 @@ export function ManagerDashboard() {
         hoverCard: 'hover:border-brand-terra-400 dark:hover:border-brand-terra-600 hover:shadow-brand-terra-500/10 hover:bg-brand-terra-50/20',
         badge: 'bg-brand-terra-100/70 text-brand-terra-800 dark:bg-brand-terra-950/70 dark:text-brand-terra-300'
       }
+    },
+    {
+      path: 'invoices',
+      icon: 'receipt_long',
+      title: isEn ? 'Invoices & Collections' : 'Hóa đơn & Thu tiền',
+      description: isEn ? 'Track invoices, counter collections and settlement status.' : 'Tra cứu hóa đơn, thu tiền tại quầy và đối soát thanh toán.',
+      tag: isEn ? 'Finance' : 'Hóa đơn',
+      theme: {
+        iconBg: 'bg-brand-sage-50 dark:bg-brand-sage-950/50 text-brand-sage-700 dark:text-brand-sage-400 border border-brand-sage-200/80 dark:border-brand-sage-800/60',
+        hoverCard: 'hover:border-brand-sage-500 dark:hover:border-brand-sage-600 hover:shadow-brand-sage-500/10 hover:bg-brand-sage-500/5',
+        badge: 'bg-brand-sage-100/70 text-brand-sage-700 dark:bg-brand-sage-950/70 dark:text-brand-sage-300'
+      }
+    },
+    {
+      path: 'support-communications',
+      icon: 'campaign',
+      title: isEn ? 'Support & Broadcasts' : 'Hỗ trợ & Thông báo',
+      description: isEn ? 'Handle member support tickets and center announcements.' : 'Tiếp nhận yêu cầu hỗ trợ và gửi thông báo toàn cơ sở.',
+      tag: isEn ? 'Support' : 'Hỗ trợ',
+      theme: {
+        iconBg: 'bg-brand-teal-50 dark:bg-brand-teal-950/50 text-brand-teal-700 dark:text-brand-teal-400 border border-brand-teal-200/80 dark:border-brand-teal-800/60',
+        hoverCard: 'hover:border-brand-teal-400 dark:hover:border-brand-teal-600 hover:shadow-brand-teal-500/10 hover:bg-brand-teal-50/20',
+        badge: 'bg-brand-teal-100/70 text-brand-teal-800 dark:bg-brand-teal-950/70 dark:text-brand-teal-300'
+      }
+    },
+    {
+      path: 'payroll',
+      icon: 'account_balance_wallet',
+      title: isEn ? 'Coach & Staff Payroll' : 'Bảng lương nhân sự & HLV',
+      description: isEn ? 'Review monthly teaching hours, commission and payroll sheets.' : 'Tổng hợp công giảng dạy, hoa hồng và bảng lương định kỳ.',
+      tag: isEn ? 'Payroll' : 'Bảng lương',
+      theme: {
+        iconBg: 'bg-brand-sand-50 dark:bg-brand-sand-950/50 text-brand-sand-800 dark:text-brand-sand-400 border border-brand-sand-200/80 dark:border-brand-sand-800/60',
+        hoverCard: 'hover:border-brand-sand-400 dark:hover:border-brand-sand-600 hover:shadow-brand-sand-500/10 hover:bg-brand-sand-50/20',
+        badge: 'bg-brand-sand-100/70 text-brand-sand-800 dark:bg-brand-sand-950/70 dark:text-brand-sand-300'
+      }
     }
   ];
 
@@ -242,7 +290,12 @@ export function ManagerDashboard() {
 
   const totalRooms = metrics?.totalRooms ?? 0;
   const activeRooms = metrics?.activeRooms ?? 0;
-  const vacantRooms = Math.max(0, totalRooms - activeRooms);
+  const inactiveRooms = Math.max(0, totalRooms - activeRooms);
+  const inUseRooms = Math.min(
+    activeRooms,
+    (metrics?.topRooms || []).filter(r => Number(r.sessionsCount || 0) > 0).length
+  );
+  const idleReadyRooms = Math.max(0, activeRooms - inUseRooms);
 
   const todayCheckins = metrics?.todayCheckins ?? 0;
   const occupancyRate = Number(metrics?.occupancyRate ?? 0);
@@ -257,11 +310,12 @@ export function ManagerDashboard() {
   // Real room donut segments computed from DB
   const roomDonutData = useMemo(() => {
     const list = [];
-    if (activeRooms > 0) list.push({ label: 'Đang có lớp', value: activeRooms, color: '#81B29A' });
-    if (vacantRooms > 0) list.push({ label: 'Sẵn sàng / Trống', value: vacantRooms, color: '#3FAEB8' });
-    if (list.length === 0) list.push({ label: 'Chưa có sân', value: totalRooms || 1, color: '#6C6D70' });
+    if (inUseRooms > 0) list.push({ label: isEn ? 'Hosting classes' : 'Đang có lớp', value: inUseRooms, color: '#81B29A' });
+    if (idleReadyRooms > 0) list.push({ label: isEn ? 'Ready / Idle' : 'Sẵn sàng / Trống', value: idleReadyRooms, color: '#3FAEB8' });
+    if (inactiveRooms > 0) list.push({ label: isEn ? 'Inactive' : 'Ngưng hoạt động', value: inactiveRooms, color: '#E07A5F' });
+    if (list.length === 0) list.push({ label: isEn ? 'No courts' : 'Chưa có sân', value: totalRooms || 1, color: '#6C6D70' });
     return list;
-  }, [activeRooms, vacantRooms, totalRooms]);
+  }, [inUseRooms, idleReadyRooms, inactiveRooms, totalRooms, isEn]);
 
   // Real sport occupancy items from DB with clean 2-letter codes
   const sportOccupancyItems = useMemo(() => {
@@ -478,7 +532,7 @@ export function ManagerDashboard() {
                   <span className="material-symbols-outlined text-[17px] text-brand-sand-700 dark:text-brand-sand-400 group-hover:scale-110 transition-transform">
                     card_membership
                   </span>
-                  <span>{isEn ? 'Renew Package' : 'Gia hạn gói tập'}</span>
+                  <span>{isEn ? 'Packages & Pricing' : 'Quản lý gói tập'}</span>
                 </a>
 
                 <a
@@ -555,7 +609,7 @@ export function ManagerDashboard() {
                     {isEn ? 'AVAILABLE COURTS' : 'SÂN & PHÒNG KHẢ DỤNG'}
                   </span>
                   <h3 className="text-2xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1">
-                    <AnimatedNumber value={vacantRooms} duration={1000} />
+                    <AnimatedNumber value={activeRooms} duration={1000} />
                   </h3>
                 </div>
                 <div className="w-10 h-10 rounded-xl bg-brand-teal-700 text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -563,7 +617,7 @@ export function ManagerDashboard() {
                 </div>
               </div>
               <p className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400 mt-2 truncate relative z-10">
-                {isEn ? `${vacantRooms}/${totalRooms} courts ready` : `${vacantRooms}/${totalRooms} sân & phòng sẵn sàng`}
+                {isEn ? `${activeRooms}/${totalRooms} courts active` : `${activeRooms}/${totalRooms} sân & phòng sẵn sàng`}
               </p>
             </div>
 
@@ -595,21 +649,19 @@ export function ManagerDashboard() {
                     <span className="text-[11px] font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
                       {isEn ? 'NET REVENUE' : 'DOANH THU THỰC NHẬN'}
                     </span>
-                    <h3 className="text-2xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1">
-                      <AnimatedNumber value={netRevenue} duration={1200} suffix="đ" />
+                    <h3 className="text-lg sm:text-2xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1 truncate"
+                      title={`${Number(netRevenue || 0).toLocaleString('vi-VN')}đ`}>
+                      {compactVnd(netRevenue, isEn)}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-brand-sand-700 text-white flex items-center justify-center shrink-0 shadow-sm">
                     <span className="material-symbols-outlined text-[20px]">payments</span>
                   </div>
                 </div>
-                <p className="text-[11px] text-brand-navy-600 dark:text-brand-navy-300 mt-1">
+                <p className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400 mt-1 truncate">
                   {isEn
-                    ? `Collected ${grossRevenue.toLocaleString('vi-VN')}đ − Refunded ${refundedRevenue.toLocaleString('vi-VN')}đ`
-                    : `Đã thu ${grossRevenue.toLocaleString('vi-VN')}đ − Đã hoàn ${refundedRevenue.toLocaleString('vi-VN')}đ`}
-                </p>
-                <p className="text-[11px] text-slate-600 dark:text-slate-300 mt-1" title={isEn ? 'Collections use payment dates; refunds use processing dates.' : 'Tiền thu tính theo ngày thanh toán; tiền hoàn tính theo ngày xử lý.'}>
-                  {reportDate(metrics?.from)} → {reportDate(metrics?.to)}
+                    ? `Gross: ${grossRevenue.toLocaleString('vi-VN')}đ`
+                    : `Tổng thu ${grossRevenue.toLocaleString('vi-VN')}đ${refundedRevenue > 0 ? ` · Hoàn ${refundedRevenue.toLocaleString('vi-VN')}đ` : ''}`}
                 </p>
               </div>
               <div className="mt-2 -mb-1">
@@ -625,8 +677,9 @@ export function ManagerDashboard() {
                     <span className="text-[11px] font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
                       {isEn ? 'TOP SPORT' : 'BỘ MÔN DOANH THU #1'}
                     </span>
-                    <h3 className="text-xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1 truncate max-w-[120px]" title={topRevenueSport?.sportName || 'Chưa có'}>
-                      {topRevenueSport ? <AnimatedNumber value={topRevenueSport.net || 0} duration={1200} suffix="đ" /> : '0đ'}
+                    <h3 className="text-lg sm:text-xl font-black font-chivo text-brand-navy-900 dark:text-white mt-1 truncate"
+                      title={topRevenueSport ? `${topRevenueSport.sportName}: ${Number(topRevenueSport.net || 0).toLocaleString('vi-VN')}đ` : undefined}>
+                      {topRevenueSport ? compactVnd(topRevenueSport.net, isEn) : '0đ'}
                     </h3>
                   </div>
                   <div className="w-10 h-10 rounded-xl bg-brand-sage-700 text-white flex items-center justify-center shrink-0 shadow-sm">
@@ -658,7 +711,7 @@ export function ManagerDashboard() {
                 </span>
               </div>
               <div className="py-2 flex-1 flex items-center justify-center">
-                <RoomStatusDonutChart total={totalRooms} data={roomDonutData} activeRooms={activeRooms} vacantRooms={vacantRooms} />
+                <RoomStatusDonutChart total={totalRooms} data={roomDonutData} activeRooms={inUseRooms} vacantRooms={idleReadyRooms} readyRooms={activeRooms} />
               </div>
             </div>
 
@@ -732,7 +785,7 @@ export function ManagerDashboard() {
                 </div>
 
                 {/* Streamlined Executive KPI Strip (Compact & High-Density) */}
-                <div className="grid grid-cols-3 gap-2.5 pt-2.5 pb-1">
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-2.5 pb-1">
                   <div className="px-3 py-2 rounded-xl bg-brand-sand-50/80 dark:bg-brand-sand-950/50 border border-brand-sand-200/80 dark:border-brand-sand-800/60 flex items-center gap-2.5">
                     <div className="w-7 h-7 rounded-lg bg-brand-sand-600 text-white flex items-center justify-center shrink-0 shadow-2xs">
                       <span className="material-symbols-outlined text-[15px]">trending_up</span>
@@ -985,7 +1038,7 @@ export function ManagerDashboard() {
           </div>
 
           {/* ========================================================
-              7. ROW 5: 10 OPERATIONAL MANAGEMENT MODULES SHORTCUTS
+              7. ROW 5: OPERATIONAL MANAGEMENT MODULES SHORTCUTS
              ======================================================== */}
           <section className="bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 rounded-2xl p-5 shadow-xs space-y-4 transition-all">
             <div className="flex items-center justify-between pb-3.5 border-b border-brand-navy-100 dark:border-brand-navy-800">
@@ -998,7 +1051,7 @@ export function ManagerDashboard() {
                     {isEn ? 'Operational Management Modules' : 'Phân Hệ Nghiệp Vụ Quản Lý Vận Hành'}
                   </h2>
                   <p className="text-[11px] text-brand-navy-400 font-medium">
-                    {isEn ? 'Direct access to all 10 management workspaces' : 'Truy cập nhanh 10 phân hệ nghiệp vụ Olympic Sports Arena'}
+                    {isEn ? `Direct access to all ${shortcuts.length} management workspaces` : `Truy cập nhanh ${shortcuts.length} phân hệ nghiệp vụ Olympic Sports Arena`}
                   </p>
                 </div>
               </div>
@@ -1007,7 +1060,7 @@ export function ManagerDashboard() {
               </span>
             </div>
 
-            <div className="grid sm:grid-cols-2 lg:grid-cols-5 gap-3">
+            <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
               {shortcuts.map((mod) => (
                 <a
                   key={mod.path}

@@ -6,8 +6,6 @@ using System.Text;
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.CoreFlows;
 using SportsCenterManagement.BLL.DTOs.Payments;
@@ -24,16 +22,12 @@ public sealed class PaymentService(
     IVnPayService vnPayService,
     IMoMoService moMoService,
     IConfiguration configuration,
-    ILogger<PaymentService>? logger = null,
     IBusinessClock? clock = null) : IPaymentService
 {
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IVnPayService _vnPayService = vnPayService;
     private readonly IMoMoService _moMoService = moMoService;
     private readonly IConfiguration _configuration = configuration;
-    private readonly ILogger<PaymentService> _logger = logger ?? NullLogger<PaymentService>.Instance;
-    // VNPay links expire after 15 minutes; 5 extra minutes covers a payment finished right at the deadline.
-    private const int VnPayAbandonedAttemptMinutes = 20;
     private readonly IBusinessClock _clock = clock ?? new BusinessClock(configuration);
 
     // Only a payment that bought a package the member still holds (Active, not past its end date,
@@ -58,8 +52,15 @@ public sealed class PaymentService(
         CancellationToken cancellationToken = default)
     {
         return await CreateVnPayPaymentUrlCoreAsync(
-            memberId, memberId, null, request, ipAddress, idempotencyKey, cancellationToken);
+            memberId, await GetMemberUserIdAsync(memberId, cancellationToken), null, request, ipAddress, idempotencyKey,
+            cancellationToken);
     }
+
+    /// <summary>Self-service actor is the member's User.Id, keeping idempotency scopes in one (user) namespace with staff.</summary>
+    private async Task<long> GetMemberUserIdAsync(long memberId, CancellationToken cancellationToken) =>
+        await _unitOfWork.Context.MemberProfiles.Where(profile => profile.Id == memberId)
+            .Select(profile => (long?)profile.UserId).SingleOrDefaultAsync(cancellationToken)
+        ?? throw BusinessException.NotFound("Không tìm thấy hồ sơ hội viên.");
 
     public async Task<string> CreateCounterVnPayPaymentUrlAsync(
         long staffUserId,
@@ -121,7 +122,8 @@ public sealed class PaymentService(
     {
         EnsureGatewayConfiguration("MoMo", "Momo:PartnerCode", "Momo:AccessKey", "Momo:SecretKey", "Momo:PaymentUrl", "Momo:ReturnUrl", "Momo:NotifyUrl");
         var (invoice, payment, existingLink) = await PrepareOnlinePaymentAsync(
-            memberId, memberId, null, request, "MOMO", idempotencyKey, cancellationToken);
+            memberId, await GetMemberUserIdAsync(memberId, cancellationToken), null, request, "MOMO", idempotencyKey,
+            cancellationToken);
         if (!string.IsNullOrWhiteSpace(existingLink))
         {
             return existingLink;
@@ -142,9 +144,7 @@ public sealed class PaymentService(
                                         response.Amount == payment.Amount &&
                                         response.PartnerCode == expectedPartnerCode &&
                                         Uri.TryCreate(response.PayUrl, UriKind.Absolute, out var payUri) &&
-                                        payUri.Scheme == Uri.UriSchemeHttps &&
-                                        (payUri.Host.Equals("momo.vn", StringComparison.OrdinalIgnoreCase) ||
-                                         payUri.Host.EndsWith(".momo.vn", StringComparison.OrdinalIgnoreCase));
+                                        IsValidMomoPayUri(payUri, _configuration);
             if (!validProviderResponse)
             {
                 await SetPaymentStatusAsync(payment.Id, "Failed",
@@ -159,21 +159,17 @@ public sealed class PaymentService(
         {
             throw;
         }
-        catch (MomoRequestRejectedException rejected)
+        catch (HttpRequestException ex) when (IsDefiniteGatewayRejection(ex.StatusCode))
         {
-            _logger.LogWarning(rejected,
-                "MoMo rejected payment creation. PaymentId={PaymentId} GatewayReference={GatewayReference} HttpStatus={HttpStatus}",
-                payment.Id, payment.GatewayReference, rejected.StatusCode);
+            // A 4xx means MoMo refused the request, so no transaction exists on their side: fail it instead of
+            // leaving a Pending row that a manager would have to reconcile by hand.
             await SetPaymentStatusAsync(payment.Id, "Failed",
-                $"MoMo từ chối yêu cầu tạo link (HTTP {rejected.StatusCode}); chưa phát sinh giao dịch.", CancellationToken.None);
-            throw new BusinessException(HttpStatusCode.ServiceUnavailable,
-                "Cổng MoMo đang từ chối kết nối từ máy chủ. Hóa đơn chưa bị trừ tiền; vui lòng thanh toán bằng VNPay hoặc thử lại sau.");
+                $"MoMo rejected link creation (HTTP {(int)ex.StatusCode!.Value}).", cancellationToken);
+            throw new BusinessException(HttpStatusCode.BadGateway,
+                "Cổng MoMo đang từ chối yêu cầu tạo giao dịch. Hóa đơn chưa thu tiền; vui lòng thử lại sau hoặc chọn VNPay.");
         }
-        catch (Exception exception)
+        catch (Exception)
         {
-            _logger.LogError(exception,
-                "MoMo creation failed. PaymentId={PaymentId} GatewayReference={GatewayReference}",
-                payment.Id, payment.GatewayReference);
             await MarkPaymentPendingForReconciliationAsync(payment.Id, "MoMo chưa xác nhận kết quả khởi tạo; cần đối soát trước khi thử lại.");
             throw new BusinessException(HttpStatusCode.ServiceUnavailable,
                 "Chưa xác định được kết quả tạo giao dịch MoMo. Hệ thống giữ Pending; quản lý cần đối soát trước lần thử mới.");
@@ -415,6 +411,9 @@ public sealed class PaymentService(
             }
         }
 
+        var sportIds = await MembershipEntitlements.ResolvePurchaseSportsAsync(_unitOfWork.Context, member.Id, package,
+            request.SportIds, ToBusinessDate(DateTime.UtcNow), cancellationToken);
+
         var received = request.AmountReceived;
         if (method == "POS" && received == 0)
         {
@@ -457,6 +456,7 @@ public sealed class PaymentService(
         };
         _unitOfWork.Context.MemberSubscriptions.Add(subscription);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        MembershipEntitlements.AddSports(_unitOfWork.Context, subscription.Id, sportIds);
 
         var invoice = new Invoice
         {
@@ -761,11 +761,9 @@ public sealed class PaymentService(
                 throw BusinessException.BadRequest("Sau khi hoàn trên máy POS, cần gửi ExternalRefundReference.");
             }
 
-            // Approved = hoàn tiền thủ công đã chuyển khoản; phải giữ chỗ như Succeeded để không hoàn trùng.
             var reserved = await _unitOfWork.Context.PaymentRefunds
                 .Where(candidate => candidate.PaymentId == payment.Id &&
-                                    (candidate.Status == "Pending" || candidate.Status == "Approved" ||
-                                     candidate.Status == "Succeeded"))
+                                    (candidate.Status == "Pending" || candidate.Status == "Approved" || candidate.Status == "Succeeded"))
                 .SumAsync(candidate => (decimal?)candidate.Amount, cancellationToken) ?? 0m;
             var refundable = payment.Amount - reserved;
             if (request.Amount <= 0 || request.Amount > refundable)
@@ -1408,7 +1406,7 @@ public sealed class PaymentService(
                 throw BusinessException.Forbidden("Tài khoản hội viên không hoạt động.");
             }
 
-            var effectiveActorUserId = (actorUserId == memberId || !await _unitOfWork.Context.Users.AnyAsync(u => u.Id == actorUserId, cancellationToken))
+            var effectiveActorUserId = !await _unitOfWork.Context.Users.AnyAsync(u => u.Id == actorUserId, cancellationToken)
                 ? member.UserId
                 : actorUserId;
 
@@ -1450,6 +1448,8 @@ public sealed class PaymentService(
                         $"Hội viên đã có hóa đơn chờ thanh toán cho gói này ({pendingInvoiceNumber}); hãy tiếp tục thanh toán hóa đơn đó.");
                 }
             }
+            var sportIds = await MembershipEntitlements.ResolvePurchaseSportsAsync(_unitOfWork.Context, member.Id, package,
+                request.SportIds, ToBusinessDate(now), cancellationToken);
             if (!member.CenterId.HasValue)
             {
                 member.CenterId = package.CenterId;
@@ -1469,6 +1469,7 @@ public sealed class PaymentService(
             };
             _unitOfWork.Context.MemberSubscriptions.Add(subscription);
             await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+            MembershipEntitlements.AddSports(_unitOfWork.Context, subscription.Id, sportIds);
             invoice = new Invoice
             {
                 InvoiceNumber = CreateInvoiceNumber(now),
@@ -1544,30 +1545,6 @@ public sealed class PaymentService(
         {
             throw BusinessException.Conflict($"{provider} chỉ nhận số tiền VND nguyên; số dư hóa đơn đang có phần thập phân.");
         }
-        // A VNPay link expires after 15 minutes (vnp_ExpireDate), so an abandoned attempt (popup closed
-        // without returning) can never complete. Close it so the member can retry; a late signed success
-        // callback still marks it Succeeded in CompleteGatewayPaymentAsync.
-        var vnPayLinkCutoff = DateTime.UtcNow.AddMinutes(-VnPayAbandonedAttemptMinutes);
-        var abandonedVnPayAttempts = await _unitOfWork.Context.Payments
-            .Where(candidate => candidate.InvoiceId == invoice.Id &&
-                                candidate.PaymentStatus == "Pending" &&
-                                candidate.PaymentMethod == "VNPAY" &&
-                                candidate.GatewayPaymentUrl != null &&
-                                candidate.AttemptedAt < vnPayLinkCutoff)
-            .ToListAsync(cancellationToken);
-        if (abandonedVnPayAttempts.Count > 0)
-        {
-            var expiredAt = DateTime.UtcNow;
-            foreach (var abandoned in abandonedVnPayAttempts)
-            {
-                abandoned.PaymentStatus = "Failed";
-                abandoned.Note = "Link VNPay đã hết hạn mà không nhận được kết quả; đóng để cho phép thanh toán lại.";
-                _unitOfWork.Context.AuditLogs.Add(CreateAudit(null, "Payment.GatewayLinkExpired", "Payment", abandoned.Id,
-                    new { abandoned.GatewayReference, abandoned.AttemptedAt }, expiredAt));
-            }
-            await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
-        }
-
         var pendingPayments = await _unitOfWork.Context.Payments
             .Where(candidate => candidate.InvoiceId == invoice.Id && candidate.PaymentStatus == "Pending")
             .OrderByDescending(candidate => candidate.Id)
@@ -1841,17 +1818,7 @@ public sealed class PaymentService(
             var package = await _unitOfWork.Context.MembershipPackages
                 .SingleAsync(candidate => candidate.Id == subscription.PackageId, cancellationToken);
             var today = ToBusinessDate(now);
-            var currentEnd = await _unitOfWork.Context.MemberSubscriptions
-                .Where(candidate => candidate.MemberId == subscription.MemberId &&
-                                    candidate.PackageId == subscription.PackageId &&
-                                    candidate.Status == "Active" && candidate.EndDate >= today)
-                .MaxAsync(candidate => (DateOnly?)candidate.EndDate, cancellationToken);
-            subscription.StartDate = currentEnd.HasValue ? currentEnd.Value.AddDays(1) : today;
-            var durationDays = subscription.DurationDays > 0 ? subscription.DurationDays : package.DurationDays;
-            subscription.EndDate = subscription.StartDate.Value.AddDays(durationDays - 1);
-            subscription.DurationDays = durationDays;
-            subscription.Status = "Active";
-            subscription.UpdatedAt = now;
+            await MembershipEntitlements.ActivateAsync(_unitOfWork.Context, subscription, package, today, now, cancellationToken);
             await FlowNotificationWriter.MembershipPaidAsync(_unitOfWork.Context, senderId, subscription,
                 package.Name, today, cancellationToken);
         }
@@ -1881,6 +1848,20 @@ public sealed class PaymentService(
             {
                 subscription.Status = "Refunded";
                 subscription.UpdatedAt = now;
+            }
+
+            // A fully refunded upgrade gives back the package it replaced, if that one has not run out.
+            var refundedIds = subscriptions.Select(subscription => subscription.Id).ToList();
+            var today = ToBusinessDate(now);
+            var replaced = await _unitOfWork.Context.MemberSubscriptions
+                .Where(other => other.UpgradedBySubscriptionId != null && refundedIds.Contains(other.UpgradedBySubscriptionId.Value)
+                    && other.Status == MembershipEntitlements.StatusUpgraded && other.EndDate >= today)
+                .ToListAsync(cancellationToken);
+            foreach (var other in replaced)
+            {
+                other.Status = "Active";
+                other.UpgradedBySubscriptionId = null;
+                other.UpdatedAt = now;
             }
         }
     }
@@ -2245,6 +2226,34 @@ public sealed class PaymentService(
     private static string GetProvider(string method) =>
         method.StartsWith("VNPAY", StringComparison.OrdinalIgnoreCase) ? "VNPAY" :
         method.StartsWith("MOMO", StringComparison.OrdinalIgnoreCase) ? "MOMO" : method.ToUpperInvariant();
+
+    internal static bool IsDefiniteGatewayRejection(HttpStatusCode? status) =>
+        status is { } code && (int)code is >= 400 and < 500 && code != HttpStatusCode.RequestTimeout;
+
+    internal static bool IsValidMomoPayUri(Uri payUri, IConfiguration configuration)
+    {
+        if (payUri.Scheme == Uri.UriSchemeHttps &&
+            (payUri.Host.Equals("momo.vn", StringComparison.OrdinalIgnoreCase) ||
+             payUri.Host.EndsWith(".momo.vn", StringComparison.OrdinalIgnoreCase)))
+        {
+            return true;
+        }
+
+        // Sandbox fallback targets only the server-configured ReturnUrl to avoid open redirects.
+        if (!MoMoService.IsSandboxFallbackEnabled(configuration) ||
+            !Uri.TryCreate(configuration["Momo:ReturnUrl"]?.Trim(), UriKind.Absolute, out var returnUri))
+        {
+            return false;
+        }
+
+        var schemeAllowed = payUri.Scheme == returnUri.Scheme &&
+                            (payUri.Scheme == Uri.UriSchemeHttps ||
+                             (payUri.Scheme == Uri.UriSchemeHttp && payUri.IsLoopback));
+        return schemeAllowed &&
+               string.Equals(payUri.Host, returnUri.Host, StringComparison.OrdinalIgnoreCase) &&
+               payUri.Port == returnUri.Port &&
+               string.Equals(payUri.AbsolutePath.TrimEnd('/'), returnUri.AbsolutePath.TrimEnd('/'), StringComparison.Ordinal);
+    }
 
     private void EnsureGatewayConfiguration(string provider, params string[] keys)
     {

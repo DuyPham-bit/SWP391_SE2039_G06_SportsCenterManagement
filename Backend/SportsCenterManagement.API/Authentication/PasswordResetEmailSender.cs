@@ -75,6 +75,34 @@ public sealed class PasswordResetEmailSender(
         return result.Success;
     }
 
+    /// <summary>Sends the counter-created member's activation link. The link is never persisted or logged.</summary>
+    public async Task<bool> SendMemberActivationAsync(
+        long recipientUserId, string fullName, string phone, string email, string verifyUrl,
+        DateTime expiresAt, string idempotencyKey, CancellationToken ct)
+    {
+        if (!IsConfigured) return false;
+        var delivery = new CommunicationDelivery
+        {
+            RecipientUserId = recipientUserId, Channel = "Email", Status = "Sending", CreatedAt = DateTime.UtcNow
+        };
+        db.CommunicationDeliveries.Add(delivery);
+        await db.SaveChangesAsync(ct);
+        var hours = (int)Math.Round(SportsCenterManagement.BLL.Services.MemberActivationService.LinkLifetime.TotalHours);
+        var title = MemberActivationEmailTemplate.Subject;
+        var message = MemberActivationEmailTemplate.BuildText(fullName, phone, email, verifyUrl, hours);
+        var html = MemberActivationEmailTemplate.BuildHtml(fullName, phone, email, verifyUrl, hours);
+        var result = await SendCodeAsync(email, title, message, html, idempotencyKey, new
+        {
+            deliveryId = delivery.Id, channel = "Email", recipientUserId, to = email,
+            title, message, html, notificationType = "MemberActivation", expiresAt
+        }, ct);
+        delivery.Status = result.Success ? "Sent" : "Failed";
+        delivery.SentAt = result.Success ? DateTime.UtcNow : null;
+        delivery.ProviderMessage = result.Status;
+        await db.SaveChangesAsync(CancellationToken.None);
+        return result.Success;
+    }
+
     private async Task<(bool Success, string Status)> SendCodeAsync(
         string email, string title, string message, string htmlMessage, string key, object payload, CancellationToken ct)
     {

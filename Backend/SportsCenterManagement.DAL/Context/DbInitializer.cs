@@ -7,24 +7,22 @@ namespace SportsCenterManagement.DAL.Context;
 /// <summary>Initializes schema and required authorization data only.</summary>
 public static class DbInitializer
 {
-    public static async Task SeedAsync(SportsCenterDbContext context, bool baselineLegacySchema = false)
+    // Timestamps are stored as UTC; session dates/times are Vietnam business time (UTC+7, no DST).
+    private static DateTime BusinessToUtc(DateTime businessTime) => businessTime.AddHours(-7);
+
+    /// <param name="seedDemoData">
+    /// Opt-in only (Database:SeedDemoData). The demo seed writes paid invoices, payments and active
+    /// subscriptions for every existing member, so it must never run against a real database.
+    /// </param>
+    public static async Task SeedAsync(SportsCenterDbContext context, bool seedDemoData = false)
     {
-        if (baselineLegacySchema) throw new NotSupportedException("SQL Server baselining is not supported. Use PostgreSQL migrations.");
-        if (context.Database.IsRelational())
-        {
-            // A relational production database must have a complete EF migration
-            // history. Falling back to EnsureCreated after a migration error can
-            // hide a broken schema or leave an existing database inconsistent.
-            await context.Database.MigrateAsync();
-        }
-        else
-        {
-            await context.Database.EnsureCreatedAsync();
-        }
+        if (context.Database.IsRelational()) await context.Database.MigrateAsync();
+        else await context.Database.EnsureCreatedAsync();
         await EnsureRolesAndPermissionsAsync(context);
         await EnsureAuthAndReceptionPermissionsAsync(context);
         await EnsureCompleteSportsCatalogAsync(context);
         await EnsureMembershipPackageSportsAsync(context);
+        if (seedDemoData) await EnsureDemoBusinessDataAsync(context);
     }
 
     private static async Task EnsureRolesAndPermissionsAsync(SportsCenterDbContext context)
@@ -354,16 +352,16 @@ public static class DbInitializer
         // Definition of all 10 sports and corresponding facilities matching site.landing-content
         var catalog = new (string SportName, string SportDesc, string RoomName, string RoomType, int RoomCapacity, string RoomLocation)[]
         {
-            ("Bơi lội", "Học bơi từ cơ bản đến nâng cao với 4 kiểu ếch, sải, ngửa, bướm. Tăng sức bền tim phổi, toàn thân săn chắc, phù hợp mọi lứa tuổi.", "Bể bơi Olympic 50m", "Swimming Pool", 30, "Khu Thể Thao Dưới Nước • Tầng 1"),
-            ("Gym & Fitness", "Tập tạ và thể lực theo giáo án cá nhân: tăng cơ, giảm mỡ, cải thiện sức mạnh và vóc dáng cùng huấn luyện viên kèm sát.", "Phòng Gym High-Performance", "Gym", 45, "Khu A • Tầng 2"),
-            ("Yoga & Pilates", "Yoga và Pilates giúp tăng độ dẻo dai, cải thiện tư thế, siết cơ trung tâm và giảm căng thẳng sau giờ làm việc.", "Phòng Yoga & Pilates Reformer", "Studio", 20, "Khu C • Tầng 3"),
-            ("Cầu lông", "Luyện kỹ thuật cầm vợt, bộ pháp di chuyển, đập cầu và chiến thuật đánh đơn, đánh đôi. Tăng phản xạ và sự nhanh nhẹn.", "Sân Cầu lông Tiêu chuẩn #1", "Badminton Court", 24, "Khu B • Tầng 2"),
-            ("Boxing & Võ thuật", "Boxing và võ thuật đối kháng: rèn đòn tay, đòn chân, phản xạ và kỹ năng tự vệ. Đốt calo mạnh, giải tỏa căng thẳng.", "Võ đài Boxing & Kickfit", "Combat Ring", 25, "Khu C • Tầng 1"),
-            ("Golf", "Làm quen swing, chipping và putting cùng huấn luyện viên; luyện tập trên driving range và phòng mô phỏng golf 3D.", "Tổ Hợp Sân Tập Golf & 3D Simulator", "Golf Complex", 30, "Khu Ngoài Trời & Khu C • Tầng 2"),
-            ("Bóng đá", "Rèn kỹ thuật dẫn bóng, chuyền, sút và phối hợp đồng đội trên sân cỏ nhân tạo. Nâng cao thể lực và tinh thần tập thể.", "Sân Bóng Đá Cỏ Nhân Tạo (Sân 5)", "Outdoor Field", 14, "Khu Ngoài Trời"),
-            ("Bóng rổ", "Luyện dẫn bóng, ném rổ, phòng thủ và chiến thuật đồng đội. Phát triển sức bật, sự linh hoạt và khả năng phối hợp.", "Sân Bóng Rổ Tiêu Chuẩn Phong Trào", "Basketball Court", 25, "Khu B • Tầng 1"),
-            ("Bóng bàn", "Rèn kỹ thuật giao bóng, giật, cắt bóng và phản xạ nhanh. Môn thể thao nhẹ nhàng giúp tăng tập trung, hợp mọi lứa tuổi.", "Khu Bóng Bàn Trong Nhà", "Table Tennis Area", 20, "Khu B • Tầng 3"),
-            ("Pickleball", "Kết hợp giữa tennis, cầu lông và bóng bàn, dễ chơi và vui nhộn. Học luật, kỹ thuật dink, volley và phối hợp đánh đôi.", "Cụm Sân Pickleball Ngoài Trời", "Pickleball Complex", 20, "Khu Ngoài Trời")
+            ("Bơi lội", "Bơi lội thể thao, cải thiện thể lực và sức bền toàn diện", "Bể bơi Olympic 50m", "Swimming Pool", 30, "Khu Thể Thao Dưới Nước • Tầng 1"),
+            ("Gym & Fitness", "Rèn luyện thể hình, tăng cơ giảm mỡ và tăng cường sức mạnh", "Phòng Gym High-Performance", "Gym", 45, "Khu A • Tầng 2"),
+            ("Yoga & Pilates", "Phục hồi chức năng, tăng độ dẻo dai và tĩnh tâm", "Phòng Yoga & Pilates Reformer", "Studio", 20, "Khu C • Tầng 3"),
+            ("Cầu lông", "Tập luyện phản xạ nhanh, di chuyển linh hoạt và đối kháng", "Sân Cầu lông Tiêu chuẩn #1", "Badminton Court", 24, "Khu B • Tầng 2"),
+            ("Boxing & Võ thuật", "Đốt cháy calo, rèn luyện kỹ năng tự vệ và phản xạ chiến đấu", "Võ đài Boxing & Kickfit", "Combat Ring", 25, "Khu C • Tầng 1"),
+            ("Golf", "Học viện đào tạo Golf chuẩn quốc tế, driving range 18 làn và phòng mô phỏng 3D TrackMan 4K", "Tổ Hợp Sân Tập Golf & 3D Simulator", "Golf Complex", 30, "Khu Ngoài Trời & Khu C • Tầng 2"),
+            ("Bóng đá", "Sân cỏ nhân tạo 5 người tiêu chuẩn, mặt cỏ êm ái chống chấn thương, hệ thống thoát nước và dàn đèn LED cao áp ban đêm.", "Sân Bóng Đá Cỏ Nhân Tạo (Sân 5)", "Outdoor Field", 14, "Khu Ngoài Trời"),
+            ("Bóng rổ", "Sân bóng rổ tiêu chuẩn thi đấu phong trào, mặt sân sơn acrylic chống trượt, trụ rổ kính cường lực độ nảy tốt và mái che mát.", "Sân Bóng Rổ Tiêu Chuẩn Phong Trào", "Basketball Court", 25, "Khu B • Tầng 1"),
+            ("Bóng bàn", "Khu bóng bàn trong nhà trang bị bàn thi đấu đạt chuẩn quốc tế, ánh sáng đều chống lóa và không gian di chuyển an toàn.", "Khu Bóng Bàn Trong Nhà", "Table Tennis Area", 20, "Khu B • Tầng 3"),
+            ("Pickleball", "Cụm sân Pickleball ngoài trời hiện đại, mặt sân acrylic chuyên dụng, vạch bếp chuẩn thi đấu và rào chắn bóng kiên cố.", "Cụm Sân Pickleball Ngoài Trời", "Pickleball Complex", 20, "Khu Ngoài Trời")
         };
 
         var sportsDict = new Dictionary<string, Sport>(StringComparer.OrdinalIgnoreCase);
@@ -522,6 +520,498 @@ public static class DbInitializer
         {
             await context.SaveChangesAsync();
         }
+    }
+
+
+    private static async Task EnsureDemoBusinessDataAsync(SportsCenterDbContext context)
+    {
+        const string markerKey = "seed.demo.business-data.v2";
+        if (await context.SystemSettings.AnyAsync(s => s.SettingKey == markerKey))
+        {
+            return;
+        }
+
+        var center = await context.Centers
+            .OrderByDescending(c => c.Status == "Active")
+            .ThenBy(c => c.Id)
+            .FirstOrDefaultAsync();
+        if (center is null)
+        {
+            return;
+        }
+
+        var adminUser = await context.Users.FirstOrDefaultAsync(u => u.Username == "admin");
+        var receptionist = await context.Users.FirstOrDefaultAsync(u => u.Username == "flow2.reception" || u.Username == "reception01");
+        var primaryCoach = await context.CoachProfiles.FirstOrDefaultAsync();
+
+        // 1. Ensure Standard Membership Packages (Basic, Pro, Elite, Olympic Pass)
+        var standardPackages = new (string Name, string Description, int DurationDays, decimal Price, int? MaxClasses, string AccessType, int AllowedSports, string Badge, string Features)[]
+        {
+            (
+                "Gói Basic Thể Thao",
+                "Khởi động lối sống năng động với 1 bộ môn tiêu chuẩn và đầy đủ tiện nghi cơ bản.",
+                30,
+                650000m,
+                10,
+                "1 môn cơ bản",
+                1,
+                "Cơ bản",
+                "[\"Tập luyện 1 bộ môn cơ bản\",\"Tủ locker tiêu chuẩn\",\"Miễn phí nước uống lọc và tắm nóng lạnh\"]"
+            ),
+            (
+                "Gói Pro Bứt Phá",
+                "Gói tập phổ biến nhất, tự chọn 3 bộ môn linh hoạt cùng quyền lợi đo InBody định kỳ.",
+                90,
+                1800000m,
+                30,
+                "3 môn tự chọn",
+                3,
+                "Phổ biến",
+                "[\"Tự chọn 3 bộ môn linh hoạt\",\"Đo chỉ số InBody định kỳ hàng tháng\",\"Tủ locker thông minh VIP\",\"Khăn tập kháng khuẩn mỗi buổi\"]"
+            ),
+            (
+                "Gói Elite Chuyên Nghiệp",
+                "Dành cho người tập luyện chuyên sâu với 6 bộ môn, kèm 2 buổi tư vấn HLV cá nhân và xông hơi Sauna.",
+                180,
+                3200000m,
+                70,
+                "6 môn chuyên sâu",
+                6,
+                "Chuyên nghiệp",
+                "[\"Toàn quyền 6 bộ môn chuyên sâu\",\"2 buổi tư vấn giáo án cùng HLV cá nhân\",\"Phòng xông hơi Sauna & Jacuzzi phục hồi\",\"Ưu tiên đặt chỗ trước giờ cao điểm\"]"
+            ),
+            (
+                "Gói All-Access Olympic Pass",
+                "Đặc quyền tối thượng toàn hệ thống: không giới hạn 10 môn thể thao Olympic, dịch vụ VIP và đưa đón.",
+                365,
+                5800000m,
+                150,
+                "Toàn quyền 10 môn",
+                10,
+                "VIP All-Access",
+                "[\"Toàn quyền 10 môn thể thao Olympic\",\"Không giới hạn số lượt check-in\",\"Miễn phí dịch vụ khăn, locker & nước ion cao cấp\",\"Mời 1 bạn tập trải nghiệm miễn phí mỗi tháng\"]"
+            )
+        };
+
+        foreach (var def in standardPackages)
+        {
+            var pkg = await context.MembershipPackages
+                .FirstOrDefaultAsync(p => p.CenterId == center.Id && p.Name == def.Name);
+
+            if (pkg is null)
+            {
+                pkg = new MembershipPackage
+                {
+                    CenterId = center.Id,
+                    Name = def.Name,
+                    Description = def.Description,
+                    DurationDays = def.DurationDays,
+                    Price = def.Price,
+                    MaxClasses = def.MaxClasses,
+                    AccessType = def.AccessType,
+                    AllowedSports = def.AllowedSports,
+                    Badge = def.Badge,
+                    Features = def.Features,
+                    Status = "Active",
+                    CreatedAt = DateTime.UtcNow.AddMonths(-4)
+                };
+                await context.MembershipPackages.AddAsync(pkg);
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 2. Ensure Classes & Schedules across all active sports
+        var sports = await context.Sports.ToListAsync();
+        var rooms = await context.Rooms.Where(r => r.CenterId == center.Id).ToListAsync();
+        var allCoaches = await context.CoachProfiles.Where(c => c.CenterId == center.Id && c.Status == "Active").ToListAsync();
+        var coachSportLinks = await context.CoachSports.AsNoTracking().ToListAsync();
+
+        var classSeedDefs = new (string SportName, string ClassName, string RoomKeyword, int DayOfWeek, TimeOnly StartTime, TimeOnly EndTime, string Level)[]
+        {
+            ("Gym", "Powerlifting & Hypertrophy Foundation", "Gym", 2, new TimeOnly(18, 0), new TimeOnly(19, 0), "Intermediate"),
+            ("Yoga", "Hatha Yoga & Trị Liệu Cột Sống", "Yoga", 3, new TimeOnly(17, 30), new TimeOnly(18, 30), "All Levels"),
+            ("Bơi lội", "Kỹ thuật Bơi Sải & Sức bền Olympic", "Bơi", 4, new TimeOnly(18, 0), new TimeOnly(19, 0), "Beginner"),
+            ("Boxing", "Boxing Kháng Lực & Tự Vệ Thực Chiến", "Boxing", 5, new TimeOnly(19, 0), new TimeOnly(20, 0), "Intermediate"),
+            ("Golf", "Golf Simulator & Kỹ Thuật Swing Chuẩn PGA", "Golf", 6, new TimeOnly(15, 0), new TimeOnly(16, 30), "Intermediate"),
+            ("Cầu lông", "Cầu Lông Chiến Thuật & Footwork Nâng Cao", "Cầu lông", 2, new TimeOnly(19, 0), new TimeOnly(20, 30), "All Levels"),
+            ("Bóng đá", "Futsal Kỹ Thuật Chạm Bóng & Di Chuyển Không Bóng", "Bóng đá", 3, new TimeOnly(19, 0), new TimeOnly(20, 30), "Beginner"),
+            ("Bóng rổ", "Bóng Rổ Căn Bản & Ném Rổ Tầm Xa", "Bóng rổ", 4, new TimeOnly(18, 30), new TimeOnly(20, 0), "All Levels"),
+            ("Bóng bàn", "Bóng Bàn Giao Cầu Xoáy & Đỡ Bóng Cắt", "Bóng bàn", 5, new TimeOnly(18, 0), new TimeOnly(19, 30), "All Levels"),
+            ("Pickleball", "Pickleball Dinking & Phản Xạ Lưới Đỉnh Cao", "Pickleball", 6, new TimeOnly(17, 0), new TimeOnly(18, 30), "Beginner")
+        };
+
+        var nowUtc = DateTime.UtcNow;
+        var today = DateOnly.FromDateTime(nowUtc);
+        int classIndex = 0;
+
+        foreach (var def in classSeedDefs)
+        {
+            classIndex++;
+            var sport = sports.FirstOrDefault(s => s.Name.Contains(def.SportName, StringComparison.OrdinalIgnoreCase));
+            if (sport is null) continue;
+
+            var room = rooms.FirstOrDefault(r => r.Name.Contains(def.RoomKeyword, StringComparison.OrdinalIgnoreCase)) ?? rooms.FirstOrDefault();
+            var classEntity = await context.Classes.FirstOrDefaultAsync(c => c.CenterId == center.Id && c.Name == def.ClassName);
+
+            var assignedCoach = allCoaches
+                .FirstOrDefault(c => coachSportLinks.Any(cs => cs.CoachId == c.Id && cs.SportId == sport.Id))
+                ?? (allCoaches.Count > 0 ? allCoaches[classIndex % allCoaches.Count] : null);
+
+            if (classEntity is null)
+            {
+                classEntity = new ClassEntity
+                {
+                    CenterId = center.Id,
+                    SportId = sport.Id,
+                    RoomId = room?.Id,
+                    Name = def.ClassName,
+                    Description = $"Chương trình đào tạo bộ môn {sport.Name} chuẩn quốc tế tại trung tâm, nâng cao thể lực và phản xạ thi đấu.",
+                    Level = def.Level,
+                    Capacity = room is not null ? Math.Min(20, room.Capacity) : 20,
+                    AllowWaitlist = true,
+                    DurationMinutes = (int)(def.EndTime - def.StartTime).TotalMinutes,
+                    Status = "Published",
+                    CreatedAt = nowUtc.AddMonths(-3)
+                };
+                await context.Classes.AddAsync(classEntity);
+                await context.SaveChangesAsync();
+
+                if (assignedCoach is not null)
+                {
+                    if (!await context.ClassCoaches.AnyAsync(cc => cc.ClassId == classEntity.Id && cc.CoachId == assignedCoach.Id))
+                    {
+                        context.ClassCoaches.Add(new ClassCoach
+                        {
+                            ClassId = classEntity.Id,
+                            CoachId = assignedCoach.Id,
+                            AssignedDate = today.AddMonths(-3),
+                            IsPrimary = true
+                        });
+                        await context.SaveChangesAsync();
+                    }
+                }
+
+                var schedule = new ClassSchedule
+                {
+                    ClassId = classEntity.Id,
+                    RoomId = room?.Id,
+                    DayOfWeek = def.DayOfWeek,
+                    StartTime = def.StartTime,
+                    EndTime = def.EndTime,
+                    StartDate = today.AddMonths(-2),
+                    EndDate = today.AddMonths(4),
+                    Status = "Active"
+                };
+                await context.ClassSchedules.AddAsync(schedule);
+                await context.SaveChangesAsync();
+
+                for (var curDate = today.AddDays(-30); curDate <= today.AddDays(30); curDate = curDate.AddDays(1))
+                {
+                    if ((int)curDate.DayOfWeek == schedule.DayOfWeek)
+                    {
+                        var exists = await context.ClassSessions
+                            .AnyAsync(s => s.ClassId == classEntity.Id && s.SessionDate == curDate && s.StartTime == schedule.StartTime);
+                        if (!exists)
+                        {
+                            context.ClassSessions.Add(new ClassSession
+                            {
+                                ClassId = classEntity.Id,
+                                ScheduleId = schedule.Id,
+                                RoomId = schedule.RoomId,
+                                CoachId = assignedCoach?.Id,
+                                SessionDate = curDate,
+                                StartTime = schedule.StartTime,
+                                EndTime = schedule.EndTime,
+                                SessionStatus = "Scheduled",
+                                Notes = "Buổi học định kỳ theo giáo trình chuẩn",
+                                CreatedAt = nowUtc.AddMonths(-2)
+                            });
+                        }
+                    }
+                }
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 3. Attach Subscriptions, Invoices, Payments, Bookings, Attendance, Checkins to EXISTING MEMBERS ONLY
+        var activeUserIds = await context.Users
+            .Where(u => u.Status == "Active")
+            .Select(u => u.Id)
+            .ToListAsync();
+
+        var existingMembers = await context.MemberProfiles
+            .Where(m => activeUserIds.Contains(m.UserId))
+            .ToListAsync();
+
+        if (existingMembers.Count > 0)
+        {
+            var allPackages = await context.MembershipPackages
+                .Where(p => p.CenterId == center.Id && p.Status == "Active")
+                .ToListAsync();
+
+            var allPublishedClasses = await context.Classes
+                .Where(c => c.CenterId == center.Id && c.Status == "Published")
+                .ToListAsync();
+
+            var staffUser = receptionist ?? adminUser;
+
+            int memberCounter = 0;
+            foreach (var member in existingMembers)
+            {
+                memberCounter++;
+                var chosenPkg = allPackages[memberCounter % allPackages.Count];
+
+                var pastStart = today.AddDays(-75);
+                var pastEnd = pastStart.AddDays(chosenPkg.DurationDays > 60 ? 60 : chosenPkg.DurationDays);
+                var activeStart = today.AddDays(-15);
+                var activeEnd = activeStart.AddDays(chosenPkg.DurationDays);
+
+                var subPairs = new[]
+                {
+                    (Start: pastStart, End: pastEnd, Status: "Expired", Created: nowUtc.AddDays(-75), IsRenewal: false),
+                    (Start: activeStart, End: activeEnd, Status: "Active", Created: nowUtc.AddDays(-15), IsRenewal: true)
+                };
+
+                foreach (var subDef in subPairs)
+                {
+                    var existingSub = await context.MemberSubscriptions
+                        .FirstOrDefaultAsync(s => s.MemberId == member.Id && s.StartDate == subDef.Start && s.PackageId == chosenPkg.Id);
+
+                    MemberSubscription sub;
+                    if (existingSub is null)
+                    {
+                        sub = new MemberSubscription
+                        {
+                            MemberId = member.Id,
+                            PackageId = chosenPkg.Id,
+                            StartDate = subDef.Start,
+                            EndDate = subDef.End,
+                            DurationDays = chosenPkg.DurationDays,
+                            Price = chosenPkg.Price,
+                            Status = subDef.Status,
+                            AutoRenew = false,
+                            CreatedAt = subDef.Created,
+                            UpdatedAt = subDef.Created
+                        };
+                        await context.MemberSubscriptions.AddAsync(sub);
+                        await context.SaveChangesAsync();
+                    }
+                    else
+                    {
+                        sub = existingSub;
+                    }
+
+                    var existingInvoiceItem = await context.InvoiceItems
+                        .FirstOrDefaultAsync(ii => ii.SubscriptionId == sub.Id);
+
+                    if (existingInvoiceItem is null)
+                    {
+                        var hexSuffix = Guid.NewGuid().ToString("N")[..8].ToUpperInvariant();
+                        var invNumber = $"INV-{subDef.Created:yyyyMMdd}-{member.Id:D3}-{hexSuffix}";
+
+                        var invoice = new Invoice
+                        {
+                            InvoiceNumber = invNumber,
+                            MemberId = member.Id,
+                            CenterId = center.Id,
+                            CreatedBy = staffUser?.Id ?? member.UserId,
+                            Subtotal = chosenPkg.Price,
+                            Discount = 0,
+                            Tax = 0,
+                            TotalAmount = chosenPkg.Price,
+                            Status = "Paid",
+                            IssuedAt = subDef.Created,
+                            PaidAt = subDef.Created,
+                            IdempotencyKey = Guid.NewGuid().ToString("N")
+                        };
+                        await context.Invoices.AddAsync(invoice);
+                        await context.SaveChangesAsync();
+
+                        var invoiceItem = new InvoiceItem
+                        {
+                            InvoiceId = invoice.Id,
+                            PackageId = chosenPkg.Id,
+                            SubscriptionId = sub.Id,
+                            Description = subDef.IsRenewal ? $"Gia hạn gói tập: {chosenPkg.Name}" : $"Đăng ký gói tập: {chosenPkg.Name}",
+                            Quantity = 1,
+                            UnitPrice = chosenPkg.Price,
+                            Amount = chosenPkg.Price
+                        };
+                        await context.InvoiceItems.AddAsync(invoiceItem);
+
+                        string method = ((member.Id + sub.Id) % 3) switch
+                        {
+                            0 => "VNPAY",
+                            1 => "MOMO",
+                            _ => "CASH"
+                        };
+
+                        var payment = new Payment
+                        {
+                            InvoiceId = invoice.Id,
+                            MemberId = member.Id,
+                            ProcessedBy = method == "CASH" ? staffUser?.Id : null,
+                            PaymentMethod = method,
+                            TransactionCode = $"{method}:TXN-{subDef.Created:yyyyMMdd}-{invoice.Id}-{hexSuffix}",
+                            Amount = chosenPkg.Price,
+                            AmountReceived = chosenPkg.Price,
+                            PaymentStatus = "Succeeded",
+                            PaidAt = subDef.Created,
+                            AttemptedAt = subDef.Created.AddSeconds(-25),
+                            CreatedAt = subDef.Created,
+                            Note = method == "CASH" ? "Thu tiền mặt tại quầy lễ tân" : $"Thanh toán trực tuyến thành công qua cổng {method}"
+                        };
+                        await context.Payments.AddAsync(payment);
+                        await context.SaveChangesAsync();
+                    }
+
+                    if (subDef.Status == "Active" && allPublishedClasses.Count > 0)
+                    {
+                        var assignedClasses = allPublishedClasses
+                            .OrderBy(c => (c.Id * member.Id) % 17)
+                            .Take(2)
+                            .ToList();
+
+                        foreach (var cls in assignedClasses)
+                        {
+                            var enrollment = await context.ClassEnrollments
+                                .FirstOrDefaultAsync(e => e.ClassId == cls.Id && e.MemberId == member.Id);
+
+                            if (enrollment is null)
+                            {
+                                enrollment = new ClassEnrollment
+                                {
+                                    ClassId = cls.Id,
+                                    MemberId = member.Id,
+                                    SubscriptionId = sub.Id,
+                                    RegisteredBy = staffUser?.Id ?? member.UserId,
+                                    RegisteredAt = subDef.Created,
+                                    Status = "Active"
+                                };
+                                await context.ClassEnrollments.AddAsync(enrollment);
+                                await context.SaveChangesAsync();
+                            }
+
+                            var sessions = await context.ClassSessions
+                                .Where(s => s.ClassId == cls.Id && s.SessionDate >= subDef.Start && s.SessionDate <= today.AddDays(21))
+                                .ToListAsync();
+
+                            foreach (var sess in sessions)
+                            {
+                                var booking = await context.SessionBookings
+                                    .FirstOrDefaultAsync(b => b.SessionId == sess.Id && b.MemberId == member.Id);
+
+                                if (booking is null)
+                                {
+                                    booking = new SessionBooking
+                                    {
+                                        SessionId = sess.Id,
+                                        MemberId = member.Id,
+                                        EnrollmentId = enrollment.Id,
+                                        SubscriptionId = sub.Id,
+                                        RegisteredBy = staffUser?.Id,
+                                        BookedAt = sess.SessionDate < today ? sess.SessionDate.ToDateTime(new TimeOnly(8, 0)).AddDays(-2) : nowUtc,
+                                        Status = "Booked"
+                                    };
+                                    await context.SessionBookings.AddAsync(booking);
+                                    await context.SaveChangesAsync();
+                                }
+
+                                if (sess.SessionDate < today)
+                                {
+                                    var hasAtt = await context.Attendances
+                                        .AnyAsync(a => a.SessionId == sess.Id && a.MemberId == member.Id);
+
+                                    if (!hasAtt)
+                                    {
+                                        bool isLate = (sess.Id + member.Id) % 5 == 0;
+                                        var sessionStartDt = BusinessToUtc(sess.SessionDate.ToDateTime(sess.StartTime));
+                                        var checkIn = isLate ? sessionStartDt.AddMinutes(10) : sessionStartDt.AddMinutes(-5);
+                                        var checkOut = BusinessToUtc(sess.SessionDate.ToDateTime(sess.EndTime)).AddMinutes(5);
+
+                                        context.Attendances.Add(new Attendance
+                                        {
+                                            SessionId = sess.Id,
+                                            MemberId = member.Id,
+                                            CheckedInBy = allCoaches.FirstOrDefault()?.UserId ?? staffUser?.Id,
+                                            AttendanceStatus = isLate ? "LATE" : "PRESENT",
+                                            CheckInTime = checkIn,
+                                            CheckOutTime = checkOut,
+                                            Note = isLate ? "Đến trễ 10 phút do kẹt xe" : "Điểm danh đúng giờ",
+                                            CreatedAt = checkIn
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+
+                for (int i = 1; i <= 10; i++)
+                {
+                    var checkDate = today.AddDays(-i * 2);
+                    var cinTime = BusinessToUtc(checkDate.ToDateTime(new TimeOnly(17, 30))).AddMinutes((int)((member.Id * 7) % 60));
+                    var coutTime = cinTime.AddMinutes(75);
+
+                    if (!await context.CenterCheckins.AnyAsync(c => c.MemberId == member.Id && c.CheckInTime == cinTime))
+                    {
+                        context.CenterCheckins.Add(new CenterCheckin
+                        {
+                            MemberId = member.Id,
+                            CenterId = center.Id,
+                            CheckedInBy = staffUser?.Id,
+                            CheckInTime = cinTime,
+                            CheckOutTime = coutTime,
+                            CreatedAt = cinTime
+                        });
+                    }
+                }
+                await context.SaveChangesAsync();
+            }
+        }
+
+        // 4. Equipment issues
+        if (!await context.EquipmentIssues.AnyAsync(e => e.CenterId == center.Id))
+        {
+            var reportUser = allCoaches.FirstOrDefault()?.UserId ?? adminUser?.Id ?? 1;
+            context.EquipmentIssues.AddRange(
+                new EquipmentIssue
+                {
+                    CenterId = center.Id,
+                    ReportedByUserId = reportUser,
+                    Title = "Dây cáp máy kéo xô đa năng có dấu hiệu sờn",
+                    Description = "Dây cáp bên trái máy kéo lat pulldown tại tầng 2 bị sờn vỏ bọc, cần bảo dưỡng định kỳ.",
+                    Severity = "Medium",
+                    Status = "InProgress",
+                    ReportedAt = nowUtc.AddDays(-4),
+                    ResolutionNote = "Đã liên hệ nhà cung cấp phụ tùng thay thế."
+                },
+                new EquipmentIssue
+                {
+                    CenterId = center.Id,
+                    ReportedByUserId = reportUser,
+                    Title = "Hệ thống lọc nước hồ bơi tầng 1",
+                    Description = "Cảm biến pH báo chỉ số nhẹ cần cân bằng Clo và lọc tuần hoàn ban đêm.",
+                    Severity = "Low",
+                    Status = "Resolved",
+                    ReportedAt = nowUtc.AddDays(-10),
+                    ResolvedAt = nowUtc.AddDays(-9),
+                    ResolvedBy = adminUser?.Id,
+                    ResolutionNote = "Đã sục rửa bình lọc cát và cân bằng nồng độ nước đạt chuẩn thi đấu."
+                }
+            );
+            await context.SaveChangesAsync();
+        }
+
+        // 5. System setting marker
+        context.SystemSettings.Add(new SystemSetting
+        {
+            SettingKey = markerKey,
+            SettingValue = "applied",
+            Description = "Demo business data for existing members: packages, classes, invoices, payments, sessions, bookings, attendance, checkins.",
+            UpdatedAt = nowUtc
+        });
+        await context.SaveChangesAsync();
     }
 
 }

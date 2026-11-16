@@ -4,6 +4,7 @@ using SportsCenterManagement.BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.OpenApi;
 using System.Security.Claims;
 using System.Threading.RateLimiting;
@@ -22,9 +23,50 @@ using SportsCenterManagement.DAL.Repositories.Interfaces;
 using SportsCenterManagement.API.Models;
 using SportsCenterManagement.API.Services;
 
+// DateTime values are stored as "timestamp without time zone" (same semantics as SQL Server datetime2).
+AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
+
 var builder = WebApplication.CreateBuilder(args);
-var connectionString = builder.Configuration.GetConnectionString("SportsCenter")
-    ?? throw new InvalidOperationException("Connection string 'SportsCenter' is not configured.");
+var rawConn = builder.Configuration.GetConnectionString("SportsCenter")
+    ?? builder.Configuration["DATABASE_URL"]
+    ?? builder.Configuration["DATABASE_PRIVATE_URL"]
+    ?? builder.Configuration["POSTGRES_URL"]
+    ?? builder.Configuration["PGURL"];
+
+if (string.IsNullOrWhiteSpace(rawConn))
+{
+    var pgHost = builder.Configuration["PGHOST"] ?? builder.Configuration["POSTGRES_HOST"];
+    var pgPort = builder.Configuration["PGPORT"] ?? builder.Configuration["POSTGRES_PORT"] ?? "5432";
+    var pgDb = builder.Configuration["PGDATABASE"] ?? builder.Configuration["POSTGRES_DB"] ?? "railway";
+    var pgUser = builder.Configuration["PGUSER"] ?? builder.Configuration["POSTGRES_USER"] ?? "postgres";
+    var pgPass = builder.Configuration["PGPASSWORD"] ?? builder.Configuration["POSTGRES_PASSWORD"] ?? "";
+    if (!string.IsNullOrWhiteSpace(pgHost))
+    {
+        rawConn = $"Host={pgHost};Port={pgPort};Database={pgDb};Username={pgUser};Password={pgPass}";
+    }
+}
+
+if (string.IsNullOrWhiteSpace(rawConn))
+{
+    throw new InvalidOperationException("Connection string is not configured. Set 'ConnectionStrings:SportsCenter' or 'DATABASE_URL'.");
+}
+
+string connectionString = rawConn;
+if (Uri.TryCreate(rawConn, UriKind.Absolute, out var uri) && (uri.Scheme == "postgres" || uri.Scheme == "postgresql"))
+{
+    var userInfo = uri.UserInfo.Split(':');
+    var builderConn = new Npgsql.NpgsqlConnectionStringBuilder
+    {
+        Host = uri.Host,
+        Port = uri.Port > 0 ? uri.Port : 5432,
+        Username = userInfo.Length > 0 ? Uri.UnescapeDataString(userInfo[0]) : "postgres",
+        Password = userInfo.Length > 1 ? Uri.UnescapeDataString(userInfo[1]) : "",
+        Database = uri.AbsolutePath.TrimStart('/'),
+        SslMode = Npgsql.SslMode.Prefer
+    };
+    connectionString = builderConn.ConnectionString;
+}
+
 var jwtIssuer = new JwtTokenIssuer(builder.Configuration);
 
 // Cấu hình HttpClient để gọi API ngoài (MoMo Sandbox...)
@@ -32,8 +74,8 @@ builder.Services.AddHttpClient();
 
 // Layer 3: DAL (DbContext & Repository / Unit of Work Pattern)
 builder.Services.AddDbContext<SportsCenterDbContext>(options =>
-    options.UseNpgsql(connectionString));
-
+    options.UseNpgsql(connectionString)
+           .ConfigureWarnings(w => w.Ignore(Microsoft.EntityFrameworkCore.Diagnostics.RelationalEventId.PendingModelChangesWarning)));
 
 builder.Services.AddSingleton(jwtIssuer);
 builder.Services.AddScoped<JwtAccountValidator>();
@@ -52,11 +94,48 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme).AddJw
 
 builder.Services.AddAuthorization(options => options.FallbackPolicy =
     new AuthorizationPolicyBuilder().RequireAuthenticatedUser().Build());
-var allowedOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+var configuredOrigins = builder.Configuration.GetSection("Cors:AllowedOrigins").Get<string[]>() ?? [];
+if (configuredOrigins.Length == 0)
+{
+    var rawOrigins = builder.Configuration["Cors:AllowedOrigins"];
+    if (!string.IsNullOrWhiteSpace(rawOrigins))
+    {
+        configuredOrigins = rawOrigins.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+    }
+}
+var allowedOrigins = configuredOrigins
+    .Select(origin => origin.Trim().TrimEnd('/'))
+    .Where(origin => !string.IsNullOrEmpty(origin))
+    .Distinct(StringComparer.OrdinalIgnoreCase)
+    .ToHashSet(StringComparer.OrdinalIgnoreCase);
+if (allowedOrigins.Count == 0)
+{
+    allowedOrigins.Add("https://olympic-sports-arena.vercel.app");
+    allowedOrigins.Add("http://localhost:3004");
+    allowedOrigins.Add("http://localhost:5173");
+}
 builder.Services.AddCors(options => options.AddDefaultPolicy(policy =>
 {
-    if (allowedOrigins.Length > 0)
-        policy.WithOrigins(allowedOrigins).AllowAnyHeader().AllowAnyMethod().AllowCredentials().WithExposedHeaders("Retry-After");
+    policy.SetIsOriginAllowed(origin =>
+        {
+            var normalized = origin.Trim().TrimEnd('/');
+            if (allowedOrigins.Contains(normalized))
+            {
+                return true;
+            }
+            if (Uri.TryCreate(normalized, UriKind.Absolute, out var originUri)
+                && string.Equals(originUri.Scheme, Uri.UriSchemeHttps, StringComparison.OrdinalIgnoreCase)
+                && originUri.Host.EndsWith(".vercel.app", StringComparison.OrdinalIgnoreCase)
+                && originUri.Host.StartsWith("olympic-sports-arena", StringComparison.OrdinalIgnoreCase))
+            {
+                return true;
+            }
+            return false;
+        })
+        .AllowAnyHeader()
+        .AllowAnyMethod()
+        .AllowCredentials()
+        .WithExposedHeaders("Retry-After");
 }));
 builder.Services.AddSingleton<IAuthorizationPolicyProvider, PermissionPolicyProvider>();
 builder.Services.AddScoped<IAuthorizationHandler, PermissionAuthorizationHandler>();
@@ -77,9 +156,10 @@ builder.Services.AddScoped<IAuthService, AuthService>();
 builder.Services.AddScoped<IProfileService, ProfileService>();
 builder.Services.AddScoped<ICenterScopeService, CenterScopeService>();
 builder.Services.AddScoped<IClassEnrollmentService, ClassEnrollmentService>();
+builder.Services.AddScoped<IMemberEnrollmentOptionsService, MemberEnrollmentOptionsService>();
 builder.Services.AddScoped<IPublicCatalogService, PublicCatalogService>();
 builder.Services.AddScoped<IMemberService, MemberService>();
-builder.Services.AddScoped<IMemberEnrollmentOptionsService, MemberEnrollmentOptionsService>();
+builder.Services.AddScoped<IMemberActivationService, MemberActivationService>();
 builder.Services.AddSingleton<SportsCenterManagement.BLL.Common.MediaUrlBuilder>();
 builder.Services.AddScoped<IAccessControlService, AccessControlService>();
 builder.Services.AddScoped<IStaffManagementService, StaffManagementService>();
@@ -111,6 +191,9 @@ builder.Services.Configure<ForwardedHeadersOptions>(options =>
     options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
     options.KnownIPNetworks.Clear();
     options.KnownProxies.Clear();
+    // Trust only the nearest hop (Railway/Vercel edge). Without this a client can append its own
+    // X-Forwarded-For value and pick the IP that the per-IP rate limiters key on.
+    options.ForwardLimit = 1;
 });
 builder.Services.AddHealthChecks()
     .AddCheck<DatabaseHealthCheck>("database", tags: new[] { "ready" });
@@ -127,8 +210,6 @@ builder.Services.AddTransient<ISendMailService, SendMailService>();
 
 builder.Services.Configure<R2StorageOptions>(builder.Configuration.GetSection(R2StorageOptions.SectionName));
 builder.Services.AddScoped<IR2StorageService, R2StorageService>();
-builder.Services.AddScoped<IObjectStorageClient>(provider => provider.GetRequiredService<IR2StorageService>());
-builder.Services.AddScoped<MediaCatalogService>();
 builder.Services.AddSingleton<GoogleTokenValidator>();
 builder.Services.AddHttpClient<GeminiService>(client => client.Timeout = TimeSpan.FromSeconds(45));
 builder.Services.AddRateLimiter(options =>
@@ -136,6 +217,11 @@ builder.Services.AddRateLimiter(options =>
     options.RejectionStatusCode = StatusCodes.Status429TooManyRequests;
     PasswordResetRateLimiting.Configure(options);
     MailSendRateLimiting.Configure(options);
+    // Per-IP cap on credential guessing; the per-account lockout alone does not stop horizontal
+    // scans such as "login = password = phone" over many accounts.
+    options.AddPolicy("login", context => RateLimitPartition.GetFixedWindowLimiter(
+        context.Connection.RemoteIpAddress?.ToString() ?? "unknown",
+        _ => new FixedWindowRateLimiterOptions { PermitLimit = 20, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
     options.AddPolicy("ai", context => RateLimitPartition.GetFixedWindowLimiter(
         context.User.FindFirstValue(ClaimTypes.NameIdentifier) ?? "anonymous",
         _ => new FixedWindowRateLimiterOptions { PermitLimit = 10, Window = TimeSpan.FromMinutes(1), QueueLimit = 0 }));
@@ -151,9 +237,7 @@ builder.Services.AddSwaggerGen(options =>
 {
     options.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
-        Type = SecuritySchemeType.Http,
-        Scheme = "bearer",
-        BearerFormat = "JWT",
+        Type = SecuritySchemeType.Http, Scheme = "bearer", BearerFormat = "JWT",
         Description = "Nhập accessToken trả về từ POST /api/auth/login hoặc /api/auth/google."
     });
     options.OperationFilter<SportsCenterManagement.API.Authentication.JwtSecurityOperationFilter>();
@@ -169,25 +253,25 @@ if (autoMigrateOnStartup)
 {
     using var scope = app.Services.CreateScope();
     var dbContext = scope.ServiceProvider.GetRequiredService<SportsCenterDbContext>();
-    // Keep one PostgreSQL connection open for the session-scoped migration lock.
-    await dbContext.Database.OpenConnectionAsync();
-    var connection = dbContext.Database.GetDbConnection();
+    var databaseCreator = dbContext.GetService<Microsoft.EntityFrameworkCore.Storage.IRelationalDatabaseCreator>();
+    if (!await databaseCreator.ExistsAsync()) await databaseCreator.CreateAsync();
+
+    await using var connection = dbContext.Database.GetDbConnection();
+    await connection.OpenAsync();
     await using var lockCommand = connection.CreateCommand();
-    lockCommand.CommandText = "SELECT pg_advisory_lock(391203906)";
-    lockCommand.CommandTimeout = 60;
+    lockCommand.CommandText = "SET lock_timeout = '60s'; SELECT pg_advisory_lock(hashtext('SCMS_Database_Migration_Lock')); RESET lock_timeout;";
     await lockCommand.ExecuteNonQueryAsync();
 
     try
     {
-        await DbInitializer.SeedAsync(dbContext);
+        await DbInitializer.SeedAsync(dbContext, app.Configuration.GetValue<bool>("Database:SeedDemoData", false));
         await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
     }
     finally
     {
         await using var releaseCommand = connection.CreateCommand();
-        releaseCommand.CommandText = "SELECT pg_advisory_unlock(391203906)";
-        try { await releaseCommand.ExecuteNonQueryAsync(); }
-        finally { await dbContext.Database.CloseConnectionAsync(); }
+        releaseCommand.CommandText = "SELECT pg_advisory_unlock(hashtext('SCMS_Database_Migration_Lock'))";
+        try { await releaseCommand.ExecuteNonQueryAsync(); } catch { }
     }
 }
 
@@ -195,6 +279,23 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
+}
+
+app.UseCors();
+// Must wrap the exception handlers below so their error bodies are localized too.
+app.UseMiddleware<SportsCenterManagement.API.Localization.ResponseMessageLocalizationMiddleware>();
+
+static void ClearResponsePreservingCors(HttpResponse response)
+{
+    var corsHeaders = response.Headers
+        .Where(h => h.Key.StartsWith("Access-Control-", StringComparison.OrdinalIgnoreCase)
+            || string.Equals(h.Key, "Vary", StringComparison.OrdinalIgnoreCase))
+        .ToArray();
+    response.Clear();
+    foreach (var header in corsHeaders)
+    {
+        response.Headers[header.Key] = header.Value;
+    }
 }
 
 app.Use(async (context, next) =>
@@ -210,7 +311,7 @@ app.Use(async (context, next) =>
             throw;
         }
 
-        context.Response.Clear();
+        ClearResponsePreservingCors(context.Response);
         context.Response.StatusCode = (int)exception.StatusCode;
         context.Response.ContentType = "application/problem+json";
         await context.Response.WriteAsJsonAsync(new
@@ -235,7 +336,7 @@ app.Use(async (context, next) =>
         }
 
         app.Logger.LogWarning(exception, "Unique constraint conflict. TraceId: {TraceId}", context.TraceIdentifier);
-        context.Response.Clear();
+        ClearResponsePreservingCors(context.Response);
         context.Response.StatusCode = StatusCodes.Status409Conflict;
         context.Response.ContentType = "application/problem+json";
         await context.Response.WriteAsJsonAsync(new
@@ -259,7 +360,7 @@ app.Use(async (context, next) =>
         }
 
         app.Logger.LogWarning(exception, "Database transaction deadlock. TraceId: {TraceId}", context.TraceIdentifier);
-        context.Response.Clear();
+        ClearResponsePreservingCors(context.Response);
         context.Response.StatusCode = StatusCodes.Status503ServiceUnavailable;
         context.Response.ContentType = "application/problem+json";
         context.Response.Headers["Retry-After"] = "1";
@@ -286,7 +387,7 @@ app.Use(async (context, next) =>
             throw;
         }
 
-        context.Response.Clear();
+        ClearResponsePreservingCors(context.Response);
         context.Response.StatusCode = StatusCodes.Status500InternalServerError;
         context.Response.ContentType = "application/problem+json";
         await context.Response.WriteAsJsonAsync(new
@@ -340,7 +441,6 @@ app.Use(async (context, next) =>
     }
 });
 app.UseRouting();
-app.UseCors();
 app.Use(async (context, next) =>
 {
     var isPaymentCreateRequest = context.Request.Method == HttpMethods.Post &&
@@ -394,6 +494,17 @@ app.MapHealthChecks("/health", new HealthCheckOptions
 
 app.MapGet("/payment-result", async context =>
 {
+    // Gateway may return to the API host; bounce to the configured SPA so the member lands back in the app.
+    if (Uri.TryCreate(app.Configuration["Frontend:BaseUrl"]?.Trim(), UriKind.Absolute, out var frontendBase)
+        && (frontendBase.Scheme == Uri.UriSchemeHttps || frontendBase.Scheme == Uri.UriSchemeHttp)
+        && !string.Equals(frontendBase.Authority, context.Request.Host.Value, StringComparison.OrdinalIgnoreCase))
+    {
+        var target = frontendBase.GetLeftPart(UriPartial.Authority) + frontendBase.AbsolutePath.TrimEnd('/')
+            + "/payment-result" + context.Request.QueryString.Value;
+        context.Response.Redirect(target);
+        return;
+    }
+
     var frontendIndex = Path.Combine(app.Environment.ContentRootPath, "wwwroot", "index.html");
     if (!File.Exists(frontendIndex))
     {

@@ -23,8 +23,84 @@ public sealed class AuthController(
     JwtTokenIssuer tokenIssuer,
     IAuthService authService,
     PasswordResetEmailSender resetEmail,
+    IMemberActivationService activationService,
     IConfiguration configuration) : ControllerBase
 {
+    /// <summary>Validates an activation link and returns the greeting details for the verify page.</summary>
+    [HttpPost("verify-email/preview")]
+    [EnableRateLimiting("password-reset")]
+    [AllowAnonymous]
+    [ProducesResponseType(typeof(SportsCenterManagement.BLL.DTOs.Members.Activation.ActivationPreviewResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> PreviewActivation(
+        [FromBody] SportsCenterManagement.BLL.DTOs.Members.Activation.ActivationPreviewRequest request,
+        CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        try
+        {
+            return Ok(await activationService.PreviewAsync(request.Token, cancellationToken));
+        }
+        catch (ValidationException exception)
+        {
+            return BadRequest(new { code = "ACTIVATION_LINK_INVALID", message = exception.Message });
+        }
+    }
+
+    /// <summary>Verifies the member's email and replaces the default (phone) password in one step.</summary>
+    [HttpPost("verify-and-change-password")]
+    [EnableRateLimiting("password-reset")]
+    [AllowAnonymous]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> VerifyAndChangePassword(
+        [FromBody] SportsCenterManagement.BLL.DTOs.Members.Activation.VerifyAndChangePasswordRequest request,
+        CancellationToken cancellationToken)
+    {
+        Response.Headers.CacheControl = "no-store";
+        try
+        {
+            await activationService.CompleteAsync(request, cancellationToken);
+            return NoContent();
+        }
+        catch (ValidationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+    }
+
+    /// <summary>First-login fallback for accounts still using the default password.</summary>
+    [Authorize]
+    [HttpPost("initial-password")]
+    [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ChangeInitialPassword(
+        [FromBody] SportsCenterManagement.BLL.DTOs.Members.Activation.InitialPasswordChangeRequest request,
+        CancellationToken cancellationToken)
+    {
+        if (!TryGetUserId(out var userId))
+            return Unauthorized(new { message = "JWT không chứa UserID hợp lệ." });
+        try
+        {
+            var user = await activationService.ChangeInitialPasswordAsync(userId, request, cancellationToken);
+            // AuthVersion was bumped, so the old session is revoked: issue a fresh one.
+            return Ok(await CreateAuthResponseAsync(user, cancellationToken));
+        }
+        catch (ValidationException exception)
+        {
+            return BadRequest(new { message = exception.Message });
+        }
+        catch (InvalidOperationException exception)
+        {
+            return Conflict(new { message = exception.Message });
+        }
+        catch (UnauthorizedAccessException exception)
+        {
+            return StatusCode(StatusCodes.Status403Forbidden, new { message = exception.Message });
+        }
+    }
+
     [HttpPost("register")]
     [EnableRateLimiting("password-reset")]
     [AllowAnonymous]
@@ -39,6 +115,10 @@ public sealed class AuthController(
         {
             var profile = await authService.RegisterAsync(request, cancellationToken: cancellationToken);
             return Created("/api/members/me", profile);
+        }
+        catch (SportsCenterManagement.BLL.Common.OtpAttemptException exception)
+        {
+            return BadRequest(new { message = exception.Message, code = "OTP_INVALID", remainingAttempts = exception.RemainingAttempts });
         }
         catch (InvalidOperationException exception)
         {
@@ -68,11 +148,15 @@ public sealed class AuthController(
         if (phone is not null && !System.Text.RegularExpressions.Regex.IsMatch(phone, @"^\+?[0-9]{8,15}$"))
             return BadRequest(new { message = "Số điện thoại phải gồm từ 8 đến 15 chữ số." });
 
+        // Product decision: report duplicates before sending an OTP (rate-limited by "password-reset").
+        if (await dbContext.Users.AnyAsync(user => user.Email == email, cancellationToken))
+            return Conflict(new { field = "email", message = "Email đã được sử dụng cho một tài khoản khác." });
+        if (phone is not null && await dbContext.Users.AnyAsync(user => user.Phone == phone, cancellationToken))
+            return Conflict(new { field = "phone", message = "Số điện thoại đã được sử dụng cho một tài khoản khác." });
+
         var now = DateTime.UtcNow;
         await using var transaction = await dbContext.Database.BeginTransactionAsync(
             System.Data.IsolationLevel.Serializable, cancellationToken);
-        // Issue the same challenge for every mailbox, regardless of existing accounts or phone numbers.
-        // Duplicate-account details are only available after the caller proves mailbox ownership.
         var latest = await dbContext.EmailVerificationTokens
             .Where(token => token.Email == email && token.UsedAt == null)
             .OrderByDescending(token => token.Id).FirstOrDefaultAsync(cancellationToken);
@@ -99,6 +183,7 @@ public sealed class AuthController(
 
     [HttpPost("login")]
     [AllowAnonymous]
+    [EnableRateLimiting("login")]
     [ProducesResponseType(typeof(AuthResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(423)]
@@ -214,7 +299,8 @@ public sealed class AuthController(
         var normalizedEmail = request.Email.Trim().ToLowerInvariant();
         var user = await dbContext.Users
             .SingleOrDefaultAsync(item => item.Email == normalizedEmail && item.Status == "Active", cancellationToken);
-        if (user is null)
+        // A lock set by an Admin (years ahead) is not a failed-login lock: resetting the password must not lift it.
+        if (user is null || user.LockedUntil > DateTime.UtcNow.AddYears(1))
         {
             return BadRequest(new { message = "Mã xác thực không hợp lệ hoặc đã hết hạn." });
         }

@@ -23,7 +23,7 @@ export function SalesOverviewRow({ isEn, membership, metrics, revenue }) {
             {metrics.groupBy === 'month' ? (isEn ? 'Monthly' : 'Theo tháng') : (isEn ? 'Daily' : 'Theo ngày')}
           </span>
         </div>
-        <VisionSalesOverviewChart data={revenue} groupBy={metrics.groupBy} growth={metrics.revenueGrowth} />
+        <VisionSalesOverviewChart data={revenue} groupBy={metrics.groupBy} />
       </section>
 
       {/* Right Card (5 cols): Active Users Bar Chart + 4 Stat Pills */}
@@ -47,10 +47,9 @@ export function SalesOverviewRow({ isEn, membership, metrics, revenue }) {
         <VisionActiveUsersChart
           data={membership}
           totalUsers={metrics.totalMembers}
-          totalBookings={metrics.totalBookings}
+          totalBookings={metrics.totalBookings ?? 0}
           netSales={metrics.netRevenue}
-          totalSessions={metrics.totalSessions}
-          growth={metrics.memberGrowth}
+          totalSessions={metrics.totalClasses}
         />
       </section>
     </div>

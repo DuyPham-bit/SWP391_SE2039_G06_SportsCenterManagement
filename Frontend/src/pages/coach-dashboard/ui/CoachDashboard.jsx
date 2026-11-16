@@ -177,7 +177,7 @@ export function CoachDashboard() {
           1. TOP BANNER GRADIENT (Olympic Athletic Header & 3 KPIs)
       ───────────────────────────────────────────────────────────── */}
       <section
-        className="scms-hero relative overflow-hidden rounded-3xl text-white p-6 sm:p-7 lg:p-8 shadow-xl shadow-brand-sage-950/15 border border-white/20 dark:border-brand-navy-800"
+        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-7 lg:p-8 shadow-xl shadow-brand-sage-950/15 border border-white/20 dark:border-brand-navy-800"
         style={{ background: OLYMPIC_GRADIENT }}
       >
         {/* Dynamic ambient glow & sports wave overlays */}
@@ -869,17 +869,15 @@ export function CoachDashboard() {
                   );
                 })
               ) : (
-                <div className="p-4 bg-brand-navy-50 dark:bg-brand-navy-800 rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 flex items-center justify-between">
-                  <div>
-                    <p className="font-bold text-brand-navy-900 dark:text-white text-xs">{activeSession.studentOrClass}</p>
-                    <p className="text-[10px] text-brand-navy-500 dark:text-brand-navy-400">{activeSession.room}</p>
-                  </div>
-                  <button
-                    type="button"
-                    className="px-3 py-1.5 rounded-lg bg-brand-sage-700 text-white text-xs font-bold"
-                  >
-                    Xác nhận có mặt
-                  </button>
+                <div className="p-4 bg-brand-navy-50 dark:bg-brand-navy-800 rounded-xl border border-brand-navy-200 dark:border-brand-navy-700">
+                  <p className="font-bold text-brand-navy-900 dark:text-white text-xs">{activeSession.studentOrClass}</p>
+                  <p className="text-[10px] text-brand-navy-500 dark:text-brand-navy-400">{activeSession.room}</p>
+                  {/* Empty roster: nothing to confirm, so no action button (it used to be a dead "confirm" button). */}
+                  <p role="status" className="mt-2 text-[11px] text-brand-navy-600 dark:text-brand-navy-300">
+                    {isEn
+                      ? 'No members are booked or enrolled for this session yet, so there is no one to check in.'
+                      : 'Ca này chưa có học viên đặt chỗ hoặc ghi danh nên chưa có ai để điểm danh.'}
+                  </p>
                 </div>
               )}
             </div>

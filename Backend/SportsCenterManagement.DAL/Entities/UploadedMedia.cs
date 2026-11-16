@@ -7,13 +7,9 @@ namespace SportsCenterManagement.DAL.Entities;
 [Table("uploaded_media")]
 public class UploadedMedia : BaseEntity
 {
-    [Column("storage_key")]
-    [MaxLength(500)]
-    public string StorageKey { get; set; } = "";
-
     [Column("drive_file_id")]
     [MaxLength(255)]
-    public string DriveFileId { get; set; } = "";
+    public string DriveFileId { get; set; } = null!;
 
     [Column("file_name")]
     [MaxLength(500)]
@@ -28,7 +24,7 @@ public class UploadedMedia : BaseEntity
 
     [Column("file_url")]
     [MaxLength(1000)]
-    public string FileUrl { get; set; } = "";
+    public string FileUrl { get; set; } = null!;
 
     [Column("web_view_link")]
     [MaxLength(1000)]

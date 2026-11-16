@@ -1,1 +1,1 @@
-export { MemberAIChatPopup, openMemberAIChat } from './ui/MemberAIChatPopup.jsx';
+export { MemberAIChatPopup } from './ui/MemberAIChatPopup.jsx';

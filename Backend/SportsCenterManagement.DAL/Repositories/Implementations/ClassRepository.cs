@@ -85,7 +85,11 @@ public sealed class ClassRepository(SportsCenterDbContext db) : IClassRepository
                 s.StartTime,
                 s.EndTime,
                 w.Status,
-                w.JoinedAt)
+                w.JoinedAt,
+                s.SessionStatus,
+                // FIFO position: same ordering the promotion uses (JoinedAt, then Id).
+                db.ClassWaitlists.Count(other => other.SessionId == w.SessionId && other.Status == "Waiting"
+                    && (other.JoinedAt < w.JoinedAt || (other.JoinedAt == w.JoinedAt && other.Id < w.Id))) + 1)
         ).ToListAsync(ct);
     }
 
@@ -109,8 +113,9 @@ public sealed class ClassRepository(SportsCenterDbContext db) : IClassRepository
             join c in db.Classes on s.ClassId equals c.Id
             join coach in db.CoachProfiles on c.CenterId equals coach.CenterId
             where s.Id == sessionId && coach.UserId == coachUserId && coach.Status == "Active" &&
-                (s.CoachId == coach.Id || (s.CoachId == null &&
-                    db.ClassCoaches.Any(a => a.ClassId == c.Id && a.CoachId == coach.Id)))
+                // Assistants always teach; the primary teaches unless the session was handed to a substitute.
+                (s.CoachId == coach.Id ||
+                    db.ClassCoaches.Any(a => a.ClassId == c.Id && a.CoachId == coach.Id && (!a.IsPrimary || s.CoachId == null)))
             select s.Id
         ).AnyAsync(ct);
     }

@@ -116,6 +116,20 @@ public sealed class MembersController(
             GetUserId(), centerId, memberId, request, cancellationToken)));
     }
 
+    /// <summary>Receptionist/Manager fix of name, birth date, gender and emergency contact (no login identifiers).</summary>
+    [HttpPatch("centers/{centerId:long}/members/{memberId:long}/basic-info")]
+    [CenterCapability("register_counter_package")]
+    [RequirePermission(PermissionCodes.MemberCenterCreate)]
+    public async Task<IActionResult> UpdateBasicInfoAtCenter(
+        long centerId,
+        long memberId,
+        MembersRequests.UpdateMemberBasicInfoRequest request,
+        CancellationToken cancellationToken)
+    {
+        return await Run(async () => Ok(await memberService.UpdateBasicInfoAtCenterAsync(
+            GetUserId(), centerId, memberId, request, cancellationToken)));
+    }
+
     [HttpPatch("centers/{centerId:long}/members/{memberId:long}/status")]
     [RequirePermission(PermissionCodes.MemberCenterManageStatus)]
     public async Task<IActionResult> SetMemberStatus(
@@ -138,7 +152,7 @@ public sealed class MembersController(
             await memberService.EnsureCanBuyPackageAsync(userId, request.PackageId, cancellationToken);
             var member = await memberService.GetMeAsync(userId, cancellationToken);
             var pending = await coreFlowService.CreatePendingMembershipAsync(
-                member.MemberId, request.PackageId, null, cancellationToken);
+                member.MemberId, request.PackageId, null, cancellationToken, request.SportIds);
             return Created($"/api/members/{member.MemberId}/subscriptions", pending);
         });
     }
@@ -156,7 +170,7 @@ public sealed class MembersController(
             var actorId = GetUserId();
             await memberService.EnsureCanSellToMemberAsync(actorId, memberId, request.PackageId, cancellationToken);
             var pending = await coreFlowService.CreatePendingMembershipAsync(
-                memberId, request.PackageId, actorId, cancellationToken);
+                memberId, request.PackageId, actorId, cancellationToken, request.SportIds);
             return Created($"/api/members/{memberId}/subscriptions", pending);
         });
     }

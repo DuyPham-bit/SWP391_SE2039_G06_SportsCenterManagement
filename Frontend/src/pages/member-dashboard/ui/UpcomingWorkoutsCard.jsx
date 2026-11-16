@@ -1,5 +1,5 @@
 import React from 'react';
-import { parseDateParts, getSportMeta } from '../lib/display.js';
+import { parseDateParts, getSportMeta, getCurrentPlan } from '../lib/display.js';
 import { translateClassName, translateRoomName, translateCoachName, translateCoachFeedback, translateWorkoutResult, translatePlanTitle, translatePlanGoal } from '../../../shared/i18n/i18nHelper.js';
 import { getBookingStatusLabel, isUpcomingBooking, formatMemberDate } from '../../../entities/member/index.js';
 
@@ -7,6 +7,7 @@ export function UpcomingWorkoutsCard({
   canBook, canCancel, canProgress, data, errors, isEn, latest, setBookingToCancel,
   setCancelModalOpen, upcoming
 }) {
+  const currentPlan = getCurrentPlan(data.plans);
   return (
     <div className="xl:col-span-7 space-y-6">
       {/* Card A: Upcoming Workouts Feed */}
@@ -180,9 +181,19 @@ export function UpcomingWorkoutsCard({
                   </span>
                 )}
               </div>
-              <p className="text-xs text-brand-navy-700 dark:text-brand-navy-300 italic leading-relaxed">
-                "{latest?.coachFeedback ? translateCoachFeedback(latest.coachFeedback, isEn) : (isEn ? 'Maintain balanced heart rate, drink enough water and adhere to the training plan.' : 'Duy trì nhịp tim ổn định, bù đủ nước và tập theo đúng giáo án đã đề ra.')}"
-              </p>
+              {errors.progress ? (
+                <p className="text-xs text-brand-danger-600 dark:text-brand-danger-400">
+                  {isEn ? 'Unable to load coach feedback.' : 'Chưa tải được nhận xét HLV.'}
+                </p>
+              ) : latest?.coachFeedback ? (
+                <p className="text-xs text-brand-navy-700 dark:text-brand-navy-300 italic leading-relaxed">
+                  "{translateCoachFeedback(latest.coachFeedback, isEn)}"
+                </p>
+              ) : (
+                <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400">
+                  {isEn ? 'No feedback from your coach yet.' : 'Chưa có nhận xét từ HLV.'}
+                </p>
+              )}
             </div>
             {latest?.workoutResult && (
               <div className="pt-2 border-t border-brand-sage-200/60 dark:border-brand-sage-800/40 text-[11px] text-brand-sage-900 dark:text-brand-sage-300 font-bold flex items-center gap-1.5">
@@ -198,10 +209,10 @@ export function UpcomingWorkoutsCard({
               <p className="text-xs text-brand-danger-600 dark:text-brand-danger-400">
                 {isEn ? 'Unable to load lesson plans.' : 'Chưa tải được giáo án.'}
               </p>
-            ) : data.plans.length === 0 ? (
+            ) : !currentPlan ? (
               <div className="py-4 text-center text-xs text-brand-navy-500 dark:text-brand-navy-400 space-y-1">
                 <span className="material-symbols-outlined text-2xl text-brand-navy-400 block">fitness_center</span>
-                <p className="font-semibold">{isEn ? 'No workout plans assigned yet' : 'Chưa có giáo án riêng từ HLV'}</p>
+                <p className="font-semibold">{isEn ? 'No active workout plan right now' : 'Hiện chưa có giáo án đang áp dụng'}</p>
                 <p className="text-[11px]">{isEn ? 'Request coach guidance during your next class' : 'Trao đổi cùng HLV trong buổi học tới'}</p>
               </div>
             ) : (
@@ -210,14 +221,19 @@ export function UpcomingWorkoutsCard({
                   {isEn ? 'Current Focus Plan' : 'Giáo án đang theo học'}
                 </span>
                 <h4 className="font-extrabold text-xs text-brand-navy-900 dark:text-white leading-snug">
-                  {translatePlanTitle(data.plans[0].title, isEn)}
+                  {translatePlanTitle(currentPlan.title, isEn)}
                 </h4>
-                <p className="text-xs text-brand-navy-600 dark:text-brand-navy-300 line-clamp-2 mt-1">
-                  {isEn ? 'Goal:' : 'Mục tiêu:'} {translatePlanGoal(data.plans[0].goal, isEn) || (isEn ? 'Build endurance and stability' : 'Tăng cường thể lực và sức bền')}
-                </p>
+                {currentPlan.goal && (
+                  <p className="text-xs text-brand-navy-600 dark:text-brand-navy-300 line-clamp-2 mt-1">
+                    {isEn ? 'Goal:' : 'Mục tiêu:'} {translatePlanGoal(currentPlan.goal, isEn)}
+                  </p>
+                )}
                 <div className="mt-2.5 pt-2 border-t border-brand-navy-200/60 dark:border-brand-navy-700 text-[11px] text-brand-navy-500 dark:text-brand-navy-400 flex items-center justify-between">
-                  <span>{isEn ? 'Coach:' : 'HLV:'} <strong className="text-brand-navy-800 dark:text-brand-navy-200">{translateCoachName(data.plans[0].coachName, isEn)}</strong></span>
-                  <span>{isEn ? `From ${formatMemberDate(data.plans[0].startDate, isEn)}` : `Từ ${formatMemberDate(data.plans[0].startDate)}`}</span>
+                  <span>{isEn ? 'Coach:' : 'HLV:'} <strong className="text-brand-navy-800 dark:text-brand-navy-200">{translateCoachName(currentPlan.coachName, isEn)}</strong></span>
+                  <span>
+                    {formatMemberDate(currentPlan.startDate, isEn)}
+                    {currentPlan.endDate ? ` → ${formatMemberDate(currentPlan.endDate, isEn)}` : ''}
+                  </span>
                 </div>
               </div>
             )}

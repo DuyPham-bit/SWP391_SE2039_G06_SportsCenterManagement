@@ -119,4 +119,3 @@ export const getSportVisual = (name) => {
 };
 
 export const getSportColor = (name) => getSportVisual(name);
-export const sportColors = sportVisuals;

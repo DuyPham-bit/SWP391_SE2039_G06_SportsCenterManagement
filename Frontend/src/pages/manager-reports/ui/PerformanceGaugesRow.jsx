@@ -31,8 +31,8 @@ export function PerformanceGaugesRow({ isEn, metrics, setActiveTableTab, topClas
             </h2>
             <p className="text-xs text-white/85 mt-1 leading-relaxed">
               {isEn
-                ? `Analytics period: ${metrics.from} → ${metrics.to} · Total ${metrics.totalSessions} scheduled sessions`
-                : `Tổng hợp từ ${metrics.from} đến ${metrics.to} · Tổng ${metrics.totalSessions} ca học đã phân bổ`}
+                ? `Analytics period: ${metrics.from} → ${metrics.to} · Total ${metrics.totalClasses} scheduled sessions`
+                : `Tổng hợp từ ${metrics.from} đến ${metrics.to} · Tổng ${metrics.totalClasses} ca học đã phân bổ`}
             </p>
           </div>
 
@@ -96,25 +96,33 @@ export function PerformanceGaugesRow({ isEn, metrics, setActiveTableTab, topClas
           value={metrics.occupancyRate}
           min={0}
           max={100}
-          title={isEn ? 'Satisfaction / Load' : 'Tỷ lệ lấp đầy'}
+          title={isEn ? 'Center Occupancy' : 'Tỷ lệ lấp đầy'}
           subtitle={isEn ? 'From all scheduled sessions' : 'Toàn bộ ca học đã mở'}
-          note={`${metrics.totalBookings} / ${metrics.totalCapacity} ${isEn ? 'seats booked' : 'chỗ đã đặt'}`}
+          note={
+            Number(metrics.occupancyRate || 0) >= 75
+              ? (isEn ? 'High court demand' : 'Nhu cầu tham gia cao')
+              : Number(metrics.occupancyRate || 0) >= 35
+              ? (isEn ? 'Balanced utilization' : 'Công suất vận hành ổn định')
+              : Number(metrics.totalClasses || 0) > 0
+              ? (isEn ? 'Available capacity remaining' : 'Còn nhiều chỗ trống')
+              : (isEn ? 'No scheduled sessions' : 'Chưa có ca học trong kỳ')
+          }
         />
       </div>
 
       {/* Right Card (4 cols): Radial Score Progress (Referral Tracking / Facility Load Score) */}
       <div className="min-w-0 lg:col-span-4 bg-white dark:bg-brand-navy-900 rounded-3xl p-4 border border-brand-navy-200/90 dark:border-brand-navy-800 shadow-xs hover-lift transition-all flex flex-col justify-between">
         <RadialScoreChart
-          score={Number((Math.max(0, Math.min(100, metrics.occupancyRate || 0)) / 10).toFixed(1))}
+          score={Number((Math.min(100, Math.max(0, Number(metrics.occupancyRate || 0))) / 10).toFixed(1))}
           maxScore={10}
           title={isEn ? 'Facility Tracking' : 'Hiệu suất sân bãi'}
-          subtitle={isEn ? 'Occupancy converted to a 10-point scale' : 'Quy đổi tỷ lệ lấp đầy sang thang 10'}
-          stat1Label={isEn ? 'Guests received' : 'Khách tiếp nhận'}
+          subtitle={isEn ? 'Utilization score (occupancy / 10)' : 'Điểm khai thác (tỷ lệ lấp đầy / 10)'}
+          stat1Label={isEn ? 'Top court bookings' : 'Lượt đặt sân #1'}
           stat1Val={`${topRoom?.booked || 0} lượt`}
           stat2Label={isEn ? 'Sessions hosted' : 'Ca đã tổ chức'}
           stat2Val={`${topRoom?.sessionsCount || 0} ca`}
-          scoreLabel={isEn ? 'Utilization' : 'Khai thác'}
-          scoreSub={isEn ? 'From actual occupancy' : 'Từ dữ liệu lấp đầy'}
+          scoreLabel={isEn ? 'Score' : 'Điểm tải'}
+          scoreSub={isEn ? 'Out of 10' : 'Thang điểm 10'}
         />
       </div>
     </div>

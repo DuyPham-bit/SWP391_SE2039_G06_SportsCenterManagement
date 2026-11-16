@@ -67,7 +67,8 @@ export function useTrainingPlans() {
   }, [currentUser?.id]);
 
   const handleClassChange = (classId) => {
-    setSelectedClassId(Number(classId));
+    const match = coachClasses.find(c => String(c.id) === String(classId));
+    setSelectedClassId(match ? match.id : '');
   };
 
   const handleOpenCreateModal = () => {
@@ -139,8 +140,20 @@ export function useTrainingPlans() {
       return;
     }
 
-    if (!exercises || !exercises.length || exercises.some(ex => !ex.name || !ex.name.trim())) {
+    const cleanExercises = exercises
+      .map(ex => ({ ...ex, name: (ex.name || '').trim(), sets: String(ex.sets ?? '').trim(), reps: String(ex.reps ?? '').trim(), note: (ex.note || '').trim() }))
+      .filter(ex => ex.name || ex.sets || ex.reps || ex.note);
+
+    if (!cleanExercises.length || cleanExercises.some(ex => !ex.name)) {
       showError(isEn ? 'Please add at least one exercise with a valid name!' : 'Vui lòng thêm ít nhất một bài tập có tên cụ thể!');
+      return;
+    }
+    if (cleanExercises.length > 50) {
+      showError(isEn ? 'A plan can contain at most 50 exercises.' : 'Mỗi giáo án tối đa 50 bài tập.');
+      return;
+    }
+    if (cleanExercises.some(ex => ex.sets && !/^\d+$/.test(ex.sets))) {
+      showError(isEn ? 'Sets must be a positive whole number.' : 'Số hiệp phải là số nguyên dương.');
       return;
     }
 
@@ -148,7 +161,11 @@ export function useTrainingPlans() {
       showError(isEn ? 'End date cannot be earlier than start date.' : 'Ngày kết thúc không được nhỏ hơn ngày bắt đầu.');
       return;
     }
-    const currentClass = coachClasses.find(c => c.id === selectedClassId);
+    const currentClass = coachClasses.find(c => String(c.id) === String(selectedClassId));
+    if (!currentClass) {
+      showError(isEn ? 'Selected class is no longer assigned to you.' : 'Lớp đã chọn không còn thuộc phân công của bạn.');
+      return;
+    }
 
     setSaving(true);
     try {
@@ -165,11 +182,12 @@ export function useTrainingPlans() {
           goal: goal.trim(),
           startDate,
           endDate: endDate || null,
-          exercises
+          exercises: cleanExercises
         });
         showSuccess(isEn ? 'Personal training plan updated successfully!' : 'Đã cập nhật giáo án riêng cá nhân hóa thành công!');
       } else {
         await coachApi.createTrainingPlan({
+          planId: editingPlanId || null,
           classId: currentClass?.id,
           className: currentClass?.name,
           sportName: currentClass?.sportName,
@@ -182,9 +200,11 @@ export function useTrainingPlans() {
           goal: goal.trim(),
           startDate,
           endDate: endDate || null,
-          exercises
+          exercises: cleanExercises
         });
-        showSuccess(isEn ? 'Training plan saved and published to the class!' : 'Đã tạo và ban hành giáo án cho lớp học thành công!');
+        showSuccess(editingPlanId
+          ? (isEn ? 'Class training plan updated successfully!' : 'Đã cập nhật giáo án lớp thành công!')
+          : isEn ? 'Training plan saved and published to the class!' : 'Đã tạo và ban hành giáo án cho lớp học thành công!');
       }
 
       setModalOpen(false);
@@ -272,7 +292,7 @@ export function useTrainingPlans() {
     });
   }, [plans, selectedFilterClass, typeFilter, searchQuery]);
 
-  const activeModalClass = coachClasses.find(c => c.id === selectedClassId);
+  const activeModalClass = coachClasses.find(c => String(c.id) === String(selectedClassId));
 
   return {
     activeModalClass, classFilterList, coachClasses, editingMemberName, editingPlanId, endDate,

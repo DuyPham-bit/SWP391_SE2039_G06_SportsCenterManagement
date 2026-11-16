@@ -53,7 +53,7 @@ export function ScheduleSummaryCards({ isEn, selectedStatusFilter, setSelectedSt
         </div>
         <div>
           <span className="text-[10px] font-bold uppercase text-brand-navy-400 block tracking-wider">{isEn ? 'Open Sports' : 'Bộ môn mở'}</span>
-          <span className="font-chivo text-lg font-black text-brand-navy-900">{stats.sportsCount} / 15</span>
+          <span className="font-chivo text-lg font-black text-brand-navy-900">{stats.sportsCount}{stats.sportsTotal ? ` / ${stats.sportsTotal}` : ''}</span>
         </div>
       </div>
     </div>

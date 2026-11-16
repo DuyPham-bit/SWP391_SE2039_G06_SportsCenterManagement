@@ -31,7 +31,7 @@ export function CoachProfessionalHub() {
   const tabsConfig = [
     { id: 'schedule', icon: 'edit_calendar', label: isEn ? 'Schedule & Leave' : 'Lịch & Xin nghỉ' },
     { id: 'communication', icon: 'chat', label: isEn ? 'Student Messages' : 'Tin nhắn học viên' },
-    { id: 'performance', icon: 'monitoring', label: isEn ? 'Teaching Performance' : 'Hiệu suất giảng dạy' }
+    { id: 'performance', icon: 'monitoring', label: isEn ? 'Performance & Salary' : 'Hiệu suất & Lương' }
   ];
 
   const load = async () => {
@@ -89,7 +89,7 @@ export function CoachProfessionalHub() {
   return (
     <div className="space-y-5 animate-fadeIn">
       {/* 1. Header Banner in SCMS Olympic Arena Theme */}
-      <header className="scms-hero relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-7 shadow-xl shadow-brand-teal-600/20 border border-white/30 dark:border-white/10">
+      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-7 shadow-xl shadow-brand-teal-600/20 border border-white/30 dark:border-white/10">
         {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
         <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent blur-3xl" />
         <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/30 to-transparent blur-3xl" />
@@ -153,7 +153,7 @@ export function CoachProfessionalHub() {
                 {isEn ? 'Average Rating' : 'Đánh giá TB'}
               </span>
               <span className="text-lg font-black text-brand-sand-300 flex items-center gap-1">
-                ★ {kpiData.averageRating || '5.0'}
+                ★ {kpiData.averageRating ?? '—'}
               </span>
             </div>
             <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
@@ -161,7 +161,7 @@ export function CoachProfessionalHub() {
                 {isEn ? 'Attendance Rate' : 'Tỉ lệ chuyên cần'}
               </span>
               <span className="text-base sm:text-lg font-black text-brand-sage-300 truncate block">
-                {kpiData.attendanceRate ?? 95}%
+                {typeof kpiData.attendanceRate === 'number' ? `${kpiData.attendanceRate}%` : '—'}
               </span>
             </div>
           </div>

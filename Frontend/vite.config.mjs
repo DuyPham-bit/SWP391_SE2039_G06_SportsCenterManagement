@@ -11,10 +11,7 @@ export default defineConfig(({ mode }) => {
       port: 3004,
       host: 'localhost',
       // Browser test profiles contain locked Windows files and must stay outside the source watcher.
-    watch: {
-      ignored: ['**/tmp/**', '**/.validation/**'],
-      usePolling: env.SCMS_USE_POLLING === 'true'
-    },
+      watch: { ignored: ['**/tmp/**', '**/.validation/**'] },
       proxy: {
         '/api': {
           target: apiTarget,

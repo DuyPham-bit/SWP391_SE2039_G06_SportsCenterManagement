@@ -2,8 +2,7 @@ import { useState, useRef, useEffect } from 'react';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { getLandingContent, loadLandingContent, loadLandingDraft, getLegacyLandingContent, saveLandingContent, openLandingPreview } from '../../../entities/landing-content/index.js';
-import { cloneContent, saveDraft, clearDraft, readLocalDraft, flushDraft } from './draft.js';
-import { deleteDashboardImage } from '../../../shared/api/r2ImageStorage.js';
+import { cloneContent, saveDraft, clearDraft, readLocalDraft, flushDraft, setDraftVersion, onDraftConflict } from './draft.js';
 
 export function useHomeContentEditor() {
   const { language } = useLanguage();
@@ -41,8 +40,6 @@ export function useHomeContentEditor() {
   const [reloadKey, setReloadKey] = useState(0);
   const savedContentRef = useRef(null);
   const latestContentRef = useRef(content);
-  const pendingDashboardKeysRef = useRef(new Set());
-  const retiredDashboardKeysRef = useRef(new Set());
   const [discardKey, setDiscardKey] = useState(0);
 
   useEffect(() => {
@@ -70,6 +67,7 @@ export function useHomeContentEditor() {
       loadLandingDraft({ signal: controller.signal }).catch(() => null)
     ]).then(([result, serverDraft]) => {
       if (!active) return;
+      setDraftVersion(serverDraft?.updatedAt);
       savedContentRef.current = cloneContent(result.content);
       const published = JSON.stringify(result.content);
       // Prefer the server draft; a local copy only exists if a previous autosave could not reach the server.
@@ -109,6 +107,17 @@ export function useHomeContentEditor() {
 
   // Save any pending autosave when the editor is left inside the app.
   useEffect(() => () => { void flushDraft(); }, []);
+
+  // Shared draft edited elsewhere: keep this editor's copy locally and tell the user instead of overwriting.
+  useEffect(() => {
+    onDraftConflict(() => addToast(
+      isEn
+        ? 'Another manager changed the draft. Your edits are kept in this browser; reload to see the latest draft.'
+        : 'Bản nháp vừa được người khác chỉnh sửa. Thay đổi của bạn vẫn được giữ trên trình duyệt này; tải lại trang để xem bản mới nhất.',
+      'warning'
+    ));
+    return () => onDraftConflict(null);
+  }, [isEn]);
 
   // Prevent accidental loss of edits when hitting F5
   useEffect(() => {
@@ -183,10 +192,6 @@ export function useHomeContentEditor() {
       setContent(saved);
       clearDraft();
       setIsDirty(false);
-      const retiredKeys = [...retiredDashboardKeysRef.current];
-      pendingDashboardKeysRef.current.clear();
-      retiredDashboardKeysRef.current.clear();
-      await Promise.allSettled(retiredKeys.map(deleteDashboardImage));
       addToast(
         isEn
           ? 'Homepage content saved and published successfully!'
@@ -207,10 +212,6 @@ export function useHomeContentEditor() {
     setIsDirty(false);
     setDiscardKey(previous => previous + 1);
     setMediaPickerConfig(previous => ({ ...previous, isOpen: false, callback: null, onClose: undefined }));
-    const pendingKeys = [...pendingDashboardKeysRef.current];
-    pendingDashboardKeysRef.current.clear();
-    retiredDashboardKeysRef.current.clear();
-    Promise.allSettled(pendingKeys.map(deleteDashboardImage));
     addToast(
       isEn
         ? 'Unsaved changes discarded. Content restored to the last successful save.'
@@ -241,22 +242,6 @@ export function useHomeContentEditor() {
     });
   };
 
-  // Track R2 dashboard images: new uploads are removed on discard, replaced ones after a successful save.
-  const handleMediaSelected = ({ key, publicUrl, isNew = true }) => {
-    const marker = '/dashboard/';
-    const currentUrl = mediaPickerConfig.currentUrl || '';
-    const markerIndex = currentUrl.indexOf(marker);
-    const oldKey = currentUrl.startsWith('dashboard/')
-      ? currentUrl
-      : (markerIndex >= 0 ? currentUrl.slice(markerIndex + 1) : null);
-    if (oldKey && oldKey !== key) {
-      if (pendingDashboardKeysRef.current.delete(oldKey)) deleteDashboardImage(oldKey).catch(() => {});
-      else retiredDashboardKeysRef.current.add(oldKey);
-    }
-    if (isNew) pendingDashboardKeysRef.current.add(key);
-    mediaPickerConfig.callback?.(publicUrl);
-  };
-
   // Thống kê nhanh
   const totalSports = content.coursesSection?.sportsList?.length || 0;
   const visibleSports = (content.coursesSection?.sportsList || []).filter(s => s.isVisible !== false).length;
@@ -265,7 +250,7 @@ export function useHomeContentEditor() {
 
   return {
     activeTab, addToast, content, deleteFacilityCard, discardKey, handleDiscardChanges,
-    handleMediaSelected, handlePreview, handleSaveAll, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
+    handlePreview, handleSaveAll, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
     mediaPickerConfig, openMediaPicker, setContent, setIsDirty, setMediaPickerConfig, setReloadKey,
     totalFacilities, totalSports, updateCatalogCards, updateContentField, visibleFacilities,
     visibleSports
