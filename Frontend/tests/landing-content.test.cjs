@@ -179,3 +179,32 @@ test('landing carousel controller wraps at edges, calculates drag threshold, and
   assert.equal(shouldAutoAdvanceCarousel({ itemCount: 5, isAutoPlayEnabled: true, reducedMotion: true }), false);
 });
 
+test('zonesLayout defaults model3dUrl to /3d-campus.html and preserves custom .html URLs on load/save', async () => {
+  let published = null;
+  const { api } = loadService(async (route, opts = {}) => {
+    if (route === 'landing-content' && opts.method === 'PUT') {
+      published = JSON.parse(JSON.stringify(opts.body.content));
+      return { content: published, updatedAt: '2026-11-16T00:00:00Z' };
+    }
+    return { content: published };
+  });
+
+  const defaults = api.getDefaultLandingContent();
+  assert.equal(defaults.zonesLayout.model3dUrl, '/3d-campus.html');
+
+  const custom = api.getDefaultLandingContent();
+  custom.zonesLayout.model3dUrl = 'https://cdn.example.com/campus-3d/arena-v2.html';
+  await api.saveLandingContent(custom);
+
+  const loaded = await api.loadLandingContent();
+  assert.equal(loaded.content.zonesLayout.model3dUrl, 'https://cdn.example.com/campus-3d/arena-v2.html');
+
+  const legacyOnly = loadService(async () => ({
+    content: { zonesLayout: { sectionTitle: 'CUSTOM TITLE' } },
+    updatedAt: '2026-11-16T00:00:00Z'
+  }));
+  const merged = await legacyOnly.api.loadLandingContent();
+  assert.equal(merged.content.zonesLayout.sectionTitle, 'CUSTOM TITLE');
+  assert.equal(merged.content.zonesLayout.model3dUrl, '/3d-campus.html');
+});
+

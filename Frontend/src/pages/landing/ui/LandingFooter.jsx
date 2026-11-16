@@ -34,10 +34,17 @@ export function LandingFooter({
                 <span className="footer-icon-pill material-symbols-outlined">location_on</span>
                 <span>{isEn ? translateLocation(landingContent.ctaAndFooter?.contactAddress, true) : (landingContent.ctaAndFooter?.contactAddress || 'Chưa cập nhật')}</span>
               </div>
-              <a href={`tel:${(landingContent.ctaAndFooter?.contactPhone || 'Chưa cập nhật').replace(/\s+/g, '')}`} className="footer-link">
-                <span className="footer-icon-pill material-symbols-outlined">call</span>
-                <span>{landingContent.ctaAndFooter?.contactPhone || (isEn ? '(028) 7300 5588' : 'Chưa cập nhật')}</span>
-              </a>
+              {landingContent.ctaAndFooter?.contactPhone?.trim() ? (
+                <a href={`tel:${landingContent.ctaAndFooter.contactPhone.trim().replace(/\s+/g, '')}`} className="footer-link">
+                  <span className="footer-icon-pill material-symbols-outlined">call</span>
+                  <span>{landingContent.ctaAndFooter.contactPhone.trim()}</span>
+                </a>
+              ) : (
+                <div className="footer-link">
+                  <span className="footer-icon-pill material-symbols-outlined">call</span>
+                  <span>{isEn ? 'Not updated' : 'Chưa cập nhật'}</span>
+                </div>
+              )}
               <a href={`mailto:${landingContent.ctaAndFooter?.contactEmail || 'Chưa cập nhật'}`} className="footer-link" style={{wordBreak:'break-all'}}>
                 <span className="footer-icon-pill material-symbols-outlined">mail</span>
                 <span>{landingContent.ctaAndFooter?.contactEmail || (isEn ? 'contact@scms.vn' : 'Chưa cập nhật')}</span>

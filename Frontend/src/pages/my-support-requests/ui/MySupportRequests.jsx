@@ -6,6 +6,7 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { formatMemberDateTime } from '../../../entities/member/index.js';
+import { useLandingContent } from '../../../entities/landing-content/index.js';
 
 const getStatusConfig = (isEn) => ({
   Open: {
@@ -49,6 +50,8 @@ export function MySupportRequests() {
   const { showSuccess, showError, showInfo } = useToast();
   const { language } = useLanguage();
   const isEn = language === 'en';
+  const landingContent = useLandingContent();
+  const hotlinePhone = landingContent?.ctaAndFooter?.contactPhone?.trim() || '';
 
   const statusConfig = useMemo(() => getStatusConfig(isEn), [isEn]);
 
@@ -360,7 +363,16 @@ export function MySupportRequests() {
           </div>
           <div className="flex items-center gap-2">
             <span className="material-symbols-outlined text-brand-sand-300 text-[18px]">call</span>
-            <span className="font-medium drop-shadow-xs">{isEn ? 'Front Desk Emergency Hotline: ' : 'Hotline khẩn cấp quầy Lễ tân: '}<strong className="text-white font-mono font-bold">0901 234 567</strong></span>
+            <span className="font-medium drop-shadow-xs">
+              {isEn ? 'Front Desk Emergency Hotline: ' : 'Hotline khẩn cấp quầy Lễ tân: '}
+              {hotlinePhone ? (
+                <a href={`tel:${hotlinePhone.replace(/\s+/g, '')}`} className="text-white font-mono font-bold underline-offset-2 hover:underline">
+                  {hotlinePhone}
+                </a>
+              ) : (
+                <strong className="text-white font-mono font-bold">{isEn ? 'Not updated' : 'Chưa cập nhật'}</strong>
+              )}
+            </span>
           </div>
         </div>
       </div>

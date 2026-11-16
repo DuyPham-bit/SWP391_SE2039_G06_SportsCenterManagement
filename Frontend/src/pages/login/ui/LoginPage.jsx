@@ -39,6 +39,7 @@ export function LoginPage() {
   const { showSuccess, showError } = useToast();
   const landingContent = useLandingContent();
   const authShowcase = landingContent?.authShowcase || {};
+  const supportPhone = landingContent?.ctaAndFooter?.contactPhone?.trim() || '';
 
   const showcaseBadge = authShowcase.badge || 'Sân tập mở cửa 24/7';
   const showcaseTagline = authShowcase.tagline || 'Khởi đầu bứt phá';
@@ -776,13 +777,17 @@ export function LoginPage() {
 
         {/* Chân trang hỗ trợ & Bảo mật */}
         <div className="text-xs text-brand-navy-200 lg:text-brand-navy-600 dark:lg:text-brand-navy-300 text-center shrink-0 py-1 leading-5 z-10 flex items-center justify-center gap-3">
-          <span>
-            Hỗ trợ 24/7:{' '}
-            <a href="tel:0859859367" className="font-semibold text-white lg:text-brand-navy-800 dark:lg:text-white hover:text-[var(--custom-btn-bg-color)] lg:hover:text-brand-sage-800 transition-colors rounded">
-              0859 859 367
-            </a>
-          </span>
-          <span aria-hidden="true">•</span>
+          {supportPhone && (
+            <>
+              <span>
+                Hỗ trợ 24/7:{' '}
+                <a href={`tel:${supportPhone.replace(/\s+/g, '')}`} className="font-semibold text-white lg:text-brand-navy-800 dark:lg:text-white hover:text-[var(--custom-btn-bg-color)] lg:hover:text-brand-sage-800 transition-colors rounded">
+                  {supportPhone}
+                </a>
+              </span>
+              <span aria-hidden="true">•</span>
+            </>
+          )}
           <span className="flex items-center gap-1">
             <span className="material-symbols-outlined text-[13px] text-brand-sage-300 lg:text-brand-sage-700 dark:lg:text-brand-sage-400">lock</span>
             Bảo mật 256-bit SSL
