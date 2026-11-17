@@ -397,7 +397,7 @@ export function LoginPage() {
       id={isRegister ? 'register-submit-button' : 'login-submit-button'}
       type="submit"
       disabled={isSubmitting}
-      className="w-full min-h-12 py-3 px-6 rounded-xl font-bold text-sm tracking-wide bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg shadow-red-600/30 hover:shadow-red-600/50 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none"
+      className="w-full min-h-12 py-3 px-6 rounded-xl font-bold text-sm tracking-wide bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-500 hover:to-teal-500 text-white shadow-lg shadow-emerald-600/30 hover:shadow-emerald-600/50 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none"
     >
       <span>
         {isSubmitting
@@ -431,10 +431,10 @@ export function LoginPage() {
         {/* Lớp phủ cinematic đa tầng: giữ độ nét, độ tương phản và chuyển động sống động của video thể thao */}
         <div className="absolute inset-0 bg-gradient-to-r from-brand-navy-950/85 via-brand-navy-950/50 to-brand-navy-950/80" />
         <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-950/90 via-transparent to-brand-navy-950/70" />
-        {/* Đốm sáng ambient đỏ thể thao Olympic rực rỡ */}
-        <div className="absolute -top-32 -left-32 w-[520px] h-[520px] bg-red-600/25 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute -bottom-32 -right-32 w-[520px] h-[520px] bg-rose-600/20 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-red-500/10 rounded-full blur-[120px] pointer-events-none" />
+        {/* Đốm sáng ambient xanh thể thao Olympic rực rỡ */}
+        <div className="absolute -top-32 -left-32 w-[520px] h-[520px] bg-emerald-600/25 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute -bottom-32 -right-32 w-[520px] h-[520px] bg-teal-600/20 rounded-full blur-[140px] pointer-events-none" />
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-500/10 rounded-full blur-[120px] pointer-events-none" />
       </div>
 
       {/* ========================================================
@@ -447,8 +447,8 @@ export function LoginPage() {
 
           <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-[13px] font-semibold text-white shadow-lg">
             <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]" />
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
+              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,1)]" />
             </span>
             <span>{showcaseBadge}</span>
           </div>
@@ -456,8 +456,8 @@ export function LoginPage() {
 
         {/* Khối trung tâm: Headline nghệ thuật & Thẻ kính nổi */}
         <div className="py-4 max-w-xl">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-red-500/20 backdrop-blur-xl border border-red-500/35 text-xs font-bold uppercase tracking-wider text-red-200 mb-4 shadow-sm">
-            <span className="material-symbols-outlined text-[15px] text-red-400">sports_score</span>
+          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-emerald-500/20 backdrop-blur-xl border border-emerald-500/35 text-xs font-bold uppercase tracking-wider text-emerald-200 mb-4 shadow-sm">
+            <span className="material-symbols-outlined text-[15px] text-emerald-400">sports_score</span>
             <span>{showcaseTagline}</span>
           </div>
 
@@ -465,14 +465,14 @@ export function LoginPage() {
             {isRegister ? (
               <>
                 {showcaseRegisterTitle.split('\n')[0]} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-red-100 to-rose-300">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-emerald-300">
                   {showcaseRegisterTitle.split('\n').slice(1).join('\n') || ''}
                 </span>
               </>
             ) : (
               <>
                 {showcaseLoginTitle.split('\n')[0]} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-red-100 to-rose-300">
+                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-emerald-100 to-emerald-300">
                   {showcaseLoginTitle.split('\n').slice(1).join('\n') || ''}
                 </span>
               </>
@@ -485,7 +485,7 @@ export function LoginPage() {
 
           {/* 2 Thẻ kính Frosted Glass Cards */}
           <div className="grid sm:grid-cols-2 gap-3.5 mt-6">
-            <div className="p-4 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/15 hover:bg-white/[0.14] hover:border-red-500/40 hover:-translate-y-0.5 transition-all duration-300 shadow-xl group">
+            <div className="p-4 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/15 hover:bg-white/[0.14] hover:border-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300 shadow-xl group">
               <div className="flex items-center gap-3">
                 <span className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(251,191,36,0.4)] transition-all shadow-inner">
                   <span className="material-symbols-outlined text-[22px]">{feature1Icon}</span>
@@ -497,9 +497,9 @@ export function LoginPage() {
               </div>
             </div>
 
-            <div className="p-4 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/15 hover:bg-white/[0.14] hover:border-red-500/40 hover:-translate-y-0.5 transition-all duration-300 shadow-xl group">
+            <div className="p-4 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/15 hover:bg-white/[0.14] hover:border-emerald-500/40 hover:-translate-y-0.5 transition-all duration-300 shadow-xl group">
               <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(239,68,68,0.4)] transition-all shadow-inner">
+                <span className="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-300 flex items-center justify-center shrink-0 border border-emerald-500/30 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(16,185,129,0.4)] transition-all shadow-inner">
                   <span className="material-symbols-outlined text-[22px]">{feature2Icon}</span>
                 </span>
                 <div>
@@ -509,6 +509,7 @@ export function LoginPage() {
               </div>
             </div>
           </div>
+        </div>
         </div>
 
         {/* Footer Cột trái: Thống kê số liệu */}
@@ -553,7 +554,7 @@ export function LoginPage() {
 
           <a
             href="#/"
-            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-full text-[13px] font-semibold text-white bg-white/10 hover:bg-white/20 backdrop-blur-xl shadow-lg border border-white/20 ml-auto transition-all duration-200 hover:-translate-x-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-full text-[13px] font-semibold text-white bg-white/10 hover:bg-white/20 backdrop-blur-xl shadow-lg border border-white/20 ml-auto transition-all duration-200 hover:-translate-x-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
           >
             <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
             <span>Về trang chủ</span>
@@ -575,9 +576,9 @@ export function LoginPage() {
                     disabled={isSubmitting}
                     onClick={() => handleTabChange(tab.id)}
                     className={
-                      'flex-1 min-h-10 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60 ' +
+                      'flex-1 min-h-10 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-60 ' +
                       (isActive
-                        ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30 font-bold'
+                        ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white shadow-md shadow-emerald-600/30 font-bold'
                         : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium')
                     }
                   >
@@ -612,7 +613,7 @@ export function LoginPage() {
                   type="button"
                   disabled={isSubmitting || googleLoading}
                   onClick={() => setShowGoogleModal(true)}
-                  className="w-full min-h-11 px-3.5 py-2.5 inline-flex items-center justify-center gap-2.5 border border-white/20 hover:border-white/35 rounded-xl bg-white hover:bg-slate-50 text-slate-800 text-xs sm:text-sm font-bold shadow-md hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60 transition-all active:scale-[0.99] cursor-pointer"
+                  className="w-full min-h-11 px-3.5 py-2.5 inline-flex items-center justify-center gap-2.5 border border-white/20 hover:border-white/35 rounded-xl bg-white hover:bg-slate-50 text-slate-800 text-xs sm:text-sm font-bold shadow-md hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-60 transition-all active:scale-[0.99] cursor-pointer"
                 >
                   <svg className="w-5 h-5 shrink-0" style={{ width: '20px', height: '20px', minWidth: '20px', minHeight: '20px' }} viewBox="0 0 24 24" aria-hidden="true">
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
@@ -625,8 +626,8 @@ export function LoginPage() {
               )}
 
               {googleLoading && (
-                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-red-400 mt-1.5 animate-pulse">
-                  <svg className="animate-spin h-3.5 w-3.5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-emerald-400 mt-1.5 animate-pulse">
+                  <svg className="animate-spin h-3.5 w-3.5 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -698,7 +699,7 @@ export function LoginPage() {
                         type="checkbox"
                         checked={rememberEmail}
                         onChange={event => setRememberEmail(event.target.checked)}
-                        className="w-3.5 h-3.5 accent-red-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                        className="w-3.5 h-3.5 accent-emerald-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
                       />
                       <span>Ghi nhớ email</span>
                     </label>
@@ -706,7 +707,7 @@ export function LoginPage() {
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
-                      className="font-bold text-red-400 hover:text-red-300 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded px-1"
+                      className="font-bold text-emerald-400 hover:text-emerald-300 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded px-1"
                     >
                       Quên mật khẩu?
                     </button>
@@ -731,13 +732,13 @@ export function LoginPage() {
                       <AuthField key="register-confirm" id="register-confirm" label="Nhập lại mật khẩu" type="password" autoComplete="new-password" maxLength={128} placeholder="Xác nhận mật khẩu" required value={regConfirmPassword} error={fieldErrors['register-confirm']} onChange={event => updateField('register-confirm', event.target.value, setRegConfirmPassword)} />
                     </div>
                     <p id="register-password-rule" className="mt-1.5 flex items-center gap-1.5 text-xs leading-4 text-slate-300">
-                      <span className="material-symbols-outlined text-[14px] text-red-400" aria-hidden="true">info</span>
+                      <span className="material-symbols-outlined text-[14px] text-emerald-400" aria-hidden="true">info</span>
                       Từ 6 ký tự, có chữ hoa, thường, số và ký tự đặc biệt.
                     </p>
                   </div>
                   <div className="pt-0.5">
                     <label htmlFor="register-agree" className="flex items-start gap-2 text-xs leading-[18px] text-slate-300 cursor-pointer select-none">
-                      <input id="register-agree" type="checkbox" required checked={regAgree} aria-invalid={Boolean(fieldErrors['register-agree'])} aria-describedby={fieldErrors['register-agree'] ? 'register-agree-error' : undefined} onChange={event => updateField('register-agree', event.target.checked, setRegAgree)} className="w-3.5 h-3.5 shrink-0 mt-0.5 accent-red-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" />
+                      <input id="register-agree" type="checkbox" required checked={regAgree} aria-invalid={Boolean(fieldErrors['register-agree'])} aria-describedby={fieldErrors['register-agree'] ? 'register-agree-error' : undefined} onChange={event => updateField('register-agree', event.target.checked, setRegAgree)} className="w-3.5 h-3.5 shrink-0 mt-0.5 accent-emerald-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500" />
                       <span>Tôi xác nhận thông tin là chính xác và đồng ý tạo tài khoản hội viên Olympic Sports Arena.</span>
                     </label>
                     {fieldErrors['register-agree'] && <p id="register-agree-error" className="text-[11px] text-red-400 leading-4 mt-0.5">{fieldErrors['register-agree']}</p>}
@@ -797,7 +798,7 @@ export function LoginPage() {
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => handleTabChange(isRegister ? 'login' : 'register')}
-                className="font-bold text-red-400 hover:text-red-300 underline-offset-4 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60"
+                className="font-bold text-emerald-400 hover:text-emerald-300 underline-offset-4 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 disabled:opacity-60"
               >
                 {isRegister ? 'Đăng nhập ngay' : 'Đăng ký hội viên'}
               </button>
@@ -811,7 +812,7 @@ export function LoginPage() {
             <>
               <span>
                 Hỗ trợ 24/7:{' '}
-                <a href={`tel:${supportPhone.replace(/\s+/g, '')}`} className="font-semibold text-white hover:text-red-400 transition-colors rounded">
+                <a href={`tel:${supportPhone.replace(/\s+/g, '')}`} className="font-semibold text-white hover:text-emerald-400 transition-colors rounded">
                   {supportPhone}
                 </a>
               </span>
