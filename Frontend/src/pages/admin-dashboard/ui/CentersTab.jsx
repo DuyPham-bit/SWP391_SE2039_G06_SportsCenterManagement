@@ -27,7 +27,7 @@ export function CentersTab({
           onClick={() => setShowCC(true)}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-sage-600 to-brand-teal-700 hover:from-brand-sage-700 hover:to-brand-teal-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-brand-sage-600/20 cursor-pointer self-start sm:self-auto"
+          className="scms-shine px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-sage-600 to-brand-teal-700 hover:from-brand-sage-700 hover:to-brand-teal-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-brand-sage-600/20 cursor-pointer self-start sm:self-auto"
         >
           <span className="material-symbols-outlined text-[18px]">add_business</span>
           <span>+ Tạo Cơ Sở Mới</span>

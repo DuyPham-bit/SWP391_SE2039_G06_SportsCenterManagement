@@ -5,7 +5,11 @@ import { CoachError, useTeachingSessions } from '../../../features/coach-workspa
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { MotionButton } from '../../../shared/ui/MotionButton.jsx';
-import { OLYMPIC_GRADIENT } from '../../../shared/ui/gradients.js';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 export function CoachDashboard() {
   const { currentUser } = useAuth();
@@ -171,41 +175,28 @@ export function CoachDashboard() {
   };
 
   return (
-    <div className="w-full space-y-6 pb-12 transition-colors">
+    <div className="w-full space-y-6 pb-12 animate-fade-slide-up transition-colors">
       
       {/* ─────────────────────────────────────────────────────────────
           1. TOP BANNER GRADIENT (Olympic Athletic Header & 3 KPIs)
       ───────────────────────────────────────────────────────────── */}
-      <section
-        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-7 lg:p-8 shadow-xl shadow-brand-sage-950/15 border border-white/20 dark:border-brand-navy-800"
-        style={{ background: OLYMPIC_GRADIENT }}
-      >
-        {/* Dynamic ambient glow & sports wave overlays */}
-        <div className="pointer-events-none absolute -right-20 -top-20 w-96 h-96 rounded-full bg-gradient-to-br from-brand-sand-300/30 via-brand-teal-300/20 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-20 -left-20 w-96 h-96 rounded-full bg-gradient-to-tr from-brand-sage-500/35 via-brand-teal-500/20 to-transparent blur-3xl" />
-
-        {/* Subtle decorative Olympic curved motion lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
-          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.25" />
-        </svg>
+      <section className={`${SCMS_HERO_SECTION_CLASS} lg:p-8`}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/30 shadow-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-brand-sage-400 animate-pulse shrink-0" />
+            <div className={SCMS_HERO_BADGE_CLASS}>
+              <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
               <span>{isEn ? 'Olympic Certified Coach Portal' : 'Cổng Huấn Luyện Viên Chuyên Nghiệp'}</span>
             </div>
 
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.25)]">
+            <h1 className="font-chivo text-2xl sm:text-3xl font-black tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
               {isEn
                 ? `Welcome back, Coach ${currentUser?.fullName || 'Trainer'}!`
                 : `Chào ngày mới, HLV ${currentUser?.fullName || 'Huấn Luyện Viên'}!`}
             </h1>
 
-            <p className="text-xs sm:text-sm text-white/90 leading-relaxed font-medium">
+            <p className="text-xs sm:text-sm text-white/95 leading-relaxed font-medium drop-shadow-xs">
               {isEn
                 ? `You have ${allSessions.length} sessions scheduled today. Track your student attendance and log training progress seamlessly.`
                 : `Hôm nay bạn có ${allSessions.length} ca dạy được phân công. Hãy kiểm tra danh sách lớp, thực hiện điểm danh và đánh giá kết quả rèn luyện của học viên.`}
@@ -217,14 +208,14 @@ export function CoachDashboard() {
             
             {/* Thẻ 1: Số ca dạy hôm nay */}
             <div className="bg-white/15 dark:bg-brand-navy-900/40 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/25 min-w-[105px] sm:min-w-[130px] flex flex-col justify-between shadow-xs hover:bg-white/20 transition-all">
-              <span className="text-[10px] sm:text-[11px] font-bold text-white/80 uppercase tracking-wider block">
+              <span className="text-[10px] sm:text-[11px] font-bold text-white/85 uppercase tracking-wider block">
                 {isEn ? 'Sessions Today' : 'Ca dạy hôm nay'}
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-3xl font-black text-white">{allSessions.length}</span>
+                <span className="text-xl sm:text-3xl font-black font-chivo text-white">{allSessions.length}</span>
                 <span className="text-[11px] text-brand-sand-200 font-bold">{isEn ? 'slots' : 'ca'}</span>
               </div>
-              <span className="mt-1 text-[10px] text-white/90 font-bold flex items-center gap-1">
+              <span className="mt-1 text-[10px] text-white/95 font-bold flex items-center gap-1">
                 <span className="w-1.5 h-1.5 rounded-full bg-brand-sage-300" />
                 <span>{completedSessionCount} {isEn ? 'completed' : 'ca xong'}</span>
               </span>
@@ -232,26 +223,26 @@ export function CoachDashboard() {
 
             {/* Thẻ 2: Tổng học viên */}
             <div className="bg-white/15 dark:bg-brand-navy-900/40 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/25 min-w-[105px] sm:min-w-[130px] flex flex-col justify-between shadow-xs hover:bg-white/20 transition-all">
-              <span className="text-[10px] sm:text-[11px] font-bold text-white/80 uppercase tracking-wider block">
+              <span className="text-[10px] sm:text-[11px] font-bold text-white/85 uppercase tracking-wider block">
                 {isEn ? 'Total Students' : 'Tổng học viên'}
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-3xl font-black text-white">{studentCount}</span>
-                <span className="text-[11px] text-white/80 font-bold">{isEn ? 'members' : 'người'}</span>
+                <span className="text-xl sm:text-3xl font-black font-chivo text-white">{studentCount}</span>
+                <span className="text-[11px] text-white/85 font-bold">{isEn ? 'members' : 'người'}</span>
               </div>
-              <span className="mt-1 text-[10px] text-white/90 font-bold flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-brand-teal-300" />
+              <span className="mt-1 text-[10px] text-white/95 font-bold flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-brand-sand-200" />
                 <span>{classes.length} {isEn ? 'classes' : 'lớp trực'}</span>
               </span>
             </div>
 
             {/* Thẻ 3: Tiến độ ca dạy trong ngày */}
             <div className="bg-white/15 dark:bg-brand-navy-900/40 backdrop-blur-md rounded-2xl p-3 sm:p-4 border border-white/25 min-w-[105px] sm:min-w-[130px] flex flex-col justify-between shadow-xs hover:bg-white/20 transition-all">
-              <span className="text-[10px] sm:text-[11px] font-bold text-white/80 uppercase tracking-wider block">
+              <span className="text-[10px] sm:text-[11px] font-bold text-white/85 uppercase tracking-wider block">
                 {isEn ? 'Progress' : 'Tiến độ ngày'}
               </span>
               <div className="mt-2 flex items-baseline gap-1.5">
-                <span className="text-xl sm:text-3xl font-black text-white">{completionPercentage}%</span>
+                <span className="text-xl sm:text-3xl font-black font-chivo text-white">{completionPercentage}%</span>
               </div>
               {/* Mini progress bar */}
               <div className="mt-1.5 w-full bg-white/20 rounded-full h-1.5 overflow-hidden">
@@ -628,7 +619,7 @@ export function CoachDashboard() {
                 disabled={savingProgress || memberList.length === 0}
                 whileHover={{ y: -1 }}
                 whileTap={{ scale: 0.98 }}
-                className="w-full h-11 rounded-xl bg-gradient-to-r from-brand-sage-600 to-brand-teal-700 hover:from-brand-sage-700 hover:to-brand-teal-800 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-brand-sage-600/20 flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="scms-shine w-full h-11 rounded-xl bg-gradient-to-r from-brand-sage-600 to-brand-teal-700 hover:from-brand-sage-700 hover:to-brand-teal-800 text-white font-bold text-xs uppercase tracking-wider transition-all shadow-md shadow-brand-sage-600/20 flex items-center justify-center gap-2 cursor-pointer mt-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <span className={`material-symbols-outlined text-[17px] ${savingProgress ? 'animate-spin' : ''}`}>
                   {savingProgress ? 'progress_activity' : 'save'}
@@ -905,7 +896,7 @@ export function CoachDashboard() {
                 onClick={handleSaveAttendance}
                 whileHover={{ scale: 1.03 }}
                 whileTap={{ scale: 0.97 }}
-                className="px-4 py-2 rounded-xl bg-gradient-to-r from-brand-sage-600 to-brand-teal-700 hover:from-brand-sage-700 hover:to-brand-teal-800 text-white text-xs font-bold shadow-md shadow-brand-sage-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
+                className="scms-shine px-4 py-2 rounded-xl bg-gradient-to-r from-brand-sage-600 to-brand-teal-700 hover:from-brand-sage-700 hover:to-brand-teal-800 text-white text-xs font-bold shadow-md shadow-brand-sage-600/20 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5"
               >
                 {savingAttendance ? (
                   <>

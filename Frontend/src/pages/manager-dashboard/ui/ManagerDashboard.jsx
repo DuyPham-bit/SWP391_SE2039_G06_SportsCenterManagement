@@ -4,6 +4,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { reportApi } from '../../../entities/report/index.js';
 import { systemApi } from '../../../entities/permission/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_BTN_DARK,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import {
   MiniSparkline,
@@ -409,21 +415,29 @@ export function ManagerDashboard() {
 
   return (
     <div className="space-y-5 animate-fade-slide-up pb-8">
-      {/* 1. TOP MINIMALIST BREADCRUMB & CONTROLS */}
-      <div className="flex flex-wrap items-center justify-between gap-3 pt-1">
+      {/* 1. TOP EXECUTIVE HERO & CONTROLS */}
+      <section className={`${SCMS_HERO_SECTION_CLASS} sm:p-8`}>
+        <ScmsHeroDecor />
+
+      <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <h1 className="text-2xl font-black font-chivo text-brand-navy-900 dark:text-white tracking-tight flex flex-wrap items-center gap-2.5">
-            <span>{isEn ? 'Executive Dashboard' : 'Bảng Điều Hành Trung Tâm'}</span>
-            <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-brand-sage-50 text-brand-sage-700 dark:bg-brand-sage-950/50 dark:text-brand-sage-300 border border-brand-sage-200/80 dark:border-brand-sage-800/60">
-              <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse" />
-              <span>Olympic Sports Arena</span>
-            </span>
+          <div className={`${SCMS_HERO_BADGE_CLASS} mb-2`}>
+            <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
+            <span>{isEn ? 'Executive Workspace · Olympic SCMS' : 'Phân hệ Điều hành · Olympic SCMS'}</span>
+          </div>
+          <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
+            {isEn ? 'Executive Dashboard' : 'Bảng Điều Hành Trung Tâm'}
           </h1>
+          <p className="mt-1.5 text-xs sm:text-sm text-white/95 max-w-2xl font-medium drop-shadow-xs">
+            {isEn
+              ? 'Revenue, members, classes and coach performance of Olympic Sports Arena at a glance.'
+              : 'Theo dõi doanh thu, hội viên, lớp học và hiệu suất HLV của Olympic Sports Arena trên một màn hình.'}
+          </p>
         </div>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2 bg-white/20 dark:bg-brand-navy-900/40 backdrop-blur-md p-2 rounded-2xl border border-white/30 self-start lg:self-auto shadow-sm">
           {/* Period Selector Tabs */}
-          <div className="flex items-center gap-1 p-1 bg-brand-navy-100 dark:bg-brand-navy-800/80 rounded-xl border border-brand-navy-200/80 dark:border-brand-navy-700/80">
+          <div className="flex items-center gap-1 p-1 bg-white/15 rounded-xl">
             {[
               { id: '30D', label: isEn ? '30 Days' : '30 ngày qua' },
               { id: 'MONTH', label: isEn ? 'This Month' : 'Tháng này' },
@@ -438,8 +452,8 @@ export function ManagerDashboard() {
                   onClick={() => setPeriod(p.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     active
-                      ? 'bg-white dark:bg-brand-navy-900 text-brand-sage-700 dark:text-brand-sage-500 shadow-xs'
-                      : 'text-brand-navy-600 dark:text-brand-navy-400 hover:text-brand-navy-900 dark:hover:text-white'
+                      ? 'bg-white text-brand-navy-950 shadow-xs'
+                      : 'text-white/90 hover:text-white hover:bg-white/15'
                   }`}
                 >
                   {p.label}
@@ -452,22 +466,23 @@ export function ManagerDashboard() {
             type="button"
             onClick={() => setRevision(x => x + 1)}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white dark:bg-brand-navy-900 border border-brand-navy-200/90 dark:border-brand-navy-800 hover:bg-brand-navy-50 dark:hover:bg-brand-navy-800 text-brand-navy-700 dark:text-brand-navy-300 text-xs font-bold transition-all shadow-xs hover-lift"
+            className="scms-shine inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/95 hover:bg-white text-brand-navy-950 font-chivo text-xs font-bold uppercase tracking-wider transition-all shadow-xs active:scale-95"
           >
-            <span className={`material-symbols-outlined text-[16px] text-brand-sage-700 dark:text-brand-sage-500 ${loading ? 'animate-spin' : ''}`}>
+            <span className={`material-symbols-outlined text-[16px] text-brand-sage-700 ${loading ? 'animate-spin' : ''}`}>
               refresh
             </span>
             <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
           </button>
           <a
             href="#/manager/reports"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-brand-sage-700 hover:bg-brand-sage-900 text-white text-xs font-bold transition-all shadow-xs hover-lift"
+            className={`${SCMS_HERO_BTN_DARK} !px-4 !py-2`}
           >
-            <span className="material-symbols-outlined text-[16px]">monitoring</span>
+            <span className="material-symbols-outlined text-[16px] text-brand-sand-300">monitoring</span>
             <span>{isEn ? 'Reports' : 'Báo cáo chi tiết'}</span>
           </a>
         </div>
       </div>
+      </section>
 
       {loading && !metrics ? (
         <LoadingSpinner text={isEn ? 'Loading management dashboard...' : 'Đang tải dữ liệu bảng điều khiển...'} />

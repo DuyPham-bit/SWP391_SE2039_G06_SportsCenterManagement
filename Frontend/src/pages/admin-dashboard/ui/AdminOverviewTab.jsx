@@ -19,7 +19,7 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
             onClick={() => setShowCC(true)}
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.98 }}
-            className="px-3.5 py-2 rounded-xl bg-brand-sage-50 dark:bg-brand-sage-950/60 text-brand-sage-700 dark:text-brand-sage-300 hover:bg-brand-sage-100 dark:hover:bg-brand-sage-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-sage-200 dark:border-brand-sage-800 transition-colors cursor-pointer"
+            className="scms-shine px-3.5 py-2 rounded-xl bg-brand-sage-50 dark:bg-brand-sage-950/60 text-brand-sage-700 dark:text-brand-sage-300 hover:bg-brand-sage-100 dark:hover:bg-brand-sage-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-sage-200 dark:border-brand-sage-800 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">add</span>
             <span>Thêm Cơ Sở</span>
@@ -29,21 +29,21 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
             disabled={activeCenters.length === 0}
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.98 }}
-            className="px-3.5 py-2 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300 hover:bg-brand-teal-100 dark:hover:bg-brand-teal-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-teal-200 dark:border-brand-teal-800 disabled:opacity-40 transition-colors cursor-pointer"
+            className="scms-shine px-3.5 py-2 rounded-xl bg-brand-teal-50 dark:bg-brand-teal-950/60 text-brand-teal-700 dark:text-brand-teal-300 hover:bg-brand-teal-100 dark:hover:bg-brand-teal-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-teal-200 dark:border-brand-teal-800 disabled:opacity-40 transition-colors cursor-pointer"
           >
             <span className="material-symbols-outlined text-[16px]">person_add</span>
             <span>Tạo Manager</span>
           </MotionButton>
           <a
             href="#/admin/roles-permissions"
-            className="px-3.5 py-2 rounded-xl bg-brand-navy-50 dark:bg-brand-navy-950/60 text-brand-navy-800 dark:text-brand-navy-300 hover:bg-brand-navy-100 dark:hover:bg-brand-navy-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-navy-200 dark:border-brand-navy-800 transition-colors"
+            className="scms-shine px-3.5 py-2 rounded-xl bg-brand-navy-50 dark:bg-brand-navy-950/60 text-brand-navy-800 dark:text-brand-navy-300 hover:bg-brand-navy-100 dark:hover:bg-brand-navy-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-navy-200 dark:border-brand-navy-800 transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">security</span>
             <span>Phân Quyền RBAC</span>
           </a>
           <a
             href="#/admin/audit-logs"
-            className="px-3.5 py-2 rounded-xl bg-brand-sand-50 dark:bg-brand-sand-950/60 text-brand-sand-700 dark:text-brand-sand-300 hover:bg-brand-sand-100 dark:hover:bg-brand-sand-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-sand-200 dark:border-brand-sand-800 transition-colors"
+            className="scms-shine px-3.5 py-2 rounded-xl bg-brand-sand-50 dark:bg-brand-sand-950/60 text-brand-sand-700 dark:text-brand-sand-300 hover:bg-brand-sand-100 dark:hover:bg-brand-sand-900/60 font-bold text-xs flex items-center gap-1.5 border border-brand-sand-200 dark:border-brand-sand-800 transition-colors"
           >
             <span className="material-symbols-outlined text-[16px]">history</span>
             <span>Nhật Ký Kiểm Toán</span>
@@ -100,7 +100,7 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
           <div
             key={card.label}
             onClick={() => switchTab(card.tabId)}
-            className="bg-white dark:bg-brand-navy-900 rounded-2xl p-5 shadow-xs border border-brand-navy-200/80 dark:border-brand-navy-800 hover:border-brand-navy-300 dark:hover:border-brand-navy-700 hover:shadow-md transition-all cursor-pointer space-y-3 group"
+            className="hover-lift bg-white dark:bg-brand-navy-900 rounded-2xl p-5 shadow-xs border border-brand-navy-200/80 dark:border-brand-navy-800 hover:border-brand-navy-300 dark:hover:border-brand-navy-700 hover:shadow-md transition-all cursor-pointer space-y-3 group"
           >
             <div className="flex items-center justify-between">
               <div className={`w-12 h-12 rounded-xl flex items-center justify-center transition-transform group-hover:scale-105 ${card.bgLight}`}>
@@ -112,7 +112,7 @@ export function AdminOverviewTab({ activeCenters, centers, managers, ov, setShow
             </div>
 
             <div>
-              <div className="text-3xl font-black text-brand-navy-900 dark:text-white leading-none">
+              <div className="text-3xl font-black font-chivo text-brand-navy-900 dark:text-white leading-none">
                 {card.value}
               </div>
               <div className="text-xs font-bold text-brand-navy-700 dark:text-brand-navy-300 mt-1">{card.label}</div>

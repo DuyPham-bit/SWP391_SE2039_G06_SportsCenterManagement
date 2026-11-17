@@ -23,7 +23,7 @@ export function TeachingSchedule() {
   } = useTeachingSchedule();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-slide-up">
       {/* 1. TOP HEADER BANNER */}
       <TeachingHeader
         isEn={isEn}

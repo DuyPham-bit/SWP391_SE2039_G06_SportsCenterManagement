@@ -8,6 +8,12 @@ import { formatMemberDateTime } from '../../../entities/member/index.js';
 import { useNotifications, NotificationList } from '../../../features/notifications/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { QUICK_TEMPLATES, detectType } from '../lib/templates.js';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_BTN_DARK,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 export function CoachNotifications() {
   const { language } = useLanguage();
@@ -247,24 +253,14 @@ export function CoachNotifications() {
   if (loading) return <LoadingSpinner text={isEn ? "Loading notifications..." : "Đang tải danh sách thông báo..."} />;
 
   return (
-    <div className="space-y-5 animate-fadeIn">
+    <div className="space-y-5 animate-fade-slide-up">
       {/* 1. TOP HEADER BANNER */}
-      <div className="rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-8 relative overflow-hidden border border-white/30 dark:border-white/10 shadow-xl shadow-brand-teal-600/20 flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-brand-teal-300/30 rounded-full blur-3xl" />
-
-        {/* Subtle decorative Olympic curved motion lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-        </svg>
+      <section className={`${SCMS_HERO_SECTION_CLASS} sm:p-8 flex flex-col md:flex-row items-start md:items-center justify-between gap-5`}>
+        <ScmsHeroDecor />
 
         <div className="space-y-1 relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-brand-navy-900/90 text-brand-sage-900 dark:text-brand-sage-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 mb-2 shadow-xs">
-            <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse" />
+          <div className={`${SCMS_HERO_BADGE_CLASS} mb-2`}>
+            <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
             <span>{isEn ? 'Class Broadcast & Homework Distribution' : 'Thông báo một chiều & Giao bài tập theo lớp'}</span>
           </div>
           <h1 className="text-2xl md:text-3xl font-chivo font-black tracking-tight text-white flex items-center gap-2.5 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
@@ -290,13 +286,13 @@ export function CoachNotifications() {
               setModalOpen(true);
             }}
             disabled={!classes.length || Boolean(error)}
-            className="px-5 py-3 bg-brand-navy-950 hover:bg-brand-navy-900 text-white border border-white/20 text-xs sm:text-sm font-bold uppercase tracking-wider rounded-xl shadow-md hover:shadow-lg transition-all flex items-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed hover-lift"
+            className={`${SCMS_HERO_BTN_DARK} border border-white/20`}
           >
             <span className="material-symbols-outlined text-[20px] text-brand-sand-300">add_circle</span>
             <span>{isEn ? 'Compose New Notice' : 'Soạn Thông Báo Mới'}</span>
           </button>
         </div>
-      </div>
+      </section>
 
       {/* 2. STAT CARDS: CHỈ GIỮ LẠI ĐÚNG 2 THẺ THEO YÊU CẦU */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">

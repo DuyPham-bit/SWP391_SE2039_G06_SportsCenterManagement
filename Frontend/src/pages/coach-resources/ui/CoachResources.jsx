@@ -8,6 +8,12 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { CoachError } from '../../../features/coach-workspace/index.js';
 import { translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_BTN_GLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 const inputClass = 'w-full rounded-xl border border-slate-200 dark:border-slate-700 bg-slate-50/60 dark:bg-slate-750 px-3.5 py-2.5 text-xs sm:text-sm text-slate-800 dark:text-slate-100 placeholder-slate-400 focus:bg-white dark:focus:bg-slate-800 focus:border-[#81B29A] dark:focus:border-[#81B29A] focus:ring-2 focus:ring-[#81B29A]/20 dark:focus:ring-[#81B29A]/30 outline-none transition-all shadow-2xs';
 const selectClass = `${inputClass} cursor-pointer`;
@@ -317,32 +323,24 @@ export function CoachResources() {
   }
 
   return (
-    <div className="space-y-5 animate-fadeIn">
+    <div className="space-y-5 animate-fade-slide-up">
       {/* 1. Header Banner */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-[#2F7B5D] via-[#24828F] via-[#3FAEB8] to-[#E5A33C] dark:from-[#184534] dark:via-[#144850] dark:via-[#1B5760] dark:to-[#5E4014] text-white p-6 sm:p-7 shadow-xl shadow-[#24828F]/20 border border-white/30 dark:border-white/10">
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-[#F2CC8F]/45 via-[#E5A33C]/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-[#81B29A]/40 via-[#2F7B5D]/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-[#A8DADC]/30 rounded-full blur-3xl" />
-
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-        </svg>
+      <header className={SCMS_HERO_SECTION_CLASS}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 dark:bg-slate-900/90 text-[#1B4332] dark:text-emerald-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 shadow-xs">
-              <span className="material-symbols-outlined text-[15px] text-amber-500">inventory_2</span>
+            <span className={SCMS_HERO_BADGE_CLASS}>
+              <span className="material-symbols-outlined text-[15px] text-brand-sand-700 dark:text-brand-sand-400">inventory_2</span>
               {isEn ? 'Resources & Facilities Management' : 'Tài nguyên & Thiết bị Huấn luyện viên'}
             </span>
 
             <button
               onClick={loadData}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 px-3.5 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-md border border-white/30 cursor-pointer shadow-xs hover-lift"
+              className={SCMS_HERO_BTN_GLASS}
             >
-              <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>
+              <span className={`material-symbols-outlined text-[16px] text-brand-sand-200 ${loading ? 'animate-spin' : ''}`}>
                 refresh
               </span>
               <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
@@ -358,28 +356,28 @@ export function CoachResources() {
               : 'Đăng ký phòng/sân tập phục vụ huấn luyện, mượn trang thiết bị và gửi cảnh báo sự cố kỹ thuật trực tiếp tới ban quản lý.'}
           </p>
 
-          <div className="mt-4 pt-4 border-t border-white/15 grid grid-cols-2 sm:grid-cols-3 gap-3">
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
+          <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Available Equipment & Courts' : 'Tài nguyên & Sân tập'}
               </span>
-              <span className="text-lg font-black text-white">
+              <span className="text-lg font-black font-chivo text-white">
                 {resources.length}
               </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'My Active Bookings' : 'Lượt đặt của tôi'}
               </span>
-              <span className="text-lg font-black text-emerald-300">
+              <span className="text-lg font-black font-chivo text-brand-sand-200">
                 {resourceBookings.length}
               </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-[#F2CC8F]/90 block">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Reported Issues' : 'Sự cố đã báo cáo'}
               </span>
-              <span className="text-lg font-black text-amber-300">
+              <span className="text-lg font-black font-chivo text-brand-sand-300">
                 {equipmentIssues.length}
               </span>
             </div>

@@ -4,6 +4,12 @@ import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { CoachError, SectionCard, EmptyState, formatDate } from '../../../features/coach-workspace/index.js';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_BTN_GLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 export function PerformanceDashboard() {
   const { showSuccess, showError } = useToast();
@@ -100,24 +106,14 @@ export function PerformanceDashboard() {
   const absentStudents = Array.isArray(k.absentStudents) ? k.absentStudents : [];
 
   return (
-    <div className="space-y-5 animate-fadeIn">
+    <div className="space-y-5 animate-fade-slide-up">
       {/* 1. Top Header Banner */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-7 shadow-xl shadow-brand-teal-600/20 border border-white/30 dark:border-white/10">
-        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-brand-teal-300/30 rounded-full blur-3xl" />
-
-        {/* Subtle decorative Olympic curved motion lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-        </svg>
+      <header className={SCMS_HERO_SECTION_CLASS}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-surface/90 text-brand-sage-900 dark:text-brand-sage-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 shadow-xs">
+            <span className={SCMS_HERO_BADGE_CLASS}>
               <span className="material-symbols-outlined text-[15px] text-brand-sage-700 dark:text-brand-sage-400">monitoring</span>
               {isEn ? 'Teaching Performance Stats' : 'Báo cáo Hiệu suất Giảng dạy'}
             </span>
@@ -125,9 +121,9 @@ export function PerformanceDashboard() {
             <button
               onClick={loadData}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 px-3.5 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-md border border-white/30 cursor-pointer shadow-xs hover-lift"
+              className={SCMS_HERO_BTN_GLASS}
             >
-              <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>
+              <span className={`material-symbols-outlined text-[16px] text-brand-sand-200 ${loading ? 'animate-spin' : ''}`}>
                 refresh
               </span>
               <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
@@ -144,37 +140,37 @@ export function PerformanceDashboard() {
           </p>
 
           {/* Quick Stats Grid inside Hero Header */}
-          <div className="mt-4 pt-4 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-brand-sage-500 block">
+          <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Monthly Sessions' : 'Số ca dạy (Tháng)'}
               </span>
-              <span className="text-xl font-black text-white">
-                {totalCompletedSessions} <span className="text-xs font-normal text-brand-navy-300">{isEn ? 'sessions' : 'buổi'}</span>
+              <span className="text-xl font-black font-chivo text-white">
+                {totalCompletedSessions} <span className="text-xs font-medium text-white/85">{isEn ? 'sessions' : 'buổi'}</span>
               </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-brand-sage-500 block">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Active Students' : 'Học viên phụ trách'}
               </span>
-              <span className="text-xl font-black text-white">
-                {totalActiveStudents} <span className="text-xs font-normal text-brand-navy-300">{isEn ? 'students' : 'người'}</span>
+              <span className="text-xl font-black font-chivo text-white">
+                {totalActiveStudents} <span className="text-xs font-medium text-white/85">{isEn ? 'students' : 'người'}</span>
               </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-brand-sage-500 block">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Attendance Rate' : 'Tỉ lệ chuyên cần'}
               </span>
-              <span className="text-xl font-black text-brand-sage-400">
+              <span className="text-xl font-black font-chivo text-white">
                 {attendanceRate}%
               </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-brand-sand-300 block">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Average Rating' : 'Đánh giá học viên'}
               </span>
-              <span className="text-xl font-black text-brand-sand-300 flex items-center gap-1">
-                ★ {averageRating} <span className="text-xs font-normal text-brand-navy-300">({reviewCount})</span>
+              <span className="text-xl font-black font-chivo text-brand-sand-200 flex items-center gap-1">
+                ★ {averageRating} <span className="text-xs font-medium text-white/85">({reviewCount})</span>
               </span>
             </div>
           </div>
@@ -186,7 +182,7 @@ export function PerformanceDashboard() {
       {/* 2. Top Banner: 3 Core Metric Cards */}
       <div className="grid gap-4 sm:grid-cols-3">
         {/* Card 1: Số ca dạy (Tháng) */}
-        <div className="rounded-2xl border border-line bg-surface p-4 sm:p-5 shadow-xs transition-transform hover:-translate-y-0.5">
+        <div className="hover-lift rounded-2xl border border-line bg-surface p-4 sm:p-5 shadow-xs transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
               {isEn ? 'Teaching Sessions (Month)' : 'Số ca dạy (Tháng)'}
@@ -214,7 +210,7 @@ export function PerformanceDashboard() {
         </div>
 
         {/* Card 2: Học viên phụ trách */}
-        <div className="rounded-2xl border border-line bg-surface p-4 sm:p-5 shadow-xs transition-transform hover:-translate-y-0.5">
+        <div className="hover-lift rounded-2xl border border-line bg-surface p-4 sm:p-5 shadow-xs transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
               {isEn ? 'Assigned Students' : 'Học viên phụ trách'}
@@ -238,7 +234,7 @@ export function PerformanceDashboard() {
         </div>
 
         {/* Card 3: Tỉ lệ chuyên cần (%) */}
-        <div className="rounded-2xl border border-line bg-surface p-4 sm:p-5 shadow-xs transition-transform hover:-translate-y-0.5">
+        <div className="hover-lift rounded-2xl border border-line bg-surface p-4 sm:p-5 shadow-xs transition-all">
           <div className="flex items-center justify-between">
             <span className="text-[11px] font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
               {isEn ? 'Attendance Rate' : 'Tỉ lệ chuyên cần (%)'}

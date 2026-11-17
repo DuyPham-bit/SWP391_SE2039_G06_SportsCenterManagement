@@ -7,6 +7,11 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useAuth } from '../../../entities/session/index.js';
 import { RefundManagement } from '../../../features/refund-review/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 const money = value => `${Number(value || 0).toLocaleString('vi-VN')} VNĐ`;
 
@@ -283,17 +288,11 @@ export function CounterInvoices() {
   return (
     <div className="space-y-6 animate-fade-slide-up">
       {/* Top Banner */}
-      <div className="scms-hero relative rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-7 border border-white/30 dark:border-white/10 shadow-xl shadow-brand-teal-600/20 overflow-hidden flex flex-col md:flex-row items-start md:items-center justify-between gap-5">
-        <div className="absolute -top-16 -right-16 w-80 h-80 bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/30 to-transparent rounded-full blur-3xl pointer-events-none" />
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-        </svg>
+      <div className={`${SCMS_HERO_SECTION_CLASS} flex flex-col md:flex-row items-start md:items-center justify-between gap-5`}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10">
-          <span className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/90 dark:bg-brand-navy-900/90 backdrop-blur-md text-brand-sage-900 dark:text-brand-sage-300 border border-white/80 dark:border-white/20 text-xs font-black uppercase tracking-wider shadow-xs">
+          <span className={SCMS_HERO_BADGE_CLASS}>
             <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse" />
             {isManagerOrAdmin
               ? (isEn ? 'FINANCIAL RESOLUTION & INVOICE MANAGEMENT' : 'QUẢN LÝ TÀI CHÍNH & XỬ LÝ HÓA ĐƠN')

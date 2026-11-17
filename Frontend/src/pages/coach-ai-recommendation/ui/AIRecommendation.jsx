@@ -3,6 +3,12 @@ import { coachApi, coachDate } from '../../../entities/coach/index.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { CoachError, coachInput } from '../../../features/coach-workspace/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_BTN_GLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 const MUTUALLY_EXCLUSIVE_TAGS = Object.freeze({
   skinny_gain: ['fit_meso', 'overweight_endo'],
@@ -403,32 +409,31 @@ export function AIRecommendation() {
   }, [result]);
 
   return (
-    <div className="space-y-6 animate-fadeIn">
+    <div className="space-y-6 animate-fade-slide-up">
       {/* 1. Header Banner */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-900 via-brand-sage-700 to-brand-sage-500 text-white p-6 sm:p-7 shadow-xl shadow-brand-sage-700/20 border border-white/20">
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/30 to-transparent blur-3xl" />
+      <header className={SCMS_HERO_SECTION_CLASS}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 text-brand-sage-900 text-xs font-black uppercase tracking-wider backdrop-blur-md shadow-xs">
+            <span className={SCMS_HERO_BADGE_CLASS}>
               <span className="material-symbols-outlined text-[15px] text-brand-sand-700 dark:text-brand-sand-400">auto_awesome</span>
               {isEn ? 'AI Physical Plan Engine' : 'Trợ Lý AI Phân Tích Thể Trạng & Đề Xuất Giáo Án'}
             </span>
             <button
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 px-3.5 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-md border border-white/30 cursor-pointer shadow-xs"
+              className={SCMS_HERO_BTN_GLASS}
             >
-              <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>refresh</span>
+              <span className={`material-symbols-outlined text-[16px] text-brand-sand-200 ${loading ? 'animate-spin' : ''}`}>refresh</span>
               <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
             </button>
           </div>
 
-          <h1 className="text-xl sm:text-2xl font-chivo font-black tracking-tight text-white mt-1 drop-shadow-sm">
+          <h1 className="text-xl sm:text-2xl font-chivo font-black tracking-tight text-white mt-1 drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? 'Personalized Fitness & Health Condition AI Assistant' : 'Cá nhân hóa giáo án theo Thể trạng & Hồ sơ sinh trắc học'}
           </h1>
-          <p className="mt-1 text-xs sm:text-sm text-white/95 max-w-3xl font-medium leading-relaxed">
+          <p className="mt-1 text-xs sm:text-sm text-white/95 max-w-3xl font-medium leading-relaxed drop-shadow-xs">
             {isEn
               ? 'Select student physical conditions (BMI, joint cautions, somatotype) and training goals to generate high-accuracy sports science protocols.'
               : 'Chọn các thể trạng được xác định trong API (BMI, tạng người gầy/thừa cân, chấn thương xương khớp) để AI thiết kế giáo án an toàn và chính xác nhất cho từng học viên.'}

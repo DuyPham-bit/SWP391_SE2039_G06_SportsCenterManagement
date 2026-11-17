@@ -6,6 +6,12 @@ import { useAuth } from '../../../entities/session/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
 import { MotionButton } from '../../../shared/ui/MotionButton.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_SECTION_CLASS,
+  SCMS_HERO_SUBBADGE_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 // Predefined module categories for organization
 const CAPABILITY_CATEGORIES = [
@@ -279,39 +285,25 @@ export function RolesPermissions() {
 
   return (
     <div className="space-y-6 pb-16 animate-fade-slide-up">
-      {/* Top Banner / Header - Olympic Multi-stop Gradient */}
-      <section
-        className="relative overflow-hidden rounded-3xl text-white p-6 lg:p-8 shadow-xl shadow-brand-teal-600/20 border border-white/30"
-        style={{
-          background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 25%, #3FAEB8 48%, #81B29A 70%, #E5A33C 88%, #E5A33C 100%)'
-        }}
-      >
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/50 via-brand-sand-500/35 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-brand-sage-500/45 via-brand-sage-700/30 to-transparent blur-3xl" />
-
-        {/* Subtle decorative Olympic curved motion lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
-        </svg>
+      {/* Top Banner / Header */}
+      <section className={`${SCMS_HERO_SECTION_CLASS} lg:p-8`}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-3">
-              <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold tracking-wider bg-white/20 text-white uppercase backdrop-blur-md border border-white/30 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-white animate-pulse" />
+            <div className="flex flex-wrap items-center gap-2 mb-2.5">
+              <span className={SCMS_HERO_BADGE_CLASS}>
+                <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
                 {isManager ? (isEn ? 'Center Access Control' : 'Phân Quyền Trung Tâm') : (isEn ? 'System Admin' : 'Quản Trị Toàn Hệ Thống')}
               </span>
-              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/20 backdrop-blur-md text-white border border-white/30">
+              <span className={SCMS_HERO_SUBBADGE_CLASS}>
                 {centerId ? `${isEn ? 'Facility' : 'Cơ sở'} #${centerId}` : (isEn ? 'Enterprise-wide' : 'Toàn hệ thống')}
               </span>
             </div>
-            <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.2)]">
+            <h1 className="text-2xl lg:text-3xl font-black tracking-tight font-chivo text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
               {isEn ? 'Role-Based Access Control (RBAC)' : 'Phân Quyền Theo Vai Trò'}
             </h1>
-            <p className="text-sm text-white/95 mt-1 max-w-3xl leading-relaxed drop-shadow-xs">
+            <p className="text-xs sm:text-sm text-white/95 mt-1 max-w-3xl leading-relaxed font-medium drop-shadow-xs">
               {isEn
                 ? 'Configure role capabilities, manage data permissions, and govern delegation across center staff.'
                 : 'Thiết lập quyền truy cập theo vai trò và lưu cấu hình tại trung tâm an toàn theo chính sách Safe Delegation.'}
@@ -319,21 +311,21 @@ export function RolesPermissions() {
           </div>
 
           {/* Quick Metrics */}
-          <div className="grid grid-cols-3 gap-3 bg-white/20 p-3 rounded-2xl border border-white/30 backdrop-blur-md shadow-xs">
+          <div className="grid grid-cols-3 gap-3 bg-white/20 p-3 rounded-2xl border border-white/30 backdrop-blur-md shadow-xs shrink-0">
             <div className="text-center px-3">
-              <div className="text-xl font-black text-white">{matrix.length}</div>
+              <div className="text-xl font-black font-chivo text-white">{matrix.length}</div>
               <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">
                 {isEn ? 'Roles' : 'Vai trò'}
               </div>
             </div>
             <div className="text-center px-3 border-l border-white/20">
-              <div className="text-xl font-black text-white">{staffList.length}</div>
+              <div className="text-xl font-black font-chivo text-white">{staffList.length}</div>
               <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">
                 {isEn ? 'Staff' : 'Nhân sự'}
               </div>
             </div>
             <div className="text-center px-3 border-l border-white/20">
-              <div className="text-xl font-black text-white">{SYSTEM_CAPABILITIES.length}</div>
+              <div className="text-xl font-black font-chivo text-white">{SYSTEM_CAPABILITIES.length}</div>
               <div className="text-[10px] text-white/90 uppercase tracking-wider font-bold">
                 {isEn ? 'Features' : 'Chức năng'}
               </div>
@@ -347,26 +339,26 @@ export function RolesPermissions() {
             onClick={() => setActiveTab('USERS')}
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.98 }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
+            className={`scms-shine flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold font-chivo text-xs uppercase tracking-wider transition-all cursor-pointer ${
               activeTab === 'USERS'
-                ? 'bg-white text-brand-sage-900 shadow-lg shadow-black/15 font-black scale-102'
-                : 'bg-white/20 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md'
+                ? 'bg-white text-brand-navy-950 shadow-lg shadow-black/15 font-black'
+                : 'bg-white/15 text-white hover:bg-white/25 border border-white/25 backdrop-blur-md'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">person_check</span>
+            <span className={`material-symbols-outlined text-[18px] ${activeTab === 'USERS' ? 'text-brand-sage-700' : 'text-brand-sand-200'}`}>person_check</span>
             {isEn ? `1. Individual Users (${userRows.length})` : `1. Theo Từng Người (${userRows.length})`}
           </MotionButton>
           <MotionButton
             onClick={() => setActiveTab('ROLES')}
             whileHover={{ y: -1 }}
             whileTap={{ scale: 0.98 }}
-            className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold text-xs uppercase tracking-wider transition-all ${
+            className={`scms-shine flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold font-chivo text-xs uppercase tracking-wider transition-all cursor-pointer ${
               activeTab === 'ROLES'
-                ? 'bg-white text-brand-sage-900 shadow-lg shadow-black/15 font-black scale-102'
-                : 'bg-white/20 text-white hover:bg-white/30 border border-white/20 backdrop-blur-md'
+                ? 'bg-white text-brand-navy-950 shadow-lg shadow-black/15 font-black'
+                : 'bg-white/15 text-white hover:bg-white/25 border border-white/25 backdrop-blur-md'
             }`}
           >
-            <span className="material-symbols-outlined text-[18px]">verified_user</span>
+            <span className={`material-symbols-outlined text-[18px] ${activeTab === 'ROLES' ? 'text-brand-sage-700' : 'text-brand-sand-200'}`}>verified_user</span>
             {isEn ? `2. Role Defaults (${matrix.length})` : `2. Quyền Nền Theo Vai Trò (${matrix.length})`}
           </MotionButton>
         </div>

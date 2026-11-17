@@ -1,28 +1,22 @@
 import React from 'react';
 import { ArcGaugeChart } from './charts/ArcGaugeChart.jsx';
 import { RadialScoreChart } from './charts/RadialScoreChart.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 export function PerformanceGaugesRow({ isEn, metrics, setActiveTableTab, topClass, topRevenueSport, topRoom }) {
   return (
     <div className="grid lg:grid-cols-12 gap-5">
       {/* Left Card (5 cols): Operation Highlight Hero Banner */}
-      <div
-        className="min-w-0 lg:col-span-5 relative overflow-hidden rounded-3xl p-6 text-white shadow-lg flex flex-col justify-between"
-        style={{
-          background: 'linear-gradient(135deg, #1B4332 0%, #24828F 55%, #1E2235 100%)'
-        }}
-      >
-        {/* Background Glow & Curves */}
-        <div className="pointer-events-none absolute -right-12 -top-12 w-64 h-64 rounded-full bg-gradient-to-br from-brand-sand-300/30 to-transparent blur-2xl" />
-        <div className="pointer-events-none absolute -bottom-10 -left-10 w-64 h-64 rounded-full bg-gradient-to-tr from-brand-sage-500/30 to-transparent blur-2xl" />
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20" viewBox="0 0 400 240" preserveAspectRatio="none">
-          <path d="M-20,180 C100,80 220,240 380,110 C440,60 480,120 520,100" fill="none" stroke="white" strokeWidth="2" strokeDasharray="4 4" />
-          <path d="M0,200 C120,110 240,260 400,130" fill="none" stroke="white" strokeWidth="1" />
-        </svg>
+      <div className={`${SCMS_HERO_SECTION_CLASS} min-w-0 lg:col-span-5 !p-6 flex flex-col justify-between`}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10 space-y-3">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/20 text-white text-[11px] font-bold backdrop-blur-md border border-white/30">
-            <span className="w-2 h-2 rounded-full bg-brand-sage-400 animate-pulse" />
+          <div className={SCMS_HERO_BADGE_CLASS}>
+            <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse" />
             <span>{isEn ? 'Center Operations Hub' : 'Trung Tâm Vận Hành Olympic'}</span>
           </div>
           <div>
@@ -45,31 +39,31 @@ export function PerformanceGaugesRow({ isEn, metrics, setActiveTableTab, topClas
               <strong className="text-white font-bold block truncate text-xs">
                 {topClass ? topClass.name : (isEn ? 'None' : 'Chưa có')}
               </strong>
-              <span className="text-brand-sage-300 text-[10px]">
+              <span className="text-white/90 font-medium text-[10px]">
                 {topClass ? `${topClass.booked} chỗ` : '0'}
               </span>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-2 border border-white/15">
-              <span className="text-white/70 block text-[10px] font-bold truncate">
+            <div className="bg-white/15 backdrop-blur-md rounded-xl p-2 border border-white/20">
+              <span className="text-white/80 block text-[10px] font-bold truncate">
                 {isEn ? 'Top Court' : 'Sân Bận #1'}
               </span>
               <strong className="text-white font-bold block truncate text-xs">
                 {topRoom ? topRoom.name : (isEn ? 'None' : 'Chưa có')}
               </strong>
-              <span className="text-brand-sand-300 text-[10px]">
+              <span className="text-white/90 font-medium text-[10px]">
                 {topRoom ? `${topRoom.booked} khách` : '0'}
               </span>
             </div>
 
-            <div className="bg-white/10 backdrop-blur-md rounded-xl p-2 border border-white/15">
-              <span className="text-white/70 block text-[10px] font-bold truncate">
+            <div className="bg-white/15 backdrop-blur-md rounded-xl p-2 border border-white/20">
+              <span className="text-white/80 block text-[10px] font-bold truncate">
                 {isEn ? 'Top Sport' : 'Bộ Môn #1'}
               </span>
               <strong className="text-white font-bold block truncate text-xs">
                 {topRevenueSport ? topRevenueSport.sportName : (isEn ? 'None' : 'Chưa có')}
               </strong>
-              <span className="text-brand-teal-300 text-[10px]">
+              <span className="text-white/90 font-medium text-[10px]">
                 {topRevenueSport ? `${topRevenueSport.share}% dt` : '0%'}
               </span>
             </div>

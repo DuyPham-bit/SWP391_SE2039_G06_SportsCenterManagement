@@ -28,7 +28,7 @@ export function ManagersTab({
           disabled={activeCenters.length === 0}
           whileHover={{ y: -1 }}
           whileTap={{ scale: 0.98 }}
-          className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-teal-600 to-brand-navy-800 hover:from-brand-teal-700 hover:to-brand-navy-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-brand-teal-600/20 cursor-pointer disabled:opacity-40 self-start sm:self-auto"
+          className="scms-shine px-4 py-2.5 rounded-xl bg-gradient-to-r from-brand-sage-600 to-brand-teal-700 hover:from-brand-sage-700 hover:to-brand-teal-800 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-md shadow-brand-teal-600/20 cursor-pointer disabled:opacity-40 self-start sm:self-auto"
           title={activeCenters.length === 0 ? 'Cần ít nhất một cơ sở hoạt động để tạo Manager' : ''}
         >
           <span className="material-symbols-outlined text-[18px]">person_add</span>
