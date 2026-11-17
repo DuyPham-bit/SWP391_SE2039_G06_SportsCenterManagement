@@ -1,17 +1,26 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "framework": "vite",
-  "buildCommand": "VITE_API_BASE_URL=/api VITE_GOOGLE_CLIENT_ID=380948467454-g1hvo5luhoqfhogoe2m4f95b1m20vk1s.apps.googleusercontent.com npm run build",
-  "outputDirectory": "dist",
+  "redirects": [
+    { "source": "/login", "destination": "/#/login", "permanent": false },
+    { "source": "/register", "destination": "/#/register", "permanent": false }
+  ],
   "rewrites": [
     {
       "source": "/api/:path*",
-      "destination": "https://swp391se2039g06sportscentermanagementbe-production.up.railway.app/api/:path*"
+      "destination": "https://scms-api-4j57.onrender.com/api/:path*"
     },
     {
       "source": "/uploads/:path*",
-      "destination": "https://swp391se2039g06sportscentermanagementbe-production.up.railway.app/uploads/:path*"
+      "destination": "https://scms-api-4j57.onrender.com/uploads/:path*"
     },
     { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "headers": [
+    {
+      "source": "/api/:path*",
+      "headers": [
+        { "key": "Cache-Control", "value": "no-store" }
+      ]
+    }
   ]
 }
