@@ -161,9 +161,13 @@ export const authApi = {
     return (await this.login(cleanEmail, password)).user;
   },
 
-  async loginWithGoogle({ credential }) {
+  // Accepts the Google Identity Services response ({ credential }) or the bare ID-token string;
+  // passing the string to a destructuring parameter used to send no idToken at all.
+  async loginWithGoogle(googleResponse) {
+    const idToken = typeof googleResponse === 'string' ? googleResponse : googleResponse?.credential;
+    if (!idToken) throw new Error('Google không trả về mã xác thực. Vui lòng thử lại.');
     return loginAndLoad('auth/google', {
-      idToken: credential, centerId: Number(import.meta.env.VITE_SPORTS_CENTER_ID) || null
+      idToken, centerId: Number(import.meta.env.VITE_SPORTS_CENTER_ID) || null
     });
   },
 
