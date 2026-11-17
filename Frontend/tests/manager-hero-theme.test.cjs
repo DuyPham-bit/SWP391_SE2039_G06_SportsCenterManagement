@@ -22,7 +22,20 @@ const MANAGER_HERO_FILES = [
   'pages/manager-home-content/ui/HomeContentHeader.jsx',
   'pages/audit-logs/ui/AuditLogs.jsx',
   'pages/admin-dashboard/ui/AdminHeroBanner.jsx',
-  'pages/roles-permissions/ui/RolesPermissions.jsx'
+  'pages/roles-permissions/ui/RolesPermissions.jsx',
+  'pages/coach-dashboard/ui/CoachDashboard.jsx',
+  'pages/coach-attendance/ui/AttendanceHeader.jsx',
+  'pages/coach-attendance/ui/ActiveSessionCard.jsx',
+  'pages/coach-teaching-schedule/ui/TeachingHeader.jsx',
+  'pages/coach-training-plan/ui/TrainingPlanHeader.jsx',
+  'pages/coach-class-members/ui/ClassMembers.jsx',
+  'pages/coach-workout-progress/ui/WorkoutProgress.jsx',
+  'pages/coach-notifications/ui/CoachNotifications.jsx',
+  'pages/coach-ai-recommendation/ui/AIRecommendation.jsx',
+  'pages/coach-resources/ui/CoachResources.jsx',
+  'pages/coach-professional-hub/ui/CoachProfessionalHub.jsx',
+  'widgets/coach-performance/ui/PerformanceDashboard.jsx',
+  'pages/my-support-requests/ui/MySupportRequests.jsx'
 ];
 
 test('shared ScmsHeroBanner defines scms-hero choreography and sage-teal-sand palette tokens', () => {

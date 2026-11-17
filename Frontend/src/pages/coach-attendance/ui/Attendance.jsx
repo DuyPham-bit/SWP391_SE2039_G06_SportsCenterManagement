@@ -26,7 +26,7 @@ export function Attendance() {
   } = useAttendance();
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-slide-up">
       {/* 1. TOP HEADER BANNER */}
       <AttendanceHeader
         isEn={isEn}

@@ -24,7 +24,7 @@ export function TrainingPlan() {
   if (loading) return <LoadingSpinner text={isEn ? "Loading lesson plans..." : "Đang tải danh sách giáo án..."} />;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 animate-fade-slide-up">
       {/* Header Banner */}
       <TrainingPlanHeader handleOpenCreateModal={handleOpenCreateModal} isEn={isEn} />
 

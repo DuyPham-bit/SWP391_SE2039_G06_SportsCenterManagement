@@ -9,6 +9,12 @@ import { ClientsTab } from './ClientsTab.jsx';
 import { ProgramsTab } from './ProgramsTab.jsx';
 import { CommunicationTab } from './CommunicationTab.jsx';
 import { PerformanceTab } from './PerformanceTab.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_BTN_GLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 export function CoachProfessionalHub() {
   const { showSuccess, showError } = useToast();
@@ -87,24 +93,14 @@ export function CoachProfessionalHub() {
   const kpiData = data?.kpi || {};
 
   return (
-    <div className="space-y-5 animate-fadeIn">
+    <div className="space-y-5 animate-fade-slide-up">
       {/* 1. Header Banner in SCMS Olympic Arena Theme */}
-      <header className="relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-7 shadow-xl shadow-brand-teal-600/20 border border-white/30 dark:border-white/10">
-        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-brand-teal-300/30 rounded-full blur-3xl" />
-
-        {/* Subtle decorative Olympic curved motion lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-        </svg>
+      <header className={SCMS_HERO_SECTION_CLASS}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10">
           <div className="flex flex-wrap items-center justify-between gap-3 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-white/90 dark:bg-brand-navy-900/90 text-brand-sage-900 dark:text-brand-sage-300 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 dark:border-white/20 shadow-xs">
+            <span className={SCMS_HERO_BADGE_CLASS}>
               <span className="material-symbols-outlined text-[15px] text-brand-sand-700 dark:text-brand-sand-400">workspace_premium</span>
               {isEn ? 'Coach Professional Workspace' : 'Phân hệ chuyên môn HLV cao cấp'}
             </span>
@@ -112,9 +108,9 @@ export function CoachProfessionalHub() {
             <button
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 rounded-xl bg-white/20 hover:bg-white/30 px-3.5 py-1.5 text-xs font-bold text-white transition-all backdrop-blur-md border border-white/30 cursor-pointer shadow-xs hover-lift"
+              className={SCMS_HERO_BTN_GLASS}
             >
-              <span className={`material-symbols-outlined text-[16px] ${loading ? 'animate-spin' : ''}`}>
+              <span className={`material-symbols-outlined text-[16px] text-brand-sand-200 ${loading ? 'animate-spin' : ''}`}>
                 refresh
               </span>
               <span>{isEn ? 'Refresh Data' : 'Làm mới dữ liệu'}</span>
@@ -131,36 +127,36 @@ export function CoachProfessionalHub() {
           </p>
 
           {/* Quick Stats Grid inside Hero Header */}
-          <div className="mt-4 pt-4 border-t border-white/15 grid grid-cols-2 sm:grid-cols-4 gap-3">
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-brand-sand-300/90 block">
+          <div className="mt-4 pt-4 border-t border-white/20 grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Active Students' : 'Học viên phụ trách'}
               </span>
-              <span className="text-lg font-black text-white">
+              <span className="text-lg font-black font-chivo text-white">
                 {data?.clients?.length || 0}
               </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-brand-sand-300/90 block">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Monthly Sessions' : 'Buổi dạy tháng'}
               </span>
-              <span className="text-lg font-black text-white">
+              <span className="text-lg font-black font-chivo text-white">
                 {kpiData.completedSessions || 0}
               </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-brand-sand-300/90 block">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Average Rating' : 'Đánh giá TB'}
               </span>
-              <span className="text-lg font-black text-brand-sand-300 flex items-center gap-1">
+              <span className="text-lg font-black font-chivo text-brand-sand-200 flex items-center gap-1">
                 ★ {kpiData.averageRating ?? '—'}
               </span>
             </div>
-            <div className="bg-white/10 backdrop-blur-xs rounded-xl p-2.5 border border-white/15">
-              <span className="text-[10px] font-bold uppercase text-brand-sage-500 block">
+            <div className="bg-white/15 backdrop-blur-xs rounded-xl p-2.5 border border-white/20">
+              <span className="text-[10px] font-bold uppercase text-white/85 block">
                 {isEn ? 'Attendance Rate' : 'Tỉ lệ chuyên cần'}
               </span>
-              <span className="text-base sm:text-lg font-black text-brand-sage-300 truncate block">
+              <span className="text-base sm:text-lg font-black font-chivo text-white truncate block">
                 {typeof kpiData.attendanceRate === 'number' ? `${kpiData.attendanceRate}%` : '—'}
               </span>
             </div>
@@ -181,7 +177,7 @@ export function CoachProfessionalHub() {
             <button
               key={id}
               onClick={() => setTab(id)}
-              className={`flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
+              className={`scms-shine flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-xs sm:text-sm font-bold transition-all cursor-pointer ${
                 isActive
                   ? 'bg-brand-navy-900 text-brand-sand-300 shadow-xs'
                   : 'text-brand-navy-600 dark:text-brand-navy-300 hover:bg-brand-navy-100/80 dark:hover:bg-brand-navy-700/60 hover:text-brand-navy-900 dark:hover:text-white'
