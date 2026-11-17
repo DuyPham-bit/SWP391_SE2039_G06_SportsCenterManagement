@@ -510,7 +510,6 @@ export function LoginPage() {
             </div>
           </div>
         </div>
-        </div>
 
         {/* Footer Cột trái: Thống kê số liệu */}
         <div className="pt-4 flex items-center justify-between gap-6 border-t border-white/15">
