@@ -22,8 +22,10 @@ public sealed class PaymentService(
     IVnPayService vnPayService,
     IMoMoService moMoService,
     IConfiguration configuration,
-    IBusinessClock? clock = null) : IPaymentService
+    IBusinessClock? clock = null,
+    ISessionBookingService? sessionBookings = null) : IPaymentService
 {
+    private readonly ISessionBookingService? _sessionBookings = sessionBookings;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IVnPayService _vnPayService = vnPayService;
     private readonly IMoMoService _moMoService = moMoService;
@@ -939,7 +941,7 @@ public sealed class PaymentService(
             await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
             if (refund.Status == "Succeeded")
             {
-                await UpdateInvoiceRefundStatusAsync(invoice, DateTime.UtcNow, cancellationToken);
+                await UpdateInvoiceRefundStatusAsync(invoice, managerUserId, DateTime.UtcNow, cancellationToken);
             }
             _unitOfWork.Context.AuditLogs.Add(CreateAudit(managerUserId, "Payment.Refund" + refund.Status,
                 "PaymentRefund", refund.Id,
@@ -1027,7 +1029,7 @@ public sealed class PaymentService(
         if (desiredStatus == "Succeeded")
         {
             payment.RefundApprovedBy = managerUserId;
-            await UpdateInvoiceRefundStatusAsync(invoice, now, cancellationToken);
+            await UpdateInvoiceRefundStatusAsync(invoice, managerUserId, now, cancellationToken);
             await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
         }
         await transaction.CommitAsync(cancellationToken);
@@ -1245,7 +1247,7 @@ public sealed class PaymentService(
         {
             payment.RefundApprovedBy = managerUserId;
             await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
-            await UpdateInvoiceRefundStatusAsync(invoice, now, cancellationToken);
+            await UpdateInvoiceRefundStatusAsync(invoice, managerUserId, now, cancellationToken);
         }
         await FlowNotificationWriter.CreateAsync(_unitOfWork.Context, managerUserId, [refund.RequestedBy],
             status == "Approved" ? "Yêu cầu hoàn tiền đã được duyệt" : "Yêu cầu hoàn tiền bị từ chối",
@@ -1824,7 +1826,7 @@ public sealed class PaymentService(
         }
     }
 
-    private async Task UpdateInvoiceRefundStatusAsync(Invoice invoice, DateTime now, CancellationToken cancellationToken)
+    private async Task UpdateInvoiceRefundStatusAsync(Invoice invoice, long actorUserId, DateTime now, CancellationToken cancellationToken)
     {
         var paid = await GetSucceededAmountAsync(invoice.Id, cancellationToken);
         var refunded = await (
@@ -1837,32 +1839,165 @@ public sealed class PaymentService(
             return;
         }
         invoice.Status = refunded >= paid ? "Refunded" : "PartiallyRefunded";
-        if (invoice.Status == "Refunded")
+        // When is the package ended?
+        //  - full refund: always;
+        //  - an approved member refund request (the member asked to leave; it carries their bank
+        //    details): always, whatever amount the manager approved (prorated / fee deducted);
+        //  - a partial refund the manager issues directly (goodwill "giảm giá bù"): the package stays.
+        var memberRequested = await (
+            from refund in _unitOfWork.Context.PaymentRefunds
+            join payment in _unitOfWork.Context.Payments on refund.PaymentId equals payment.Id
+            where payment.InvoiceId == invoice.Id && (refund.Status == "Succeeded" || refund.Status == "Approved")
+                  && refund.BankName != null && refund.BankAccountNumber != null
+            select refund.Id).AnyAsync(cancellationToken);
+        if (invoice.Status != "Refunded" && !memberRequested)
         {
-            var subscriptions = await (
-                from item in _unitOfWork.Context.InvoiceItems
-                join subscription in _unitOfWork.Context.MemberSubscriptions on item.SubscriptionId equals subscription.Id
-                where item.InvoiceId == invoice.Id && item.SubscriptionId != null
-                select subscription).ToListAsync(cancellationToken);
-            foreach (var subscription in subscriptions)
-            {
-                subscription.Status = "Refunded";
-                subscription.UpdatedAt = now;
-            }
+            return;
+        }
+        var subscriptions = await (
+            from item in _unitOfWork.Context.InvoiceItems
+            join subscription in _unitOfWork.Context.MemberSubscriptions on item.SubscriptionId equals subscription.Id
+            where item.InvoiceId == invoice.Id && item.SubscriptionId != null &&
+                  subscription.Status != "Refunded" && subscription.Status != "Cancelled"
+            select subscription).ToListAsync(cancellationToken);
+        foreach (var subscription in subscriptions)
+        {
+            subscription.Status = "Refunded";
+            subscription.UpdatedAt = now;
+        }
+        var revokedIds = subscriptions.Select(subscription => subscription.Id).ToList();
 
-            // A fully refunded upgrade gives back the package it replaced, if that one has not run out.
-            var refundedIds = subscriptions.Select(subscription => subscription.Id).ToList();
-            var today = ToBusinessDate(now);
-            var replaced = await _unitOfWork.Context.MemberSubscriptions
-                .Where(other => other.UpgradedBySubscriptionId != null && refundedIds.Contains(other.UpgradedBySubscriptionId.Value)
-                    && other.Status == MembershipEntitlements.StatusUpgraded && other.EndDate >= today)
-                .ToListAsync(cancellationToken);
-            foreach (var other in replaced)
+        // A refunded upgrade gives back the package it replaced, if that one has not run out.
+        var today = ToBusinessDate(now);
+        var replaced = await _unitOfWork.Context.MemberSubscriptions
+            .Where(other => other.UpgradedBySubscriptionId != null && revokedIds.Contains(other.UpgradedBySubscriptionId.Value)
+                && other.Status == MembershipEntitlements.StatusUpgraded && other.EndDate >= today)
+            .ToListAsync(cancellationToken);
+        foreach (var other in replaced)
+        {
+            other.Status = "Active";
+            other.UpgradedBySubscriptionId = null;
+            other.UpdatedAt = now;
+        }
+
+        await ReleaseRevokedEntitlementsAsync(revokedIds, actorUserId, now, cancellationToken);
+        foreach (var chain in subscriptions.Select(s => new { s.MemberId, s.PackageId }).Distinct())
+        {
+            await RechainQueuedSubscriptionsAsync(chain.MemberId, chain.PackageId, revokedIds, now, cancellationToken);
+        }
+    }
+
+    // A refunded pass must stop granting access: cancel class enrollments made with it and every
+    // booking for a session that has not happened yet. Past bookings and attendance stay as history.
+    private async Task ReleaseRevokedEntitlementsAsync(
+        IReadOnlyCollection<long> revokedIds,
+        long actorUserId,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        if (revokedIds.Count == 0) return;
+        var db = _unitOfWork.Context;
+        var today = _clock.Today;
+        var enrollments = await db.ClassEnrollments
+            .Where(enrollment => enrollment.SubscriptionId != null && revokedIds.Contains(enrollment.SubscriptionId.Value) &&
+                                 enrollment.Status == FlowStatuses.EnrollmentConfirmed)
+            .ToListAsync(cancellationToken);
+        foreach (var enrollment in enrollments)
+        {
+            enrollment.Status = FlowStatuses.EnrollmentCancelled;
+            enrollment.CancelledAt = now;
+            enrollment.CancellationReason = "Gói tập đã được hoàn tiền.";
+        }
+        // Bookings belong to the pass either directly (subscription_id) or through an enrollment
+        // made with it (enrollment-generated bookings may carry no subscription_id).
+        var enrollmentIds = await db.ClassEnrollments
+            .Where(enrollment => enrollment.SubscriptionId != null && revokedIds.Contains(enrollment.SubscriptionId.Value))
+            .Select(enrollment => enrollment.Id)
+            .ToListAsync(cancellationToken);
+        var candidates = await (
+            from booking in db.SessionBookings
+            join session in db.ClassSessions on booking.SessionId equals session.Id
+            where booking.Status == FlowStatuses.BookingBooked && session.SessionDate >= today &&
+                  ((booking.SubscriptionId != null && revokedIds.Contains(booking.SubscriptionId.Value)) ||
+                   (booking.EnrollmentId != null && enrollmentIds.Contains(booking.EnrollmentId.Value))) &&
+                  !db.Attendances.Any(attendance => attendance.SessionId == booking.SessionId &&
+                                                    attendance.MemberId == booking.MemberId)
+            select new { Booking = booking, session.SessionDate, session.StartTime, session.ClassId, booking.MemberId })
+            .ToListAsync(cancellationToken);
+        // Only sessions that have not started yet; a session already under way today stays as is.
+        var nowLocal = ScheduleTime.VietnamNow;
+        var released = candidates.Where(row => row.SessionDate.ToDateTime(row.StartTime) > nowLocal).ToList();
+        foreach (var row in released)
+        {
+            row.Booking.Status = FlowStatuses.BookingCancelled;
+        }
+        if (released.Count > 0 && _sessionBookings is not null)
+        {
+            // Freed seats go to the waitlist exactly as when a member cancels; persist first so
+            // the capacity count sees them.
+            await db.SaveChangesAsync(cancellationToken);
+            await _sessionBookings.PromoteWaitlistsAsync(
+                released.Select(row => row.Booking.SessionId).Distinct().ToList(), actorUserId, cancellationToken);
+        }
+
+        // Coaches of the affected classes must learn the member left their roster.
+        var classIds = enrollments.Select(enrollment => enrollment.ClassId)
+            .Concat(released.Select(row => row.ClassId)).Distinct().ToList();
+        if (classIds.Count == 0) return;
+        var memberIds = enrollments.Select(enrollment => enrollment.MemberId)
+            .Concat(released.Select(row => row.MemberId)).Distinct().ToList();
+        var memberNames = await db.MemberProfiles.Where(member => memberIds.Contains(member.Id))
+            .Select(member => member.FullName).ToListAsync(cancellationToken);
+        var classNames = await db.Classes.Where(cls => classIds.Contains(cls.Id))
+            .Select(cls => cls.Name).ToListAsync(cancellationToken);
+        var coachUserIds = await (
+            from link in db.ClassCoaches
+            join coach in db.CoachProfiles on link.CoachId equals coach.Id
+            where classIds.Contains(link.ClassId) && coach.Status == "Active"
+            select coach.UserId).Distinct().ToListAsync(cancellationToken);
+        if (coachUserIds.Count > 0)
+        {
+            await FlowNotificationWriter.CreateAsync(db, actorUserId, coachUserIds,
+                "Học viên rời lớp do hoàn tiền gói tập",
+                $"{string.Join(", ", memberNames)} đã được hoàn tiền gói tập; ghi danh và {released.Count} lịch học sắp tới tại {string.Join(", ", classNames)} đã bị hủy.",
+                "CoachBookingCancelled", cancellationToken);
+        }
+    }
+
+    // Renewals of the same package are queued back-to-back (see ActivateInvoiceSubscriptionsAsync).
+    // When one link is revoked, pull every not-yet-started renewal forward so the member's paid days
+    // follow on without a gap: right after the pass still running, or from today if none is.
+    private async Task RechainQueuedSubscriptionsAsync(
+        long memberId,
+        long packageId,
+        IReadOnlyCollection<long> revokedIds,
+        DateTime now,
+        CancellationToken cancellationToken)
+    {
+        var today = _clock.Today;
+        // Revoked rows are only changed in memory here, so exclude them by id, not by status.
+        var chain = await _unitOfWork.Context.MemberSubscriptions
+            .Where(candidate => candidate.MemberId == memberId && candidate.PackageId == packageId &&
+                                candidate.Status == "Active" && !revokedIds.Contains(candidate.Id) &&
+                                candidate.StartDate != null && candidate.EndDate != null &&
+                                candidate.EndDate >= today)
+            .ToListAsync(cancellationToken);
+        var running = chain.Where(candidate => candidate.StartDate <= today).ToList();
+        var cursor = running.Count > 0 ? running.Max(candidate => candidate.EndDate!.Value) : today.AddDays(-1);
+        foreach (var queued in chain.Where(candidate => candidate.StartDate > today)
+                     .OrderBy(candidate => candidate.StartDate).ThenBy(candidate => candidate.Id))
+        {
+            var start = cursor.AddDays(1);
+            if (queued.StartDate != start)
             {
-                other.Status = "Active";
-                other.UpgradedBySubscriptionId = null;
-                other.UpdatedAt = now;
+                var durationDays = queued.DurationDays > 0
+                    ? queued.DurationDays
+                    : queued.EndDate!.Value.DayNumber - queued.StartDate!.Value.DayNumber + 1;
+                queued.StartDate = start;
+                queued.EndDate = start.AddDays(durationDays - 1);
+                queued.UpdatedAt = now;
             }
+            cursor = queued.EndDate!.Value;
         }
     }
 

@@ -15,19 +15,26 @@ public sealed class TrainingService(SportsCenterDbContext db)
         (db.Users.Any(u => u.Id == userId && db.Roles.Any(r => r.Id == u.RoleId && r.Name == "Manager")) &&
          db.StaffProfiles.Any(s => s.UserId == userId && s.CenterId == c.CenterId && s.Status == "Active")));
 
-    private IQueryable<MemberProfile> ClassMembers(long classId) => db.MemberProfiles.Where(m =>
-        db.SessionBookings.Any(b => b.MemberId == m.Id && b.Status == "Booked" &&
-            db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == classId)) ||
-        db.ClassEnrollments.Any(e => e.MemberId == m.Id && e.ClassId == classId &&
-            (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")));
+    // Current roster: a live enrollment or a booking for a session that has not passed. Old "Booked"
+    // rows never change status after the session, so counting them kept refunded/expired members forever.
+    private IQueryable<MemberProfile> ClassMembers(long classId)
+    {
+        var today = ScheduleTime.VietnamToday;
+        return db.MemberProfiles.Where(m =>
+            db.SessionBookings.Any(b => b.MemberId == m.Id && b.Status == "Booked" &&
+                db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == classId && s.SessionDate >= today)) ||
+            db.ClassEnrollments.Any(e => e.MemberId == m.Id && e.ClassId == classId &&
+                (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")));
+    }
 
     public async Task<object> ListClassesAsync(long userId, CancellationToken ct)
     {
         var classes = await (from c in VisibleClasses(userId) join s in db.Sports on c.SportId equals s.Id
             orderby c.Name select new { c.Id, c.Name, SportName = s.Name, c.Capacity, c.Status }).ToListAsync(ct);
         var ids = classes.Select(c => c.Id).ToArray();
+        var today = ScheduleTime.VietnamToday;
         var memberships = await (from booking in db.SessionBookings join session in db.ClassSessions on booking.SessionId equals session.Id
-            where ids.Contains(session.ClassId) && booking.Status == "Booked"
+            where ids.Contains(session.ClassId) && booking.Status == "Booked" && session.SessionDate >= today
             select new { session.ClassId, booking.MemberId }).Union(
             db.ClassEnrollments.Where(e => ids.Contains(e.ClassId) &&
                 (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled"))
@@ -113,8 +120,12 @@ public sealed class TrainingService(SportsCenterDbContext db)
                     ["ProposedHandling"] = "Chỉ HLV hiệu lực của buổi học (HLV chính hoặc HLV dạy thay) được ghi kết quả."
                 }
             };
-        if (!await ClassMembers(session.ClassId).AnyAsync(m => m.Id == memberId &&
-                db.Users.Any(u => u.Id == m.UserId && u.Status == "Active"), ct))
+        // Results are recorded after the session, so a member booked into this very session counts
+        // even though it is now in the past and no longer on the current roster.
+        if (!await db.MemberProfiles.AnyAsync(m => m.Id == memberId &&
+                db.Users.Any(u => u.Id == m.UserId && u.Status == "Active") &&
+                (ClassMembers(session.ClassId).Any(c => c.Id == m.Id) ||
+                 db.SessionBookings.Any(b => b.SessionId == session.Id && b.MemberId == m.Id && b.Status == "Booked")), ct))
             throw new InvalidOperationException("Hội viên không thuộc danh sách lớp của buổi học.")
             {
                 Data = { ["StatusCode"] = 403, ["Code"] = "CO-02" }
@@ -460,8 +471,9 @@ public sealed class TrainingService(SportsCenterDbContext db)
                 throw new InvalidOperationException("Danh sách có lớp bạn không được phụ trách.") { Data = { ["StatusCode"] = 403 } };
             classIds = requestedClassIds.ToList();
         }
+        var today = ScheduleTime.VietnamToday;
         var recipientQuery = db.MemberProfiles.Where(m => db.SessionBookings.Any(b => b.MemberId == m.Id &&
-            b.Status == "Booked" && db.ClassSessions.Any(s => s.Id == b.SessionId && classIds.Contains(s.ClassId))) ||
+            b.Status == "Booked" && db.ClassSessions.Any(s => s.Id == b.SessionId && classIds.Contains(s.ClassId) && s.SessionDate >= today)) ||
             db.ClassEnrollments.Any(e => e.MemberId == m.Id && classIds.Contains(e.ClassId) &&
                 (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")))
             .Where(m => db.Users.Any(u => u.Id == m.UserId && u.Status == "Active"));

@@ -66,4 +66,7 @@ public interface ISessionBookingService
     Task<int> FillOpenSeatsFromWaitlistAsync(long sessionId, long actorUserId, CancellationToken ct = default);
     Task<IReadOnlyList<SessionRosterItemDto>> GetSessionRosterAsync(long coachUserId, long sessionId, CancellationToken ct = default);
     Task<int> RecordAttendanceAsync(long coachUserId, long sessionId, IReadOnlyList<AttendanceRecordDto> records, CancellationToken ct = default);
+    /// <summary>Offers seats freed outside the member cancel flow (e.g. a refunded pass) to each session's waitlist.
+    /// Runs inside the caller's transaction; freed bookings must already be saved.</summary>
+    Task PromoteWaitlistsAsync(IReadOnlyCollection<long> sessionIds, long actorUserId, CancellationToken ct = default);
 }

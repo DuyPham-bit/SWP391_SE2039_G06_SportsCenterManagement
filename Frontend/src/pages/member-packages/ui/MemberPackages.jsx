@@ -117,6 +117,9 @@ export function MemberPackages() {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { showSuccess, showError, showInfo, showWarning } = useToast();
+  // Only a running or queued pass counts as "current"; REFUNDED/CANCELLED/EXPIRED/INACTIVE do not.
+  const packageStatus = String(currentUser?.packageStatus || '').toUpperCase();
+  const holdsPackage = packageStatus === 'ACTIVE' || packageStatus === 'SCHEDULED';
 
   const [packages, setPackages] = useState([]);
   const [pendingInvoices, setPendingInvoices] = useState([]);
@@ -399,15 +402,17 @@ export function MemberPackages() {
           <div className="space-y-1">
             <div className="flex items-center gap-2">
               <span className="px-2.5 py-0.5 rounded-full bg-white/90 dark:bg-brand-navy-900/90 text-brand-sage-900 dark:text-brand-sage-300 border border-white/80 dark:border-white/20 text-[10px] font-black uppercase tracking-wider flex items-center gap-1.5 shadow-xs">
-                <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse" />
-                {isEn ? 'Active Membership Tier' : 'GÓI TẬP HIỆN TẠI ĐANG SỬ DỤNG'}
+                <span className={`w-2 h-2 rounded-full ${holdsPackage ? 'bg-brand-sage-500 animate-pulse' : 'bg-brand-navy-400'}`} />
+                {holdsPackage
+                  ? (isEn ? 'Active Membership Tier' : 'GÓI TẬP HIỆN TẠI ĐANG SỬ DỤNG')
+                  : (isEn ? 'Membership Status' : 'TRẠNG THÁI GÓI TẬP')}
               </span>
-              <span className="px-2 py-0.5 rounded-full bg-brand-sage-400 text-brand-navy-950 text-[10px] font-black tracking-wider uppercase shadow-xs">
-                ACTIVE
+              <span className={`px-2 py-0.5 rounded-full text-[10px] font-black tracking-wider uppercase shadow-xs ${holdsPackage ? 'bg-brand-sage-400 text-brand-navy-950' : 'bg-white/90 text-brand-navy-900'}`}>
+                {packageStatus || 'INACTIVE'}
               </span>
             </div>
             <h2 className="text-xl sm:text-2xl font-black font-chivo text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-              {translatePackageName(currentUser?.packageName, isEn) || (isEn ? 'No active package' : 'Chưa có gói tập')}
+              {(holdsPackage && translatePackageName(currentUser?.packageName, isEn)) || (isEn ? 'No active package' : 'Chưa có gói tập')}
             </h2>
             <p className="text-xs text-white/90 font-medium max-w-2xl drop-shadow-xs">
               {isEn ? 'Full privilege rights apply to all enrolled class schedules & center facilities.' : 'Đặc quyền hội viên áp dụng cho toàn bộ lịch học và dịch vụ thể thao của trung tâm.'}
@@ -420,7 +425,7 @@ export function MemberPackages() {
             <span className="material-symbols-outlined text-[20px] text-brand-sand-300">event_available</span>
             <div>
               <span className="text-[10px] text-white/80 uppercase font-bold tracking-wider block">{isEn ? 'Valid Until' : 'Thời hạn sử dụng'}</span>
-              <strong className="text-white text-sm font-chivo font-black">{formatMemberDate(currentUser?.packageExpiry, isEn) || (isEn ? 'N/A' : 'Chưa kích hoạt')}</strong>
+              <strong className="text-white text-sm font-chivo font-black">{(holdsPackage && formatMemberDate(currentUser?.packageExpiry, isEn)) || (isEn ? 'N/A' : 'Chưa kích hoạt')}</strong>
             </div>
           </div>
         </div>

@@ -80,8 +80,8 @@ export function MemberRefundRequests() {
       <p className="mt-2 max-w-2xl text-sm text-white/95 font-medium drop-shadow-xs">{isEn ? 'Submit your receiving bank account. A manager will verify the payment and upload transfer proof when approved.' : 'Cung cấp tài khoản nhận tiền. Quản lý sẽ kiểm tra giao dịch và tải ảnh chuyển khoản khi duyệt.'}</p>
       <p className="mt-2 max-w-2xl text-xs font-semibold text-white/85">
         {isEn
-          ? 'Successful payments with a remaining refundable balance are eligible while their package is still valid, including packages purchased in advance. Expired or cancelled packages cannot be refunded.'
-          : 'Giao dịch thành công còn số dư được yêu cầu hoàn khi gói tập vẫn còn hiệu lực, kể cả gói mua trước. Gói đã hết hạn hoặc đã hủy không thể hoàn tiền.'}
+          ? 'Successful payments with a remaining refundable balance are eligible while their package is still valid, including packages purchased in advance. Expired or cancelled packages cannot be refunded. An approved request ends the package.'
+          : 'Giao dịch thành công còn số dư được yêu cầu hoàn khi gói tập vẫn còn hiệu lực, kể cả gói mua trước. Gói đã hết hạn hoặc đã hủy không thể hoàn tiền. Yêu cầu được duyệt sẽ kết thúc gói tập.'}
       </p>
       </div>
     </header>
@@ -109,6 +109,12 @@ export function MemberRefundRequests() {
             </div>
             <label className="block text-xs font-bold">{isEn ? 'Account holder name' : 'Tên chủ tài khoản'}<input name="bankAccountName" minLength="2" maxLength="150" required placeholder="NGUYEN VAN A" className="mt-1 w-full rounded-xl border border-brand-navy-300 p-3 text-sm uppercase" /></label>
             <label className="block text-xs font-bold">{isEn ? 'Refund reason' : 'Lý do hoàn tiền'}<textarea name="reason" minLength="5" maxLength="500" rows="3" required className="mt-1 w-full rounded-xl border border-brand-navy-300 p-3 text-sm" /></label>
+            <p role="note" className="flex gap-2 rounded-xl border border-amber-300 bg-amber-50 p-3 text-xs font-medium text-amber-900 dark:border-amber-700/60 dark:bg-amber-950/30 dark:text-amber-200">
+              <span className="material-symbols-outlined text-[18px] shrink-0" aria-hidden="true">warning</span>
+              <span>{isEn
+                ? 'Once a manager approves this request, this package ends immediately, whatever amount is refunded: upcoming class bookings and enrollments made with it are cancelled.'
+                : 'Khi quản lý duyệt yêu cầu, gói tập này sẽ kết thúc ngay, dù số tiền được hoàn là bao nhiêu. Các lịch học và ghi danh lớp sắp tới dùng gói này sẽ bị hủy.'}</span>
+            </p>
             <button disabled={busy} className="w-full rounded-xl bg-brand-navy-900 px-4 py-3 text-sm font-black text-brand-sand-300 disabled:opacity-50">{busy ? (isEn ? 'Submitting...' : 'Đang gửi...') : (isEn ? 'Submit for review' : 'Gửi quản lý duyệt')}</button>
           </form>}
       </section>

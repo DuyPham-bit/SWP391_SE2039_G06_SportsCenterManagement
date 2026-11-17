@@ -406,6 +406,23 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
     /// BR-BOOK-04. Promotes the earliest waiting member of the class who is still eligible for the freed session.
     /// Ineligible members (no active package, clash, ...) are closed and the next FIFO entry is evaluated.
     /// </summary>
+    public async Task PromoteWaitlistsAsync(IReadOnlyCollection<long> sessionIds, long actorUserId, CancellationToken ct = default)
+    {
+        if (sessionIds.Count == 0) return;
+        var now = ScheduleTime.VietnamNow;
+        var sessions = await Db.ClassSessions.Where(s => sessionIds.Contains(s.Id)).ToListAsync(ct);
+        foreach (var session in sessions.Where(s => s.SessionStatus == FlowStatuses.SessionScheduled))
+        {
+            var cls = await Db.Classes.SingleAsync(c => c.Id == session.ClassId, ct);
+            // Fill every freed seat, not just one: each promotion re-checks remaining capacity.
+            while (await PromoteNextWaitlistAsync(session, cls, now, actorUserId, ct) is not null)
+            {
+                await SaveAsync(ct);
+            }
+        }
+        await SaveAsync(ct);
+    }
+
     private async Task<long?> PromoteNextWaitlistAsync(ClassSession session, ClassEntity cls, DateTime now, long actorUserId, CancellationToken ct)
     {
         var capacity = await GetEffectiveCapacityAsync(session, cls, ct);

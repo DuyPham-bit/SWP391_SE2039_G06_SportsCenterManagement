@@ -559,8 +559,14 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
                 ?? mSubs.FirstOrDefault(s => string.Equals(s.Status, "Active", StringComparison.OrdinalIgnoreCase))
                 ?? mSubs.FirstOrDefault();
 
-            string pkgName = currentSub?.PackageName ?? "Chưa đăng ký gói";
-            DateOnly? pkgExpiry = currentSub?.EndDate;
+            // A refunded/cancelled package is no longer held: report only its status, never its
+            // name or validity dates, so no screen shows "valid until ..." for a revoked pass.
+            var revoked = currentSub is not null &&
+                (string.Equals(currentSub.Status, "Refunded", StringComparison.OrdinalIgnoreCase) ||
+                 string.Equals(currentSub.Status, "Cancelled", StringComparison.OrdinalIgnoreCase));
+            var heldSub = revoked ? null : currentSub;
+            string pkgName = heldSub?.PackageName ?? "Chưa đăng ký gói";
+            DateOnly? pkgExpiry = heldSub?.EndDate;
             string pkgStatus = "INACTIVE";
 
             if (currentSub != null)
@@ -594,9 +600,9 @@ public sealed class MemberService(IUnitOfWork unitOfWork, IAuthService authServi
                 PackageName = pkgName,
                 PackageExpiry = pkgExpiry,
                 PackageStatus = pkgStatus,
-                PackageId = currentSub?.PackageId,
-                SubscriptionId = currentSub?.Id,
-                PackageStartDate = currentSub?.StartDate,
+                PackageId = heldSub?.PackageId,
+                SubscriptionId = heldSub?.Id,
+                PackageStartDate = heldSub?.StartDate,
                 // The SQL projection carried the raw avatar key here; expose the public URL instead.
                 AvatarUrl = mediaUrls?.PublicUrl(m.AvatarUrl)
             };

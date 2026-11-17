@@ -217,15 +217,18 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         var classIds = AssignedClassIds(coachId);
         var enrolled = db.ClassEnrollments.Where(x => classIds.Contains(x.ClassId) &&
             (x.Status == "Active" || x.Status == "Confirmed" || x.Status == "Enrolled")).Select(x => x.MemberId);
+        // Current students only: past "Booked" rows never change status, so they must not keep a
+        // refunded or expired member assigned to the coach forever.
+        var today = ScheduleTime.VietnamToday;
         var booked = db.SessionBookings.Where(x => x.Status == "Booked" && db.ClassSessions.Any(s =>
-            s.Id == x.SessionId && classIds.Contains(s.ClassId))).Select(x => x.MemberId);
+            s.Id == x.SessionId && classIds.Contains(s.ClassId) && s.SessionDate >= today)).Select(x => x.MemberId);
         // Substitutions (session.CoachId) also link the coach to that class's members, mirrored in MemberWorkspace.
         var substitutedClassIds = db.ClassSessions
             .Where(s => s.CoachId == coachId && s.SessionStatus != FlowStatuses.SessionCancelled).Select(s => s.ClassId);
         var substituteEnrolled = db.ClassEnrollments.Where(x => substitutedClassIds.Contains(x.ClassId) &&
             (x.Status == "Active" || x.Status == "Confirmed" || x.Status == "Enrolled")).Select(x => x.MemberId);
         var substituteBooked = db.SessionBookings.Where(x => x.Status == "Booked" && db.ClassSessions.Any(s =>
-            s.Id == x.SessionId && s.CoachId == coachId)).Select(x => x.MemberId);
+            s.Id == x.SessionId && s.CoachId == coachId && s.SessionDate >= today)).Select(x => x.MemberId);
         return enrolled.Union(booked).Union(substituteEnrolled).Union(substituteBooked).Distinct();
     }
 
@@ -740,6 +743,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             throw BusinessException.Forbidden("Bạn không phụ trách lớp đã chọn.");
         if (request.MemberId.HasValue) await EnsureCoachMember(coach.Id, request.MemberId.Value, ct);
         if (request.DueDate.HasValue && ToUtc(request.DueDate.Value) <= UtcNow) throw Invalid("Hạn hoàn thành phải ở tương lai.");
+        var rosterToday = ScheduleTime.VietnamToday;
         var recipients = request.MemberId.HasValue
             ? await db.MemberProfiles.Where(x => x.Id == request.MemberId &&
                     db.Users.Any(u => u.Id == x.UserId && u.Status == "Active"))
@@ -749,7 +753,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
                 (db.ClassEnrollments.Any(e => e.ClassId == request.ClassId && e.MemberId == x.Id &&
                     (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")) ||
                  db.SessionBookings.Any(b => b.MemberId == x.Id && b.Status == "Booked" &&
-                    db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == request.ClassId))))
+                    db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == request.ClassId && s.SessionDate >= rosterToday))))
                 .Select(x => x.UserId).Distinct().ToArrayAsync(ct);
         if (recipients.Length == 0) throw BusinessException.Conflict("Không có học viên đang hoạt động để nhận bài tập.", "HOMEWORK-NO-RECIPIENT");
         var row = new Assignment { CoachId = coach.Id, ClassId = request.ClassId, MemberId = request.MemberId,
@@ -857,6 +861,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
         var coach = await Coach(userId, ct);
         var allowedIds = await AssignedMemberIds(coach.Id).ToArrayAsync(ct);
+        var rosterToday = ScheduleTime.VietnamToday;
         long[] memberIds;
         if (request.ClassId.HasValue)
         {
@@ -864,7 +869,7 @@ public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvi
             memberIds = await db.MemberProfiles.Where(x => allowedIds.Contains(x.Id) &&
                 (db.ClassEnrollments.Any(e => e.MemberId == x.Id && e.ClassId == request.ClassId &&
                     (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")) ||
-                 db.SessionBookings.Any(b => b.MemberId == x.Id && b.Status == "Booked" && db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == request.ClassId))))
+                 db.SessionBookings.Any(b => b.MemberId == x.Id && b.Status == "Booked" && db.ClassSessions.Any(s => s.Id == b.SessionId && s.ClassId == request.ClassId && s.SessionDate >= rosterToday))))
                 .Select(x => x.Id).Distinct().ToArrayAsync(ct);
         }
         else memberIds = request.MemberIds is { Length: > 0 } ? request.MemberIds.Distinct().ToArray() : allowedIds;
