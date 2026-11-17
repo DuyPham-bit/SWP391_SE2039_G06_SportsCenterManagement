@@ -1,5 +1,6 @@
 import React, { useLayoutEffect } from 'react';
 import { FacilitiesSection } from './FacilitiesSection.jsx';
+import { IntroSplashScreen } from './IntroSplashScreen.jsx';
 import { useLandingPage } from '../model/useLandingPage.js';
 import { LandingHeader } from './LandingHeader.jsx';
 import { HeroSection } from './HeroSection.jsx';
@@ -18,7 +19,7 @@ export function LandingPage() {
     landingContent, language, leftSports, logout, membershipAction, navItems, rightSports, role,
     selectedCategory, selectedFacilityForModal, selectedSportFromMenu, setIsMobileCoursesOpen,
     setIsMobileMenuOpen, setIsVideoMuted, setLanguage, setSelectedCategory,
-    setSelectedFacilityForModal, socialContacts, sportCarouselIndex,
+    setSelectedFacilityForModal, setShowIntro, showIntro, socialContacts, sportCarouselIndex,
     sportsCarousel, sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
   } = useLandingPage();
 
@@ -34,6 +35,7 @@ export function LandingPage() {
 
   return (
     <div className="landing-page-root tiya-page w-full min-h-screen" style={{ colorScheme: 'light' }}>
+      {showIntro && <IntroSplashScreen onFinish={() => setShowIntro(false)} />}
       {/* LANDING HEADER (TIYA NAVBAR) */}
       <LandingHeader
         activeNav={activeNav}

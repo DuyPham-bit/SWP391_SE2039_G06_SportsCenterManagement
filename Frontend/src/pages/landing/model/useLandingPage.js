@@ -41,6 +41,8 @@ export function useLandingPage() {
   const isManualScrollRef = useRef(false);
   const manualScrollTimerRef = useRef(null);
 
+  const [showIntro, setShowIntro] = useState(true);
+
   // Tiya Scroll Reveal Observer (Synchronized with Tiya animations)
   useEffect(() => {
     if (typeof window === 'undefined' || !('IntersectionObserver' in window)) return;
@@ -321,7 +323,7 @@ export function useLandingPage() {
     landingContent, language, leftSports, logout, membershipAction, navItems, rightSports, role,
     selectedCategory, selectedFacilityForModal, selectedSportFromMenu, setIsMobileCoursesOpen,
     setIsMobileMenuOpen, setIsVideoMuted, setLanguage, setSelectedCategory,
-    setSelectedFacilityForModal, socialContacts, sportCarouselIndex,
+    setSelectedFacilityForModal, setShowIntro, showIntro, socialContacts, sportCarouselIndex,
     sportsCarousel, sportsCarouselRef, sportsList, toggleCoursesDropdown, videoRef, visibleSports
   };
 }
