@@ -21,19 +21,33 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
     private static readonly HashSet<string> ObjectArrays = ["metrics", "features", "stats", "sportsList", "facilitiesList", "zones", "serviceAmenities", "specs", "trustBadges"];
     private static readonly HashSet<string> TextArrays = ["tags", "badges", "amenities", "items"];
     private static readonly HashSet<string> Booleans = ["isVisible", "isAutoCount", "formatThousands"];
+    private const int SportDescriptionMaxLength = 500; // sports.description column length
+
+    // Content saved by v1.5 references uploaded_media by id instead of storing the image path.
+    private static readonly IReadOnlyDictionary<string, string> LegacyMediaFields = new Dictionary<string, string>
+    {
+        ["mediaId"] = "image", ["secondaryMediaId"] = "secondaryImage",
+        ["posterMediaId"] = "posterUrl", ["imageMediaId"] = "imageUrl"
+    };
 
     public async Task<LandingContentResponse> GetAsync(CancellationToken ct)
     {
         var setting = await db.SystemSettings.AsNoTracking().SingleOrDefaultAsync(s => s.SettingKey == SettingKey, ct);
         if (setting?.SettingValue is null) return new(null, null);
-        using var document = JsonDocument.Parse(setting.SettingValue);
-        return new(TransformR2Urls(document.RootElement, toPublicUrl: true), setting.UpdatedAt);
+        return new(await ReadFromDatabaseAsync(JsonNode.Parse(setting.SettingValue)!, ct), setting.UpdatedAt);
     }
 
     public async Task<LandingContentResponse> SaveAsync(JsonElement content, long userId, CancellationToken ct)
     {
-        var storedContent = TransformR2Urls(content, toPublicUrl: false);
+        var node = JsonNode.Parse(content.GetRawText())!;
+        // Legacy media ids become stored image paths, so the saved content uses the current format.
+        await ResolveLegacyMediaAsync(node, ct);
+        var storedContent = TransformR2Urls(JsonSerializer.SerializeToElement(node), toPublicUrl: false);
         Validate(storedContent);
+        node = JsonNode.Parse(storedContent.GetRawText())!;
+        // Linked sport cards: the sports table owns the text; edits are written there, not copied here.
+        await StoreSportDescriptionsAsync(node, userId, ct);
+        storedContent = JsonSerializer.SerializeToElement(node);
         var setting = await db.SystemSettings.SingleOrDefaultAsync(s => s.SettingKey == SettingKey, ct);
         var previous = new { setting?.UpdatedAt, setting?.UpdatedBy };
         if (setting is null)
@@ -46,18 +60,177 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
         setting.UpdatedAt = DateTime.UtcNow;
         await SyncCenterPhoneAsync(storedContent, userId, ct);
         AddAudit(userId, "landing.content.published", previous, new { setting.UpdatedAt, Bytes = setting.SettingValue.Length });
+        // Publishing consumes the draft in the same save: published content, sport descriptions and the
+        // draft removal commit together or not at all.
+        var draft = await db.SystemSettings.SingleOrDefaultAsync(s => s.SettingKey == DraftKey, ct);
+        if (draft is not null) db.SystemSettings.Remove(draft);
         await db.SaveChangesAsync(ct);
-        // Publishing consumes the draft — only once the published content is safely stored.
-        await db.SystemSettings.Where(s => s.SettingKey == DraftKey).ExecuteDeleteAsync(ct);
-        return new(TransformR2Urls(storedContent, toPublicUrl: true), setting.UpdatedAt);
+        return new(await ReadFromDatabaseAsync(JsonNode.Parse(storedContent.GetRawText())!, ct), setting.UpdatedAt);
     }
 
     public async Task<LandingContentResponse> GetDraftAsync(CancellationToken ct)
     {
         var draft = await db.SystemSettings.AsNoTracking().SingleOrDefaultAsync(s => s.SettingKey == DraftKey, ct);
         if (draft?.SettingValue is null) return new(null, null);
-        using var document = JsonDocument.Parse(draft.SettingValue);
-        return new(TransformR2Urls(document.RootElement, toPublicUrl: true), draft.UpdatedAt);
+        return new(await ReadFromDatabaseAsync(JsonNode.Parse(draft.SettingValue)!, ct), draft.UpdatedAt);
+    }
+
+    /// <summary>Fills what the database owns (images by media id, linked sport descriptions) and publishes R2 paths.</summary>
+    private async Task<JsonElement> ReadFromDatabaseAsync(JsonNode node, CancellationToken ct)
+    {
+        await ResolveLegacyMediaAsync(node, ct);
+        await HydrateSportDescriptionsAsync(node, ct);
+        return TransformR2Urls(JsonSerializer.SerializeToElement(node), toPublicUrl: true);
+    }
+
+    /// <summary>
+    /// Replaces each legacy media id with the image path from uploaded_media ("dashboard/…" R2 key, or the
+    /// stored file URL). An image path already present wins, so a newer upload is never overwritten.
+    /// An id that no longer resolves is kept untouched rather than silently dropped.
+    /// </summary>
+    private async Task ResolveLegacyMediaAsync(JsonNode node, CancellationToken ct)
+    {
+        var ids = new HashSet<long>();
+        Collect(node);
+        if (ids.Count == 0) return;
+        var media = await db.UploadedMedias.AsNoTracking().Where(m => ids.Contains(m.Id))
+            .Select(m => new { m.Id, m.DriveFileId, m.FileUrl }).ToListAsync(ct);
+        var paths = media.Select(m => (m.Id, Path: MediaPath(m.DriveFileId, m.FileUrl)))
+            .Where(m => m.Path is not null).ToDictionary(m => m.Id, m => m.Path!);
+        Apply(node);
+
+        void Collect(JsonNode? current)
+        {
+            if (current is JsonObject obj)
+                foreach (var property in obj)
+                {
+                    if (LegacyMediaFields.ContainsKey(property.Key) && TryGetId(property.Value, out var id)) ids.Add(id);
+                    else Collect(property.Value);
+                }
+            else if (current is JsonArray array)
+                foreach (var child in array) Collect(child);
+        }
+
+        void Apply(JsonNode? current)
+        {
+            if (current is JsonObject obj)
+            {
+                foreach (var (idField, imageField) in LegacyMediaFields)
+                {
+                    if (!TryGetId(obj[idField], out var id) || !paths.TryGetValue(id, out var path)) continue;
+                    var existing = obj[imageField] is JsonValue value && value.TryGetValue<string>(out var text) ? text : null;
+                    if (string.IsNullOrWhiteSpace(existing)) obj[imageField] = path;
+                    obj.Remove(idField);
+                }
+                foreach (var property in obj.ToArray()) Apply(property.Value);
+            }
+            else if (current is JsonArray array)
+                foreach (var child in array) Apply(child);
+        }
+    }
+
+    private static string? MediaPath(string? driveFileId, string? fileUrl)
+    {
+        if (!string.IsNullOrWhiteSpace(driveFileId) && driveFileId.StartsWith(MediaAccessScope.R2FileIdPrefix, StringComparison.Ordinal)
+            && driveFileId.Length > MediaAccessScope.R2FileIdPrefix.Length)
+            return driveFileId[MediaAccessScope.R2FileIdPrefix.Length..];
+        return string.IsNullOrWhiteSpace(fileUrl) ? null : fileUrl.Trim();
+    }
+
+    private static bool TryGetId(JsonNode? node, out long id)
+    {
+        id = 0;
+        if (node is not JsonValue value) return false;
+        if (value.TryGetValue<long>(out id)) return id > 0;
+        return value.TryGetValue<string>(out var text) && long.TryParse(text, out id) && id > 0;
+    }
+
+    // Homepage sport cards may link to a sports row through "sportId"; for those the sports table is the
+    // single source of the card's "highlight" text (as in v1.5).
+    private async Task HydrateSportDescriptionsAsync(JsonNode node, CancellationToken ct)
+    {
+        var cards = LinkedSportCards(node).Where(card => card.SportId > 0).ToList();
+        if (cards.Count == 0) return;
+        var ids = cards.Select(card => card.SportId).Distinct().ToList();
+        var descriptions = await db.Sports.AsNoTracking().Where(s => ids.Contains(s.Id))
+            .ToDictionaryAsync(s => s.Id, s => s.Description, ct);
+        foreach (var (card, sportId) in cards)
+            if (descriptions.TryGetValue(sportId, out var description)) card["highlight"] = description ?? "";
+    }
+
+    private async Task StoreSportDescriptionsAsync(JsonNode node, long userId, CancellationToken ct)
+    {
+        var cards = LinkedSportCards(node);
+        if (cards.Count == 0) return;
+        if (cards.Any(card => card.SportId <= 0))
+            throw FlowException.BadRequest("Liên kết bộ môn trên thẻ trang chủ không hợp lệ.");
+        var ids = cards.Select(card => card.SportId).Distinct().ToList();
+        var sports = await db.Sports.Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, ct);
+        if (sports.Count != ids.Count)
+            throw FlowException.BadRequest("Bộ môn liên kết trên thẻ trang chủ không tồn tại.");
+
+        var changes = new Dictionary<long, string>();
+        foreach (var (card, sportId) in cards)
+        {
+            var text = card["highlight"] is JsonValue value && value.TryGetValue<string>(out var raw) ? raw.Trim() : "";
+            card.Remove("highlight");
+            // Blank or missing text (e.g. a raw re-save) never wipes a stored description.
+            if (text.Length == 0 || text == sports[sportId].Description) continue;
+            if (text.Length > SportDescriptionMaxLength)
+                throw FlowException.BadRequest($"Mô tả bộ môn tối đa {SportDescriptionMaxLength} ký tự.");
+            if (changes.TryGetValue(sportId, out var other) && other != text)
+                throw FlowException.BadRequest("Hai thẻ cùng liên kết một bộ môn nhưng có mô tả khác nhau.");
+            changes[sportId] = text;
+        }
+
+        // Check every change before touching any entity so a refusal leaves nothing half-applied.
+        foreach (var sportId in changes.Keys)
+        {
+            if (sports[sportId].CenterId is not long centerId)
+                throw FlowException.Forbidden("Bộ môn dùng chung không sửa mô tả từ trang chủ; hãy dùng mục Quản lý bộ môn.");
+            await EnsureCanEditCenterAsync(userId, centerId, ct);
+        }
+        foreach (var (sportId, text) in changes)
+        {
+            var sport = sports[sportId];
+            var previous = sport.Description;
+            sport.Description = text;
+            db.AuditLogs.Add(new AuditLog
+            {
+                UserId = userId > 0 ? userId : null, CenterId = sport.CenterId, Action = "SPORT.UPDATED",
+                EntityType = "Sport", EntityId = sport.Id,
+                OldValues = JsonSerializer.Serialize(new { Description = previous }),
+                NewValues = JsonSerializer.Serialize(new { Description = text }), CreatedAt = DateTime.UtcNow
+            });
+        }
+    }
+
+    // Admins edit any center; a Manager only the center of their active staff profile.
+    private async Task EnsureCanEditCenterAsync(long userId, long centerId, CancellationToken ct)
+    {
+        var role = await (from user in db.Users.AsNoTracking()
+                          join r in db.Roles.AsNoTracking() on user.RoleId equals r.Id
+                          where user.Id == userId && user.Status == "Active"
+                          select r.Name).SingleOrDefaultAsync(ct);
+        if (string.Equals(role, "Admin", StringComparison.OrdinalIgnoreCase)) return;
+        var managesCenter = string.Equals(role, "Manager", StringComparison.OrdinalIgnoreCase)
+            && await db.StaffProfiles.AsNoTracking().AnyAsync(s => s.UserId == userId && s.CenterId == centerId && s.Status == "Active", ct);
+        if (!managesCenter)
+            throw FlowException.Forbidden("Bạn chỉ được sửa mô tả bộ môn của trung tâm mình quản lý.");
+    }
+
+    private static List<(JsonObject Card, long SportId)> LinkedSportCards(JsonNode node)
+    {
+        var result = new List<(JsonObject, long)>();
+        if (node is not JsonObject root || root["coursesSection"] is not JsonObject section
+            || section["sportsList"] is not JsonArray cards) return result;
+        foreach (var card in cards.OfType<JsonObject>())
+        {
+            var link = card["sportId"];
+            if (link is null || (link is JsonValue v && v.TryGetValue<string>(out var s) && string.IsNullOrWhiteSpace(s))) continue;
+            result.Add((card, TryGetId(link, out var id) ? id : 0));
+        }
+        return result;
     }
 
     /// <summary>Autosaved, possibly incomplete content: only shape-checked, never shown publicly.</summary>
@@ -224,6 +397,19 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
             else if (property.Name == "number")
             {
                 if (item.ValueKind != JsonValueKind.Number || !item.TryGetDouble(out var number) || !double.IsFinite(number) || number < 0 || number > 1_000_000_000) throw InvalidContent();
+            }
+            else if (property.Name == "sportId" || LegacyMediaFields.ContainsKey(property.Name))
+            {
+                // Database references: a positive id, as a number or (sportId, from the editor) a numeric string.
+                var valid = item.ValueKind switch
+                {
+                    JsonValueKind.Number => item.TryGetInt64(out var id) && id > 0,
+                    JsonValueKind.String => property.Name == "sportId" &&
+                        (string.IsNullOrWhiteSpace(item.GetString()) || (long.TryParse(item.GetString(), out var sid) && sid > 0)),
+                    JsonValueKind.Null => true,
+                    _ => false
+                };
+                if (!valid) throw InvalidContent();
             }
             else ValidateText(item, property.Name);
         }
