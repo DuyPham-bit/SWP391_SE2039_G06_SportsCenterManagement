@@ -99,29 +99,14 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const [directoryViewMode, setDirectoryViewMode] = useState('3d');
   const [is3dLoading, setIs3dLoading] = useState(true);
   useEffect(() => { setIs3dLoading(true); }, [model3dUrl]);
-  // The 3D scene (three.js, ~300 meshes) loads only when the visitor asks for it, so the homepage
-  // itself stays light; until then a static cover is shown.
-  const [is3dRequested, setIs3dRequested] = useState(false);
   const [is3dFullscreen, setIs3dFullscreen] = useState(false);
   const [activeZoneFilter, setActiveZoneFilter] = useState('all');
   const model3dContainerRef = useRef(null);
   const iframeRef = useRef(null);
 
-  // Pause the scene's render loop while the model is scrolled out of view, resume when it returns.
-  useEffect(() => {
-    const container = model3dContainerRef.current;
-    if (!is3dRequested || !container || typeof IntersectionObserver === 'undefined') return undefined;
-    const observer = new IntersectionObserver(([entry]) => {
-      iframeRef.current?.contentWindow?.postMessage({ type: 'SET_ACTIVE', active: entry.isIntersecting }, '*');
-    }, { threshold: 0.05 });
-    observer.observe(container);
-    return () => observer.disconnect();
-  }, [is3dRequested, directoryViewMode, is3dLoading]);
-
   const toggle3dFullscreen = () => {
     const el = model3dContainerRef.current;
     if (!el) return;
-    setIs3dRequested(true);
     try {
       const isFs = Boolean(document.fullscreenElement || document.webkitFullscreenElement);
       if (!isFs) {
@@ -158,7 +143,6 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
 
   const handleZoneSelect = (zoneId) => {
     setActiveZoneFilter(zoneId);
-    setIs3dRequested(true);
     if (directoryViewMode !== '3d') {
       setDirectoryViewMode('3d');
     }
@@ -172,12 +156,12 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   };
 
   const quickZones = useMemo(() => [
-    { id: 'all', label: isEn ? 'Whole campus' : 'Toàn cảnh', icon: 'domain' },
-    { id: 'khuA', label: isEn ? 'Zone A: Pool, gym' : 'Khu A: Bơi, gym', icon: 'pool' },
-    { id: 'khuB', label: isEn ? 'Zone B: Basketball, badminton' : 'Khu B: Bóng rổ, cầu lông', icon: 'sports_basketball' },
-    { id: 'khuC', label: isEn ? 'Zone C: Martial arts, yoga' : 'Khu C: Võ thuật, yoga', icon: 'self_improvement' },
-    { id: 'outdoor', label: isEn ? 'Outdoor: Football, pickleball' : 'Ngoài trời: Bóng đá, pickleball', icon: 'stadium' },
-    { id: 'lobby', label: isEn ? 'Reception, clinic' : 'Lễ tân, y tế', icon: 'local_convenience_store' },
+    { id: 'all', label: isEn ? 'Master View (13,000m²)' : 'Toàn Cảnh (13.000m²)', icon: 'domain' },
+    { id: 'khuA', label: isEn ? 'Zone A: Pool & Gym' : 'Khu A: Bơi & Gym', icon: 'pool' },
+    { id: 'khuB', label: isEn ? 'Zone B: Basketball & Badminton' : 'Khu B: Bóng Rổ & Cầu Lông', icon: 'sports_basketball' },
+    { id: 'khuC', label: isEn ? 'Zone C: Combat & Yoga' : 'Khu C: Võ & Yoga', icon: 'self_improvement' },
+    { id: 'outdoor', label: isEn ? 'Outdoor: Football & Pickleball' : 'Ngoài Trời: Bóng Đá & Pickleball', icon: 'stadium' },
+    { id: 'lobby', label: isEn ? 'Lobby & Clinic' : 'Sảnh Lễ Tân & Y Tế', icon: 'local_convenience_store' },
   ], [isEn]);
 
   useEffect(() => {
@@ -600,14 +584,19 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
               <div className="min-w-0">
                 <div className="flex items-center gap-2 flex-wrap mb-1">
                   <span className="tiya-campus-3d-badge text-[10px] uppercase tracking-wider font-extrabold text-[#E6D7C3]">
-                    {isEn ? 'Campus map' : (landingContent?.zonesLayout?.badge || 'Sơ đồ khuôn viên')}
+                    {isEn ? 'CONVENIENT SPATIAL LAYOUT' : (landingContent?.zonesLayout?.badge || 'BỐ TRÍ KHÔNG GIAN THUẬN TIỆN')}
                   </span>
                   <span className="tiya-campus-3d-tag text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
-                    13.000 m²
+                    13.000 m² (130m × 100m)
                   </span>
                 </div>
-                <h3 className="tiya-campus-3d-title text-base sm:text-xl font-extrabold tracking-tight leading-snug truncate" style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>
-                  {isEn ? 'Explore the training areas in 3D' : (landingContent?.zonesLayout?.title || 'Xem các khu tập trên mô hình 3D')}
+                <h3 className="tiya-campus-3d-title text-base sm:text-xl font-extrabold tracking-tight uppercase leading-snug truncate" style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>
+                  <span className="text-[#CDBDA6] font-black mr-2">
+                    {isEn ? '3D MODEL:' : 'MÔ HÌNH 3D:'}
+                  </span>
+                  <span className="text-white font-extrabold" style={{ color: '#FFFFFF' }}>
+                    {isEn ? 'CAMPUS SPATIAL DIRECTORY' : (landingContent?.zonesLayout?.title || 'SƠ ĐỒ CÁC KHU VỰC TẬP LUYỆN')}
+                  </span>
                 </h3>
               </div>
             </div>
@@ -625,7 +614,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">3d_rotation</span>
-                  <span className="hidden sm:inline">{isEn ? '3D model' : 'Mô hình 3D'}</span>
+                  <span className="hidden sm:inline">{isEn ? '3D Model' : 'Mô Hình 3D'}</span>
                 </button>
                 <button
                   type="button"
@@ -637,7 +626,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   }`}
                 >
                   <span className="material-symbols-outlined text-[16px]">grid_view</span>
-                  <span className="hidden sm:inline">{isEn ? '2D map' : 'Sơ đồ 2D'}</span>
+                  <span className="hidden sm:inline">{isEn ? '2D Map & Info' : 'Sơ Đồ 2D'}</span>
                 </button>
               </div>
 
@@ -658,7 +647,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 target="_blank"
                 rel="noopener noreferrer"
                 className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-[#E6D7C3] hover:text-white flex items-center gap-1.5 transition active:scale-95 shadow-sm"
-                title={isEn ? 'Open in a new tab' : 'Mở trong tab mới'}
+                title={isEn ? 'Open in dedicated window' : 'Mở tab 3D riêng biệt'}
               >
                 <span className="material-symbols-outlined text-[18px]">open_in_new</span>
                 <span className="hidden md:inline">{isEn ? 'New Tab' : 'Tab mới'}</span>
@@ -673,7 +662,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
               <div className="relative z-10 px-4 py-2.5 bg-[#0F111D] border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
                 <span className="text-[11px] font-black text-[#E6D7C3] uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
                   <span className="material-symbols-outlined text-[15px] text-[#CDBDA6]">explore</span>
-                  <span>{isEn ? 'Go to:' : 'Xem khu:'}</span>
+                  <span>{isEn ? 'Fast Focus:' : 'Xem Nhanh:'}</span>
                 </span>
                 {quickZones.map(qz => (
                   <button
@@ -694,45 +683,27 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
 
               {/* Viewport for 3D Iframe */}
               <div className="tiya-3d-viewport relative w-full h-[540px] sm:h-[620px] lg:h-[700px] bg-[#141622]">
-                {!is3dRequested ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-[radial-gradient(ellipse_at_center,#232741_0%,#141622_70%)]">
-                    <span className="material-symbols-outlined text-[56px] text-[#CDBDA6] mb-3" aria-hidden="true">view_in_ar</span>
-                    <p className="text-sm sm:text-base font-bold text-white mb-1">
-                      {isEn ? 'See the whole campus in 3D' : 'Xem toàn bộ khuôn viên trên mô hình 3D'}
+                {is3dLoading && (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141622] z-10 text-center p-6">
+                    <div className="w-10 h-10 sm:w-12 sm:h-12 border-3 border-[#CDBDA6]/30 border-t-[#CDBDA6] rounded-full animate-spin mb-4" />
+                    <h4 className="text-xs sm:text-sm font-extrabold text-[#F7F5F0] uppercase tracking-wider mb-1">
+                      {isEn ? 'Loading 3D Campus (13,000m²)...' : 'Đang tải mô hình 3D khuôn viên 13.000m²...'}
+                    </h4>
+                    <p className="text-[11px] sm:text-xs text-slate-400 max-w-sm">
+                      {isEn ? 'Rendering Three.js WebGL architecture, lighting and sports venues.' : 'Khởi tạo không gian kiến trúc Three.js WebGL, ánh sáng thực tế và 9 cụm sân tập.'}
                     </p>
-                    <p className="text-xs text-slate-400 max-w-sm mb-5">
-                      {isEn ? 'Rotate, zoom and open each building floor by floor.' : 'Xoay, phóng to và xem từng tầng của mỗi tòa nhà.'}
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => setIs3dRequested(true)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#CDBDA6] text-[#141622] text-sm font-extrabold hover:bg-[#dfd3bc] transition shadow-md active:scale-95"
-                    >
-                      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">3d_rotation</span>
-                      {isEn ? 'View 3D model' : 'Xem mô hình 3D'}
-                    </button>
                   </div>
-                ) : (
-                  <>
-                    {is3dLoading && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141622] z-10 text-center p-6">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 border-3 border-[#CDBDA6]/30 border-t-[#CDBDA6] rounded-full animate-spin mb-4" />
-                        <p className="text-xs sm:text-sm font-bold text-[#F7F5F0]">
-                          {isEn ? 'Loading the 3D model…' : 'Đang tải mô hình 3D…'}
-                        </p>
-                      </div>
-                    )}
-                    <iframe
-                      key={model3dUrl}
-                      ref={iframeRef}
-                      src={model3dUrl}
-                      title={isEn ? '3D campus model' : 'Mô hình 3D khuôn viên'}
-                      onLoad={() => setIs3dLoading(false)}
-                      className="w-full h-full border-0 block"
-                      allow="fullscreen"
-                    />
-                  </>
                 )}
+
+                <iframe
+                  key={model3dUrl}
+                  ref={iframeRef}
+                  src={model3dUrl}
+                  title="3D ArchViz Campus Model"
+                  onLoad={() => setIs3dLoading(false)}
+                  className="w-full h-full border-0 block"
+                  allow="fullscreen"
+                />
               </div>
 
               {/* Interactive Help Footer Bar */}
@@ -741,8 +712,8 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   <span className="material-symbols-outlined text-emerald-400 text-[16px]">touch_app</span>
                   <span>
                     {isEn
-                      ? 'Drag to rotate, scroll or pinch to zoom, click a building to see each floor.'
-                      : 'Kéo để xoay, cuộn hoặc chụm hai ngón để phóng to, bấm vào tòa nhà để xem từng tầng.'}
+                      ? 'Drag with mouse/finger to rotate 360° • Scroll/pinch to zoom • Click buildings to inspect floor cutaways'
+                      : 'Kéo chuột/chạm để xoay 360° • Cuộn chuột để phóng to/thu nhỏ • Bấm trực tiếp vào khối nhà để xem mặt cắt từng tầng'}
                   </span>
                 </div>
                 <button
@@ -750,7 +721,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   onClick={toggle3dFullscreen}
                   className="text-[#CDBDA6] hover:underline font-semibold ml-auto hidden sm:inline"
                 >
-                  {isEn ? 'View full screen' : 'Xem toàn màn hình'}
+                  {isEn ? '⛶ Open Fullscreen Mode' : '⛶ Mở chế độ xem Toàn Màn Hình'}
                 </button>
               </div>
             </div>
@@ -780,11 +751,11 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   <div className="pt-4">
                     <button
                       type="button"
-                      onClick={() => { setDirectoryViewMode('3d'); setIs3dRequested(true); }}
+                      onClick={() => setDirectoryViewMode('3d')}
                       className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#CDBDA6] text-[#141622] text-xs font-extrabold hover:bg-[#dfd3bc] transition shadow-md w-full sm:w-auto active:scale-95"
                     >
                       <span className="material-symbols-outlined text-[18px]">3d_rotation</span>
-                      <span>{isEn ? 'View 3D model' : 'Xem mô hình 3D'}</span>
+                      <span>{isEn ? 'Switch to 3D Campus Model' : 'Chuyển sang xem Mô Hình 3D Thực Tế'}</span>
                     </button>
                   </div>
                 </div>

@@ -3,10 +3,10 @@ import { Logo } from '../../../shared/ui/Logo.jsx';
 
 export function LandingHeader({
   activeNav, coursesDropdownRef, getDashboardLink, handleCoursesMouseEnter, handleCoursesMouseLeave,
-  handleNavClick, handleSelectMenuItem, isAuthenticated, isCoursesDropdownOpen, isEn,
+  handleNavClick, handleSelectMenuItem, isAuthenticated, is3DMode = false, isCoursesDropdownOpen, isEn,
   isMobileCoursesOpen, isMobileMenuOpen, isScrolled, language, leftSports, logout, navItems,
   rightSports, role, selectedSportFromMenu, setIsMobileCoursesOpen, setIsMobileMenuOpen, setLanguage,
-  toggleCoursesDropdown
+  toggle3DMode, toggleCoursesDropdown
 }) {
   return (
     <header
@@ -124,6 +124,24 @@ export function LandingHeader({
             </button>
           </div>
 
+          {/* 3D Spatial Experience Toggle Button */}
+          {toggle3DMode && (
+            <button
+              type="button"
+              onClick={toggle3DMode}
+              className={`tiya-navbar__desktop-only flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all duration-300 cursor-pointer ${
+                is3DMode
+                  ? 'bg-slate-900 text-cyan-400 border-cyan-500/60 shadow-[0_0_12px_rgba(6,182,212,0.4)]'
+                  : 'bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300 dark:border-white/10 hover:border-cyan-500/50'
+              }`}
+              title={is3DMode ? (isEn ? 'Switch off 3D models' : 'Tắt chế độ mô hình 3D') : (isEn ? 'Switch on 3D models' : 'Bật chế độ mô hình 3D')}
+            >
+              <span className="material-symbols-outlined text-[16px]">view_in_ar</span>
+              <span>{is3DMode ? '3D: BẬT' : '3D: TẮT'}</span>
+              <span className={`w-1.5 h-1.5 rounded-full ${is3DMode ? 'bg-cyan-400 shadow-[0_0_6px_#22d3ee] animate-pulse' : 'bg-slate-400'}`} />
+            </button>
+          )}
+
           {isAuthenticated ? (
             <div className="tiya-navbar__desktop-only" style={{display:'flex',alignItems:'center',gap:'8px'}}>
               <a
@@ -173,8 +191,22 @@ export function LandingHeader({
       {/* Mobile Navigation Drawer */}
       {isMobileMenuOpen && (
         <div className="tiya-mobile-drawer">
-          {/* Mobile Language Selector */}
-          <div style={{display:'flex',justifyContent:'flex-end',marginBottom:'12px'}}>
+          {/* Mobile Controls: 3D Toggle + Language */}
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:'12px'}}>
+            {toggle3DMode && (
+              <button
+                type="button"
+                onClick={toggle3DMode}
+                className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full border text-xs font-bold transition-all cursor-pointer ${
+                  is3DMode
+                    ? 'bg-slate-900 text-cyan-400 border-cyan-500/60 shadow-sm'
+                    : 'bg-white/80 dark:bg-slate-800 text-slate-700 dark:text-slate-200 border-slate-300'
+                }`}
+              >
+                <span className="material-symbols-outlined text-[16px]">view_in_ar</span>
+                <span>{is3DMode ? '3D: BẬT' : '3D: TẮT'}</span>
+              </button>
+            )}
             <div className="tiya-lang-toggle" role="group" aria-label="Language selector">
               <button
                 type="button"
