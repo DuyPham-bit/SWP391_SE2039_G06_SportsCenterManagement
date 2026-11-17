@@ -2,9 +2,6 @@ import React from 'react';
 import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
 
-// EN keeps the published title unless it is written in Vietnamese.
-const hasVietnameseChars = (text) => /[à-ỹđ]/i.test(text || '');
-
 export function HeroSection({ catalogLoading = false, facilitiesList, heroReady = true, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
   const publishedMetrics = landingContent?.heroBanner?.metrics || [];
   const hasPublishedDesc = Boolean(landingContent?.heroBanner?.description);
@@ -33,31 +30,31 @@ export function HeroSection({ catalogLoading = false, facilitiesList, heroReady 
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',maxWidth:'900px',margin:'0 auto'}}>
           {/* Animated Headline with Slide-up & Typewriter */}
           <TypewriterHeroHeading
-            heroBadge={isEn ? 'OLYMPIC SPORTS CENTER' : (landingContent?.heroBanner?.badge || 'TRUNG TÂM THỂ THAO')}
+            heroBadge={landingContent?.heroBanner?.badge || (isEn ? 'SPORTS CENTER' : 'TRUNG TÂM THỂ THAO')}
             heroReady={heroReady}
-            heroTitle={isEn && hasVietnameseChars(landingContent?.heroBanner?.title) ? '' : landingContent?.heroBanner?.title}
+            heroTitle={landingContent?.heroBanner?.title}
           />
 
           {/* Subtext */}
           <p className="hero-desc scms-hero-desc mt-5">
-            {isEn
-              ? (countsReady ? `Develop fitness, build resilience, and push boundaries across our ${facilitiesList?.length || 0} sports facilities and ${visibleSports?.length || 0} disciplines.` : '\u00A0')
-              : (hasPublishedDesc ? landingContent.heroBanner.description : (countsReady ? `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList?.length || 0} cụm sân, phòng tập phục vụ ${visibleSports?.length || 0} bộ môn thể thao.` : '\u00A0'))}
+            {hasPublishedDesc ? landingContent.heroBanner.description : isEn
+              ? (countsReady ? `Build fitness and push your limits across our ${facilitiesList?.length || 0} courts and rooms for ${visibleSports?.length || 0} sports.` : ' ')
+              : (countsReady ? `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList?.length || 0} cụm sân, phòng tập phục vụ ${visibleSports?.length || 0} bộ môn thể thao.` : ' ')}
           </p>
 
           {/* CTA Buttons */}
           <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center'}}>
             <a href={safeHref(landingContent?.heroBanner?.primaryCtaLink) || '#/register'}
               className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
-              {isEn ? 'REGISTER NEW MEMBER' : (landingContent?.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
+              {landingContent?.heroBanner?.primaryCtaText || (isEn ? 'BECOME A MEMBER' : 'ĐĂNG KÝ HỘI VIÊN MỚI')}
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>arrow_forward</span>
             </a>
             <a href={safeHref(landingContent?.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
               className="link">
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
-              {isEn
-                ? (countsReady ? `EXPLORE ${visibleSports?.length || 0} DISCIPLINES` : 'EXPLORE DISCIPLINES')
-                : (landingContent?.heroBanner?.secondaryCtaText || (countsReady ? `KHÁM PHÁ ${visibleSports?.length || 0} MÔN HỌC` : 'KHÁM PHÁ MÔN HỌC'))}
+              {landingContent?.heroBanner?.secondaryCtaText || (isEn
+                ? (countsReady ? `EXPLORE ${visibleSports?.length || 0} SPORTS` : 'EXPLORE SPORTS')
+                : (countsReady ? `KHÁM PHÁ ${visibleSports?.length || 0} MÔN HỌC` : 'KHÁM PHÁ MÔN HỌC'))}
             </a>
           </div>
 

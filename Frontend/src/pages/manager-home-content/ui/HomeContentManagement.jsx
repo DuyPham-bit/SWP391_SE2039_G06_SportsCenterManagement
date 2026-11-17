@@ -9,13 +9,14 @@ import { WhyUsTab } from './WhyUsTab.jsx';
 import { ZonesTab } from './ZonesTab.jsx';
 import { FooterTab } from './FooterTab.jsx';
 import { AuthShowcaseTab } from './AuthShowcaseTab.jsx';
+import { EnglishTab } from './EnglishTab.jsx';
 import { PublishBar } from './PublishBar.jsx';
 
 export function HomeContentManagement() {
   const {
     activeTab, addToast, content, deleteFacilityCard, discardKey, handleDiscardChanges,
     handlePreview, handleSaveAll, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
-    mediaPickerConfig, openMediaPicker, setContent, setIsDirty, setMediaPickerConfig, setReloadKey,
+    mediaPickerConfig, mergeTranslations, openMediaPicker, setContent, setIsDirty, setMediaPickerConfig, setReloadKey,
     totalFacilities, totalSports, updateCatalogCards, updateContentField, visibleFacilities,
     visibleSports
   } = useHomeContentEditor();
@@ -61,6 +62,7 @@ export function HomeContentManagement() {
 
       {/* 2. TAB NAVIGATION (7 Sections - All 7 tabs fully visible in responsive grid) */}
       <HomeContentTabs
+        content={content}
         activeTab={activeTab}
         handleTabChange={handleTabChange}
         isEn={isEn}
@@ -164,6 +166,21 @@ export function HomeContentManagement() {
           openMediaPicker={openMediaPicker}
           setContent={setContent}
           setIsDirty={setIsDirty}
+          updateContentField={updateContentField}
+        />
+      )}
+
+      {/* TAB 8: ENGLISH VERSION */}
+      {activeTab === 'english' && (
+        <EnglishTab
+          addToast={addToast}
+          content={content}
+          handleDiscardChanges={handleDiscardChanges}
+          handleSaveAll={handleSaveAll}
+          isDirty={isDirty}
+          isEn={isEn}
+          isSaving={isSaving}
+          mergeTranslations={mergeTranslations}
           updateContentField={updateContentField}
         />
       )}

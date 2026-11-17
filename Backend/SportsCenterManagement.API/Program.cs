@@ -203,6 +203,7 @@ builder.Services.AddScoped<ClassReminderService>();
 builder.Services.AddHostedService<ClassReminderWorker>();
 builder.Services.AddHostedService<CommunicationDeliveryWorker>();
 builder.Services.AddScoped<LandingContentService>();
+builder.Services.AddScoped<LandingTranslationService>();
 
 // MailKit SendMailService
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));

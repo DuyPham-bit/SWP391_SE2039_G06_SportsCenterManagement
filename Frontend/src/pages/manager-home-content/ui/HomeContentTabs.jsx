@@ -1,8 +1,13 @@
-import React from 'react';
+import React, { useMemo } from 'react';
+import { builtInEnglish, collectLandingTexts } from '../../../shared/i18n/landingTranslation.js';
 
-export function HomeContentTabs({ activeTab, handleTabChange, isEn, totalFacilities, totalSports }) {
+export function HomeContentTabs({ activeTab, content, handleTabChange, isEn, totalFacilities, totalSports }) {
+  const untranslated = useMemo(() => {
+    const saved = content?.translations || {};
+    return collectLandingTexts(content).filter(item => !saved[item.text]?.trim() && !builtInEnglish(item.text)).length;
+  }, [content]);
   return (
-    <div className="bg-white dark:bg-brand-navy-900 rounded-2xl border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-sm p-2.5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-7 gap-2">
+    <div className="bg-white dark:bg-brand-navy-900 rounded-2xl border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-sm p-2.5 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 xl:grid-cols-8 gap-2">
       {[
         { id: 'hero', label: isEn ? '1. Hero Banner' : '1. Hero Banner', icon: 'crop_original', desc: isEn ? 'Main Banner & Media' : 'Banner chính & Video' },
         { id: 'whyUs', label: isEn ? '2. Why SCMS' : '2. Tại Sao Chọn SCMS', icon: 'verified', desc: isEn ? '3 Merits & 4 Stats' : '3 Ưu thế & 4 Số liệu' },
@@ -16,6 +21,15 @@ export function HomeContentTabs({ activeTab, handleTabChange, isEn, totalFacilit
           icon: 'badge',
           desc: isEn ? 'Login Page (3 Stats)' : 'Trang Đăng Nhập (3 số liệu)',
           badge: isEn ? 'Login Stats' : '3 Số liệu Login'
+        },
+        {
+          id: 'english',
+          label: isEn ? '8. English' : '8. Bản Tiếng Anh',
+          icon: 'translate',
+          desc: untranslated
+            ? (isEn ? `${untranslated} not translated` : `${untranslated} đoạn chưa dịch`)
+            : (isEn ? 'All translated' : 'Đã dịch đủ'),
+          badge: untranslated ? String(untranslated) : ''
         }
       ].map(tab => (
         <button

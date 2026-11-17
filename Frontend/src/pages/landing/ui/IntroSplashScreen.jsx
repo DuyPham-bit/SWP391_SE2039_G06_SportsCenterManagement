@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 
 // Cấu trúc 3 cột chữ OLYMPIC SPORTS ARENA định vị trên vành cung không gian 3D (Cylindrical Arc)
 // Phân bổ góc xoay cân xứng (-28°, 0°, +28°) tạo hiệu ứng vòm khán đài Olympic
@@ -57,6 +58,7 @@ const OLYMPIC_COLUMNS = [
 ];
 
 export function IntroSplashScreen({ onFinish, duration = 4000 }) {
+  const { language } = useLanguage();
   const [isExiting, setIsExiting] = useState(false);
   const [showFullWords, setShowFullWords] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
@@ -282,7 +284,7 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
           </span>
         </div>
         <span className="text-[9px] text-white/40 tracking-[0.25em] sm:tracking-[0.3em]">
-          BẤM MÀN HÌNH / SPACE ĐỂ TIẾP TỤC
+          {language === 'en' ? 'TAP THE SCREEN / PRESS SPACE TO CONTINUE' : 'BẤM MÀN HÌNH / SPACE ĐỂ TIẾP TỤC'}
         </span>
       </div>
     </div>

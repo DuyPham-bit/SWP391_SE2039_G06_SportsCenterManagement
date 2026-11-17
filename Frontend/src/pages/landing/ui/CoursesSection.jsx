@@ -1,6 +1,6 @@
 import React from 'react';
 import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
-import { translateFacilityBadge, translateSportName, translateFacilityName, translateLocation, translateCourseHighlight, translateCoachName, translateOpenHours } from '../../../shared/i18n/i18nHelper.js';
+import { translateLocation, translateCoachName, translateOpenHours } from '../../../shared/i18n/i18nHelper.js';
 import { CarouselSideArrows } from './CarouselControls.jsx';
 
 export function CoursesSection({
@@ -30,13 +30,13 @@ export function CoursesSection({
         <div className="tiya-reveal courses-section-header">
           <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'6px 16px',background:'rgba(129,178,154,0.15)',border:'1px solid rgba(129,178,154,0.4)',borderRadius:'100px',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
             <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--primary-color)',animation:'tiyaPulse 2s infinite'}} />
-            {isEn ? 'PROFESSIONAL TRAINING PROGRAMS' : (landingContent?.coursesSection?.badge || 'Chương trình đào tạo chuyên nghiệp')}
+            {landingContent?.coursesSection?.badge || (isEn ? 'Training programs' : 'Chương trình đào tạo chuyên nghiệp')}
           </div>
           <h2 className="courses-title">
-            <span>{visibleSports?.length || 0} {isEn ? 'Sports' : 'Bộ Môn'}</span> {isEn ? 'Disciplines' : (landingContent?.coursesSection?.title || 'Thể Thao').replace(/^(Khóa Học|Bộ môn)\s*/i, '')}
+            <span>{visibleSports?.length || 0} {isEn ? 'Sports' : 'Bộ Môn'}</span> {isEn ? (landingContent?.coursesSection?.title || '').replace(/^(Courses?|Sports?)\s*/i, '') : (landingContent?.coursesSection?.title || 'Thể Thao').replace(/^(Khóa Học|Bộ môn)\s*/i, '')}
           </h2>
           <p className="courses-desc">
-            {isEn ? 'Curated athletic courses taught by certified instructors with modern facilities and structured curricula.' : (landingContent?.coursesSection?.description || 'Các khóa đào tạo thể thao chuyên sâu, huấn luyện viên đạt chuẩn quốc gia.')}
+            {landingContent?.coursesSection?.description || (isEn ? 'In-depth sports courses with nationally qualified coaches.' : 'Các khóa đào tạo thể thao chuyên sâu, huấn luyện viên đạt chuẩn quốc gia.')}
           </p>
           <p className="text-sm text-brand-navy-600 mt-3">
             {isEn ? 'Choose a package and complete payment before booking classes. Class access depends on your package benefits and available places.' : 'Đăng ký và thanh toán gói tập trước khi đặt ca học. Quyền tham gia lớp phụ thuộc quyền lợi gói và số chỗ còn trống.'}
@@ -132,7 +132,7 @@ export function CoursesSection({
                           {isEn ? (catCfg.labelEn || catCfg.label) : catCfg.label}
                         </span>
                         <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(129,178,154,0.9)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,backdropFilter:'blur(4px)'}}>
-                          {isEn ? translateFacilityBadge(facility.badge, true) : (facility.badge || (isEn ? 'Court / Hall' : 'Phòng / sân'))}
+                          {facility.badge || (isEn ? 'Room / court' : 'Phòng / sân')}
                         </span>
                       </div>
                       <div style={{position:'absolute',bottom:'10px',right:'12px',padding:'4px 12px',borderRadius:'8px',background:'rgba(0,0,0,0.7)',color:'var(--custom-btn-bg-color)',fontSize:'12px',fontWeight:700,backdropFilter:'blur(4px)'}}>
@@ -142,7 +142,7 @@ export function CoursesSection({
 
                     <div className="tiya-course-card__body">
                       <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:'8px',marginBottom:'6px',minHeight:'30px'}}>
-                        <h3 className="tiya-course-card__title" style={{margin:0}}>{isEn ? translateSportName(sport.name, true) : sport.name}</h3>
+                        <h3 className="tiya-course-card__title" style={{margin:0}}>{sport.name}</h3>
                         {sport.rating && <span style={{display:'inline-flex',alignItems:'center',gap:'3px',fontSize:'12px',fontWeight:700,color:'var(--custom-btn-bg-hover-color)',flexShrink:0}}>
                           <span className="material-symbols-outlined" style={{fontSize:'14px',color:'var(--custom-btn-bg-color)'}}>star</span>
                           {sport.rating}
@@ -152,11 +152,11 @@ export function CoursesSection({
 
                       <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:600,color:'var(--primary-color)',marginBottom:'10px',minHeight:'20px'}}>
                         <span className="material-symbols-outlined" style={{fontSize:'15px',flexShrink:0}}>location_on</span>
-                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{isEn ? translateFacilityName(facility.name, true) : facility.name} • {isEn ? translateLocation(facility.location, true) : facility.location}</span>
+                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{facility.name} • {isEn ? translateLocation(facility.location, true) : facility.location}</span>
                       </div>
 
                       <p style={{fontSize:'13px',lineHeight:1.6,color:'var(--p-color)',marginBottom:'14px',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',minHeight:'42px'}}>
-                        {isEn ? (translateCourseHighlight(details.highlight, true) || details.highlight) : details.highlight}
+                        {details.highlight}
                       </p>
 
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'16px',fontSize:'11px',color:'var(--p-color)',minHeight:'36px'}}>

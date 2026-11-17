@@ -4,7 +4,7 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { getMembershipAction } from '../../../entities/membership/index.js';
 import { useLandingContentState, normalizeZaloPhone, getExternalContactUrl } from '../../../entities/landing-content/index.js';
 import { usePublicCatalog, getLandingPresentation } from '../../../entities/catalog/index.js';
-import { translateLandingContent, translateSportName } from '../../../shared/i18n/i18nHelper.js';
+import { localizeLandingContent } from '../../../shared/i18n/landingTranslation.js';
 import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
 import { useHorizontalCarousel } from './useHorizontalCarousel.js';
 
@@ -16,7 +16,7 @@ export function useLandingPage() {
   const { content: editorialContent, loaded: editorialLoaded } = useLandingContentState();
   const { catalog, loading: catalogLoading, error: catalogError } = usePublicCatalog();
   const rawLandingContent = getLandingPresentation(editorialContent, catalog);
-  const landingContent = useMemo(() => isEn ? translateLandingContent(rawLandingContent, true) : rawLandingContent, [rawLandingContent, isEn]);
+  const landingContent = useMemo(() => localizeLandingContent(rawLandingContent, isEn), [rawLandingContent, isEn]);
   const facilitiesList = landingContent?.facilitiesSection?.facilitiesList || [];
   const catalogSportList = landingContent?.coursesSection?.sportsList || [];
   const hours = landingContent?.ctaAndFooter?.hoursWeekdays || (catalog?.center?.openingTime && catalog?.center?.closingTime ? catalog.center.openingTime.slice(0, 5) + ' - ' + catalog.center.closingTime.slice(0, 5) : 'Chưa cập nhật');
@@ -68,12 +68,12 @@ export function useLandingPage() {
 
   const leftSports = useMemo(() => {
     const items = [{ id: 'all', name: isEn ? 'All Sports' : 'Tất cả' }];
-    visibleSports.slice(0, Math.ceil(visibleSports.length / 2)).forEach(s => items.push({ id: s.id, name: isEn ? translateSportName(s.name, true) : s.name }));
+    visibleSports.slice(0, Math.ceil(visibleSports.length / 2)).forEach(s => items.push({ id: s.id, name: s.name }));
     return items;
   }, [visibleSports, isEn]);
 
   const rightSports = useMemo(() => {
-    return visibleSports.slice(Math.ceil(visibleSports.length / 2)).map(s => ({ id: s.id, name: isEn ? translateSportName(s.name, true) : s.name }));
+    return visibleSports.slice(Math.ceil(visibleSports.length / 2)).map(s => ({ id: s.id, name: s.name }));
   }, [visibleSports, isEn]);
 
   const navItems = [

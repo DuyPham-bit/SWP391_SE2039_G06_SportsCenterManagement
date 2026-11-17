@@ -148,6 +148,21 @@ export function useHomeContentEditor() {
     setIsDirty(true);
   };
 
+  // Adds English versions without replacing ones the manager already wrote.
+  const mergeTranslations = (translations, { overwrite = false } = {}) => {
+    setContent(prev => {
+      const current = prev.translations && typeof prev.translations === 'object' ? prev.translations : {};
+      const merged = { ...current };
+      for (const [vi, en] of Object.entries(translations || {})) {
+        if (typeof en === 'string' && en.trim() && (overwrite || !current[vi]?.trim())) merged[vi] = en.trim();
+      }
+      const updated = { ...prev, translations: merged };
+      saveDraft(updated);
+      return updated;
+    });
+    setIsDirty(true);
+  };
+
   // Cập nhật danh sách thẻ trong bản nháp
   const updateCatalogCards = (section, key, items) => {
     setContent(prev => {
@@ -251,7 +266,7 @@ export function useHomeContentEditor() {
   return {
     activeTab, addToast, content, deleteFacilityCard, discardKey, handleDiscardChanges,
     handlePreview, handleSaveAll, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
-    mediaPickerConfig, openMediaPicker, setContent, setIsDirty, setMediaPickerConfig, setReloadKey,
+    mediaPickerConfig, mergeTranslations, openMediaPicker, setContent, setIsDirty, setMediaPickerConfig, setReloadKey,
     totalFacilities, totalSports, updateCatalogCards, updateContentField, visibleFacilities,
     visibleSports
   };

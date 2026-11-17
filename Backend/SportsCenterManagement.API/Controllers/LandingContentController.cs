@@ -8,9 +8,11 @@ namespace SportsCenterManagement.API.Controllers;
 
 [Route("api/landing-content")]
 [FlowExceptionFilter]
-public sealed class LandingContentController(LandingContentService contentService) : FlowControllerBase
+public sealed class LandingContentController(LandingContentService contentService, LandingTranslationService translationService) : FlowControllerBase
 {
     public sealed record SaveRequest(JsonElement Content, DateTime? ExpectedUpdatedAt = null);
+    public sealed record TranslateRequest(IReadOnlyList<string>? Texts);
+    public sealed record TranslateResponse(IReadOnlyDictionary<string, string> Translations);
 
     [HttpGet]
     [AllowAnonymous]
@@ -34,6 +36,13 @@ public sealed class LandingContentController(LandingContentService contentServic
     [RequestSizeLimit(2 * 1024 * 1024)]
     public async Task<ActionResult<LandingContentResponse>> SaveDraft(SaveRequest request, CancellationToken ct) =>
         Ok(await contentService.SaveDraftAsync(request.Content, CurrentUserId, ct, request.ExpectedUpdatedAt));
+
+    /// <summary>Drafts English versions of Vietnamese homepage texts for the editor to review.</summary>
+    [HttpPost("translate")]
+    [Authorize(Roles = "ADMIN,MANAGER")]
+    [RequestSizeLimit(256 * 1024)]
+    public async Task<ActionResult<TranslateResponse>> Translate(TranslateRequest request, CancellationToken ct) =>
+        Ok(new TranslateResponse(await translationService.TranslateAsync(request.Texts, ct)));
 
     [HttpDelete("draft")]
     [Authorize(Roles = "ADMIN,MANAGER")]

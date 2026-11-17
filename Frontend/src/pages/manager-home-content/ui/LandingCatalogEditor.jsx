@@ -216,6 +216,11 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
       </div>
       {!isSports && (
         <>
+          {record.secondaryImage && (
+            <div className="h-32 w-full sm:w-1/2 rounded-lg overflow-hidden bg-brand-navy-900">
+              <img src={record.secondaryImage} alt={`${record.name} (2)`} className="h-full w-full object-cover" />
+            </div>
+          )}
           <button
             type="button"
             onClick={() => pickImage(record, 'secondaryImage')}
@@ -326,6 +331,33 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
                     {isEn ? `Capacity: ${record.capacity}` : `Sức chứa: ${record.capacity} người`}
                   </span>
                 )}
+              </div>
+              <div className="relative">
+                <button
+                  type="button"
+                  onClick={() => setEditingCard({ type, id: String(record.id) })}
+                  aria-label={`${isEn ? 'Edit card' : 'Chỉnh sửa thẻ'}: ${record.name}`}
+                  className="block w-full aspect-[16/9] rounded-lg overflow-hidden bg-brand-navy-100 dark:bg-brand-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700"
+                >
+                  {record.image ? (
+                    <img src={record.image} alt={record.name} loading="lazy" className={`h-full w-full object-cover ${record.isVisible === false ? 'opacity-50 grayscale' : ''}`} />
+                  ) : (
+                    <span className="h-full w-full grid place-items-center text-xs text-brand-navy-400">{isEn ? 'No image set' : 'Chưa có ảnh'}</span>
+                  )}
+                </button>
+                {!isSports && record.secondaryImage && (
+                  <img src={record.secondaryImage} alt={`${record.name} (2)`} loading="lazy" className="absolute bottom-2 right-2 h-14 w-20 rounded-md object-cover border-2 border-white shadow" />
+                )}
+                {record.isVisible === false && (
+                  <span className="absolute top-2 left-2 rounded bg-brand-navy-900/80 px-2 py-0.5 text-[11px] font-semibold text-white">{isEn ? 'Hidden' : 'Đang ẩn'}</span>
+                )}
+                <button
+                  type="button"
+                  onClick={() => pickImage(record)}
+                  className="absolute top-2 right-2 rounded-md bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-brand-navy-800 shadow-sm hover:bg-white"
+                >
+                  {record.image ? (isEn ? 'Change image' : 'Đổi ảnh') : (isEn ? 'Add image' : 'Thêm ảnh')}
+                </button>
               </div>
               <button
                 type="button"

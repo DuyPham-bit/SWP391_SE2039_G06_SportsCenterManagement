@@ -5,6 +5,7 @@
  */
 
 import { apiRequest } from '../../../shared/api/http.js';
+import { pruneTranslations } from '../../../shared/i18n/landingTranslation.js';
 import { fixMojibake } from '../../../shared/lib/encodingHelper.js';
 
 const LEGACY_STORAGE_KEY = 'SCMS_DYNAMIC_LANDING_CONTENT_V1';
@@ -259,8 +260,14 @@ export function normalizeZaloPhone(value) {
   return /^(0\d{9}|\+84\d{9})$/.test(phone) ? phone.replace(/^\+84/, '0') : '';
 }
 
+/** Asks the backend (Gemini) for English versions of Vietnamese homepage texts, for the editor to review. */
+export async function translateLandingTexts(texts) {
+  const response = await apiRequest('landing-content/translate', { method: 'POST', body: { texts } });
+  return response?.translations && typeof response.translations === 'object' ? response.translations : {};
+}
+
 export async function saveLandingContent(content) {
-  const cleaned = fixMojibake(content);
+  const cleaned = pruneTranslations(fixMojibake(content));
   const footer = { ...cleaned.ctaAndFooter };
   const zaloValue = footer.contactZaloPhone ?? '';
   const zaloPhone = normalizeZaloPhone(zaloValue);

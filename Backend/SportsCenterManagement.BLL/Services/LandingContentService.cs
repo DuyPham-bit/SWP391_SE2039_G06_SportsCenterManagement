@@ -17,7 +17,12 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
     // Unpublished editor work, shared by every Manager/Admin and kept across devices.
     private const string DraftKey = "site.landing-content.draft";
     private static readonly string[] RequiredSections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter"];
-    private static readonly string[] Sections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter", "authShowcase"];
+    private static readonly string[] Sections = ["heroBanner", "whyUs", "coursesSection", "facilitiesSection", "zonesLayout", "ctaAndFooter", "authShowcase", TranslationsSection];
+    // English text for the language switch: { "<Vietnamese text>": "<English text>" }.
+    // Keyed by the Vietnamese source, so editing the Vietnamese text leaves it visibly untranslated
+    // instead of showing an English version of the old wording.
+    internal const string TranslationsSection = "translations";
+    internal const int MaxTranslations = 2000;
     private static readonly HashSet<string> ObjectArrays = ["metrics", "features", "stats", "sportsList", "facilitiesList", "zones", "serviceAmenities", "specs", "trustBadges"];
     private static readonly HashSet<string> TextArrays = ["tags", "badges", "amenities", "items"];
     private static readonly HashSet<string> Booleans = ["isVisible", "isAutoCount", "formatThousands"];
@@ -359,7 +364,8 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
         foreach (var section in content.EnumerateObject())
         {
             if (!Sections.Contains(section.Name)) throw InvalidContent();
-            ValidateObject(section.Value, 0);
+            if (section.Name == TranslationsSection) ValidateTranslations(section.Value);
+            else ValidateObject(section.Value, 0);
         }
     }
 
@@ -412,6 +418,17 @@ public sealed class LandingContentService(SportsCenterDbContext db, IConfigurati
                 if (!valid) throw InvalidContent();
             }
             else ValidateText(item, property.Name);
+        }
+    }
+
+    private static void ValidateTranslations(JsonElement value)
+    {
+        if (value.ValueKind != JsonValueKind.Object) throw InvalidContent();
+        var count = 0;
+        foreach (var entry in value.EnumerateObject())
+        {
+            if (++count > MaxTranslations || string.IsNullOrWhiteSpace(entry.Name) || entry.Name.Length > 10000 ||
+                entry.Value.ValueKind != JsonValueKind.String || entry.Value.GetString()!.Length > 10000) throw InvalidContent();
         }
     }
 

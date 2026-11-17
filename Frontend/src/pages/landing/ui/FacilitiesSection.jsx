@@ -7,74 +7,57 @@ import { getMembershipAction, getMembershipBanner, packageApi } from '../../../e
 import { safeHref } from '../../../shared/lib/safeUrl.js';
 import { useHorizontalCarousel } from '../model/useHorizontalCarousel.js';
 import { CarouselSideArrows } from './CarouselControls.jsx';
-import {
-  translateLandingContent,
-  translateFacilityName,
-  translateFacilityCategory,
-  translateFacilityBadge,
-  translateLocation,
-  translateFacilityHighlight,
-  translateFacilityDescription,
-  translateSpecLabel,
-  translateSpecValue,
-  translateAmenity,
-  translateMetricLabel,
-  translateMetricValue,
-  translateZoneName,
-  translateZoneItem,
-  translateCapacityString,
-  translateOpenHours
-} from '../../../shared/i18n/i18nHelper.js';
+import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
+import { translateLocation, translateCapacityString, translateOpenHours } from '../../../shared/i18n/i18nHelper.js';
+import { localizeLandingContent } from '../../../shared/i18n/landingTranslation.js';
 
+// Shown while the manager has not configured zones/amenities. Carries its own English so the
+// wording can stay plain without depending on the i18n dictionary's exact Vietnamese keys.
 const FALLBACK_CAMPUS_ZONES = [
   {
     id: 'zone-a',
-    name: 'Khu A: Bơi Lội, Gym & Fitness',
-    icon: 'pool',
-    items: [
-      'Tầng 1: Bể bơi 4 mùa 25m trong nhà nước ấm',
-      'Tầng 2: Phòng tập Gym & Fitness',
-      'Tầng 3: Khu thay đồ & tắm tráng nóng lạnh'
-    ]
+    name: 'Khu A: Bơi lội, Gym',
+    nameEn: 'Zone A: Swimming, gym',
+    items: ['Tầng 1: Hồ bơi bốn mùa 25 m', 'Tầng 2: Phòng gym', 'Tầng 3: Thay đồ, phòng tắm'],
+    itemsEn: ['Floor 1: 25 m all-season pool', 'Floor 2: Gym', 'Floor 3: Changing rooms, showers']
   },
   {
     id: 'zone-b',
-    name: 'Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn',
-    icon: 'sports_basketball',
-    items: [
-      'Tầng 1: Sân bóng rổ tiêu chuẩn phong trào có mái che',
-      'Tầng 2: Cụm 4 sân cầu lông thảm cao su chống trượt',
-      'Tầng 3: Khu bóng bàn trong nhà với 4 bàn tập'
-    ]
+    name: 'Khu B: Bóng rổ, Cầu lông, Bóng bàn',
+    nameEn: 'Zone B: Basketball, badminton, table tennis',
+    items: ['Tầng 1: Sân bóng rổ', 'Tầng 2: 4 sân cầu lông', 'Tầng 3: 4 bàn bóng bàn'],
+    itemsEn: ['Floor 1: Basketball court', 'Floor 2: 4 badminton courts', 'Floor 3: 4 table-tennis tables']
   },
   {
     id: 'zone-c',
-    name: 'Khu C: Võ Thuật, Boxing, Yoga & Pilates',
-    icon: 'self_improvement',
-    items: [
-      'Tầng 1: Phòng tập võ thuật & Boxing, thảm và bao cát',
-      'Tầng 3: Phòng tập Yoga & Pilates, khu thảm và máy Reformer',
-      'Tủ đồ cá nhân và khu thay đồ phục vụ học viên'
-    ]
+    name: 'Khu C: Võ thuật, Boxing, Yoga, Pilates',
+    nameEn: 'Zone C: Martial arts, boxing, yoga, pilates',
+    items: ['Tầng 1: Võ thuật và Boxing', 'Tầng 2: Thay đồ, tủ khóa', 'Tầng 3: Yoga và Pilates'],
+    itemsEn: ['Floor 1: Martial arts and boxing', 'Floor 2: Changing rooms, lockers', 'Floor 3: Yoga and pilates']
   },
   {
     id: 'zone-d',
-    name: 'Khu Ngoài Trời: Bóng Đá & Pickleball',
-    icon: 'stadium',
-    items: [
-      'Cụm sân bóng đá cỏ nhân tạo (sân 5 và sân 7)',
-      'Cụm 4 sân Pickleball, có lưới riêng và vạch khu vực bếp',
-      'Dàn đèn pha LED chiếu sáng ban đêm rõ nét'
-    ]
+    name: 'Ngoài trời: Bóng đá, Pickleball',
+    nameEn: 'Outdoor: Football, pickleball',
+    items: ['Sân bóng đá cỏ nhân tạo (sân 5 và sân 7)', '4 sân pickleball', 'Đèn chiếu sáng buổi tối'],
+    itemsEn: ['Artificial-turf football pitches (5- and 7-a-side)', '4 pickleball courts', 'Floodlights for evening play']
   }
 ];
 
 const FALLBACK_SERVICE_AMENITIES = [
-  { id: 'sa1', icon: 'lock', text: 'Tủ cất đồ cá nhân có chìa khóa an toàn, thuận tiện sử dụng' },
-  { id: 'sa2', icon: 'shower', text: 'Phòng thay đồ và khu vực tắm tráng nóng lạnh sạch sẽ' },
-  { id: 'sa3', icon: 'local_cafe', text: 'Quầy căn-tin nước giải khát, nước khoáng phục vụ nhanh' },
-  { id: 'sa4', icon: 'medical_services', text: 'Tủ thuốc y tế và dụng cụ sơ cứu ban đầu luôn sẵn sàng' }
+  { id: 'sa1', text: 'Tủ khóa cá nhân có chìa', textEn: 'Personal lockers with keys' },
+  { id: 'sa2', text: 'Phòng thay đồ, tắm nóng lạnh', textEn: 'Changing rooms with hot showers' },
+  { id: 'sa3', text: 'Căn tin nước uống', textEn: 'Drinks counter' },
+  { id: 'sa4', text: 'Tủ thuốc và dụng cụ sơ cứu', textEn: 'First-aid kit and medicine cabinet' }
 ];
+
+// Manager-entered labels are sometimes typed in all caps ("KHÔNG GIAN TẬP LUYỆN"); show them in sentence case.
+const calmCase = (text) => {
+  const value = String(text || '').trim();
+  if (!value || value !== value.toLocaleUpperCase('vi') || value === value.toLocaleLowerCase('vi')) return value;
+  const lower = value.toLocaleLowerCase('vi');
+  return lower.charAt(0).toLocaleUpperCase('vi') + lower.slice(1);
+};
 
 export function FacilitiesSection({ externalFacility = null, onModalClose = null } = {}) {
   const { isAuthenticated, role } = useAuth();
@@ -85,7 +68,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   const editorialContent = useLandingContent();
   const { catalog, loading: catalogLoading, error: catalogError } = usePublicCatalog();
   const rawLandingContent = getLandingPresentation(editorialContent, catalog);
-  const landingContent = useMemo(() => isEn ? translateLandingContent(rawLandingContent, true) : rawLandingContent, [rawLandingContent, isEn]);
+  const landingContent = useMemo(() => localizeLandingContent(rawLandingContent, isEn), [rawLandingContent, isEn]);
   const membershipBanner = getMembershipBanner(landingContent?.ctaAndFooter, isEn);
   const contactPhone = landingContent?.ctaAndFooter?.contactPhone || catalog?.center?.phone;
   const contactEmail = landingContent?.ctaAndFooter?.contactEmail || catalog?.center?.email;
@@ -103,9 +86,19 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
   // itself stays light; until then a static cover is shown.
   const [is3dRequested, setIs3dRequested] = useState(false);
   const [is3dFullscreen, setIs3dFullscreen] = useState(false);
-  const [activeZoneFilter, setActiveZoneFilter] = useState('all');
   const model3dContainerRef = useRef(null);
   const iframeRef = useRef(null);
+
+  // "Đăng ký tập" inside the 3D model: continue in the site's real flow (login or packages).
+  useEffect(() => {
+    const onMessage = (event) => {
+      if (event.source !== iframeRef.current?.contentWindow || event.data?.type !== 'OPEN_REGISTRATION') return;
+      if (document.fullscreenElement) document.exitFullscreen?.().catch(() => {});
+      window.location.assign(membershipAction.href);
+    };
+    window.addEventListener('message', onMessage);
+    return () => window.removeEventListener('message', onMessage);
+  }, [membershipAction.href]);
 
   // Pause the scene's render loop while the model is scrolled out of view, resume when it returns.
   useEffect(() => {
@@ -156,29 +149,26 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     };
   }, []);
 
-  const handleZoneSelect = (zoneId) => {
-    setActiveZoneFilter(zoneId);
-    setIs3dRequested(true);
-    if (directoryViewMode !== '3d') {
-      setDirectoryViewMode('3d');
-    }
-    if (iframeRef.current && iframeRef.current.contentWindow) {
-      if (zoneId === 'all') {
-        iframeRef.current.contentWindow.postMessage({ type: 'RESET_VIEW' }, '*');
-      } else {
-        iframeRef.current.contentWindow.postMessage({ type: 'FOCUS_ZONE', zoneId }, '*');
-      }
-    }
+  // Zone navigation lives inside the 3D model (its bottom bar); the site-plan cards only jump there.
+  // A zone chosen before the model has loaded is kept and sent as soon as it is ready.
+  const pendingZoneRef = useRef(null);
+  const sendZone = (zoneId) => {
+    const target = iframeRef.current?.contentWindow;
+    if (!target || is3dLoading) { pendingZoneRef.current = zoneId; return; }
+    target.postMessage(zoneId === 'all' ? { type: 'RESET_VIEW' } : { type: 'FOCUS_ZONE', zoneId }, '*');
   };
-
-  const quickZones = useMemo(() => [
-    { id: 'all', label: isEn ? 'Whole campus' : 'Toàn cảnh', icon: 'domain' },
-    { id: 'khuA', label: isEn ? 'Zone A: Pool, gym' : 'Khu A: Bơi, gym', icon: 'pool' },
-    { id: 'khuB', label: isEn ? 'Zone B: Basketball, badminton' : 'Khu B: Bóng rổ, cầu lông', icon: 'sports_basketball' },
-    { id: 'khuC', label: isEn ? 'Zone C: Martial arts, yoga' : 'Khu C: Võ thuật, yoga', icon: 'self_improvement' },
-    { id: 'outdoor', label: isEn ? 'Outdoor: Football, pickleball' : 'Ngoài trời: Bóng đá, pickleball', icon: 'stadium' },
-    { id: 'lobby', label: isEn ? 'Reception, clinic' : 'Lễ tân, y tế', icon: 'local_convenience_store' },
-  ], [isEn]);
+  const handleZoneSelect = (zoneId) => {
+    setIs3dRequested(true);
+    if (directoryViewMode !== '3d') setDirectoryViewMode('3d');
+    sendZone(zoneId);
+  };
+  const handle3dLoaded = () => {
+    setIs3dLoading(false);
+    const zoneId = pendingZoneRef.current;
+    pendingZoneRef.current = null;
+    if (zoneId) iframeRef.current?.contentWindow?.postMessage(
+      zoneId === 'all' ? { type: 'RESET_VIEW' } : { type: 'FOCUS_ZONE', zoneId }, '*');
+  };
 
   useEffect(() => {
     let active = true;
@@ -242,7 +232,9 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
     { id: 'all', label: isEn ? 'ALL' : 'TẤT CẢ', count: visibleFacilities.length, icon: 'grid_view' },
     ...[...new Set(visibleFacilities.map(f => f.category).filter(Boolean))].map(category => {
       const sample = visibleFacilities.find(f => f.category === category);
-      const rawLabel = sample?.categoryName || category;
+      // Group chips by category code; the shared category name ("Thể thao") would label several chips alike.
+      const config = SPORT_CATEGORY_CONFIG[category];
+      const rawLabel = config ? (isEn ? config.labelEn : config.label) : (sample?.categoryName || category);
       const icon = category === 'golf' ? 'golf_course'
         : category === 'aquatics' || category === 'pool' ? 'pool'
         : category === 'fitness' ? 'fitness_center'
@@ -251,7 +243,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         : 'stadium';
       return {
         id: category,
-        label: (isEn ? translateFacilityCategory(rawLabel, true) : rawLabel).toUpperCase(),
+        label: String(rawLabel).toUpperCase(),
         count: visibleFacilities.filter(f => f.category === category).length,
         icon
       };
@@ -323,19 +315,19 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
       : name.includes('cầu lông') ? 'sports_tennis'
       : 'stadium';
     return {
-      label: (isEn ? translateFacilityCategory(fac.categoryName || fac.category || 'Phòng / sân', true) : (fac.categoryName || 'Phòng / sân')).toUpperCase(),
+      label: (fac.categoryName || (isEn ? 'Room / court' : 'Phòng / sân')).toUpperCase(),
       icon
     };
   };
 
   const renderFacilityCard = (fac, isCarousel = false) => {
     const catMeta = getFacilityCategoryMeta(fac);
-    const highlightSpec = isEn ? translateCapacityString(fac.capacity, true) : (fac.capacity || (isEn ? 'Not updated' : 'Chưa cập nhật'));
+    const highlightSpec = fac.capacity ? (isEn ? translateCapacityString(fac.capacity, true) : fac.capacity) : (isEn ? 'Not updated' : 'Chưa cập nhật');
     const displayHours = fac.openHours ? (isEn ? translateOpenHours(fac.openHours, true) : fac.openHours.replace('hàng ngày', '').trim()) : (isEn ? 'Not updated' : 'Chưa cập nhật');
-    const displayName = isEn ? translateFacilityName(fac.name, true) : fac.name;
+    const displayName = fac.name;
     const displayLocation = isEn ? translateLocation(fac.location, true) : fac.location;
-    const displayBadge = isEn ? translateFacilityBadge(fac.badge, true) : (fac.badge || '');
-    const displayHighlight = isEn ? (translateFacilityHighlight(fac.highlights, true) || translateFacilityDescription(fac.description, true)) : (fac.highlights || fac.description);
+    const displayBadge = fac.badge || '';
+    const displayHighlight = fac.highlights || fac.description;
     const displayPrice = isEn ? 'Included in Packages' : 'Bao gồm trong gói tập';
 
     return (
@@ -438,15 +430,13 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         <div className="text-center max-w-3xl mx-auto mb-12 tiya-reveal">
           <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-[rgba(129,178,154,0.15)] text-[var(--primary-color)] text-xs font-sans font-bold uppercase tracking-widest mb-4 border border-[rgba(129,178,154,0.4)]">
             <span className="w-2 h-2 rounded-full bg-[var(--primary-color)] animate-pulse" />
-            {isEn ? 'STANDARD ATHLETIC INFRASTRUCTURE' : (landingContent.facilitiesSection?.badge || 'HẠ TẦNG THỂ THAO TIÊU CHUẨN')}
+            {landingContent.facilitiesSection?.badge || (isEn ? 'ROOMS AND COURTS' : 'PHÒNG VÀ SÂN TẬP')}
           </div>
           <h2 className="font-sans text-3xl sm:text-4xl lg:text-5xl font-bold uppercase text-slate-900 tracking-tight leading-tight">
-            {isEn ? 'MODERN & QUALITY OLYMPIC FACILITY COMPLEX' : (landingContent.facilitiesSection?.title || 'HỆ THỐNG CƠ SỞ VẬT CHẤT TIỆN NGHI & CHẤT LƯỢNG')}
+            {landingContent.facilitiesSection?.title || (isEn ? 'Facilities' : 'Cơ sở vật chất')}
           </h2>
           <p className="font-sans text-brand-navy-600 text-sm sm:text-base mt-4 leading-relaxed">
-            {isEn
-              ? 'Spacious, clean, and modern athletic complex featuring 9 courts and training studios for Swimming, Gym & Fitness, Yoga & Pilates, Martial Arts & Boxing, Football, Badminton, Basketball, Table Tennis, and Pickleball. Catering to fitness, club activities, and friendly tournaments.'
-              : (landingContent.facilitiesSection?.description || '')}
+            {landingContent.facilitiesSection?.description || ''}
           </p>
         </div>
 
@@ -467,8 +457,8 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                   <span className="material-symbols-outlined text-[28px]">{metric.icon || 'domain'}</span>
                 </div>
                 <div className="min-w-0">
-                  <div className="font-sans text-2xl sm:text-3xl font-bold text-slate-900 break-words">{isEn ? translateMetricValue(metric.value, true) : metric.value}</div>
-                  <div className="text-[11px] sm:text-xs text-slate-500 font-semibold uppercase tracking-wide sm:tracking-wider mt-0.5 break-words">{isEn ? translateMetricLabel(metric.label, true) : metric.label}</div>
+                  <div className="font-sans text-2xl sm:text-3xl font-bold text-slate-900 break-words">{metric.value}</div>
+                  <div className="text-[11px] sm:text-xs text-slate-500 font-semibold uppercase tracking-wide sm:tracking-wider mt-0.5 break-words">{metric.label}</div>
                 </div>
               </div>
             );
@@ -587,139 +577,72 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
           </div>
         )}
 
-        {/* CAMPUS 3D ARCHITECTURE & ZONE SHOWCASE (MÔ HÌNH 3D TỔ HỢP THỂ THAO ĐA NĂNG 13.000M²) */}
-        <div ref={model3dContainerRef} className="tiya-campus-3d-showcase tiya-reveal--scale relative mb-12 rounded-3xl overflow-hidden bg-[#141622] border border-white/10 shadow-[0_25px_60px_-15px_rgba(0,0,0,0.7)]">
-          <div className="pointer-events-none absolute -right-20 -bottom-20 w-96 h-96 rounded-full bg-[var(--primary-color)]/10 blur-3xl" />
-
-          {/* Top Control Header */}
-          <div className="relative z-10 px-4 py-3.5 sm:px-6 sm:py-4.5 border-b border-white/10 flex flex-wrap items-center justify-between gap-3 bg-[#1A1D2E]/95 backdrop-blur-md">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-xl bg-[#CDBDA6]/20 border border-[#CDBDA6]/40 flex items-center justify-center text-[#E6D7C3] shrink-0 shadow-sm">
-                <span className="material-symbols-outlined text-[22px] sm:text-[24px]">view_in_ar</span>
-              </div>
-              <div className="min-w-0">
-                <div className="flex items-center gap-2 flex-wrap mb-1">
-                  <span className="tiya-campus-3d-badge text-[10px] uppercase tracking-wider font-extrabold text-[#E6D7C3]">
-                    {isEn ? 'Campus map' : (landingContent?.zonesLayout?.badge || 'Sơ đồ khuôn viên')}
-                  </span>
-                  <span className="tiya-campus-3d-tag text-[10px] px-2 py-0.5 rounded-full font-bold whitespace-nowrap">
-                    13.000 m²
-                  </span>
-                </div>
-                <h3 className="tiya-campus-3d-title text-base sm:text-xl font-extrabold tracking-tight leading-snug truncate" style={{ color: '#FFFFFF', textShadow: '0 2px 8px rgba(0,0,0,0.7)' }}>
-                  {isEn ? 'Explore the training areas in 3D' : (landingContent?.zonesLayout?.title || 'Xem các khu tập trên mô hình 3D')}
-                </h3>
-              </div>
+        {/* Training areas: 3D campus model and site plan */}
+        <div ref={model3dContainerRef} className="tiya-reveal--scale mb-12 rounded-2xl border border-slate-200 bg-white shadow-sm overflow-hidden">
+          <div className="px-5 py-4 sm:px-6 sm:py-5 border-b border-slate-200 flex flex-wrap items-end justify-between gap-4">
+            <div className="min-w-0">
+              <p className="text-xs font-medium text-slate-500">
+                {`${calmCase(landingContent?.zonesLayout?.badge) || (isEn ? 'Campus map' : 'Sơ đồ khuôn viên')} · ${isEn ? '13,000' : '13.000'} m²`}
+              </p>
+              <h3 className="mt-1 text-lg sm:text-xl font-semibold text-brand-navy-900 tracking-tight">
+                {landingContent?.zonesLayout?.title || (isEn ? 'Training areas' : 'Khu vực tập luyện')}
+              </h3>
             </div>
 
-            {/* View Mode Switcher & Fullscreen Action */}
-            <div className="flex items-center gap-2 sm:gap-2.5 ml-auto shrink-0">
-              <div className="bg-[#0D0F18] p-1 rounded-xl border border-white/20 flex items-center gap-1 shadow-inner">
-                <button
-                  type="button"
-                  onClick={() => setDirectoryViewMode('3d')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                    directoryViewMode === '3d'
-                      ? 'bg-[#CDBDA6] text-[#141622] font-black shadow-md'
-                      : 'text-slate-200 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">3d_rotation</span>
-                  <span className="hidden sm:inline">{isEn ? '3D model' : 'Mô hình 3D'}</span>
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setDirectoryViewMode('2d')}
-                  className={`px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1.5 ${
-                    directoryViewMode === '2d'
-                      ? 'bg-[#CDBDA6] text-[#141622] font-black shadow-md'
-                      : 'text-slate-200 hover:text-white hover:bg-white/10'
-                  }`}
-                >
-                  <span className="material-symbols-outlined text-[16px]">grid_view</span>
-                  <span className="hidden sm:inline">{isEn ? '2D map' : 'Sơ đồ 2D'}</span>
-                </button>
+            <div className="flex flex-wrap items-center gap-2 sm:gap-3">
+              <div className="inline-flex rounded-lg border border-slate-200 p-0.5 bg-slate-50" role="tablist" aria-label={isEn ? 'View' : 'Chế độ xem'}>
+                {[
+                  { id: '3d', label: isEn ? '3D model' : 'Mô hình 3D' },
+                  { id: '2d', label: isEn ? 'Site plan' : 'Sơ đồ' }
+                ].map(mode => (
+                  <button
+                    key={mode.id}
+                    type="button"
+                    role="tab"
+                    aria-selected={directoryViewMode === mode.id}
+                    onClick={() => setDirectoryViewMode(mode.id)}
+                    className={`px-3.5 py-1.5 rounded-md text-xs font-semibold transition ${
+                      directoryViewMode === mode.id ? 'bg-white text-brand-navy-900 shadow-sm' : 'text-slate-500 hover:text-brand-navy-900'
+                    }`}
+                  >
+                    {mode.label}
+                  </button>
+                ))}
               </div>
-
-              <button
-                type="button"
-                onClick={toggle3dFullscreen}
-                className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-white flex items-center gap-1.5 transition active:scale-95 shadow-sm"
-                title={is3dFullscreen ? (isEn ? 'Exit Fullscreen' : 'Thu nhỏ') : (isEn ? 'Fullscreen 3D' : 'Toàn màn hình')}
-              >
-                <span className="material-symbols-outlined text-[18px]">
-                  {is3dFullscreen ? 'fullscreen_exit' : 'fullscreen'}
-                </span>
-                <span className="hidden md:inline">{is3dFullscreen ? (isEn ? 'Exit' : 'Thu nhỏ') : (isEn ? 'Fullscreen' : 'Toàn màn hình')}</span>
+              <button type="button" onClick={toggle3dFullscreen} className="text-xs font-semibold text-slate-600 hover:text-brand-navy-900 transition">
+                {is3dFullscreen ? (isEn ? 'Exit full screen' : 'Thoát toàn màn hình') : (isEn ? 'Full screen' : 'Toàn màn hình')}
               </button>
-
-              <a
-                href={model3dUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="px-3 py-2 rounded-xl bg-white/10 hover:bg-white/20 border border-white/20 text-xs font-bold text-[#E6D7C3] hover:text-white flex items-center gap-1.5 transition active:scale-95 shadow-sm"
-                title={isEn ? 'Open in a new tab' : 'Mở trong tab mới'}
-              >
-                <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                <span className="hidden md:inline">{isEn ? 'New Tab' : 'Tab mới'}</span>
+              <a href={model3dUrl} target="_blank" rel="noopener noreferrer" className="hidden sm:inline text-xs font-semibold text-slate-600 hover:text-brand-navy-900 transition">
+                {isEn ? 'Open in new tab' : 'Mở tab mới'}
               </a>
             </div>
           </div>
 
-          {/* Mode 1: 3D Interactive Model View */}
           {directoryViewMode === '3d' && (
-            <div className="relative flex flex-col">
-              {/* Quick Jump Zone Pills */}
-              <div className="relative z-10 px-4 py-2.5 bg-[#0F111D] border-b border-white/10 flex items-center gap-2 overflow-x-auto no-scrollbar">
-                <span className="text-[11px] font-black text-[#E6D7C3] uppercase tracking-wider mr-1 flex items-center gap-1 shrink-0">
-                  <span className="material-symbols-outlined text-[15px] text-[#CDBDA6]">explore</span>
-                  <span>{isEn ? 'Go to:' : 'Xem khu:'}</span>
-                </span>
-                {quickZones.map(qz => (
-                  <button
-                    key={qz.id}
-                    type="button"
-                    onClick={() => handleZoneSelect(qz.id)}
-                    className={`tiya-campus-3d-pill px-3 py-1.5 rounded-xl text-xs whitespace-nowrap transition-all flex items-center gap-1.5 shrink-0 ${
-                      activeZoneFilter === qz.id
-                        ? 'active'
-                        : 'inactive'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[16px]">{qz.icon}</span>
-                    <span>{qz.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              {/* Viewport for 3D Iframe */}
-              <div className="tiya-3d-viewport relative w-full h-[540px] sm:h-[620px] lg:h-[700px] bg-[#141622]">
+            <div>
+              <div className="relative w-full h-[480px] sm:h-[580px] lg:h-[640px] bg-[#141622]">
                 {!is3dRequested ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6 bg-[radial-gradient(ellipse_at_center,#232741_0%,#141622_70%)]">
-                    <span className="material-symbols-outlined text-[56px] text-[#CDBDA6] mb-3" aria-hidden="true">view_in_ar</span>
-                    <p className="text-sm sm:text-base font-bold text-white mb-1">
-                      {isEn ? 'See the whole campus in 3D' : 'Xem toàn bộ khuôn viên trên mô hình 3D'}
+                  <div className="absolute inset-0 flex flex-col items-center justify-center text-center p-6">
+                    <p className="text-base sm:text-lg font-semibold text-white">
+                      {isEn ? 'Explore the campus in 3D' : 'Xem khuôn viên trên mô hình 3D'}
                     </p>
-                    <p className="text-xs text-slate-400 max-w-sm mb-5">
-                      {isEn ? 'Rotate, zoom and open each building floor by floor.' : 'Xoay, phóng to và xem từng tầng của mỗi tòa nhà.'}
+                    <p className="mt-1.5 text-sm text-slate-400 max-w-md text-balance">
+                      {isEn ? 'Rotate, zoom and look inside each building floor by floor.' : 'Xoay, phóng to và xem bên trong từng tầng của mỗi tòa nhà.'}
                     </p>
                     <button
                       type="button"
                       onClick={() => setIs3dRequested(true)}
-                      className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#CDBDA6] text-[#141622] text-sm font-extrabold hover:bg-[#dfd3bc] transition shadow-md active:scale-95"
+                      className="mt-5 px-5 py-2.5 rounded-lg bg-white text-brand-navy-900 text-sm font-semibold hover:bg-slate-100 transition"
                     >
-                      <span className="material-symbols-outlined text-[18px]" aria-hidden="true">3d_rotation</span>
                       {isEn ? 'View 3D model' : 'Xem mô hình 3D'}
                     </button>
                   </div>
                 ) : (
                   <>
                     {is3dLoading && (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center bg-[#141622] z-10 text-center p-6">
-                        <div className="w-10 h-10 sm:w-12 sm:h-12 border-3 border-[#CDBDA6]/30 border-t-[#CDBDA6] rounded-full animate-spin mb-4" />
-                        <p className="text-xs sm:text-sm font-bold text-[#F7F5F0]">
-                          {isEn ? 'Loading the 3D model…' : 'Đang tải mô hình 3D…'}
-                        </p>
+                      <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-[#141622] text-center p-6">
+                        <div className="w-8 h-8 border-2 border-white/20 border-t-white rounded-full animate-spin mb-3" aria-hidden="true" />
+                        <p className="text-sm text-slate-300">{isEn ? 'Loading the 3D model…' : 'Đang tải mô hình 3D…'}</p>
                       </div>
                     )}
                     <iframe
@@ -727,7 +650,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                       ref={iframeRef}
                       src={model3dUrl}
                       title={isEn ? '3D campus model' : 'Mô hình 3D khuôn viên'}
-                      onLoad={() => setIs3dLoading(false)}
+                      onLoad={handle3dLoaded}
                       className="w-full h-full border-0 block"
                       allow="fullscreen"
                     />
@@ -735,86 +658,54 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 )}
               </div>
 
-              {/* Interactive Help Footer Bar */}
-              <div className="px-4 py-2.5 bg-[#1A1D2E]/90 border-t border-white/5 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
-                <div className="flex items-center gap-2">
-                  <span className="material-symbols-outlined text-emerald-400 text-[16px]">touch_app</span>
-                  <span>
-                    {isEn
-                      ? 'Drag to rotate, scroll or pinch to zoom, click a building to see each floor.'
-                      : 'Kéo để xoay, cuộn hoặc chụm hai ngón để phóng to, bấm vào tòa nhà để xem từng tầng.'}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={toggle3dFullscreen}
-                  className="text-[#CDBDA6] hover:underline font-semibold ml-auto hidden sm:inline"
-                >
-                  {isEn ? 'View full screen' : 'Xem toàn màn hình'}
-                </button>
-              </div>
+              <p className="px-5 sm:px-6 py-3 border-t border-slate-200 text-xs text-slate-500">
+                {isEn
+                  ? 'Drag to rotate, scroll or pinch to zoom, click a building to see each floor.'
+                  : 'Kéo để xoay, cuộn hoặc chụm hai ngón để phóng to, bấm vào tòa nhà để xem từng tầng.'}
+              </p>
             </div>
           )}
 
-          {/* Mode 2: 2D Directory & Amenities Map */}
           {directoryViewMode === '2d' && (
-            <div className="p-6 sm:p-10 relative z-10">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-center">
-                <div className="lg:col-span-5">
-                  <p className="tiya-campus-directory__desc">
-                    {isEn
-                      ? '9 neatly planned courts and training studios with open corridors, clear navigation signs, and dedicated front desks for seamless booking in person or online.'
-                      : (landingContent.zonesLayout?.description || '')}
-                  </p>
-
-                  {/* Added Service Amenities */}
-                  <div className="space-y-2.5">
-                    {((landingContent?.zonesLayout?.serviceAmenities?.length ? landingContent.zonesLayout.serviceAmenities : FALLBACK_SERVICE_AMENITIES) || []).map((amenity, idx) => (
-                      <div key={amenity.id || idx} className="tiya-campus-amenity-item">
-                        <span className="material-symbols-outlined">{amenity.icon}</span>
-                        <span>{isEn ? translateAmenity(amenity.text, true) : amenity.text}</span>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="pt-4">
-                    <button
-                      type="button"
-                      onClick={() => { setDirectoryViewMode('3d'); setIs3dRequested(true); }}
-                      className="flex sm:inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#CDBDA6] text-[#141622] text-xs font-extrabold hover:bg-[#dfd3bc] transition shadow-md w-full sm:w-auto active:scale-95"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">3d_rotation</span>
-                      <span>{isEn ? 'View 3D model' : 'Xem mô hình 3D'}</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* 4 Zones Map Columns */}
-                <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-                  {((landingContent?.zonesLayout?.zones?.length ? landingContent.zonesLayout.zones : FALLBACK_CAMPUS_ZONES) || []).map((zone, idx) => (
-                    <div
-                      key={zone.id || idx}
-                      onClick={() => handleZoneSelect(zone.id === 'zone-a' ? 'khuA' : zone.id === 'zone-b' ? 'khuB' : zone.id === 'zone-c' ? 'khuC' : 'outdoor')}
-                      className="tiya-zone-card cursor-pointer group hover:border-[#CDBDA6]/40"
-                      title={isEn ? 'Click to inspect in 3D' : 'Bấm để xem trên mô hình 3D'}
-                    >
-                      <div className="tiya-zone-card__header flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>{zone.icon}</span>
-                          <span>{isEn ? translateZoneName(zone.name, true) : zone.name}</span>
-                        </div>
-                        <span className="material-symbols-outlined text-[16px] text-[#CDBDA6] opacity-0 group-hover:opacity-100 transition-opacity">
-                          view_in_ar
-                        </span>
-                      </div>
-                      <ul className="tiya-zone-card__list">
-                        {(zone.items || []).map((item, itemIdx) => (
-                          <li key={itemIdx}>• {isEn ? translateZoneItem(item, true) : item}</li>
-                        ))}
-                      </ul>
-                    </div>
+            <div className="p-5 sm:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+              <div className="lg:col-span-4">
+                <p className="text-sm text-slate-600 leading-relaxed">
+                  {landingContent.zonesLayout?.description || (isEn
+                    ? 'Courts and studios are grouped by zone, with clear walkways and signs. Reception helps with sign-up and bookings at the desk or online.'
+                    : 'Các phòng tập và sân được chia theo khu, có lối đi và biển chỉ dẫn rõ ràng. Lễ tân hỗ trợ đăng ký và đặt lịch tại quầy hoặc trên website.')}
+                </p>
+                <p className="mt-6 text-sm font-semibold text-brand-navy-900">{isEn ? 'Shared amenities' : 'Tiện ích chung'}</p>
+                <ul className="mt-2 divide-y divide-slate-200 border-y border-slate-200 text-sm text-slate-600">
+                  {((landingContent?.zonesLayout?.serviceAmenities?.length ? landingContent.zonesLayout.serviceAmenities : FALLBACK_SERVICE_AMENITIES) || []).map((amenity, idx) => (
+                    <li key={amenity.id || idx} className="py-2.5">{isEn && amenity.textEn ? amenity.textEn : amenity.text}</li>
                   ))}
-                </div>
+                </ul>
+                <button
+                  type="button"
+                  onClick={() => { setDirectoryViewMode('3d'); setIs3dRequested(true); }}
+                  className="mt-6 px-4 py-2.5 rounded-lg bg-brand-navy-900 text-white text-sm font-semibold hover:bg-brand-navy-800 transition"
+                >
+                  {isEn ? 'View 3D model' : 'Xem mô hình 3D'}
+                </button>
+              </div>
+
+              <div className="lg:col-span-8 grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {((landingContent?.zonesLayout?.zones?.length ? landingContent.zonesLayout.zones : FALLBACK_CAMPUS_ZONES) || []).map((zone, idx) => (
+                  <button
+                    key={zone.id || idx}
+                    type="button"
+                    onClick={() => handleZoneSelect(zone.id === 'zone-a' ? 'khuA' : zone.id === 'zone-b' ? 'khuB' : zone.id === 'zone-c' ? 'khuC' : 'outdoor')}
+                    className="text-left rounded-xl border border-slate-200 p-4 hover:border-slate-400 transition"
+                    title={isEn ? 'Show on the 3D model' : 'Xem trên mô hình 3D'}
+                  >
+                    <span className="block text-sm font-semibold text-brand-navy-900">{isEn && zone.nameEn ? zone.nameEn : zone.name}</span>
+                    <ul className="mt-2 space-y-1 text-sm text-slate-600 list-disc pl-4">
+                      {(zone.items || []).map((item, itemIdx) => (
+                        <li key={itemIdx}>{isEn && zone.itemsEn?.[itemIdx] ? zone.itemsEn[itemIdx] : item}</li>
+                      ))}
+                    </ul>
+                  </button>
+                ))}
               </div>
             </div>
           )}
@@ -874,10 +765,10 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                 </div>
                 <div>
                   <span className="tiya-modal-header__badge">
-                    {isEn ? translateLocation(selectedFacility.location, true) : selectedFacility.location} • {isEn ? translateFacilityBadge(selectedFacility.badge, true) : (selectedFacility.badge || '')}
+                    {isEn ? translateLocation(selectedFacility.location, true) : selectedFacility.location} • {selectedFacility.badge || ''}
                   </span>
                   <h3 className="tiya-modal-title">
-                    {isEn ? translateFacilityName(selectedFacility.name, true) : selectedFacility.name}
+                    {selectedFacility.name}
                   </h3>
                 </div>
               </div>
@@ -933,8 +824,8 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                     <div className="tiya-spec-grid">
                       {selectedFacility.specs.map((spec, sIdx) => (
                         <div key={sIdx} className="tiya-spec-item">
-                          <span className="tiya-spec-item__label">{isEn ? translateSpecLabel(spec.label, true) : spec.label}</span>
-                          <strong className="tiya-spec-item__val">{isEn ? translateSpecValue(spec.value, true) : spec.value}</strong>
+                          <span className="tiya-spec-item__label">{spec.label}</span>
+                          <strong className="tiya-spec-item__val">{spec.value}</strong>
                         </div>
                       ))}
                     </div>
@@ -949,7 +840,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                       {selectedFacility.amenities.map((amenity, aIdx) => (
                         <div key={aIdx} className="tiya-amenity-item">
                           <span className="material-symbols-outlined">done</span>
-                          <span>{isEn ? translateAmenity(amenity, true) : amenity}</span>
+                          <span>{amenity}</span>
                         </div>
                       ))}
                     </div>
@@ -971,7 +862,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                       style={{ width: '100%', height: '240px', objectFit: 'cover', display: 'block' }}
                     /> : <p className="p-12 text-center text-slate-500">{isEn ? 'No venue photo available.' : 'Chưa có ảnh phòng / sân.'}</p>}
                     <div style={{ padding: '12px 18px', background: 'var(--secondary-color)', color: 'var(--white-color)', fontSize: '12.5px', fontWeight: 600, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                      <span>{isEn ? `Panoramic View — ${isEn ? translateFacilityName(selectedFacility.name, true) : selectedFacility.name}` : `Góc máy toàn cảnh — ${selectedFacility.name}`}</span>
+                      <span>{isEn ? `Panoramic view: ${selectedFacility.name}` : `Góc máy toàn cảnh — ${selectedFacility.name}`}</span>
                       <span style={{ color: 'var(--custom-btn-bg-color)', fontSize: '11px', fontWeight: 700, textTransform: 'uppercase' }}>{isEn ? translateLocation(selectedFacility.location, true) : selectedFacility.location}</span>
                     </div>
                   </div>
@@ -1004,7 +895,7 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
                       <div>
                         <div className="flex flex-wrap items-center gap-2 mb-0.5">
                           <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded bg-emerald-100 text-emerald-800">
-                            {isEn ? translateFacilityBadge(selectedFacility.badge, true) : (selectedFacility.badge || 'Sân bãi tiêu chuẩn')}
+                            {selectedFacility.badge || (isEn ? 'Standard court' : 'Sân bãi tiêu chuẩn')}
                           </span>
                           <span className="text-xs font-semibold text-slate-500">
                             ⏱ {selectedFacility.openHours || '06:00 - 22:00'} • 👥 {selectedFacility.capacity || (isEn ? '30 slots' : 'Sức chứa tiêu chuẩn')}
