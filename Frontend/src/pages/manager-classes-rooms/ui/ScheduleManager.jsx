@@ -2,6 +2,11 @@ import React from 'react';
 import { CLASS_STATUS, WEEK_DAYS, effectiveScheduleRoom, groupSchedulesByDay, filterRoomsForSport } from '../model/classManagementView.js';
 import { todayDate, futureDate, addMinutesToTime, getTimePeriodInfo, timeValue } from '../lib/scheduleTime.js';
 import { Icon } from './Icon.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 export function ScheduleManager({
   row,
@@ -130,29 +135,14 @@ export function ScheduleManager({
 
   return (
     <div className="space-y-4">
-      {/* 1. Class Header Summary Banner - Matched exactly to Image 2 (MemberManagement banner) */}
-      <div
-        className="relative overflow-hidden rounded-2xl text-white p-5 sm:p-6 shadow-xl shadow-brand-teal-600/20 border border-white/20"
-        style={{
-          background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 25%, #3FAEB8 48%, #81B29A 70%, #E5A33C 88%, #E5A33C 100%)'
-        }}
-      >
-        {/* Dynamic ambient glow & sports wave overlays matching Image 2 */}
-        <div className="pointer-events-none absolute -right-12 -top-12 w-64 h-64 rounded-full bg-gradient-to-br from-brand-sand-300/50 via-brand-sand-500/35 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-12 -left-12 w-64 h-64 rounded-full bg-gradient-to-tr from-brand-sage-500/45 via-brand-sage-700/30 to-transparent blur-3xl" />
-
-        {/* Subtle decorative Olympic curved motion lines from Image 2 */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
-        </svg>
+      {/* 1. Class Header Summary Banner */}
+      <div className={`${SCMS_HERO_SECTION_CLASS} !rounded-2xl !p-5 sm:!p-6`}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div className="space-y-1.5">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/95 text-brand-sage-900 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs">
-              <span className="w-2.5 h-2.5 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
+            <div className={SCMS_HERO_BADGE_CLASS}>
+              <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
               <span>{isEn ? 'Class Schedule Operations' : 'Quản trị lịch học SCMS'}</span>
             </div>
 
@@ -594,10 +584,7 @@ export function ScheduleManager({
                 <button
                   type="submit"
                   disabled={busy}
-                  className="w-full inline-flex items-center justify-center gap-1.5 py-2 px-4 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
-                  style={{
-                    background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 35%, #3FAEB8 65%, #E5A33C 100%)'
-                  }}
+                  className="scms-shine w-full inline-flex items-center justify-center gap-1.5 py-2 px-4 bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 to-brand-sand-500 hover:brightness-105 text-white text-xs font-black rounded-xl shadow-md transition-all active:scale-[0.98] disabled:opacity-50 cursor-pointer"
                 >
                   <span className="material-symbols-outlined text-[16px]">
                     {editingScheduleId ? 'save' : 'bolt'}

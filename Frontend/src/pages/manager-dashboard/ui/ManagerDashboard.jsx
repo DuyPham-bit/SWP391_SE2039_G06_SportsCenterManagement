@@ -4,6 +4,12 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { reportApi } from '../../../entities/report/index.js';
 import { systemApi } from '../../../entities/permission/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_BTN_DARK,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import {
   MiniSparkline,
@@ -409,26 +415,20 @@ export function ManagerDashboard() {
 
   return (
     <div className="space-y-5 animate-fade-slide-up pb-8">
-      {/* 1. TOP MINIMALIST BREADCRUMB & CONTROLS */}
-      <section className="scms-hero relative overflow-hidden rounded-3xl bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 via-brand-teal-500 to-brand-sand-500 dark:from-brand-sage-900 dark:via-brand-teal-900 dark:via-brand-teal-800 dark:to-brand-sand-900 text-white p-6 sm:p-8 shadow-xl shadow-brand-teal-600/20 border border-white/30 dark:border-white/10">
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/45 via-brand-sand-500/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-brand-sage-500/40 via-brand-sage-700/30 to-transparent blur-3xl" />
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-15 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-        </svg>
+      {/* 1. TOP EXECUTIVE HERO & CONTROLS */}
+      <section className={`${SCMS_HERO_SECTION_CLASS} sm:p-8`}>
+        <ScmsHeroDecor />
 
       <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
         <div>
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/95 text-brand-sage-900 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs mb-2">
-            <span className="w-2.5 h-2.5 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
+          <div className={`${SCMS_HERO_BADGE_CLASS} mb-2`}>
+            <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
             <span>{isEn ? 'Executive Workspace · Olympic SCMS' : 'Phân hệ Điều hành · Olympic SCMS'}</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-black font-chivo tracking-tight text-white leading-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
             {isEn ? 'Executive Dashboard' : 'Bảng Điều Hành Trung Tâm'}
           </h1>
-          <p className="mt-1.5 text-xs sm:text-sm text-white/90 max-w-2xl font-medium drop-shadow-sm">
+          <p className="mt-1.5 text-xs sm:text-sm text-white/95 max-w-2xl font-medium drop-shadow-xs">
             {isEn
               ? 'Revenue, members, classes and coach performance of Olympic Sports Arena at a glance.'
               : 'Theo dõi doanh thu, hội viên, lớp học và hiệu suất HLV của Olympic Sports Arena trên một màn hình.'}
@@ -452,8 +452,8 @@ export function ManagerDashboard() {
                   onClick={() => setPeriod(p.id)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
                     active
-                      ? 'bg-white text-brand-sage-900 shadow-xs'
-                      : 'text-white/85 hover:text-white hover:bg-white/15'
+                      ? 'bg-white text-brand-navy-950 shadow-xs'
+                      : 'text-white/90 hover:text-white hover:bg-white/15'
                   }`}
                 >
                   {p.label}
@@ -466,7 +466,7 @@ export function ManagerDashboard() {
             type="button"
             onClick={() => setRevision(x => x + 1)}
             disabled={loading}
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white/80 hover:bg-white text-brand-navy-800 text-xs font-bold transition-all shadow-xs active:scale-95"
+            className="scms-shine inline-flex items-center gap-1.5 px-3.5 py-2 rounded-xl bg-white/95 hover:bg-white text-brand-navy-950 font-chivo text-xs font-bold uppercase tracking-wider transition-all shadow-xs active:scale-95"
           >
             <span className={`material-symbols-outlined text-[16px] text-brand-sage-700 ${loading ? 'animate-spin' : ''}`}>
               refresh
@@ -475,9 +475,9 @@ export function ManagerDashboard() {
           </button>
           <a
             href="#/manager/reports"
-            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-xl bg-white text-brand-sage-900 hover:bg-white/90 text-xs font-bold transition-all shadow-xs active:scale-95"
+            className={`${SCMS_HERO_BTN_DARK} !px-4 !py-2`}
           >
-            <span className="material-symbols-outlined text-[16px]">monitoring</span>
+            <span className="material-symbols-outlined text-[16px] text-brand-sand-300">monitoring</span>
             <span>{isEn ? 'Reports' : 'Báo cáo chi tiết'}</span>
           </a>
         </div>

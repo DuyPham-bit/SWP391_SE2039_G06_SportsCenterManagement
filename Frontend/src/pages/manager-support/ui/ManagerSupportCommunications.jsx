@@ -3,6 +3,11 @@ import { SupportRequests } from '../../../widgets/support-inbox/index.js';
 import { systemApi } from '../../../entities/permission/index.js';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_SECTION_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 const TARGET_ROLES = [
   { id: 'Member', label: 'Hội viên', en: 'Members', icon: 'fitness_center' },
@@ -67,29 +72,42 @@ export function ManagerSupportCommunications() {
 
   return (
     <div className="space-y-5 animate-fade-slide-up">
-      <section className="rounded-2xl overflow-hidden border border-white/10 bg-gradient-to-r from-brand-navy-900 via-brand-navy-900 to-brand-navy-900 text-white shadow-xl">
-        <div className="p-6 sm:p-7">
+      <section className={`${SCMS_HERO_SECTION_CLASS} sm:p-8`}>
+        <ScmsHeroDecor />
+        <div className="relative z-10">
+          <div className={`${SCMS_HERO_BADGE_CLASS} mb-2`}>
+            <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
+            <span>{isEn ? 'Center Support & Broadcast' : 'Hỗ Trợ & Truyền Thông Trung Tâm'}</span>
+          </div>
           <div className="flex items-start gap-3">
-            <span className="material-symbols-outlined shrink-0 text-brand-sand-300 text-[30px]" aria-hidden="true">campaign</span>
+            <span className="material-symbols-outlined shrink-0 text-brand-sand-200 text-[30px] mt-0.5" aria-hidden="true">campaign</span>
             <div>
-              <h1 className="font-chivo text-2xl md:text-3xl font-black">
+              <h1 className="font-chivo text-2xl md:text-3xl font-black text-white drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
                 {isEn ? 'Support & Center Communications' : 'Tiếp Nhận Hỗ Trợ & Gửi Thông Báo'}
               </h1>
-              <p className="mt-1 text-sm text-brand-navy-300 max-w-3xl">
+              <p className="mt-1 text-xs sm:text-sm text-white/95 max-w-3xl font-medium drop-shadow-xs">
                 {isEn
                   ? 'Resolve requests and publish announcements only to active accounts in your assigned center.'
                   : 'Xử lý yêu cầu và gửi thông báo đúng các tài khoản đang hoạt động trong trung tâm được phân công.'}
               </p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-2 mt-6 pt-4 border-t border-white/10">
+          <div className="flex flex-wrap gap-2.5 mt-6 pt-4 border-t border-white/20">
             {[
               ['SUPPORT', 'support_agent', isEn ? 'Support requests' : 'Yêu cầu hỗ trợ'],
               ['NOTIFICATIONS', 'notifications_active', isEn ? 'Send notification' : 'Gửi thông báo']
             ].map(([id, icon, label]) => (
-              <button key={id} onClick={() => setActiveTab(id)}
-                className={`px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider flex items-center gap-2 transition ${activeTab === id ? 'bg-brand-sage-700 text-white shadow-lg' : 'bg-white/10 text-brand-navy-200 hover:bg-white/20'}`}>
-                <span className="material-symbols-outlined text-[18px]">{icon}</span>{label}
+              <button
+                key={id}
+                onClick={() => setActiveTab(id)}
+                className={`scms-shine px-4 py-2.5 rounded-xl text-xs font-bold font-chivo uppercase tracking-wider flex items-center gap-2 transition-all cursor-pointer ${
+                  activeTab === id
+                    ? 'bg-white text-brand-navy-950 shadow-md border border-white/80'
+                    : 'bg-white/15 hover:bg-white/25 text-white border border-white/30 backdrop-blur-md'
+                }`}
+              >
+                <span className={`material-symbols-outlined text-[18px] ${activeTab === id ? 'text-brand-sage-700' : 'text-brand-sand-200'}`}>{icon}</span>
+                <span>{label}</span>
               </button>
             ))}
           </div>

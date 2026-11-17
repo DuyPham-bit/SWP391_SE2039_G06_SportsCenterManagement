@@ -5,6 +5,13 @@ import { safeHref } from '../../../shared/lib/safeUrl.js';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
+import {
+  SCMS_HERO_BADGE_CLASS,
+  SCMS_HERO_BTN_GLASS,
+  SCMS_HERO_SECTION_CLASS,
+  SCMS_HERO_SUBBADGE_CLASS,
+  ScmsHeroDecor
+} from '../../../shared/ui/ScmsHeroBanner.jsx';
 
 const inputStyle = 'w-full rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 px-3 py-2 text-sm text-brand-navy-800 dark:text-brand-navy-100 focus:outline-none focus:ring-2 focus:ring-brand-sage-500/40 focus:border-brand-sage-500 transition-all';
 const primaryBtnStyle = 'rounded-xl bg-brand-sage-700 hover:bg-brand-sage-900 px-4 py-2 text-sm font-bold text-white transition-all shadow-sm hover-lift disabled:opacity-50';
@@ -154,34 +161,18 @@ export function ManagerCoachOperations() {
 
   return (
     <div className="space-y-6 animate-fade-slide-up">
-      {/* Top Banner (Olympic Multi-stop Gradient matching Image 1) */}
-      <section
-        className="relative overflow-hidden rounded-3xl text-white p-6 sm:p-8 shadow-xl shadow-brand-teal-600/25 border border-white/30"
-        style={{
-          background: 'linear-gradient(108deg, #2D6A4F 0%, #24828F 25%, #3FAEB8 48%, #81B29A 70%, #E5A33C 88%, #E5A33C 100%)'
-        }}
-      >
-        {/* Dynamic ambient glow & sports wave overlays matching logo palette */}
-        <div className="pointer-events-none absolute -right-16 -top-16 w-80 h-80 rounded-full bg-gradient-to-br from-brand-sand-300/50 via-brand-sand-500/35 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-16 -left-16 w-80 h-80 rounded-full bg-gradient-to-tr from-brand-sage-500/45 via-brand-sage-700/30 to-transparent blur-3xl" />
-        <div className="pointer-events-none absolute top-1/2 left-1/3 -translate-y-1/2 w-96 h-40 bg-brand-teal-300/35 rounded-full blur-3xl" />
-
-        {/* Subtle decorative Olympic curved motion lines */}
-        <svg className="absolute inset-0 w-full h-full pointer-events-none opacity-20 overflow-hidden" preserveAspectRatio="none" viewBox="0 0 1000 300">
-          <path d="M-50,220 C200,80 450,260 750,120 C900,40 1050,180 1100,140" fill="none" stroke="white" strokeWidth="2.5" strokeDasharray="6 6" />
-          <path d="M-20,260 C250,120 500,300 800,160 C950,90 1050,200 1120,180" fill="none" stroke="white" strokeWidth="1.5" />
-          <circle cx="850" cy="80" r="140" fill="none" stroke="white" strokeWidth="1" opacity="0.4" />
-          <circle cx="890" cy="110" r="90" fill="none" stroke="white" strokeWidth="1" opacity="0.3" />
-        </svg>
+      {/* Top Banner */}
+      <section className={`${SCMS_HERO_SECTION_CLASS} sm:p-8`}>
+        <ScmsHeroDecor />
 
         <div className="relative z-10 flex flex-col md:flex-row md:items-center md:justify-between gap-6">
           <div>
-            <div className="flex items-center gap-2 mb-2">
-              <span className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/95 text-brand-sage-900 text-xs font-black uppercase tracking-wider backdrop-blur-md border border-white/80 shadow-xs">
-                <span className="w-2.5 h-2.5 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
+            <div className="flex flex-wrap items-center gap-2 mb-2">
+              <span className={SCMS_HERO_BADGE_CLASS}>
+                <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
                 <span>{isEn ? 'Coach Workspace' : 'Khu vực điều hành'}</span>
               </span>
-              <span className="rounded-full bg-white/20 backdrop-blur-md px-3 py-1 text-xs font-bold text-white border border-white/30">
+              <span className={SCMS_HERO_SUBBADGE_CLASS}>
                 {coachOptions.length} {isEn ? 'coaches' : 'HLV'}
               </span>
             </div>
@@ -199,9 +190,9 @@ export function ManagerCoachOperations() {
             <button
               onClick={load}
               disabled={loading}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/20 hover:bg-white/30 text-white text-xs font-bold uppercase tracking-wider backdrop-blur-md border border-white/40 transition-all hover-lift cursor-pointer shadow-xs disabled:opacity-50"
+              className={SCMS_HERO_BTN_GLASS}
             >
-              <span className="material-symbols-outlined text-[16px] text-brand-sand-200">refresh</span>
+              <span className={`material-symbols-outlined text-[18px] text-brand-sand-200 ${loading ? 'animate-spin' : ''}`}>refresh</span>
               <span>{isEn ? 'Refresh' : 'Làm mới'}</span>
             </button>
           </div>
