@@ -205,7 +205,7 @@ export function LoginPage() {
             setGoogleLoading(true);
             setFormError('');
             try {
-              const user = await loginWithGoogle(response.credential);
+              const user = await loginWithGoogle({ credential: response.credential });
               showSuccess('Đăng nhập thành công!');
               redirectToRoleDashboard(user.role || 'MEMBER');
             } catch (err) {
