@@ -5,8 +5,8 @@ import { CarouselSideArrows } from './CarouselControls.jsx';
 
 export function CoursesSection({
   catalogError, catalogLoading, categoryConfig, editorialContent, facilitiesList, filteredSports,
-  handleScrollSportsToIndex, handleSportClick, handleSportsScroll, highlightedSportId, hours, isEn,
-  landingContent, membershipAction, selectedCategory, setSelectedCategory, sportCarouselIndex,
+  handleScrollSportsToIndex, handleSportClick, handleSportsScroll, highlightedSportId, hours, is3DMode = false, isEn,
+  landingContent, membershipAction, onOpenSport3D, selectedCategory, setSelectedCategory, sportCarouselIndex,
   sportsCarousel, sportsCarouselRef, sportsList, visibleSports
 }) {
   return (
@@ -170,15 +170,40 @@ export function CoursesSection({
                         </div>
                       </div>
 
-                      <button
-                        type="button"
-                        className="custom-border-btn"
-                        style={{width:'100%',justifyContent:'center'}}
-                        onClick={(e) => { e.stopPropagation(); handleSportClick(sport); }}
-                      >
-                        {isEn ? 'View Details & Book' : 'Xem Chi Tiết & Đặt Lịch'}
-                        <span className="material-symbols-outlined" style={{fontSize:'16px'}}>arrow_forward</span>
-                      </button>
+                      <div style={{display:'flex',gap:'8px',width:'100%'}}>
+                        {is3DMode && (
+                          <button
+                            type="button"
+                            className="custom-btn"
+                            style={{
+                              padding:'8px 12px',
+                              fontSize:'12px',
+                              background:'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
+                              borderColor:'#22d3ee',
+                              boxShadow:'0 0 12px rgba(6, 182, 212, 0.4)',
+                              flexShrink:0,
+                              cursor:'pointer'
+                            }}
+                            title={isEn ? 'Inspect 3D court & equipment' : 'Xem mô phỏng 3D sân bãi'}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (onOpenSport3D) onOpenSport3D(sport);
+                            }}
+                          >
+                            <span className="material-symbols-outlined" style={{fontSize:'16px'}}>view_in_ar</span>
+                            <span>3D</span>
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="custom-border-btn"
+                          style={{flex:1,justifyContent:'center'}}
+                          onClick={(e) => { e.stopPropagation(); handleSportClick(sport); }}
+                        >
+                          {isEn ? 'View Details & Book' : 'Xem Chi Tiết & Đặt Lịch'}
+                          <span className="material-symbols-outlined" style={{fontSize:'16px'}}>arrow_forward</span>
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>

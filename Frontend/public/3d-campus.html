@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
-  <title>Mô hình 3D khuôn viên trung tâm thể thao</title>
+  <title>3D ArchViz Thực Tế - Tổ Hợp Thể Thao Đa Năng 13.000m²</title>
   <script src="https://cdn.tailwindcss.com"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -193,7 +193,7 @@
 
           <button id="btn-cam-mode" onclick="toggleWalkMode()" class="arch-panel hover:border-[#E5D9B6]/60 px-3.5 py-2.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-2 transition">
             <i data-lucide="eye" class="w-4 h-4 text-sky-400"></i>
-            <span id="cam-mode-label">Góc nhìn: Từ trên cao</span>
+            <span id="cam-mode-label">Góc nhìn: Flycam 3D</span>
           </button>
 
           <!-- Time of Day / Lighting Switcher -->
@@ -222,7 +222,7 @@
             <i data-lucide="maximize-2" class="w-3.5 h-3.5"></i>
             <span class="text-[11px]">Toàn cảnh</span>
           </button>
-          <button onclick="toggleModal('info-modal', true)" class="arch-panel px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-1 shadow-lg active:scale-95 transition" title="Sơ đồ và tiện ích">
+          <button onclick="toggleModal('info-modal', true)" class="arch-panel px-2.5 py-1.5 rounded-xl text-xs font-semibold text-[#F7F5F0] flex items-center gap-1 shadow-lg active:scale-95 transition" title="Sơ đồ & Tiện ích">
             <i data-lucide="layout-grid" class="w-3.5 h-3.5 text-[#E5D9B6]"></i>
             <span class="text-[11px]">Tiện ích</span>
           </button>
@@ -318,7 +318,7 @@
             <span id="ins-badge" class="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-[#E5D9B6]/20 text-[#E5D9B6]">PHÂN KHU</span>
             <h2 id="ins-title" class="text-base md:text-lg font-extrabold text-[#F7F5F0] mt-1.5 leading-snug">Tên Khu Vực</h2>
           </div>
-          <button onclick="resetMasterView()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-slate-200 flex items-center justify-center transition shrink-0" title="Đóng, quay về toàn cảnh">
+          <button onclick="resetMasterView()" class="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 active:scale-95 text-slate-200 flex items-center justify-center transition shrink-0" title="Đóng và về toàn cảnh">
             <i data-lucide="x" class="w-4 h-4"></i>
           </button>
         </div>
@@ -371,12 +371,12 @@
       </button>
       <button onclick="focusZone('khuA')" id="dock-khuA" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
         <span class="w-2.5 h-2.5 rounded-full bg-sky-400 shrink-0"></span>
-        <span class="hidden sm:inline">Khu A: Bơi lội, Gym</span>
+        <span class="hidden sm:inline">Khu A: Bơi Lội, Gym & Fitness</span>
         <span class="sm:hidden">Khu A • Bơi & Gym</span>
       </button>
       <button onclick="focusZone('khuB')" id="dock-khuB" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
         <span class="w-2.5 h-2.5 rounded-full bg-amber-400 shrink-0"></span>
-        <span class="hidden sm:inline">Khu B: Bóng rổ, Cầu lông, Bóng bàn</span>
+        <span class="hidden sm:inline">Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn</span>
         <span class="sm:hidden">Khu B • Rổ & Lông</span>
       </button>
       <button onclick="focusZone('khuC')" id="dock-khuC" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
@@ -386,7 +386,7 @@
       </button>
       <button onclick="focusZone('outdoor')" id="dock-outdoor" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
         <span class="w-2.5 h-2.5 rounded-full bg-emerald-400 shrink-0"></span>
-        <span class="hidden sm:inline">Ngoài trời: Bóng đá, Pickleball</span>
+        <span class="hidden sm:inline">Khu Ngoài Trời: Bóng Đá & Pickleball</span>
         <span class="sm:hidden">Ngoài Trời • Bóng Đá</span>
       </button>
       <button onclick="focusZone('lobby')" id="dock-lobby" class="dock-btn px-3 py-2 rounded-xl text-xs font-bold whitespace-nowrap transition-all hover:bg-white/10 flex items-center gap-1.5 shrink-0">
@@ -509,7 +509,7 @@
             </div>
             <ul class="space-y-2 text-xs sm:text-[13px] text-[#C7CCD9] leading-relaxed">
               <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tầng 1: Bể bơi 4 mùa 25m trong nhà nước ấm</span></li>
-              <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tầng 2: Phòng gym</span></li>
+              <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tầng 2: Phòng tập Gym & Fitness</span></li>
               <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tầng 3: Khu thay đồ & tắm tráng nóng lạnh</span></li>
             </ul>
           </div>
@@ -555,8 +555,8 @@
               </h3>
             </div>
             <ul class="space-y-2 text-xs sm:text-[13px] text-[#C7CCD9] leading-relaxed">
-              <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tầng 1: Võ thuật và Boxing</span></li>
-              <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tầng 3: Yoga và Pilates</span></li>
+              <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tầng 1: Phòng tập võ thuật & Boxing, thảm và bao cát</span></li>
+              <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tầng 3: Phòng tập Yoga & Pilates, khu thảm và máy Reformer</span></li>
               <li class="flex items-start gap-1.5"><span class="text-white/60">•</span><span>Tủ đồ cá nhân và khu thay đồ phục vụ học viên</span></li>
             </ul>
           </div>
@@ -616,7 +616,7 @@
         </div>
         <div>
           <label class="block text-slate-300 font-semibold mb-1">Họ tên & Số điện thoại</label>
-          <input type="text" required placeholder="Nhập số điện thoại để lễ tân gọi xác nhận" class="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white text-base sm:text-xs">
+          <input type="text" required placeholder="Nhập SĐT để lễ tân xác nhận..." class="w-full px-3.5 py-2.5 rounded-xl bg-black/50 border border-white/15 text-white text-base sm:text-xs">
         </div>
         <div id="booking-toast" class="hidden p-3 rounded-xl bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 font-bold text-center">
           ✅ Đặt lịch thành công! Lễ tân đã ghi nhận mã đặt sân của bạn.
@@ -659,191 +659,191 @@
     const ZONES_DATA = {
       khuA: {
         id: 'khuA',
-        shortTitle: 'Khu A: Bơi lội, Gym',
-        badge: 'Tòa nhà 3 tầng, giữa cánh Tây',
-        area: '2.200 m² mặt bằng, 6.600 m² sàn',
-        desc: 'Tòa nhà 3 tầng ở giữa cánh Tây: tầng 1 hồ bơi, tầng 2 phòng gym, tầng 3 khu thay đồ và tắm.',
+        shortTitle: 'KHU A: BƠI LỘI, GYM & FITNESS',
+        badge: 'Khối nhà 3 tầng • Cánh Tây (Giữa)',
+        area: '2.200 m² đất (3 tầng = 6.600 m² sàn)',
+        desc: 'Tòa nhà 3 tầng độc lập tại trung tâm Cánh Tây (cách Khu B 12m và cách Khu C 8m bằng sân vườn cảnh quan). Gồm đúng 1 bể bơi 4 mùa 25m, 1 sàn Gym & Fitness và 1 tầng thay đồ & tắm tráng với đầy đủ dụng cụ 3D chi tiết.',
         hasFloors: true,
         targetPos: { x: -37, y: 6, z: 6 },
         camPos: { x: -2, y: 24, z: 26 },
         floors: [
           {
             level: 1,
-            name: 'Tầng 1: Hồ bơi bốn mùa 25 m, 5 làn',
-            detail: 'Hồ bơi nước ấm trong nhà 25 m × 12,5 m, có bục xuất phát, thang inox, ghế cứu hộ và ghế nằm nghỉ.',
+            name: 'Tầng 1: Bể bơi 4 mùa 25m trong nhà nước ấm (1 Bể 5 làn)',
+            detail: 'Đúng 1 bể bơi 25m × 12.5m với 4 dây phao chắn sóng hạt tròn đỏ-trắng-xanh, 5 bục xuất phát chuyên nghiệp có tay nắm bơi ngửa, 4 thang inox uốn cong, ghế cao cứu hộ kèm phao cứu sinh và dãy ghế nằm thư giãn.',
             camPos: { x: -12, y: 11, z: 16 },
             targetPos: { x: -37, y: 1.2, z: 6 },
             equipZooms: [
-              { label: 'Bục xuất phát và dây phao', camPos: { x: -44, y: 4.2, z: 12 }, targetPos: { x: -50, y: 0.8, z: 5.2 } },
-              { label: 'Ghế cứu hộ và thang', camPos: { x: -29, y: 4.5, z: 4 }, targetPos: { x: -37, y: 1.0, z: -1.5 } },
-              { label: 'Ghế nghỉ cạnh hồ', camPos: { x: -26, y: 4.0, z: 15 }, targetPos: { x: -37, y: 0.6, z: 14.2 } }
+              { label: '🔍 5 Bục xuất phát & Dây phao', camPos: { x: -44, y: 4.2, z: 12 }, targetPos: { x: -50, y: 0.8, z: 5.2 } },
+              { label: '🔍 Ghế cứu hộ & Thang inox', camPos: { x: -29, y: 4.5, z: 4 }, targetPos: { x: -37, y: 1.0, z: -1.5 } },
+              { label: '🔍 Dãy ghế nghỉ hồ bơi', camPos: { x: -26, y: 4.0, z: 15 }, targetPos: { x: -37, y: 0.6, z: 14.2 } }
             ]
           },
           {
             level: 2,
-            name: 'Tầng 2: Phòng gym',
-            detail: '3 máy chạy bộ, 3 xe đạp tập, 2 khung squat, kệ tạ đơn, máy kéo cáp, máy kéo xô, máy đạp đùi, máy chèo thuyền và đường đẩy sled.',
+            name: 'Tầng 2: Phòng tập Gym & Fitness',
+            detail: 'Bố trí khoa học vừa vặn: 3 máy chạy bộ (Treadmill) có băng tải, tay cầm nhịp tim & màn hình LED; 3 xe đạp thể lực (Spin Bike) bánh đà inox & ghi-đông sừng bò; 2 khung gánh tạ (Power Squat Rack) lắp bánh tạ màu (Đỏ 25kg, Xanh 20kg, Vàng 15kg) & ghế đẩy ngực; kệ tạ đơn 2 tầng; kết hợp Giàn kéo cáp đa năng (Cable Crossover), 2 máy kéo xô (Lat Pulldown), 2 máy đạp đùi 45° (Leg Press), 2 máy chèo thuyền Air Rower và đường cỏ đẩy tạ Sled.',
             camPos: { x: -12, y: 16, z: 16 },
             targetPos: { x: -37, y: 5.8, z: 6 },
             equipZooms: [
-              { label: 'Máy chạy bộ và xe đạp tập', camPos: { x: -28, y: 7.8, z: 15 }, targetPos: { x: -45, y: 5.5, z: 11.5 } },
-              { label: 'Khung squat và kệ tạ', camPos: { x: -32, y: 8.2, z: 3 }, targetPos: { x: -45, y: 5.8, z: -1.5 } },
-              { label: 'Máy kéo cáp, kéo xô, đạp đùi', camPos: { x: -20, y: 8.2, z: 4 }, targetPos: { x: -29, y: 5.8, z: -1.0 } },
-              { label: 'Đường đẩy sled và máy chèo thuyền', camPos: { x: -22, y: 7.8, z: 13 }, targetPos: { x: -34, y: 5.4, z: 8.5 } }
+              { label: '🔍 3 Máy chạy bộ & 3 Xe đạp Spin', camPos: { x: -28, y: 7.8, z: 15 }, targetPos: { x: -45, y: 5.5, z: 11.5 } },
+              { label: '🔍 2 Khung Squat Rack & Kệ tạ đơn', camPos: { x: -32, y: 8.2, z: 3 }, targetPos: { x: -45, y: 5.8, z: -1.5 } },
+              { label: '🔍 Giàn kéo cáp, Máy kéo xô & Đạp đùi', camPos: { x: -20, y: 8.2, z: 4 }, targetPos: { x: -29, y: 5.8, z: -1.0 } },
+              { label: '🔍 Đường cỏ đẩy Sled & Máy chèo thuyền', camPos: { x: -22, y: 7.8, z: 13 }, targetPos: { x: -34, y: 5.4, z: 8.5 } }
             ]
           },
           {
             level: 3,
-            name: 'Tầng 3: Thay đồ, tủ khóa, phòng tắm',
-            detail: 'Tủ khóa cá nhân, ghế thay giày, bồn rửa có gương và 6 phòng tắm nóng lạnh.',
+            name: 'Tầng 3: Khu thay đồ, Tủ Locker & Tắm tráng nóng lạnh',
+            detail: 'Hệ thống tủ Locker chia từng cánh cửa có khe thoáng khí & ổ khóa, ghế băng gỗ thay giày, bàn Lavabo gương soi và 6 buồng tắm kính mờ có vòi sen tắm mưa (Rain Shower) cùng van gạt nước nóng/lạnh.',
             camPos: { x: -12, y: 21, z: 16 },
             targetPos: { x: -37, y: 10.2, z: 6 },
             equipZooms: [
-              { label: 'Tủ khóa và ghế thay đồ', camPos: { x: -34, y: 13.0, z: 14 }, targetPos: { x: -45, y: 10.2, z: 6 } },
-              { label: 'Phòng tắm nóng lạnh', camPos: { x: -19, y: 13.0, z: 10 }, targetPos: { x: -26, y: 10.5, z: 6 } }
+              { label: '🔍 Dãy tủ Locker & Ghế thay đồ', camPos: { x: -34, y: 13.0, z: 14 }, targetPos: { x: -45, y: 10.2, z: 6 } },
+              { label: '🔍 6 Buồng tắm sen nóng lạnh', camPos: { x: -19, y: 13.0, z: 10 }, targetPos: { x: -26, y: 10.5, z: 6 } }
             ]
           }
         ]
       },
       khuB: {
         id: 'khuB',
-        shortTitle: 'Khu B: Bóng rổ, Cầu lông, Bóng bàn',
-        badge: 'Tòa nhà 3 tầng, góc Tây Bắc',
-        area: '1.800 m² mặt bằng, 5.400 m² sàn',
-        desc: 'Nhà thi đấu trong nhà: tầng 1 sân bóng rổ, tầng 2 bốn sân cầu lông, tầng 3 bốn bàn bóng bàn.',
+        shortTitle: 'KHU B: BÓNG RỔ, CẦU LÔNG & BÓNG BÀN',
+        badge: 'Khối nhà 3 tầng • Cánh Tây Bắc',
+        area: '1.800 m² đất (3 tầng = 5.400 m² sàn)',
+        desc: 'Nhà thi đấu thể thao trong nhà nằm ở góc Tây Bắc. Tầng 1 là 1 sân bóng rổ FIBA, Tầng 2 là cụm 4 sân cầu lông thảm PVC, Tầng 3 là khu 4 bàn bóng bàn chuẩn ITTF.',
         hasFloors: true,
         targetPos: { x: -37, y: 6, z: -30 },
         camPos: { x: -2, y: 25, z: -10 },
         floors: [
           {
             level: 1,
-            name: 'Tầng 1: Sân bóng rổ',
-            detail: 'Sân bóng rổ trong nhà có 2 trụ rổ di động, khán đài 3 bậc và bảng điểm điện tử.',
+            name: 'Tầng 1: Sân bóng rổ tiêu chuẩn phong trào có mái che (1 Sân)',
+            detail: '2 trụ bóng rổ di động chuyên nghiệp (đối trọng bọc nệm, cần vươn chữ Y, bảng rổ kính cường lực, vành rổ cam & lưới đan phễu), khán đài 3 bậc, bảng điểm điện tử và xe đẩy đựng bóng rổ.',
             camPos: { x: -12, y: 11, z: -18 },
             targetPos: { x: -37, y: 1.5, z: -30 },
             equipZooms: [
-              { label: 'Trụ rổ', camPos: { x: -32, y: 4.5, z: -24 }, targetPos: { x: -23.5, y: 2.8, z: -29.2 } },
-              { label: 'Khán đài', camPos: { x: -37, y: 4.5, z: -26 }, targetPos: { x: -37, y: 1.5, z: -38.5 } }
+              { label: '🔍 Trụ bóng rổ kính cường lực', camPos: { x: -32, y: 4.5, z: -24 }, targetPos: { x: -23.5, y: 2.8, z: -29.2 } },
+              { label: '🔍 Khán đài & Xe đựng bóng rổ', camPos: { x: -37, y: 4.5, z: -26 }, targetPos: { x: -37, y: 1.5, z: -38.5 } }
             ]
           },
           {
             level: 2,
-            name: 'Tầng 2: 4 sân cầu lông',
-            detail: 'Bốn sân cầu lông thảm chống trượt, mỗi sân có ghế trọng tài và ghế nghỉ.',
+            name: 'Tầng 2: Cụm 4 sân cầu lông thảm cao su chống trượt (4 Sân)',
+            detail: 'Đúng 4 sân cầu lông (Sân 1 - 4), mỗi sân có 2 trụ căng lưới bánh xe đối trọng, lưới mắt nhỏ viền băng trắng, ghế trọng tài cao đặt sát cột lưới và ghế nghỉ vận động viên.',
             camPos: { x: -12, y: 16, z: -18 },
             targetPos: { x: -37, y: 5.8, z: -30 },
             equipZooms: [
-              { label: 'Cột lưới và ghế trọng tài', camPos: { x: -28, y: 8.2, z: -22 }, targetPos: { x: -32.8, y: 5.5, z: -30 } },
-              { label: 'Toàn cảnh 4 sân', camPos: { x: -16, y: 14, z: -20 }, targetPos: { x: -37, y: 5.2, z: -30 } }
+              { label: '🔍 Cột lưới & Ghế trọng tài', camPos: { x: -28, y: 8.2, z: -22 }, targetPos: { x: -32.8, y: 5.5, z: -30 } },
+              { label: '🔍 Toàn cảnh 4 sân cầu lông', camPos: { x: -16, y: 14, z: -20 }, targetPos: { x: -37, y: 5.2, z: -30 } }
             ]
           },
           {
             level: 3,
-            name: 'Tầng 3: 4 bàn bóng bàn',
-            detail: 'Bốn bàn bóng bàn tiêu chuẩn ITTF, có vách chắn bóng quanh khu tập.',
+            name: 'Tầng 3: Khu bóng bàn trong nhà với 4 bàn tập (4 Bàn)',
+            detail: 'Đúng 4 bàn bóng bàn chuẩn ITTF có chân thép gấp gọn gắn bánh xe đỏ, cọc lưới căng giữa bàn, trên mặt bàn có sẵn vợt bóng bàn (mặt đỏ/đen) và bóng trắng, bao quanh bởi vách chắn bóng.',
             camPos: { x: -12, y: 21, z: -18 },
             targetPos: { x: -37, y: 10.5, z: -30 },
             equipZooms: [
-              { label: 'Bàn bóng bàn', camPos: { x: -29, y: 11.8, z: -25 }, targetPos: { x: -32.8, y: 10.0, z: -30 } },
-              { label: 'Khu bàn và vách chắn', camPos: { x: -18, y: 17, z: -20 }, targetPos: { x: -37, y: 10.2, z: -30 } }
+              { label: '🔍 Cận cảnh Bàn bóng bàn & Vợt', camPos: { x: -29, y: 11.8, z: -25 }, targetPos: { x: -32.8, y: 10.0, z: -30 } },
+              { label: '🔍 4 Ô bàn tập & Vách chắn bóng', camPos: { x: -18, y: 17, z: -20 }, targetPos: { x: -37, y: 10.2, z: -30 } }
             ]
           }
         ]
       },
       khuC: {
         id: 'khuC',
-        shortTitle: 'Khu C: Võ thuật, Boxing, Yoga, Pilates',
-        badge: 'Tòa nhà 3 tầng, góc Tây Nam',
-        area: '1.200 m² mặt bằng, 3.600 m² sàn',
-        desc: 'Tầng 1 võ thuật và boxing, tầng 2 khu thay đồ, tầng 3 phòng yoga và pilates.',
+        shortTitle: 'KHU C: VÕ THUẬT, BOXING, YOGA & PILATES',
+        badge: 'Khối nhà 3 tầng • Cánh Tây Nam',
+        area: '1.200 m² đất (3 tầng = 3.600 m² sàn)',
+        desc: 'Tòa nhà 3 tầng nằm ở góc Tây Nam. Tầng 1 là Võ thuật, đài Boxing & giàn bao cát; Tầng 2 là khu Locker thay đồ học viên; Tầng 3 là studio Yoga & 8 máy Pilates Reformer.',
         hasFloors: true,
         targetPos: { x: -40, y: 6, z: 35 },
         camPos: { x: -10, y: 22, z: 54 },
         floors: [
           {
             level: 1,
-            name: 'Tầng 1: Võ thuật và Boxing',
-            detail: 'Võ đài boxing, giàn 8 bao cát, 2 hình nộm tập đấm và thảm tatami.',
+            name: 'Tầng 1: Phòng tập võ thuật & Boxing, thảm và bao cát',
+            detail: '1 Sàn đài Boxing Ring chuyên nghiệp (4 trụ góc, đệm góc Đỏ-Xanh-Trắng, 4 tầng dây đài căng, cầu thang bước lên đài), giàn khung thép chữ I treo 8 bao cát da bằng xích 3 chạc, 2 hình nộm Boxing Bob và thảm võ Tatami.',
             camPos: { x: -16, y: 11, z: 46 },
             targetPos: { x: -40, y: 1.5, z: 35 },
             equipZooms: [
-              { label: 'Võ đài boxing', camPos: { x: -41, y: 4.5, z: 42 }, targetPos: { x: -49.5, y: 1.5, z: 35 } },
-              { label: 'Bao cát và hình nộm', camPos: { x: -24, y: 4.2, z: 41 }, targetPos: { x: -31.0, y: 1.6, z: 35 } }
+              { label: '🔍 Đài Boxing Ring 4 tầng dây', camPos: { x: -41, y: 4.5, z: 42 }, targetPos: { x: -49.5, y: 1.5, z: 35 } },
+              { label: '🔍 Giàn treo 8 Bao cát & Hình nộm', camPos: { x: -24, y: 4.2, z: 41 }, targetPos: { x: -31.0, y: 1.6, z: 35 } }
             ]
           },
           {
             level: 2,
-            name: 'Tầng 2: Thay đồ và tủ khóa',
-            detail: 'Tủ khóa cá nhân, ghế thay đồ, phòng thay đồ riêng và bồn rửa cho học viên.',
+            name: 'Tầng 2: Tủ đồ cá nhân và khu thay đồ phục vụ học viên',
+            detail: 'Các dãy tủ Locker có khóa an toàn, ghế băng dài ngồi thay đồ, buồng thay đồ riêng tư và bàn gương Lavabo phục vụ học viên Võ thuật, Yoga & Pilates.',
             camPos: { x: -16, y: 16, z: 46 },
             targetPos: { x: -40, y: 5.8, z: 35 },
             equipZooms: [
-              { label: 'Tủ khóa học viên', camPos: { x: -30, y: 8.5, z: 42 }, targetPos: { x: -40, y: 5.5, z: 35 } }
+              { label: '🔍 Khu tủ đồ Locker học viên', camPos: { x: -30, y: 8.5, z: 42 }, targetPos: { x: -40, y: 5.5, z: 35 } }
             ]
           },
           {
             level: 3,
-            name: 'Tầng 3: Yoga và Pilates',
-            detail: '8 máy Pilates Reformer và 12 thảm yoga kèm gối, gạch tập và bóng thăng bằng.',
+            name: 'Tầng 3: Phòng tập Yoga & Pilates, khu thảm và máy Reformer',
+            detail: '8 giường tập Pilates Reformer (khung gỗ sồi, nệm trượt, gối tựa vai, 5 lò xo kháng lực màu, thanh Footbar uốn cong & dây kéo ròng rọc) + 12 thảm Yoga kèm gối lăn Bolster, gạch tập & bóng cân bằng Swiss Ball.',
             camPos: { x: -16, y: 21, z: 46 },
             targetPos: { x: -40, y: 10.5, z: 35 },
             equipZooms: [
-              { label: 'Máy Pilates Reformer', camPos: { x: -40, y: 12.2, z: 41 }, targetPos: { x: -47.5, y: 9.8, z: 35 } },
-              { label: 'Thảm và dụng cụ yoga', camPos: { x: -26, y: 12.2, z: 41 }, targetPos: { x: -33.0, y: 9.8, z: 35 } }
+              { label: '🔍 8 Máy Pilates Reformer lò xo', camPos: { x: -40, y: 12.2, z: 41 }, targetPos: { x: -47.5, y: 9.8, z: 35 } },
+              { label: '🔍 Thảm Yoga, Gối lăn & Bóng tập', camPos: { x: -26, y: 12.2, z: 41 }, targetPos: { x: -33.0, y: 9.8, z: 35 } }
             ]
           }
         ]
       },
       outdoor: {
         id: 'outdoor',
-        shortTitle: 'Khu ngoài trời: Bóng đá, Pickleball',
-        badge: 'Ngoài trời, cánh Đông',
-        area: '5.200 m² sân và lối đi',
-        desc: 'Phía Đông Bắc có 1 sân bóng đá 5 người và 1 sân 7 người; phía Đông Nam có 4 sân pickleball.',
+        shortTitle: 'KHU NGOÀI TRỜI: BÓNG ĐÁ & PICKLEBALL',
+        badge: 'Tổ hợp ngoài trời • Cánh Đông',
+        area: '5.200 m² mặt sân & hành lang',
+        desc: 'Quy hoạch chuẩn xác tại Cánh Đông: Phía Đông Bắc gồm đúng 1 Sân bóng đá 5 người và 1 Sân bóng đá 7 người; phía Đông Nam gồm đúng 4 Sân Pickleball có lưới riêng & vạch bếp.',
         hasFloors: false,
         targetPos: { x: 34, y: 1, z: 2 },
         camPos: { x: 34, y: 46, z: 62 },
         floors: [
           {
             level: 1,
-            name: 'Sân bóng đá cỏ nhân tạo (sân 5 và sân 7)',
-            detail: 'Khung thành, cờ góc, băng ghế dự bị có mái che và lưới chắn bóng quanh sân.',
+            name: 'Cụm sân bóng đá cỏ nhân tạo (Đúng 1 Sân 5 và 1 Sân 7)',
+            detail: 'Trang bị khung thành 3D có gọng chữ D và lưới mắt cáo, cột cờ phạt góc, băng ghế huấn luyện viên & cầu thủ dự bị có mái vòm (Team Dugout) và hàng rào lưới chắn bóng.',
             camPos: { x: 34, y: 28, z: 20 },
             targetPos: { x: 34, y: 1, z: -20 },
             equipZooms: [
-              { label: 'Khung thành và cờ góc', camPos: { x: 36, y: 5.5, z: 12 }, targetPos: { x: 44, y: 1.5, z: 4 } },
-              { label: 'Băng ghế dự bị', camPos: { x: 20, y: 4.5, z: -12 }, targetPos: { x: 26.8, y: 1.2, z: -18 } }
+              { label: '🔍 Khung thành 3D & Cột cờ góc', camPos: { x: 36, y: 5.5, z: 12 }, targetPos: { x: 44, y: 1.5, z: 4 } },
+              { label: '🔍 Băng ghế dự bị có mái che', camPos: { x: 20, y: 4.5, z: -12 }, targetPos: { x: 26.8, y: 1.2, z: -18 } }
             ]
           },
           {
             level: 1,
-            name: '4 sân Pickleball (P1 đến P4)',
-            detail: 'Bốn sân pickleball có lưới riêng, kẻ vạch khu bếp, bàn ghế và dù che nắng dọc biên.',
+            name: 'Cụm 4 sân Pickleball (Sân P1, P2, P3, P4 có vạch khu vực bếp)',
+            detail: '4 sân Pickleball có cọc lưới bánh xe, lưới căng có dây đai trắng chính giữa (Center strap), vạch khu vực bếp màu cam đất và bộ bàn ghế nghỉ có dù che nắng dọc biên.',
             camPos: { x: 36, y: 19, z: 46 },
             targetPos: { x: 36, y: 1, z: 24.5 },
             equipZooms: [
-              { label: 'Lưới và vạch sân', camPos: { x: 25, y: 4.5, z: 32 }, targetPos: { x: 30, y: 0.8, z: 24.5 } },
-              { label: 'Ghế nghỉ và dù che', camPos: { x: 24, y: 4.5, z: 39 }, targetPos: { x: 30, y: 1.2, z: 34.6 } }
+              { label: '🔍 Lưới Pickleball & Khu vực bếp', camPos: { x: 25, y: 4.5, z: 32 }, targetPos: { x: 30, y: 0.8, z: 24.5 } },
+              { label: '🔍 Ghế nghỉ VĐV & Dù che nắng', camPos: { x: 24, y: 4.5, z: 39 }, targetPos: { x: 30, y: 1.2, z: 34.6 } }
             ]
           },
           {
             level: 1,
-            name: '10 trụ đèn LED chiếu sáng buổi tối',
-            detail: 'Trụ đèn cao 15 m, mỗi trụ gắn 6 đèn pha LED hướng xuống sân.',
+            name: 'Dàn 10 trụ đèn pha LED chiếu sáng ban đêm rõ nét',
+            detail: '10 trụ đèn thép cao 15m có lồng thang leo bảo trì, giá đỡ giàn ngang gắn 6 chóa đèn pha LED công suất lớn hướng xuống mặt sân.',
             camPos: { x: 64, y: 24, z: 36 },
             targetPos: { x: 34, y: 8, z: 10 },
             equipZooms: [
-              { label: 'Đèn pha LED', camPos: { x: 26, y: 17, z: 22 }, targetPos: { x: 34, y: 15.2, z: 14 } }
+              { label: '🔍 Cận cảnh Giàn 6 chóa đèn LED', camPos: { x: 26, y: 17, z: 22 }, targetPos: { x: 34, y: 15.2, z: 14 } }
             ]
           }
         ]
       },
       lobby: {
         id: 'lobby',
-        shortTitle: 'Sảnh lễ tân, căn tin, phòng y tế',
-        badge: 'Quảng trường trung tâm, cạnh cổng chính',
-        area: '1.850 m² gồm cổng, quảng trường và sảnh',
-        desc: 'Sảnh đón tiếp nằm ở quảng trường trung tâm, ngay sau cổng chính và tách riêng với bãi đỗ xe.',
+        shortTitle: 'SẢNH LỄ TÂN, CĂN-TIN & TRẠM Y TẾ',
+        badge: 'Quảng trường trung tâm • Cổng Olympic Sports Area',
+        area: '1.850 m² (Cổng chào + Quảng trường + Sảnh dịch vụ)',
+        desc: 'Tòa sảnh đón tiếp nằm tại Quảng trường trung tâm bên phải trục đại lộ chính (hoàn toàn không chắn đường và tách biệt khỏi khu bãi đỗ xe ô tô). Kết nối trực tiếp với Cổng chào Olympic Sports Area.',
         hasFloors: false,
         targetPos: { x: 1.5, y: 2.5, z: 27 },
         camPos: { x: -12, y: 16, z: 54 },
@@ -855,62 +855,62 @@
             camPos: { x: -13.5, y: 7.5, z: 66 },
             targetPos: { x: -13.5, y: 4.5, z: 49.5 },
             equipZooms: [
-              { label: 'Cổng chính', camPos: { x: -13.5, y: 6.5, z: 64 }, targetPos: { x: -13.5, y: 5.5, z: 49.5 } }
+              { label: '🔍 Cổng Chào Olympic Sports Area', camPos: { x: -13.5, y: 6.5, z: 64 }, targetPos: { x: -13.5, y: 5.5, z: 49.5 } }
             ]
           },
           {
             level: 1,
-            name: 'Quầy lễ tân và cổng check-in',
-            detail: 'Quầy lễ tân tra cứu lịch đặt sân và 3 làn cổng soát thẻ thành viên.',
+            name: 'Quầy Lễ Tân Tiếp Đón & Cổng Kiểm Soát Check-in',
+            detail: 'Quầy lễ tân vòng cung ốp gỗ và đá cẩm thạch, trang bị 2 bộ máy tính màn hình kép tra cứu lịch đặt sân và 3 làn cổng xoay kiểm soát thẻ thành viên (Turnstile).',
             camPos: { x: 1.5, y: 5.5, z: 36 },
             targetPos: { x: 1.5, y: 1.2, z: 28.5 },
             equipZooms: [
-              { label: 'Quầy lễ tân', camPos: { x: 1.5, y: 3.8, z: 33.5 }, targetPos: { x: 1.5, y: 1.1, z: 29.2 } }
+              { label: '🔍 Quầy Lễ Tân & Máy tính đặt sân', camPos: { x: 1.5, y: 3.8, z: 33.5 }, targetPos: { x: 1.5, y: 1.1, z: 29.2 } }
             ]
           },
           {
             level: 1,
-            name: 'Căn tin và phòng y tế',
-            detail: 'Căn tin bán nước uống, có bàn ngồi; bên cạnh là phòng y tế có giường sơ cứu, bình oxy và tủ thuốc.',
+            name: 'Quầy Căn-tin Nước Giải Khát & Phòng Y Tế Sơ Cứu',
+            detail: 'Quầy bar căn-tin có tủ mát cánh kính 4 tầng xếp đầy nước khoáng, bàn tròn cafe; cạnh bên là Phòng Y Tế có giường sơ cứu, bình Oxy xanh và tủ thuốc Chữ Thập Đỏ.',
             camPos: { x: -6.5, y: 5.5, z: 33 },
             targetPos: { x: 1.5, y: 1.2, z: 25.5 },
             equipZooms: [
-              { label: 'Quầy căn tin', camPos: { x: -1.0, y: 3.4, z: 29.5 }, targetPos: { x: -4.3, y: 1.3, z: 24.5 } },
-              { label: 'Phòng y tế', camPos: { x: 4.3, y: 3.5, z: 29.5 }, targetPos: { x: 7.3, y: 1.2, z: 24.5 } }
+              { label: '🔍 Tủ mát nước khoáng & Quầy Bar', camPos: { x: -1.0, y: 3.4, z: 29.5 }, targetPos: { x: -4.3, y: 1.3, z: 24.5 } },
+              { label: '🔍 Giường sơ cứu, Bình Oxy & Tủ thuốc', camPos: { x: 4.3, y: 3.5, z: 29.5 }, targetPos: { x: 7.3, y: 1.2, z: 24.5 } }
             ]
           }
         ]
       },
       parking: {
         id: 'parking',
-        shortTitle: 'Bãi đỗ ô tô (20 chỗ)',
-        badge: 'Góc Đông Nam',
-        area: '750 m², 2 dãy, 20 chỗ đỗ',
-        desc: 'Bãi đỗ có 2 dãy đối diện, mỗi dãy 10 chỗ, có barrier ở lối vào, mái che pin mặt trời và trạm sạc xe điện.',
+        shortTitle: 'KHU BÃI ĐỖ XE Ô TÔ TẬP TRUNG (20 CHỖ)',
+        badge: '1 Khu Tập Trung Duy Nhất • Phía Đông Nam',
+        area: '750 m² (48m × 15.6m • 2 Dãy Đối Diện • 20 Ô Đỗ)',
+        desc: 'Toàn bộ ô tô được quy hoạch tập trung trong 1 khu phức hợp khép kín duy nhất ở góc Đông Nam. Bố trí 2 dãy chuồng đỗ đối diện nhau (Dãy Bắc 10 ô & Dãy Nam 10 ô) qua làn đường nội bộ rộng 5.2m ở giữa, có cổng Barrier kiểm soát riêng, 2 mái che Pin Mặt Trời và trạm sạc xe điện EV.',
         hasFloors: false,
         targetPos: { x: 38, y: 1.8, z: 44 },
         camPos: { x: 38, y: 20, z: 68 },
         floors: [
           {
             level: 1,
-            name: 'Hai dãy đỗ xe (20 chỗ)',
-            detail: 'Ô đỗ kẻ vạch, có cục chặn bánh và làn xe chạy hai chiều ở giữa.',
+            name: 'Dãy Đỗ Ô Tô Phía Bắc & Phía Nam (20 Chuồng Đỗ Tiêu Chuẩn)',
+            detail: '20 ô đỗ xe sơn kẻ vạch trắng rõ nét, có cục chặn lùi bánh xe màu vàng, lối xe chạy 2 chiều ở giữa có mũi tên chỉ hướng và 14 xe SUV/Sedan đang đỗ gọn gàng.',
             camPos: { x: 12, y: 11, z: 44 },
             targetPos: { x: 38, y: 1.2, z: 44 },
             equipZooms: [
-              { label: 'Toàn cảnh bãi xe', camPos: { x: 10, y: 9.5, z: 44 }, targetPos: { x: 38, y: 1.2, z: 44 } },
-              { label: 'Lối vào có barrier', camPos: { x: 16, y: 6.0, z: 60 }, targetPos: { x: 17.5, y: 1.2, z: 50.5 } }
+              { label: '🔍 Toàn cảnh 2 dãy ô tô đối diện', camPos: { x: 10, y: 9.5, z: 44 }, targetPos: { x: 38, y: 1.2, z: 44 } },
+              { label: '🔍 Cổng Barrier & Lối Vào Bãi Xe', camPos: { x: 16, y: 6.0, z: 60 }, targetPos: { x: 17.5, y: 1.2, z: 50.5 } }
             ]
           },
           {
             level: 1,
-            name: 'Trạm sạc xe điện và mái pin mặt trời',
-            detail: 'Hai mái che lợp pin mặt trời, cấp điện cho 5 trụ sạc nhanh xe điện.',
+            name: 'Hệ Thống Trạm Sạc Xe Điện (EV Chargers) & Mái Điện Mặt Trời',
+            detail: '2 hệ mái che Carport lợp kín tấm Pin Năng Lượng Mặt Trời cung cấp điện trực tiếp cho 5 trụ sạc nhanh xe điện (EV Fast Charging Pillars) có màn hình LED xanh.',
             camPos: { x: 42, y: 8.5, z: 58 },
             targetPos: { x: 42, y: 2.0, z: 48 },
             equipZooms: [
-              { label: 'Trụ sạc xe điện', camPos: { x: 35, y: 3.6, z: 44.5 }, targetPos: { x: 39, y: 1.2, z: 49.5 } },
-              { label: 'Mái che pin mặt trời', camPos: { x: 52, y: 9.0, z: 56 }, targetPos: { x: 38, y: 3.5, z: 44 } }
+              { label: '🔍 Trụ sạc xe điện EV & Ô tô đang sạc', camPos: { x: 35, y: 3.6, z: 44.5 }, targetPos: { x: 39, y: 1.2, z: 49.5 } },
+              { label: '🔍 Mái che Solar Carport Đôi', camPos: { x: 52, y: 9.0, z: 56 }, targetPos: { x: 38, y: 3.5, z: 44 } }
             ]
           }
         ]
@@ -948,10 +948,9 @@
 
     const renderer = new THREE.WebGLRenderer({ antialias: true, powerPreference: 'high-performance' });
     renderer.setSize(window.innerWidth, window.innerHeight);
-    // Performance: 1.5x is visually indistinguishable here but draws ~44% fewer pixels than 2x on HiDPI screens.
-    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.5));
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
     renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFShadowMap; // cheaper than PCFSoftShadowMap
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.toneMappingExposure = 1.08;
@@ -1045,8 +1044,8 @@
     const sunLight = new THREE.DirectionalLight(0xfffbeb, 1.35);
     sunLight.position.set(68, 92, 54);
     sunLight.castShadow = true;
-    sunLight.shadow.mapSize.width = 1024; // 4x fewer shadow texels than 2048
-    sunLight.shadow.mapSize.height = 1024;
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
     sunLight.shadow.camera.near = 10;
     sunLight.shadow.camera.far = 260;
     const shadowD = 82;
@@ -3206,12 +3205,12 @@
     const markerElements = {};
 
     const pinConfigs = [
-      { id: 'khuB', label: 'Khu B: Bóng rổ, Cầu lông, Bóng bàn', sub: '1 Bóng rổ • 4 Cầu lông • 4 Bóng bàn', pos: new THREE.Vector3(-37, 15.5, -30) },
-      { id: 'khuA', label: 'Khu A: Bơi lội, Gym', sub: 'Hồ bơi 25 m • Gym • Tủ khóa', pos: new THREE.Vector3(-37, 15.5, 6) },
-      { id: 'khuC', label: 'Khu C: Võ thuật, Boxing, Yoga', sub: '1 Đài Boxing • 8 Bao cát • 8 Reformer', pos: new THREE.Vector3(-40, 15.5, 35) },
-      { id: 'outdoor', label: 'Ngoài trời: Bóng đá, Pickleball', sub: '1 Sân 5 • 1 Sân 7 • 4 Sân Pickleball', pos: new THREE.Vector3(36, 6.0, 4) },
-      { id: 'lobby', label: 'Sảnh lễ tân và căn tin', sub: 'Cổng chính • Lễ tân • Y tế', pos: new THREE.Vector3(1.5, 7.2, 28) },
-      { id: 'parking', label: 'Bãi đỗ ô tô (20 chỗ)', sub: '2 dãy • Mái pin mặt trời • Sạc xe điện', pos: new THREE.Vector3(38, 6.5, 44) }
+      { id: 'khuB', label: 'Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn', sub: '1 Bóng rổ • 4 Cầu lông • 4 Bóng bàn', pos: new THREE.Vector3(-37, 15.5, -30) },
+      { id: 'khuA', label: 'Khu A: Bơi Lội, Gym & Fitness', sub: '1 Bể bơi 25m • 1 Gym • Khu Locker', pos: new THREE.Vector3(-37, 15.5, 6) },
+      { id: 'khuC', label: 'Khu C: Võ Thuật, Boxing & Yoga', sub: '1 Đài Boxing • 8 Bao cát • 8 Reformer', pos: new THREE.Vector3(-40, 15.5, 35) },
+      { id: 'outdoor', label: 'Khu Ngoài Trời: Bóng Đá & Pickleball', sub: '1 Sân 5 • 1 Sân 7 • 4 Sân Pickleball', pos: new THREE.Vector3(36, 6.0, 4) },
+      { id: 'lobby', label: 'Olympic Sports Area • Lễ Tân & Căn-Tin', sub: 'Cổng chính • Quầy Lễ tân • Phòng Y tế', pos: new THREE.Vector3(1.5, 7.2, 28) },
+      { id: 'parking', label: 'Khu Bãi Đỗ Xe Ô Tô Tập Trung (20 Ô)', sub: '2 Dãy Đối Diện • Mái Solar • Sạc EV', pos: new THREE.Vector3(38, 6.5, 44) }
     ];
 
     pinConfigs.forEach(cfg => {
@@ -3387,7 +3386,7 @@
       activeZoneId = null;
       isWalkMode = false;
       const label = document.getElementById('cam-mode-label');
-      if (label) label.textContent = 'Góc nhìn: Từ trên cao';
+      if (label) label.textContent = 'Góc nhìn: Flycam 3D';
       const labelMob = document.getElementById('cam-mode-label-mob');
       if (labelMob) labelMob.textContent = 'Góc nhìn';
       resetAllBuildingFloors();
@@ -3409,7 +3408,7 @@
       activeZoneId = null;
       isWalkMode = false;
       const label = document.getElementById('cam-mode-label');
-      if (label) label.textContent = 'Góc nhìn: Mặt bằng';
+      if (label) label.textContent = 'Góc nhìn: Mặt Bằng 2D';
       const labelMob = document.getElementById('cam-mode-label-mob');
       if (labelMob) labelMob.textContent = 'Mặt Bằng 2D';
       resetAllBuildingFloors();
@@ -3422,11 +3421,11 @@
       const label = document.getElementById('cam-mode-label');
       const labelMob = document.getElementById('cam-mode-label-mob');
       if (isWalkMode) {
-        if (label) label.textContent = 'Góc nhìn: Mặt đất';
+        if (label) label.textContent = 'Góc nhìn: Thực Tế Mặt Đất';
         if (labelMob) labelMob.textContent = 'Mặt Đất';
         animateCameraTo({ x: -13.0, y: 3.2, z: -15 }, { x: -13.0, y: 2.4, z: 24 });
       } else {
-        if (label) label.textContent = 'Góc nhìn: Từ trên cao';
+        if (label) label.textContent = 'Góc nhìn: Flycam 3D';
         if (labelMob) labelMob.textContent = 'Flycam';
         resetMasterView();
       }
@@ -3498,7 +3497,7 @@
 
     window.openBookingModal = function() {
       const z = ZONES_DATA[activeZoneId];
-      document.getElementById('booking-zone-name').value = z ? z.shortTitle : 'Toàn khu 13.000 m²';
+      document.getElementById('booking-zone-name').value = z ? z.shortTitle : 'Toàn Khu Thể Thao 13.000m²';
       document.getElementById('booking-toast').classList.add('hidden');
       toggleModal('booking-modal', true);
     };
@@ -3546,20 +3545,8 @@
       renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
-    // Render only while someone can see the model: the landing page reports when this frame is
-    // scrolled out of view (SET_ACTIVE), and a hidden browser tab stops it too.
-    let hostActive = true;
-    let rafId = null;
-    const isRunning = () => hostActive && document.visibilityState !== 'hidden';
-    function startLoop() {
-      if (rafId === null && isRunning()) rafId = requestAnimationFrame(animate);
-    }
-    document.addEventListener('visibilitychange', startLoop);
-
     function animate(now) {
-      rafId = null;
-      if (!isRunning()) return; // paused; startLoop() resumes it
-      rafId = requestAnimationFrame(animate);
+      requestAnimationFrame(animate);
       const time = (now || 0) * 0.001;
 
       // Smooth Camera Fly-To
@@ -3615,16 +3602,13 @@
           window.resetMasterView();
         } else if (data.type === 'SET_LIGHTING' && data.mode && typeof window.setLightingMode === 'function') {
           window.setLightingMode(data.mode);
-        } else if (data.type === 'SET_ACTIVE') {
-          hostActive = data.active !== false;
-          startLoop();
         }
       } catch (err) {
         console.warn('PostMessage error in 3D campus:', err);
       }
     });
 
-    window.onload = () => startLoop();
+    window.onload = () => animate(performance.now());
     }
   </script>
 </body>
