@@ -24,7 +24,7 @@ export function AdminDashboard({ initialSection }) {
   } = useAdminDashboard({ initialSection });
 
   return (
-    <div className="w-full space-y-6 pb-12 transition-colors">
+    <div className="w-full space-y-6 pb-12 animate-fade-slide-up transition-colors">
       {/* Modals */}
       {showCC && (
         <CenterModal

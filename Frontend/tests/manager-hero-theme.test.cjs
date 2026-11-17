@@ -20,7 +20,9 @@ const MANAGER_HERO_FILES = [
   'pages/manager-coach-operations/ui/ManagerCoachOperations.jsx',
   'pages/manager-support/ui/ManagerSupportCommunications.jsx',
   'pages/manager-home-content/ui/HomeContentHeader.jsx',
-  'pages/audit-logs/ui/AuditLogs.jsx'
+  'pages/audit-logs/ui/AuditLogs.jsx',
+  'pages/admin-dashboard/ui/AdminHeroBanner.jsx',
+  'pages/roles-permissions/ui/RolesPermissions.jsx'
 ];
 
 test('shared ScmsHeroBanner defines scms-hero choreography and sage-teal-sand palette tokens', () => {
