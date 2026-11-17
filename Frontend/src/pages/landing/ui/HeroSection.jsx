@@ -1,12 +1,11 @@
 import React from 'react';
 import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
-import { Hero3DCanvas } from './Hero3DCanvas.jsx';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
 
 // EN keeps the published title unless it is written in Vietnamese.
 const hasVietnameseChars = (text) => /[à-ỹđ]/i.test(text || '');
 
-export function HeroSection({ catalogLoading = false, facilitiesList, heroReady = true, is3DMode = false, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
+export function HeroSection({ catalogLoading = false, facilitiesList, heroReady = true, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
   const publishedMetrics = landingContent?.heroBanner?.metrics || [];
   const hasPublishedDesc = Boolean(landingContent?.heroBanner?.description);
   const countsReady = !catalogLoading && heroReady;
@@ -29,9 +28,6 @@ export function HeroSection({ catalogLoading = false, facilitiesList, heroReady 
       </video>
       <div className="section-overlay" />
 
-      {/* Interactive 3D Spatial Canvas when 3D Mode is active */}
-      {is3DMode && <Hero3DCanvas isEn={isEn} />}
-
       {/* Hero Container */}
       <div className="hero-container">
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',maxWidth:'900px',margin:'0 auto'}}>
@@ -50,7 +46,7 @@ export function HeroSection({ catalogLoading = false, facilitiesList, heroReady 
           </p>
 
           {/* CTA Buttons */}
-          <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center', flexWrap:'wrap', gap:'12px'}}>
+          <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center'}}>
             <a href={safeHref(landingContent?.heroBanner?.primaryCtaLink) || '#/register'}
               className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
               {isEn ? 'REGISTER NEW MEMBER' : (landingContent?.heroBanner?.primaryCtaText || 'ĐĂNG KÝ HỘI VIÊN MỚI')}
@@ -63,27 +59,6 @@ export function HeroSection({ catalogLoading = false, facilitiesList, heroReady 
                 ? (countsReady ? `EXPLORE ${visibleSports?.length || 0} DISCIPLINES` : 'EXPLORE DISCIPLINES')
                 : (landingContent?.heroBanner?.secondaryCtaText || (countsReady ? `KHÁM PHÁ ${visibleSports?.length || 0} MÔN HỌC` : 'KHÁM PHÁ MÔN HỌC'))}
             </a>
-            {is3DMode && (
-              <button
-                type="button"
-                onClick={() => {
-                  const el = document.getElementById('khong-gian-tap-luyen');
-                  if (el) el.scrollIntoView({ behavior: 'smooth' });
-                }}
-                className="custom-btn"
-                style={{
-                  padding: '14px 28px',
-                  fontSize: '14px',
-                  background: 'linear-gradient(135deg, #0891b2 0%, #06b6d4 100%)',
-                  borderColor: '#22d3ee',
-                  boxShadow: '0 0 24px rgba(6, 182, 212, 0.45)',
-                  cursor: 'pointer'
-                }}
-              >
-                <span className="material-symbols-outlined" style={{ fontSize: '18px' }}>view_in_ar</span>
-                <span>{isEn ? '3D CAMPUS TOUR' : 'THAM QUAN 3D CAMPUS'}</span>
-              </button>
-            )}
           </div>
 
           {/* Metrics Strip */}
