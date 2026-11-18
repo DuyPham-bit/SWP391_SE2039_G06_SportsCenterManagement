@@ -1,13 +1,15 @@
 import React from 'react';
 import { Logo } from '../../../shared/ui/Logo.jsx';
+import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 
 export function LandingHeader({
   activeNav, coursesDropdownRef, getDashboardLink, handleCoursesMouseEnter, handleCoursesMouseLeave,
-  handleNavClick, handleSelectMenuItem, isAuthenticated, isCoursesDropdownOpen, isEn,
+  handleNavClick, handleSelectMenuItem, isAuthenticated, isCoursesDropdownOpen,
   isMobileCoursesOpen, isMobileMenuOpen, isScrolled, language, leftSports, logout, navItems,
   rightSports, role, selectedSportFromMenu, setIsMobileCoursesOpen, setIsMobileMenuOpen, setLanguage,
   toggleCoursesDropdown
 }) {
+  const { t } = useLanguage();
   return (
     <header
       id="site-header"
@@ -19,25 +21,25 @@ export function LandingHeader({
 
         {/* Navigation Links */}
         <nav className="tiya-nav-menu">
-          {/* TRANG CHỦ */}
+          {/* HOME */}
           <a
             href="#/"
             onClick={(e) => handleNavClick(navItems[0], e)}
             className={`tiya-nav-link ${activeNav === 'trang-chu' ? 'active' : ''}`}
           >
-            {isEn ? 'HOME' : 'TRANG CHỦ'}
+            {t('landing.nav.home')}
           </a>
 
-          {/* VỀ CHÚNG TÔI */}
+          {/* ABOUT US */}
           <a
             href="#ve-chung-toi"
             onClick={(e) => handleNavClick(navItems[1], e)}
             className={`tiya-nav-link ${activeNav === 've-chung-toi' ? 'active' : ''}`}
           >
-            {isEn ? 'ABOUT US' : 'VỀ CHÚNG TÔI'}
+            {t('landing.nav.about')}
           </a>
 
-          {/* KHÓA HỌC with 2-Column Sports Dropdown */}
+          {/* COURSES with a 2-column sports dropdown */}
           <div
             ref={coursesDropdownRef}
             className="tiya-dropdown"
@@ -52,7 +54,7 @@ export function LandingHeader({
               }}
               className={`tiya-nav-link ${isCoursesDropdownOpen || activeNav === 'khoa-hoc' ? 'active' : ''}`}
             >
-              {isEn ? 'COURSES' : 'KHÓA HỌC'}
+              {t('landing.nav.courses')}
               <span className="material-symbols-outlined" style={{fontSize:'16px',transition:'transform 0.2s',transform:isCoursesDropdownOpen?'rotate(180deg)':'none'}}>
                 keyboard_arrow_down
               </span>
@@ -90,26 +92,26 @@ export function LandingHeader({
             )}
           </div>
 
-          {/* CƠ SỞ VẬT CHẤT */}
+          {/* FACILITIES */}
           <a
             href="#co-so-vat-chat"
             onClick={(e) => handleNavClick(navItems[3], e)}
             className={`tiya-nav-link ${activeNav === 'co-so-vat-chat' ? 'active' : ''}`}
           >
-            {isEn ? 'FACILITIES' : 'CƠ SỞ VẬT CHẤT'}
+            {t('landing.nav.facilities')}
           </a>
         </nav>
 
         {/* Action / Auth Buttons */}
         <div style={{display:'flex',alignItems:'center',gap:'10px'}}>
           {/* Minimalist Refined Language Toggle */}
-          <div className="tiya-lang-toggle tiya-navbar__desktop-only" role="group" aria-label="Language selector">
+          <div className="tiya-lang-toggle tiya-navbar__desktop-only" role="group" aria-label={t('landing.lang.selector')}>
             <button
               type="button"
               onClick={() => setLanguage('vi')}
               className={`tiya-lang-toggle__btn ${language === 'vi' ? 'active' : ''}`}
-              aria-label="Tiếng Việt"
-              title="Tiếng Việt"
+              aria-label={t('landing.lang.vi')}
+              title={t('landing.lang.vi')}
             >
               <span className="lang-code">VI</span>
             </button>
@@ -117,8 +119,8 @@ export function LandingHeader({
               type="button"
               onClick={() => setLanguage('en')}
               className={`tiya-lang-toggle__btn ${language === 'en' ? 'active' : ''}`}
-              aria-label="English"
-              title="English"
+              aria-label={t('landing.lang.en')}
+              title={t('landing.lang.en')}
             >
               <span className="lang-code">EN</span>
             </button>
@@ -131,7 +133,7 @@ export function LandingHeader({
                 className="custom-btn"
               >
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>space_dashboard</span>
-                <span>{isEn ? `Dashboard (${role})` : `Vào Dashboard (${role})`}</span>
+                <span>{t('landing.nav.dashboard', { role })}</span>
               </a>
               <button
                 type="button"
@@ -140,17 +142,17 @@ export function LandingHeader({
                   window.location.hash = '#/login';
                 }}
                 className="custom-border-btn"
-                title={isEn ? 'Sign out' : 'Đăng xuất tài khoản'}
+                title={t('landing.nav.signOutTitle')}
               >
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>logout</span>
-                <span>{isEn ? 'Logout' : 'Đăng xuất'}</span>
+                <span>{t('landing.nav.logout')}</span>
               </button>
             </div>
           ) : (
             <div className="tiya-navbar__desktop-only" style={{display:'flex',alignItems:'center',gap:'8px'}}>
-              <a href="#/login" className="custom-border-btn">{isEn ? 'SIGN IN' : 'ĐĂNG NHẬP'}</a>
+              <a href="#/login" className="custom-border-btn">{t('landing.nav.signIn')}</a>
               <a href="#/register" className="custom-btn">
-                {isEn ? 'REGISTER' : 'ĐĂNG KÝ'}
+                {t('landing.nav.register')}
                 <span className="material-symbols-outlined" style={{fontSize:'16px'}}>arrow_forward</span>
               </a>
             </div>
@@ -175,12 +177,12 @@ export function LandingHeader({
         <div className="tiya-mobile-drawer">
           {/* Mobile Language Selector */}
           <div style={{display:'flex',justifyContent:'flex-end',marginBottom:'12px'}}>
-            <div className="tiya-lang-toggle" role="group" aria-label="Language selector">
+            <div className="tiya-lang-toggle" role="group" aria-label={t('landing.lang.selector')}>
               <button
                 type="button"
                 onClick={() => setLanguage('vi')}
                 className={`tiya-lang-toggle__btn ${language === 'vi' ? 'active' : ''}`}
-                aria-label="Tiếng Việt"
+                aria-label={t('landing.lang.vi')}
               >
                 <span className="lang-code">VI</span>
               </button>
@@ -188,7 +190,7 @@ export function LandingHeader({
                 type="button"
                 onClick={() => setLanguage('en')}
                 className={`tiya-lang-toggle__btn ${language === 'en' ? 'active' : ''}`}
-                aria-label="English"
+                aria-label={t('landing.lang.en')}
               >
                 <span className="lang-code">EN</span>
               </button>
@@ -197,17 +199,17 @@ export function LandingHeader({
 
           <a href="#/" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(navItems[0], e); }}
             className={`tiya-mobile-drawer__link ${activeNav === 'trang-chu' ? 'active' : ''}`}>
-            {isEn ? 'HOME' : 'TRANG CHỦ'}
+            {t('landing.nav.home')}
           </a>
           <a href="#ve-chung-toi" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(navItems[1], e); }}
             className={`tiya-mobile-drawer__link ${activeNav === 've-chung-toi' ? 'active' : ''}`}>
-            {isEn ? 'ABOUT US' : 'VỀ CHÚNG TÔI'}
+            {t('landing.nav.about')}
           </a>
           {/* Mobile Courses Accordion */}
           <button type="button" onClick={() => setIsMobileCoursesOpen(!isMobileCoursesOpen)}
             className={`tiya-mobile-drawer__link ${activeNav === 'khoa-hoc' || isMobileCoursesOpen ? 'active' : ''}`}
             style={{display:'flex',justifyContent:'space-between',width:'100%'}}>
-            <span>{isEn ? 'COURSES' : 'KHÓA HỌC'}</span>
+            <span>{t('landing.nav.courses')}</span>
             <span className="material-symbols-outlined" style={{fontSize:'18px'}}>
               {isMobileCoursesOpen ? 'keyboard_arrow_up' : 'keyboard_arrow_down'}
             </span>
@@ -225,7 +227,7 @@ export function LandingHeader({
           )}
           <a href="#co-so-vat-chat" onClick={(e) => { setIsMobileMenuOpen(false); handleNavClick(navItems[3], e); }}
             className={`tiya-mobile-drawer__link ${activeNav === 'co-so-vat-chat' ? 'active' : ''}`}>
-            {isEn ? 'FACILITIES' : 'CƠ SỞ VẬT CHẤT'}
+            {t('landing.nav.facilities')}
           </a>
           <hr className="tiya-mobile-drawer__divider" />
           {isAuthenticated ? (
@@ -233,23 +235,23 @@ export function LandingHeader({
               <a href={getDashboardLink()} onClick={() => setIsMobileMenuOpen(false)}
                 className="custom-btn" style={{width:'100%',justifyContent:'center',borderRadius:'10px'}}>
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>space_dashboard</span>
-                <span>{isEn ? `Dashboard (${role})` : `Vào Dashboard (${role})`}</span>
+                <span>{t('landing.nav.dashboard', { role })}</span>
               </a>
               <button type="button" onClick={() => { setIsMobileMenuOpen(false); logout(); window.location.hash = '#/login'; }}
                 className="custom-border-btn" style={{width:'100%',marginTop:'8px',borderRadius:'10px',justifyContent:'center'}}>
                 <span className="material-symbols-outlined" style={{fontSize:'18px'}}>logout</span>
-                {isEn ? 'Sign out' : 'Đăng xuất tài khoản'}
+                {t('landing.nav.signOutTitle')}
               </button>
             </>
           ) : (
             <div style={{display:'flex',flexDirection:'column',gap:'8px'}}>
               <a href="#/login" onClick={() => setIsMobileMenuOpen(false)}
                 className="custom-border-btn" style={{width:'100%',justifyContent:'center',borderRadius:'10px'}}>
-                {isEn ? 'SIGN IN' : 'ĐĂNG NHẬP'}
+                {t('landing.nav.signIn')}
               </a>
               <a href="#/register" onClick={() => setIsMobileMenuOpen(false)}
                 className="custom-btn" style={{width:'100%',justifyContent:'center',borderRadius:'10px'}}>
-                {isEn ? 'REGISTER NEW MEMBER' : 'ĐĂNG KÝ HỘI VIÊN MỚI'}
+                {t('landing.nav.registerMember')}
               </a>
             </div>
           )}
