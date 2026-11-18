@@ -1,14 +1,12 @@
 import React from 'react';
+import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 
-export function CarouselSideArrows({ carousel, isEn = false, itemCount = 0, sectionLabel = '' }) {
+export function CarouselSideArrows({ carousel, itemCount = 0, sectionLabel = '' }) {
+  const { t } = useLanguage();
   if (itemCount <= 1 || !carousel) return null;
 
-  const prevLabel = isEn
-    ? `Previous ${sectionLabel || 'slide'}`
-    : `Lướt sang trái ${sectionLabel}`;
-  const nextLabel = isEn
-    ? `Next ${sectionLabel || 'slide'}`
-    : `Lướt sang phải ${sectionLabel}`;
+  const prevLabel = t('landing.carousel.prev', { label: sectionLabel });
+  const nextLabel = t('landing.carousel.next', { label: sectionLabel });
 
   return (
     <>
