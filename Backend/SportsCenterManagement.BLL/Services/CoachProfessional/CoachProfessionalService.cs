@@ -8,8 +8,11 @@ using SportsCenterManagement.DAL.Entities;
 
 namespace SportsCenterManagement.BLL.Services.CoachProfessional;
 
-public sealed class CoachProfessionalService(SportsCenterDbContext db, TimeProvider timeProvider)
+public sealed class CoachProfessionalService(IUnitOfWork unitOfWork, TimeProvider timeProvider)
 {
+    // Data access goes through the unit of work (same scoped DbContext instance).
+    private readonly SportsCenterDbContext db = unitOfWork.Context;
+
     private sealed record ReplacementCoachOption(
         long Id, string FullName, string CoachCode, string? Specialization, string[] Specializations);
 
