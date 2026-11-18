@@ -1,13 +1,30 @@
 /* Auth form fields: floating label, focus rule, messages, animated eye and checkbox. Transform/opacity only. */
 /* ── Floating-label fields ────────────────────────────────────────────── */
 .lp-float-label {
+  z-index: 2;
   transform: translate3d(0, -50%, 0);
   transform-origin: left center;
   transition: transform 0.22s var(--auth-ease), color 0.2s;
 }
 .lp-float-input:focus ~ .lp-float-label,
 .lp-float-input:not(:placeholder-shown) ~ .lp-float-label,
-.lp-float-input:-webkit-autofill ~ .lp-float-label { transform: translate3d(0, -112%, 0) scale(0.8); }
+.lp-float-input:-webkit-autofill ~ .lp-float-label {
+  transform: translate3d(0, -104%, 0) scale(0.76);
+}
+/* Keep browser autofill clean on both light cream and dark card tones (no jarring pale-blue block). */
+.lp-float-input:-webkit-autofill,
+.lp-float-input:-webkit-autofill:hover,
+.lp-float-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: rgb(var(--brand-navy-900));
+  -webkit-box-shadow: 0 0 0 1000px rgb(255 255 255) inset;
+  transition: background-color 5000s ease-in-out 0s;
+}
+html.dark .lp-float-input:-webkit-autofill,
+html.dark .lp-float-input:-webkit-autofill:hover,
+html.dark .lp-float-input:-webkit-autofill:focus {
+  -webkit-text-fill-color: rgb(255 255 255);
+  -webkit-box-shadow: 0 0 0 1000px rgb(var(--brand-navy-900)) inset;
+}
 .lp-float-input::placeholder { opacity: 0; transition: opacity 0.2s; }
 .lp-float-input:focus::placeholder { opacity: 1; }
 .lp-field-bar {
