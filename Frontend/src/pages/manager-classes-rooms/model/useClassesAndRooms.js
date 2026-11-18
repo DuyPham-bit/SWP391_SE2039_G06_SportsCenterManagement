@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { classApi } from '../../../entities/class/index.js';
 import { roomApi } from '../../../entities/facility/index.js';
 import { splitAndSortClasses, filterRoomsForSport, filterCoachesForSport, isRoomMatchingSport, isCoachMatchingSport, validateClassFields, validateRoomFields, validateSportFields, scheduleEndTime, validateScheduleForm, toCenterHours, DEFAULT_CENTER_HOURS, WEEK_DAYS, filterClasses } from './classManagementView.js';
