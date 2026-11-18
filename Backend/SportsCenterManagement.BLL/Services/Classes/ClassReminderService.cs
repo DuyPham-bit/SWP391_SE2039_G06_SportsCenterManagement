@@ -5,8 +5,11 @@ using SportsCenterManagement.DAL.Entities;
 
 namespace SportsCenterManagement.BLL.Services.Classes;
 
-public sealed class ClassReminderService(SportsCenterDbContext db, TimeProvider timeProvider)
+public sealed class ClassReminderService(IUnitOfWork unitOfWork, TimeProvider timeProvider)
 {
+    // Data access goes through the unit of work (same scoped DbContext instance).
+    private readonly SportsCenterDbContext db = unitOfWork.Context;
+
     public async Task<int> SendDueRemindersAsync(CancellationToken cancellationToken = default)
     {
         var utcNow = timeProvider.GetUtcNow();
