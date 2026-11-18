@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLanguage } from '../../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../../shared/i18n/index.js';
 
 /**
  * 6. BIỂU ĐỒ XẾP HẠNG SÂN BÃI / PHÒNG TẬP: SỐ CA HỌC & LƯỢT KHÁCH
