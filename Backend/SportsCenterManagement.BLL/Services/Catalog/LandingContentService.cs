@@ -19,8 +19,11 @@ public sealed record AdminHomeContentResponse(JsonElement? Content, HomeContentS
 /// Home page content stored as one bilingual JSON document in SystemSettings. Sport/room visibility and the
 /// "x/y visible" counts live on the Sports/Rooms tables; cards whose id is a DB id follow those columns.
 /// </summary>
-public sealed class LandingContentService(SportsCenterDbContext db, IConfiguration configuration)
+public sealed class LandingContentService(IUnitOfWork unitOfWork, IConfiguration configuration)
 {
+    // Data access goes through the unit of work (same scoped DbContext instance).
+    private readonly SportsCenterDbContext db = unitOfWork.Context;
+
     private const string SettingKey = "site.landing-content";
     // Unpublished editor work, shared by every Manager/Admin and kept across devices.
     private const string DraftKey = "site.landing-content.draft";
