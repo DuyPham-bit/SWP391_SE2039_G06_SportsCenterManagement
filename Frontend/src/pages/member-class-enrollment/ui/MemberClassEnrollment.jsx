@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { classApi } from '../../../entities/class/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 
 const DAY_VI = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
