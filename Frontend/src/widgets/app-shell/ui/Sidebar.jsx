@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { translateCoachName } from '../../../shared/i18n/i18nHelper.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { translateCoachName } from '../../../shared/lib/i18nHelper.js';
 import { Logo } from '../../../shared/ui/Logo.jsx';
 
 export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCollapse, onClose, currentPath }) {
