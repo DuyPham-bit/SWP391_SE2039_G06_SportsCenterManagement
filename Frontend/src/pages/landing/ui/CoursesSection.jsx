@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { CarouselSideArrows } from './CarouselControls.jsx';
 
 export function CoursesSection({
