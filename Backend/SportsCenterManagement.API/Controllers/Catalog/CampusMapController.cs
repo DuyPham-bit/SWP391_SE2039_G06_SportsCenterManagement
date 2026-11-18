@@ -8,7 +8,7 @@ namespace SportsCenterManagement.API.Controllers.Catalog;
 
 [Route("api/campus-map")]
 [FlowExceptionFilter]
-public sealed class CampusMapController(CampusMapService campusMap, SportsCenterDbContext db) : FlowControllerBase
+public sealed class CampusMapController(CampusMapService campusMap, CenterAccessGuard centerAccess) : FlowControllerBase
 {
     /// <summary>Public campus map: zones, rooms/courts, features and live status.</summary>
     [HttpGet]
@@ -21,7 +21,7 @@ public sealed class CampusMapController(CampusMapService campusMap, SportsCenter
     [Authorize(Roles = "ADMIN,MANAGER")]
     public async Task<ActionResult<CampusZoneDto>> UpdateZone(long zoneId, UpdateCampusZoneRequest request, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, await campusMap.GetZoneCenterIdAsync(zoneId, ct), ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, await campusMap.GetZoneCenterIdAsync(zoneId, ct), ct);
         return Ok(await campusMap.UpdateZoneAsync(zoneId, request, CurrentUserId, ct));
     }
 }
