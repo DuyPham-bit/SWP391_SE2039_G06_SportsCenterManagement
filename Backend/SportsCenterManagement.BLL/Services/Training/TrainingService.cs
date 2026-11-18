@@ -7,8 +7,11 @@ using SportsCenterManagement.DAL.Entities;
 
 namespace SportsCenterManagement.BLL.Services.Training;
 
-public sealed class TrainingService(SportsCenterDbContext db)
+public sealed class TrainingService(IUnitOfWork unitOfWork)
 {
+    // Data access goes through the unit of work (same scoped DbContext instance).
+    private readonly SportsCenterDbContext db = unitOfWork.Context;
+
     private IQueryable<ClassEntity> VisibleClasses(long userId) => db.Classes.Where(c =>
         db.ClassCoaches.Any(a => a.ClassId == c.Id && db.CoachProfiles.Any(p => p.Id == a.CoachId &&
             p.UserId == userId && p.Status == "Active" && p.CenterId == c.CenterId)) ||
