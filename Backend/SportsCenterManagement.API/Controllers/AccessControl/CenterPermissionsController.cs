@@ -12,7 +12,7 @@ namespace SportsCenterManagement.API.Controllers.AccessControl;
 public sealed record UpdateCenterUserPermissionsRequest(string[] PermissionCodes, string[] CapabilityIds);
 
 [Authorize]
-public sealed class CenterPermissionsController(SportsCenterDbContext db) : FlowControllerBase, IAsyncActionFilter
+public sealed class CenterPermissionsController(SportsCenterDbContext db, CenterAccessGuard centerAccess) : FlowControllerBase, IAsyncActionFilter
 {
     [RequirePermission("roles.permissions.manage")]
     [HttpGet("admin/permissions")]
@@ -37,7 +37,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     [HttpGet("centers/{centerId:long}/roles")]
     public async Task<IActionResult> Matrix(long centerId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         var canManageManagers = User.IsInRole("ADMIN");
         var result = new List<object>();
         foreach (var role in await db.Roles
@@ -52,7 +52,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     [HttpPut("centers/{centerId:long}/roles/{roleId:long}/permissions")]
     public async Task<IActionResult> Replace(long centerId, long roleId, CenterRoleOverride request, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         if (request.PermissionCodes is null || request.CapabilityIds is null || request.PermissionCodes.Length > 100 || request.CapabilityIds.Length > 100
             || request.PermissionCodes.Distinct().Count() != request.PermissionCodes.Length || request.CapabilityIds.Distinct().Count() != request.CapabilityIds.Length)
             throw new InvalidOperationException("Danh sách quyền không hợp lệ.") { Data = { ["StatusCode"] = 400 } };
@@ -92,7 +92,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     [HttpGet("centers/{centerId:long}/user-permissions")]
     public async Task<IActionResult> Users(long centerId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         var canManageManagers = User.IsInRole("ADMIN");
         var memberRows = await (from profile in db.MemberProfiles.AsNoTracking()
             join user in db.Users.AsNoTracking() on profile.UserId equals user.Id
@@ -140,7 +140,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     [HttpPut("centers/{centerId:long}/users/{targetUserId:long}/permissions")]
     public async Task<IActionResult> ReplaceUser(long centerId, long targetUserId, UpdateCenterUserPermissionsRequest request, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         if (targetUserId == CurrentUserId)
             throw new InvalidOperationException("Bạn không thể thay đổi quyền của chính mình.") { Data = { ["StatusCode"] = 403 } };
         if (request.PermissionCodes is null || request.CapabilityIds is null || request.PermissionCodes.Length > 100 || request.CapabilityIds.Length > 100
@@ -183,7 +183,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     [HttpDelete("centers/{centerId:long}/users/{targetUserId:long}/permissions")]
     public async Task<IActionResult> ResetUser(long centerId, long targetUserId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         if (targetUserId == CurrentUserId)
             throw new InvalidOperationException("Bạn không thể thay đổi quyền của chính mình.") { Data = { ["StatusCode"] = 403 } };
         var canManageManagers = User.IsInRole("ADMIN");
@@ -208,7 +208,7 @@ public sealed class CenterPermissionsController(SportsCenterDbContext db) : Flow
     [HttpDelete("centers/{centerId:long}/roles/{roleId:long}/user-permissions")]
     public async Task<IActionResult> ResetUsersForRole(long centerId, long roleId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         var canManageManagers = User.IsInRole("ADMIN");
         var role = await db.Roles.SingleOrDefaultAsync(r => r.Id == roleId
             && (r.Name == "Member" || r.Name == "Coach" || r.Name == "Receptionist"
