@@ -444,3 +444,19 @@ public record PendingInvoiceDto(
     string? PaymentMethod
 );
 }
+
+namespace SportsCenterManagement.BLL.DTOs.Payments
+{
+    /// <summary>One row of GET /api/centers/{centerId}/invoices (field order = the former anonymous type).</summary>
+    public sealed record CenterInvoiceListItem(
+        string InvoiceNumber,
+        long MemberId,
+        string MemberName,
+        string MemberCode,
+        DateTime IssuedAt,
+        string Status,
+        decimal TotalAmount,
+        long Id);
+
+    public sealed record CenterInvoicePage(IReadOnlyList<CenterInvoiceListItem> Items, int TotalCount, int Page, int PageSize);
+}
