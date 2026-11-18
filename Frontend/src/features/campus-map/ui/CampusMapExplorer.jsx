@@ -1,5 +1,5 @@
 import React, { Component, Suspense, lazy, useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { useCampusMap } from '../model/useCampusMap.js';
 import {
   AMENITIES, FEATURE_LEGEND, LIGHTING_MODES, LIGHTING_TIME, STATUS_META,
