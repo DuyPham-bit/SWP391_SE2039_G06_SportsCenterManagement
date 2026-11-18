@@ -102,10 +102,10 @@ static class PersistenceChecks
 
         await check("landing editor draft is stored in the DB, survives reload and is consumed by publishing", async () =>
         {
-            var service = new LandingContentService(db, configuration);
+            var service = new LandingContentService(new UnitOfWork(db), configuration);
             using var draftDoc = JsonDocument.Parse("""{"heroBanner":{"title":"Bản nháp chưa xuất bản"}}""");
             await service.SaveDraftAsync(draftDoc.RootElement, desk.Id, default);
-            var reloaded = await new LandingContentService(db, configuration).GetDraftAsync(default);
+            var reloaded = await new LandingContentService(new UnitOfWork(db), configuration).GetDraftAsync(default);
             var stored = await db.SystemSettings.AsNoTracking().AnyAsync(s => s.SettingKey == "site.landing-content.draft");
             var rejected = false;
             try { using var bad = JsonDocument.Parse("[1,2]"); await service.SaveDraftAsync(bad.RootElement, desk.Id, default); }
