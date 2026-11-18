@@ -1,9 +1,9 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { systemApi, SYSTEM_CAPABILITIES } from '../../../entities/permission/index.js';
 import { staffApi } from '../../../entities/staff/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
 import { MotionButton } from '../../../shared/ui/MotionButton.jsx';
 import {
