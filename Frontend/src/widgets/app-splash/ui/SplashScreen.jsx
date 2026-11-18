@@ -5,7 +5,7 @@ import { isReduceMotionOn, prefersReducedMotion, replayPageEnter } from '../../.
 import { useSplashRouteReady } from '../../../shared/lib/splashSignal.js';
 import { DISMISS_LABEL, RETRY_LABEL, SPLASH_COPY } from '../model/splashCopy.js';
 import { AuroraBackground } from './AuroraBackground.jsx';
-import { LaneRing, ProgressRings } from './ProgressRings.jsx';
+import { LaneRing, PortalBurst, ProgressRings } from './ProgressRings.jsx';
 import { BrandTitle } from './BrandTitle.jsx';
 import { StatusTicker } from './StatusTicker.jsx';
 import { LangToggle } from './LangToggle.jsx';
@@ -14,8 +14,8 @@ const LOGO_SRC = '/logo-olympic-mark.png?v=20261109v4';
 const SEEN_KEY = 'SCMS_APP_SPLASH_SEEN';
 const MIN_FIRST_MS = 1200; // first launch of the browser session: long enough not to flash
 const MIN_REPEAT_MS = 500; // reloads later in the same session stay quick
-const HOLD_MS = 420; // ring closes and pulses before the exit starts
-const EXIT_MS = 820;
+const HOLD_MS = 340; // ring charges and ignites before the portal bursts open
+const EXIT_MS = 900;
 const CALM_EXIT_MS = 320;
 const STEP_MS = 1200;
 const STALL_MS = 20000;
@@ -46,21 +46,6 @@ const bootTime = () => (typeof window.__osaBootT === 'number' ? window.__osaBoot
 
 export function removeBootSplash() {
   document.getElementById('osa-boot')?.remove();
-}
-
-/** Where the visible app-shell logo sits, as a square box around its emblem. */
-function findLogoTarget() {
-  const images = document.querySelectorAll('a[aria-label="Olympic Sports Arena"] img');
-  for (const img of images) {
-    const r = img.getBoundingClientRect();
-    if (r.width < 8 || r.height < 8 || r.right <= 0 || r.bottom <= 0 || r.left >= window.innerWidth) continue;
-    const isMark = (img.currentSrc || img.src).includes('logo-olympic-mark');
-    // The wordmark keeps its emblem in the left fifth at full height.
-    return isMark
-      ? { cx: r.left + r.width / 2, cy: r.top + r.height / 2, size: Math.min(r.width, r.height) }
-      : { cx: r.left + r.width * 0.2, cy: r.top + r.height / 2, size: r.height * 0.9 };
-  }
-  return null;
 }
 
 /**
@@ -182,7 +167,7 @@ function SplashOverlay({ onFinish }) {
     return () => window.clearTimeout(id);
   }, [phase, calm]);
 
-  // Exit: logo FLIPs onto the header logo, the background opens from the logo, the page replays its entrance.
+  // Exit: center emblem ignites and expands into the portal flash while shockwaves open the page.
   useLayoutEffect(() => {
     if (phase !== 'exit') return undefined;
     removeBootSplash();
@@ -192,11 +177,7 @@ function SplashOverlay({ onFinish }) {
     root.style.setProperty('--osa-hy', `${stage.top + stage.height / 2}px`);
     const flip = flipRef.current;
     if (!calm) {
-      const from = tileRef.current.getBoundingClientRect();
-      const to = findLogoTarget();
-      flip.style.transform = to
-        ? `translate3d(${to.cx - (from.left + from.width / 2)}px, ${to.cy - (from.top + from.height / 2)}px, 0) scale(${to.size / from.width})`
-        : 'scale(0.82)';
+      flip.style.transform = 'scale(1.24)';
     }
     flip.style.opacity = '0';
     replayPageEnter();
@@ -254,10 +235,11 @@ function SplashOverlay({ onFinish }) {
       lang={lang}
     >
       <span className="osa-sr">{phase === 'loading' ? copy.loading : copy.ready}</span>
-      <AuroraBackground calm={calm} />
+      <AuroraBackground calm={calm} phase={shownPhase} />
       <div className="osa-splash__fg">
         <div ref={stageRef} className="osa-splash__stage" aria-hidden="true">
           <ProgressRings progressRef={progressRef} />
+          <PortalBurst />
           <div ref={flipRef} className="osa-splash__flip">
             <div ref={tiltRef} className="osa-splash__tilt">
               <div className="osa-splash__float">
