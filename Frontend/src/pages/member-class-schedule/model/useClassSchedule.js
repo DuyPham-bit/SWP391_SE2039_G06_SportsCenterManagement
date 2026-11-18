@@ -1,12 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import { useAuth } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { DAY_LABELS_EN, DAY_LABELS_VI, SHORT_DAY_LABELS_EN, SHORT_DAY_LABELS_VI, formatIsoDate, parseIsoDate, getWeekDays } from '../../../shared/lib/calendar.js';
 import { parseCalendarDate } from '../../../shared/lib/dateTime.js';
 import { classApi } from '../../../entities/class/index.js';
 import { bookingApi } from '../../../entities/booking/index.js';
-import { translateClassName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName } from '../../../shared/lib/i18nHelper.js';
 import { filterSessionsByEntitlements } from '../lib/sessionAction.js';
 
 export function useClassSchedule() {
