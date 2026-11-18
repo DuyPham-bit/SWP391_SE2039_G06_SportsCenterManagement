@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { memberApi, receptionApi } from '../../../entities/member/index.js';
 import { normalizeSubscriptionHistory, buildMemberUpdatePayload } from './memberManagementView.js';
 
