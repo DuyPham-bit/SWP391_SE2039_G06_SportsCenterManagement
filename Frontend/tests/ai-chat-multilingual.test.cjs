@@ -24,7 +24,7 @@ test('speech voice follows the language of the AI reply, not only the UI languag
 test('chat requests send the UI language as a hint to the backend', () => {
   assert.match(read('src/entities/ai-chat/api/aiApi.js'), /body:\s*\{\s*message,\s*conversationId,\s*language\s*\}/);
   for (const file of [
-    'src/features/member-ai-chat/ui/MemberAIChatPopup.jsx',
+    'src/widgets/app-shell/ui/MemberAIChatPopup.jsx',
     'src/pages/member-ai-assistant/ui/MemberAIAssistant.jsx',
   ]) {
     const source = read(file);
@@ -36,7 +36,7 @@ test('chat requests send the UI language as a hint to the backend', () => {
 test('resetting member AI chat deletes server conversations and clears browser cache', () => {
   assert.match(read('src/entities/ai-chat/api/aiApi.js'), /clearConversations:\s*\(\)\s*=>\s*apiRequest\('ai\/conversations',\s*\{\s*method:\s*'DELETE'\s*\}\)/);
   for (const file of [
-    'src/features/member-ai-chat/ui/MemberAIChatPopup.jsx',
+    'src/widgets/app-shell/ui/MemberAIChatPopup.jsx',
     'src/pages/member-ai-assistant/ui/MemberAIAssistant.jsx',
   ]) {
     const source = read(file);
