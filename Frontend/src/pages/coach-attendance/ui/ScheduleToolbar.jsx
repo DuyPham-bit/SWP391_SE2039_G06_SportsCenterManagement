@@ -1,6 +1,6 @@
 import React from 'react';
 import { formatFullDate } from '../lib/attendanceCalendar.js';
-import { translateSportName } from '../../../shared/i18n/i18nHelper.js';
+import { translateSportName } from '../../../shared/lib/i18nHelper.js';
 
 export function ScheduleToolbar({
   availableSports, handleNextWeek, handlePrevWeek, handleThisWeek, isEn, readinessFilter,
