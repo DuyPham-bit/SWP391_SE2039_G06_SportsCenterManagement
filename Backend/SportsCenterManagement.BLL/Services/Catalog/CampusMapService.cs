@@ -23,8 +23,11 @@ public sealed record UpdateCampusZoneRequest(string NameVi, string NameEn, strin
     string ColorHex, string? OpenTime, string? CloseTime, string Status, string? ImageUrl, IReadOnlyList<string>? Amenities);
 
 /// <summary>Single source of truth for the campus map (3D model, 2D plan, zone navigation and detail panel).</summary>
-public sealed class CampusMapService(SportsCenterDbContext db, IBusinessClock clock)
+public sealed class CampusMapService(IUnitOfWork unitOfWork, IBusinessClock clock)
 {
+    // Data access goes through the unit of work (same scoped DbContext instance).
+    private readonly SportsCenterDbContext db = unitOfWork.Context;
+
     public static readonly string[] ZoneStatuses = { "Open", "Maintenance", "Full", "Closed" };
     private static readonly Regex HexColor = new("^#[0-9A-Fa-f]{6}$", RegexOptions.Compiled);
 
