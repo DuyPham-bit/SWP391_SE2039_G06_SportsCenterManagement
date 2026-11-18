@@ -10,7 +10,7 @@ const read = relative => fs.readFileSync(path.join(root, relative), 'utf8');
 
 test('audit API and manager UI do not expose before/after values', () => {
   const response = read('Backend/SportsCenterManagement.BLL/DTOs/Audit/Responses.cs');
-  const query = read('Backend/SportsCenterManagement.BLL/Services/AuditLogService.cs');
+  const query = read('Backend/SportsCenterManagement.BLL/Services/Audit/AuditLogService.cs');
   const ui = read('Frontend/src/pages/audit-logs/ui/AuditLogs.jsx');
   const api = apiSource();
 
@@ -22,7 +22,7 @@ test('audit API and manager UI do not expose before/after values', () => {
 });
 
 test('manager can process support tickets but cannot create a ticket for a requester', () => {
-  const controller = read('Backend/SportsCenterManagement.API/Controllers/SupportRequestsController.cs');
+  const controller = read('Backend/SportsCenterManagement.API/Controllers/Support/SupportRequestsController.cs');
   const supportUi = read('Frontend/src/widgets/support-inbox/ui/SupportRequests.jsx');
   const managerUi = read('Frontend/src/pages/manager-support/ui/ManagerSupportCommunications.jsx');
 
@@ -34,9 +34,9 @@ test('manager can process support tickets but cannot create a ticket for a reque
 });
 
 test('center notification backend rebuilds a safe recipient list and records audit', () => {
-  const service = read('Backend/SportsCenterManagement.BLL/Services/CenterNotificationService.cs');
-  const repository = read('Backend/SportsCenterManagement.DAL/Repositories/Implementations/NotificationRepository.cs');
-  const controller = read('Backend/SportsCenterManagement.API/Controllers/NotificationsController.cs');
+  const service = read('Backend/SportsCenterManagement.BLL/Services/Notifications/CenterNotificationService.cs');
+  const repository = read('Backend/SportsCenterManagement.DAL/Repositories/Notifications/NotificationRepository.cs');
+  const controller = read('Backend/SportsCenterManagement.API/Controllers/Notifications/NotificationsController.cs');
   const code = service + '\n' + repository;
 
   assert.match(controller, /\[Authorize\(Roles = "MANAGER"\)\]/);
@@ -49,7 +49,7 @@ test('center notification backend rebuilds a safe recipient list and records aud
   assert.match(code, /profile\.CenterId == centerId/);
   assert.match(code, /CENTER_NOTIFICATION_SENT/);
   assert.match(code, /throw new FlowException\(409/);
-  assert.doesNotMatch(read('Backend/SportsCenterManagement.BLL/DTOs/Notifications/CenterNotificationDtos.cs'), /UserIds|RecipientIds/);
+  assert.doesNotMatch(read('Backend/SportsCenterManagement.BLL/DTOs/Notifications/Requests.cs'), /UserIds|RecipientIds/);
 });
 
 test('frontend sends either all-center or selected-role notification contract', async () => {

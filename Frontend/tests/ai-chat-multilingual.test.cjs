@@ -43,7 +43,7 @@ test('resetting member AI chat deletes server conversations and clears browser c
     assert.match(source, /aiApi\.clearConversations\(\)/, file);
     assert.match(source, /clearMemberAIChatStorage\(\)/, file);
   }
-  const controller = fs.readFileSync(path.resolve(frontend, '../Backend/SportsCenterManagement.API/Controllers/AiController.cs'), 'utf8');
+  const controller = fs.readFileSync(path.resolve(frontend, '../Backend/SportsCenterManagement.API/Controllers/Training/AiController.cs'), 'utf8');
   assert.match(controller, /\[HttpDelete\("ai\/conversations"\)\]/);
   assert.match(controller, /ClearConversations/);
 });
