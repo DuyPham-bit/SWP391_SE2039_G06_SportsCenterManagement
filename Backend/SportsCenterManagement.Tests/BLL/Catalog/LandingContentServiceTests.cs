@@ -11,7 +11,7 @@ public class LandingContentServiceTests
     public async Task SaveDraftAsync_StaleVersion_IsRejectedInsteadOfOverwriting()
     {
         using var db = TestDb.Create();
-        var service = new LandingContentService(db, new ConfigurationBuilder().Build());
+        var service = new LandingContentService(new UnitOfWork(db), new ConfigurationBuilder().Build());
         var first = await service.SaveDraftAsync(Json("""{"heroBanner":{"title":"A"}}"""), 1, default);
         // The service treats versions less than 1 ms apart as equal (Postgres precision), so the second
         // save must land at least 1 ms later or the stale write is indistinguishable from a fresh one.
@@ -29,7 +29,7 @@ public class LandingContentServiceTests
     public async Task DiscardDraftAsync_WritesAuditLog()
     {
         using var db = TestDb.Create();
-        var service = new LandingContentService(db, new ConfigurationBuilder().Build());
+        var service = new LandingContentService(new UnitOfWork(db), new ConfigurationBuilder().Build());
         await service.SaveDraftAsync(Json("""{"heroBanner":{}}"""), 1, default);
 
         await service.DiscardDraftAsync(5, default);
@@ -51,7 +51,7 @@ public class LandingContentServiceTests
         });
         await db.SaveChangesAsync();
 
-        var service = new LandingContentService(db, new ConfigurationBuilder().Build());
+        var service = new LandingContentService(new UnitOfWork(db), new ConfigurationBuilder().Build());
         await service.SyncCenterPhoneAsync(Json("""
         {
           "ctaAndFooter": { "contactPhone": "0353716249" }
