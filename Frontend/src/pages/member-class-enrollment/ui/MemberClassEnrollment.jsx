@@ -37,7 +37,27 @@ export function MemberClassEnrollment() {
 
   useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  const sports = useMemo(() => data?.sports || [], [data]);
+  // Deep link from the campus map "Book" button: #/member/classes?room=<room name>
+  const [roomFilter, setRoomFilter] = useState(() => readRoomParam());
+  useEffect(() => {
+    const onHash = () => setRoomFilter(readRoomParam());
+    window.addEventListener('hashchange', onHash);
+    return () => window.removeEventListener('hashchange', onHash);
+  }, []);
+  const clearRoomFilter = () => {
+    setRoomFilter('');
+    if (window.location.hash.includes('?')) window.history.replaceState(null, '', window.location.hash.split('?')[0]);
+  };
+
+  const sports = useMemo(() => {
+    const all = data?.sports || [];
+    if (!roomFilter) return all;
+    return all
+      .map(s => ({ ...s, coaches: (s.coaches || [])
+        .map(c => ({ ...c, classes: (c.classes || []).filter(cls => cls.roomName === roomFilter) }))
+        .filter(c => c.classes.length) }))
+      .filter(s => s.coaches.length);
+  }, [data, roomFilter]);
   const visibleSports = sportFilter === 'ALL' ? sports : sports.filter(s => String(s.sportId) === sportFilter);
   const packageName = id => data?.subscriptions?.find(s => s.subscriptionId === id)?.packageName || '';
 
@@ -119,6 +139,16 @@ export function MemberClassEnrollment() {
             ))}
           </section>
 
+          {roomFilter && (
+            <div className="flex flex-wrap items-center gap-2 text-xs" role="status">
+              <span className="font-bold text-brand-navy-700 dark:text-brand-navy-200">{isEn ? 'Venue:' : 'Sân/phòng:'}</span>
+              <span className="px-3 py-1.5 rounded-xl bg-brand-teal-50 text-brand-teal-800 border border-brand-teal-200 font-bold">{roomFilter}</span>
+              <button type="button" onClick={clearRoomFilter} className="px-2.5 py-1.5 rounded-xl border border-brand-navy-200 font-bold text-brand-navy-700 dark:text-brand-navy-200 cursor-pointer">
+                {isEn ? 'Show all venues' : 'Xem tất cả'}
+              </button>
+            </div>
+          )}
+
           {sports.length > 1 && (
             <div className="flex flex-wrap gap-2" role="group" aria-label={isEn ? 'Filter by sport' : 'Lọc theo môn'}>
               {[{ sportId: 'ALL', name: isEn ? 'All sports' : 'Tất cả môn' }, ...sports].map(s => (
@@ -138,7 +168,9 @@ export function MemberClassEnrollment() {
           )}
 
           {!visibleSports.length ? (
-            <p className="text-sm text-brand-navy-500">{isEn ? 'No open classes at your center right now.' : 'Hiện trung tâm chưa có lớp nào đang mở.'}</p>
+            <p className="text-sm text-brand-navy-500">{roomFilter
+              ? (isEn ? 'No open classes use this venue yet. Ask reception to book it directly.' : 'Chưa có lớp nào đang mở tại sân/phòng này. Vui lòng liên hệ lễ tân để đặt trực tiếp.')
+              : (isEn ? 'No open classes at your center right now.' : 'Hiện trung tâm chưa có lớp nào đang mở.')}</p>
           ) : visibleSports.map(sport => (
             <section key={sport.sportId} className="space-y-3">
               <h2 className="font-chivo text-lg font-black text-brand-navy-900 dark:text-white">
@@ -213,4 +245,10 @@ export function MemberClassEnrollment() {
       )}
     </div>
   );
+}
+
+function readRoomParam() {
+  const hash = typeof window !== 'undefined' ? window.location.hash || '' : '';
+  const qs = hash.includes('?') ? hash.split('?')[1] : '';
+  return qs ? (new URLSearchParams(qs).get('room') || '').trim() : '';
 }
