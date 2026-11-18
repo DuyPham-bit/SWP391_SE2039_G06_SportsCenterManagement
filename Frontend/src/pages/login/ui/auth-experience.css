@@ -59,8 +59,104 @@
 }
 
 /* ── Hero stage (left panel) ──────────────────────────────────────────── */
-.lp-scene { opacity: 0; transition: opacity 1.1s var(--auth-ease); }
-.lp-scene.is-ready { opacity: 1; }
+/* Film grain over the forest panel: kills banding in large gradients. */
+.lp-grain {
+  position: absolute;
+  inset: 0;
+  opacity: 0.06;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+}
+
+/*
+ * Athletics track (HeroTrack.jsx): concentric lanes tilted in 3D + overhead stadium floodlight dome
+ * framing SportMorphBall on the right side without crossing headline copy.
+ */
+.lp-track {
+  position: absolute;
+  top: 50%;
+  right: -198px;
+  width: 600px;
+  aspect-ratio: 1;
+  translate: 0 -50%;
+  transform: translate3d(calc(var(--px, 0) * -18px), calc(var(--py, 0) * -12px), 0);
+  transition: transform 0.8s var(--auth-ease);
+  -webkit-mask-image: linear-gradient(90deg, transparent 18%, #000 52%);
+  mask-image: linear-gradient(90deg, transparent 18%, #000 52%);
+  animation: lp-track-in 0.9s var(--auth-ease) 0.15s both;
+}
+@keyframes lp-track-in { from { opacity: 0; scale: 0.92; } to { opacity: 1; scale: 1; } }
+
+.lp-track-dome {
+  position: absolute;
+  inset: -14% -8% 12% 8%;
+  border-radius: 50%;
+  background: radial-gradient(
+    ellipse at 54% 38%,
+    rgb(var(--brand-sand-300) / 0.15) 0%,
+    rgb(var(--brand-teal-500) / 0.11) 38%,
+    transparent 72%
+  );
+  filter: blur(18px);
+}
+.lp-track-plane {
+  position: absolute;
+  inset: 0;
+  transform: perspective(1200px) rotateX(64deg) rotate(-14deg);
+}
+.lp-track-lane {
+  position: absolute;
+  inset: calc(var(--lane) * 7%);
+  border-radius: 50%;
+  border: 1.5px solid rgb(var(--brand-sand-300) / 0.5);
+}
+.lp-track-lane:nth-child(2) { border-color: rgb(var(--brand-sage-500) / 0.36); }
+.lp-track-lane:nth-child(3) { border-color: rgb(var(--brand-teal-500) / 0.36); }
+.lp-track-lane:nth-child(4) { border-color: rgb(var(--brand-sand-300) / 0.24); border-style: dashed; }
+.lp-track-infield {
+  position: absolute;
+  inset: 28%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(var(--brand-sage-700) / 0.38), rgb(var(--brand-sage-700) / 0.1) 70%, transparent);
+}
+
+.lp-track-comet {
+  position: absolute;
+  border-radius: 50%;
+  animation: lp-track-spin var(--spin) linear infinite;
+}
+.lp-track-comet::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: conic-gradient(var(--tail-from) 0 62%, var(--tail-to));
+  -webkit-mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+  mask: radial-gradient(farthest-side, transparent calc(100% - 3.5px), #000 calc(100% - 3px));
+}
+.lp-track-comet > i {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 9px;
+  height: 9px;
+  margin: -4.5px 0 0 -4.5px;
+  border-radius: 50%;
+  background: var(--tail-to);
+  box-shadow: 0 0 16px 4px var(--tail-to);
+}
+.lp-track-comet--gold { inset: 0; --spin: 9s; --tail-from: rgb(var(--brand-sand-300) / 0); --tail-to: rgb(var(--brand-sand-300) / 0.95); }
+.lp-track-comet--teal { inset: 14%; --spin: 12s; animation-direction: reverse; --tail-from: rgb(var(--brand-teal-500) / 0); --tail-to: rgb(var(--brand-teal-500) / 0.9); }
+.lp-track-comet--teal::before { background: conic-gradient(var(--tail-to), var(--tail-from) 38%); }
+@keyframes lp-track-spin { to { transform: rotate(360deg); } }
+
+@media (min-width: 1280px) and (max-width: 1439px) {
+  .lp-track { width: 480px; right: -162px; }
+}
+@media (max-width: 1279px) {
+  .lp-track { width: 460px; right: -230px; opacity: 0.55; }
+}
 
 /* Fallback parallax layers following the pointer (--px/--py in -1..1). */
 .lp-layer { position: absolute; inset: -4%; will-change: transform; transition: transform 0.6s var(--auth-ease); }
@@ -348,12 +444,15 @@
 @media (prefers-reduced-motion: reduce) {
   .lp-in, .lp-word, .lp-shimmer, .lp-drift, .lp-breathe, .lp-swap, .lp-slide-next, .lp-slide-prev, .lp-marquee-track, .lp-halo, .lp-tick,
   .lp-card-enter, .lp-topline, .lp-statbar::after, .lp-ring-border::before, .lp-pulse::before, .lp-pulse::after,
-  .lp-dust span, .lp-check input:checked ~ .lp-check-box { animation: none !important; }
+  .lp-dust span, .lp-check input:checked ~ .lp-check-box,
+  .lp-track, .lp-track-comet { animation: none !important; }
+  .lp-track { transform: none !important; }
   .lp-shimmer { color: rgb(var(--brand-sand-300)); background: none; }
   .lp-court > * { animation: none !important; stroke-dashoffset: 0 !important; }
   .lp-layer, .lp-court-wrap, .lp-tilt, .lp-card-tilt, .lp-magnetic { transform: none !important; }
   .lp-dust { display: none; }
 }
 html.scms-reduce-motion .lp-dust { display: none; }
+html.scms-reduce-motion :is(.lp-track, .lp-track-comet) { animation: none; }
 html.scms-reduce-motion .lp-shimmer { color: rgb(var(--brand-sand-300)); background: none; }
 html.scms-reduce-motion .lp-court > * { stroke-dashoffset: 0 !important; }
