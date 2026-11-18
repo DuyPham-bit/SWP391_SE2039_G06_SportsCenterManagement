@@ -3,7 +3,7 @@ import { parseIsoDate } from '../../../shared/lib/calendar.js';
 import { getSportTheme } from '../lib/calendarView.js';
 import { getSessionAction } from '../lib/sessionAction.js';
 import { SessionActionButton } from './SessionActionButton.jsx';
-import { translateSportName, translateClassName, translateCoachName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateSportName, translateClassName, translateCoachName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function AgendaList({ DAY_LABELS, bookedSessionIds, classesByDate, handleOpenSessionDetail, isEn, todayStr }) {
   return (
