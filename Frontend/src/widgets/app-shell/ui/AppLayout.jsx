@@ -3,8 +3,8 @@ import { Header } from './Header.jsx';
 import { Sidebar } from './Sidebar.jsx';
 import { ProfileModal } from '../../../features/auth/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { MemberAIChatPopup } from '../../../features/member-ai-chat/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { MemberAIChatPopup } from './MemberAIChatPopup.jsx';
 import { usePageEnter } from '../../../shared/lib/motion.js';
 import { PageErrorBoundary } from '../../../shared/ui/PageErrorBoundary.jsx';
 
