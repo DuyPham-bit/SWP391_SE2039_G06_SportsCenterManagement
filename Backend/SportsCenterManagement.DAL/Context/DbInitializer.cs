@@ -20,8 +20,10 @@ public static class DbInitializer
         else await context.Database.EnsureCreatedAsync();
         await EnsureRolesAndPermissionsAsync(context);
         await EnsureAuthAndReceptionPermissionsAsync(context);
+        await CampusMapSeed.RenameLegacyRoomsAsync(context);
         await EnsureCompleteSportsCatalogAsync(context);
         await EnsureMembershipPackageSportsAsync(context);
+        await CampusMapSeed.EnsureAsync(context, DateTime.UtcNow);
         if (seedDemoData) await EnsureDemoBusinessDataAsync(context);
     }
 
@@ -343,6 +345,21 @@ public static class DbInitializer
         await context.SaveChangesAsync();
     }
 
+    /// <summary>The 10 seeded sports and the room each one trains in (also used to map landing cards to DB records).</summary>
+    public static readonly (string SportName, string SportDesc, string RoomName, string RoomType, int RoomCapacity, string RoomLocation)[] SportsCatalog =
+    {
+        ("Bơi lội", "Bơi lội thể thao, cải thiện thể lực và sức bền toàn diện", "Bể bơi 25m (6 làn)", "Swimming Pool", 30, "Khu A • Tầng 1"),
+        ("Gym & Fitness", "Rèn luyện thể hình, tăng cơ giảm mỡ và tăng cường sức mạnh", "Phòng Gym High-Performance", "Gym", 45, "Khu A • Tầng 2"),
+        ("Yoga & Pilates", "Phục hồi chức năng, tăng độ dẻo dai và tĩnh tâm", "Phòng Yoga & Pilates Reformer", "Studio", 20, "Khu C • Tầng 3"),
+        ("Cầu lông", "Tập luyện phản xạ nhanh, di chuyển linh hoạt và đối kháng", "Sân Cầu lông Tiêu chuẩn #1", "Badminton Court", 24, "Khu B • Tầng 2"),
+        ("Boxing & Võ thuật", "Đốt cháy calo, rèn luyện kỹ năng tự vệ và phản xạ chiến đấu", "Võ đài Boxing & Kickfit", "Combat Ring", 25, "Khu C • Tầng 1"),
+        ("Golf", "Học viện đào tạo Golf chuẩn quốc tế, driving range 18 làn và phòng mô phỏng 3D TrackMan 4K", "Tổ Hợp Sân Tập Golf & 3D Simulator", "Golf Complex", 30, "Khu Ngoài Trời & Khu C • Tầng 2"),
+        ("Bóng đá", "Sân cỏ nhân tạo 5 người tiêu chuẩn, mặt cỏ êm ái chống chấn thương, hệ thống thoát nước và dàn đèn LED cao áp ban đêm.", "Sân Bóng Đá Cỏ Nhân Tạo (Sân 5)", "Outdoor Field", 14, "Khu Ngoài Trời"),
+        ("Bóng rổ", "Sân bóng rổ tiêu chuẩn thi đấu phong trào, mặt sân sơn acrylic chống trượt, trụ rổ kính cường lực độ nảy tốt và mái che mát.", "Sân Bóng Rổ Tiêu Chuẩn Phong Trào", "Basketball Court", 25, "Khu B • Tầng 1"),
+        ("Bóng bàn", "Khu bóng bàn trong nhà trang bị bàn thi đấu đạt chuẩn quốc tế, ánh sáng đều chống lóa và không gian di chuyển an toàn.", "Khu Bóng Bàn Trong Nhà", "Table Tennis Area", 20, "Khu B • Tầng 3"),
+        ("Pickleball", "Cụm sân Pickleball ngoài trời hiện đại, mặt sân acrylic chuyên dụng, vạch bếp chuẩn thi đấu và rào chắn bóng kiên cố.", "Sân Pickleball #1", "Pickleball Court", 4, "Khu O • Ngoài trời")
+    };
+
     private static async Task EnsureCompleteSportsCatalogAsync(SportsCenterDbContext context)
     {
         var center = await context.Centers.FirstOrDefaultAsync(c => c.Id == 15)
@@ -350,19 +367,7 @@ public static class DbInitializer
         if (center == null) return;
 
         // Definition of all 10 sports and corresponding facilities matching site.landing-content
-        var catalog = new (string SportName, string SportDesc, string RoomName, string RoomType, int RoomCapacity, string RoomLocation)[]
-        {
-            ("Bơi lội", "Bơi lội thể thao, cải thiện thể lực và sức bền toàn diện", "Bể bơi Olympic 50m", "Swimming Pool", 30, "Khu Thể Thao Dưới Nước • Tầng 1"),
-            ("Gym & Fitness", "Rèn luyện thể hình, tăng cơ giảm mỡ và tăng cường sức mạnh", "Phòng Gym High-Performance", "Gym", 45, "Khu A • Tầng 2"),
-            ("Yoga & Pilates", "Phục hồi chức năng, tăng độ dẻo dai và tĩnh tâm", "Phòng Yoga & Pilates Reformer", "Studio", 20, "Khu C • Tầng 3"),
-            ("Cầu lông", "Tập luyện phản xạ nhanh, di chuyển linh hoạt và đối kháng", "Sân Cầu lông Tiêu chuẩn #1", "Badminton Court", 24, "Khu B • Tầng 2"),
-            ("Boxing & Võ thuật", "Đốt cháy calo, rèn luyện kỹ năng tự vệ và phản xạ chiến đấu", "Võ đài Boxing & Kickfit", "Combat Ring", 25, "Khu C • Tầng 1"),
-            ("Golf", "Học viện đào tạo Golf chuẩn quốc tế, driving range 18 làn và phòng mô phỏng 3D TrackMan 4K", "Tổ Hợp Sân Tập Golf & 3D Simulator", "Golf Complex", 30, "Khu Ngoài Trời & Khu C • Tầng 2"),
-            ("Bóng đá", "Sân cỏ nhân tạo 5 người tiêu chuẩn, mặt cỏ êm ái chống chấn thương, hệ thống thoát nước và dàn đèn LED cao áp ban đêm.", "Sân Bóng Đá Cỏ Nhân Tạo (Sân 5)", "Outdoor Field", 14, "Khu Ngoài Trời"),
-            ("Bóng rổ", "Sân bóng rổ tiêu chuẩn thi đấu phong trào, mặt sân sơn acrylic chống trượt, trụ rổ kính cường lực độ nảy tốt và mái che mát.", "Sân Bóng Rổ Tiêu Chuẩn Phong Trào", "Basketball Court", 25, "Khu B • Tầng 1"),
-            ("Bóng bàn", "Khu bóng bàn trong nhà trang bị bàn thi đấu đạt chuẩn quốc tế, ánh sáng đều chống lóa và không gian di chuyển an toàn.", "Khu Bóng Bàn Trong Nhà", "Table Tennis Area", 20, "Khu B • Tầng 3"),
-            ("Pickleball", "Cụm sân Pickleball ngoài trời hiện đại, mặt sân acrylic chuyên dụng, vạch bếp chuẩn thi đấu và rào chắn bóng kiên cố.", "Cụm Sân Pickleball Ngoài Trời", "Pickleball Complex", 20, "Khu Ngoài Trời")
-        };
+        var catalog = SportsCatalog;
 
         var sportsDict = new Dictionary<string, Sport>(StringComparer.OrdinalIgnoreCase);
         var roomsDict = new Dictionary<string, Room>(StringComparer.OrdinalIgnoreCase);
