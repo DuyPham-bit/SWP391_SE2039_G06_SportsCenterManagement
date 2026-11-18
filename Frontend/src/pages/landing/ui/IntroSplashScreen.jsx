@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 // Three letter columns (OLYMPIC SPORTS ARENA) placed on a 3D cylindrical arc.
 // Symmetric rotations (-28°, 0°, +28°) give the stadium-dome effect.
