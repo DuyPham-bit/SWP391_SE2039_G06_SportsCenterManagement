@@ -11,7 +11,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using SportsCenterManagement.API.Authentication;
 using SportsCenterManagement.API.Authorization;
-using SportsCenterManagement.API.Controllers;
+using SportsCenterManagement.API.Controllers.Payments;
 using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;

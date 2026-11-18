@@ -20,3 +20,4 @@ global using SportsCenterManagement.BLL.Services.Roles;
 global using SportsCenterManagement.BLL.Services.Staff;
 global using SportsCenterManagement.BLL.Services.Support;
 global using SportsCenterManagement.BLL.Services.Training;
+global using SportsCenterManagement.API.Controllers;
