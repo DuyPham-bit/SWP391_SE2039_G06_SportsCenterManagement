@@ -2,7 +2,7 @@ import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { useAuth, authApi } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR, PASSWORD_RULES } from '../../../shared/lib/passwordPolicy.js';
 import { loadGoogleIdentity, googleClientId } from '../../../shared/lib/googleIdentity.js';
 import { AuthField, ForgotPasswordModal, GoogleLoginModal } from '../../../features/auth/index.js';
