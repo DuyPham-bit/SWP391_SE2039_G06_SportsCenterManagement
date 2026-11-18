@@ -1,3 +1,5 @@
+import { CountUp } from './CountUp.jsx';
+
 export function Badge({ children, variant = 'primary', size = 'md' }) {
   const getStyles = () => {
     switch (variant) {
@@ -45,22 +47,22 @@ export function Badge({ children, variant = 'primary', size = 'md' }) {
 
 export function StatCard({ title, value, subtitle, icon, trend, color = 'blue' }) {
   return (
-    <div className="p-5 rounded-2xl bg-white border border-brand-navy-200 shadow-xs relative overflow-hidden transition-all duration-200 hover:shadow-md hover:-translate-y-0.5">
+    <div className="scms-glow-border group p-5 rounded-2xl bg-surface border border-line shadow-[var(--shadow-1)] relative transition-all duration-300 hover:shadow-[var(--shadow-3)] hover:-translate-y-1">
       <div className="flex items-center justify-between">
-        <span className="text-xs uppercase tracking-wider font-bold text-brand-navy-500">
+        <span className="text-xs uppercase tracking-wider font-bold text-ink-muted">
           {title}
         </span>
-        <div className="w-9 h-9 rounded-xl bg-brand-sage-500/15 text-brand-sage-700 flex items-center justify-center shadow-2xs">
+        <div className="w-9 h-9 rounded-xl bg-primary-soft text-primary flex items-center justify-center shadow-2xs transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-6">
           <span className="material-symbols-outlined text-[20px]">{icon}</span>
         </div>
       </div>
 
-      <div className="text-2xl sm:text-3xl font-extrabold text-brand-navy-900 mt-2.5 tracking-tight font-sans">
-        {value}
+      <div className="text-2xl sm:text-3xl font-extrabold text-ink-strong mt-2.5 tracking-tight font-sans">
+        <CountUp value={value} />
       </div>
 
       {(subtitle || trend) && (
-        <div className="flex items-center gap-2 mt-2 text-xs font-medium text-brand-navy-500">
+        <div className="flex items-center gap-2 mt-2 text-xs font-medium text-ink-muted">
           {trend && (
             <span className="px-1.5 py-0.5 rounded-full bg-brand-sage-50 text-brand-sage-700 font-bold border border-brand-sage-200 text-[10px]">
               {trend}
