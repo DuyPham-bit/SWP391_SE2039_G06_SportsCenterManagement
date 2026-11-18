@@ -39,11 +39,10 @@ Decisions: FE stays JS + FSD; keep the HttpOnly cookie session; no new runtime l
 - Phase 3b: CenterScope DB checks -> BLL CenterAccessGuard (verbatim: InvalidOperationException + Data StatusCode); invoice list query -> IPaymentService.ListCenterInvoicesAsync (same JSON field order); health -> BLL SystemHealthService. ClassManagement, CampusMap, Invoices, Health and DatabaseHealthCheck no longer touch the DbContext.
 - PHASE 3 REMAINDER (not done, needs careful per-domain work + more tests): the DbContext is still used by AdminManagement, CenterPermissions, Auth, Ai, ClassResources, GoogleAuth, MediaUpload controllers and by JwtAccountValidator, SystemAdminBootstrapper, PasswordResetEmailSender, R2StorageService, CenterCapabilityAttribute, CommunicationDeliveryWorker, InitializeDatabaseAsync. The BLL still reads unitOfWork.Context (~500 sites); full Query()/repository migration not started. NEEDS CONFIRMATION: merge CenterAccessGuard into ICenterScopeService (changes 404->403 + error body).
 
-## Next
-- Phase 4 (FE FSD)
-- Old phase 3 notes (BLL off DbContext -> UnitOfWork/repositories, one domain at a time; 12 controllers + 7 API classes still use the DbContext).
-- 2g: Tests -> <Layer>/<Domain>/. Then the Phase 2 report.
-- Every step: dotnet build + test (51/51) + check-api-routes diff.
+- Phase 4 (re-committed by the user as small commits), Phase 5 (e5edcd2b, 6b3f43b8, c5c10216 + user commits a3ab7b1c/13e8ef7c/5451ed64/e8abc51b), Phase 6 (99ac9fcb), Phase 7: docs/refactor/acceptance.md - everything green, both route lists identical.
+- NOTE: the work now lives on feature/rbac-admin-manager-integrated (the user moved it there); refactor/structure-cleanup stopped at 80c45b1.
 
-## Assumptions
-- Entities keep their namespace. The DbContext class name is kept, because migrations reference it in [DbContext(typeof(...))].
+## Next
+- Phase 3 remainder (see acceptance.md "Not done"): one domain at a time, starting with Auth; add tests first; update the source-reading FE tests that pin controller code.
+- Single IExceptionHandler/ProblemDetails needs agreement on the error body (today: custom problem+json with code/message/proposedHandling).
+- Resolve the NEEDS CONFIRMATION list in deletion-manifest.md.
