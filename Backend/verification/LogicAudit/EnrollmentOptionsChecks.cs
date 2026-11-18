@@ -113,7 +113,7 @@ static class EnrollmentOptionsChecks
         db.ChangeTracker.Clear();
 
         var clock = new BusinessClock(new ConfigurationBuilder().Build());
-        MemberEnrollmentOptionsService Service() => new(db, clock);
+        MemberEnrollmentOptionsService Service() => new(new UnitOfWork(db), clock);
 
         EnrollmentClassOptionDto? FindClass(MemberEnrollmentOptionsDto options, long classId) =>
             options.Sports.SelectMany(s => s.Coaches).SelectMany(c => c.Classes).SingleOrDefault(c => c.ClassId == classId);
