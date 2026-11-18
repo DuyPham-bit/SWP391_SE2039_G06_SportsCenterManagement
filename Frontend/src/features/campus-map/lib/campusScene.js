@@ -911,7 +911,7 @@ export function createCampusScene({ container, labelLayer, onHover, onSelect, on
     if (built.instances.carTaillight) built.instances.carTaillight.material.emissiveIntensity = night ? 1.6 : dusk ? 0.65 : 0;
     if (built.instances.signPanel) built.instances.signPanel.material.emissiveIntensity = night ? 0.95 : 0.22;
 
-    if (state.campus) labelManager.updateNamesAndSubs(state.campus, state.labelSubs);
+    if (state.campus) labelManager.updateNamesAndSubs(state.campus, state.labelSubs, state.statusAt);
 
     drawRoute();
     renderer.shadowMap.needsUpdate = true;
@@ -1248,7 +1248,7 @@ export function createCampusScene({ container, labelLayer, onHover, onSelect, on
             const entry = built?.zones.get(zone.id);
             if (entry) entry.zone = zone;
           }
-          labelManager.updateNamesAndSubs(next.campus, state.labelSubs);
+          labelManager.updateNamesAndSubs(next.campus, state.labelSubs, state.statusAt);
         }
       }
       applyState(false);
