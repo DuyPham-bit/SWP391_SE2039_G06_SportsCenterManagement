@@ -1,4 +1,4 @@
-import { apiRequest } from '../../../shared/api/http.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 export async function getPublicCatalog({ signal } = {}) {
   const centerId = Number(import.meta.env.VITE_SPORTS_CENTER_ID);
