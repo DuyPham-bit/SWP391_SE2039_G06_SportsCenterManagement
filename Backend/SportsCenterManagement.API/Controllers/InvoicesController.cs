@@ -6,7 +6,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.BLL.DTOs.Payments;
-using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.BLL.Common;
 
 namespace SportsCenterManagement.API.Controllers;

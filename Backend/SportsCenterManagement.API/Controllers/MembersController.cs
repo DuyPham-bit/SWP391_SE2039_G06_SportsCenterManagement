@@ -9,7 +9,6 @@ using AuthRequests = SportsCenterManagement.BLL.DTOs.Auth.Requests;
 using AuthResponses = SportsCenterManagement.BLL.DTOs.Auth.Responses;
 using MembersRequests = SportsCenterManagement.BLL.DTOs.Members.Requests;
 using MembersResponses = SportsCenterManagement.BLL.DTOs.Members.Responses;
-using SportsCenterManagement.BLL.Interfaces;
 
 namespace SportsCenterManagement.API.Controllers;
 

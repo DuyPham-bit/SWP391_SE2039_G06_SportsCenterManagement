@@ -2,7 +2,6 @@ using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
-using SportsCenterManagement.BLL.Services;
 
 namespace SportsCenterManagement.API.Authorization;
 

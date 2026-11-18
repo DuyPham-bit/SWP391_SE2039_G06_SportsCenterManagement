@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using SportsCenterManagement.API.Authorization;
 using AccessControlRequests = SportsCenterManagement.BLL.DTOs.AccessControl.Requests;
 using AccessControlResponses = SportsCenterManagement.BLL.DTOs.AccessControl.Responses;
-using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Authorization;
 
 namespace SportsCenterManagement.API.Controllers;

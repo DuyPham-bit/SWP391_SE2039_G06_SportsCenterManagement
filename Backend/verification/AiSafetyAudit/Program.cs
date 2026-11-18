@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using System.Text.Json;
 using SportsCenterManagement.API.Services;
 using SportsCenterManagement.BLL.DTOs.Training;
-using SportsCenterManagement.BLL.Services;
 
 var failures = new List<string>();
 var checks = 0;
@@ -456,9 +455,9 @@ Check("chat instruction ends with an explicit reply-language rule", () =>
         "yoga",
         "{}",
         [
-            new SportsCenterManagement.BLL.Services.AiTurn("user", "hãy nói tiếng thái"),
-            new SportsCenterManagement.BLL.Services.AiTurn("model", "ได้เลยครับ"),
-            new SportsCenterManagement.BLL.Services.AiTurn("user", "yoga"),
+            new SportsCenterManagement.BLL.Services.Training.AiTurn("user", "hãy nói tiếng thái"),
+            new SportsCenterManagement.BLL.Services.Training.AiTurn("model", "ได้เลยครับ"),
+            new SportsCenterManagement.BLL.Services.Training.AiTurn("user", "yoga"),
         ]);
     var fallback = SportsCenterManagement.API.Controllers.AiController.BuildChatInstruction("en", "yoga", "{}");
     return instruction.EndsWith("Never say you can only answer in Vietnamese or any other single language.", StringComparison.Ordinal) &&

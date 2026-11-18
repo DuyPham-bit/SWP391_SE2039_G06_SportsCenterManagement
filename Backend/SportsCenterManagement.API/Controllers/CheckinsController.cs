@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.BLL.DTOs.Checkins;
-using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Authorization;
 using Microsoft.AspNetCore.Mvc.Filters;
 

@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.API.Filters;
 using SportsCenterManagement.BLL.DTOs.Notifications;
-using SportsCenterManagement.BLL.Interfaces;
 
 namespace SportsCenterManagement.API.Controllers;
 

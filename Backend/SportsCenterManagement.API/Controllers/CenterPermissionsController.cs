@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Authorization;
-using SportsCenterManagement.BLL.Services;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 using Microsoft.AspNetCore.Mvc.Filters;

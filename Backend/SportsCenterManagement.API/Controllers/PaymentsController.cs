@@ -9,7 +9,6 @@ using Microsoft.AspNetCore.Mvc;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.Payments;
-using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Authorization;
 

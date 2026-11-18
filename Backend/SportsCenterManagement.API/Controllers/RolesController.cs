@@ -1,7 +1,6 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SportsCenterManagement.BLL.DTOs.Roles;
-using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Authorization;
 
 namespace SportsCenterManagement.API.Controllers;

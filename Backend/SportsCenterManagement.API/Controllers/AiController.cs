@@ -7,7 +7,6 @@ using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.BLL.DTOs.Training;
-using SportsCenterManagement.BLL.Services;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 using Microsoft.AspNetCore.Mvc.Filters;

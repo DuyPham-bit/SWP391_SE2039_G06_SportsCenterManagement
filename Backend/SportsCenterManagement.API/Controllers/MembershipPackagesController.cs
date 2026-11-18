@@ -4,7 +4,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.BLL.DTOs.MembershipPackages;
-using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Authorization;
 using Microsoft.AspNetCore.Mvc.Filters;
 

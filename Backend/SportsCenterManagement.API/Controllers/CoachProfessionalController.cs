@@ -2,7 +2,6 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.BLL.DTOs.CoachProfessional;
-using SportsCenterManagement.BLL.Services;
 
 namespace SportsCenterManagement.API.Controllers;
 

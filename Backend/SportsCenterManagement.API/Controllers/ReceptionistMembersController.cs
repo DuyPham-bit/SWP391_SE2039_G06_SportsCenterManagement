@@ -7,8 +7,6 @@ using SportsCenterManagement.API.Authentication;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.Members.Activation;
-using SportsCenterManagement.BLL.Interfaces;
-using SportsCenterManagement.BLL.Services;
 using SportsCenterManagement.DAL.Authorization;
 
 namespace SportsCenterManagement.API.Controllers;

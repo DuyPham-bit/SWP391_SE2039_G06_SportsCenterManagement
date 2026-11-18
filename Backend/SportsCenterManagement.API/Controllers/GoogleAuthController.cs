@@ -50,7 +50,7 @@ public sealed class GoogleAuthController(SportsCenterDbContext db, GoogleTokenVa
         db.AuditLogs.Add(new AuditLog { UserId = user.Id, Action = "GOOGLE_LOGIN", EntityType = "User", EntityId = user.Id, CreatedAt = DateTime.UtcNow });
         await db.SaveChangesAsync(ct); await tx.CommitAsync(ct);
         var roleName = await db.Roles.Where(r => r.Id == user.RoleId).Select(r => r.Name).SingleAsync(ct);
-        var centerId = await SportsCenterManagement.BLL.Services.CenterRolePolicy.CenterForUser(db, user.Id, ct);
+        var centerId = await SportsCenterManagement.BLL.Services.AccessControl.CenterRolePolicy.CenterForUser(db, user.Id, ct);
         var (token, expiresAt) = jwt.Issue(new(user.Id, user.Username, roleName, centerId, user.Email, user.AuthVersion));
         return Ok(BrowserSessionCookie.Issue(HttpContext, token, user.Id, roleName.ToUpperInvariant(), expiresAt));
     }

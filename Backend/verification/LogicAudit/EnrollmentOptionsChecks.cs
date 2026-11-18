@@ -2,7 +2,6 @@ using System.Net;
 using Microsoft.Extensions.Configuration;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.Classes;
-using SportsCenterManagement.BLL.Services;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Implementations;

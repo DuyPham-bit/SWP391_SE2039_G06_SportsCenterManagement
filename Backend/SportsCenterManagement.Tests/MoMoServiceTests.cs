@@ -1,6 +1,5 @@
 using System.Net;
 using Microsoft.Extensions.Configuration;
-using SportsCenterManagement.BLL.Services;
 
 namespace SportsCenterManagement.Tests;
 

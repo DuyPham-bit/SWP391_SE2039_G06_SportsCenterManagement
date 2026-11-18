@@ -3,7 +3,6 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using AuditResponses = SportsCenterManagement.BLL.DTOs.Audit.Responses;
-using SportsCenterManagement.BLL.Interfaces;
 using SportsCenterManagement.DAL.Authorization;
 
 namespace SportsCenterManagement.API.Controllers;

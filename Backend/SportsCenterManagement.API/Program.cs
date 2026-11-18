@@ -1,6 +1,5 @@
 using Microsoft.AspNetCore.HttpOverrides;
 using Microsoft.AspNetCore.Diagnostics.HealthChecks;
-using SportsCenterManagement.BLL.Services.Interfaces;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
@@ -15,8 +14,6 @@ using SportsCenterManagement.API.Authentication;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.API.BackgroundServices;
 using SportsCenterManagement.BLL.Common;
-using SportsCenterManagement.BLL.Interfaces;
-using SportsCenterManagement.BLL.Services;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Repositories.Implementations;
 using SportsCenterManagement.DAL.Repositories.Interfaces;

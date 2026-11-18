@@ -2,7 +2,6 @@ using System.Text.Json;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using SportsCenterManagement.API.Filters;
-using SportsCenterManagement.BLL.Services;
 
 namespace SportsCenterManagement.API.Controllers;
 
