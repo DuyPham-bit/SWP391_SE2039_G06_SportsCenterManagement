@@ -1,15 +1,15 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { authApi, useAuth } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { OtpDialogContent, OTP_CARD_CLASS, withMinDuration } from '../../../shared/ui/OtpCode.jsx';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
 import { PasswordInput } from './PasswordInput.jsx';
 import { GoogleLoginModal } from './GoogleLoginModal.jsx';
 import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../../shared/lib/passwordPolicy.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { translatePackageName } from '../../../shared/i18n/i18nHelper.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { translatePackageName } from '../../../shared/lib/i18nHelper.js';
 import { processAvatarFile, getInitials } from '../../../shared/lib/avatarHelper.js';
 
 export function ProfileModal({ isOpen, onClose }) {
