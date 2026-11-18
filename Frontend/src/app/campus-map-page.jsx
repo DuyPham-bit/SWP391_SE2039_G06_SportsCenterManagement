@@ -1,14 +1,14 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import './styles/tokens.css';
-import { LanguageProvider } from '../shared/i18n/LanguageContext.jsx';
-import { CampusMapExplorer } from '../features/campus-map/index.js';
+import { LanguageProvider } from '../shared/i18n/index.js';
+import { CampusMapPage } from '../pages/campus-map/index.js';
 
-// Standalone full-viewport campus map (/3d-campus.html), same module and data as the landing section.
+// Entry of the standalone /3d-campus.html: providers here (app layer), the screen itself in pages/campus-map.
 ReactDOM.createRoot(document.getElementById('campus-root')).render(
   <React.StrictMode>
     <LanguageProvider>
-      <CampusMapExplorer page />
+      <CampusMapPage />
     </LanguageProvider>
   </React.StrictMode>
 );
