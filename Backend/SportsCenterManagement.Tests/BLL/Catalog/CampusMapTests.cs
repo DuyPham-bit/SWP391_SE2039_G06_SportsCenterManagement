@@ -28,7 +28,7 @@ public class CampusMapTests
         db.Centers.Add(new Center { Name = "SCMS", Address = "HCM", Status = "Active", CreatedAt = TestDb.Now });
         await db.SaveChangesAsync();
         await CampusMapSeed.EnsureAsync(db, TestDb.Now);
-        return (db, new CampusMapService(db, new FixedClock(now ?? Noon)));
+        return (db, new CampusMapService(new UnitOfWork(db), new FixedClock(now ?? Noon)));
     }
 
     [Fact]
@@ -119,7 +119,7 @@ public class CampusMapTests
         Assert.Equal("Available", zoneA.Rooms.Single(r => r.Kind == "gym").Status);
         Assert.Equal("Open", zoneA.Status);
 
-        var night = await new CampusMapService(db, new FixedClock(Noon.Date.AddHours(23))).GetAsync(null, CancellationToken.None);
+        var night = await new CampusMapService(new UnitOfWork(db), new FixedClock(Noon.Date.AddHours(23))).GetAsync(null, CancellationToken.None);
         Assert.Equal("Closed", night.Zones.Single(z => z.Code == "A").Status);
         Assert.Equal("Open", night.Zones.Single(z => z.Code == "G").Status); // landscape has no hours
     }
