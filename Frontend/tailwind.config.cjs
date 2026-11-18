@@ -19,6 +19,10 @@ module.exports = {
         // Brand scales derived from the landing palette (navy, sage, sand/cream, terracotta, teal) + danger.
         brand: {
           navy: scale('navy'),
+          forest: {
+            900: token('brand-forest-900'),
+            950: token('brand-forest-950'),
+          },
           sage: scale('sage'),
           sand: scale('sand'),
           terra: scale('terra'),
