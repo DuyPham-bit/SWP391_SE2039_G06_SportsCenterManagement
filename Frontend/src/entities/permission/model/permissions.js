@@ -1,5 +1,5 @@
 
-import { getAuthUser } from '../../../shared/api/authState.js';
+import { getAuthUser } from '../../../shared/api/index.js';
 
 export const SYSTEM_CAPABILITIES = [
   // 1. Quản lý chung
