@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { formatMemberDateTime } from '../../../entities/member/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { translateNotificationTitle, translateNotificationContent } from '../../../shared/i18n/i18nHelper.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { translateNotificationTitle, translateNotificationContent } from '../../../shared/lib/i18nHelper.js';
 import { useAuth } from '../../../entities/session/index.js';
 import { notificationTarget, getNotificationActionLabel, parseNotificationDetails } from '../lib/notificationNavigation.js';
 
