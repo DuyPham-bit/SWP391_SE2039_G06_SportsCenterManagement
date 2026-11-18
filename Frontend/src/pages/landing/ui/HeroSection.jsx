@@ -23,7 +23,8 @@ export function HeroSection({ heroReady = true, isVideoMuted, landingContent, se
         className="hero-video-bg"
         poster={hero.posterUrl || undefined}
       >
-        {hero.videoUrl && <source src={hero.videoUrl} type={/\.webm($|\?)/i.test(hero.videoUrl) ? 'video/webm' : 'video/mp4'} />}
+        {/* No uploaded video yet: fall back to the bundled clip (as in v1.5) instead of a blank hero. */}
+        <source src={hero.videoUrl || './hero-video.mp4'} type={/\.webm($|\?)/i.test(hero.videoUrl || '') ? 'video/webm' : 'video/mp4'} />
       </video>
       <div className="section-overlay" />
 

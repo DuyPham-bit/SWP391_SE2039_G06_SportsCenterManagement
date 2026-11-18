@@ -342,6 +342,35 @@ public sealed class LandingContentService(IUnitOfWork unitOfWork, IConfiguration
             var visible = await db.Rooms.AsNoTracking().Where(r => ids.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.IsVisibleOnLanding, ct);
             foreach (var (id, card) in roomCards) if (visible.TryGetValue(id, out var v)) card["isVisible"] = v;
         }
+        await FillSportHighlightsAsync(doc, ct);
+    }
+
+    /// <summary>
+    /// Sport cards without their own text show Sports.Description (where v1.5/v1.6 kept the card text).
+    /// Text written in the editor is stored on the card and wins over the DB description.
+    /// </summary>
+    private async Task FillSportHighlightsAsync(JsonObject doc, CancellationToken ct)
+    {
+        if (doc["coursesSection"]?["sportsList"] is not JsonArray list) return;
+        var cards = new List<(JsonObject Card, long SportId)>();
+        foreach (var card in list.OfType<JsonObject>())
+        {
+            var highlight = card["highlight"];
+            var hasText = HomeContentDocument.IsLocalized(highlight)
+                ? HomeContentDocument.Text(highlight, "vi").Trim().Length > 0
+                : !string.IsNullOrWhiteSpace(Str(highlight));
+            if (hasText) continue;
+            // Normalize turns non-shared keys (sportId included) into {vi,en}; read either shape.
+            var rawSportId = HomeContentDocument.IsLocalized(card["sportId"]) ? HomeContentDocument.Text(card["sportId"], "vi") : Str(card["sportId"]);
+            if (long.TryParse(rawSportId ?? CardId(card), out var sportId) && sportId > 0) cards.Add((card, sportId));
+        }
+        if (cards.Count == 0) return;
+        var ids = cards.Select(c => c.SportId).Distinct().ToList();
+        var descriptions = await db.Sports.AsNoTracking().Where(s => ids.Contains(s.Id) && s.Description != null)
+            .ToDictionaryAsync(s => s.Id, s => s.Description!, ct);
+        foreach (var (card, sportId) in cards)
+            if (descriptions.TryGetValue(sportId, out var text) && text.Trim().Length > 0)
+                card["highlight"] = new JsonObject { ["vi"] = text.Trim(), ["en"] = string.Empty };
     }
 
     private async Task SyncVisibilityAsync(JsonObject doc, CancellationToken ct)

@@ -26,6 +26,35 @@ public class LandingContentServiceTests
     }
 
     [Fact]
+    public async Task GetPublicAsync_SportCardWithoutText_ShowsDbDescription_AndEditorTextWins()
+    {
+        using var db = TestDb.Create();
+        db.Sports.AddRange(
+            new Sport { Id = 1, Name = "Bơi lội", Description = "Bể bơi trong nhà", Status = "Active" },
+            new Sport { Id = 2, Name = "Gym", Description = "Mô tả cũ", Status = "Active" });
+        db.SystemSettings.Add(new SystemSetting
+        {
+            SettingKey = "site.landing-content",
+            UpdatedAt = DateTime.UtcNow,
+            SettingValue = """
+            {"coursesSection":{"sportsList":[
+              {"id":"swimming","sportId":"1","name":{"vi":"Bơi lội","en":"Swimming"}},
+              {"id":"gym","sportId":"2","name":{"vi":"Gym","en":"Gym"},"highlight":{"vi":"Do quản lý viết","en":""}}
+            ]}}
+            """
+        });
+        await db.SaveChangesAsync();
+        var service = new LandingContentService(new UnitOfWork(db), new ConfigurationBuilder().Build());
+
+        var vi = (await service.GetPublicAsync("vi", null, default)).Content!.Value.GetProperty("coursesSection").GetProperty("sportsList");
+        var en = (await service.GetPublicAsync("en", null, default)).Content!.Value.GetProperty("coursesSection").GetProperty("sportsList");
+
+        Assert.Equal("Bể bơi trong nhà", vi[0].GetProperty("highlight").GetString());
+        Assert.Equal("Bể bơi trong nhà", en[0].GetProperty("highlight").GetString()); // no English yet: falls back to vi
+        Assert.Equal("Do quản lý viết", vi[1].GetProperty("highlight").GetString());
+    }
+
+    [Fact]
     public async Task DiscardDraftAsync_WritesAuditLog()
     {
         using var db = TestDb.Create();
