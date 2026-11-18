@@ -1,5 +1,5 @@
-import { asArray, centerId } from '../../../shared/api/apiUtils.js';
-import { apiRequest } from '../../../shared/api/http.js';
+import { asArray, centerId } from '../../../shared/api/index.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 export const roomApi = {
  async getAll() { return asArray(await apiRequest('centers/'+centerId()+'/rooms')); },
