@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { CAMPUS_ZONE_STATUSES, fetchCampusMap, updateCampusZone } from '../../../features/campus-map/api/campusMapApi.js';
+import { CAMPUS_ZONE_STATUSES, fetchCampusMap, updateCampusZone } from '../../../entities/campus-map/index.js';
 
 // Amenity codes seeded with the campus map.
 export const CAMPUS_AMENITIES = ['locker', 'shower', 'wc', 'wc_accessible', 'first_aid', 'extinguisher', 'water', 'reception',
