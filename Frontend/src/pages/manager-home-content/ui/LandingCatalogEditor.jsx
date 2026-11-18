@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { usePublicCatalog, catalogFacilities, catalogSports } from '../../../entities/catalog/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { readText, writeText } from '../../../entities/landing-content/index.js';
 
 // [key, multiline, shared] — shared fields are the same in every language (icons, numbers).
