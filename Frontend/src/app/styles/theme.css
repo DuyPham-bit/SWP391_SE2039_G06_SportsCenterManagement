@@ -810,11 +810,11 @@ body.scms-simulated-fullscreen #root {
 }
 
 .toast-capsule-bg {
-  background-color: #ffffff !important;
+  background-color: rgb(var(--color-surface)) !important;
 }
 
 :is(.dark .toast-capsule-bg) {
-  background-color: #0c1322 !important;
+  background-color: rgb(var(--brand-navy-900)) !important;
 }
 
 /* 3D Spatial Confirmation Modal Animation (VisionOS / 3D Spring Physics) */
@@ -1909,15 +1909,18 @@ body.scms-simulated-fullscreen #root {
   --motion-stagger: 55ms;
 }
 
+/* Route transition: fade + slide + de-blur (filter ends at none, so nothing is left composited). */
 @keyframes scmsPageRise {
   from {
     opacity: 0;
-    transform: translate3d(0, 8px, 0);
+    transform: translate3d(0, 14px, 0);
+    filter: blur(6px);
   }
 
   to {
     opacity: 1;
     transform: none;
+    filter: blur(0);
   }
 }
 
