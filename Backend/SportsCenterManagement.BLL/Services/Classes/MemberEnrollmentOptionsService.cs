@@ -10,9 +10,12 @@ namespace SportsCenterManagement.BLL.Services.Classes;
 /// <see cref="CoreFlowService.EnrollMemberAsync"/> (active package for today, package allowance, capacity),
 /// which stays the authority when the member confirms.
 /// </summary>
-public sealed class MemberEnrollmentOptionsService(SportsCenterDbContext db, IBusinessClock clock)
+public sealed class MemberEnrollmentOptionsService(IUnitOfWork unitOfWork, IBusinessClock clock)
     : IMemberEnrollmentOptionsService
 {
+    // Data access goes through the unit of work (same scoped DbContext instance).
+    private readonly SportsCenterDbContext db = unitOfWork.Context;
+
     private static readonly string[] JoinedStatuses = ["Confirmed", "Active", "Enrolled"];
 
     public async Task<MemberEnrollmentOptionsDto> GetOptionsAsync(long userId, long centerId, CancellationToken ct = default)
