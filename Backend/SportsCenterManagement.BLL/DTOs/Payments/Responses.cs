@@ -183,25 +183,6 @@ public sealed record RefundEligiblePaymentResponse(
 namespace SportsCenterManagement.BLL.DTOs.Payments
 {
 /// <summary>
-/// Cấu hình thông tin tích hợp Cổng thanh toán MoMo từ appsettings.json.
-/// </summary>
-public class MomoOption
-{
-    public const string SectionName = "Momo";
-
-    public string PartnerCode { get; set; } = string.Empty;
-    public string AccessKey { get; set; } = string.Empty;
-    public string SecretKey { get; set; } = string.Empty;
-    public string PaymentUrl { get; set; } = string.Empty;
-    public string ReturnUrl { get; set; } = string.Empty;
-    public string NotifyUrl { get; set; } = string.Empty;
-    public string RequestType { get; set; } = "captureWallet";
-}
-}
-
-namespace SportsCenterManagement.BLL.DTOs.Payments
-{
-/// <summary>
 /// DTO hứng dữ liệu phản hồi từ máy chủ MoMo API v2 khi tạo giao dịch thanh toán.
 /// </summary>
 public class MomoCreatePaymentResponse
