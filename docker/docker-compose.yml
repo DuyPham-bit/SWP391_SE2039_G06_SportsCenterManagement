@@ -35,7 +35,7 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - TZ=Asia/Ho_Chi_Minh
       - Reports__TimeZoneId=Asia/Ho_Chi_Minh
-      - ConnectionStrings__SportsCenter=Host=postgres;Port=5432;Database=SportsCenterDB;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env}
+      - ConnectionStrings__SportsCenter=${EXTERNAL_DATABASE_URL:-Host=postgres;Port=5432;Database=SportsCenterDB;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env}}
       - Jwt__Key=${JWT_KEY:?Set JWT_KEY in docker/.env}
       - Jwt__Issuer=SportsCenterManagement.API
       - Jwt__Audience=SportsCenterManagement.FE
