@@ -27,6 +27,29 @@ public sealed class PaymentService(
     private readonly IConfiguration _configuration = configuration;
     private readonly IBusinessClock _clock = clock ?? new BusinessClock(configuration);
 
+    public async Task<CenterInvoicePage> ListCenterInvoicesAsync(long centerId, string? query, int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var db = _unitOfWork.Context;
+        var rows = from invoice in db.Invoices.AsNoTracking()
+            join member in db.MemberProfiles.AsNoTracking() on invoice.MemberId equals member.Id
+            // Scope by the invoice's center only: a member who later moved center keeps their history here.
+            where invoice.CenterId == centerId
+            select new CenterInvoiceListItem(invoice.InvoiceNumber, invoice.MemberId, member.FullName,
+                member.MemberCode, invoice.IssuedAt, invoice.Status, invoice.TotalAmount, invoice.Id);
+        var term = query?.Trim();
+        if (!string.IsNullOrEmpty(term))
+        {
+            var lowerTerm = term.ToLower();
+            rows = rows.Where(r => r.InvoiceNumber.ToLower().Contains(lowerTerm)
+                || r.MemberName.ToLower().Contains(lowerTerm)
+                || r.MemberCode.ToLower().Contains(lowerTerm));
+        }
+        var totalCount = await rows.CountAsync(cancellationToken);
+        var items = await rows.OrderByDescending(r => r.IssuedAt).ThenByDescending(r => r.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        return new CenterInvoicePage(items, totalCount, page, pageSize);
+    }
+
     // Only a payment that bought a package the member still holds (Active, not past its end date,
     // including packages bought in advance) can be refunded. Payments with no purchased package
     // (or whose package expired/was cancelled/refunded) are not refundable.
