@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { coachApi, coachDate } from '../../../entities/coach/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { CoachError, coachInput } from '../../../features/coach-workspace/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import {
   SCMS_HERO_BADGE_CLASS,
   SCMS_HERO_BTN_GLASS,
