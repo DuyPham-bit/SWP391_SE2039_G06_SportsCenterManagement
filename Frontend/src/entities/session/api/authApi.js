@@ -1,6 +1,6 @@
-import { asArray } from '../../../shared/api/apiUtils.js';
-import { assertAuthVersion, beginAuthOperation, getAuthUser, getAuthVersion, setAuthUser } from '../../../shared/api/authState.js';
-import { apiRequest, clearApiSession, createApiSession, getApiSession, setApiSession } from '../../../shared/api/http.js';
+import { asArray } from '../../../shared/api/index.js';
+import { assertAuthVersion, beginAuthOperation, getAuthUser, getAuthVersion, setAuthUser } from '../../../shared/api/index.js';
+import { apiRequest, clearApiSession, createApiSession, getApiSession, setApiSession } from '../../../shared/api/index.js';
 import { dataUrlToFile, notifyAvatarChanged } from '../../../shared/lib/avatarHelper.js';
 
 async function loadCurrentUser(session = getApiSession(), version = getAuthVersion()) {
