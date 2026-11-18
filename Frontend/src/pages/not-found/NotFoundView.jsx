@@ -71,7 +71,7 @@ export function NotFoundView({ path = '', currentUser = null }) {
   return (
     <main
       role="main"
-      className="min-h-screen w-full relative overflow-hidden flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-brand-navy-950 via-[#0a1122] to-brand-navy-900 text-slate-100"
+      className="min-h-screen w-full relative overflow-hidden flex items-center justify-center p-4 sm:p-6 bg-gradient-to-br from-brand-navy-950 via-brand-forest-950 to-brand-navy-900 text-brand-sand-100"
     >
       {/* Ambient Olympic Glow Spheres */}
       <div
@@ -83,7 +83,7 @@ export function NotFoundView({ path = '', currentUser = null }) {
         aria-hidden="true"
       />
       <div
-        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-blue-600/5 blur-[120px] pointer-events-none"
+        className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] rounded-full bg-brand-teal-500/5 blur-[120px] pointer-events-none"
         aria-hidden="true"
       />
 
