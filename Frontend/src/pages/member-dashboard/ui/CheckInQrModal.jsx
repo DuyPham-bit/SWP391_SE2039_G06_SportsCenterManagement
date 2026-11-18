@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { translatePackageName } from '../../../shared/i18n/i18nHelper.js';
+import { translatePackageName } from '../../../shared/lib/i18nHelper.js';
 
 export function CheckInQrModal({
   copiedCode, currentUser, handleCopyMemberCode, isEn, memberCode, qrDataUrl, qrModalOpen,
