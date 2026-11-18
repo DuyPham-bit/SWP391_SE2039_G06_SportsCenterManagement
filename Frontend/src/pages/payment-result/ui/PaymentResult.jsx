@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { paymentReturnApi } from '../../../entities/payment/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { notifyPaymentReturn } from '../../../features/payment-checkout/index.js';
 
 const AUTO_RETURN_MS = 3000;
