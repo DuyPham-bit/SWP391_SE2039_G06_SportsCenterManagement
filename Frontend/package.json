@@ -14,6 +14,7 @@
     "test:chat:browser": "node tests/coach-chat.browser.cjs",
     "test:ai-chat:browser": "node tests/member-ai-chat.browser.cjs",
     "test:landing:browser": "node tests/landing-content.browser.cjs",
+    "test:home-content:live": "node tests/home-content.api-live.cjs",
     "test:invoices:browser": "node tests/counter-invoices.browser.cjs",
     "test:api:live": "node tests/api-live.cjs",
     "test:api:proxy": "node tests/api-proxy.cjs",
@@ -33,11 +34,13 @@
   "dependencies": {
     "exceljs": "4.4.0",
     "html5-qrcode": "^2.3.8",
+    "lenis": "^1.3.27",
     "motion": "^14.6.0",
     "pdfmake": "0.2.20",
     "qrcode": "^1.5.4",
     "react": "^18.2.0",
-    "react-dom": "^18.2.0"
+    "react-dom": "^18.2.0",
+    "three": "0.170.0"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.3.4",
