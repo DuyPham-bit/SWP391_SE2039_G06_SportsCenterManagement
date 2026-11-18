@@ -1,6 +1,6 @@
 import React, { useState, useEffect, Suspense, lazy } from 'react';
 import { useAuth } from '../../entities/session/index.js';
-import { useLanguage } from '../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../shared/i18n/index.js';
 import { PageErrorBoundary } from '../../shared/ui/PageErrorBoundary.jsx';
 import { SplashRouteReady } from '../../shared/lib/splashSignal.js';
 import { NotFoundView } from '../../pages/not-found/index.js';
