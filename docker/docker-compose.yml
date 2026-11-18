@@ -92,6 +92,9 @@ services:
     build:
       context: ..
       dockerfile: docker/frontend/Dockerfile
+      args:
+        - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:-380948467454-g1hvo5luhoqfhogoe2m4f95b1m20vk1s.apps.googleusercontent.com}}
     container_name: scms-frontend
     restart: unless-stopped
     depends_on:

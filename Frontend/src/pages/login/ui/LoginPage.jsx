@@ -823,7 +823,7 @@ export function LoginPage() {
 
             {/* Nút Đăng nhập Google đồng nhất 100% với form (52px, bo góc 12px, full-width, không bị tràn 390px) */}
             <div className="w-full flex flex-col items-center justify-center mb-4">
-              <div className={`lp-google relative w-full h-[52px] overflow-hidden rounded-xl border border-brand-navy-200 hover:border-brand-sage-700/45 bg-brand-sand-50 hover:bg-white dark:border-white/15 dark:bg-white/[0.06] dark:hover:bg-white/10 shadow-xs transition-colors ${googleLoading ? 'pointer-events-none opacity-45' : ''}`}>
+              <div className={`lp-google relative w-full h-[52px] rounded-xl border border-brand-navy-200 hover:border-brand-sage-700/45 bg-brand-sand-50 hover:bg-white dark:border-white/15 dark:bg-[#102620]/95 dark:hover:bg-[#15332b] shadow-xs transition-colors ${googleLoading ? 'pointer-events-none opacity-45' : ''}`}>
                 {/* Visual unified button layer matching inputs */}
                 <button
                   type="button"
@@ -831,7 +831,7 @@ export function LoginPage() {
                   onClick={() => { if (!googleRendered) setShowGoogleModal(true); }}
                   aria-hidden={googleRendered === true ? true : undefined}
                   tabIndex={googleRendered === true ? -1 : 0}
-                  className="w-full h-full px-4 inline-flex items-center justify-center gap-3 text-sm font-semibold text-brand-navy-900 dark:text-white cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700"
+                  className="relative z-[1] w-full h-full px-4 rounded-xl bg-brand-sand-50 hover:bg-white dark:bg-[#102620]/95 dark:hover:bg-[#15332b] inline-flex items-center justify-center gap-3 text-sm font-semibold text-brand-navy-900 dark:text-white cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700"
                 >
                   <svg className="w-5 h-5 shrink-0" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
@@ -842,13 +842,17 @@ export function LoginPage() {
                   <span>{isRegister ? 'Đăng ký với Google' : 'Tiếp tục với Google'}</span>
                 </button>
 
-                {/* Real Google Identity iframe overlaid interactively when GSI is active */}
+                {/* Keep an untouched absolute wrapper because GIS renderButton overrides position on its mount element */}
                 {googleRendered !== false && (
                   <div
-                    ref={googleButtonRef}
-                    className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden opacity-[0.005] cursor-pointer [&_iframe]:scale-125"
+                    className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden rounded-xl opacity-[0.005] cursor-pointer"
                     aria-label={isRegister ? 'Đăng ký với Google' : 'Tiếp tục với Google'}
-                  />
+                  >
+                    <div
+                      ref={googleButtonRef}
+                      className="w-full flex items-center justify-center [&_.S9gUrf-YoZ4jf]:scale-125 [&_iframe]:scale-125"
+                    />
+                  </div>
                 )}
               </div>
 

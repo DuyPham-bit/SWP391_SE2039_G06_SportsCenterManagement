@@ -423,22 +423,22 @@
 .lp-btn-check path { stroke-dasharray: 1; stroke-dashoffset: 1; }
 .lp-btn.is-success .lp-btn-check path { transition: stroke-dashoffset 0.45s var(--auth-ease) 0.15s; stroke-dashoffset: 0; }
 
-/* Unified Google button container: matches h-[52px] & rounded-xl without overflow clipping */
-.lp-google { position: relative; border-radius: 0.75rem; transition: transform 0.25s var(--auth-spring), box-shadow 0.25s var(--auth-ease); }
+/* Unified Google button container: matches h-[52px] & rounded-xl; halo stays behind button surface */
+.lp-google { position: relative; isolation: isolate; border-radius: 0.75rem; transition: transform 0.25s var(--auth-spring), box-shadow 0.25s var(--auth-ease); }
 .lp-google::before {
   content: '';
   position: absolute;
   inset: -2px;
+  z-index: -1;
   border-radius: inherit;
-  background: linear-gradient(120deg, rgb(var(--brand-teal-500) / 0.45), rgb(var(--brand-sand-300) / 0.5), rgb(var(--brand-sage-700) / 0.45));
+  background: linear-gradient(120deg, rgb(var(--brand-teal-500) / 0.4), rgb(var(--brand-sand-300) / 0.45), rgb(var(--brand-sage-700) / 0.4));
   opacity: 0;
-  filter: blur(5px);
+  filter: blur(6px);
   transition: opacity 0.25s;
   pointer-events: none;
 }
 .lp-google:hover { transform: translate3d(0, -1px, 0); }
-.lp-google:hover::before { opacity: 1; }
-.lp-google > * { position: relative; }
+.lp-google:hover::before { opacity: 0.75; }
 
 /* ── Reduced motion ───────────────────────────────────────────────────── */
 @media (prefers-reduced-motion: reduce) {
