@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { bookingStart, getSportTheme, formatMemberDate } from '../../../entities/member/index.js';
-import { translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function CancelBookingModal({
   bookingToCancel, cancelModalOpen, cancelling, handleConfirmCancelBooking, isEn, setCancelModalOpen
