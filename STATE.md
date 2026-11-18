@@ -35,8 +35,13 @@ Decisions: FE stays JS + FSD; keep the HttpOnly cookie session; no new runtime l
 - Phase 2g: Tests -> Tests/BLL/<Domain>/ (namespace Tests.BLL.<Domain>; TestDb stays at the root). AdminFlowTests was split into BLL/Payroll/PayrollPolicyTests + BLL/Catalog/LandingContentServiceTests. The split exposed a timing-flaky test (versions <1 ms apart count as equal); added a 5 ms gap between the saves in the test, product logic unchanged. 51/51 over 5 runs.
 - PHASE 2 DONE.
 
+- Phase 3a ab34547: the 7 BLL services that injected the DbContext now take IUnitOfWork (db = unitOfWork.Context; bodies unchanged).
+- Phase 3b: CenterScope DB checks -> BLL CenterAccessGuard (verbatim: InvalidOperationException + Data StatusCode); invoice list query -> IPaymentService.ListCenterInvoicesAsync (same JSON field order); health -> BLL SystemHealthService. ClassManagement, CampusMap, Invoices, Health and DatabaseHealthCheck no longer touch the DbContext.
+- PHASE 3 REMAINDER (not done, needs careful per-domain work + more tests): the DbContext is still used by AdminManagement, CenterPermissions, Auth, Ai, ClassResources, GoogleAuth, MediaUpload controllers and by JwtAccountValidator, SystemAdminBootstrapper, PasswordResetEmailSender, R2StorageService, CenterCapabilityAttribute, CommunicationDeliveryWorker, InitializeDatabaseAsync. The BLL still reads unitOfWork.Context (~500 sites); full Query()/repository migration not started. NEEDS CONFIRMATION: merge CenterAccessGuard into ICenterScopeService (changes 404->403 + error body).
+
 ## Next
-- Phase 3 (BLL off DbContext -> UnitOfWork/repositories, one domain at a time; 12 controllers + 7 API classes still use the DbContext).
+- Phase 4 (FE FSD)
+- Old phase 3 notes (BLL off DbContext -> UnitOfWork/repositories, one domain at a time; 12 controllers + 7 API classes still use the DbContext).
 - 2g: Tests -> <Layer>/<Domain>/. Then the Phase 2 report.
 - Every step: dotnet build + test (51/51) + check-api-routes diff.
 
