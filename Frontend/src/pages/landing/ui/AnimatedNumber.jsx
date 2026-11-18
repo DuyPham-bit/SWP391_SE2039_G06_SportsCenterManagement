@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 
-// Component đếm số nhảy động khi mới lướt trúng (chỉ nhảy 1 lần duy nhất khi F5 hay mới vào trang)
+// Counts up to the value the first time it scrolls into view (once per page load).
 export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '', formatThousands = false }) {
   const [displayValue, setDisplayValue] = useState(0);
   const elementRef = useRef(null);
@@ -10,13 +10,13 @@ export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '
     const el = elementRef.current;
     if (!el) return;
 
-    // Nếu đã nhảy rồi thì giữ nguyên giá trị đích
+    // Already animated: keep the final value.
     if (hasAnimatedRef.current) {
       setDisplayValue(value);
       return;
     }
 
-    // Fallback cho môi trường không có IntersectionObserver
+    // Fallback for environments without IntersectionObserver.
     if (typeof window === 'undefined' || !('IntersectionObserver' in window)) {
       setDisplayValue(value);
       hasAnimatedRef.current = true;
@@ -28,10 +28,10 @@ export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '
     const observer = new IntersectionObserver(
       (entries) => {
         entries.forEach((entry) => {
-          // Chỉ kích hoạt khi lướt trúng lần đầu tiên
+          // Only start the first time it becomes visible.
           if (entry.isIntersecting && !hasAnimatedRef.current) {
             hasAnimatedRef.current = true;
-            observer.disconnect(); // Ngắt observer ngay để không bao giờ reset hay nhảy lại khi cuộn lên/xuống
+            observer.disconnect(); // Disconnect so scrolling back never restarts the count.
 
             let startTime = null;
 
@@ -40,7 +40,7 @@ export function AnimatedNumber({ value, duration = 1400, suffix = '', prefix = '
               const elapsed = currentTime - startTime;
               const progress = Math.min(elapsed / duration, 1);
 
-              // Ease Out Cubic: 1 - (1 - progress)^3 giúp số nhảy mượt dần về đích
+              // Ease-out cubic: 1 - (1 - progress)^3 slows down towards the target.
               const easeOut = 1 - Math.pow(1 - progress, 3);
               const currentVal = Math.round(easeOut * value);
               setDisplayValue(currentVal);
