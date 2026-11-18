@@ -1,5 +1,5 @@
 import React, { useRef, useState } from 'react';
-import { uploadMediaFileToCloud } from '../../../shared/api/mediaApi.js';
+import { uploadMediaFileToCloud } from '../../../shared/api/index.js';
 import { INPUT_CLASS, LABEL_CLASS, LocalizedInput, SectionHeading } from './fields.jsx';
 
 const MAX_METRICS = 12;
