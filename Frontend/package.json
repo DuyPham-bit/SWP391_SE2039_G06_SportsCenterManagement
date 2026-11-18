@@ -20,7 +20,8 @@
     "test:api:proxy": "node tests/api-proxy.cjs",
     "build": "vite build",
     "build:api": "vite build --outDir ../Backend/SportsCenterManagement.API/wwwroot --emptyOutDir",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint:arch": "steiger ./src && eslint src"
   },
   "keywords": [
     "scms",
@@ -43,10 +44,15 @@
     "three": "0.170.0"
   },
   "devDependencies": {
+    "@feature-sliced/steiger-plugin": "^0.8.2",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
     "esbuild": "^0.21.5",
+    "eslint": "^10.15.0",
+    "eslint-plugin-boundaries": "^7.4.4",
+    "knip": "^6.45.1",
     "postcss": "^8.4.49",
+    "steiger": "^0.10.0",
     "tailwindcss": "^3.4.17",
     "vite": "^5.4.14"
   }
