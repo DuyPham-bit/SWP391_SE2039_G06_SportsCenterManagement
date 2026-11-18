@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { bookingApi } from '../../../entities/booking/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { useNotifications, NotificationList } from '../../../features/notifications/index.js';
 import { MemberReminders } from '../../../widgets/member-reminders/index.js';
 import { getMemberReminders } from '../../../entities/member/index.js';
