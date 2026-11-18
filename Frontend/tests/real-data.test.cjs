@@ -99,6 +99,10 @@ test('an unconfigured homepage uses only the actual SQL catalog and never invent
   assert.equal(result.facilitiesSection.facilitiesList[0].capacity, '11 người');
 });
 
+// The editor's UI labels come from the Vietnamese locale, like the running app.
+const VI_LOCALE = require('../src/shared/i18n/locales/vi.json');
+const viT = (key, params) => String(VI_LOCALE[key] ?? key).replace(/\{(\w+)\}/g, (match, name) => (params?.[name] ?? match));
+
 function loadCatalogEditor(catalog) {
   const React = require('react');
   const module = { exports: {} };
@@ -120,7 +124,8 @@ function loadCatalogEditor(catalog) {
       if (id.includes('entities/catalog')) return { ...load('entities/catalog/api/publicCatalog.js'), usePublicCatalog: () => ({ catalog, loading: false, error: '' }) };
       if (id.includes('usePublicCatalog')) return { usePublicCatalog: () => ({ catalog, loading: false, error: '' }) };
       if (id.includes('publicCatalog.js')) return load('entities/catalog/api/publicCatalog.js');
-      if (id.includes('LanguageContext')) return { useLanguage: () => ({ language: 'vi' }) };
+      if (id.includes('LanguageContext')) return { useLanguage: () => ({ language: 'vi', t: viT }) };
+      if (id.includes('entities/landing-content')) return load('entities/landing-content/api/homeContentService.js');
       throw new Error(`Unexpected dependency: ${id}`);
     }
   });
@@ -182,12 +187,13 @@ test('both homepage card editors can add and edit cards without changing existin
     }
     findAll(view(), 'button').find(button => button.props['aria-haspopup'] === 'dialog').props.onClick();
     findAll(view(), 'input').find(input => input.props.name === 'name').props.onChange({ target: { value: 'Edited first' } });
-    assert.deepEqual(JSON.parse(JSON.stringify(cards[0])), { ...original[0], name: 'Edited first' });
+    // Text is stored per language; the legacy plain string becomes the Vietnamese side.
+    assert.deepEqual(JSON.parse(JSON.stringify(cards[0])), { ...original[0], name: { vi: 'Edited first', en: '' } });
     assert.equal(cards[1], original[1]);
     assert.equal(original[0].name, 'First');
     const key = type === 'sports' ? 'highlight' : 'description';
     findAll(view(), 'textarea').find(input => input.props.name === key).props.onChange({ target: { value: 'Edited description' } });
-    assert.equal(cards[0][key], 'Edited description');
+    assert.deepEqual(JSON.parse(JSON.stringify(cards[0][key])), { vi: 'Edited description', en: '' });
     assert.equal(cards[0].id, original[0].id);
     assert.equal(cards[0].facilityId, original[0].facilityId);
   }
