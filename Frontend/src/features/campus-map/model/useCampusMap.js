@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { CAMPUS_MAP_CHANGE_EVENT, fetchCampusMap } from '../api/campusMapApi.js';
+import { CAMPUS_MAP_CHANGE_EVENT, fetchCampusMap } from '../../../entities/campus-map/index.js';
 import { buildCampus } from './campusModel.js';
 
 const POLL_MS = 60_000;
