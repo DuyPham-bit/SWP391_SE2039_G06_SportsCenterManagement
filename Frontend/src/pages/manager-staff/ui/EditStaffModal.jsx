@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { labelClass, inputClass } from './formStyles.js';
+import { labelClass, inputClass } from '../../../shared/ui/formStyles.js';
 import { SpecialtyPicker } from './SpecialtyPicker.jsx';
 
 export function EditStaffModal({
