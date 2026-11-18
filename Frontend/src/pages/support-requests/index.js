@@ -1,1 +1,1 @@
-export { SupportRequests } from '../../widgets/support-inbox/index.js';
+export { SupportRequests } from './ui/SupportRequestsPage.jsx';
