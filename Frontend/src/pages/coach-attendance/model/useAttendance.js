@@ -1,6 +1,6 @@
 import { useRef, useMemo, useState, useEffect } from 'react';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { getAttendanceStatuses, getAttendanceRestrictionInfo, getSessionStatusInfo } from '../lib/attendanceStatus.js';
 import { DAY_NAMES_EN, DAY_NAMES_VI, DAY_FULL_LABELS_EN, DAY_FULL_LABELS_VI, getMondayOfDate, getWeekDays, toIsoDate, formatFullDate } from '../lib/attendanceCalendar.js';
 import { parseCalendarDate } from '../../../shared/lib/dateTime.js';
