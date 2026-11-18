@@ -1,6 +1,6 @@
 import { useMemo, useState, useRef, useEffect } from 'react';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { getRoleConfig, today } from '../lib/staffDisplay.js';
 import { COACH_CLASS_FILTER, matchesCoachClassFilter } from './staffManagementView.js';
 import { staffApi } from '../../../entities/staff/index.js';
