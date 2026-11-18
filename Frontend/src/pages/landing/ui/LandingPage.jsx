@@ -12,11 +12,11 @@ import { LandingFooter } from './LandingFooter.jsx';
 export function LandingPage() {
   const {
     activeNav, catalog, catalogError, catalogLoading, categoryConfig, coursesDropdownRef,
-    editorialContent, editorialLoaded, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
+    editorialContent, editorialError, editorialLoaded, editorialStats, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
     handleCoursesMouseLeave, handleNavClick, handleScrollSportsToIndex, handleSelectMenuItem,
     handleSportClick, handleSportsScroll, highlightedSportId, hours, isAuthenticated,
-    isCoursesDropdownOpen, isEn, isMobileCoursesOpen, isMobileMenuOpen, isScrolled, isVideoMuted,
-    landingContent, language, leftSports, logout, membershipAction, navItems, rightSports, role,
+    isCoursesDropdownOpen, isMobileCoursesOpen, isMobileMenuOpen, isScrolled, isVideoMuted,
+    landingContent, language, leftSports, logout, retryEditorial, t, membershipAction, navItems, rightSports, role,
     selectedCategory, selectedFacilityForModal, selectedSportFromMenu, setIsMobileCoursesOpen,
     setIsMobileMenuOpen, setIsVideoMuted, setLanguage, setSelectedCategory,
     setSelectedFacilityForModal, setShowIntro, showIntro, socialContacts, sportCarouselIndex,
@@ -47,7 +47,6 @@ export function LandingPage() {
         handleSelectMenuItem={handleSelectMenuItem}
         isAuthenticated={isAuthenticated}
         isCoursesDropdownOpen={isCoursesDropdownOpen}
-        isEn={isEn}
         isMobileCoursesOpen={isMobileCoursesOpen}
         isMobileMenuOpen={isMobileMenuOpen}
         isScrolled={isScrolled}
@@ -67,34 +66,32 @@ export function LandingPage() {
       {/* ─────────────────────────────────────────────────────────────
           1. HERO SECTION (Tiya Wave Elements with Compact Balanced Height)
       ───────────────────────────────────────────────────────────── */}
+      {editorialError && !editorialContent && (
+        <div role="alert" className="fixed top-20 left-1/2 -translate-x-1/2 z-50 w-[92%] max-w-lg px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm flex items-center justify-between gap-3 shadow-lg">
+          <span>{t('landing.common.loadError')}</span>
+          <button type="button" onClick={retryEditorial} className="px-3 py-1.5 rounded-lg bg-rose-600 text-white text-xs font-bold shrink-0">
+            {t('landing.common.retry')}
+          </button>
+        </div>
+      )}
       <HeroSection
-        catalogLoading={catalogLoading}
-        facilitiesList={facilitiesList}
         heroReady={editorialLoaded}
-        isEn={isEn}
         isVideoMuted={isVideoMuted}
         landingContent={landingContent}
         setIsVideoMuted={setIsVideoMuted}
         videoRef={videoRef}
-        visibleSports={visibleSports}
       />
 
       {/* ─────────────────────────────────────────────────────────────
           2. ABOUT SECTION (Tiya Pure White Background #ffffff)
       ───────────────────────────────────────────────────────────── */}
-      <AboutSection
-        catalog={catalog}
-        facilitiesList={facilitiesList}
-        isEn={isEn}
-        landingContent={landingContent}
-        visibleSports={visibleSports}
-      />
+      <AboutSection landingContent={landingContent} stats={editorialStats} />
 
       {/* ─────────────────────────────────────────────────────────────
           3. BACKGROUND IMAGE SECTION WITH FROSTED GLASS BLOCK (Tiya Signature)
           Matches 100% the user's reference screenshot!
       ───────────────────────────────────────────────────────────── */}
-      <ZonesSection facilitiesList={facilitiesList} hours={hours} isEn={isEn} />
+      <ZonesSection facilitiesList={facilitiesList} hours={hours} />
 
       {/* ─────────────────────────────────────────────────────────────
           4. COURSES CATALOG SECTION (Tiya Warm Cream #F4F1DE Background)
@@ -111,7 +108,6 @@ export function LandingPage() {
         handleSportsScroll={handleSportsScroll}
         highlightedSportId={highlightedSportId}
         hours={hours}
-        isEn={isEn}
         landingContent={landingContent}
         membershipAction={membershipAction}
         selectedCategory={selectedCategory}
@@ -145,7 +141,6 @@ export function LandingPage() {
         facilitiesList={facilitiesList}
         handleNavClick={handleNavClick}
         handleSportClick={handleSportClick}
-        isEn={isEn}
         landingContent={landingContent}
         navItems={navItems}
         socialContacts={socialContacts}

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { coachProfessionalApi } from '../../../entities/coach/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { CoachError, SectionCard, EmptyState, formatDate } from '../../../features/coach-workspace/index.js';
 import {

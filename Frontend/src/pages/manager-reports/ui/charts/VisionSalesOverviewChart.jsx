@@ -1,6 +1,6 @@
 import { AnimatedNumber } from '../../../../shared/lib/useCountUp.jsx';
 import React, { useState } from 'react';
-import { useLanguage } from '../../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../../shared/i18n/index.js';
 import { formatVnd, formatShortVnd } from '../../lib/chartFormat.js';
 
 /**
@@ -159,12 +159,14 @@ export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
           {lineD && (
             <path
               d={lineD}
+              pathLength="1"
               fill="none"
               stroke="rgb(var(--color-chart-5))"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
               filter="url(#visionGlowLine)"
+              className="scms-chart-line"
             />
           )}
 

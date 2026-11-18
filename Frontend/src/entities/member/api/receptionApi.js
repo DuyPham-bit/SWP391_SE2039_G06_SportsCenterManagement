@@ -1,6 +1,6 @@
 import { mapMember } from './mapMember.js';
-import { asArray, centerId } from '../../../shared/api/apiUtils.js';
-import { apiRequest, createIdempotencyKey } from '../../../shared/api/http.js';
+import { asArray, centerId } from '../../../shared/api/index.js';
+import { apiRequest, createIdempotencyKey } from '../../../shared/api/index.js';
 
 export const receptionApi = {
   async lookupMember(query = '') {

@@ -3,7 +3,7 @@ import { getMonthCalendarGrid, getSportTheme } from '../lib/calendarView.js';
 import { getSessionAction } from '../lib/sessionAction.js';
 import { SessionActionButton } from './SessionActionButton.jsx';
 import { formatIsoDate } from '../../../shared/lib/calendar.js';
-import { translateClassName, translateSportName, translateCoachName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateSportName, translateCoachName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function MonthCalendar({
   DAY_LABELS, bookedSessionIds, classesByDate, currentDate, handleOpenSessionDetail, isEn,

@@ -1,19 +1,213 @@
 import React, { useState, useEffect } from 'react';
 import { memberApi, formatMeasurement, formatMemberDate, getLatestProgress } from '../../../entities/member/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
-import {
-  translatePlanTitle,
-  translatePlanGoal,
-  translateCoachName,
-  translateClassName,
-  translateWorkoutResult,
-  translateCoachFeedback,
-  translateExerciseName,
-  translateExerciseNote,
-  translateReps
-} from '../../../shared/i18n/i18nHelper.js';
+import { CountUp } from '../../../shared/ui/CountUp.jsx';
+import { EmptyState } from '../../../shared/ui/Feedback.jsx';
+import { translatePlanTitle, translatePlanGoal, translateCoachName, translateClassName, translateWorkoutResult, translateCoachFeedback, translateExerciseName, translateExerciseNote, translateReps } from '../../../shared/lib/i18nHelper.js';
+
+/** Accessible multi-metric SVG InBody trend chart (weight solid, muscle dashed, body fat dotted) with draw-in & data-table fallback. */
+function InBodyTrendChart({ records, isEn }) {
+  const [activeIdx, setActiveIdx] = useState(null);
+  const [showTable, setShowTable] = useState(false);
+
+  const ordered = [...records]
+    .filter(r => r && (r.weight != null || r.muscleMass != null || r.bodyFat != null))
+    .slice(0, 12)
+    .reverse();
+
+  if (ordered.length < 2) return null;
+
+  const width = 680;
+  const height = 220;
+  const padL = 44;
+  const padR = 24;
+  const padT = 22;
+  const padB = 34;
+  const innerW = width - padL - padR;
+  const innerH = height - padT - padB;
+
+  const normalize = (key) => {
+    const vals = ordered.map(r => Number(r[key])).filter(n => Number.isFinite(n));
+    if (vals.length === 0) return null;
+    const min = Math.min(...vals);
+    const max = Math.max(...vals);
+    const span = Math.max(4, max - min);
+    const lo = Math.max(0, min - span * 0.2);
+    const hi = max + span * 0.2;
+    return ordered.map((r, i) => {
+      const v = Number(r[key]);
+      const x = padL + (i / Math.max(1, ordered.length - 1)) * innerW;
+      const y = Number.isFinite(v)
+        ? padT + innerH - ((v - lo) / Math.max(1, hi - lo)) * innerH
+        : null;
+      return { x, y, val: Number.isFinite(v) ? v : null, rec: r, idx: i };
+    });
+  };
+
+  const series = [
+    { key: 'weight', label: isEn ? 'Weight (kg)' : 'Cân nặng (kg)', unit: 'kg', color: 'rgb(var(--color-chart-5))', dash: undefined, pts: normalize('weight') },
+    { key: 'muscleMass', label: isEn ? 'Muscle (kg)' : 'Cơ bắp (kg)', unit: 'kg', color: 'rgb(var(--color-chart-1))', dash: '6 4', pts: normalize('muscleMass') },
+    { key: 'bodyFat', label: isEn ? 'Body Fat (%)' : 'Mỡ cơ thể (%)', unit: '%', color: 'rgb(var(--color-chart-4))', dash: '2 4', pts: normalize('bodyFat') },
+  ].filter(s => s.pts);
+
+  const buildPath = (pts) => {
+    const valid = pts.filter(p => p.y != null);
+    if (valid.length < 2) return '';
+    return valid.map((p, idx) => `${idx === 0 ? 'M' : 'L'} ${p.x.toFixed(1)} ${p.y.toFixed(1)}`).join(' ');
+  };
+
+  const activeRec = activeIdx != null ? ordered[activeIdx] : ordered[ordered.length - 1];
+
+  return (
+    <section
+      aria-label={isEn ? 'InBody biometric trend chart' : 'Biểu đồ xu hướng chỉ số InBody'}
+      className="bg-white dark:bg-brand-navy-900 rounded-2xl border border-brand-navy-200 dark:border-brand-navy-800 p-5 sm:p-6 shadow-xs space-y-4 transition-all"
+    >
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="font-chivo text-sm font-bold text-brand-navy-900 dark:text-white uppercase tracking-wide flex items-center gap-2">
+            <span className="material-symbols-outlined text-brand-teal-600 dark:text-brand-teal-400" aria-hidden="true">show_chart</span>
+            {isEn ? 'InBody Biometric Progression' : 'Xu Hướng Chỉ Số InBody Theo Thời Gian'}
+          </h2>
+          <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400 mt-0.5">
+            {ordered.length} {isEn ? 'check-ins compared (hover or Tab points for exact values)' : 'lần đo gần nhất (di chuột hoặc Tab qua từng điểm để xem chi tiết)'}
+          </p>
+        </div>
+
+        <div className="flex flex-wrap items-center gap-3 text-xs">
+          {series.map(s => (
+            <span key={s.key} className="inline-flex items-center gap-1.5 font-semibold text-brand-navy-700 dark:text-brand-navy-200">
+              <svg width="20" height="6" viewBox="0 0 20 6" aria-hidden="true">
+                <line x1="0" y1="3" x2="20" y2="3" stroke={s.color} strokeWidth="2.5" strokeDasharray={s.dash} strokeLinecap="round" />
+              </svg>
+              <span>{s.label}</span>
+            </span>
+          ))}
+          <button
+            type="button"
+            onClick={() => setShowTable(v => !v)}
+            className="px-2.5 py-1 rounded-lg border border-brand-navy-200 dark:border-brand-navy-700 text-[11px] font-bold text-brand-navy-700 dark:text-brand-navy-200 hover:bg-brand-navy-50 dark:hover:bg-brand-navy-800 transition-colors cursor-pointer"
+          >
+            {showTable ? (isEn ? 'Hide table' : 'Ẩn bảng số liệu') : (isEn ? 'Data table' : 'Xem bảng số liệu')}
+          </button>
+        </div>
+      </div>
+
+      <div className="relative overflow-x-auto">
+        <svg viewBox={`0 0 ${width} ${height}`} className="w-full h-auto min-w-[460px] select-none" role="img" aria-label={isEn ? 'InBody biometric line chart' : 'Biểu đồ đường chỉ số InBody'}>
+          {[0.2, 0.5, 0.8].map(r => (
+            <line
+              key={r}
+              x1={padL}
+              y1={padT + innerH * r}
+              x2={width - padR}
+              y2={padT + innerH * r}
+              stroke="rgb(var(--color-border))"
+              strokeDasharray="3 3"
+              strokeWidth="1"
+            />
+          ))}
+          <line x1={padL} y1={padT + innerH} x2={width - padR} y2={padT + innerH} stroke="rgb(var(--color-border))" strokeWidth="1.2" />
+
+          {series.map(s => {
+            const pathD = buildPath(s.pts);
+            return (
+              <g key={s.key}>
+                {pathD && (
+                  <path
+                    d={pathD}
+                    pathLength="1"
+                    fill="none"
+                    stroke={s.color}
+                    strokeWidth="2.5"
+                    strokeDasharray={s.dash}
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    className={s.dash ? '' : 'scms-chart-line'}
+                  />
+                )}
+                {s.pts.filter(p => p.y != null).map(pt => {
+                  const active = activeIdx === pt.idx;
+                  return (
+                    <circle
+                      key={`${s.key}-${pt.idx}`}
+                      cx={pt.x}
+                      cy={pt.y}
+                      r={active ? 6 : 4}
+                      fill={active ? s.color : 'rgb(var(--color-surface))'}
+                      stroke={s.color}
+                      strokeWidth="2.2"
+                      tabIndex={0}
+                      role="button"
+                      aria-label={`${formatMemberDate(pt.rec.date, isEn)} - ${s.label}: ${pt.val} ${s.unit}`}
+                      onFocus={() => setActiveIdx(pt.idx)}
+                      onBlur={() => setActiveIdx(null)}
+                      onMouseEnter={() => setActiveIdx(pt.idx)}
+                      onMouseLeave={() => setActiveIdx(null)}
+                      className="cursor-pointer outline-none transition-all duration-150"
+                    />
+                  );
+                })}
+              </g>
+            );
+          })}
+
+          {ordered.map((r, i) => (
+            <text
+              key={`lbl-${i}`}
+              x={padL + (i / Math.max(1, ordered.length - 1)) * innerW}
+              y={height - 10}
+              textAnchor="middle"
+              className={`text-[10px] tabular-nums ${activeIdx === i ? 'fill-brand-teal-600 font-bold' : 'fill-brand-navy-500 dark:fill-brand-navy-400'}`}
+            >
+              {formatMemberDate(r.date, isEn)}
+            </text>
+          ))}
+        </svg>
+      </div>
+
+      {activeRec && (
+        <div className="flex flex-wrap items-center justify-between gap-3 px-3.5 py-2.5 rounded-xl bg-brand-navy-50/70 dark:bg-brand-navy-800/60 border border-brand-navy-200/80 dark:border-brand-navy-700 text-xs tabular-nums">
+          <span className="font-bold text-brand-navy-800 dark:text-white">
+            {isEn ? 'Session:' : 'Mốc đo:'} {formatMemberDate(activeRec.date, isEn)}
+          </span>
+          <div className="flex flex-wrap items-center gap-4 font-semibold">
+            <span className="text-brand-teal-700 dark:text-brand-teal-300">{isEn ? 'Weight' : 'Cân nặng'}: {formatMeasurement(activeRec.weight, 'kg')}</span>
+            <span className="text-brand-sage-700 dark:text-brand-sage-300">{isEn ? 'Muscle' : 'Cơ bắp'}: {formatMeasurement(activeRec.muscleMass, 'kg')}</span>
+            <span className="text-brand-terra-600 dark:text-brand-terra-400">{isEn ? 'Body fat' : 'Tỷ lệ mỡ'}: {formatMeasurement(activeRec.bodyFat, '%')}</span>
+          </div>
+        </div>
+      )}
+
+      {showTable && (
+        <div className="overflow-x-auto rounded-xl border border-brand-navy-200 dark:border-brand-navy-700">
+          <table className="w-full text-xs text-left tabular-nums">
+            <thead className="bg-brand-navy-50 dark:bg-brand-navy-800 text-brand-navy-700 dark:text-brand-navy-200">
+              <tr>
+                <th className="px-3 py-2">{isEn ? 'Date' : 'Ngày đo'}</th>
+                <th className="px-3 py-2">{isEn ? 'Weight' : 'Cân nặng'}</th>
+                <th className="px-3 py-2">{isEn ? 'Muscle' : 'Cơ bắp'}</th>
+                <th className="px-3 py-2">{isEn ? 'Body fat' : 'Tỷ lệ mỡ'}</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-brand-navy-100 dark:divide-brand-navy-800">
+              {ordered.map((r, i) => (
+                <tr key={r.id ?? i}>
+                  <td className="px-3 py-2 font-medium">{formatMemberDate(r.date, isEn)}</td>
+                  <td className="px-3 py-2">{formatMeasurement(r.weight, 'kg')}</td>
+                  <td className="px-3 py-2">{formatMeasurement(r.muscleMass, 'kg')}</td>
+                  <td className="px-3 py-2">{formatMeasurement(r.bodyFat, '%')}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </section>
+  );
+}
 
 export function MyProgress() {
   const { currentUser } = useAuth();
@@ -103,16 +297,13 @@ export function MyProgress() {
 
       {/* Empty State Banner when no data yet */}
       {isPending && (
-        <div className="p-8 rounded-2xl border border-dashed border-brand-navy-300 dark:border-brand-navy-800 bg-brand-navy-50 dark:bg-brand-navy-900/50 text-center space-y-3">
-          <span className="material-symbols-outlined text-5xl text-brand-navy-300 dark:text-brand-navy-600">fitness_center</span>
-          <h3 className="font-chivo text-base font-bold text-brand-navy-700 dark:text-brand-navy-300">
-            {isEn ? 'No Progress Records Yet' : 'Chưa có dữ liệu tiến độ'}
-          </h3>
-          <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400 max-w-md mx-auto leading-6">
-            {isEn
+        <div className="p-6 rounded-2xl border border-dashed border-brand-navy-200 dark:border-brand-navy-800 bg-brand-navy-50/70 dark:bg-brand-navy-900/50">
+          <EmptyState
+            title={isEn ? 'No Progress Records Yet' : 'Chưa có dữ liệu tiến độ'}
+            message={isEn
               ? 'Coaches will record physical metrics, workout results, and personalized plans after each session. Data will appear here once updated by your coach.'
               : 'Huấn luyện viên sẽ ghi nhận chỉ số thể lực, kết quả tập luyện và kế hoạch cá nhân sau mỗi buổi học. Dữ liệu sẽ hiển thị tại đây sau khi HLV cập nhật.'}
-          </p>
+          />
         </div>
       )}
 
@@ -124,7 +315,7 @@ export function MyProgress() {
               <span className="text-xs font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
                 {isEn ? 'Current Weight' : 'Cân Nặng Hiện Tại'}
               </span>
-              <div className="font-chivo text-3xl font-black text-brand-navy-900 dark:text-white mt-1">{formatMeasurement(latestRecord.weight, 'kg')}</div>
+              <div className="font-chivo text-3xl font-black text-brand-navy-900 dark:text-white mt-1"><CountUp value={formatMeasurement(latestRecord.weight, 'kg')} /></div>
               <span className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400">
                 {isEn ? `Recorded on ${formatMemberDate(latestRecord.date, isEn)}` : `Ghi nhận ngày ${formatMemberDate(latestRecord.date)}`}
               </span>
@@ -139,7 +330,7 @@ export function MyProgress() {
               <span className="text-xs font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
                 {isEn ? 'Body Fat Rate' : 'Tỷ Lệ Mỡ Cơ Thể'}
               </span>
-              <div className="font-chivo text-3xl font-black text-brand-terra-500 mt-1">{formatMeasurement(latestRecord.bodyFat, '%')}</div>
+              <div className="font-chivo text-3xl font-black text-brand-terra-500 mt-1"><CountUp value={formatMeasurement(latestRecord.bodyFat, '%')} /></div>
               <span className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400">{isEn ? 'Assessed by Coach' : 'Theo đánh giá của HLV'}</span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-brand-terra-500/15 text-brand-terra-500 flex items-center justify-center">
@@ -152,7 +343,7 @@ export function MyProgress() {
               <span className="text-xs font-bold uppercase tracking-wider text-brand-navy-400 dark:text-brand-navy-500">
                 {isEn ? 'Skeletal Muscle Mass' : 'Khối Lượng Cơ Bắp'}
               </span>
-              <div className="font-chivo text-3xl font-black text-brand-sage-700 dark:text-brand-sage-500 mt-1">{formatMeasurement(latestRecord.muscleMass, 'kg')}</div>
+              <div className="font-chivo text-3xl font-black text-brand-sage-700 dark:text-brand-sage-500 mt-1"><CountUp value={formatMeasurement(latestRecord.muscleMass, 'kg')} /></div>
               <span className="text-[11px] text-brand-navy-500 dark:text-brand-navy-400">{isEn ? 'Assessed by Coach' : 'Theo đánh giá của HLV'}</span>
             </div>
             <div className="w-12 h-12 rounded-xl bg-brand-sage-500/15 text-brand-sage-700 dark:text-brand-sage-500 flex items-center justify-center">
@@ -161,6 +352,9 @@ export function MyProgress() {
           </div>
         </div>
       )}
+
+      {/* Interactive InBody Trend Chart when 2+ check-ins exist */}
+      {records.length >= 2 && <InBodyTrendChart records={records} isEn={isEn} />}
 
       {/* Assigned Training Plans from Coach */}
       {plans.length > 0 && (

@@ -2,7 +2,7 @@ import React, { useEffect, useState, useMemo } from 'react';
 import { receptionApi, formatMemberDateTime } from '../../../entities/member/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { counterInput, CounterError, CounterMemberPicker } from '../../../features/counter-desk/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { useAuth } from '../../../entities/session/index.js';
 import { SupportPriorityBadge, SupportPrioritySelect } from '../../../entities/support-request/index.js';
 import { getStatusConfig, getTopicPresets, getQuickNotes, extractTopic } from '../lib/supportPresets.js';

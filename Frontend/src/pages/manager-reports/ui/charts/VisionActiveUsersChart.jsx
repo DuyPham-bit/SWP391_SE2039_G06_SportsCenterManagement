@@ -1,6 +1,6 @@
 import { AnimatedNumber } from '../../../../shared/lib/useCountUp.jsx';
 import React, { useState } from 'react';
-import { useLanguage } from '../../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../../shared/i18n/index.js';
 
 /**
  * 10. VISION UI ACTIVE USERS (Bar Chart with 4 Mini Stat Pills)

@@ -1,7 +1,7 @@
 import React from 'react';
 import { getMonthCalendarGrid, getSportTheme } from '../lib/calendarView.js';
 import { formatIsoDate } from '../../../shared/lib/calendar.js';
-import { translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function TeachingMonthView({
   SHORT_DAY_LABELS, STATUS_CONFIG, currentDate, handleOpenDetail, isEn, selectedCalendarDate,

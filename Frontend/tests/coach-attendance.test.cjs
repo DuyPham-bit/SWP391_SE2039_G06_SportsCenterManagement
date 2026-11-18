@@ -19,8 +19,8 @@ test('coach dashboard persists quick progress and attendance through the real AP
 });
 
 test('backend roster and attendance honor replacement coach and active class enrollment', () => {
-  const repository = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.DAL/Repositories/Implementations/ClassRepository.cs'), 'utf8');
-  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/SessionBookingService.cs'), 'utf8');
+  const repository = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.DAL/Repositories/Classes/ClassRepository.cs'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/Classes/SessionBookingService.cs'), 'utf8');
   const backendCode = repository + '\n' + service;
   assert.match(backendCode, /s\.CoachId == coach\.Id/);
   assert.match(backendCode, /s\.CoachId == null/);
@@ -39,7 +39,7 @@ test('attendance schedule excludes cancelled class and session history', () => {
 });
 
 test('cancelling any pre-start booking offers the released seat to the FIFO waitlist', () => {
-  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/SessionBookingService.cs'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/Classes/SessionBookingService.cs'), 'utf8');
 
   assert.doesNotMatch(service, /if \(!late\)\s*\{[\s\S]{0,250}PromoteNextWaitlistAsync/);
   assert.match(service, /var promotedMemberId = await PromoteNextWaitlistAsync/);
@@ -48,7 +48,7 @@ test('cancelling any pre-start booking offers the released seat to the FIFO wait
 });
 
 test('session progress is upserted and overnight completion uses the Vietnam session end', () => {
-  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/TrainingService.cs'), 'utf8');
+  const service = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/Training/TrainingService.cs'), 'utf8');
   assert.match(service, /SessionEndVietnam\(session\.SessionDate, session\.StartTime, session\.EndTime\)/);
   assert.match(service, /r\.SessionId == request\.SessionId && r\.MemberId == request\.MemberId/);
   assert.match(service, /TRAINING_PROGRESS_UPDATED/);

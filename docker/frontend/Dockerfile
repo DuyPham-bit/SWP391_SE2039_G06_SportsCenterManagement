@@ -7,6 +7,10 @@ COPY Frontend/package*.json ./
 RUN npm ci || npm install
 
 # Build static bundle
+ARG VITE_API_BASE_URL=/api
+ARG VITE_GOOGLE_CLIENT_ID=
+ENV VITE_API_BASE_URL=$VITE_API_BASE_URL
+ENV VITE_GOOGLE_CLIENT_ID=$VITE_GOOGLE_CLIENT_ID
 COPY Frontend/ .
 RUN npm run build
 

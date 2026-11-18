@@ -1,8 +1,8 @@
-import { saveLandingDraft, discardLandingDraft } from '../../../entities/landing-content/index.js';
+import { saveHomeContentDraft, discardHomeContentDraft } from '../../../entities/landing-content/index.js';
 
 export const cloneContent = content => JSON.parse(JSON.stringify(content));
 /** Local safety copy, only used while the server draft cannot be reached. */
-export const MANAGER_DRAFT_KEY = 'SCMS_MANAGER_LANDING_DRAFT_V2';
+export const MANAGER_DRAFT_KEY = 'SCMS_MANAGER_LANDING_DRAFT_V3';
 
 const AUTOSAVE_DELAY_MS = 1200;
 let timer = null;
@@ -39,7 +39,7 @@ export async function flushDraft() {
   const content = pending;
   pending = null;
   try {
-    const saved = await saveLandingDraft(content, draftVersion);
+    const saved = await saveHomeContentDraft(content, draftVersion);
     draftVersion = saved?.updatedAt ?? draftVersion;
     dropLocalCopy();
   } catch (error) {
@@ -62,5 +62,5 @@ export const clearDraft = () => {
   pending = null;
   draftVersion = null;
   dropLocalCopy();
-  void discardLandingDraft().catch(() => { /* publishing already removes it server-side */ });
+  void discardHomeContentDraft().catch(() => { /* publishing already removes it server-side */ });
 };

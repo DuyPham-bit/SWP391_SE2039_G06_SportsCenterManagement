@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useLanguage } from '../../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../../shared/i18n/index.js';
 import { getSportVisual } from '../../lib/chartFormat.js';
 
 /**
@@ -70,6 +70,7 @@ export function SportsDonutChart({ sports = [], metrics = null }) {
         >
           {/* Donut ring (centred at 105, 105) */}
           <g transform="rotate(-90, 105, 105)">
+            <g className="scms-donut-reveal">
             <circle
               cx="105"
               cy="105"
@@ -103,6 +104,7 @@ export function SportsDonutChart({ sports = [], metrics = null }) {
                 />
               );
             })}
+            </g>
           </g>
 
           {/* Center Dynamic Label */}

@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { receptionApi } from '../../../entities/member/index.js';
 import { Html5Qrcode, Html5QrcodeScannerState } from 'html5-qrcode';
 import { playScannerBeep, extractMemberIdentifier } from '../lib/scanner.js';

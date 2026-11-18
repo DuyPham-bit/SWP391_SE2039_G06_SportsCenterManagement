@@ -1,4 +1,4 @@
-import { apiRequest } from '../../../shared/api/http.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 export const managerCoachApi = {
   getWorkspace: () => apiRequest('manager/coach-operations'),

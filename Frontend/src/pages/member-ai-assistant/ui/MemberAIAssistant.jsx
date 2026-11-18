@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { aiApi } from '../../../entities/ai-chat/index.js';
 import { clearMemberAIChatStorage } from '../../../shared/lib/memberAiChatStorage.js';
 import { parseFormattedMarkdown } from './chatMarkdown.jsx';

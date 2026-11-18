@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { filterCompatibleCoaches, filterAndSortAssignmentClasses, coachWorkload, isCoachCompatible } from './coachAssignmentView.js';
 import { classApi } from '../../../entities/class/index.js';
 

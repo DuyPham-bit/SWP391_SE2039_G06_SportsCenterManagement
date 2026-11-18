@@ -8,7 +8,7 @@ const source = fs.readFileSync(
   path.join(__dirname, '../src/pages/roles-permissions/ui/RolesPermissions.jsx'),
   'utf8'
 );
-const controllerSource = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Controllers/CenterPermissionsController.cs'), 'utf8');
+const controllerSource = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Controllers/AccessControl/CenterPermissionsController.cs'), 'utf8');
 const capabilityGuardSource = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Authorization/CenterCapabilityAttribute.cs'), 'utf8');
 const permissionGuardSource = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Authorization/PermissionAuthorizationHandler.cs'), 'utf8');
 const apiSource = readApiSource();

@@ -1,4 +1,4 @@
-import { apiRequest } from '../../../shared/api/http.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 // Confirms the gateway redirect (VNPay/MoMo) with the backend; the query string is forwarded unchanged.
 export const paymentReturnApi = {

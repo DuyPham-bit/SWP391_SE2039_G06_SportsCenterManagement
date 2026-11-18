@@ -10,7 +10,7 @@ const { renderToStaticMarkup } = require('react-dom/server');
 const read = (relPath) => fs.readFileSync(path.join(__dirname, '../../', relPath), 'utf8');
 
 test('ReportsController handles uppercase ADMIN role claim consistently', () => {
-  const src = read('Backend/SportsCenterManagement.API/Controllers/ReportsController.cs');
+  const src = read('Backend/SportsCenterManagement.API/Controllers/Reports/ReportsController.cs');
   assert.match(src, /User\.IsInRole\("ADMIN"\)/);
 });
 

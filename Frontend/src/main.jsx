@@ -30,6 +30,8 @@ import App from './app/App.jsx';
 import './app/styles/tokens.css';
 import './app/styles/theme.css';
 import './app/styles/tiya-theme.css';
+// UI overhaul: aurora, glass, ripple, inputs, tables, skeleton, theme reveal (after themes, before utilities).
+import './app/styles/experience.css';
 // Loaded last to keep the cascade order the runtime CDN build used (utilities win over theme rules).
 import './app/styles/tailwind.css';
 import { installMotion } from './shared/lib/motion.js';

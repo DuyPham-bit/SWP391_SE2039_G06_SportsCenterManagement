@@ -7,13 +7,13 @@ const read = (relPath) =>
   fs.readFileSync(path.join(__dirname, '..', '..', relPath), 'utf8');
 
 test('AdminManagementController preserves Active, Inactive, and Disabled center statuses', () => {
-  const src = read('Backend/SportsCenterManagement.API/Controllers/AdminManagementController.cs');
+  const src = read('Backend/SportsCenterManagement.API/Controllers/AccessControl/AdminManagementController.cs');
   assert.match(src, /NormalizeCenterStatus\(request\.Status\)/);
   assert.match(src, /string\.Equals\(trimmed,\s*"Inactive",\s*StringComparison\.OrdinalIgnoreCase\)\)\s*return\s*"Inactive"/);
 });
 
 test('AdminManagementController Overview excludes deleted accounts and syncs locked/disabled status', () => {
-  const src = read('Backend/SportsCenterManagement.API/Controllers/AdminManagementController.cs');
+  const src = read('Backend/SportsCenterManagement.API/Controllers/AccessControl/AdminManagementController.cs');
   assert.match(src, /user\.Status != "Deleted" && \(user\.Status == "Disabled" \|\| \(user\.LockedUntil != null && user\.LockedUntil > now\)\)/);
   assert.match(src, /db\.Users\.CountAsync\(user => user\.Status != "Deleted",\s*ct\)/);
   assert.match(src, /account\.Status = "Disabled"/);
@@ -21,7 +21,7 @@ test('AdminManagementController Overview excludes deleted accounts and syncs loc
 });
 
 test('AdminManagementController Accounts joins CoachProfiles and MemberProfiles for center and fullName resolution', () => {
-  const src = read('Backend/SportsCenterManagement.API/Controllers/AdminManagementController.cs');
+  const src = read('Backend/SportsCenterManagement.API/Controllers/AccessControl/AdminManagementController.cs');
   assert.match(src, /join coach in db\.CoachProfiles\.AsNoTracking\(\)/);
   assert.match(src, /join member in db\.MemberProfiles\.AsNoTracking\(\)/);
   assert.match(src, /let resolvedCenterId =/);
@@ -29,13 +29,13 @@ test('AdminManagementController Accounts joins CoachProfiles and MemberProfiles 
 });
 
 test('AdminManagementController UpdateManager allows disabling manager on inactive center and clears lock on activation', () => {
-  const src = read('Backend/SportsCenterManagement.API/Controllers/AdminManagementController.cs');
+  const src = read('Backend/SportsCenterManagement.API/Controllers/AccessControl/AdminManagementController.cs');
   assert.match(src, /if \(center is null \|\| \(status == "Active" && center\.Status != "Active"\)\)/);
   assert.match(src, /manager\.User\.LockedUntil = null;/);
 });
 
 test('AuditLogService resolves Center entity names and AuditLogs UI maps Admin & RBAC actions', () => {
-  const beSrc = read('Backend/SportsCenterManagement.BLL/Services/AuditLogService.cs');
+  const beSrc = read('Backend/SportsCenterManagement.BLL/Services/Audit/AuditLogService.cs');
   const feSrc = read('Frontend/src/pages/audit-logs/ui/AuditLogs.jsx');
   assert.match(beSrc, /else if \(log\.EntityType == "Center" && centers\.TryGetValue\(log\.EntityId\.Value, out var centerName\)\) entityName = centerName;/);
   assert.match(feSrc, /'ADMIN\.CENTER\.CREATED'/);

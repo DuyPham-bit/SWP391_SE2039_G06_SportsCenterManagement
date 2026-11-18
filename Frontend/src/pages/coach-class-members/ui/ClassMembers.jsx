@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { coachApi, coachDate } from '../../../entities/coach/index.js';
 import { MemberAvatar } from '../../../shared/ui/MemberAvatar.jsx';
 import { useAuth } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { Table, LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { CoachError, coachInput } from '../../../features/coach-workspace/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { translateClassName, translateSportName } from '../../../shared/i18n/i18nHelper.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { translateClassName, translateSportName } from '../../../shared/lib/i18nHelper.js';
 import {
   SCMS_HERO_BADGE_CLASS,
   SCMS_HERO_BTN_GLASS,

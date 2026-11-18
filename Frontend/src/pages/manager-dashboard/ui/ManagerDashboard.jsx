@@ -10,7 +10,7 @@ import {
   SCMS_HERO_SECTION_CLASS,
   ScmsHeroDecor
 } from '../../../shared/ui/ScmsHeroBanner.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import {
   MiniSparkline,
   RoomStatusDonutChart,

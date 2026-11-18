@@ -4,7 +4,7 @@ import { getSessionStatusInfo } from '../lib/attendanceStatus.js';
 import { canAttendSession } from '../../../entities/coach/index.js';
 import { getSportBadgeTheme, getTimeOfDayBadge } from '../lib/badges.js';
 import { parseCalendarDate } from '../../../shared/lib/dateTime.js';
-import { translateSportName, translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateSportName, translateClassName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function SessionListView({
   activeSession, filteredSessions, handleSelectSession, isEn, readinessFilter, selectedDateIso,

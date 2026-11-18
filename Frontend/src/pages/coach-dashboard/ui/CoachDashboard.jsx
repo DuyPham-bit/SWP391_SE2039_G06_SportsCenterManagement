@@ -2,8 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { coachApi, coachMemberOptions, dashboardAttendanceRecords, dashboardProgressRequest, filterDashboardSessions, mapDashboardRoster, mapDashboardSessions } from '../../../entities/coach/index.js';
 import { useAuth } from '../../../entities/session/index.js';
 import { CoachError, useTeachingSessions } from '../../../features/coach-workspace/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { MotionButton } from '../../../shared/ui/MotionButton.jsx';
 import {
   SCMS_HERO_BADGE_CLASS,

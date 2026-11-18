@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../../shared/i18n/index.js';
 
 /**
  * 8. VISION UI RADIAL PROGRESS SCORE (Referral Tracking / Facility Load Score)

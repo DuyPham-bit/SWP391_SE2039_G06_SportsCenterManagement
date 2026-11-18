@@ -1,2 +1,8 @@
-export { DEFAULT_LANDING_CONTENT, LANDING_CONTENT_CHANGE_EVENT, getDefaultLandingContent, getExternalContactUrl, getLandingContent, getLandingPreviewContent, getLegacyLandingContent, hasPublishedLandingContent, loadLandingContent, loadLandingDraft, saveLandingDraft, discardLandingDraft, normalizeZaloPhone, openLandingPreview, saveLandingContent, subscribeLandingContentRefresh, translateLandingTexts, uploadCampus3dHtml } from './api/landingContentService.js';
+export {
+  CONTENT_LANGUAGES, HOME_CONTENT_SECTIONS, LANDING_CONTENT_CHANGE_EVENT,
+  discardHomeContentDraft, fetchAdminHomeContent, fetchHomeContent, fillCounts, getCachedHomeContent,
+  getExternalContactUrl, getLandingPreviewContent, isLocalized, loadHomeContentDraft, localizeContent,
+  missingLanguages, normalizeLanguage, normalizeZaloPhone, openLandingPreview, publishHomeContent, readText,
+  saveHomeContentDraft, saveHomeContentSection, subscribeLandingContentRefresh, toLocalized, writeText
+} from './api/homeContentService.js';
 export { useLandingContent, useLandingContentState } from './model/useLandingContent.js';

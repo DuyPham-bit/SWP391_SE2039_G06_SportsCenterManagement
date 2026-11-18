@@ -1,4 +1,4 @@
-import { apiRequest } from '../../../shared/api/http.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 export const supportApi = {
   getMine: ({ status = '', page = 1 } = {}) => {

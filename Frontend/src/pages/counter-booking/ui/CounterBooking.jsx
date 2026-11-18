@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { bookingApi } from '../../../entities/booking/index.js';
 import { classApi } from '../../../entities/class/index.js';
 import { receptionApi } from '../../../entities/member/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 export function CounterBooking() {
   const { language } = useLanguage();

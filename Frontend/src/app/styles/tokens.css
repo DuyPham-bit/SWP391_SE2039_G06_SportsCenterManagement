@@ -21,6 +21,9 @@
   --brand-navy-800: 43 45 66; /* #2B2D42 */
   --brand-navy-900: 30 34 53; /* #1E2235 */
   --brand-navy-950: 5 7 15; /* #05070F */
+  /* forest (login/showcase deep greens) */
+  --brand-forest-900: 14 42 31; /* #0E2A1F */
+  --brand-forest-950: 7 24 18; /* #071812 */
   /* sage */
   --brand-sage-50: 239 252 245; /* #EFFCF5 */
   --brand-sage-100: 230 242 236; /* #E6F2EC */
@@ -122,6 +125,42 @@
   --color-chart-6: 42 92 70; /* #2A5C46 */
   --color-chart-7: 108 109 112; /* #6C6D70 */
   --color-chart-8: 124 82 0; /* #7C5200 */
+
+  /* ── Experience tokens (UI overhaul): one place for depth, shape, glass and motion ── */
+  /* Gradients */
+  --gradient-brand: linear-gradient(135deg, rgb(45 106 79) 0%, rgb(36 130 143) 55%, rgb(63 174 184) 100%);
+  --gradient-accent: linear-gradient(135deg, rgb(242 204 143) 0%, rgb(233 184 114) 100%);
+  --gradient-sunrise: linear-gradient(135deg, rgb(242 204 143) 0%, rgb(224 122 95) 100%);
+  --gradient-ring: conic-gradient(from var(--ring-angle, 0deg), rgb(129 178 154), rgb(63 174 184), rgb(242 204 143), rgb(224 122 95), rgb(129 178 154));
+  /* Aurora backdrop blobs (alpha tuned per theme) */
+  --aurora-1: 129 178 154;
+  --aurora-2: 63 174 184;
+  --aurora-3: 242 204 143;
+  --aurora-alpha: 0.42;
+  /* Elevation: layered shadows, tinted with navy instead of pure black */
+  --shadow-1: 0 1px 2px rgb(30 34 53 / 0.06), 0 1px 1px rgb(30 34 53 / 0.04);
+  --shadow-2: 0 2px 4px rgb(30 34 53 / 0.05), 0 8px 18px -6px rgb(30 34 53 / 0.10);
+  --shadow-3: 0 4px 8px rgb(30 34 53 / 0.05), 0 18px 36px -12px rgb(30 34 53 / 0.18);
+  --shadow-4: 0 8px 16px rgb(30 34 53 / 0.06), 0 32px 64px -20px rgb(30 34 53 / 0.28);
+  --shadow-glow: 0 0 0 1px rgb(129 178 154 / 0.35), 0 10px 30px -8px rgb(45 106 79 / 0.35);
+  /* Shape */
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  /* Glass */
+  --glass-bg: 255 255 255;
+  --glass-alpha: 0.72;
+  --glass-border: 255 255 255;
+  --glass-border-alpha: 0.6;
+  --glass-blur: 16px;
+  /* Motion */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --dur-fast: 160ms;
+  --dur-base: 280ms;
+  --dur-slow: 520ms;
 }
 
 /* Dark mode: tonal, desaturated variants (not inverted). */
@@ -163,4 +202,15 @@ html.dark {
   --color-chart-6: 167 218 193; /* #A7DAC1 */
   --color-chart-7: 160 161 165; /* #A0A1A5 */
   --color-chart-8: 242 204 143; /* #F2CC8F */
+
+  --aurora-alpha: 0.2;
+  --shadow-1: 0 1px 2px rgb(0 0 0 / 0.4);
+  --shadow-2: 0 2px 4px rgb(0 0 0 / 0.3), 0 8px 18px -6px rgb(0 0 0 / 0.45);
+  --shadow-3: 0 4px 8px rgb(0 0 0 / 0.3), 0 18px 36px -12px rgb(0 0 0 / 0.6);
+  --shadow-4: 0 8px 16px rgb(0 0 0 / 0.35), 0 32px 64px -20px rgb(0 0 0 / 0.7);
+  --shadow-glow: 0 0 0 1px rgb(145 194 170 / 0.35), 0 10px 30px -8px rgb(63 174 184 / 0.35);
+  --glass-bg: 30 34 53;
+  --glass-alpha: 0.66;
+  --glass-border: 255 255 255;
+  --glass-border-alpha: 0.08;
 }

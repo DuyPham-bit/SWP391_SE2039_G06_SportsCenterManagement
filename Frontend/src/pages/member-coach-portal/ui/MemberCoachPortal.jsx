@@ -1,10 +1,10 @@
 import { vietnamDate, formatVietnamDateTime } from '../../../shared/lib/dateTime.js';
 import React, { useEffect, useRef, useState } from 'react';
 import { memberCoachApi } from '../../../entities/coach/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
-import { translateCoachName, translateMealType, translateStatus } from '../../../shared/i18n/i18nHelper.js';
+import { translateCoachName, translateMealType, translateStatus } from '../../../shared/lib/i18nHelper.js';
 
 const input = 'w-full rounded-xl border border-brand-navy-300 dark:border-brand-navy-700 dark:bg-brand-navy-800 dark:text-white px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-sage-500/40 focus:border-brand-sage-500 transition';
 const button = 'rounded-xl bg-brand-sage-700 hover:bg-brand-sage-900 px-4 py-2 text-sm font-bold text-white shadow-xs hover:shadow transition-all active:scale-95 disabled:opacity-50 cursor-pointer';

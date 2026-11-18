@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatIsoDate } from '../../../shared/lib/calendar.js';
 import { getSportTheme } from '../lib/calendarView.js';
-import { translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function TeachingWeekView({
   DAY_LABELS, STATUS_CONFIG, handleOpenDetail, isEn, selectedCalendarDate, sessionsByDate,

@@ -3,8 +3,8 @@ import { Header } from './Header.jsx';
 import { Sidebar } from './Sidebar.jsx';
 import { ProfileModal } from '../../../features/auth/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { MemberAIChatPopup } from '../../../features/member-ai-chat/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { MemberAIChatPopup } from './MemberAIChatPopup.jsx';
 import { usePageEnter } from '../../../shared/lib/motion.js';
 import { PageErrorBoundary } from '../../../shared/ui/PageErrorBoundary.jsx';
 
@@ -156,7 +156,12 @@ export function AppLayout({ children, currentPath }) {
   const breadcrumbTitle = getBreadcrumbTitle(currentPath);
 
   return (
-    <div className="min-h-screen bg-brand-sand-50 dark:bg-brand-navy-950 flex flex-col font-sans transition-colors">
+    <div className="relative isolate min-h-screen bg-brand-sand-50 dark:bg-brand-navy-950 flex flex-col font-sans transition-colors">
+      {/* Aurora backdrop: drifting brand colour fields behind the whole app (experience.css) */}
+      <div className="scms-aurora no-print" aria-hidden="true">
+        <span className="scms-aurora__blob" /><span className="scms-aurora__blob" /><span className="scms-aurora__blob" />
+      </div>
+
       {/* Top Header */}
       <Header
         onOpenProfile={() => setProfileModalOpen(true)}
@@ -165,7 +170,7 @@ export function AppLayout({ children, currentPath }) {
         isMobileOpen={mobileOpen}
       />
 
-      <div className="flex-1 flex">
+      <div className="relative z-[1] flex-1 flex">
         {/* Left Sidebar */}
         <Sidebar
           isOpen={mobileOpen}
@@ -183,7 +188,7 @@ export function AppLayout({ children, currentPath }) {
         >
           <div className="flex-1 p-3.5 sm:p-5 lg:p-6 max-w-7xl w-full mx-auto">
             {/* FPT Portal Breadcrumb Bar */}
-            <div className="flex items-center gap-2 text-xs text-ink-muted mb-4 no-print">
+            <div className="scms-breadcrumb items-center gap-2 text-xs text-ink-muted mb-4 no-print">
               <span className="material-symbols-outlined text-[17px] text-brand-sage-500">home</span>
               <a href="#/" className="hover:text-brand-terra-500 dark:hover:text-brand-sand-300 transition-colors">
                 {t('nav.home', 'Trang chủ')}
@@ -200,7 +205,7 @@ export function AppLayout({ children, currentPath }) {
           </div>
 
           {/* Theme Clean Footer */}
-          <footer className="py-3 px-6 bg-brand-sand-50 dark:bg-brand-navy-900 border-t border-line text-xs text-ink-muted flex flex-col sm:flex-row items-center justify-between gap-2 mt-auto transition-colors">
+          <footer className="py-3 px-6 bg-surface/60 backdrop-blur-md border-t border-line text-xs text-ink-muted flex flex-col sm:flex-row items-center justify-between gap-2 mt-auto transition-colors">
             <span>{t('footer.copyright', 'Bản quyền © 2026 Olympic Sports Arena. Đã đăng ký bản quyền.')}</span>
             <div className="flex items-center gap-4 text-[11px] font-medium text-ink-muted">
               <span>{t('footer.version', 'Phiên bản: 2.0.0.0')}</span>

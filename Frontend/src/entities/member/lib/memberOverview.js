@@ -1,4 +1,4 @@
-import { translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 

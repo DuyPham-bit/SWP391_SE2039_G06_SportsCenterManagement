@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatIsoDate, parseIsoDate } from '../../../shared/lib/calendar.js';
 import { getSportTheme } from '../lib/calendarView.js';
-import { translateSportName } from '../../../shared/i18n/i18nHelper.js';
+import { translateSportName } from '../../../shared/lib/i18nHelper.js';
 
 const initialsOf = name => String(name || '?').trim().split(/\s+/).slice(-2).map(p => p[0]).join('').toUpperCase();
 

@@ -1,0 +1,6 @@
+{
+  "$schema": "https://unpkg.com/knip@6/schema.json",
+  "entry": ["src/main.jsx", "src/app/campus-map-page.jsx", "tests/**/*.cjs"],
+  "project": ["src/**/*.{js,jsx}", "tests/**/*.cjs"],
+  "ignoreDependencies": ["@feature-sliced/steiger-plugin"]
+}

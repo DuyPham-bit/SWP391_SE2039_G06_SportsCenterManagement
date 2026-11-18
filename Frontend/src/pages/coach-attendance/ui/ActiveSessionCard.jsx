@@ -1,5 +1,5 @@
 import React from 'react';
-import { translateSportName, translateRoomName, translateClassName } from '../../../shared/i18n/i18nHelper.js';
+import { translateSportName, translateRoomName, translateClassName } from '../../../shared/lib/i18nHelper.js';
 import { formatFullDate } from '../lib/attendanceCalendar.js';
 import { parseCalendarDate } from '../../../shared/lib/dateTime.js';
 import { SCMS_HERO_SECTION_CLASS, ScmsHeroDecor } from '../../../shared/ui/ScmsHeroBanner.jsx';

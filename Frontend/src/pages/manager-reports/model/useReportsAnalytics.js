@@ -1,6 +1,6 @@
 import { useState, useMemo, useEffect } from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { reportApi } from '../../../entities/report/index.js';
 import { downloadReportFile } from '../../../shared/lib/reportFiles.js';
 import { createReportCsv } from '../../../shared/lib/reportExport.js';

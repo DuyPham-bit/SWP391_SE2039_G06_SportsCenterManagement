@@ -1,32 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-
-const SCMS_SLOGANS_VI = [
-  "LÊN MỘT BẬC HÀNH TRÌNH FITNESS",
-  "BỨT PHÁ GIỚI HẠN THỂ CHẤT CÙNG SCMS",
-  "HỆ THỐNG ĐA BỘ MÔN CHUẨN OLYMPIC",
-  "ĐỒNG HÀNH CÙNG ĐỘI NGŨ HLV CHUYÊN NGHIỆP"
-];
-
-const SCMS_SLOGANS_EN = [
-  "ELEVATE YOUR FITNESS JOURNEY",
-  "PUSH YOUR PHYSICAL LIMITS WITH SCMS",
-  "OLYMPIC-STANDARD MULTI-SPORT SYSTEM",
-  "TRAIN WITH PROFESSIONAL CERTIFIED COACHES"
-];
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 export function TypewriterHeroHeading({ heroBadge, heroReady = true, heroTitle }) {
   const customTitle = typeof heroTitle === 'string' ? heroTitle.trim() : '';
-  const { language } = useLanguage();
-  const isEn = language === 'en';
-  const slogans = isEn ? SCMS_SLOGANS_EN : SCMS_SLOGANS_VI;
+  const { t } = useLanguage();
+  // Rotating slogans are UI copy kept in the locale files (landing.hero.slogans).
+  const sloganList = t('landing.hero.slogans');
+  const slogans = Array.isArray(sloganList) && sloganList.length ? sloganList : [''];
 
   const [wordIndex, setWordIndex] = useState(0);
   const [charIndex, setCharIndex] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [hasStartedTyping, setHasStartedTyping] = useState(false);
 
-  // Chờ tiêu đề chính trượt lên hoàn tất rồi mới bắt đầu gõ chữ
+  // Start typing once the headline has slid in.
   useEffect(() => {
     const startTimer = setTimeout(() => {
       setHasStartedTyping(true);
@@ -34,7 +21,7 @@ export function TypewriterHeroHeading({ heroBadge, heroReady = true, heroTitle }
     return () => clearTimeout(startTimer);
   }, []);
 
-  // Hiệu ứng Typewriter tự động gõ và xóa câu
+  // Typewriter: type, pause, delete, next slogan.
   useEffect(() => {
     if (!hasStartedTyping) return;
 
@@ -43,12 +30,12 @@ export function TypewriterHeroHeading({ heroBadge, heroReady = true, heroTitle }
     let speed = isDeleting ? 35 : 70;
 
     if (!isDeleting && charIndex === currentWord.length) {
-      speed = 1800; // Dừng lại 1.8s sau khi gõ xong 1 câu
+      speed = 1800; // Pause 1.8s after a full slogan
       timer = setTimeout(() => setIsDeleting(true), speed);
     } else if (isDeleting && charIndex === 0) {
       setIsDeleting(false);
       setWordIndex((prev) => (prev + 1) % slogans.length);
-      speed = 400; // Nghỉ 0.4s trước khi gõ câu tiếp
+      speed = 400; // Wait 0.4s before the next slogan
       timer = setTimeout(() => {}, speed);
     } else {
       timer = setTimeout(() => {
@@ -59,31 +46,29 @@ export function TypewriterHeroHeading({ heroBadge, heroReady = true, heroTitle }
     return () => clearTimeout(timer);
   }, [hasStartedTyping, charIndex, isDeleting, wordIndex, slogans]);
 
-  // Reset khi đổi ngôn ngữ
+  // Restart typing when the language (and so the slogan list) changes.
   useEffect(() => {
     setWordIndex(0);
     setCharIndex(0);
     setIsDeleting(false);
-  }, [language]);
+  }, [sloganList]);
 
   const displayedText = (slogans[wordIndex] || '').substring(0, charIndex);
 
-  const displayBadge = heroBadge && heroBadge.length <= 30
-    ? heroBadge
-    : (isEn ? 'SCMS OLYMPIC ARENA' : 'TRUNG TÂM THỂ THAO SCMS');
+  const displayBadge = heroBadge || '';
 
   return (
     <div
       className="flex flex-col items-center text-center max-w-5xl mx-auto px-4 select-none"
       style={{ fontFamily: "'Archivo', 'Be Vietnam Pro', system-ui, sans-serif" }}
     >
-      {/* 1. Badge tinh gọn phía trên */}
+      {/* 1. Badge */}
       <div className="hero-badge scms-hero-sub mb-3 sm:mb-4">
         <span className="hero-badge-dot" />
         {displayBadge}
       </div>
 
-      {/* 2. Tiêu đề chính thể thao cao cấp: Bố cục 2 dòng tinh gọn, loại bỏ chữ thừa */}
+      {/* 2. Headline (two lines) */}
       <h1
         className="text-center font-black uppercase text-white tracking-tight"
         style={{
@@ -102,14 +87,14 @@ export function TypewriterHeroHeading({ heroBadge, heroReady = true, heroTitle }
         )}
       </h1>
 
-      {/* 3. Hiệu ứng Typewriter gõ chữ với màu vàng đồng Warm Gold thương hiệu */}
+      {/* 3. Typewriter slogan in the brand warm gold */}
       <div
         className="scms-hero-typewriter mt-4 sm:mt-5 min-h-[56px] sm:min-h-[38px] flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-0 text-center text-xs sm:text-base md:text-lg font-bold tracking-wider uppercase text-white"
         style={{ fontFamily: "'Archivo', 'Be Vietnam Pro', system-ui, sans-serif" }}
       >
         {/* Phones: label on its own line so the typed phrase gets the full width instead of a squeezed column. */}
         <span className="text-white/85 sm:mr-2 whitespace-nowrap" style={{ textShadow: '0 2px 12px rgba(0,0,0,0.8)' }}>
-          {isEn ? 'READY TO:' : 'SẴN SÀNG ĐỂ:'}
+          {t('landing.hero.readyTo')}
         </span>
         <span className="inline">
         <span

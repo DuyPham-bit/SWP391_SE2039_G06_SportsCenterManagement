@@ -1,11 +1,13 @@
 import React from 'react';
 import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
-export function HeroSection({ catalogLoading = false, facilitiesList, heroReady = true, isEn, isVideoMuted, landingContent, setIsVideoMuted, videoRef, visibleSports }) {
-  const publishedMetrics = landingContent?.heroBanner?.metrics || [];
-  const hasPublishedDesc = Boolean(landingContent?.heroBanner?.description);
-  const countsReady = !catalogLoading && heroReady;
+/** All copy comes from the published home content (already in the selected language); no fallback text. */
+export function HeroSection({ heroReady = true, isVideoMuted, landingContent, setIsVideoMuted, videoRef }) {
+  const { t } = useLanguage();
+  const hero = landingContent?.heroBanner || {};
+  const metrics = hero.metrics || [];
 
   return (
     <section id="trang-chu" className="hero-section">
@@ -19,9 +21,9 @@ export function HeroSection({ catalogLoading = false, facilitiesList, heroReady 
         ref={videoRef}
         autoPlay loop muted playsInline
         className="hero-video-bg"
-        poster={landingContent?.heroBanner?.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=75&w=1280&auto=format&fit=crop'}
+        poster={hero.posterUrl || undefined}
       >
-        <source src={landingContent?.heroBanner?.videoUrl || './hero-video.mp4'} type="video/mp4" />
+        {hero.videoUrl && <source src={hero.videoUrl} type={/\.webm($|\?)/i.test(hero.videoUrl) ? 'video/webm' : 'video/mp4'} />}
       </video>
       <div className="section-overlay" />
 
@@ -30,38 +32,34 @@ export function HeroSection({ catalogLoading = false, facilitiesList, heroReady 
         <div style={{display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',maxWidth:'900px',margin:'0 auto'}}>
           {/* Animated Headline with Slide-up & Typewriter */}
           <TypewriterHeroHeading
-            heroBadge={landingContent?.heroBanner?.badge || (isEn ? 'SPORTS CENTER' : 'TRUNG TÂM THỂ THAO')}
+            heroBadge={hero.badge || ''}
             heroReady={heroReady}
-            heroTitle={landingContent?.heroBanner?.title}
+            heroTitle={hero.title || ''}
           />
 
           {/* Subtext */}
-          <p className="hero-desc scms-hero-desc mt-5">
-            {hasPublishedDesc ? landingContent.heroBanner.description : isEn
-              ? (countsReady ? `Build fitness and push your limits across our ${facilitiesList?.length || 0} courts and rooms for ${visibleSports?.length || 0} sports.` : ' ')
-              : (countsReady ? `Phát triển thể lực, tôi luyện ý chí và bứt phá mọi giới hạn cùng hệ thống ${facilitiesList?.length || 0} cụm sân, phòng tập phục vụ ${visibleSports?.length || 0} bộ môn thể thao.` : ' ')}
-          </p>
+          <p className="hero-desc scms-hero-desc mt-5">{hero.description || ' '}</p>
 
           {/* CTA Buttons */}
           <div className="custom-btn-group scms-hero-cta" style={{justifyContent:'center'}}>
-            <a href={safeHref(landingContent?.heroBanner?.primaryCtaLink) || '#/register'}
-              className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
-              {landingContent?.heroBanner?.primaryCtaText || (isEn ? 'BECOME A MEMBER' : 'ĐĂNG KÝ HỘI VIÊN MỚI')}
-              <span className="material-symbols-outlined" style={{fontSize:'18px'}}>arrow_forward</span>
-            </a>
-            <a href={safeHref(landingContent?.heroBanner?.secondaryCtaLink) || '#khoa-hoc'}
-              className="link">
-              <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
-              {landingContent?.heroBanner?.secondaryCtaText || (isEn
-                ? (countsReady ? `EXPLORE ${visibleSports?.length || 0} SPORTS` : 'EXPLORE SPORTS')
-                : (countsReady ? `KHÁM PHÁ ${visibleSports?.length || 0} MÔN HỌC` : 'KHÁM PHÁ MÔN HỌC'))}
-            </a>
+            {hero.primaryCtaText && safeHref(hero.primaryCtaLink) && (
+              <a href={safeHref(hero.primaryCtaLink)} className="custom-btn" style={{padding:'14px 34px',fontSize:'14px'}}>
+                {hero.primaryCtaText}
+                <span className="material-symbols-outlined" style={{fontSize:'18px'}}>arrow_forward</span>
+              </a>
+            )}
+            {hero.secondaryCtaText && safeHref(hero.secondaryCtaLink) && (
+              <a href={safeHref(hero.secondaryCtaLink)} className="link">
+                <span className="material-symbols-outlined" style={{fontSize:'18px'}}>sports_score</span>
+                {hero.secondaryCtaText}
+              </a>
+            )}
           </div>
 
           {/* Metrics Strip */}
-          {publishedMetrics.length > 0 && (
+          {metrics.length > 0 && (
             <div className="tiya-metrics-strip" style={{width:'100%'}}>
-              {publishedMetrics.map((metric, idx) => (
+              {metrics.map((metric, idx) => (
                 <div key={metric.id || idx} className="tiya-metrics-item">
                   <span className="tiya-metrics-value">{metric.value}</span>
                   <span className="tiya-metrics-label">{metric.label}</span>
@@ -72,7 +70,7 @@ export function HeroSection({ catalogLoading = false, facilitiesList, heroReady 
 
           <div style={{display:'flex',justifyContent:'center',marginTop:'18px'}}>
             <a href="#ve-chung-toi" className="tiya-hero__scroll-cue">
-              {isEn ? 'Scroll down to explore' : 'Cuộn xuống khám phá'}
+              {t('landing.hero.scrollCue')}
               <span className="material-symbols-outlined" style={{fontSize:'18px'}}>keyboard_arrow_down</span>
             </a>
           </div>
@@ -89,13 +87,13 @@ export function HeroSection({ catalogLoading = false, facilitiesList, heroReady 
             setIsVideoMuted(nextMuted);
           }
         }}
-        aria-label={isVideoMuted ? (isEn ? 'Unmute video audio' : 'Bật âm thanh video') : (isEn ? 'Mute video audio' : 'Tắt âm thanh video')}
+        aria-label={t(isVideoMuted ? 'landing.hero.unmuteAria' : 'landing.hero.muteAria')}
         className="hero-sound-btn"
       >
         <span className="material-symbols-outlined" style={{fontSize:'18px'}}>
           {isVideoMuted ? 'volume_off' : 'volume_up'}
         </span>
-        {isVideoMuted ? (isEn ? 'Unmute' : 'Bật âm thanh') : (isEn ? 'Mute' : 'Tắt âm thanh')}
+        {t(isVideoMuted ? 'landing.hero.unmute' : 'landing.hero.mute')}
       </button>
 
       {/* Bottom Wave: Pure White #ffffff (Tiya Wave styled with compact height) */}

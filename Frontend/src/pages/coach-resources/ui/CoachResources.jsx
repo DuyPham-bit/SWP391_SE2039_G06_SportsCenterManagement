@@ -2,12 +2,12 @@ import { formatVietnamDateTime, parseVietnamDateTime } from '../../../shared/lib
 import React, { useEffect, useMemo, useState } from 'react';
 import { coachProfessionalApi } from '../../../entities/coach/index.js';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
-import { uploadMediaFileToCloud } from '../../../shared/api/mediaApi.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { uploadMediaFileToCloud } from '../../../shared/api/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { CoachError } from '../../../features/coach-workspace/index.js';
-import { translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateRoomName } from '../../../shared/lib/i18nHelper.js';
 import {
   SCMS_HERO_BADGE_CLASS,
   SCMS_HERO_BTN_GLASS,

@@ -1,17 +1,17 @@
 import { useEffect, useState } from 'react';
 import { paymentReturnApi } from '../../../entities/payment/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { notifyPaymentReturn } from '../../../features/payment-checkout/index.js';
 
 const AUTO_RETURN_MS = 3000;
 
-// Fixed palette per status: the backdrop stays dark in both themes, like the landing intro.
+// Fixed palette per status on the cream brand backdrop (brand-sand-100), same in both themes.
 const TONES = {
-  success: { glow: '74 160 120', ring: '#4ade80', chip: 'bg-brand-sage-50 text-brand-sage-800 ring-brand-sage-200' },
-  pending: { glow: '214 160 72', ring: '#fbbf24', chip: 'bg-brand-sand-50 text-brand-sand-900 ring-brand-sand-200' },
-  failed: { glow: '220 80 70', ring: '#f87171', chip: 'bg-brand-danger-50 text-brand-danger-700 ring-brand-danger-200' },
-  loading: { glow: '96 130 200', ring: '#93c5fd', chip: 'bg-brand-navy-50 text-brand-navy-700 ring-brand-navy-200' }
+  success: { glow: '45 106 79', ring: 'rgb(var(--brand-sage-700))', chip: 'bg-brand-sage-50 text-brand-sage-800 ring-brand-sage-200' },
+  pending: { glow: '229 163 60', ring: 'rgb(var(--brand-sand-500))', chip: 'bg-brand-sand-50 text-brand-sand-900 ring-brand-sand-200' },
+  failed: { glow: '205 73 58', ring: 'rgb(var(--brand-danger-600))', chip: 'bg-brand-danger-50 text-brand-danger-700 ring-brand-danger-200' },
+  loading: { glow: '61 64 91', ring: 'rgb(var(--brand-navy-700))', chip: 'bg-brand-navy-50 text-brand-navy-700 ring-brand-navy-200' }
 };
 
 function formatVnd(value) {
@@ -29,7 +29,7 @@ function formatPayDate(raw, isEn) {
 function StatusIcon({ tone }) {
   const color = TONES[tone].ring;
   if (tone === 'loading') {
-    return <span className="block h-16 w-16 rounded-full border-[3px] border-white/15 border-t-white animate-spin" aria-hidden="true" />;
+    return <span className="block h-16 w-16 rounded-full border-[3px] border-brand-navy-200 border-t-brand-sage-700 animate-spin" aria-hidden="true" />;
   }
   const path = tone === 'success' ? 'M20 33 l9 9 l17 -19' : tone === 'pending' ? 'M32 20 v14 M32 43 v1' : 'M23 23 l18 18 M41 23 l-18 18';
   return (
@@ -46,8 +46,8 @@ function StatusIcon({ tone }) {
 function DetailRow({ label, children }) {
   return (
     <div className="flex items-start justify-between gap-4 py-2.5 text-sm">
-      <dt className="shrink-0 text-ink-muted">{label}</dt>
-      <dd className="min-w-0 text-right font-semibold text-ink-strong break-all">{children}</dd>
+      <dt className="shrink-0 text-slate-500">{label}</dt>
+      <dd className="min-w-0 text-right font-semibold text-brand-navy-900 break-all">{children}</dd>
     </div>
   );
 }
@@ -144,7 +144,7 @@ export function PaymentResult() {
   return (
     <main
       className="relative min-h-screen overflow-hidden flex items-center justify-center px-4 py-10"
-      style={{ background: 'radial-gradient(120% 80% at 50% 0%, #1b2536 0%, #0d131c 55%, #080b11 100%)' }}
+      style={{ background: 'radial-gradient(120% 80% at 50% 0%, #FAF8F5 0%, #F4F1DE 55%, #EDE6D1 100%)' }}
     >
       <style>{`
         @keyframes pr-draw { to { stroke-dashoffset: 0; } }
@@ -163,50 +163,50 @@ export function PaymentResult() {
 
       {/* Ambient glow + court-line grid */}
       <div className="pr-glow pointer-events-none absolute left-1/2 top-[18%] h-[520px] w-[520px] -translate-x-1/2 rounded-full blur-3xl"
-        style={{ background: `radial-gradient(circle, rgb(${TONES[tone].glow} / .35), transparent 65%)`, transition: 'background 600ms' }} />
-      <div className="pointer-events-none absolute inset-0 opacity-[0.06]"
-        style={{ backgroundImage: 'linear-gradient(#fff 1px, transparent 1px), linear-gradient(90deg, #fff 1px, transparent 1px)', backgroundSize: '56px 56px', maskImage: 'radial-gradient(ellipse at center, #000 30%, transparent 75%)' }} />
+        style={{ background: `radial-gradient(circle, rgb(${TONES[tone].glow} / .22), transparent 65%)`, transition: 'background 600ms' }} />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.07]"
+        style={{ backgroundImage: 'linear-gradient(#1E293B 1px, transparent 1px), linear-gradient(90deg, #1E293B 1px, transparent 1px)', backgroundSize: '56px 56px', maskImage: 'radial-gradient(ellipse at center, #000 30%, transparent 75%)' }} />
 
       <div className="relative w-full max-w-md">
-        <p className="pr-rise mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.42em] text-white/50">
+        <p className="pr-rise mb-6 text-center text-[11px] font-semibold uppercase tracking-[0.42em] text-brand-navy-700/60">
           Olympic Sports Arena
         </p>
 
-        <section className="pr-rise relative rounded-3xl bg-surface-raised shadow-2xl shadow-black/40 ring-1 ring-white/10" style={{ animationDelay: '80ms' }}>
+        <section className="pr-rise relative rounded-3xl bg-white shadow-[0_24px_60px_-20px_rgba(30,41,59,0.25)] ring-1 ring-brand-sand-200" style={{ animationDelay: '80ms' }}>
           {/* Head */}
           <div className="relative overflow-hidden rounded-t-3xl px-6 pb-7 pt-8 text-center sm:px-8"
-            style={{ background: 'linear-gradient(160deg, #142033 0%, #0e1621 100%)' }}>
-            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-white/5 ring-1 ring-white/10">
+            style={{ background: 'linear-gradient(160deg, #FFFFFF 0%, #FAF8F5 100%)' }}>
+            <div className="mx-auto flex h-24 w-24 items-center justify-center rounded-full bg-brand-sand-100 ring-1 ring-brand-sand-200">
               <StatusIcon tone={tone} />
             </div>
-            <h1 className="mt-5 font-display text-2xl font-black tracking-tight text-white sm:text-[26px]" role={state.loading ? 'status' : undefined}>
+            <h1 className="mt-5 font-display text-2xl font-black tracking-tight text-brand-navy-900 sm:text-[26px]" role={state.loading ? 'status' : undefined}>
               {title}
             </h1>
             {amount && tone !== 'loading' && (
-              <p className="mt-2 font-display text-4xl font-black tracking-tight text-white tabular-nums">{amount}</p>
+              <p className="mt-2 font-display text-4xl font-black tracking-tight text-brand-navy-900 tabular-nums">{amount}</p>
             )}
-            <p className={`mx-auto mt-3 max-w-xs text-sm leading-relaxed ${state.error ? 'text-red-300' : 'text-white/65'}`} role={state.error ? 'alert' : undefined}>
+            <p className={`mx-auto mt-3 max-w-xs text-sm leading-relaxed ${state.error ? 'text-red-600' : 'text-slate-600'}`} role={state.error ? 'alert' : undefined}>
               {subtitle}
             </p>
           </div>
 
           {/* Ticket perforation */}
           <div className="relative h-0" aria-hidden="true">
-            <span className="absolute -left-3 -top-3 h-6 w-6 rounded-full" style={{ background: '#0d131c' }} />
-            <span className="absolute -right-3 -top-3 h-6 w-6 rounded-full" style={{ background: '#0d131c' }} />
-            <span className="absolute inset-x-5 top-0 border-t-2 border-dashed border-line" />
+            <span className="absolute -left-3 -top-3 h-6 w-6 rounded-full" style={{ background: '#F4F1DE' }} />
+            <span className="absolute -right-3 -top-3 h-6 w-6 rounded-full" style={{ background: '#F4F1DE' }} />
+            <span className="absolute inset-x-5 top-0 border-t-2 border-dashed border-brand-sand-200" />
           </div>
 
           {/* Body */}
           <div className="px-6 pb-6 pt-5 sm:px-8">
             {showDetails && (
-              <dl className="divide-y divide-line">
+              <dl className="divide-y divide-brand-sand-200">
                 {state.result?.invoiceNumber && (
                   <DetailRow label={isEn ? 'Invoice' : 'Mã hóa đơn'}>
                     <button type="button" onClick={copyInvoice} title={isEn ? 'Copy' : 'Sao chép'}
-                      className="group inline-flex items-center gap-1.5 text-right hover:text-primary cursor-pointer">
+                      className="group inline-flex items-center gap-1.5 text-right hover:text-emerald-700 cursor-pointer">
                       <span className="font-mono text-[13px]">{state.result.invoiceNumber}</span>
-                      <span className="material-symbols-outlined text-[16px] text-ink-muted group-hover:text-primary">{copied ? 'check' : 'content_copy'}</span>
+                      <span className="material-symbols-outlined text-[16px] text-slate-400 group-hover:text-emerald-700">{copied ? 'check' : 'content_copy'}</span>
                     </button>
                   </DetailRow>
                 )}
@@ -223,10 +223,10 @@ export function PaymentResult() {
             )}
 
             {!state.loading && tone !== 'success' && !cancelled && (
-              <div className="mt-4 flex gap-3 rounded-2xl bg-surface-muted p-3.5 text-left text-xs leading-relaxed text-ink-muted">
-                <span className="material-symbols-outlined text-[20px] text-brand-sand-700 dark:text-brand-sand-400">verified_user</span>
+              <div className="mt-4 flex gap-3 rounded-2xl bg-brand-sand-100 p-3.5 text-left text-xs leading-relaxed text-slate-600">
+                <span className="material-symbols-outlined text-[20px] text-brand-sand-700">verified_user</span>
                 <p>
-                  <strong className="block text-ink-strong">{isEn ? 'Your money is safe' : 'Quyền lợi của bạn được bảo vệ'}</strong>
+                  <strong className="block text-brand-navy-900">{isEn ? 'Your money is safe' : 'Quyền lợi của bạn được bảo vệ'}</strong>
                   {isEn
                     ? 'If your bank account was charged, the invoice is reserved in the system and will be reconciled automatically.'
                     : 'Nếu tài khoản đã bị trừ tiền, hóa đơn vẫn được bảo lưu trên hệ thống và sẽ được đối soát tự động.'}
@@ -238,20 +238,20 @@ export function PaymentResult() {
               type="button"
               onClick={handleBackToPackages}
               disabled={state.loading}
-              className="group relative mt-6 flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-brand-danger-600 px-6 py-3.5 text-sm font-bold text-white shadow-lg shadow-brand-danger-600/30 transition hover:bg-brand-danger-700 active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
+              className="group relative mt-6 flex w-full items-center justify-center gap-2 overflow-hidden rounded-2xl bg-gradient-to-br from-brand-sand-300 to-[#E9B872] px-6 py-3.5 text-sm font-bold text-brand-navy-800 shadow-lg shadow-amber-500/25 transition hover:brightness-105 active:scale-[.99] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer"
             >
-              {autoReturn && <span className="pr-bar absolute inset-0 bg-white/15" aria-hidden="true" />}
+              {autoReturn && <span className="pr-bar absolute inset-0 bg-white/30" aria-hidden="true" />}
               <span className="relative">{buttonLabel}</span>
               <span className="material-symbols-outlined relative text-[18px] transition-transform group-hover:translate-x-0.5">arrow_forward</span>
             </button>
 
             {autoReturn && (
-              <p role="status" className="mt-3 text-center text-xs text-ink-muted">
+              <p role="status" className="mt-3 text-center text-xs text-slate-500">
                 {isEn ? 'Taking you back automatically…' : 'Tự động chuyển về trang gói tập…'}
               </p>
             )}
             {!isAuthenticated && !window.opener && !state.loading && (
-              <p className="mt-3 text-center text-xs text-ink-muted">
+              <p className="mt-3 text-center text-xs text-slate-500">
                 {isEn ? 'Your sign-in session is not available in this window. Log in again to check your invoice.' : 'Phiên đăng nhập không có trong cửa sổ này. Vui lòng đăng nhập lại để kiểm tra hóa đơn.'}
               </p>
             )}

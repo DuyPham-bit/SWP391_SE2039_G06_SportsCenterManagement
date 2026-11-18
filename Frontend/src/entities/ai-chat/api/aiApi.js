@@ -1,4 +1,4 @@
-import { apiRequest } from '../../../shared/api/http.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 export const aiApi = {
   /** `language` is only a hint for ambiguous messages; the AI replies in the language the member writes in. */

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { receptionApi } from '../../../entities/member/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { startResendCooldown } from './ResendVerificationButton.jsx';
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

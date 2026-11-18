@@ -1,5 +1,5 @@
 import React from 'react';
-import { translatePackageName, translateNotificationTitle, translateNotificationContent } from '../../../shared/i18n/i18nHelper.js';
+import { translatePackageName, translateNotificationTitle, translateNotificationContent } from '../../../shared/lib/i18nHelper.js';
 import { formatMemberDate, formatMemberDateTime } from '../../../entities/member/index.js';
 
 export function DigitalPassPanel({

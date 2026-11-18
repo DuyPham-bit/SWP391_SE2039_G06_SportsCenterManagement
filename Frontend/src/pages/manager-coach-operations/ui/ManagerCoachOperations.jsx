@@ -2,8 +2,8 @@ import { vietnamDate, formatVietnamDateTime } from '../../../shared/lib/dateTime
 import React, { useEffect, useState } from 'react';
 import { managerCoachApi, currency } from '../../../entities/coach/index.js';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import {
   SCMS_HERO_BADGE_CLASS,

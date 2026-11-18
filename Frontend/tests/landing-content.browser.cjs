@@ -1,4 +1,5 @@
-// Runs the production React app in Chrome; only the API is a local, isolated fixture.
+// Runs the production React app in Chrome; only the API is a local, isolated fixture of the
+// bilingual home-content API (/api/home-content?lang=, /api/admin/home-content[/section|/draft]).
 const assert = require('node:assert/strict');
 const fs = require('node:fs');
 const path = require('node:path');
@@ -15,7 +16,28 @@ const galleryFiles = Array.from({ length: 7 }, (_, index) => ({
   mimeType: index < 4 ? 'image/jpeg' : 'image/avif', fileSize: 1024,
   url: `https://gallery.example/photo-${index}.${index < 4 ? 'jpg' : 'avif'}`
 }));
-let published = null, saves = 0, failSave = false, browser, socket, cdp;
+const L = (vi = '', en = '') => ({ vi, en });
+// Minimal published document: every section exists, no business content (the editor must not invent any).
+let published = {
+  schemaVersion: 2,
+  heroBanner: { badge: L(), title: L(), description: L(), primaryCtaText: L(), primaryCtaLink: '', posterUrl: '', videoUrl: '', metrics: [] },
+  whyUs: { badge: L(), title: L(), description: L(), features: [], stats: [] },
+  coursesSection: { badge: L(), title: L(), description: L(), trustBadges: [], sportsList: [] },
+  facilitiesSection: { badge: L(), title: L(), description: L(), metrics: [], facilitiesList: [] },
+  zonesLayout: { badge: L(), title: L(), description: L(), serviceAmenities: [], zones: [] },
+  ctaAndFooter: { ctaTitle: L(), contactPhone: '', contactEmail: '', contactZaloPhone: '', contactFacebookUrl: '', copyright: L() },
+  authShowcase: {}
+};
+let draft = null, saves = 0, failSave = false, browser, socket, cdp;
+const stats = { sports: { visible: 0, total: 0 }, facilities: { visible: 0, total: 0 } };
+const isLocalized = value => value && typeof value === 'object' && !Array.isArray(value) && Object.keys(value).length > 0
+  && Object.keys(value).every(key => key === 'vi' || key === 'en');
+// Same rule as the real API: requested language, else Vietnamese.
+const localize = (node, lang) => isLocalized(node) ? ((lang === 'en' && node.en?.trim()) ? node.en : (node.vi ?? ''))
+  : Array.isArray(node) ? node.map(item => localize(item, lang))
+  : node && typeof node === 'object' ? Object.fromEntries(Object.entries(node).map(([key, value]) => [key, localize(value, lang)]))
+  : node;
+const adminResponse = () => ({ content: published, stats, updatedAt: '2026-11-18T00:00:00Z', missingTranslations: [] });
 let publicCatalog = { center: { id: 15, name: 'Test center' }, sports: [], rooms: [], classes: [] };
 
 function json(res, value, status = 200) {
@@ -27,18 +49,28 @@ const server = http.createServer(async (req, res) => {
   if (route.startsWith('/api/')) {
     let raw = ''; for await (const chunk of req) raw += chunk;
     const body = raw ? JSON.parse(raw) : null;
-    if (route === '/api/landing-content' && req.method === 'GET') return json(res, { content: published });
+    const query = new URL(req.url, 'http://fixture').searchParams;
+    if (route === '/api/home-content' && req.method === 'GET') return json(res, { content: localize(published, query.get('lang')), stats, lang: query.get('lang') === 'en' ? 'en' : 'vi' });
+    if (route === '/api/campus-map') return json(res, { centerId: 15, zones: [] });
     if (/^\/api\/public\/centers\/\d+\/catalog$/.test(route)) return json(res, publicCatalog);
     if (route === '/api/auth/login') return json(res, issueBrowserSession(req, res, 'manager-test-token'));
     if (browserCredential(req) !== 'manager-test-token') return json(res, { message: 'Unauthorized' }, 401);
     if (route === '/api/profile/me') return json(res, { userId: 99, role: 'Manager', status: 'Active', centerId: 1, fullName: 'Manager test', email: 'manager@example.test' });
     if (route === '/api/access/me/capabilities') return json(res, ['manage_landing_content']);
     if (route === '/api/notifications/me') return json(res, []);
-    if (route === '/api/landing-content' && req.method === 'PUT') {
+    if (route === '/api/admin/home-content/draft') {
+      if (req.method === 'PUT') { draft = body.content; return json(res, { content: draft, updatedAt: new Date().toISOString() }); }
+      if (req.method === 'DELETE') { draft = null; res.writeHead(204); return res.end(); }
+      return json(res, { content: draft, updatedAt: null });
+    }
+    if (route === '/api/admin/home-content' && req.method === 'GET') return json(res, adminResponse());
+    if (route.startsWith('/api/admin/home-content') && req.method === 'PUT') {
       saves++;
       if (failSave) return json(res, { message: 'Simulated save failure' }, 503);
-      published = body.content;
-      return json(res, { content: published });
+      const section = route.split('/')[4];
+      published = section ? { ...published, [section]: body.content } : body.content;
+      draft = section ? draft : null;
+      return json(res, adminResponse());
     }
     if (route === '/api/media/status') return json(res, { isConnected: true, totalImages: galleryFiles.length, folderId: 'fixture-folder' });
     if (route === '/api/media/files') return json(res, galleryFiles);
@@ -107,7 +139,7 @@ async function click(session, label) {
 }
 // Toasts also use role=alert, so look through every alert rather than only the first one.
 const alertIncludes = text => `[...document.querySelectorAll('[role=alert]')].some(alert => alert.textContent.includes(${JSON.stringify(text)}))`;
-const titleInput = value => `[...document.querySelectorAll('main input')].find(input => input.value === ${JSON.stringify(value)})`;
+const titleInput = value => `[document.querySelector('#hero-title')].find(input => input && input.value === ${JSON.stringify(value)})`;
 const discardButton = `[...document.querySelectorAll('main button')].find(button => button.textContent.includes('Hủy thay đổi'))`;
 
 (async () => {
@@ -158,7 +190,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
     const diag = await evaluate(preview, `JSON.stringify({ href: location.href, ready: document.readyState, h1s: [...document.querySelectorAll('h1')].map(h => h.textContent.trim().slice(0, 80)), stored: Object.keys(sessionStorage), body: document.body?.innerText.slice(0, 300) })`).catch(e => String(e));
     throw new Error(`${error.message} ${diag} errors=${JSON.stringify(errors)}`);
   });
-  assert.equal(saves, 0); assert.equal(published, null);
+  assert.equal(saves, 0); assert.equal(published.heroBanner.title.vi, '');
   checks.push('Preview opens the draft in a separate tab without publishing.');
 
   const { browserContextId } = await cdp.send('Target.createBrowserContext');
@@ -169,7 +201,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await cdp.send('Page.bringToFront', {}, manager);
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
   await until('save completed', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && !document.querySelector('main')?.textContent.includes('Có thay đổi chưa lưu')`));
-  assert.equal(published.heroBanner.title, 'Isolated preview draft');
+  assert.equal(published.heroBanner.title.vi, 'Isolated preview draft');
   assert.equal(await evaluate(manager, `${discardButton}.disabled`), true);
   await cdp.send('Page.bringToFront', {}, visitor);
   await evaluate(visitor, `window.dispatchEvent(new Event('focus'))`);
@@ -181,7 +213,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   failSave = true;
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
   await until('save error', () => evaluate(manager, `${alertIncludes('Simulated save failure')}`));
-  assert.equal(published.heroBanner.title, 'Isolated preview draft');
+  assert.equal(published.heroBanner.title.vi, 'Isolated preview draft');
   assert.equal(await evaluate(manager, `document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`), true);
   checks.push('Save failure keeps the draft dirty and leaves published content unchanged.');
   assert.equal(await evaluate(manager, `[...document.querySelectorAll('main button')].some(button => /Khôi Phục Gốc|Reset to Default/.test(button.textContent))`), false);
@@ -191,14 +223,14 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await click(manager, 'Hủy thay đổi');
   await until('failed draft discarded to the last saved title', () => evaluate(manager, `Boolean(${titleInput('Isolated preview draft')}) && !document.querySelector('main').textContent.includes('Có thay đổi chưa lưu')`));
   assert.equal(saves, savesBeforeDiscard);
-  assert.equal(published.heroBanner.title, 'Isolated preview draft');
+  assert.equal(published.heroBanner.title.vi, 'Isolated preview draft');
   assert.equal(await evaluate(manager, `${discardButton}.disabled`), true);
   checks.push('Discard after a failed save restores the last successful save without publishing or resetting defaults.');
   await setInput(manager, titleInput('Isolated preview draft'), 'Unsaved failure draft');
   failSave = false;
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
   await until('retry save completed', () => evaluate(manager, `!document.querySelector('main fieldset')?.disabled && !document.querySelector('main')?.textContent.includes('Có thay đổi chưa lưu')`));
-  assert.equal(published.heroBanner.title, 'Unsaved failure draft');
+  assert.equal(published.heroBanner.title.vi, 'Unsaved failure draft');
   assert.deepEqual(published.heroBanner.metrics, []);
   assert.deepEqual(published.coursesSection.sportsList, []);
   assert.deepEqual(published.facilitiesSection.facilitiesList, []);
@@ -211,7 +243,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
     ['3. Môn Thể Thao', 'Thêm thẻ bộ môn'],
     ['4. Thẻ Cụm Sân', 'Thêm thẻ cụm sân'],
     ['5. Sơ Đồ Phân Khu', 'Khu Vực 5: Sơ Đồ Các Khu Vực Tập Luyện'],
-    ['6. Kêu Gọi & Footer', 'Khu Vực 6: Banner Kêu Gọi Sự Kiện & Chân Trang Footer'],
+    ['6. Kêu Gọi & Footer', 'Khu Vực 6: Banner Kêu Gọi & Chân Trang Footer'],
     ['7. Banner Đăng Nhập', 'Khu Vực 7: Banner Giới Thiệu Đăng Nhập & Đăng Ký']
   ]) {
     await click(manager, label);
@@ -271,9 +303,9 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
   await until('new cards saved', () => published.coursesSection.sportsList.length === 1 && published.facilitiesSection.facilitiesList.length === 1);
   assert.equal(published.coursesSection.sportsList[0].facilityId, facilityId);
-  assert.equal(published.facilitiesSection.facilitiesList[0].description, 'Nội dung chi tiết sân mới');
-  assert.deepEqual(published.facilitiesSection.facilitiesList[0].amenities, ['Phòng thay đồ', 'Tủ đồ']);
-  assert.deepEqual(published.facilitiesSection.facilitiesList[0].specs, [{ label: 'Diện tích', value: '300 m²' }]);
+  assert.deepEqual(published.facilitiesSection.facilitiesList[0].description, L('Nội dung chi tiết sân mới'));
+  assert.deepEqual(published.facilitiesSection.facilitiesList[0].amenities, [L('Phòng thay đồ'), L('Tủ đồ')]);
+  assert.deepEqual(published.facilitiesSection.facilitiesList[0].specs, [{ label: L('Diện tích'), value: L('300 m²') }]);
   const sportId = published.coursesSection.sportsList[0].id;
   await cdp.send('Page.reload', {}, visitor);
   await until('new cards visible to a visitor', () => evaluate(visitor, `document.body.textContent.includes('Bộ môn mới') && document.body.textContent.includes('Sân tập mới') && document.body.textContent.includes('Nội dung thẻ bộ môn mới')`));
@@ -299,7 +331,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   await setInput(manager, cardField('description'), 'Chi tiết đã sửa');
   await closeCard();
   await click(manager, 'Lưu Toàn Bộ Thay Đổi');
-  await until('card edits saved', () => published.coursesSection.sportsList[0].name === 'Bộ môn đã sửa' && published.facilitiesSection.facilitiesList[0].name === 'Sân tập đã sửa');
+  await until('card edits saved', () => published.coursesSection.sportsList[0].name.vi === 'Bộ môn đã sửa' && published.facilitiesSection.facilitiesList[0].name.vi === 'Sân tập đã sửa');
   assert.equal(published.coursesSection.sportsList[0].id, sportId);
   assert.equal(published.facilitiesSection.facilitiesList[0].id, facilityId);
   assert.equal(published.coursesSection.sportsList[0].facilityId, facilityId);
@@ -369,7 +401,7 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   assert.equal(published.facilitiesSection.catalogSource, 'custom');
   assert.equal(published.coursesSection.sportsList[0].id, sportId);
   assert.equal(published.coursesSection.sportsList[0].facilityId, '');
-  assert.equal(published.coursesSection.sportsList[0].name, 'Bộ môn đã sửa');
+  assert.equal(published.coursesSection.sportsList[0].name.vi, 'Bộ môn đã sửa');
   await click(manager, '3. Môn Thể Thao');
   await click(manager, 'Xóa thẻ');
   await click(manager, 'Xác nhận xóa');
@@ -459,7 +491,36 @@ const discardButton = `[...document.querySelectorAll('main button')].find(button
   assert.equal(await evaluate(visitor, `Boolean(${footerLink(zaloLabel)}) || Boolean(${footerLink('Facebook')})`), false);
   checks.push('Invalid Zalo phones and Facebook URLs cannot publish; clearing them hides the corresponding contacts.');
 
+  // Bilingual editing: EN text is entered separately; the public EN page falls back to VI when it is empty.
   await click(manager, '1. Hero Banner');
+  await until('hero tab', () => evaluate(manager, `Boolean(document.querySelector('#hero-title'))`));
+  await evaluate(manager, `[...document.querySelectorAll('[role=group] button')].find(b => b.textContent.trim() === 'EN').click()`);
+  await until('EN editing', () => evaluate(manager, `document.querySelector('#hero-title').getAttribute('lang') === 'en'`));
+  assert.equal(await evaluate(manager, `document.querySelector('#hero-title').placeholder`), 'Unsaved failure draft');
+  await setInput(manager, `document.querySelector('#hero-title')`, 'English headline');
+  await click(manager, 'Lưu khu vực này');
+  await until('EN title saved', () => published.heroBanner.title.en === 'English headline');
+  assert.equal(published.heroBanner.title.vi, 'Unsaved failure draft');
+  await evaluate(visitor, `localStorage.setItem('SCMS_LANGUAGE', 'en'); true`);
+  await cdp.send('Page.reload', {}, visitor);
+  await until('visitor EN headline', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes('English headline')`));
+  // UI labels follow the language too: header, sections and footer show no Vietnamese chrome in EN.
+  const enChrome = await evaluate(visitor, `(() => { const text = document.body.textContent;
+    return { nav: ['HOME', 'ABOUT US', 'COURSES', 'FACILITIES'].every(label => text.toUpperCase().includes(label)),
+      leftovers: ['TRANG CHỦ', 'VỀ CHÚNG TÔI', 'ĐĂNG NHẬP', 'Cuộn xuống khám phá', 'Thông Tin Liên Hệ', 'Xem Chi Tiết'].filter(label => text.includes(label)) }; })()`);
+  assert.equal(enChrome.nav, true);
+  assert.deepEqual(enChrome.leftovers, []);
+  await evaluate(visitor, `[...document.querySelectorAll('.tiya-lang-toggle button')].find(b => b.textContent.trim().toUpperCase() === 'VI').click()`);
+  await until('visitor switches to VI without reload', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes('Unsaved failure draft')`));
+  assert.equal(await evaluate(visitor, `localStorage.getItem('SCMS_LANGUAGE')`), 'vi');
+  await setInput(manager, `document.querySelector('#hero-title')`, '');
+  await click(manager, 'Lưu khu vực này');
+  await until('EN title cleared', () => published.heroBanner.title.en === '');
+  await evaluate(visitor, `[...document.querySelectorAll('.tiya-lang-toggle button')].find(b => b.textContent.trim().toUpperCase() === 'EN').click()`);
+  await evaluate(visitor, `window.dispatchEvent(new Event('focus'))`);
+  await until('EN page falls back to the VI headline', () => evaluate(visitor, `document.querySelector('h1')?.textContent.includes('Unsaved failure draft')`));
+  checks.push('VI and EN are edited separately, the visitor switches language without reloading, and missing EN falls back to VI.');
+
   await click(manager, 'Tải/Đổi Ảnh');
   await until('all gallery images rendered', () => evaluate(manager, `document.querySelectorAll('p[title^="photo-"]').length === 7`));
   for (const file of galleryFiles.filter(file => file.mimeType === 'image/avif')) {

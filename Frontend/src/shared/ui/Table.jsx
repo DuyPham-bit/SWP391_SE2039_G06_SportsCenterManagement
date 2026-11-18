@@ -1,3 +1,4 @@
+import { EmptyState, SkeletonRows } from './Feedback.jsx';
 import React, { useState } from 'react';
 
 export function Table({
@@ -25,7 +26,7 @@ export function Table({
   const paginatedData = filteredData.slice((currentPage - 1) * pageSize, currentPage * pageSize);
 
   return (
-    <div className="w-full bg-white rounded-2xl border border-brand-navy-200/90 shadow-xs overflow-hidden">
+    <div className="w-full bg-surface rounded-2xl border border-line shadow-[var(--shadow-2)] overflow-hidden">
       {/* Table Toolbar */}
       {(searchKey || actions) && (
         <div className="p-4 border-b border-brand-navy-100 flex flex-col sm:flex-row items-center justify-between gap-3 bg-brand-navy-50/50">
@@ -76,10 +77,9 @@ export function Table({
               ))
             ) : (
               <tr>
-                <td colSpan={columns.length} className="py-12 text-center text-brand-navy-400">
-                  <div className="flex flex-col items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-4xl text-brand-navy-300">folder_off</span>
-                    <span className="text-xs font-medium">{emptyMessage}</span>
+                <td colSpan={columns.length} className="text-center">
+                  <div>
+                    <EmptyState title={emptyMessage} compact />
                   </div>
                 </td>
               </tr>
@@ -119,11 +119,12 @@ export function Table({
   );
 }
 
+/** Loading placeholder: shimmering skeleton rows instead of a bare spinner. */
 export function LoadingSpinner({ text = 'Đang tải dữ liệu...' }) {
   return (
-    <div className="flex flex-col items-center justify-center p-12 gap-3">
-      <div className="w-8 h-8 border-3 border-brand-navy-200 border-t-brand-sage-500 rounded-full animate-spin" />
-      <span className="text-xs font-semibold text-brand-navy-500 uppercase tracking-wider">{text}</span>
+    <div className="w-full">
+      <SkeletonRows rows={4} label={text} />
+      <p className="pb-4 text-center text-[11px] font-semibold text-ink-muted animate-pulse">{text}</p>
     </div>
   );
 }

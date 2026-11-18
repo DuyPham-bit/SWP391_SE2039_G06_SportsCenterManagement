@@ -1,4 +1,5 @@
 import React from 'react';
+import { markSplashRouteReady } from '../lib/splashSignal.js';
 
 /**
  * Keeps a rendering error inside the page that threw it. Without a boundary React unmounts the
@@ -18,6 +19,8 @@ export class PageErrorBoundary extends React.Component {
 
   componentDidCatch(error, info) {
     console.error('Page render failed', error, info?.componentStack);
+    // The error panel is the first screen now: let the launch splash lift so it can be seen.
+    markSplashRouteReady();
   }
 
   componentDidUpdate(prevProps) {

@@ -1,11 +1,11 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { receptionApi, formatMemberDateTime } from '../../../entities/member/index.js';
-import { createIdempotencyKey } from '../../../shared/api/http.js';
+import { createIdempotencyKey } from '../../../shared/api/index.js';
 import { downloadInvoice, invoiceStatus, printInvoice } from '../../../shared/lib/invoiceExport.js';
 import { counterButton, counterQuery, CounterError } from '../../../features/counter-desk/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { RefundManagement } from '../../../features/refund-review/index.js';
+import { RefundManagement } from './RefundManagement.jsx';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import {
   SCMS_HERO_BADGE_CLASS,

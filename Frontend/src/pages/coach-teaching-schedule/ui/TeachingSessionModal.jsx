@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { getSportTheme } from '../lib/calendarView.js';
-import { translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function TeachingSessionModal({ STATUS_CONFIG, activeSession, detailModalOpen, formatDayOfWeek, isEn, setDetailModalOpen }) {
   return (

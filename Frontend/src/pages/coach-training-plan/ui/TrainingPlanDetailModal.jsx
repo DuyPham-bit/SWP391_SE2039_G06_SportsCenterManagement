@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { getSportBadgeTheme, getResolvedExercises } from '../lib/planPresets.js';
-import { translatePlanTitle, translateCoachName, translateClassName, translatePlanGoal, translateExerciseName, translateReps, translateExerciseNote } from '../../../shared/i18n/i18nHelper.js';
+import { translatePlanTitle, translateCoachName, translateClassName, translatePlanGoal, translateExerciseName, translateReps, translateExerciseNote } from '../../../shared/lib/i18nHelper.js';
 
 export function TrainingPlanDetailModal({ handleOpenEditModal, isEn, selectedPlanDetail, setSelectedPlanDetail }) {
   return (

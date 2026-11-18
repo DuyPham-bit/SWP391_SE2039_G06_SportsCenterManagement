@@ -1,20 +1,121 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
+import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { useAuth, authApi } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { isAsciiPassword, PASSWORD_CHARACTER_ERROR } from '../../../shared/lib/passwordPolicy.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
+import { isAsciiPassword, PASSWORD_CHARACTER_ERROR, PASSWORD_RULES } from '../../../shared/lib/passwordPolicy.js';
 import { loadGoogleIdentity, googleClientId } from '../../../shared/lib/googleIdentity.js';
 import { AuthField, ForgotPasswordModal, GoogleLoginModal } from '../../../features/auth/index.js';
 import { Logo } from '../../../shared/ui/Logo.jsx';
 import { OtpDialogContent, OTP_CARD_CLASS, withMinDuration } from '../../../shared/ui/OtpCode.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../../entities/membership/index.js';
 import { useLandingContent } from '../../../entities/landing-content/index.js';
+import { CountUp } from '../../../shared/ui/CountUp.jsx';
+import { prefersReducedMotion } from '../../../shared/lib/motion.js';
+import { useCan3D, SplitWords, TiltCard, MagneticLink, AnimatedCheckbox, useTilt } from './authMotion.jsx';
+import { playAuthTransition } from '../lib/authTransition.js';
+import { HeroTrack } from './HeroTrack.jsx';
+import './auth-experience.css';
 
+const DUST = Array.from({ length: 14 }, (_, i) => ({
+  left: `${(i * 41) % 100}%`, s: `${2 + (i % 3)}px`, t: `${12 + (i % 5) * 2}s`, dl: `${-(i * 1.6).toFixed(1)}s`, dx: `${((i % 5) - 2) * 14}px`,
+}));
+
+/** Left-panel backdrop: intentional emerald/teal radial ambient glow + subtle gold particles (no stray streaks). */
+function HeroFallback({ posterUrl, videoUrl }) {
+  return (
+    <div className="absolute inset-0 overflow-hidden" aria-hidden="true">
+      <div className="lp-layer" data-depth="1">
+        {(videoUrl || posterUrl) && (
+          <video autoPlay loop muted playsInline className="lp-drift h-full w-full object-cover opacity-35" poster={posterUrl || undefined}>
+            {videoUrl && <source src={videoUrl} type={/\.webm($|\?)/i.test(videoUrl) ? 'video/webm' : 'video/mp4'} />}
+          </video>
+        )}
+      </div>
+      <div className="lp-layer" data-depth="2">
+        <div className="lp-breathe absolute -left-24 top-[6%] h-[460px] w-[460px] rounded-full bg-brand-sage-700/25 blur-[130px]" />
+        <div className="absolute -right-24 bottom-[4%] h-[400px] w-[400px] rounded-full bg-brand-teal-500/15 blur-[135px]" />
+      </div>
+      <div className="lp-layer lp-dust" data-depth="4">
+        {DUST.map((d, i) => <span key={i} style={{ left: d.left, '--s': d.s, '--t': d.t, '--dl': d.dl, '--dx': d.dx }} />)}
+      </div>
+    </div>
+  );
+}
+
+
+/** Splits the showcase title into a lead and a sand-coloured second line: at "\n", else after the first comma. */
+function splitHeadline(title = '') {
+  const text = String(title).trim();
+  const nl = text.indexOf('\n');
+  if (nl >= 0) return [text.slice(0, nl).trim(), text.slice(nl + 1).trim()];
+  const comma = text.indexOf(',');
+  if (comma > 0 && comma < text.length - 1) return [text.slice(0, comma + 1), text.slice(comma + 1).trim()];
+  return [text, ''];
+}
+
+/** Sport names taken from the real zone list ("Khu B: Bóng Rổ, Cầu Lông & Bóng Bàn"). */
+function sportsFromZones(zones) {
+  const names = (zones || []).flatMap(zone =>
+    String(zone?.name || '').replace(/^[^:]*:\s*/, '').split(/\s*(?:,|&)\s*/)
+  ).map(name => name.trim()).filter(Boolean);
+  return [...new Set(names)];
+}
+
+function SportsMarquee({ sports, className = '' }) {
+  if (sports.length < 3) return null;
+  const row = (hidden) => (
+    <ul className="flex shrink-0 items-center gap-8 pr-8" aria-hidden={hidden || undefined}>
+      {sports.map(sport => (
+        <li key={sport} className="flex items-center gap-8 whitespace-nowrap text-sm font-semibold tracking-tight text-brand-sand-100/90">
+          <span className="lp-marquee-item inline-block cursor-default">{sport}</span>
+          <span className="h-1.5 w-1.5 rotate-45 rounded-[2px] bg-brand-sand-300 shadow-[0_0_8px_rgb(var(--brand-sand-300)/0.65)]" aria-hidden="true" />
+        </li>
+      ))}
+    </ul>
+  );
+  return (
+    <div className={`lp-marquee relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] py-3 backdrop-blur-md [mask-image:linear-gradient(90deg,transparent,rgb(255_255_255)_16%,rgb(255_255_255)_84%,transparent)] ${className}`}>
+      <p className="sr-only">Các bộ môn: {sports.join(', ')}</p>
+      <div className="lp-marquee-track flex w-max">
+        {row(true)}{row(true)}
+      </div>
+    </div>
+  );
+}
+
+/** Court markings on the cream panel: drawn in once (stroke-dashoffset), then drift with the pointer. */
+function CourtLines() {
+  return (
+    <div className="lp-court-wrap absolute inset-0">
+      <svg
+        aria-hidden="true"
+        viewBox="0 0 610 1340"
+        preserveAspectRatio="xMidYMid meet"
+        className="lp-court pointer-events-none absolute left-1/2 top-1/2 h-[145%] -translate-x-1/2 -translate-y-1/2 -rotate-[24deg] text-brand-sage-700 opacity-[0.09] dark:text-brand-sand-100 dark:opacity-[0.06]"
+        fill="none" stroke="currentColor" strokeWidth="4.5"
+      >
+        <rect x="5" y="5" width="600" height="1330" pathLength="1" />
+        <path d="M50 5V1335M560 5V1335" pathLength="1" />
+        <path d="M5 670H605" pathLength="1" strokeWidth="8" />
+        <path d="M5 472H605M5 868H605" pathLength="1" />
+        <path d="M5 81H605M5 1259H605" pathLength="1" />
+        <path d="M305 5V472M305 868V1335" pathLength="1" />
+        <circle cx="305" cy="670" r="92" pathLength="1" />
+      </svg>
+    </div>
+  );
+}
+
+const gisCallback = { current: null, initialized: false };
 const REMEMBERED_EMAIL_KEY = 'SCMS_REMEMBERED_EMAIL';
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 // Login accepts what the backend accepts: email, phone number (any common spelling) or username.
 const PHONE_LOGIN_PATTERN = /^\+?[0-9 ().-]{8,20}$/;
 const USERNAME_PATTERN = /^[A-Za-z0-9._-]{3,100}$/;
+const REGISTER_PHONE_PATTERN = /^(0\d{9}|\+84\d{9})$/;
+// Short labels for the live password chips (same rules as PASSWORD_RULES / backend).
+const PASSWORD_CHIP_LABELS = { length: '6+ ký tự', case: 'Aa', digit: '123', symbol: '#@!' };
 const isValidLoginIdentifier = value => EMAIL_PATTERN.test(value) || PHONE_LOGIN_PATTERN.test(value) || USERNAME_PATTERN.test(value);
 
 function readRememberedEmail() {
@@ -41,34 +142,68 @@ export function LoginPage() {
   const authShowcase = landingContent?.authShowcase || {};
   const supportPhone = landingContent?.ctaAndFooter?.contactPhone?.trim() || '';
 
-  const showcaseBadge = authShowcase.badge || 'Sân tập mở cửa 24/7';
-  const showcaseTagline = authShowcase.tagline || 'Khởi đầu bứt phá';
-  const showcaseLoginTitle = authShowcase.loginTitle || 'Tập luyện hôm nay, \nbứt phá mỗi ngày.';
-  const showcaseRegisterTitle = authShowcase.registerTitle || 'Hành trình mới, \nphiên bản khỏe hơn.';
-  const showcaseDescription = authShowcase.description || 'Hệ sinh thái thể thao đa năng với 9 cụm sân thi đấu chuẩn Olympic. Đặt sân siêu tốc, cá nhân hóa lịch tập và theo dõi chỉ số InBody cùng huấn luyện viên hàng đầu.';
-  const showcasePosterUrl = authShowcase.posterUrl || 'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?q=80&w=1920&auto=format&fit=crop';
-  const authVideoUrl = authShowcase.videoUrl || landingContent?.heroBanner?.videoUrl || './hero-video.mp4';
-  
-  const feature1Title = authShowcase.feature1Title || 'Đặt chỗ trong 30s';
-  const feature1Desc = authShowcase.feature1Desc || 'Giữ sân & lớp học 7 ngày';
-  const feature1Icon = authShowcase.feature1Icon || 'bolt';
+  // Showcase copy comes from the published home content (GET /api/home-content?lang=…); no fallback text.
+  const showcaseBadge = authShowcase.badge || '';
+  const showcaseTagline = authShowcase.tagline || '';
+  const showcaseLoginTitle = authShowcase.loginTitle || '';
+  const showcaseRegisterTitle = authShowcase.registerTitle || '';
+  const showcaseDescription = authShowcase.description || '';
+  const showcasePosterUrl = authShowcase.posterUrl || '';
+  const authVideoUrl = authShowcase.videoUrl || landingContent?.heroBanner?.videoUrl || '';
 
-  const feature2Title = authShowcase.feature2Title || 'Chuẩn Olympic 5★';
-  const feature2Desc = authShowcase.feature2Desc || 'Hệ thống sân bãi cao cấp';
-  const feature2Icon = authShowcase.feature2Icon || 'verified';
+  const feature1Title = authShowcase.feature1Title || '';
+  const feature1Desc = authShowcase.feature1Desc || '';
+  const feature1Icon = authShowcase.feature1Icon || '';
 
-  const stat1Value = authShowcase.stat1Value || '09';
-  const stat1Label = authShowcase.stat1Label || 'Bộ môn thi đấu';
+  const feature2Title = authShowcase.feature2Title || '';
+  const feature2Desc = authShowcase.feature2Desc || '';
+  const feature2Icon = authShowcase.feature2Icon || '';
 
-  const stat2Value = authShowcase.stat2Value || '09';
-  const stat2Label = authShowcase.stat2Label || 'Khu tập luyện';
+  const stat1Value = authShowcase.stat1Value || '';
+  const stat1Label = authShowcase.stat1Label || '';
 
-  const stat3Value = authShowcase.stat3Value || '2.5K+';
-  const stat3Label = authShowcase.stat3Label || 'Hội viên active';
+  const stat2Value = authShowcase.stat2Value || '';
+  const stat2Label = authShowcase.stat2Label || '';
+
+  const stat3Value = authShowcase.stat3Value || '';
+  const stat3Label = authShowcase.stat3Label || '';
+  const sports = sportsFromZones(landingContent?.zonesLayout?.zones);
+
+  // Cursor spotlight on the showcase: one CSS variable pair, updated once per frame.
+  const asideRef = useRef(null);
+  const spotFrame = useRef(0);
+
+  const moveSpotlight = event => {
+    const el = asideRef.current;
+    if (!el || spotFrame.current || event.pointerType === 'touch') return;
+    const { clientX, clientY } = event;
+    spotFrame.current = requestAnimationFrame(() => {
+      spotFrame.current = 0;
+      const box = el.getBoundingClientRect();
+      el.style.setProperty('--mx', `${clientX - box.left}px`);
+      el.style.setProperty('--my', `${clientY - box.top}px`);
+      // Normalised pointer (-1…1) for the parallax layers and the court drift.
+      el.style.setProperty('--px', ((clientX / window.innerWidth) * 2 - 1).toFixed(3));
+      el.style.setProperty('--py', ((clientY / window.innerHeight) * 2 - 1).toFixed(3));
+    });
+  };
+
+  // Capable desktops get the animated CSS athletics track; others keep the CMS poster/video backdrop.
+  const can3D = useCan3D();
+  const cardTiltRef = useTilt(3);
+  // Tab content slides in from the side of the tab that was picked.
+  const [slideDir, setSlideDir] = useState('');
+  const [authSuccess, setAuthSuccess] = useState(false);
 
   const membershipIntent = useRef(getMembershipIntent(window.location.hash));
   const redirectToRoleDashboard = role => {
     window.location.hash = getPostLoginRoute(role, membershipIntent.current);
+  };
+  // Success hand-off: the button morphs into a tick, then a green sheet sweeps over and the route changes.
+  const finishAuth = async role => {
+    setAuthSuccess(true);
+    if (!prefersReducedMotion()) await new Promise(resolve => setTimeout(resolve, 560));
+    playAuthTransition(() => redirectToRoleDashboard(role));
   };
   const [activeTab, setActiveTab] = useState(() => window.location.hash.split('?')[0] === '#/register' ? 'register' : 'login');
   const [showForgotPassword, setShowForgotPassword] = useState(false);
@@ -167,7 +302,8 @@ export function LoginPage() {
   // Tích hợp Google Identity trực tiếp trên trang
   const googleButtonRef = useRef(null);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [googleRendered, setGoogleRendered] = useState(false);
+  // Fallback button only when GIS is not configured or failed to load (no flash of two buttons while it loads).
+  const [googleRendered, setGoogleRendered] = useState(googleClientId ? null : false); // null = loading, true = GIS button, false = fallback
 
   useEffect(() => {
     const handleHash = () => {
@@ -181,7 +317,7 @@ export function LoginPage() {
   }, []);
 
   useEffect(() => {
-    if (isAuthenticated && role === 'GUEST') {
+    if (window.location.hash.includes('logout=true') || (isAuthenticated && role === 'GUEST')) {
       logout();
       window.location.hash = '#/login';
       return;
@@ -189,6 +325,25 @@ export function LoginPage() {
     // Đang chạy animation xác thực thành công: handleRegisterSubmit tự chuyển trang sau đó
     if (isAuthenticated && !holdAuthRedirectRef.current) redirectToRoleDashboard(role);
   }, [isAuthenticated, role, logout]);
+
+  // GIS is initialised once per page load (re-initialising logs a GSI warning); the callback always
+  // reaches the mounted LoginPage through the module-level handler.
+  gisCallback.current = async (response) => {
+    if (!response?.credential) return;
+    setGoogleLoading(true);
+    setFormError('');
+    holdAuthRedirectRef.current = true;
+    try {
+      const user = await loginWithGoogle({ credential: response.credential });
+      showSuccess('Đăng nhập thành công!');
+      await finishAuth(user.role || 'MEMBER');
+    } catch (err) {
+      holdAuthRedirectRef.current = false;
+      setFormError(err.payload?.message || err.message || 'Đăng nhập Google thất bại.');
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
 
   // Render nút Google Identity trực tiếp trên trang
   useEffect(() => {
@@ -198,30 +353,21 @@ export function LoginPage() {
       try {
         await loadGoogleIdentity();
         if (cancelled || !window.google?.accounts?.id || !googleButtonRef.current) return;
-        window.google.accounts.id.initialize({
-          client_id: googleClientId,
-          callback: async (response) => {
-            if (!response?.credential) return;
-            setGoogleLoading(true);
-            setFormError('');
-            try {
-              const user = await loginWithGoogle({ credential: response.credential });
-              showSuccess('Đăng nhập thành công!');
-              redirectToRoleDashboard(user.role || 'MEMBER');
-            } catch (err) {
-              setFormError(err.payload?.message || err.message || 'Đăng nhập Google thất bại.');
-            } finally {
-              setGoogleLoading(false);
-            }
-          },
-        });
+        if (!gisCallback.initialized) {
+          gisCallback.initialized = true;
+          window.google.accounts.id.initialize({
+            client_id: googleClientId,
+            callback: response => gisCallback.current?.(response),
+          });
+        }
         googleButtonRef.current.innerHTML = '';
         window.google.accounts.id.renderButton(googleButtonRef.current, {
           theme: 'outline',
           size: 'large',
-          width: 320,
+          // GIS caps width at 400px; match the form column so it lines up with inputs
+          width: Math.min(400, googleButtonRef.current.offsetWidth || 320),
           text: isRegister ? 'signup_with' : 'signin_with',
-          shape: 'pill',
+          shape: 'rectangular',
           locale: 'vi',
         });
         setGoogleRendered(true);
@@ -233,16 +379,35 @@ export function LoginPage() {
     return () => { cancelled = true; };
   }, [isRegister]);
 
-  const handleTabChange = tab => {
-    setActiveTab(tab);
+  const clearFormFeedback = () => {
     setFieldErrors({});
     setFormError('');
     setRegOtpNotice('');
-    window.location.hash = tab === 'register' ? '#/register' : '#/login';
+  };
+
+  const handleTabChange = tab => {
+    if (isSubmitting || tab === activeTab) return;
+    clearFormFeedback();
+    setSlideDir(tab === 'register' ? 'next' : 'prev');
+    setLoginPassword('');
+    setRegPassword('');
+    setRegConfirmPassword('');
+    setRegAgree(false);
+    setVerificationEmail('');
+    setVerificationPhone('');
+    setRegOtp('');
+    setActiveTab(tab);
+    const authPath = tab === 'register' ? '#/register' : '#/login';
+    window.location.hash = authPath + (membershipIntent.current ? `?next=${membershipIntent.current}` : '');
   };
 
   const updateField = (field, value, setter) => {
     setter(value);
+    if (field === 'register-email' || field === 'register-phone') {
+      setVerificationEmail('');
+      setVerificationPhone('');
+      setRegOtp('');
+    }
     if (fieldErrors[field]) {
       setFieldErrors(prev => {
         const next = { ...prev };
@@ -285,12 +450,14 @@ export function LoginPage() {
     if (hasValidationErrors(errors)) return;
 
     setIsSubmitting(true);
+    holdAuthRedirectRef.current = true;
     try {
       const user = await login(identifier, loginPassword);
       saveRememberedEmail(rememberEmail ? identifier : '');
       showSuccess('Đăng nhập thành công!');
-      redirectToRoleDashboard(user.role);
+      await finishAuth(user.role);
     } catch (error) {
+      holdAuthRedirectRef.current = false;
       const message = error.payload?.message || error.message || 'Đăng nhập thất bại. Vui lòng kiểm tra lại.';
       if (error.status === 401) {
         setFormError('Thông tin đăng nhập không chính xác. Vui lòng kiểm tra lại tài khoản hoặc mật khẩu.');
@@ -341,7 +508,7 @@ export function LoginPage() {
       setRegOtpVerified(true);
       await new Promise(resolve => setTimeout(resolve, 1400));
       showSuccess('Đăng ký thành công! Mã hội viên của bạn: ' + user.memberCode);
-      redirectToRoleDashboard(user.role || 'MEMBER');
+      playAuthTransition(() => redirectToRoleDashboard(user.role || 'MEMBER'));
     } catch (error) {
       holdAuthRedirectRef.current = false;
       const message = error.payload?.message || error.message || 'Đăng ký thất bại. Vui lòng thử lại.';
@@ -396,175 +563,228 @@ export function LoginPage() {
     <button
       id={isRegister ? 'register-submit-button' : 'login-submit-button'}
       type="submit"
-      disabled={isSubmitting}
-      className="w-full min-h-12 py-3 px-6 rounded-xl font-bold text-sm tracking-wide bg-gradient-to-r from-red-600 to-rose-600 hover:from-red-500 hover:to-rose-500 text-white shadow-lg shadow-red-600/30 hover:shadow-red-600/50 hover:scale-[1.01] active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 disabled:opacity-60 disabled:pointer-events-none"
+      disabled={isSubmitting || authSuccess}
+      aria-live="polite"
+      className={`lp-btn group relative overflow-hidden select-none w-full min-h-[52px] py-3 px-6 rounded-xl font-bold text-sm tracking-wide bg-gradient-to-r from-brand-sage-700 via-brand-teal-600 to-brand-teal-500 bg-[length:160%_100%] bg-left hover:bg-right text-white shadow-[0_10px_24px_-10px_rgb(var(--brand-sage-900)/0.55)] hover:shadow-[0_16px_34px_-12px_rgb(var(--brand-teal-600)/0.6)] hover:-translate-y-px transition-[background-position,box-shadow,transform] duration-500 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700 focus-visible:ring-offset-2 disabled:pointer-events-none ${authSuccess ? 'is-success' : 'disabled:opacity-70'}`}
     >
-      <span>
-        {isSubmitting
-          ? 'Đang xử lý...'
-          : isRegister
-            ? (needsEmailCode ? 'Xác thực & Tạo tài khoản' : 'Tiếp tục đăng ký')
-            : 'Đăng nhập vào Olympic Sports Arena'}
-      </span>
-      {!isSubmitting && (
-        <span className="material-symbols-outlined text-[18px]" aria-hidden="true">
-          arrow_forward
+      <span className="lp-btn-label flex items-center justify-center gap-2">
+        {isSubmitting && !authSuccess && (
+          <svg className="h-4 w-4 animate-spin" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <circle cx="12" cy="12" r="10" stroke="currentColor" strokeOpacity=".3" strokeWidth="3" />
+            <path d="M22 12a10 10 0 0 0-10-10" stroke="currentColor" strokeWidth="3" strokeLinecap="round" />
+          </svg>
+        )}
+        <span>
+          {isSubmitting
+            ? (isRegister ? 'Đang xử lý...' : 'Đang đăng nhập...')
+            : isRegister
+              ? (needsEmailCode ? 'Xác thực & Tạo tài khoản' : 'Tiếp tục đăng ký')
+              : <>Đăng nhập<span className="hidden sm:inline"> vào Olympic Sports Arena</span></>}
         </span>
-      )}
+        {!isSubmitting && (
+          <span className="material-symbols-outlined text-[18px] transition-transform duration-300 group-hover:translate-x-1" aria-hidden="true">
+            arrow_forward
+          </span>
+        )}
+      </span>
+      <span className="lp-btn-check" aria-hidden="true">
+        <svg viewBox="0 0 24 24" className="h-7 w-7" fill="none" stroke="currentColor" strokeWidth="2.6" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="12" r="10" strokeOpacity=".35" />
+          <path d="M7 12.5l3.2 3.2L17 9" pathLength="1" />
+        </svg>
+      </span>
+      {authSuccess && <span className="sr-only">Thành công</span>}
     </button>
   );
 
+  const [headLead, headAccent] = splitHeadline(isRegister ? showcaseRegisterTitle : showcaseLoginTitle);
+  const headLeadWords = headLead.split(/\s+/).filter(Boolean).length;
+
   return (
-    <div className="min-h-screen lg:h-screen w-full relative flex flex-col lg:flex-row overflow-x-hidden font-dm-sans select-text bg-[#0b0d14] text-white">
-      {/* 🎬 Fullscreen Cinematic Ambient Background Video (Tràn viền toàn trang) */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none z-0">
-        <video
-          autoPlay
-          loop
-          muted
-          playsInline
-          className="w-full h-full object-cover scale-105"
-          poster={showcasePosterUrl}
-        >
-          <source src={authVideoUrl} type="video/mp4" />
-        </video>
-        {/* Lớp phủ cinematic đa tầng: giữ độ nét, độ tương phản và chuyển động sống động của video thể thao */}
-        <div className="absolute inset-0 bg-gradient-to-r from-brand-navy-950/85 via-brand-navy-950/50 to-brand-navy-950/80" />
-        <div className="absolute inset-0 bg-gradient-to-t from-brand-navy-950/90 via-transparent to-brand-navy-950/70" />
-        {/* Đốm sáng ambient đỏ thể thao Olympic rực rỡ */}
-        <div className="absolute -top-32 -left-32 w-[520px] h-[520px] bg-red-600/25 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute -bottom-32 -right-32 w-[520px] h-[520px] bg-rose-600/20 rounded-full blur-[140px] pointer-events-none" />
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-red-500/10 rounded-full blur-[120px] pointer-events-none" />
-      </div>
-
+    <MotionConfig reducedMotion="user">
+    <div ref={asideRef} onPointerMove={moveSpotlight} className="auth-root min-h-screen lg:h-screen w-full relative flex flex-col lg:flex-row overflow-x-hidden font-sans select-text bg-brand-sand-100 dark:bg-brand-navy-950 text-brand-navy-900 dark:text-white">
       {/* ========================================================
-          CỘT TRÁI: SHOWCASE THỂ THAO ĐỈNH CAO (Cinematic Athletic Hero)
+          CỘT TRÁI: ĐƯỜNG CHẠY 3D (CSS) · fallback poster/video
           ======================================================== */}
-      <aside className="hidden lg:flex lg:w-[48%] xl:w-[50%] 2xl:w-[52%] h-full relative z-10 flex-col justify-between p-8 sm:p-10 xl:p-12 select-none shrink-0 border-r border-white/10">
-        {/* Thanh Header thương hiệu góc trên bên trái */}
-        <div className="flex items-center justify-between gap-4">
-          <Logo variant="auto" size="lg" />
-
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-xl border border-white/20 text-[13px] font-semibold text-white shadow-lg">
-            <span className="relative flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-500 shadow-[0_0_10px_rgba(239,68,68,1)]" />
-            </span>
-            <span>{showcaseBadge}</span>
-          </div>
+      <aside className="hidden lg:flex lg:w-[53%] xl:w-[55%] 2xl:w-[56%] h-full relative z-10 flex-col p-8 xl:p-12 2xl:px-16 select-none shrink-0 overflow-hidden bg-brand-forest-950 text-white">
+        <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
+          <HeroFallback posterUrl={can3D ? '' : showcasePosterUrl} videoUrl={can3D ? '' : authVideoUrl} />
+          {can3D && <HeroTrack />}
+          <div className="lp-grain" />
+          {/* Subtle intentional vignettes keeping foreground copy crisp */}
+          <div className="absolute inset-0 bg-gradient-to-b from-brand-forest-950/75 via-brand-forest-950/10 to-brand-forest-950/75" />
+          <div className="absolute inset-0 bg-gradient-to-r from-brand-forest-950/80 via-brand-forest-950/30 to-transparent" />
+          <div className="lp-spot absolute inset-0" />
         </div>
+        <div className="absolute right-0 inset-y-0 w-px bg-gradient-to-b from-transparent via-brand-sand-300/35 to-transparent pointer-events-none z-10" aria-hidden="true" />
 
-        {/* Khối trung tâm: Headline nghệ thuật & Thẻ kính nổi */}
-        <div className="py-4 max-w-xl">
-          <div className="inline-flex items-center gap-1.5 px-3.5 py-1 rounded-full bg-red-500/20 backdrop-blur-xl border border-red-500/35 text-xs font-bold uppercase tracking-wider text-red-200 mb-4 shadow-sm">
-            <span className="material-symbols-outlined text-[15px] text-red-400">sports_score</span>
-            <span>{showcaseTagline}</span>
-          </div>
-
-          <h2 className="font-dm-sans text-3xl sm:text-4xl xl:text-5xl font-extrabold leading-[1.14] tracking-tight text-white whitespace-pre-line drop-shadow-lg">
-            {isRegister ? (
-              <>
-                {showcaseRegisterTitle.split('\n')[0]} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-red-100 to-rose-300">
-                  {showcaseRegisterTitle.split('\n').slice(1).join('\n') || ''}
-                </span>
-              </>
-            ) : (
-              <>
-                {showcaseLoginTitle.split('\n')[0]} <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-white via-red-100 to-rose-300">
-                  {showcaseLoginTitle.split('\n').slice(1).join('\n') || ''}
-                </span>
-              </>
+        <div className="relative z-10 w-full max-w-[700px] xl:max-w-[760px] mx-auto h-full flex flex-col justify-between gap-5 xl:gap-6">
+          <div className="lp-in flex items-center justify-between gap-4">
+            <Logo variant="dark" size="lg" />
+            {showcaseBadge && (
+              <div className="lp-ring-border inline-flex items-center gap-2.5 px-4 py-1.5 rounded-full bg-brand-forest-950/60 backdrop-blur-xl text-[13px] font-semibold text-white shadow-lg">
+                <span className="lp-pulse" aria-hidden="true"><i /></span>
+                <span>{showcaseBadge}</span>
+              </div>
             )}
-          </h2>
-
-          <p className="text-base text-slate-200 mt-4 leading-relaxed max-w-lg font-normal drop-shadow">
-            {showcaseDescription}
-          </p>
-
-          {/* 2 Thẻ kính Frosted Glass Cards */}
-          <div className="grid sm:grid-cols-2 gap-3.5 mt-6">
-            <div className="p-4 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/15 hover:bg-white/[0.14] hover:border-red-500/40 hover:-translate-y-0.5 transition-all duration-300 shadow-xl group">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-amber-400/20 text-amber-300 flex items-center justify-center shrink-0 border border-amber-400/30 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(251,191,36,0.4)] transition-all shadow-inner">
-                  <span className="material-symbols-outlined text-[22px]">{feature1Icon}</span>
-                </span>
-                <div>
-                  <h4 className="text-sm font-bold text-white tracking-wide">{feature1Title}</h4>
-                  <p className="text-[12.5px] text-slate-300 mt-0.5 font-normal">{feature1Desc}</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="p-4 rounded-2xl bg-white/[0.08] backdrop-blur-xl border border-white/15 hover:bg-white/[0.14] hover:border-red-500/40 hover:-translate-y-0.5 transition-all duration-300 shadow-xl group">
-              <div className="flex items-center gap-3">
-                <span className="w-10 h-10 rounded-xl bg-red-500/20 text-red-300 flex items-center justify-center shrink-0 border border-red-500/30 group-hover:scale-110 group-hover:shadow-[0_0_12px_rgba(239,68,68,0.4)] transition-all shadow-inner">
-                  <span className="material-symbols-outlined text-[22px]">{feature2Icon}</span>
-                </span>
-                <div>
-                  <h4 className="text-sm font-bold text-white tracking-wide">{feature2Title}</h4>
-                  <p className="text-[12.5px] text-slate-300 mt-0.5 font-normal">{feature2Desc}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Footer Cột trái: Thống kê số liệu */}
-        <div className="pt-4 flex items-center justify-between gap-6 border-t border-white/15">
-          <div className="flex gap-8 sm:gap-10">
-            <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-sm">{stat1Value}</div>
-              <div className="text-[12.5px] text-slate-300 font-medium mt-0.5">{stat1Label}</div>
-            </div>
-            <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-extrabold text-white tracking-tight drop-shadow-sm">{stat2Value}</div>
-              <div className="text-[12.5px] text-slate-300 font-medium mt-0.5">{stat2Label}</div>
-            </div>
-            <div>
-              <div className="font-dm-sans text-2xl sm:text-3xl font-extrabold text-amber-300 tracking-tight drop-shadow-[0_0_10px_rgba(252,211,77,0.3)]">{stat3Value}</div>
-              <div className="text-[12.5px] text-slate-300 font-medium mt-0.5">{stat3Label}</div>
-            </div>
           </div>
 
-          <a
-            href="#khoa-hoc"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-sm font-semibold text-white transition-all duration-200 hover:scale-105 active:scale-95 group shadow-lg backdrop-blur-md"
-          >
-            <span>Khám phá</span>
-            <span className="material-symbols-outlined text-[17px] group-hover:translate-x-1 transition-transform" aria-hidden="true">
-              arrow_forward
-            </span>
-          </a>
+          <div className="relative my-auto flex flex-col gap-5 py-2 max-w-[500px] min-[1440px]:max-w-[540px] 2xl:max-w-[580px]">
+            {showcaseTagline && (
+              <div style={{ '--d': '80ms' }} className="lp-in lp-ring-border self-start inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-sage-700/35 backdrop-blur-xl text-xs font-bold uppercase tracking-[0.14em] text-brand-sand-100 shadow-sm">
+                <span className="lp-pulse scale-75" aria-hidden="true"><i /></span>
+                <span>{showcaseTagline}</span>
+              </div>
+            )}
+
+            <h2 key={`hero-${activeTab}`} className="font-sans text-4xl/[1.06] xl:text-[52px]/[1.05] 2xl:text-[58px]/[1.05] font-extrabold tracking-[-0.02em] text-white [text-wrap:balance] drop-shadow-[0_4px_24px_rgb(var(--brand-forest-950)/0.65)]">
+              <SplitWords text={headLead} start={160} step={65} />
+              {headAccent && (
+                <>
+                  <br />
+                  <span className="lp-shimmer pb-1" style={{ '--wd': `${160 + headLeadWords * 65 + 40}ms` }}>{headAccent}</span>
+                </>
+              )}
+            </h2>
+
+            <p style={{ '--d': '420ms' }} className="lp-in text-[15px] xl:text-base text-brand-sand-100/80 leading-[1.6] max-w-[56ch] font-normal">
+              {showcaseDescription}
+            </p>
+
+            <div style={{ '--d': '520ms' }} className="lp-in grid sm:grid-cols-2 gap-4 pt-1 [perspective:900px]">
+              {[
+                { icon: feature1Icon, title: feature1Title, desc: feature1Desc, tone: 'bg-brand-sand-300/15 text-brand-sand-300 border-brand-sand-300/30' },
+                { icon: feature2Icon, title: feature2Title, desc: feature2Desc, tone: 'bg-brand-teal-500/15 text-brand-teal-400 border-brand-teal-500/30' },
+              ].map((card, i) => (
+                <TiltCard key={i} max={6} className="lp-spot-card relative overflow-hidden p-4 rounded-2xl backdrop-blur-xl group">
+                  <div className="flex items-center gap-3.5">
+                    <span className={`lp-icon w-11 h-11 rounded-xl flex items-center justify-center shrink-0 border shadow-inner ${card.tone}`}>
+                      <span className="material-symbols-outlined text-[22px]" aria-hidden="true">{card.icon}</span>
+                    </span>
+                    <div className="min-w-0">
+                      <h4 className="text-sm font-bold text-white tracking-wide leading-snug">{card.title}</h4>
+                      <p className="text-[12.5px] text-brand-sand-100/80 mt-0.5 font-normal leading-snug">{card.desc}</p>
+                    </div>
+                  </div>
+                </TiltCard>
+              ))}
+            </div>
+
+            {/* Dải bộ môn chạy ngang (từ danh sách khu tập thật); fallback dải cam kết */}
+            {sports.length >= 3 ? <div style={{ '--d': '620ms' }} className="lp-in"><SportsMarquee sports={sports} /></div> : (
+              <div style={{ '--d': '620ms' }} className="lp-in px-4 py-3 rounded-2xl bg-white/[0.04] backdrop-blur-md border border-white/10 flex flex-wrap items-center justify-between gap-4 text-xs text-brand-sand-100/85">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] text-brand-sage-300" aria-hidden="true">verified_user</span>
+                  Đăng ký hội viên trực tuyến
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] text-brand-sand-300" aria-hidden="true">calendar_month</span>
+                  Đặt lịch tập linh hoạt
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="material-symbols-outlined text-[15px] text-brand-sage-300" aria-hidden="true">monitoring</span>
+                  Theo dõi chỉ số InBody
+                </span>
+              </div>
+            )}
+          </div>
+
+          {/* Footer cột trái: số liệu count-up + vạch sáng đồng nhất */}
+          <div style={{ '--d': '700ms' }} className="lp-in pt-6 flex items-end justify-between gap-6 border-t border-white/10">
+            <div className="grid flex-1 grid-cols-3 divide-x divide-white/10 [&>div]:px-4 xl:[&>div]:px-6 [&>div:first-child]:pl-0 [&>div:last-child]:pr-0">
+              {[
+                { value: stat1Value, label: stat1Label, delay: 720, gold: false },
+                { value: stat2Value, label: stat2Label, delay: 840, gold: false },
+                { value: stat3Value, label: stat3Label, delay: 960, gold: true },
+              ].map((stat, i) => (
+                <div key={i} className="min-w-0">
+                  <div className={`font-sans text-2xl sm:text-3xl xl:text-[34px] tabular-nums font-extrabold tracking-tight leading-none ${stat.gold ? 'text-brand-sand-300 drop-shadow-[0_0_14px_rgb(var(--brand-sand-300)/0.35)]' : 'text-white'}`}>
+                    <CountUp value={stat.value} delay={stat.delay} />
+                  </div>
+                  <div className="lp-statbar" style={{ '--d': `${1.2 + i * 0.4}s` }} aria-hidden="true" />
+                  <div className="text-[12.5px] text-brand-sand-100/80 font-medium mt-2 leading-snug [text-wrap:balance]">{stat.label}</div>
+                </div>
+              ))}
+            </div>
+
+            <MagneticLink
+              href="#khoa-hoc"
+              className="shrink-0 whitespace-nowrap inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-brand-sand-100/10 hover:bg-brand-sand-300 hover:text-brand-forest-950 border border-brand-sand-100/25 hover:border-brand-sand-300 text-sm font-bold text-brand-sand-100 shadow-lg backdrop-blur-md"
+            >
+              <span>Khám phá</span>
+              <span className="lp-arrow material-symbols-outlined text-[17px]" aria-hidden="true">arrow_forward</span>
+            </MagneticLink>
+          </div>
         </div>
       </aside>
 
+      {/* Mobile (<lg): cột showcase thu thành header xanh ngắn (không chạy 3D / tilt) */}
+      <header className="lg:hidden relative z-10 overflow-hidden rounded-b-[28px] bg-brand-forest-950 px-4 sm:px-6 pt-4 pb-5 text-white shadow-[0_18px_40px_-22px_rgb(var(--brand-forest-950)/0.85)]">
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          <div className="absolute -top-24 -left-16 h-60 w-60 rounded-full bg-brand-sage-700/45 blur-[80px]" />
+          <div className="absolute -bottom-28 right-0 h-60 w-60 rounded-full bg-brand-teal-500/20 blur-[90px]" />
+        </div>
+        <div className="relative w-full max-w-[496px] mx-auto">
+          <div className="lp-in flex items-center justify-between gap-3">
+            <Logo variant="dark" size="sm" />
+            <a href="#/" className="inline-flex items-center gap-1.5 min-h-[40px] py-2 px-3.5 rounded-full text-[13px] font-semibold text-white bg-white/10 hover:bg-white/20 border border-white/20 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sand-300">
+              <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
+              <span>Về trang chủ</span>
+            </a>
+          </div>
+          <p key={`m-hero-${activeTab}`} className="mt-4 font-sans text-[26px]/[1.1] sm:text-4xl/[1.1] font-extrabold tracking-[-0.02em] [text-wrap:balance]">
+            <SplitWords text={headLead} start={100} step={55} />
+            {headAccent && <> <span className="lp-shimmer" style={{ '--wd': `${100 + headLeadWords * 55 + 40}ms` }}>{headAccent}</span></>}
+          </p>
+          <div style={{ '--d': '160ms' }} className="lp-in"><SportsMarquee sports={sports} className="mt-4" /></div>
+        </div>
+      </header>
+
       {/* ========================================================
-          CỘT PHẢI: FORM AUTHENTICATION SANG TRỌNG FROSTED GLASS
+          CỘT PHẢI: NỀN KEM + VẠCH SÂN, CARD FORM 3D
           ======================================================== */}
       <section
         aria-labelledby="auth-heading"
-        className="flex-1 h-full relative z-10 flex flex-col justify-between overflow-y-auto overflow-x-hidden p-4 sm:p-6 lg:p-8 xl:p-10 backdrop-blur-sm lg:backdrop-blur-none"
+        className="flex-1 lg:h-full relative z-10 flex flex-col justify-between overflow-y-auto overflow-x-hidden px-4 py-6 sm:p-8 lg:p-8 xl:p-10"
       >
-        {/* Thanh điều hướng góc trên */}
-        <div className="flex items-center justify-between w-full shrink-0 mb-2 z-10">
-          <Logo variant="auto" size="sm" className="lg:hidden" />
-
-          <a
-            href="#/"
-            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-full text-[13px] font-semibold text-white bg-white/10 hover:bg-white/20 backdrop-blur-xl shadow-lg border border-white/20 ml-auto transition-all duration-200 hover:-translate-x-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
-          >
-            <span className="material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
-            <span>Về trang chủ</span>
-          </a>
+        <div aria-hidden="true" className="absolute inset-0 overflow-hidden pointer-events-none z-0">
+          <CourtLines />
+          <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_50%_42%,rgb(var(--brand-sand-50)/0.85),transparent_65%)] dark:bg-none" />
         </div>
 
-        {/* Khung Auth Card cao cấp nổi bật giữa màn hình với Glassmorphism */}
-        <div className="my-auto py-2 sm:py-3 w-full max-w-[464px] mx-auto z-10">
-          <div className="bg-slate-900/80 dark:bg-brand-navy-950/85 backdrop-blur-2xl rounded-3xl p-6 sm:p-8 shadow-[0_25px_70px_-15px_rgba(0,0,0,0.7)] border border-white/15 transition-all duration-300">
-            {/* Tab chuyển đổi Đăng nhập / Đăng ký Tiya Style */}
-            <div className="flex gap-1.5 rounded-2xl bg-black/40 backdrop-blur-md p-1.5 mb-5 border border-white/10 shadow-inner" role="group" aria-label="Chọn đăng nhập hoặc đăng ký">
+        <div className="lp-in relative z-10 w-full max-w-[496px] mx-auto hidden lg:flex items-center justify-between gap-4 shrink-0">
+          <span className="inline-flex items-center gap-2 px-3.5 py-2 rounded-full bg-white/80 dark:bg-white/10 backdrop-blur-xl border border-brand-sage-700/15 dark:border-white/15 text-xs font-semibold text-brand-sage-900 dark:text-brand-sand-100 shadow-sm">
+            <span className="lp-pulse scale-75" aria-hidden="true"><i /></span>
+            Cổng hội viên Olympic
+          </span>
+          <MagneticLink
+            href="#/"
+            strength={0.22}
+            className="inline-flex items-center gap-1.5 py-2 px-4 rounded-full text-[13px] font-semibold text-brand-sage-900 dark:text-white bg-white/80 hover:bg-white dark:bg-white/10 dark:hover:bg-white/20 backdrop-blur-xl shadow-sm hover:shadow-md border border-brand-sage-700/15 dark:border-white/15 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700"
+          >
+            <span className="lp-arrow material-symbols-outlined text-[16px]" aria-hidden="true">arrow_back</span>
+            <span>Về trang chủ</span>
+          </MagneticLink>
+        </div>
+
+        {/* Card form: vào bằng rotateX 12° → 0, tilt ±3° theo chuột, border 3px gradient đầy đủ mép trên */}
+        <div className="lp-card-stage relative my-auto py-4 w-full max-w-[496px] mx-auto z-10">
+          <div aria-hidden="true" className="lp-halo pointer-events-none absolute -inset-6 -z-10 rounded-[40px] bg-[radial-gradient(closest-side,rgb(var(--brand-sage-700)/0.18),rgb(var(--brand-sand-300)/0.24)_55%,transparent)] blur-2xl" />
+          <div style={{ '--d': '160ms' }} className="lp-card-enter">
+          <div ref={cardTiltRef} className="lp-card-tilt">
+          <motion.div
+            layout
+            transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+            className="relative overflow-hidden bg-white/95 dark:bg-brand-navy-900/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-brand-sage-700/18 dark:border-white/12 shadow-[0_1px_0_rgb(255_255_255/0.7)_inset]"
+          >
+            <span className="lp-topline" aria-hidden="true" />
+            {/* Tab chuyển đổi Đăng nhập / Đăng ký */}
+            <div className="relative flex gap-1.5 rounded-2xl bg-brand-sand-100 dark:bg-brand-navy-950 p-1.5 mb-6 border border-brand-sage-700/10 dark:border-white/10" role="group" aria-label="Chọn đăng nhập hoặc đăng ký">
+              <span
+                aria-hidden="true"
+                className="lp-tab-pill absolute top-1.5 bottom-1.5 left-1.5 w-[calc(50%-0.5rem)] rounded-xl bg-gradient-to-r from-brand-sage-700 to-brand-teal-600 shadow-[0_6px_16px_-6px_rgb(var(--brand-sage-900)/0.55)] motion-reduce:transition-none"
+                style={{ transform: isRegister ? 'translateX(calc(100% + 0.375rem))' : 'translateX(0)' }}
+              />
               {[{ id: 'login', label: 'Đăng nhập' }, { id: 'register', label: 'Đăng ký' }].map(tab => {
                 const isActive = activeTab === tab.id;
                 return (
@@ -574,14 +794,15 @@ export function LoginPage() {
                     aria-pressed={isActive}
                     disabled={isSubmitting}
                     onClick={() => handleTabChange(tab.id)}
+                    data-no-ripple
                     className={
-                      'flex-1 min-h-10 rounded-xl text-sm font-bold transition-all duration-200 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60 ' +
+                      'relative z-10 flex-1 min-h-[44px] rounded-xl text-sm font-bold transition-colors duration-300 flex items-center justify-center gap-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700 disabled:opacity-60 ' +
                       (isActive
-                        ? 'bg-gradient-to-r from-red-600 to-rose-600 text-white shadow-md shadow-red-600/30 font-bold'
-                        : 'text-slate-300 hover:text-white hover:bg-white/10 font-medium')
+                        ? 'text-white font-bold'
+                        : 'text-brand-navy-700 dark:text-brand-navy-300 hover:text-brand-sage-900 dark:hover:text-white hover:bg-white/75 dark:hover:bg-white/10 font-medium')
                     }
                   >
-                    {isActive && <span className="w-1.5 h-1.5 rounded-full bg-white inline-block shadow-[0_0_6px_rgba(255,255,255,0.9)]" />}
+                    {isActive && <span className="lp-tick w-1.5 h-1.5 rounded-full bg-brand-sand-300 inline-block shadow-[0_0_8px_rgb(var(--brand-sand-300)/0.9)]" />}
                     <span>{tab.label}</span>
                   </button>
                 );
@@ -589,44 +810,55 @@ export function LoginPage() {
             </div>
 
             {/* Tiêu đề & Lời chào thân thiện */}
-            <div className="mb-5">
-              <h1 id="auth-heading" className="font-dm-sans text-2xl sm:text-3xl font-extrabold text-white tracking-tight leading-tight">
+            <div key={`head-${activeTab}`} className={`${slideDir ? `lp-slide-${slideDir}` : 'lp-swap'} mb-5`}>
+              <h1 id="auth-heading" className="font-sans text-2xl sm:text-[28px] font-extrabold text-brand-navy-900 dark:text-white tracking-[-0.02em] leading-tight [text-wrap:balance]">
                 <span>{isRegister ? 'Gia nhập Olympic Sports Arena' : 'Chào mừng trở lại!'}</span>
               </h1>
-              <p className="text-sm text-slate-300 mt-1.5 leading-snug line-clamp-2">
+              <p className="text-sm text-brand-navy-600 dark:text-brand-navy-300 mt-1.5 leading-snug [text-wrap:pretty]">
                 {isRegister
                   ? 'Tạo tài khoản để khám phá khóa học, đặt sân và bắt đầu tập luyện.'
                   : 'Đăng nhập để quản lý lịch tập, đặt sân và theo dõi tiến độ của bạn.'}
               </p>
             </div>
 
-            {/* Nút Đăng nhập Google trực tiếp trên trang */}
-            <div className="w-full flex flex-col items-center justify-center mb-3 sm:mb-3.5">
-              <div
-                ref={googleButtonRef}
-                className={`w-full flex justify-center min-h-[40px] transition-all ${googleLoading ? 'pointer-events-none opacity-40' : ''}`}
-              />
-
-              {!googleRendered && (
+            {/* Nút Đăng nhập Google đồng nhất 100% với form (52px, bo góc 12px, full-width, không bị tràn 390px) */}
+            <div className="w-full flex flex-col items-center justify-center mb-4">
+              <div className={`lp-google relative w-full h-[52px] rounded-xl border border-brand-navy-200 hover:border-brand-sage-700/45 bg-brand-sand-50 hover:bg-white dark:border-white/15 dark:bg-[#102620]/95 dark:hover:bg-[#15332b] shadow-xs transition-colors ${googleLoading ? 'pointer-events-none opacity-45' : ''}`}>
+                {/* Visual unified button layer matching inputs */}
                 <button
                   type="button"
                   disabled={isSubmitting || googleLoading}
-                  onClick={() => setShowGoogleModal(true)}
-                  className="w-full min-h-11 px-3.5 py-2.5 inline-flex items-center justify-center gap-2.5 border border-white/20 hover:border-white/35 rounded-xl bg-white hover:bg-slate-50 text-slate-800 text-xs sm:text-sm font-bold shadow-md hover:shadow-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60 transition-all active:scale-[0.99] cursor-pointer"
+                  onClick={() => { if (!googleRendered) setShowGoogleModal(true); }}
+                  aria-hidden={googleRendered === true ? true : undefined}
+                  tabIndex={googleRendered === true ? -1 : 0}
+                  className="relative z-[1] w-full h-full px-4 rounded-xl bg-brand-sand-50 hover:bg-white dark:bg-[#102620]/95 dark:hover:bg-[#15332b] inline-flex items-center justify-center gap-3 text-sm font-semibold text-brand-navy-900 dark:text-white cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700"
                 >
-                  <svg className="w-5 h-5 shrink-0" style={{ width: '20px', height: '20px', minWidth: '20px', minHeight: '20px' }} viewBox="0 0 24 24" aria-hidden="true">
+                  <svg className="w-5 h-5 shrink-0" width="20" height="20" viewBox="0 0 24 24" aria-hidden="true">
                     <path fill="#4285F4" d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.8-2.4 3.65v3.03h3.88c2.27-2.09 3.66-5.17 3.66-9.12z" />
                     <path fill="#34A853" d="M12 24c3.24 0 5.95-1.08 7.93-2.91l-3.88-3.03c-1.08.72-2.45 1.16-4.05 1.16-3.12 0-5.77-2.1-6.72-4.93H1.24v3.13C3.26 21.36 7.33 24 12 24z" />
                     <path fill="#FBBC05" d="M5.28 14.29c-.25-.72-.38-1.49-.38-2.29s.13-1.57.38-2.29V6.58H1.24C.45 8.15 0 9.99 0 12s.45 3.85 1.24 5.42l4.04-3.13z" />
                     <path fill="#EA4335" d="M12 4.75c1.77 0 3.35.61 4.6 1.8l3.42-3.42C17.95 1.19 15.24 0 12 0 7.33 0 3.26 2.64 1.24 6.58l4.04 3.13c.95-2.83 3.6-4.96 6.72-4.96z" />
                   </svg>
-                  <span className="font-semibold text-slate-800">{isRegister ? 'Đăng ký với Google' : 'Tiếp tục với Google'}</span>
+                  <span>{isRegister ? 'Đăng ký với Google' : 'Tiếp tục với Google'}</span>
                 </button>
-              )}
+
+                {/* Keep an untouched absolute wrapper because GIS renderButton overrides position on its mount element */}
+                {googleRendered !== false && (
+                  <div
+                    className="absolute inset-0 z-10 flex items-center justify-center overflow-hidden rounded-xl opacity-[0.005] cursor-pointer"
+                    aria-label={isRegister ? 'Đăng ký với Google' : 'Tiếp tục với Google'}
+                  >
+                    <div
+                      ref={googleButtonRef}
+                      className="w-full flex items-center justify-center [&_.S9gUrf-YoZ4jf]:scale-125 [&_iframe]:scale-125"
+                    />
+                  </div>
+                )}
+              </div>
 
               {googleLoading && (
-                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-red-400 mt-1.5 animate-pulse">
-                  <svg className="animate-spin h-3.5 w-3.5 text-red-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <div className="flex items-center justify-center gap-1.5 text-xs font-semibold text-brand-sage-700 dark:text-brand-sage-300 mt-2 animate-pulse">
+                  <svg className="animate-spin h-3.5 w-3.5 text-brand-sage-700" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -636,33 +868,49 @@ export function LoginPage() {
             </div>
 
             {/* Dòng phân cách "hoặc qua email" */}
-            <div className="relative flex items-center justify-center my-3.5">
-              <div className="border-t border-white/15 w-full" />
-              <span className="bg-slate-900/90 dark:bg-brand-navy-950 px-3 text-[11.5px] uppercase tracking-wider text-slate-400 font-medium shrink-0">
+            <div className="relative flex items-center justify-center my-5 gap-3">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brand-navy-200 dark:via-white/20 to-brand-navy-200 dark:to-white/20" />
+              <span className="text-[11px] uppercase tracking-[0.12em] text-brand-navy-500 dark:text-brand-navy-400 font-bold shrink-0">
                 hoặc qua email
               </span>
-              <div className="border-t border-white/15 w-full" />
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent via-brand-navy-200 dark:via-white/20 to-brand-navy-200 dark:to-white/20" />
             </div>
 
             {/* Thông báo lỗi tổng quát */}
             {formError && (
               <div
+                key={formError}
                 role="alert"
-                className="mb-3.5 p-3 rounded-xl bg-red-950/60 border border-red-500/40 text-red-200 text-xs sm:text-[13px] leading-5 flex items-start gap-2 shadow-sm"
+                className="lp-msg-in mb-4 p-3 rounded-xl bg-brand-danger-50 border border-brand-danger-200 text-brand-danger-700 text-xs sm:text-[13px] leading-5 flex items-start gap-2 shadow-xs"
               >
-                <span className="material-symbols-outlined text-[18px] text-red-400 shrink-0 mt-0.5" aria-hidden="true">
+                <span className="material-symbols-outlined text-[18px] text-brand-danger-600 shrink-0 mt-0.5" aria-hidden="true">
                   error
                 </span>
                 <span className="flex-1">{formError}</span>
               </div>
             )}
 
-            {/* Form Đăng nhập */}
+            {/* Form Đăng nhập / Đăng ký */}
+            <AnimatePresence mode="wait" initial={false}>
             {!isRegister ? (
-              <form id="login-form" onSubmit={handleLoginSubmit} noValidate aria-labelledby="auth-heading" aria-busy={isSubmitting}>
-                <fieldset disabled={isSubmitting} className="space-y-3.5 min-w-0">
+              <motion.form
+                key="login"
+                id="login-form"
+                initial={prefersReducedMotion() ? false : { opacity: 0, x: -16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={prefersReducedMotion() ? undefined : { opacity: 0, x: 16 }}
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className={slideDir ? 'lp-slide-prev' : 'lp-swap'}
+                onSubmit={handleLoginSubmit}
+                noValidate
+                aria-labelledby="auth-heading"
+                aria-busy={isSubmitting}
+              >
+                <fieldset disabled={isSubmitting} className="space-y-4 min-w-0">
                   <AuthField
                     key="login-email"
+                    floating
+                    icon="alternate_email"
                     id="login-email"
                     label="Email hoặc số điện thoại"
                     type="text"
@@ -679,6 +927,8 @@ export function LoginPage() {
 
                   <AuthField
                     key="login-password"
+                    floating
+                    icon="lock"
                     id="login-password"
                     label="Mật khẩu"
                     type="password"
@@ -692,21 +942,22 @@ export function LoginPage() {
                   />
 
                   <div className="flex items-center justify-between text-xs pt-0.5 select-none">
-                    <label htmlFor="remember-email" className="flex items-center gap-2 cursor-pointer text-slate-300 hover:text-white">
-                      <input
+                    <label htmlFor="remember-email" className="flex items-center gap-2 cursor-pointer text-brand-navy-700 dark:text-brand-navy-300 hover:text-brand-navy-900">
+                      <AnimatedCheckbox
                         id="remember-email"
-                        type="checkbox"
                         checked={rememberEmail}
-                        onChange={event => setRememberEmail(event.target.checked)}
-                        className="w-3.5 h-3.5 accent-red-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                        onChange={event => {
+                          setRememberEmail(event.target.checked);
+                          if (!event.target.checked) saveRememberedEmail('');
+                        }}
                       />
-                      <span>Ghi nhớ email</span>
+                      <span className="font-medium">Ghi nhớ email</span>
                     </label>
 
                     <button
                       type="button"
                       onClick={() => setShowForgotPassword(true)}
-                      className="font-bold text-red-400 hover:text-red-300 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 rounded px-1"
+                      className="font-bold text-brand-sage-700 hover:text-brand-sage-900 dark:text-brand-sage-300 dark:hover:text-brand-sage-200 hover:underline transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700 rounded px-1"
                     >
                       Quên mật khẩu?
                     </button>
@@ -716,35 +967,66 @@ export function LoginPage() {
                     {submitButton}
                   </div>
                 </fieldset>
-              </form>
+              </motion.form>
             ) : (
-              <form id="register-form" onSubmit={handleRegisterSubmit} noValidate aria-labelledby="auth-heading" aria-busy={isSubmitting}>
-                <fieldset disabled={isSubmitting} className="space-y-2.5 min-w-0">
-                  <div className="grid sm:grid-cols-2 gap-2.5">
-                    <AuthField key="register-name" id="register-name" label="Họ và tên" autoComplete="name" maxLength={150} placeholder="Nguyễn Văn A" required value={regFullName} error={fieldErrors['register-name']} onChange={event => updateField('register-name', event.target.value, setRegFullName)} />
-                    <AuthField key="register-phone" id="register-phone" label="Số điện thoại" type="tel" autoComplete="tel" maxLength={20} placeholder="0901234567" value={regPhone} error={fieldErrors['register-phone']} onChange={event => updateField('register-phone', event.target.value, setRegPhone)} />
+              <motion.form
+                key="register"
+                id="register-form"
+                initial={prefersReducedMotion() ? false : { opacity: 0, x: 16 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={prefersReducedMotion() ? undefined : { opacity: 0, x: -16 }}
+                transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+                className={slideDir ? 'lp-slide-next' : 'lp-swap'}
+                onSubmit={handleRegisterSubmit}
+                noValidate
+                aria-labelledby="auth-heading"
+                aria-busy={isSubmitting}
+              >
+                <fieldset disabled={isSubmitting} className="space-y-3 min-w-0">
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <AuthField key="register-name" floating icon="badge" id="register-name" label="Họ và tên" check={{ ok: regFullName.trim().length >= 2, hint: 'Nhập đầy đủ họ tên' }} autoComplete="name" maxLength={150} placeholder="Nguyễn Văn A" required value={regFullName} error={fieldErrors['register-name']} onChange={event => updateField('register-name', event.target.value, setRegFullName)} />
+                    <AuthField key="register-phone" floating icon="call" id="register-phone" label="Số điện thoại" check={{ ok: REGISTER_PHONE_PATTERN.test(regPhone.replace(/[\s().-]/g, '')), hint: '10 số, bắt đầu bằng 0' }} type="tel" autoComplete="tel" maxLength={20} placeholder="0901234567" value={regPhone} error={fieldErrors['register-phone']} onChange={event => updateField('register-phone', event.target.value, setRegPhone)} />
                   </div>
-                  <AuthField key="register-email" id="register-email" label="Địa chỉ Email" type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={150} placeholder="ban@example.com" required value={regEmail} error={fieldErrors['register-email']} onChange={event => updateField('register-email', event.target.value, setRegEmail)} />
+                  <AuthField key="register-email" floating icon="mail" id="register-email" label="Địa chỉ Email" check={{ ok: EMAIL_PATTERN.test(regEmail.trim()), hint: 'Chưa đúng dạng ten@mien.com' }} type="email" autoComplete="email" autoCapitalize="none" spellCheck={false} maxLength={150} placeholder="ban@example.com" required value={regEmail} error={fieldErrors['register-email']} onChange={event => updateField('register-email', event.target.value, setRegEmail)} />
                   <div>
-                    <div className="grid sm:grid-cols-2 gap-2.5 items-start">
-                      <AuthField key="register-password" id="register-password" label="Mật khẩu" type="password" autoComplete="new-password" minLength={6} maxLength={128} placeholder="Tạo mật khẩu" hintId="register-password-rule" required value={regPassword} error={fieldErrors['register-password']} onChange={event => updateField('register-password', event.target.value, setRegPassword)} />
-                      <AuthField key="register-confirm" id="register-confirm" label="Nhập lại mật khẩu" type="password" autoComplete="new-password" maxLength={128} placeholder="Xác nhận mật khẩu" required value={regConfirmPassword} error={fieldErrors['register-confirm']} onChange={event => updateField('register-confirm', event.target.value, setRegConfirmPassword)} />
+                    <div className="grid sm:grid-cols-2 gap-3 items-start">
+                      <AuthField key="register-password" floating icon="lock" id="register-password" label="Mật khẩu" check={{ ok: PASSWORD_RULES.every(rule => rule.test(regPassword)) }} type="password" autoComplete="new-password" minLength={6} maxLength={128} placeholder="Tạo mật khẩu" hintId="register-password-rule" required value={regPassword} error={fieldErrors['register-password']} onChange={event => updateField('register-password', event.target.value, setRegPassword)} />
+                      <AuthField key="register-confirm" floating icon="lock_reset" id="register-confirm" label="Nhập lại mật khẩu" check={{ ok: regConfirmPassword === regPassword, hint: 'Chưa khớp mật khẩu' }} type="password" autoComplete="new-password" maxLength={128} placeholder="Xác nhận mật khẩu" required value={regConfirmPassword} error={fieldErrors['register-confirm']} onChange={event => updateField('register-confirm', event.target.value, setRegConfirmPassword)} />
                     </div>
-                    <p id="register-password-rule" className="mt-1.5 flex items-center gap-1.5 text-xs leading-4 text-slate-300">
-                      <span className="material-symbols-outlined text-[14px] text-red-400" aria-hidden="true">info</span>
-                      Từ 6 ký tự, có chữ hoa, thường, số và ký tự đặc biệt.
-                    </p>
+                    {regPassword && (() => {
+                      const level = PASSWORD_RULES.filter(rule => rule.test(regPassword)).length;
+                      const bar = level <= 1 ? 'bg-brand-danger-500' : level === 2 ? 'bg-brand-sand-500' : level === 3 ? 'bg-brand-teal-500' : 'bg-brand-sage-700';
+                      return (
+                        <div id="register-password-rule" className="lp-swap mt-2">
+                          <div className="h-1 overflow-hidden rounded-full bg-brand-navy-100 dark:bg-white/10" aria-hidden="true">
+                            <div className={`h-full rounded-full transition-all duration-300 ${bar}`} style={{ width: `${level * 25}%` }} />
+                          </div>
+                          {level < PASSWORD_RULES.length && <ul className="mt-1.5 flex flex-wrap gap-1.5">
+                            {PASSWORD_RULES.map(rule => {
+                              const ok = rule.test(regPassword);
+                              return (
+                                <li key={rule.id} title={rule.label} className={`inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-[11px] font-semibold transition-colors duration-200 ${ok ? 'bg-brand-sage-50 text-brand-sage-700 dark:bg-brand-sage-700/20 dark:text-brand-sage-300' : 'bg-brand-navy-50 text-brand-navy-600 dark:bg-white/5 dark:text-brand-navy-400'}`}>
+                                  <span className="material-symbols-outlined text-[13px]" aria-hidden="true">{ok ? 'check' : 'close'}</span>
+                                  {PASSWORD_CHIP_LABELS[rule.id] || rule.label}
+                                  <span className="sr-only">{`: ${rule.label} ${ok ? '(đã đạt)' : '(chưa đạt)'}`}</span>
+                                </li>
+                              );
+                            })}
+                          </ul>}
+                        </div>
+                      );
+                    })()}
                   </div>
                   <div className="pt-0.5">
-                    <label htmlFor="register-agree" className="flex items-start gap-2 text-xs leading-[18px] text-slate-300 cursor-pointer select-none">
-                      <input id="register-agree" type="checkbox" required checked={regAgree} aria-invalid={Boolean(fieldErrors['register-agree'])} aria-describedby={fieldErrors['register-agree'] ? 'register-agree-error' : undefined} onChange={event => updateField('register-agree', event.target.checked, setRegAgree)} className="w-3.5 h-3.5 shrink-0 mt-0.5 accent-red-600 rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500" />
+                    <label htmlFor="register-agree" className="flex items-start gap-2 text-xs leading-[18px] text-brand-navy-700 dark:text-brand-navy-300 cursor-pointer select-none">
+                      <AnimatedCheckbox id="register-agree" required checked={regAgree} aria-invalid={Boolean(fieldErrors['register-agree'])} aria-describedby={fieldErrors['register-agree'] ? 'register-agree-error' : undefined} onChange={event => updateField('register-agree', event.target.checked, setRegAgree)} />
                       <span>Tôi xác nhận thông tin là chính xác và đồng ý tạo tài khoản hội viên Olympic Sports Arena.</span>
                     </label>
-                    {fieldErrors['register-agree'] && <p id="register-agree-error" className="text-[11px] text-red-400 leading-4 mt-0.5">{fieldErrors['register-agree']}</p>}
+                    {fieldErrors['register-agree'] && <p id="register-agree-error" className="lp-msg-in text-[11px] text-brand-danger-600 leading-4 mt-0.5">{fieldErrors['register-agree']}</p>}
                   </div>
                   {needsEmailCode && typeof document !== 'undefined' && createPortal(
                     <div
-                      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-brand-navy-950/70 backdrop-blur-md transition-all duration-300"
+                      className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 bg-brand-navy-900/35 backdrop-blur-sm transition-all duration-300"
                       role="dialog"
                       aria-modal="true"
                       aria-labelledby="otp-dialog-title"
@@ -752,7 +1034,7 @@ export function LoginPage() {
                         if (e.target === e.currentTarget && !isSubmitting) closeRegisterOtp();
                       }}
                     >
-                      {/* Modal OTP tối: 6 ô gom thành khối gradient khi kiểm tra, xanh khi đúng, đỏ khi sai */}
+                      {/* Modal OTP sáng */}
                       <div
                         ref={otpModalRef}
                         tabIndex={-1}
@@ -787,59 +1069,51 @@ export function LoginPage() {
                     {submitButton}
                   </div>
                 </fieldset>
-              </form>
+              </motion.form>
             )}
+            </AnimatePresence>
 
             {/* Chuyển đổi trạng thái tài khoản */}
-            <div className="mt-5 text-center text-[13px] leading-5 text-slate-300">
+            <div className="mt-5 text-center text-[13px] leading-5 text-brand-navy-600 dark:text-brand-navy-300">
               {isRegister ? 'Đã có tài khoản?' : 'Bạn chưa có tài khoản?'}{' '}
               <button
                 type="button"
                 disabled={isSubmitting}
                 onClick={() => handleTabChange(isRegister ? 'login' : 'register')}
-                className="font-bold text-red-400 hover:text-red-300 underline-offset-4 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500 disabled:opacity-60"
+                className="font-bold text-brand-sage-700 hover:text-brand-sage-900 dark:text-brand-sage-300 dark:hover:text-brand-sage-200 underline-offset-4 hover:underline rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700 disabled:opacity-60"
               >
                 {isRegister ? 'Đăng nhập ngay' : 'Đăng ký hội viên'}
               </button>
             </div>
+          </motion.div>
+          </div>
           </div>
         </div>
 
         {/* Chân trang hỗ trợ & Bảo mật */}
-        <div className="text-xs text-slate-300 text-center shrink-0 py-2 leading-5 z-10 flex items-center justify-center gap-3">
-          {supportPhone && (
-            <>
-              <span>
-                Hỗ trợ 24/7:{' '}
-                <a href={`tel:${supportPhone.replace(/\s+/g, '')}`} className="font-semibold text-white hover:text-red-400 transition-colors rounded">
-                  {supportPhone}
-                </a>
-              </span>
-              <span aria-hidden="true">•</span>
-            </>
+        <div className="relative z-10 w-full max-w-[496px] mx-auto pt-3 border-t border-brand-sage-700/15 dark:border-white/15 text-xs text-brand-navy-600 dark:text-brand-navy-300 shrink-0 py-2 leading-5 flex flex-wrap items-center justify-between gap-2">
+          {supportPhone ? (
+            <span>
+              Hỗ trợ 24/7:{' '}
+              <a href={`tel:${supportPhone.replace(/\s+/g, '')}`} className="font-semibold text-brand-sage-900 dark:text-white hover:text-brand-sage-700 dark:hover:text-brand-sand-300 transition-colors rounded">
+                {supportPhone}
+              </a>
+            </span>
+          ) : (
+            <span className="font-semibold text-brand-sage-900 dark:text-white/90">Olympic Sports Arena</span>
           )}
-          <span className="flex items-center gap-1">
-            <span className="material-symbols-outlined text-[13px] text-emerald-400">lock</span>
+          <span className="flex items-center gap-1 font-medium text-brand-navy-600 dark:text-brand-navy-300">
+            <span className="material-symbols-outlined text-[14px] text-brand-sage-700 dark:text-brand-sage-300" aria-hidden="true">lock</span>
             Bảo mật 256-bit SSL
           </span>
         </div>
       </section>
 
-      {/* Modal Quên Mật Khẩu */}
-      {showForgotPassword && (
-        <ForgotPasswordModal
-          onClose={() => setShowForgotPassword(false)}
-          defaultEmail={loginEmail}
-        />
-      )}
-
-      {/* Modal Hướng dẫn Đăng nhập Google */}
-      {showGoogleModal && (
-        <GoogleLoginModal
-          onClose={() => setShowGoogleModal(false)}
-        />
-      )}
+      {/* Modals hỗ trợ dự phòng */}
+      <GoogleLoginModal isOpen={showGoogleModal} onClose={() => setShowGoogleModal(false)} onSuccess={user => redirectToRoleDashboard(user.role)} />
+      <ForgotPasswordModal isOpen={showForgotPassword} onClose={() => setShowForgotPassword(false)} onResetSuccess={email => { setLoginEmail(email); clearFormFeedback(); handleTabChange('login'); }} />
     </div>
+    </MotionConfig>
   );
 }
 

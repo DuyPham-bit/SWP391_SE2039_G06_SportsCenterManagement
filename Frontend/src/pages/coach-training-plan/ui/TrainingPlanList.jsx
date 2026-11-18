@@ -1,6 +1,6 @@
 import React from 'react';
 import { getSportBadgeTheme, getResolvedExercises } from '../lib/planPresets.js';
-import { translateClassName, translatePlanTitle, translateCoachName, translatePlanGoal, translateExerciseName, translateExerciseNote, translateReps } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translatePlanTitle, translateCoachName, translatePlanGoal, translateExerciseName, translateExerciseNote, translateReps } from '../../../shared/lib/i18nHelper.js';
 
 export function TrainingPlanList({ filteredPlans, handleDeletePlan, handleOpenEditModal, isEn, setSelectedPlanDetail }) {
   return (

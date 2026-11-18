@@ -1,0 +1,536 @@
+/*
+ * SCMS Experience layer — the UI overhaul's single home for effects.
+ * Reads tokens from tokens.css. Animates transform/opacity only (plus clip-path for the theme
+ * reveal). Everything is disabled by prefers-reduced-motion or the in-app "Giảm hiệu ứng" switch
+ * (html.scms-reduce-motion). Loaded after theme.css/tiya-theme.css and before Tailwind utilities.
+ */
+
+@property --ring-angle {
+  syntax: '<angle>';
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* ── 1. Aurora backdrop: three soft colour fields drifting behind the app ─────────────────── */
+.scms-aurora {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.scms-aurora__blob {
+  position: absolute;
+  width: 62vmax;
+  height: 62vmax;
+  border-radius: 50%;
+  opacity: var(--aurora-alpha);
+  will-change: transform;
+}
+
+.scms-aurora__blob:nth-child(1) {
+  top: -24vmax;
+  left: -18vmax;
+  background: radial-gradient(closest-side, rgb(var(--aurora-1) / 0.9), rgb(var(--aurora-1) / 0) 72%);
+  animation: scmsAuroraA 26s var(--ease-in-out) infinite alternate;
+}
+
+.scms-aurora__blob:nth-child(2) {
+  top: 18vh;
+  right: -26vmax;
+  background: radial-gradient(closest-side, rgb(var(--aurora-2) / 0.8), rgb(var(--aurora-2) / 0) 72%);
+  animation: scmsAuroraB 32s var(--ease-in-out) infinite alternate;
+}
+
+.scms-aurora__blob:nth-child(3) {
+  bottom: -30vmax;
+  left: 22vw;
+  background: radial-gradient(closest-side, rgb(var(--aurora-3) / 0.85), rgb(var(--aurora-3) / 0) 72%);
+  animation: scmsAuroraC 28s var(--ease-in-out) infinite alternate;
+}
+
+/* Fine court grid fading out from the top: gives the glass something to blur. */
+.scms-aurora::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgb(var(--color-text) / 0.045) 1px, transparent 1px),
+    linear-gradient(90deg, rgb(var(--color-text) / 0.045) 1px, transparent 1px);
+  background-size: 48px 48px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 75%);
+  -webkit-mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 20%, transparent 75%);
+}
+
+@keyframes scmsAuroraA {
+  to { transform: translate3d(14vmax, 10vmax, 0) scale(1.15); }
+}
+
+@keyframes scmsAuroraB {
+  to { transform: translate3d(-16vmax, -6vmax, 0) scale(0.9); }
+}
+
+@keyframes scmsAuroraC {
+  to { transform: translate3d(-10vmax, -12vmax, 0) scale(1.2); }
+}
+
+/* ── 2. Glass chrome: header turns to glass once the page scrolls; sidebar is frosted ───────── */
+.scms-header {
+  transition: background-color var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+
+html[data-scrolled] .scms-header {
+  background-color: rgb(var(--glass-bg) / var(--glass-alpha));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  backdrop-filter: blur(var(--glass-blur)) saturate(170%);
+  border-bottom-color: rgb(var(--glass-border) / var(--glass-border-alpha));
+  box-shadow: var(--shadow-2);
+}
+
+@media (min-width: 1024px) {
+  #app-sidebar {
+    background-color: rgb(var(--glass-bg) / 0.78);
+    -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+    backdrop-filter: blur(var(--glass-blur)) saturate(160%);
+  }
+}
+
+/* Breadcrumb as a small glass pill */
+.scms-breadcrumb {
+  display: inline-flex;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: rgb(var(--glass-bg) / 0.55);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgb(var(--glass-border) / var(--glass-border-alpha));
+  box-shadow: var(--shadow-1);
+}
+
+/* ── 3. Sidebar: active indicator that glides between items ─────────────────────────────── */
+.scms-nav-indicator {
+  position: absolute;
+  left: 4px;
+  top: 0;
+  width: 4px;
+  border-radius: 999px;
+  background: var(--gradient-brand);
+  box-shadow: 0 0 12px rgb(63 174 184 / 0.55);
+  pointer-events: none;
+  transition: transform 420ms var(--ease-spring), height 300ms var(--ease-out), opacity 200ms linear;
+  will-change: transform;
+}
+
+/* ── 4. Route progress bar ─────────────────────────────────────────────────────────────── */
+.scms-route-bar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  z-index: 200;
+  pointer-events: none;
+  background: var(--gradient-brand);
+  transform-origin: 0 50%;
+  transform: scaleX(0);
+  opacity: 0;
+}
+
+.scms-route-bar.is-running {
+  animation: scmsRouteBar 700ms var(--ease-out) forwards;
+}
+
+@keyframes scmsRouteBar {
+  0% { transform: scaleX(0); opacity: 1; }
+  70% { transform: scaleX(0.92); opacity: 1; }
+  100% { transform: scaleX(1); opacity: 0; }
+}
+
+/* ── 5. Cards: lift + cursor spotlight on every page (dashboards keep their own richer rules) ── */
+.scms-page .grid > :is([class*='rounded-2xl'], [class*='rounded-3xl'], [class*='rounded-xl'][class*='border']):not(input, select, textarea, button, a, label, form, [class*='bg-gradient']) {
+  transition: translate var(--dur-base) var(--ease-out), box-shadow var(--dur-base) var(--ease-out),
+    border-color var(--dur-base) var(--ease-out);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  html:not([data-scms-view='dashboard']) .scms-page .grid > :is([class*='rounded-2xl'], [class*='rounded-3xl'], [class*='rounded-xl'][class*='border']):not(input, select, textarea, button, a, label, form, [class*='bg-gradient']):not(:has(table, form, input)):hover {
+    translate: 0 -3px;
+    box-shadow: var(--shadow-3);
+  }
+
+  html:not([data-scms-view='dashboard']) .scms-page .grid > .is-spotlit:not([class*='bg-gradient']):not([style*='background']) {
+    background-image: radial-gradient(240px circle at var(--mx, 50%) var(--my, 50%), rgb(var(--aurora-1) / 0.14), transparent 70%);
+  }
+}
+
+/* Running gradient ring (opt-in: StatCard and hero tiles) */
+.scms-glow-border {
+  position: relative;
+  isolation: isolate;
+}
+
+.scms-glow-border::before {
+  content: '';
+  position: absolute;
+  inset: -1px;
+  z-index: -1;
+  border-radius: inherit;
+  padding: 1.5px;
+  background: var(--gradient-ring);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+  opacity: 0;
+  transition: opacity var(--dur-base) var(--ease-out);
+  animation: scmsRingSpin 4s linear infinite;
+  animation-play-state: paused;
+}
+
+.scms-glow-border:hover::before,
+.scms-glow-border:focus-within::before {
+  opacity: 1;
+  animation-play-state: running;
+}
+
+@keyframes scmsRingSpin {
+  to { --ring-angle: 360deg; }
+}
+
+/* ── 6. Buttons: ripple + icon micro-motion ─────────────────────────────────────────────── */
+.scms-ripple-host {
+  position: relative;
+}
+
+.scms-ripple-wrap {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+
+.scms-ripple {
+  position: absolute;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0;
+  transform: scale(0);
+  pointer-events: none;
+}
+
+/* Individual transform properties (scale/rotate/translate) compose with any Tailwind transform
+   already on the element, so centred or rotated icons/buttons never jump. */
+:is(button, a):not(:disabled) > .material-symbols-outlined {
+  transition: scale var(--dur-fast) var(--ease-spring), rotate var(--dur-fast) var(--ease-spring),
+    translate var(--dur-fast) var(--ease-spring);
+}
+
+@media (hover: hover) {
+  :is(button, a):not(:disabled):hover > .material-symbols-outlined:only-child {
+    scale: 1.12;
+    rotate: -6deg;
+  }
+
+  :is(button, a):not(:disabled):hover > .material-symbols-outlined:last-child:not(:first-child) {
+    translate: 2px 0;
+  }
+}
+
+:is(button, [role='button']):not(:disabled):active {
+  scale: 0.97;
+  transition: scale 90ms var(--ease-out);
+}
+
+/* ── 7. Inputs: focus glow, smooth borders, shake on validation error ───────────────────── */
+:is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color']) {
+  transition: border-color var(--dur-fast) var(--ease-out), box-shadow var(--dur-fast) var(--ease-out),
+    background-color var(--dur-fast) var(--ease-out);
+}
+
+:is(input, select, textarea):not([type='checkbox'], [type='radio'], [type='range'], [type='file'], [type='color'], [autocomplete='one-time-code'], [aria-label^='Chữ số']):focus {
+  box-shadow: 0 0 0 4px rgb(var(--color-primary) / 0.16), var(--shadow-1);
+}
+
+:is(input, select, textarea)[aria-invalid='true']:not([autocomplete='one-time-code'], [aria-label^='Chữ số']) {
+  animation: scmsShake 420ms var(--ease-out);
+}
+
+@keyframes scmsShake {
+  0%, 100% { translate: 0 0; }
+  20% { translate: -6px 0; }
+  40% { translate: 5px 0; }
+  60% { translate: -3px 0; }
+  80% { translate: 2px 0; }
+}
+
+/* ── 8. Tables: row highlight with an accent edge, rows rise in on page enter ───────────── */
+.scms-page table tbody tr {
+  transition: background-color var(--dur-fast) var(--ease-out);
+}
+
+.scms-page table tbody tr:hover {
+  background-color: rgb(var(--color-primary) / 0.06);
+}
+
+.scms-page table tbody tr:hover > td:first-child {
+  box-shadow: inset 3px 0 0 rgb(var(--color-primary));
+}
+
+.scms-page th[aria-sort],
+.scms-page th button {
+  transition: color var(--dur-fast) var(--ease-out);
+}
+
+.scms-page-enter table tbody tr {
+  animation: scmsRowIn 420ms var(--ease-out) backwards;
+}
+
+.scms-page-enter table tbody tr:nth-child(2) { animation-delay: 30ms; }
+.scms-page-enter table tbody tr:nth-child(3) { animation-delay: 60ms; }
+.scms-page-enter table tbody tr:nth-child(4) { animation-delay: 90ms; }
+.scms-page-enter table tbody tr:nth-child(5) { animation-delay: 120ms; }
+.scms-page-enter table tbody tr:nth-child(6) { animation-delay: 150ms; }
+.scms-page-enter table tbody tr:nth-child(7) { animation-delay: 180ms; }
+.scms-page-enter table tbody tr:nth-child(n + 8) { animation-delay: 210ms; }
+
+@keyframes scmsRowIn {
+  from { opacity: 0; transform: translate3d(0, 6px, 0); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── 9. Skeleton + shimmer ─────────────────────────────────────────────────────────────── */
+.scms-skeleton {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius-sm);
+  background: rgb(var(--color-text) / 0.08);
+}
+
+.scms-skeleton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.55), transparent);
+  animation: scmsShimmer 1.4s var(--ease-in-out) infinite;
+}
+
+html.dark .scms-skeleton::after {
+  background: linear-gradient(90deg, transparent, rgb(255 255 255 / 0.08), transparent);
+}
+
+@keyframes scmsShimmer {
+  to { transform: translateX(100%); }
+}
+
+/* Progress bars fill from the left on every page (dashboards already do this) */
+html:not([data-scms-view='dashboard']) .scms-page .rounded-full[style*='width']:not([class*='absolute']):not(img) {
+  transform-origin: 0 50%;
+  animation: dmBarFill 1s 0.12s var(--ease-out) backwards;
+}
+
+/* ── 10. Empty state illustration ─────────────────────────────────────────────────────── */
+.scms-empty-art {
+  animation: scmsFloatSoft 5s var(--ease-in-out) infinite alternate;
+}
+
+@keyframes scmsFloatSoft {
+  to { transform: translate3d(0, -6px, 0); }
+}
+
+/* ── 11. Theme switch: circular reveal via View Transitions ────────────────────────────── */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+/* ── 12. Count-up numbers keep their width steady ─────────────────────────────────────── */
+.scms-count {
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── 13. Auth hand-off: forest sheet sweeps across with the logo (pages/login/lib/authTransition.js) ── */
+.auth-transition {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.auth-transition__band,
+.auth-transition__panel {
+  position: absolute;
+  inset: 0 -12%;
+  transform: translate3d(-101%, 0, 0);
+  will-change: transform;
+}
+
+.auth-transition__band--gold { background: linear-gradient(90deg, rgb(242 204 143), rgb(243 192 113)); }
+.auth-transition__band--teal { background: linear-gradient(90deg, rgb(36 130 143), rgb(63 174 184)); }
+.auth-transition__panel {
+  background: radial-gradient(ellipse at 50% 45%, rgb(var(--brand-sage-700)) 0%, rgb(var(--brand-sage-900)) 45%, rgb(var(--brand-forest-950)) 100%);
+}
+
+.auth-transition__logo {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 132px;
+  height: 132px;
+  margin: -66px 0 0 -66px;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+}
+
+.auth-transition__logo img { position: relative; width: 72px; height: 72px; object-fit: contain; }
+.auth-transition__ring { position: absolute; inset: 0; transform: rotate(-90deg); }
+.auth-transition__ring circle {
+  fill: none;
+  stroke: rgb(242 204 143);
+  stroke-width: 2.5;
+  stroke-linecap: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: scmsRingDraw 900ms var(--ease-in-out) 520ms forwards;
+}
+
+@keyframes scmsRingDraw { to { stroke-dashoffset: 0; } }
+
+/* ── 16. Modal: opens as a 3D card over the blurred backdrop ──────────────────────────── */
+.scms-modal-3d {
+  transform-origin: 50% 0%;
+  animation: scmsModal3d 460ms var(--ease-out) both;
+}
+
+.scms-modal-stage { perspective: 1400px; }
+
+@keyframes scmsModal3d {
+  from { opacity: 0; transform: rotateX(-14deg) translate3d(0, 24px, 0) scale(0.94); }
+  to { opacity: 1; transform: none; }
+}
+
+/* ── 17. Selectable slots / chips: hover glow, pop when picked ────────────────────────── */
+.scms-page :is(button, [role='option'], [role='gridcell'], .scms-slot)[aria-pressed='true'],
+.scms-page :is(button, [role='option'], [role='gridcell'], .scms-slot)[aria-selected='true'],
+.scms-page .scms-slot.is-selected {
+  animation: scmsSlotPop 380ms var(--ease-spring);
+}
+
+@media (hover: hover) {
+  .scms-page :is([role='option'], [role='gridcell'], .scms-slot):not([aria-disabled='true'], :disabled):hover {
+    box-shadow: 0 0 0 1px rgb(63 174 184 / 0.45), 0 8px 22px -8px rgb(63 174 184 / 0.55);
+  }
+}
+
+@keyframes scmsSlotPop {
+  0% { scale: 0.92; }
+  60% { scale: 1.05; }
+  100% { scale: 1; }
+}
+
+/* ── 18. Card media: photos zoom softly inside their frame on hover ────────────────────── */
+@media (hover: hover) and (pointer: fine) {
+  .scms-page :is(.grid > *, .scms-tilt, .hover-lift)[class*='overflow-hidden'] img:not([class*='rounded-full'], [width='16'], [width='20']) {
+    transition: transform 700ms var(--ease-out);
+  }
+
+  .scms-page :is(.grid > *, .scms-tilt, .hover-lift)[class*='overflow-hidden']:hover img:not([class*='rounded-full'], [width='16'], [width='20']) {
+    transform: scale(1.06);
+  }
+}
+
+/* ── Reduced motion: OS setting or the in-app switch ──────────────────────────────────── */
+html.scms-reduce-motion *,
+html.scms-reduce-motion *::before,
+html.scms-reduce-motion *::after {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  animation-delay: 0ms !important;
+  transition-duration: 1ms !important;
+  scroll-behavior: auto !important;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .scms-aurora__blob,
+  .scms-skeleton::after,
+  .scms-empty-art,
+  .scms-glow-border::before,
+  .scms-route-bar.is-running,
+  .scms-page-enter table tbody tr,
+  :is(input, select, textarea)[aria-invalid='true'],
+  .scms-modal-3d,
+  .scms-page :is(button, [role='option'], [role='gridcell'], .scms-slot) {
+    animation: none !important;
+  }
+
+  .scms-page-enter,
+  .scms-page-enter .grid > *,
+  .scms-chart-line,
+  .scms-donut-reveal {
+    animation: none !important;
+    stroke-dashoffset: 0 !important;
+    filter: none !important;
+  }
+
+  .scms-nav-indicator {
+    transition: none;
+  }
+}
+
+/* ── 4. Route transition & progress bar ────────────────────────────────────────────────── */
+.scms-page-enter {
+  animation: scmsPageEnter 460ms var(--ease-out) both;
+}
+
+.scms-page-enter .grid > * {
+  animation: scmsPageCardIn 520ms var(--ease-out) backwards;
+}
+
+.scms-page-enter .grid > *:nth-child(1) { animation-delay: 40ms; }
+.scms-page-enter .grid > *:nth-child(2) { animation-delay: 85ms; }
+.scms-page-enter .grid > *:nth-child(3) { animation-delay: 130ms; }
+.scms-page-enter .grid > *:nth-child(4) { animation-delay: 175ms; }
+.scms-page-enter .grid > *:nth-child(n + 5) { animation-delay: 220ms; }
+
+@keyframes scmsPageEnter {
+  from { opacity: 0; transform: translate3d(0, 14px, 0); filter: blur(4px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+@keyframes scmsPageCardIn {
+  from { opacity: 0; transform: translate3d(0, 18px, 0) scale(0.985); filter: blur(3px); }
+  to { opacity: 1; transform: none; filter: blur(0); }
+}
+
+/* Chart stroke draw-in (pathLength="1") */
+.scms-chart-line {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  animation: scmsRingDraw 1.25s 120ms var(--ease-out) forwards;
+}
+
+.scms-donut-reveal {
+  transform-box: fill-box;
+  transform-origin: center;
+  animation: scmsDonutReveal 880ms 80ms var(--ease-out) both;
+}
+
+@keyframes scmsDonutReveal {
+  from { opacity: 0; transform: scale(0.9) rotate(-18deg); }
+  to { opacity: 1; transform: scale(1) rotate(0deg); }
+}
+
+/* Theme toggle icon swaps with a spin-in */
+@keyframes scmsThemeIcon {
+  from { opacity: 0; transform: rotate(-90deg) scale(0.4); }
+  to { opacity: 1; transform: none; }
+}

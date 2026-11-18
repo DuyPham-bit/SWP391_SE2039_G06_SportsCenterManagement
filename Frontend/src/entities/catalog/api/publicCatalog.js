@@ -1,4 +1,4 @@
-import { apiRequest } from '../../../shared/api/http.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 export async function getPublicCatalog({ signal } = {}) {
   const centerId = Number(import.meta.env.VITE_SPORTS_CENTER_ID);
@@ -26,7 +26,7 @@ export function catalogFacilities(catalog, editorial = []) {
       badge: room.roomType || '', image: media?.image || '', secondaryImage: media?.secondaryImage || '',
       highlights: '', description: '', amenities: [], tags: [],
       specs: [{ label: 'Sức chứa', value: `${room.capacity} người` }, { label: 'Vị trí', value: room.locationDescription || 'Chưa cập nhật' }],
-      isVisible: media?.isVisible !== false
+      isVisible: media ? media.isVisible !== false : room.isVisibleOnLanding !== false
     };
   });
 }
@@ -45,7 +45,7 @@ export function catalogSports(catalog, editorial = []) {
       facilityId: room ? String(room.id) : null, venue: room?.name || '', location: room?.locationDescription || '',
       highlight: sport.description || '', level: [...new Set(classes.map(item => item.level).filter(Boolean))].join(' • '),
       coach: '', schedule: '', price: '', capacity: room ? `${room.capacity} người` : '', badges: [],
-      image: media?.image || '', isVisible: media?.isVisible !== false
+      image: media?.image || '', isVisible: media ? media.isVisible !== false : sport.isVisibleOnLanding !== false
     };
   });
 }

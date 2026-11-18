@@ -6,7 +6,7 @@ const { test } = require('node:test');
 
 function loadPermissions() {
   const code = fs.readFileSync(path.join(__dirname, '../src/entities/permission/model/permissions.js'), 'utf8')
-    .replaceAll("import { getAuthUser } from '../../../shared/api/authState.js';", "const getAuthUser = () => null;")
+    .replaceAll("import { getAuthUser } from '../../../shared/api/index.js';", "const getAuthUser = () => null;")
     .replaceAll('export const ', 'const ')
     .replaceAll('export function ', 'function ');
 

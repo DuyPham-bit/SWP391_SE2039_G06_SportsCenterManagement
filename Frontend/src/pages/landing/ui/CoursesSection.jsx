@@ -1,50 +1,47 @@
 import React from 'react';
-import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
-import { translateLocation, translateCoachName, translateOpenHours } from '../../../shared/i18n/i18nHelper.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { CarouselSideArrows } from './CarouselControls.jsx';
 
 export function CoursesSection({
   catalogError, catalogLoading, categoryConfig, editorialContent, facilitiesList, filteredSports,
-  handleScrollSportsToIndex, handleSportClick, handleSportsScroll, highlightedSportId, hours, isEn,
+  handleScrollSportsToIndex, handleSportClick, handleSportsScroll, highlightedSportId, hours,
   landingContent, membershipAction, selectedCategory, setSelectedCategory, sportCarouselIndex,
   sportsCarousel, sportsCarouselRef, sportsList, visibleSports
 }) {
+  const { t } = useLanguage();
+  const section = landingContent?.coursesSection || {};
   return (
     <section className="courses-section" id="khoa-hoc">
       <div className="courses-container">
-        {catalogLoading && !editorialContent.coursesSection?.sportsList?.length && (
-          <p role="status" className="text-center text-sm text-brand-navy-600 mb-4">
-            {isEn ? 'Loading center catalog...' : 'Đang tải danh mục trung tâm...'}
-          </p>
+        {catalogLoading && !editorialContent?.coursesSection?.sportsList?.length && (
+          <p role="status" className="text-center text-sm text-brand-navy-600 mb-4">{t('landing.courses.loading')}</p>
         )}
-        {(editorialContent._loadError || (catalogError && !editorialContent.coursesSection?.sportsList?.length)) && (
+        {catalogError && !editorialContent?.coursesSection?.sportsList?.length && (
           <div role="alert" className="max-w-2xl mx-auto mb-6 px-4 py-3 rounded-xl bg-rose-50 border border-rose-200 text-rose-700 text-sm text-center">
-            {editorialContent._loadError || catalogError}
+            {catalogError}
           </div>
         )}
         {!catalogLoading && !catalogError && sportsList.length === 0 && (
-          <p role="status" className="text-center text-sm text-brand-navy-600 mb-4">
-            {isEn ? 'No sports currently active.' : 'Chưa có bộ môn đang hoạt động.'}
-          </p>
+          <p role="status" className="text-center text-sm text-brand-navy-600 mb-4">{t('landing.courses.none')}</p>
         )}
         <div className="tiya-reveal courses-section-header">
           <div style={{display:'inline-flex',alignItems:'center',gap:'8px',padding:'6px 16px',background:'rgba(129,178,154,0.15)',border:'1px solid rgba(129,178,154,0.4)',borderRadius:'100px',color:'var(--primary-color)',fontSize:'11px',fontWeight:700,letterSpacing:'0.15em',textTransform:'uppercase',marginBottom:'12px'}}>
             <span style={{width:'7px',height:'7px',borderRadius:'50%',background:'var(--primary-color)',animation:'tiyaPulse 2s infinite'}} />
-            {landingContent?.coursesSection?.badge || (isEn ? 'Training programs' : 'Chương trình đào tạo chuyên nghiệp')}
+            {section.badge}
           </div>
           <h2 className="courses-title">
-            <span>{visibleSports?.length || 0} {isEn ? 'Sports' : 'Bộ Môn'}</span> {isEn ? (landingContent?.coursesSection?.title || '').replace(/^(Courses?|Sports?)\s*/i, '') : (landingContent?.coursesSection?.title || 'Thể Thao').replace(/^(Khóa Học|Bộ môn)\s*/i, '')}
+            <span>{t('landing.courses.count', { count: visibleSports?.length || 0 })}</span> {section.title}
           </h2>
           <p className="courses-desc">
-            {landingContent?.coursesSection?.description || (isEn ? 'In-depth sports courses with nationally qualified coaches.' : 'Các khóa đào tạo thể thao chuyên sâu, huấn luyện viên đạt chuẩn quốc gia.')}
+            {section.description}
           </p>
           <p className="text-sm text-brand-navy-600 mt-3">
-            {isEn ? 'Choose a package and complete payment before booking classes. Class access depends on your package benefits and available places.' : 'Đăng ký và thanh toán gói tập trước khi đặt ca học. Quyền tham gia lớp phụ thuộc quyền lợi gói và số chỗ còn trống.'}
+            {t('landing.courses.packageNote')}
           </p>
 
           {/* Trust Badges */}
           <div style={{display:'flex',flexWrap:'wrap',gap:'10px',justifyContent:'center',marginTop:'12px'}}>
-            {(landingContent?.coursesSection?.trustBadges || []).map((tb, idx) => (
+            {(section.trustBadges || []).map((tb, idx) => (
               <span key={tb.id || idx} style={{display:'inline-flex',alignItems:'center',gap:'6px',padding:'6px 14px',borderRadius:'100px',background:'var(--white-color)',border:'1px solid rgba(0,0,0,0.06)',fontSize:'12px',fontWeight:600,color:'var(--p-color)',boxShadow:'0 2px 6px rgba(0,0,0,0.04)'}}>
                 <span className="material-symbols-outlined" style={{fontSize:'16px',color:'var(--primary-color)'}}>{tb.icon}</span>
                 {tb.text}
@@ -76,9 +73,8 @@ export function CoursesSection({
         >
           <CarouselSideArrows
             carousel={sportsCarousel}
-            isEn={isEn}
             itemCount={filteredSports.length}
-            sectionLabel={isEn ? 'sport' : 'môn thể thao'}
+            sectionLabel={t('landing.courses.carouselLabel')}
           />
 
           <div
@@ -91,25 +87,19 @@ export function CoursesSection({
             {filteredSports.length === 0 ? (
               <div style={{width:'100%',textAlign:'center',padding:'48px 20px',color:'var(--p-color)'}}>
                 <span className="material-symbols-outlined" style={{fontSize:'36px',color:'var(--primary-color)',marginBottom:'8px'}}>sports</span>
-                <p style={{fontSize:'14px',fontWeight:500,margin:0}}>{isEn ? 'No sports found in this category.' : 'Chưa có bộ môn nào trong danh mục này.'}</p>
+                <p style={{fontSize:'14px',fontWeight:500,margin:0}}>{t('landing.courses.noneInCategory')}</p>
               </div>
             ) : (
               filteredSports.map(sport => {
                 const facility = facilitiesList.find(f => f.id === (sport.facilityId || sport.facilityId)) || {};
               const details = {
-                level: sport.level || (isEn ? 'All levels' : 'Chưa cập nhật'),
-                coach: sport.coach || (isEn ? 'Class Schedule' : 'Xem lịch lớp'),
+                level: sport.level || t('landing.common.notUpdated'),
+                coach: sport.coach || t('landing.courses.viewSchedule'),
                 schedule: sport.schedule || facility.openHours || hours,
                 highlight: sport.highlight || '',
                 price: membershipAction.label,
-                capacity: sport.capacity || (isEn ? 'Standard' : 'Chưa cập nhật'),
+                capacity: sport.capacity || t('landing.common.notUpdated'),
                 badges: []
-              };
-              const catCfg = SPORT_CATEGORY_CONFIG[sport.category] || {
-                badge: 'bg-rose-500/15 text-rose-300 border-rose-500/30',
-                iconColor: 'text-rose-400',
-                label: sport.category,
-                labelEn: sport.category
               };
               const isHighlighted = highlightedSportId === sport.id;
 
@@ -125,14 +115,14 @@ export function CoursesSection({
                     className={`tiya-course-card ${isHighlighted ? 'highlighted' : ''}`}
                   >
                     <div className="tiya-course-card__image-wrap">
-                      {sport.image || facility.image || facility.secondaryImage ? <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" draggable={false} /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{isEn ? 'No image' : 'Chưa có ảnh'}</div>}
+                      {sport.image || facility.image || facility.secondaryImage ? <img src={sport.image || facility.image || facility.secondaryImage} alt={sport.name} loading="lazy" draggable={false} /> : <div className="h-full grid place-items-center bg-brand-navy-100 text-slate-500 text-sm">{t('landing.common.noImage')}</div>}
                       <div style={{position:'absolute',top:'12px',left:'12px',right:'12px',display:'flex',justifyContent:'space-between',alignItems:'flex-start',zIndex:2}}>
                         <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(0,0,0,0.65)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,textTransform:'uppercase',backdropFilter:'blur(4px)'}}>
                           <span className="material-symbols-outlined" style={{fontSize:'13px'}}>{sport.icon}</span>
-                          {isEn ? (catCfg.labelEn || catCfg.label) : catCfg.label}
+                          {sport.category}
                         </span>
                         <span style={{display:'inline-flex',alignItems:'center',gap:'4px',padding:'4px 10px',borderRadius:'100px',background:'rgba(129,178,154,0.9)',color:'var(--white-color)',fontSize:'10px',fontWeight:700,backdropFilter:'blur(4px)'}}>
-                          {facility.badge || (isEn ? 'Room / court' : 'Phòng / sân')}
+                          {facility.badge || t('landing.courses.courtFallback')}
                         </span>
                       </div>
                       <div style={{position:'absolute',bottom:'10px',right:'12px',padding:'4px 12px',borderRadius:'8px',background:'rgba(0,0,0,0.7)',color:'var(--custom-btn-bg-color)',fontSize:'12px',fontWeight:700,backdropFilter:'blur(4px)'}}>
@@ -152,7 +142,7 @@ export function CoursesSection({
 
                       <div style={{display:'flex',alignItems:'center',gap:'6px',fontSize:'12px',fontWeight:600,color:'var(--primary-color)',marginBottom:'10px',minHeight:'20px'}}>
                         <span className="material-symbols-outlined" style={{fontSize:'15px',flexShrink:0}}>location_on</span>
-                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{facility.name} • {isEn ? translateLocation(facility.location, true) : facility.location}</span>
+                        <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{facility.name} • {facility.location}</span>
                       </div>
 
                       <p style={{fontSize:'13px',lineHeight:1.6,color:'var(--p-color)',marginBottom:'14px',display:'-webkit-box',WebkitLineClamp:2,WebkitBoxOrient:'vertical',overflow:'hidden',minHeight:'42px'}}>
@@ -162,11 +152,11 @@ export function CoursesSection({
                       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'8px',marginBottom:'16px',fontSize:'11px',color:'var(--p-color)',minHeight:'36px'}}>
                         <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 8px',background:'#F9FAFB',borderRadius:'6px'}}>
                           <span className="material-symbols-outlined" style={{fontSize:'15px',color:'var(--primary-color)'}}>sports</span>
-                          <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{isEn ? translateCoachName(details.coach, true) : details.coach}</span>
+                          <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{details.coach}</span>
                         </div>
                         <div style={{display:'flex',alignItems:'center',gap:'6px',padding:'6px 8px',background:'#F9FAFB',borderRadius:'6px'}}>
                           <span className="material-symbols-outlined" style={{fontSize:'15px',color:'var(--custom-btn-bg-color)'}}>schedule</span>
-                          <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{details.schedule ? (isEn ? translateOpenHours(details.schedule, true) : details.schedule.replace('hàng ngày', '')) : (isEn ? 'Flexible' : 'Linh hoạt')}</span>
+                          <span style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{details.schedule || t('landing.courses.flexible')}</span>
                         </div>
                       </div>
 
@@ -176,7 +166,7 @@ export function CoursesSection({
                         style={{width:'100%',justifyContent:'center'}}
                         onClick={(e) => { e.stopPropagation(); handleSportClick(sport); }}
                       >
-                        {isEn ? 'View Details & Book' : 'Xem Chi Tiết & Đặt Lịch'}
+                        {t('landing.courses.viewDetails')}
                         <span className="material-symbols-outlined" style={{fontSize:'16px'}}>arrow_forward</span>
                       </button>
                     </div>

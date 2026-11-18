@@ -1,5 +1,5 @@
-import { asArray } from '../../../shared/api/apiUtils.js';
-import { apiRequest } from '../../../shared/api/http.js';
+import { asArray } from '../../../shared/api/index.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 function mapBooking(item) {
   return {

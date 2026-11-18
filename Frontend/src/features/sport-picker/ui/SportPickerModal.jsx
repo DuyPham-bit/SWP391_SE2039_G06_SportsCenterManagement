@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { translatePackageName, translateSportName } from '../../../shared/i18n/i18nHelper.js';
+import { translatePackageName, translateSportName } from '../../../shared/lib/i18nHelper.js';
 
 /** Member must tick exactly `pkg.allowedSports` sports before continuing to checkout. */
 export function SportPickerModal({ isEn, isOpen, onClose, onConfirm, pkg, selected, setSelected, sports }) {

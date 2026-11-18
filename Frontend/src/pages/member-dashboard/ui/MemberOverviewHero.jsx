@@ -1,5 +1,5 @@
 import React from 'react';
-import { translatePackageName } from '../../../shared/i18n/i18nHelper.js';
+import { translatePackageName } from '../../../shared/lib/i18nHelper.js';
 
 export function MemberOverviewHero({
   canBook, copiedCode, currentUser, greeting, handleCopyMemberCode, handleSyncData, isEn,

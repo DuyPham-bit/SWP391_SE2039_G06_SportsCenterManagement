@@ -6,7 +6,6 @@ const { test } = require('node:test');
 const { transformSync } = require('esbuild');
 
 function loadService(apiRequest, { blockedStorage = false, popupBlocked = false } = {}) {
-  const modules = new Map();
   const store = new Map();
   const previewStore = new Map();
   const events = [];
@@ -17,7 +16,7 @@ function loadService(apiRequest, { blockedStorage = false, popupBlocked = false 
     close() { this.closed = true; }
   };
   const window = {
-    location: { href: 'https://scms.example/#/manager/home-content', hash: '#/' },
+    location: { href: 'https://scms.example/#/admin/home-content', hash: '#/' },
     open: () => popupBlocked ? null : previewWindow,
     dispatchEvent: event => events.push(event),
     addEventListener() {}, removeEventListener() {}
@@ -26,107 +25,133 @@ function loadService(apiRequest, { blockedStorage = false, popupBlocked = false 
     getItem: key => store.get(key) ?? null,
     setItem(key, value) { if (blockedStorage) throw new Error('Storage unavailable'); store.set(key, value); }
   };
-  function load(file) {
-    file = path.resolve(file);
-    if (modules.has(file)) return modules.get(file);
-    const module = { exports: {} };
-    const context = vm.createContext({
-      module, window, localStorage, URL, URLSearchParams, console,
-      sessionStorage: { getItem: key => previewStore.get(key) ?? null },
-      CustomEvent: class { constructor(type, { detail }) { this.type = type; this.detail = detail; } },
-      require: id => id.endsWith('/http.js') ? { apiRequest } : load(path.resolve(path.dirname(file), id))
-    });
-    vm.runInContext(transformSync(fs.readFileSync(file, 'utf8'), { format: 'cjs' }).code, context);
-    modules.set(file, module.exports);
-    return module.exports;
-  }
-  return { api: load(path.join(__dirname, '../src/entities/landing-content/api/landingContentService.js')), window, store, events, previewStore, previewWindow };
+  const file = path.join(__dirname, '../src/entities/landing-content/api/homeContentService.js');
+  const module = { exports: {} };
+  const context = vm.createContext({
+    module, window, localStorage, URL, URLSearchParams, console, JSON, Object, Array, String, Number, Math, Date,
+    sessionStorage: { getItem: key => previewStore.get(key) ?? null },
+    CustomEvent: class { constructor(type, { detail }) { this.type = type; this.detail = detail; } },
+    require: id => {
+      if (id.endsWith('/http.js') || id.endsWith('/shared/api/index.js')) return { apiRequest };
+      throw new Error(`Unexpected dependency: ${id}`);
+    }
+  });
+  vm.runInContext(transformSync(fs.readFileSync(file, 'utf8'), { format: 'cjs', logLevel: 'silent' }).code, context);
+  return { api: module.exports, window, store, events, previewStore, previewWindow };
 }
 
-test('publishing goes through the API and another browser reads the shared content', async () => {
-  let published = null;
+const plain = value => JSON.parse(JSON.stringify(value));
+const STATS = { sports: { visible: 9, total: 10 }, facilities: { visible: 8, total: 10 } };
+
+test('public content is requested in the selected language, counts are filled and each language is cached', async () => {
   const calls = [];
-  const apiRequest = async (route, options = {}) => {
-    calls.push({ route, options });
-    if (options.method === 'PUT') published = JSON.parse(JSON.stringify(options.body.content));
-    return { content: published };
-  };
-  const manager = loadService(apiRequest);
-  const content = manager.api.getLandingContent();
-  content.heroBanner.title = 'Published across browsers';
-  await manager.api.saveLandingContent(content);
-  assert.equal(calls[0].route, 'landing-content');
-  assert.equal(calls[0].options.method, 'PUT');
-  const visitor = loadService(apiRequest);
-  assert.equal((await visitor.api.loadLandingContent()).content.heroBanner.title, 'Published across browsers');
-  assert.equal(manager.events.length, 1);
+  const { api } = loadService(async route => {
+    calls.push(route);
+    const en = route.includes('lang=en');
+    return { content: { heroBanner: { title: en ? 'Title' : 'Tiêu đề', description: '{{sportCount}} / {{facilityCount}}' } }, stats: STATS };
+  });
+
+  const en = await api.fetchHomeContent('en');
+  assert.equal(calls[0], 'home-content?lang=en');
+  assert.equal(en.content.heroBanner.title, 'Title');
+  assert.equal(en.content.heroBanner.description, '9 / 8');
+  assert.equal(api.getCachedHomeContent('en').content.heroBanner.title, 'Title');
+  assert.equal(api.getCachedHomeContent('vi'), null);
+
+  await api.fetchHomeContent('fr'); // unknown language → vi
+  assert.equal(calls[1], 'home-content?lang=vi');
+  assert.equal(api.getCachedHomeContent('vi').content.heroBanner.title, 'Tiêu đề');
 });
 
-test('failed publish preserves the published cache and emits no success event', async () => {
-  let fail = false;
-  const fixture = loadService(async (_route, options = {}) => {
-    if (fail) throw new Error('API save rejected');
-    return { content: options.body?.content ?? null };
+test('localizing falls back to Vietnamese when the English text is empty, like the server', () => {
+  const { api } = loadService(async () => null);
+  const doc = { heroBanner: { badge: { vi: 'HUY HIỆU', en: '' }, title: { vi: 'Tiêu đề', en: 'Title' }, posterUrl: '/a.webp', metrics: [{ value: '24/7', label: { vi: 'Mở cửa', en: 'Open' } }] } };
+
+  assert.deepEqual(plain(api.localizeContent(doc, 'en')), { heroBanner: { badge: 'HUY HIỆU', title: 'Title', posterUrl: '/a.webp', metrics: [{ value: '24/7', label: 'Open' }] } });
+  assert.equal(api.localizeContent(doc, 'vi').heroBanner.title, 'Tiêu đề');
+  assert.deepEqual(plain(api.missingLanguages(doc)), { vi: false, en: true });
+  assert.deepEqual(plain(api.missingLanguages({ a: { vi: '', en: 'Only English' } })), { vi: true, en: false });
+});
+
+test('editing one language keeps the other and treats legacy plain strings as Vietnamese', () => {
+  const { api } = loadService(async () => null);
+  assert.deepEqual(plain(api.writeText('Cũ', 'en', 'Old')), { vi: 'Cũ', en: 'Old' });
+  assert.deepEqual(plain(api.writeText({ vi: 'A', en: 'B' }, 'vi', 'C')), { vi: 'C', en: 'B' });
+  assert.equal(api.readText(undefined, 'en'), '');
+});
+
+test('publishing uses the admin API, clears the public cache and notifies other pages', async () => {
+  const calls = [];
+  const fixture = loadService(async (route, options = {}) => {
+    calls.push({ route, options });
+    if (options.method === 'PUT') return { content: options.body.content, stats: STATS, missingTranslations: [] };
+    return { content: { heroBanner: { title: 'x' } }, stats: STATS };
   });
-  const draft = fixture.api.getLandingContent();
-  draft.heroBanner.title = 'Kept published title';
-  await fixture.api.saveLandingContent(draft);
-  fail = true;
-  draft.heroBanner.title = 'Rejected draft';
-  await assert.rejects(fixture.api.saveLandingContent(draft), /API save rejected/);
-  assert.equal(fixture.api.getLandingContent().heroBanner.title, 'Kept published title');
+  await fixture.api.fetchHomeContent('vi');
+  const content = { heroBanner: { title: { vi: 'Mới', en: 'New' } }, ctaAndFooter: { contactZaloPhone: '+84901234567', contactFacebookUrl: '' } };
+
+  const saved = await fixture.api.publishHomeContent(content);
+
+  const put = calls.find(call => call.options.method === 'PUT');
+  assert.equal(put.route, 'admin/home-content');
+  assert.equal(put.options.body.content.ctaAndFooter.contactZaloPhone, '0901234567');
+  assert.equal(saved.content.heroBanner.title.en, 'New');
+  assert.equal(fixture.api.getCachedHomeContent('vi'), null);
   assert.equal(fixture.events.length, 1);
 });
 
-test('editor defaults stay independent after editing and publishing nested metrics and zones', async () => {
-  const fixture = loadService(async (_route, options = {}) => ({ content: options.body?.content ?? null }));
-  const initial = fixture.api.getDefaultLandingContent();
-  const edited = fixture.api.getDefaultLandingContent();
-  edited.heroBanner.metrics.push({ id: 'test-metric', value: 'Modified metric', label: 'Test' });
-  edited.zonesLayout.zones.push({ id: 'test-zone', name: 'Test zone', items: ['Modified zone'] });
-  await fixture.api.saveLandingContent(edited);
-  const defaults = fixture.api.getDefaultLandingContent();
-  assert.deepEqual(defaults.heroBanner.metrics, initial.heroBanner.metrics);
-  assert.deepEqual(defaults.zonesLayout.zones, initial.zonesLayout.zones);
-  assert.equal(defaults.coursesSection.sportsList.length, 0);
-  assert.equal(defaults.facilitiesSection.facilitiesList.length, 0);
+test('a failed or invalid publish emits no change event and keeps the cache', async () => {
+  let fail = false;
+  const fixture = loadService(async (route, options = {}) => {
+    if (fail && options.method === 'PUT') throw new Error('API save rejected');
+    return { content: { heroBanner: { title: 'Kept' } }, stats: STATS };
+  });
+  await fixture.api.fetchHomeContent('vi');
+  fail = true;
+
+  await assert.rejects(fixture.api.publishHomeContent({ heroBanner: {}, ctaAndFooter: {} }), /API save rejected/);
+  await assert.rejects(fixture.api.publishHomeContent({ ctaAndFooter: { contactZaloPhone: '12' } }), error => error.i18nKey === 'homeContent.error.zalo');
+  assert.equal(fixture.api.getCachedHomeContent('vi').content.heroBanner.title, 'Kept');
+  assert.equal(fixture.events.length, 0);
 });
 
-test('preview isolates a draft in the new tab without publishing or changing browser storage', () => {
+test('saving one section uses the section endpoint', async () => {
+  const calls = [];
+  const { api } = loadService(async (route, options) => { calls.push({ route, options }); return { content: {}, stats: STATS }; });
+  await api.saveHomeContentSection('heroBanner', { title: { vi: 'A', en: '' } });
+  assert.equal(calls[0].route, 'admin/home-content/heroBanner');
+  assert.equal(calls[0].options.method, 'PUT');
+});
+
+test('preview shows the unsaved bilingual draft, localized, without publishing or touching storage', () => {
   let calls = 0;
   const fixture = loadService(async () => { calls++; });
-  const draft = fixture.api.getLandingContent();
-  draft.heroBanner.title = 'Preview only';
-  fixture.api.openLandingPreview(draft);
+  const draft = { heroBanner: { title: { vi: 'Bản nháp', en: 'Preview only' }, description: { vi: '{{sportCount}} môn', en: '' } } };
+  fixture.api.openLandingPreview(draft, STATS);
   assert.equal(calls, 0);
   assert.equal(fixture.store.size, 0);
   assert.equal(fixture.previewWindow.opener, null);
   assert.equal(fixture.previewWindow.location.url, 'https://scms.example/#/?preview=1');
-  assert.notEqual(fixture.api.getLandingContent().heroBanner.title, 'Preview only');
   fixture.window.location.hash = '#/?preview=1';
-  assert.equal(fixture.api.getLandingPreviewContent().heroBanner.title, 'Preview only');
+  const preview = fixture.api.getLandingPreviewContent('en');
+  assert.equal(preview.content.heroBanner.title, 'Preview only');
+  assert.equal(preview.content.heroBanner.description, '9 môn');
   fixture.window.location.hash = '#/';
-  assert.equal(fixture.api.getLandingPreviewContent(), null);
+  assert.equal(fixture.api.getLandingPreviewContent('en'), null);
 });
 
-test('blocked preview does not publish and storage failures do not invalidate an API save', async () => {
-  const fixture = loadService(async (_route, options) => ({ content: options.body.content }), { blockedStorage: true, popupBlocked: true });
-  const draft = fixture.api.getLandingContent();
-  assert.throws(() => fixture.api.openLandingPreview(draft));
-  draft.heroBanner.title = 'Saved without browser storage';
-  await fixture.api.saveLandingContent(draft);
-  assert.equal(fixture.api.getLandingContent().heroBanner.title, 'Saved without browser storage');
+test('a blocked preview tab raises a translatable error and storage failures do not break publishing', async () => {
+  const fixture = loadService(async (_route, options) => ({ content: options.body.content, stats: STATS }), { blockedStorage: true, popupBlocked: true });
+  assert.throws(() => fixture.api.openLandingPreview({}, STATS), error => error.i18nKey === 'homeContent.error.popupBlocked');
+  const saved = await fixture.api.publishHomeContent({ heroBanner: { title: { vi: 'Không cần storage', en: '' } } });
+  assert.equal(saved.content.heroBanner.title.vi, 'Không cần storage');
 });
 
-test('legacy local content is available as a draft but never overrides the public page', async () => {
-  const fixture = loadService(async () => ({ content: null }));
-  const legacy = fixture.api.getDefaultLandingContent();
-  legacy.heroBanner.title = 'Old local draft';
-  fixture.store.set('SCMS_DYNAMIC_LANDING_CONTENT_V1', JSON.stringify(legacy));
-  const result = await fixture.api.loadLandingContent();
-  assert.equal(result.hasPublishedContent, false);
-  assert.notEqual(result.content.heroBanner.title, 'Old local draft');
-  assert.equal(fixture.api.getLegacyLandingContent().heroBanner.title, 'Old local draft');
+test('no default or fallback content ships with the frontend service', () => {
+  const source = fs.readFileSync(path.join(__dirname, '../src/entities/landing-content/api/homeContentService.js'), 'utf8');
+  for (const legacy of ['DEFAULT_LANDING_CONTENT', 'images.unsplash.com', 'hero-video.mp4', 'SHAPING RESILIENCE', '24/7']) {
+    assert.equal(source.includes(legacy), false, legacy);
+  }
 });
 
 test('landing carousel controller wraps at edges, calculates drag threshold, and pauses autoplay on interaction', () => {
@@ -177,34 +202,5 @@ test('landing carousel controller wraps at edges, calculates drag threshold, and
   assert.equal(shouldAutoAdvanceCarousel({ itemCount: 5, isAutoPlayEnabled: true, isDragging: true }), false);
   assert.equal(shouldAutoAdvanceCarousel({ itemCount: 5, isAutoPlayEnabled: true, isModalOpen: true }), false);
   assert.equal(shouldAutoAdvanceCarousel({ itemCount: 5, isAutoPlayEnabled: true, reducedMotion: true }), false);
-});
-
-test('zonesLayout defaults model3dUrl to /3d-campus.html and preserves custom .html URLs on load/save', async () => {
-  let published = null;
-  const { api } = loadService(async (route, opts = {}) => {
-    if (route === 'landing-content' && opts.method === 'PUT') {
-      published = JSON.parse(JSON.stringify(opts.body.content));
-      return { content: published, updatedAt: '2026-11-16T00:00:00Z' };
-    }
-    return { content: published };
-  });
-
-  const defaults = api.getDefaultLandingContent();
-  assert.equal(defaults.zonesLayout.model3dUrl, '/3d-campus.html');
-
-  const custom = api.getDefaultLandingContent();
-  custom.zonesLayout.model3dUrl = 'https://cdn.example.com/campus-3d/arena-v2.html';
-  await api.saveLandingContent(custom);
-
-  const loaded = await api.loadLandingContent();
-  assert.equal(loaded.content.zonesLayout.model3dUrl, 'https://cdn.example.com/campus-3d/arena-v2.html');
-
-  const legacyOnly = loadService(async () => ({
-    content: { zonesLayout: { sectionTitle: 'CUSTOM TITLE' } },
-    updatedAt: '2026-11-16T00:00:00Z'
-  }));
-  const merged = await legacyOnly.api.loadLandingContent();
-  assert.equal(merged.content.zonesLayout.sectionTitle, 'CUSTOM TITLE');
-  assert.equal(merged.content.zonesLayout.model3dUrl, '/3d-campus.html');
 });
 

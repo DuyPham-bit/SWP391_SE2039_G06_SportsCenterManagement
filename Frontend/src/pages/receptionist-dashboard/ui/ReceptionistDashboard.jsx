@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { receptionApi } from '../../../entities/member/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { useAuth } from '../../../entities/session/index.js';
 import { hasCapability } from '../../../entities/permission/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { getTimeGreeting } from '../../../shared/lib/greeting.js';
 import { playScannerBeep } from '../lib/scannerBeep.js';
 

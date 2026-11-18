@@ -2,39 +2,26 @@ import React, { useEffect, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { usePublicCatalog, catalogFacilities, catalogSports } from '../../../entities/catalog/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { readText, writeText } from '../../../entities/landing-content/index.js';
 
+// [key, multiline, shared] — shared fields are the same in every language (icons, numbers).
 const SPORT_FIELDS = [
-  ['name', 'Tên bộ môn', 'Sport name'],
-  ['category', 'Nhóm bộ môn', 'Category'],
-  ['icon', 'Biểu tượng', 'Icon'],
-  ['highlight', 'Nội dung giới thiệu', 'Introduction', true],
-  ['coach', 'Huấn luyện viên', 'Coach'],
-  ['schedule', 'Lịch tập', 'Schedule'],
-  ['level', 'Trình độ', 'Level'],
-  ['capacity', 'Sức chứa', 'Capacity'],
-  ['rating', 'Điểm đánh giá', 'Rating'],
-  ['ratingCount', 'Số lượt đánh giá', 'Rating count']
+  ['name'], ['category'], ['icon', false, true], ['highlight', true], ['coach'], ['schedule'], ['level'], ['capacity'],
+  ['rating', false, true], ['ratingCount', false, true]
 ];
-
 const FACILITY_FIELDS = [
-  ['name', 'Tên cụm sân / phòng tập', 'Court / facility name'],
-  ['category', 'Nhóm phân loại', 'Category'],
-  ['categoryName', 'Tên nhóm hiển thị', 'Category label'],
-  ['badge', 'Nhãn trên thẻ', 'Card badge'],
-  ['location', 'Vị trí', 'Location'],
-  ['zone', 'Khu vực', 'Zone'],
-  ['capacity', 'Sức chứa', 'Capacity'],
-  ['openHours', 'Giờ hoạt động', 'Opening hours'],
-  ['highlights', 'Nội dung nổi bật', 'Highlights', true],
-  ['description', 'Mô tả chi tiết', 'Description', true]
+  ['name'], ['category'], ['categoryName'], ['badge'], ['location'], ['zone'], ['capacity'], ['openHours'],
+  ['highlights', true], ['description', true]
 ];
 
 const inputClass = 'w-full mt-1 rounded-lg border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 px-3 py-2 text-xs text-brand-navy-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-brand-sage-700';
 
-export function LandingCatalogEditor({ type, metadata = [], facilities, sports, fallbackToCatalog = true, onChange, onDelete, openMediaPicker }) {
-  const { language } = useLanguage();
-  const isEn = language === 'en';
+/** Card name in the editing language, else Vietnamese. */
+const nameOf = (record, lang) => readText(record.name, lang) || readText(record.name, 'vi');
+
+export function LandingCatalogEditor({ type, lang = 'vi', metadata = [], facilities, sports, fallbackToCatalog = true, onChange, onDelete, openMediaPicker }) {
+  const { t } = useLanguage();
   const isSports = type === 'sports';
   const [editingCard, setEditingCard] = useState(null);
   const [isMediaPickerOpen, setIsMediaPickerOpen] = useState(false);
@@ -50,7 +37,6 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
     ? catalogSports(catalog).map(record => ({ ...record, facilityId: record.facilityId || '' }))
     : catalogFacilities(catalog));
   const availableFacilities = facilities ?? catalogFacilities(catalog);
-  const storedSports = catalog?.sports || [];
   const relatedSports = isSports ? [] : (sports ?? catalogSports(catalog).map(record => ({ ...record, facilityId: record.facilityId || '' })));
   const fields = isSports ? SPORT_FIELDS : FACILITY_FIELDS;
   const activeRecord = editingCard?.type === type
@@ -73,7 +59,7 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
   const pickImage = (record, key = 'image') => {
     setIsMediaPickerOpen(true);
     openMediaPicker(
-      `${isEn ? 'Image' : 'Ảnh'}: ${record.name}`,
+      t('homeContent.catalog.imageFor', { name: nameOf(record, lang) }),
       record[key] || '',
       url => update(record, { [key]: url }),
       () => setIsMediaPickerOpen(false)
@@ -91,64 +77,62 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
       id = `${type}-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
     } while (records.some(record => String(record.id) === id));
     const card = {
-      ...Object.fromEntries(fields.map(([key]) => [key, ''])),
+      ...Object.fromEntries(fields.map(([key, , shared]) => [key, shared ? '' : { vi: '', en: '' }])),
       id,
-      name: isSports ? (isEn ? 'New sport' : 'Bộ môn mới') : (isEn ? 'New facility' : 'Cụm sân mới'),
+      name: { vi: t('homeContent.catalog.newCard'), en: '' },
       image: '',
       isVisible: true,
       ...(isSports
-        ? { icon: 'sports', facilityId: '', sportId: '', badges: [] }
+        ? { icon: 'sports', facilityId: '', badges: [] }
         : { secondaryImage: '', specs: [], amenities: [], tags: [] })
     };
     onChange([...records, card]);
   };
-  const linkedSport = record => isSports && record.sportId
-    ? storedSports.find(sport => String(sport.id) === String(record.sportId)) || { id: record.sportId, name: `#${record.sportId}` }
-    : null;
-  const linkSport = (record, sportId) => {
-    const stored = storedSports.find(sport => String(sport.id) === String(sportId));
-    // Load the linked sport's own description so saving never copies another sport's text into it.
-    update(record, sportId ? { sportId, highlight: stored?.description || '' } : { sportId: '' });
+  const renderField = (record, [key, multiline, shared]) => {
+    const props = {
+      name: key,
+      lang: shared ? undefined : lang,
+      value: shared ? (record[key] ?? '') : readText(record[key], lang),
+      placeholder: shared || lang === 'vi' ? undefined : readText(record[key], 'vi'),
+      onChange: event => update(record, { [key]: shared ? event.target.value : writeText(record[key], lang, event.target.value) }),
+      maxLength: 10000,
+      className: inputClass
+    };
+    return (
+      <label key={key} className={`block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 ${multiline ? 'sm:col-span-2' : ''}`}>
+        {t(`homeContent.catalog.field.${key}`)}
+        {multiline ? <textarea rows={3} {...props} /> : <input type="text" {...props} />}
+      </label>
+    );
   };
-  const renderField = (record, [key, vi, en, multiline]) => (
-    <label key={key} className={`block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 ${multiline ? 'sm:col-span-2' : ''}`}>
-      {isEn ? en : vi}
-      {key === 'highlight' && linkedSport(record) && (
-        <span className="ml-1 font-normal text-brand-sage-700 dark:text-brand-sage-500">
-          {isEn ? `(saved to sport "${linkedSport(record).name}", max 500 characters)` : `(lưu vào bộ môn "${linkedSport(record).name}", tối đa 500 ký tự)`}
-        </span>
-      )}
-      {multiline ? (
-        <textarea
-          name={key}
-          value={record[key] ?? ''}
-          onChange={event => update(record, { [key]: event.target.value })}
-          rows={3}
-          maxLength={10000}
-          className={inputClass}
-        />
-      ) : (
-        <input
-          name={key}
-          type="text"
-          value={record[key] ?? ''}
-          onChange={event => update(record, { [key]: event.target.value })}
-          maxLength={10000}
-          className={inputClass}
-        />
-      )}
+  // One entry per line in the editing language; lines keep their position across languages.
+  const renderLines = (record, key) => (
+    <label key={key} className="block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300">
+      {t(`homeContent.catalog.field.${key}`)}
+      <textarea
+        name={key}
+        rows={3}
+        lang={lang}
+        value={(record[key] || []).map(item => readText(item, lang)).join('\n')}
+        onChange={event => {
+          const lines = event.target.value ? event.target.value.split('\n') : [];
+          const items = record[key] || [];
+          update(record, { [key]: lines.map((line, index) => writeText(items[index], lang, line)) });
+        }}
+        className={inputClass}
+      />
     </label>
   );
   const renderCardContent = record => (
     <div className="space-y-3">
       {record.image ? (
         <div className="h-40 w-full rounded-lg overflow-hidden bg-brand-navy-900">
-          <img src={record.image} alt={record.name} className="h-full w-full object-cover" />
+          <img src={record.image} alt={nameOf(record, lang)} className="h-full w-full object-cover" />
         </div>
       ) : (
         <div className="py-10 text-center bg-white dark:bg-brand-navy-800 rounded-lg border border-dashed border-brand-navy-300 dark:border-brand-navy-700 text-brand-navy-400 text-xs">
           <span className="material-symbols-outlined text-[28px] mb-1">image_not_supported</span>
-          <div>{isEn ? 'No image set' : 'Chưa có ảnh'}</div>
+          <div>{t('homeContent.catalog.noImage')}</div>
         </div>
       )}
       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
@@ -158,7 +142,7 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
           onClick={() => pickImage(record)}
         >
           <span className="material-symbols-outlined text-[16px]">cloud_upload</span>
-          <span>{isEn ? 'Upload/Change Image' : 'Tải/Đổi Ảnh'}</span>
+          <span>{t('homeContent.action.uploadImage')}</span>
         </button>
         <label className="flex items-center gap-2 text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 cursor-pointer">
           <input
@@ -167,103 +151,65 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
             onChange={event => update(record, { isVisible: event.target.checked })}
             className="rounded text-brand-sage-700 dark:text-brand-sage-400 focus:ring-brand-sage-700 accent-brand-sage-700 cursor-pointer"
           />
-          <span>{isEn ? 'Show on Homepage' : 'Hiển thị trên trang chủ'}</span>
+          <span>{t('homeContent.catalog.showOnHomepage')}</span>
         </label>
       </div>
       <div className="grid gap-3 sm:grid-cols-2">
-        {isSports && (
-          <label className="block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 sm:col-span-2">
-            {isEn ? 'Linked sport (description source)' : 'Bộ môn trong hệ thống (nguồn mô tả)'}
-            <select
-              name="sportId"
-              value={record.sportId ?? ''}
-              onChange={event => linkSport(record, event.target.value)}
-              className={inputClass}
-            >
-              <option value="">{isEn ? 'Not linked: the introduction stays on this card only' : 'Chưa liên kết: nội dung giới thiệu chỉ lưu trên thẻ này'}</option>
-              {record.sportId && !storedSports.some(sport => String(sport.id) === String(record.sportId)) && (
-                <option value={record.sportId}>{isEn ? `Sport #${record.sportId} (inactive)` : `Bộ môn #${record.sportId} (không hoạt động)`}</option>
-              )}
-              {storedSports.map(sport => <option key={sport.id} value={String(sport.id)}>{sport.name}</option>)}
-            </select>
-            <span className="mt-1 block font-normal text-[11px] text-brand-navy-500 dark:text-brand-navy-400">
-              {isEn
-                ? 'When linked, the introduction below is the sport\'s description: editing it here and saving also updates Sports management.'
-                : 'Khi liên kết, nội dung giới thiệu bên dưới chính là mô tả của bộ môn. Sửa ở đây rồi lưu thì Quản lý bộ môn cũng được cập nhật.'}
-            </span>
-          </label>
-        )}
         {fields.map(field => renderField(record, field))}
         {isSports && (
           <label className="block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300 sm:col-span-2">
-            {isEn ? 'Linked facility' : 'Cụm sân liên kết'}
+            {t('homeContent.catalog.linkedFacility')}
             <select
               name="facilityId"
               value={record.facilityId ?? ''}
               onChange={event => update(record, { facilityId: event.target.value })}
               className={inputClass}
             >
-              <option value="">{isEn ? 'No linked facility' : 'Chưa liên kết cụm sân'}</option>
+              <option value="">{t('homeContent.catalog.noLinkedFacility')}</option>
               {record.facilityId && !availableFacilities.some(facility => String(facility.id) === String(record.facilityId)) && (
-                <option value={record.facilityId}>{record.venue || record.facilityId}</option>
+                <option value={record.facilityId}>{readText(record.venue, lang) || record.facilityId}</option>
               )}
-              {availableFacilities.map(facility => <option key={facility.id} value={String(facility.id)}>{facility.name}</option>)}
+              {availableFacilities.map(facility => <option key={facility.id} value={String(facility.id)}>{nameOf(facility, lang)}</option>)}
             </select>
           </label>
         )}
-        {renderField(record, ['image', 'Đường dẫn ảnh', 'Image URL'])}
-        {!isSports && renderField(record, ['secondaryImage', 'Đường dẫn ảnh phụ', 'Secondary image URL'])}
+        {renderField(record, ['image', false, true])}
+        {!isSports && renderField(record, ['secondaryImage', false, true])}
       </div>
       {!isSports && (
         <>
-          {record.secondaryImage && (
-            <div className="h-32 w-full sm:w-1/2 rounded-lg overflow-hidden bg-brand-navy-900">
-              <img src={record.secondaryImage} alt={`${record.name} (2)`} className="h-full w-full object-cover" />
-            </div>
-          )}
           <button
             type="button"
             onClick={() => pickImage(record, 'secondaryImage')}
             className="text-xs font-bold text-brand-sage-700 dark:text-brand-sage-500 hover:underline"
           >
-            {isEn ? 'Upload/Change Secondary Image' : 'Tải/Đổi Ảnh Phụ'}
+            {t('homeContent.catalog.uploadSecondary')}
           </button>
           <div className="grid gap-3 sm:grid-cols-2">
-            {['amenities', 'tags'].map(key => (
-              <label key={key} className="block text-xs font-semibold text-brand-navy-700 dark:text-brand-navy-300">
-                {key === 'amenities'
-                  ? (isEn ? 'Amenities (one per line)' : 'Tiện ích (mỗi dòng một mục)')
-                  : (isEn ? 'Tags (one per line)' : 'Nhãn tìm kiếm (mỗi dòng một mục)')}
-                <textarea
-                  name={key}
-                  rows={3}
-                  value={(record[key] || []).join('\n')}
-                  onChange={event => update(record, { [key]: event.target.value ? event.target.value.split('\n') : [] })}
-                  className={inputClass}
-                />
-              </label>
-            ))}
+            {['amenities', 'tags'].map(key => renderLines(record, key))}
           </div>
           <div className="space-y-2">
-            <h4 className="text-xs font-bold text-brand-navy-700 dark:text-brand-navy-300">{isEn ? 'Specifications' : 'Thông số'}</h4>
+            <h4 className="text-xs font-bold text-brand-navy-700 dark:text-brand-navy-300">{t('homeContent.catalog.specs')}</h4>
             {(record.specs || []).map((spec, index) => (
               <div key={index} className="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
                 {['label', 'value'].map(key => (
                   <label key={key} className="min-w-0 text-xs text-brand-navy-700 dark:text-brand-navy-300">
-                    {key === 'label' ? (isEn ? 'Label' : 'Tên thông số') : (isEn ? 'Value' : 'Giá trị')}
+                    {t(`homeContent.catalog.spec.${key}`)}
                     <input
                       type="text"
                       name={`spec-${key}`}
-                      value={spec[key] || ''}
+                      lang={lang}
+                      value={readText(spec[key], lang)}
+                      placeholder={lang === 'vi' ? undefined : readText(spec[key], 'vi')}
                       maxLength={10000}
-                      onChange={event => update(record, { specs: record.specs.map((entry, entryIndex) => entryIndex === index ? { ...entry, [key]: event.target.value } : entry) })}
+                      onChange={event => update(record, { specs: record.specs.map((entry, entryIndex) => entryIndex === index ? { ...entry, [key]: writeText(entry[key], lang, event.target.value) } : entry) })}
                       className={inputClass}
                     />
                   </label>
                 ))}
                 <button
                   type="button"
-                  aria-label={isEn ? 'Remove specification' : 'Xóa thông số'}
+                  aria-label={t('homeContent.catalog.removeSpec')}
                   onClick={() => update(record, { specs: record.specs.filter((_, entryIndex) => entryIndex !== index) })}
                   className="p-2 text-brand-danger-600 hover:text-brand-danger-700"
                 >
@@ -274,10 +220,10 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
             <button
               type="button"
               disabled={(record.specs || []).length >= 200}
-              onClick={() => update(record, { specs: [...(record.specs || []), { label: '', value: '' }] })}
+              onClick={() => update(record, { specs: [...(record.specs || []), { label: { vi: '', en: '' }, value: { vi: '', en: '' } }] })}
               className="text-xs font-bold text-brand-sage-700 dark:text-brand-sage-500 hover:underline disabled:opacity-50"
             >
-              {isEn ? 'Add specification' : 'Thêm thông số'}
+              {t('homeContent.catalog.addSpec')}
             </button>
           </div>
         </>
@@ -285,24 +231,14 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
     </div>
   );
   return (
-    <section className="space-y-5 rounded-2xl border border-brand-navy-200/80 dark:border-brand-navy-800 bg-white dark:bg-brand-navy-900 p-6 shadow-sm">
-      <div className="border-b border-brand-navy-100 dark:border-brand-navy-800 pb-4 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <h2 className="font-bold text-lg text-brand-navy-900 dark:text-white">
-            {isSports
-              ? (isEn ? 'Homepage Sports' : 'Bộ môn trên trang chủ')
-              : (isEn ? 'Homepage Courts & Facilities' : 'Phòng / sân trên trang chủ')}
-          </h2>
-          <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400 mt-1">
-            {isEn
-              ? 'Add cards and edit their content, images and visibility. Click Save All Changes to publish.'
-              : 'Thêm thẻ và chỉnh nội dung, hình ảnh, ẩn/hiện. Bấm Lưu Toàn Bộ Thay Đổi để công bố.'}
-          </p>
-          <a className="inline-flex items-center gap-1 text-xs font-semibold text-brand-sage-700 dark:text-brand-sage-500 hover:underline mt-2" href="#/manager/classes-rooms">
-            <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
-            <span>{isEn ? 'Manage sports, classes, courts & rooms' : 'Quản lý bộ môn, lớp và phòng / sân'}</span>
-          </a>
-        </div>
+    <section className="space-y-5">
+      {loading && usesCatalog && <p role="status" className="text-xs text-brand-navy-500 dark:text-brand-navy-400">{t('homeContent.catalog.loading')}</p>}
+      {error && usesCatalog && <p role="alert" className="text-xs text-brand-danger-600 dark:text-brand-danger-400">{error}</p>}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <a className="inline-flex items-center gap-1 text-xs font-semibold text-brand-sage-700 dark:text-brand-sage-500 hover:underline" href="#/manager/classes-rooms">
+          <span className="material-symbols-outlined text-[15px]">arrow_forward</span>
+          <span>{t('homeContent.catalog.manageLink')}</span>
+        </a>
         <button
           type="button"
           onClick={addCard}
@@ -310,127 +246,78 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
           className="inline-flex items-center gap-1.5 rounded-xl bg-brand-sage-700 hover:bg-brand-sage-900 px-4 py-2 text-xs font-bold text-white shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
         >
           <span className="material-symbols-outlined text-[18px]">add</span>
-          {isSports ? (isEn ? 'Add sport card' : 'Thêm thẻ bộ môn') : (isEn ? 'Add facility card' : 'Thêm thẻ cụm sân')}
+          {t(isSports ? 'homeContent.catalog.addSport' : 'homeContent.catalog.addFacility')}
         </button>
       </div>
-      {loading && usesCatalog && <p role="status" className="text-xs text-brand-navy-500 dark:text-brand-navy-400">{isEn ? 'Loading catalog...' : 'Đang tải danh mục...'}</p>}
-      {error && usesCatalog && <p role="alert" className="text-xs text-brand-danger-600 dark:text-brand-danger-400">{error}</p>}
       {(!usesCatalog || (!loading && !error)) && records.length === 0 && (
-        <p role="status" className="text-xs text-brand-navy-500 dark:text-brand-navy-400">
-          {isEn ? 'No cards yet. Add a card to start.' : 'Chưa có thẻ. Bấm thêm thẻ để bắt đầu.'}
-        </p>
+        <p role="status" className="text-xs text-brand-navy-500 dark:text-brand-navy-400">{t('homeContent.catalog.empty')}</p>
       )}
       <div className="grid items-start gap-4 sm:grid-cols-2">
-        {records.map(record => {
-          return (
-            <article key={`${type}-${record.id}`} data-card-id={record.id} className="min-w-0 rounded-xl border border-brand-navy-200/80 dark:border-brand-navy-800 bg-brand-navy-50/50 dark:bg-brand-navy-800/40 p-4 space-y-3 hover-lift transition-all">
-              <div className="flex items-center justify-between">
-                <h3 className="font-bold text-sm text-brand-navy-900 dark:text-white">{record.name}</h3>
-                {Number.isFinite(record.capacity) && (
-                  <span className="text-[11px] font-semibold text-brand-navy-500 dark:text-brand-navy-400 bg-white dark:bg-brand-navy-800 px-2 py-0.5 rounded border border-brand-navy-200 dark:border-brand-navy-700">
-                    {isEn ? `Capacity: ${record.capacity}` : `Sức chứa: ${record.capacity} người`}
-                  </span>
-                )}
-              </div>
-              <div className="relative">
-                <button
-                  type="button"
-                  onClick={() => setEditingCard({ type, id: String(record.id) })}
-                  aria-label={`${isEn ? 'Edit card' : 'Chỉnh sửa thẻ'}: ${record.name}`}
-                  className="block w-full aspect-[16/9] rounded-lg overflow-hidden bg-brand-navy-100 dark:bg-brand-navy-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700"
-                >
-                  {record.image ? (
-                    <img src={record.image} alt={record.name} loading="lazy" className={`h-full w-full object-cover ${record.isVisible === false ? 'opacity-50 grayscale' : ''}`} />
-                  ) : (
-                    <span className="h-full w-full grid place-items-center text-xs text-brand-navy-400">{isEn ? 'No image set' : 'Chưa có ảnh'}</span>
-                  )}
-                </button>
-                {!isSports && record.secondaryImage && (
-                  <img src={record.secondaryImage} alt={`${record.name} (2)`} loading="lazy" className="absolute bottom-2 right-2 h-14 w-20 rounded-md object-cover border-2 border-white shadow" />
-                )}
-                {record.isVisible === false && (
-                  <span className="absolute top-2 left-2 rounded bg-brand-navy-900/80 px-2 py-0.5 text-[11px] font-semibold text-white">{isEn ? 'Hidden' : 'Đang ẩn'}</span>
-                )}
-                <button
-                  type="button"
-                  onClick={() => pickImage(record)}
-                  className="absolute top-2 right-2 rounded-md bg-white/90 px-2.5 py-1 text-[11px] font-semibold text-brand-navy-800 shadow-sm hover:bg-white"
-                >
-                  {record.image ? (isEn ? 'Change image' : 'Đổi ảnh') : (isEn ? 'Add image' : 'Thêm ảnh')}
-                </button>
-              </div>
-              <button
-                type="button"
-                aria-haspopup="dialog"
-                onClick={() => setEditingCard({ type, id: String(record.id) })}
-                className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl bg-brand-sage-700/10 px-3 py-2.5 text-xs font-bold text-brand-sage-700 dark:text-brand-sage-500 hover:bg-brand-sage-700/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700"
-              >
-                <span>{isEn ? 'Expand content' : 'Mở rộng nội dung'}</span>
-                <span className="material-symbols-outlined text-[20px]" aria-hidden="true">open_in_new</span>
-              </button>
-              <button
-                type="button"
-                aria-label={`${isEn ? 'Delete card' : 'Xóa thẻ'}: ${record.name}`}
-                onClick={() => setDeletingCard({ type, id: String(record.id) })}
-                className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-brand-danger-200 px-3 py-2 text-xs font-bold text-brand-danger-600 hover:bg-brand-danger-50 dark:border-brand-danger-900 dark:text-brand-danger-400 dark:hover:bg-brand-danger-950/30"
-              >
-                <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
-                {isEn ? 'Delete card' : 'Xóa thẻ'}
-              </button>
-            </article>
-          );
-        })}
+        {records.map(record => (
+          <article key={`${type}-${record.id}`} data-card-id={record.id} className="min-w-0 rounded-xl border border-brand-navy-200/80 dark:border-brand-navy-800 bg-brand-navy-50/50 dark:bg-brand-navy-800/40 p-4 space-y-3 hover-lift transition-all">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="font-bold text-sm text-brand-navy-900 dark:text-white">{nameOf(record, lang)}</h3>
+              {record.isVisible === false && (
+                <span className="text-[11px] font-semibold text-brand-navy-500 dark:text-brand-navy-400 bg-white dark:bg-brand-navy-800 px-2 py-0.5 rounded border border-brand-navy-200 dark:border-brand-navy-700">
+                  {t('homeContent.catalog.hidden')}
+                </span>
+              )}
+            </div>
+            <button
+              type="button"
+              aria-haspopup="dialog"
+              onClick={() => setEditingCard({ type, id: String(record.id) })}
+              className="flex w-full cursor-pointer items-center justify-between gap-2 rounded-xl bg-brand-sage-700/10 px-3 py-2.5 text-xs font-bold text-brand-sage-700 dark:text-brand-sage-500 hover:bg-brand-sage-700/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-700"
+            >
+              <span>{t('homeContent.catalog.expand')}</span>
+              <span className="material-symbols-outlined text-[20px]" aria-hidden="true">open_in_new</span>
+            </button>
+            <button
+              type="button"
+              aria-label={t('homeContent.catalog.deleteNamed', { name: nameOf(record, lang) })}
+              onClick={() => setDeletingCard({ type, id: String(record.id) })}
+              className="flex w-full items-center justify-center gap-1.5 rounded-xl border border-brand-danger-200 px-3 py-2 text-xs font-bold text-brand-danger-600 hover:bg-brand-danger-50 dark:border-brand-danger-900 dark:text-brand-danger-400 dark:hover:bg-brand-danger-950/30"
+            >
+              <span className="material-symbols-outlined text-[18px]" aria-hidden="true">delete</span>
+              {t('homeContent.catalog.delete')}
+            </button>
+          </article>
+        ))}
       </div>
       {activeRecord && createPortal(
         <Modal
           isOpen={!isMediaPickerOpen}
           onClose={() => setEditingCard(null)}
-          title={`${isEn ? 'Edit card' : 'Chỉnh sửa thẻ'}: ${activeRecord.name}`}
+          title={t('homeContent.catalog.editNamed', { name: nameOf(activeRecord, lang), lang: lang.toUpperCase() })}
           maxWidth="max-w-2xl"
         >
           {renderCardContent(activeRecord)}
           <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-brand-navy-200 pt-4">
-            <p className="text-xs text-brand-navy-500">
-              {isEn
-                ? 'Changes stay in your draft. Click Save All Changes after closing.'
-                : 'Thay đổi được giữ trong bản nháp. Bấm Lưu Toàn Bộ Thay Đổi sau khi đóng.'}
-            </p>
+            <p className="text-xs text-brand-navy-500">{t('homeContent.catalog.draftHint')}</p>
             <button
               type="button"
               onClick={() => setEditingCard(null)}
               className="rounded-xl bg-brand-sage-700 px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-sage-900"
             >
-              {isEn ? 'Done' : 'Hoàn tất'}
+              {t('homeContent.action.done')}
             </button>
           </div>
         </Modal>,
         document.body
       )}
       {pendingDelete && createPortal(
-        <Modal
-          isOpen
-          onClose={() => setDeletingCard(null)}
-          title={isEn ? 'Delete card?' : 'Xóa thẻ?'}
-        >
-          <p className="text-sm text-brand-navy-700">
-            {isEn ? `Remove "${pendingDelete.name}" from the homepage?` : `Xóa thẻ "${pendingDelete.name}" khỏi trang chủ?`}
-          </p>
+        <Modal isOpen onClose={() => setDeletingCard(null)} title={t('homeContent.catalog.deleteTitle')}>
+          <p className="text-sm text-brand-navy-700">{t('homeContent.catalog.deleteConfirm', { name: nameOf(pendingDelete, lang) })}</p>
           {linkedSportsCount > 0 && (
-            <p className="mt-3 text-sm text-brand-sand-700 dark:text-brand-sand-400">
-              {isEn
-                ? `${linkedSportsCount} linked sport card(s) will be kept with their facility link cleared.`
-                : `${linkedSportsCount} thẻ bộ môn liên kết sẽ được giữ lại và chuyển về trạng thái chưa liên kết cụm sân.`}
-            </p>
+            <p className="mt-3 text-sm text-brand-sand-700 dark:text-brand-sand-400">{t('homeContent.catalog.deleteLinked', { count: linkedSportsCount })}</p>
           )}
-          <p className="mt-3 text-xs text-brand-navy-500">
-            {isEn ? 'Click Save All Changes to publish the deletion.' : 'Bấm Lưu Toàn Bộ Thay Đổi để lưu việc xóa thẻ.'}
-          </p>
+          <p className="mt-3 text-xs text-brand-navy-500">{t('homeContent.catalog.deleteHint')}</p>
           <div className="mt-5 flex justify-end gap-3">
             <button type="button" onClick={() => setDeletingCard(null)} className="rounded-xl border border-brand-navy-300 px-4 py-2 text-xs font-bold text-brand-navy-700 hover:bg-brand-navy-50">
-              {isEn ? 'Cancel' : 'Hủy bỏ'}
+              {t('homeContent.action.cancel')}
             </button>
             <button type="button" onClick={deleteCard} className="rounded-xl bg-brand-danger-600 px-4 py-2 text-xs font-bold text-white hover:bg-brand-danger-700">
-              {isEn ? 'Confirm deletion' : 'Xác nhận xóa'}
+              {t('homeContent.catalog.confirmDelete')}
             </button>
           </div>
         </Modal>,
@@ -439,4 +326,3 @@ export function LandingCatalogEditor({ type, metadata = [], facilities, sports, 
     </section>
   );
 }
-

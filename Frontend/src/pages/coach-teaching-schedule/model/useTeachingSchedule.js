@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect } from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { DAY_LABELS_EN, DAY_LABELS_VI, SHORT_DAY_LABELS_EN, SHORT_DAY_LABELS_VI, formatIsoDate, parseIsoDate, getWeekDays } from '../../../shared/lib/calendar.js';
 import { useTeachingSessions } from '../../../features/coach-workspace/index.js';
 import { parseCalendarDate } from '../../../shared/lib/dateTime.js';

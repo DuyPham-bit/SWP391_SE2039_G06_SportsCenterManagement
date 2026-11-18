@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { coachApi, coachProfessionalApi, tdeeEstimate } from '../../../entities/coach/index.js';
-import { uploadMediaFileToCloud } from '../../../shared/api/mediaApi.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { uploadMediaFileToCloud } from '../../../shared/api/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { SectionCard, EmptyState } from '../../../features/coach-workspace/index.js';
 import { inputClass, selectClass, buttonPrimary, FormField, dateInput } from './formControls.jsx';
 

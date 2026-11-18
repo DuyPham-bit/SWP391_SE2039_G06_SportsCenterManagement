@@ -1,8 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useLayoutEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { translateCoachName } from '../../../shared/i18n/i18nHelper.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { translateCoachName } from '../../../shared/lib/i18nHelper.js';
 import { Logo } from '../../../shared/ui/Logo.jsx';
 
 export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCollapse, onClose, currentPath }) {
@@ -23,6 +23,25 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
   }, []);
 
   const isEffectiveCollapsed = isDesktopCollapsed && !isMobileScreen;
+
+  // Gliding active indicator: measures the item marked aria-current and slides a bar to it.
+  const navScrollRef = useRef(null);
+  const [indicator, setIndicator] = useState({ y: 0, h: 0, visible: false });
+  useLayoutEffect(() => {
+    const measure = () => {
+      const box = navScrollRef.current;
+      const active = box?.querySelector('[aria-current="page"]');
+      if (!box || !active) { setIndicator(prev => ({ ...prev, visible: false })); return; }
+      const boxRect = box.getBoundingClientRect();
+      const rect = active.getBoundingClientRect();
+      setIndicator({ y: rect.top - boxRect.top + box.scrollTop + 6, h: Math.max(rect.height - 12, 12), visible: true });
+    };
+    measure();
+    // Re-measure after the width/accordion transitions settle.
+    const timer = window.setTimeout(measure, 320);
+    window.addEventListener('resize', measure);
+    return () => { window.clearTimeout(timer); window.removeEventListener('resize', measure); };
+  }, [currentPath, isEffectiveCollapsed, expandedGroups, isOpen]);
 
   const isEn = language === 'en';
 
@@ -94,7 +113,6 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
               icon: 'calendar_month',
               subItems: [
                 { label: isEn ? 'Timetable' : 'Thời khóa biểu', path: '#/member/schedule' },
-                { label: isEn ? 'Join a Class' : 'Ghi danh lớp học', path: '#/member/classes' },
                 { label: isEn ? 'Booked & Cancelled' : 'Lớp đã đặt & Hủy', path: '#/member/bookings' }
               ]
             },
@@ -567,7 +585,8 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
 
         {/* Navigation Menu Body: fully scrollable container with sleek custom scrollbar */}
         <div
-          className={`flex-1 overflow-y-auto sidebar-scroll-container ${
+          ref={navScrollRef}
+          className={`relative flex-1 overflow-y-auto sidebar-scroll-container ${
             isEffectiveCollapsed ? 'px-2 py-3 space-y-2' : 'px-3 py-4 space-y-5'
           }`}
           onScroll={() => {
@@ -575,6 +594,11 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
             setTooltipState(null);
           }}
         >
+          <span
+            aria-hidden="true"
+            className="scms-nav-indicator"
+            style={{ transform: `translateY(${indicator.y}px)`, height: `${indicator.h}px`, opacity: indicator.visible ? 1 : 0 }}
+          />
           {sections.map((section, idx) => (
             <div key={idx} className={isEffectiveCollapsed ? 'space-y-1.5' : 'space-y-1'}>
               {/* Category Divider / Header */}
@@ -643,6 +667,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
                           onClick={(e) => handleItemClick(item, e)}
                           onMouseEnter={(e) => handleItemMouseEnter(item, e)}
                           onMouseLeave={handleItemMouseLeave}
+                          aria-current={isAnyChildActive ? 'page' : undefined}
                           className={`sidebar-rail-btn w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
                             isAnyChildActive || isFlyoutOpen
                               ? 'bg-brand-sage-500/20 dark:bg-brand-sage-950/60 text-brand-sage-700 dark:text-brand-sage-300 border-2 border-brand-sage-500/50 shadow-xs font-bold scale-105'
@@ -671,6 +696,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
                         }}
                         onMouseEnter={(e) => handleTooltipEnter(item.label, e)}
                         onMouseLeave={handleTooltipLeave}
+                        aria-current={isActive ? 'page' : undefined}
                         className={`sidebar-rail-btn w-11 h-11 rounded-2xl flex items-center justify-center transition-all cursor-pointer ${
                           isActive
                             ? 'bg-brand-sage-500/20 dark:bg-brand-sage-950/60 text-brand-sage-700 dark:text-brand-sage-300 border-2 border-brand-sage-500/50 shadow-xs font-bold scale-105'
@@ -730,6 +756,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
                                 key={sIdx}
                                 href={sub.path}
                                 onClick={onClose}
+                                aria-current={isChildActive ? 'page' : undefined}
                                 className={`flex items-center gap-2 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                                   isChildActive
                                     ? 'bg-brand-sage-500/15 dark:bg-brand-sage-900/40 text-brand-sage-700 dark:text-brand-sage-300 font-bold border border-brand-sage-500/30'
@@ -754,6 +781,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
                   <a
                     key={item.id}
                     href={item.path}
+                    aria-current={isActive ? 'page' : undefined}
                     onClick={(e) => {
                       if (item.isPopup) {
                         e.preventDefault();
@@ -763,7 +791,7 @@ export function Sidebar({ isOpen, isDesktopCollapsed = false, onToggleDesktopCol
                         onClose?.();
                       }
                     }}
-                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-colors ${
+                    className={`flex items-center justify-between px-2.5 py-1.5 rounded-xl text-xs transition-[color,background-color,translate] duration-200 hover:translate-x-0.5 ${
                       isActive
                         ? 'bg-brand-sage-500/15 dark:bg-brand-sage-950/40 text-brand-sage-700 dark:text-brand-sage-300 font-bold border border-brand-sage-500/30 shadow-2xs'
                         : 'text-ink font-medium hover:bg-surface-muted hover:text-brand-sage-500 dark:hover:text-brand-sage-400'

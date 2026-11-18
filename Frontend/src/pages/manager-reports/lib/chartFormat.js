@@ -15,7 +15,7 @@ export const sportVisuals = {
     fill: '#FEE5E1',
     text: 'text-brand-danger-700 dark:text-brand-danger-400',
     bg: 'bg-brand-danger-50 text-brand-danger-700 dark:bg-brand-danger-950/50 dark:text-brand-danger-300 border-brand-danger-200 dark:border-brand-danger-800',
-    barGrad: 'from-rose-500 to-red-600',
+    barGrad: 'from-brand-danger-500 to-brand-danger-700',
     barHex: '#CD493A',
     icon: 'fitness_center'
   },
@@ -24,7 +24,7 @@ export const sportVisuals = {
     fill: '#E6F2F3',
     text: 'text-brand-teal-700 dark:text-brand-teal-400',
     bg: 'bg-brand-teal-50 text-brand-teal-700 dark:bg-brand-teal-950/50 dark:text-brand-teal-300 border-brand-teal-200 dark:border-brand-teal-800',
-    barGrad: 'from-cyan-400 to-teal-600',
+    barGrad: 'from-brand-teal-400 to-brand-teal-700',
     barHex: '#24828F',
     icon: 'pool'
   },
@@ -33,7 +33,7 @@ export const sportVisuals = {
     fill: '#FEE5E1',
     text: 'text-brand-danger-800 dark:text-brand-danger-300',
     bg: 'bg-brand-danger-50 text-brand-danger-700 dark:bg-brand-danger-950/50 dark:text-brand-danger-300 border-brand-danger-200 dark:border-brand-danger-800',
-    barGrad: 'from-amber-600 to-rose-700',
+    barGrad: 'from-brand-terra-600 to-brand-danger-700',
     barHex: '#B54E34',
     icon: 'sports_mma'
   },
@@ -42,7 +42,7 @@ export const sportVisuals = {
     fill: '#E6F2EC',
     text: 'text-brand-sage-700 dark:text-brand-sage-400',
     bg: 'bg-brand-sage-50 text-brand-sage-700 dark:bg-brand-sage-950/50 dark:text-brand-sage-300 border-brand-sage-200 dark:border-brand-sage-800',
-    barGrad: 'from-teal-600 to-emerald-700',
+    barGrad: 'from-brand-sage-500 to-brand-sage-800',
     barHex: '#2D6A4F',
     icon: 'self_improvement'
   },
@@ -51,7 +51,7 @@ export const sportVisuals = {
     fill: '#F4F1DE',
     text: 'text-brand-sand-700 dark:text-brand-sand-400',
     bg: 'bg-brand-sand-50 text-brand-sand-700 dark:bg-brand-sand-950/50 dark:text-brand-sand-300 border-brand-sand-200 dark:border-brand-sand-800',
-    barGrad: 'from-amber-400 to-yellow-600',
+    barGrad: 'from-brand-sand-400 to-brand-sand-600',
     barHex: '#BF8832',
     icon: 'sports_tennis'
   },
@@ -60,7 +60,7 @@ export const sportVisuals = {
     fill: '#E6F2F3',
     text: 'text-brand-teal-700 dark:text-brand-teal-400',
     bg: 'bg-brand-teal-50 text-brand-teal-700 dark:bg-brand-teal-950/50 dark:text-brand-teal-300 border-brand-teal-200 dark:border-brand-teal-800',
-    barGrad: 'from-emerald-400 to-teal-700',
+    barGrad: 'from-brand-teal-400 to-brand-teal-700',
     barHex: '#3FAEB8',
     icon: 'sports_tennis'
   },
@@ -69,7 +69,7 @@ export const sportVisuals = {
     fill: '#E6F2EC',
     text: 'text-brand-sage-800 dark:text-brand-sage-300',
     bg: 'bg-brand-sage-50 text-brand-sage-700 dark:bg-brand-sage-950/50 dark:text-brand-sage-300 border-brand-sage-200 dark:border-brand-sage-800',
-    barGrad: 'from-emerald-600 to-green-800',
+    barGrad: 'from-brand-sage-600 to-brand-sage-900',
     barHex: '#1B4332',
     icon: 'sports_golf'
   },
@@ -78,7 +78,7 @@ export const sportVisuals = {
     fill: '#FED3C8',
     text: 'text-brand-terra-700 dark:text-brand-terra-400',
     bg: 'bg-brand-terra-50 text-brand-terra-700 dark:bg-brand-terra-950/50 dark:text-brand-terra-300 border-brand-terra-200 dark:border-brand-terra-800',
-    barGrad: 'from-amber-500 to-orange-600',
+    barGrad: 'from-brand-sand-500 to-brand-terra-600',
     barHex: '#E07A5F',
     icon: 'sports_basketball'
   },
@@ -87,7 +87,7 @@ export const sportVisuals = {
     fill: '#E6F2F3',
     text: 'text-brand-teal-700 dark:text-brand-teal-400',
     bg: 'bg-brand-teal-50 text-brand-teal-700 dark:bg-brand-teal-950/50 dark:text-brand-teal-300 border-brand-teal-200 dark:border-brand-teal-800',
-    barGrad: 'from-sky-400 to-teal-600',
+    barGrad: 'from-brand-teal-400 to-brand-teal-700',
     barHex: '#24828F',
     icon: 'sports_tennis'
   },
@@ -96,7 +96,7 @@ export const sportVisuals = {
     fill: '#E6F2EC',
     text: 'text-brand-sage-700 dark:text-brand-sage-400',
     bg: 'bg-brand-sage-50 text-brand-sage-700 dark:bg-brand-sage-950/50 dark:text-brand-sage-300 border-brand-sage-200 dark:border-brand-sage-800',
-    barGrad: 'from-green-500 to-emerald-700',
+    barGrad: 'from-brand-sage-500 to-brand-sage-800',
     barHex: '#2A5C46',
     icon: 'sports_soccer'
   }

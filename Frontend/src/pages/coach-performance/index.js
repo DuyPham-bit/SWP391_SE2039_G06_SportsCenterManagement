@@ -1,1 +1,1 @@
-export { PerformanceDashboard } from '../../widgets/coach-performance/index.js';
+export { PerformanceDashboard } from './ui/CoachPerformancePage.jsx';

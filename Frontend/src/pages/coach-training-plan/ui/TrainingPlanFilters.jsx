@@ -1,6 +1,6 @@
 import React from 'react';
 import { getSportBadgeTheme } from '../lib/planPresets.js';
-import { translateClassName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName } from '../../../shared/lib/i18nHelper.js';
 
 export function TrainingPlanFilters({
   classFilterList, isEn, plans, searchQuery, selectedFilterClass, setSearchQuery,

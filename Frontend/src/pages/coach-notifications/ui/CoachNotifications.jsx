@@ -1,12 +1,12 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { coachApi } from '../../../entities/coach/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { CoachError } from '../../../features/coach-workspace/index.js';
 import { formatMemberDateTime } from '../../../entities/member/index.js';
 import { useNotifications, NotificationList } from '../../../features/notifications/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { QUICK_TEMPLATES, detectType } from '../lib/templates.js';
 import {
   SCMS_HERO_BADGE_CLASS,

@@ -1,11 +1,15 @@
 import React from 'react';
 import { Logo } from '../../../shared/ui/Logo.jsx';
-import { translateLocation, translateOpenHours } from '../../../shared/i18n/i18nHelper.js';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 export function LandingFooter({
-  facilitiesList, handleNavClick, handleSportClick, isEn, landingContent, navItems, socialContacts,
+  facilitiesList, handleNavClick, handleSportClick, landingContent, navItems, socialContacts,
   visibleSports
 }) {
+  const { t } = useLanguage();
+  const footer = landingContent?.ctaAndFooter || {};
+  const notSet = t('landing.common.notUpdated');
+  const visibleFacilities = (landingContent?.facilitiesSection?.facilitiesList || facilitiesList || []).filter(f => f?.isVisible !== false).length;
   return (
     <footer className="site-footer">
       <div className="footer-container tiya-reveal">
@@ -16,39 +20,44 @@ export function LandingFooter({
               <Logo variant="dark" size="lg" onClick={e => handleNavClick(navItems[0], e)} />
             </div>
             <p style={{fontSize:'13.5px',lineHeight:1.7,color:'#D3D4D7',maxWidth:'320px'}}>
-              {isEn
-                ? 'Premier sports learning and training ground for all ages. Join Olympic Sports Arena to pursue your passion, enhance physical health, and connect with fellow athletes.'
-                : 'Không gian học tập và rèn luyện thể thao dành cho mọi lứa tuổi. Cùng Olympic Sports Arena chọn bộ môn yêu thích, nâng cao thể lực và kết nối cộng đồng.'}
+              {footer.brandDescription}
             </p>
             <div style={{display:'inline-flex',alignItems:'center',gap:'8px',marginTop:'16px',padding:'7px 16px',background:'rgba(129,178,154,0.12)',border:'1px solid rgba(129,178,154,0.3)',borderRadius:'100px',fontSize:'12px',fontWeight:600,color:'#A7F3D0'}}>
               <span className="material-symbols-outlined" style={{fontSize:'16px',color:'#81B29A'}}>sports_score</span>
-              {visibleSports?.length || 0} {isEn ? 'disciplines' : 'bộ môn'} · {((landingContent?.facilitiesSection?.facilitiesList || facilitiesList || []).filter(f => f?.isVisible !== false)).length} {isEn ? 'facilities' : 'khu tập luyện'}
+              {t('landing.footer.counts', { sports: visibleSports?.length || 0, facilities: visibleFacilities })}
             </div>
           </div>
 
           {/* Col 2: Contact */}
           <div>
-            <h4 className="site-footer-title">{isEn ? 'Contact Info' : 'Thông Tin Liên Hệ'}</h4>
+            <h4 className="site-footer-title">{t('landing.footer.contact')}</h4>
             <div style={{display:'flex',flexDirection:'column',gap:'12px'}}>
               <div className="footer-link">
                 <span className="footer-icon-pill material-symbols-outlined">location_on</span>
-                <span>{landingContent.ctaAndFooter?.contactAddress ? (isEn ? translateLocation(landingContent.ctaAndFooter.contactAddress, true) : landingContent.ctaAndFooter.contactAddress) : (isEn ? 'Not updated' : 'Chưa cập nhật')}</span>
+                <span>{footer.contactAddress || notSet}</span>
               </div>
-              {landingContent.ctaAndFooter?.contactPhone?.trim() ? (
-                <a href={`tel:${landingContent.ctaAndFooter.contactPhone.trim().replace(/\s+/g, '')}`} className="footer-link">
+              {footer.contactPhone?.trim() ? (
+                <a href={`tel:${footer.contactPhone.trim().replace(/\s+/g, '')}`} className="footer-link">
                   <span className="footer-icon-pill material-symbols-outlined">call</span>
-                  <span>{landingContent.ctaAndFooter.contactPhone.trim()}</span>
+                  <span>{footer.contactPhone.trim()}</span>
                 </a>
               ) : (
                 <div className="footer-link">
                   <span className="footer-icon-pill material-symbols-outlined">call</span>
-                  <span>{isEn ? 'Not updated' : 'Chưa cập nhật'}</span>
+                  <span>{notSet}</span>
                 </div>
               )}
-              <a href={`mailto:${landingContent.ctaAndFooter?.contactEmail || 'Chưa cập nhật'}`} className="footer-link" style={{wordBreak:'break-all'}}>
-                <span className="footer-icon-pill material-symbols-outlined">mail</span>
-                <span>{landingContent.ctaAndFooter?.contactEmail || (isEn ? 'contact@scms.vn' : 'Chưa cập nhật')}</span>
-              </a>
+              {footer.contactEmail ? (
+                <a href={`mailto:${footer.contactEmail}`} className="footer-link" style={{wordBreak:'break-all'}}>
+                  <span className="footer-icon-pill material-symbols-outlined">mail</span>
+                  <span>{footer.contactEmail}</span>
+                </a>
+              ) : (
+                <div className="footer-link">
+                  <span className="footer-icon-pill material-symbols-outlined">mail</span>
+                  <span>{notSet}</span>
+                </div>
+              )}
               <div className="social-icon" style={{marginTop:'8px'}}>
                 {socialContacts.map(contact => (
                   <a key={contact.label} href={contact.url} target="_blank" rel="noopener noreferrer" className="social-icon-link" title={contact.label}>
@@ -61,35 +70,35 @@ export function LandingFooter({
 
           {/* Col 3: Hours */}
           <div>
-            <h4 className="site-footer-title">{isEn ? 'Opening Hours' : 'Thời Gian Hoạt Động'}</h4>
+            <h4 className="site-footer-title">{t('landing.footer.hours')}</h4>
             <div className="footer-hours-card">
               <div className="footer-hours-row">
-                <span className="footer-hours-label">{isEn ? 'Monday - Friday:' : 'Thứ Hai - Thứ Sáu:'}</span>
-                <span className="footer-hours-value">{landingContent.ctaAndFooter?.hoursWeekdays || (isEn ? '05:30 - 22:30' : 'Chưa cập nhật')}</span>
+                <span className="footer-hours-label">{t('landing.footer.weekdays')}</span>
+                <span className="footer-hours-value">{footer.hoursWeekdays || notSet}</span>
               </div>
               <div className="footer-hours-row">
-                <span className="footer-hours-label">{isEn ? 'Saturday - Sunday:' : 'Thứ Bảy - Chủ Nhật:'}</span>
-                <span className="footer-hours-value">{landingContent.ctaAndFooter?.hoursWeekend || (isEn ? '06:00 - 22:00' : 'Chưa cập nhật')}</span>
+                <span className="footer-hours-label">{t('landing.footer.weekend')}</span>
+                <span className="footer-hours-value">{footer.hoursWeekend || notSet}</span>
               </div>
               <div className="footer-hours-row">
-                <span className="footer-hours-label">{isEn ? 'Holidays:' : 'Ngày Lễ:'}</span>
-                <span className="footer-hours-value footer-hours-gold">{landingContent.ctaAndFooter?.hoursHolidays ? (isEn ? translateOpenHours(landingContent.ctaAndFooter.hoursHolidays, true) : landingContent.ctaAndFooter.hoursHolidays) : (isEn ? 'Not updated' : 'Chưa cập nhật')}</span>
+                <span className="footer-hours-label">{t('landing.footer.holidays')}</span>
+                <span className="footer-hours-value footer-hours-gold">{footer.hoursHolidays || notSet}</span>
               </div>
             </div>
             <p style={{fontSize:'12px',color:'#94A3B8',marginTop:'12px',lineHeight:1.6}}>
-              {isEn ? 'Specific opening hours are listed in each facility & court detail.' : 'Giờ hoạt động cụ thể được ghi trong thông tin từng sân và phòng tập.'}
+              {footer.hoursNote}
             </p>
           </div>
 
           {/* Col 4: Sports List */}
           <div>
-            <h4 className="site-footer-title">{isEn ? 'Disciplines & Facilities' : 'Bộ Môn & Cơ Sở'}</h4>
+            <h4 className="site-footer-title">{t('landing.footer.sports')}</h4>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'6px 14px'}}>
               {visibleSports.map(sport => {
                 const sName = sport.name;
                 return (
                   <button key={sport.id} type="button" onClick={() => handleSportClick(sport)}
-                    title={isEn ? `View facility for ${sName}` : `Xem cơ sở tập luyện ${sName}`}
+                    title={t('landing.footer.viewFacility', { name: sName })}
                     className="footer-sport-btn"
                   >
                     <span className="footer-sport-dot" />
@@ -104,16 +113,16 @@ export function LandingFooter({
         {/* Bottom Copyright & Navigation */}
         <div className="footer-bottom-bar">
           <p className="footer-copyright">
-            {landingContent.ctaAndFooter?.copyright || (isEn ? '© 2026 Olympic Sports Arena. All rights reserved.' : '© 2026 Olympic Sports Arena. Bảo lưu mọi quyền.')}
+            {footer.copyright}
           </p>
-          <nav aria-label={isEn ? "Footer navigation" : "Liên kết cuối trang"} className="footer-bottom-nav">
+          <nav aria-label={t('landing.footer.navLabel')} className="footer-bottom-nav">
             {navItems.filter(item => item.id !== 'trang-chu').map(item => (
               <a key={item.id} href={item.href} onClick={e => handleNavClick(item, e)} className="footer-nav-link">
                 {item.label}
               </a>
             ))}
             <a href="#/register" className="custom-border-btn footer-register-btn">
-              <span>{isEn ? 'Register Member' : 'Đăng ký hội viên'}</span>
+              <span>{t('landing.footer.register')}</span>
               <span className="material-symbols-outlined" style={{fontSize:'16px'}}>arrow_forward</span>
             </a>
           </nav>

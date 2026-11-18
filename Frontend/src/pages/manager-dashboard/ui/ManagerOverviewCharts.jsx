@@ -123,7 +123,7 @@ export function MiniSparkline({ color = '#E07A5F', data = [] }) {
           </linearGradient>
         </defs>
         <path d={fillD} fill={`url(#grad-${color.replace('#', '')})`} />
-        <path d={pathD} fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" />
+        <path d={pathD} pathLength="1" fill="none" stroke={color} strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round" className="scms-chart-line" />
       </svg>
     </div>
   );
@@ -163,6 +163,7 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
       {/* SVG Donut Ring with Center Micro Badge */}
       <div className="relative w-36 h-36 mx-auto flex items-center justify-center select-none">
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`} className="transform -rotate-90 select-none overflow-visible">
+          <g className="scms-donut-reveal">
           {/* Subtle Background Track */}
           <circle
             cx={size / 2}
@@ -190,6 +191,7 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
               onMouseLeave={() => setHovered(null)}
             />
           ))}
+          </g>
         </svg>
 
         {/* Center Text Info */}
@@ -200,7 +202,7 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
           <strong className="text-2xl font-black font-chivo text-brand-navy-900 dark:text-white leading-none mt-0.5">
             {hovered !== null ? validData[hovered].value : <AnimatedNumber value={total} duration={1000} />}
           </strong>
-          <span className="mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-teal-50 text-teal-700 dark:bg-teal-950/60 dark:text-teal-300 border border-teal-200/60">
+          <span className="mt-1 px-1.5 py-0.5 rounded-full text-[9px] font-bold bg-brand-teal-50 text-brand-teal-700 dark:bg-brand-teal-950/60 dark:text-brand-teal-300 border border-brand-teal-200/60">
             {readyPct}% Khả dụng
           </span>
         </div>
@@ -208,12 +210,12 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
 
       {/* Mini Operational Stats Strip */}
       <div className="grid grid-cols-2 gap-2 w-full pt-1">
-        <div className="p-2 rounded-xl bg-teal-50/70 dark:bg-teal-950/40 border border-teal-200/70 dark:border-teal-800/50 flex items-center gap-2">
-          <div className="w-7 h-7 rounded-lg bg-teal-700 text-white flex items-center justify-center shrink-0 shadow-xs">
+        <div className="p-2 rounded-xl bg-brand-teal-50/70 dark:bg-brand-teal-950/40 border border-brand-teal-200/70 dark:border-brand-teal-800/50 flex items-center gap-2">
+          <div className="w-7 h-7 rounded-lg bg-brand-teal-700 text-white flex items-center justify-center shrink-0 shadow-xs">
             <span className="material-symbols-outlined text-[16px]">sports_score</span>
           </div>
           <div className="min-w-0">
-            <span className="text-[10px] text-teal-800 dark:text-teal-300 font-bold block truncate">Đang có lớp</span>
+            <span className="text-[10px] text-brand-teal-800 dark:text-brand-teal-300 font-bold block truncate">Đang có lớp</span>
             <span className="text-xs font-black text-brand-navy-900 dark:text-white block">
               <AnimatedNumber value={activeCount} duration={1000} /> <span className="text-[10px] font-medium text-brand-navy-400">sân</span>
             </span>
@@ -235,8 +237,8 @@ export function RoomStatusDonutChart({ total = 0, data = [], activeRooms, vacant
 
       {/* Bottom Insight Pill */}
       <div className="text-[10.5px] font-medium text-brand-navy-500 dark:text-brand-navy-400 pt-1.5 border-t border-brand-navy-100 dark:border-brand-navy-800/80 flex items-center justify-between">
-        <span className="flex items-center gap-1.5 text-teal-700 dark:text-teal-400 font-bold">
-          <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
+        <span className="flex items-center gap-1.5 text-brand-teal-700 dark:text-brand-teal-400 font-bold">
+          <span className="w-1.5 h-1.5 rounded-full bg-brand-teal-500 animate-pulse" />
           {activeCount}/{total} sân đang mở lớp
         </span>
         <span className="text-[10px] font-semibold text-brand-navy-400">Sẵn sàng {readyPct}%</span>
@@ -719,26 +721,26 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
         onMouseLeave={() => setHoveredIdx(null)}
       >
         <defs>
-          {/* Revenue Area Gradient - Luminous Emerald Teal to Transparent */}
+          {/* Revenue Area Gradient - Teal Token Scale */}
           <linearGradient id="areaRevGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#2DD4BF" stopOpacity="0.48" />
-            <stop offset="35%" stopColor="#14B8A6" stopOpacity="0.30" />
-            <stop offset="70%" stopColor="#0D9488" stopOpacity="0.12" />
-            <stop offset="100%" stopColor="#0F766E" stopOpacity="0.00" />
+            <stop offset="0%" stopColor="rgb(var(--brand-teal-400))" stopOpacity="0.48" />
+            <stop offset="35%" stopColor="rgb(var(--brand-teal-500))" stopOpacity="0.30" />
+            <stop offset="70%" stopColor="rgb(var(--brand-teal-600))" stopOpacity="0.12" />
+            <stop offset="100%" stopColor="rgb(var(--brand-teal-700))" stopOpacity="0.00" />
           </linearGradient>
 
-          {/* Net Profit Area Gradient - Amber/Gold Tint */}
+          {/* Net Profit Area Gradient - Sand/Gold Token Scale */}
           <linearGradient id="areaProfitGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#F59E0B" stopOpacity="0.25" />
-            <stop offset="60%" stopColor="#E5A33C" stopOpacity="0.08" />
-            <stop offset="100%" stopColor="#E5A33C" stopOpacity="0.00" />
+            <stop offset="0%" stopColor="rgb(var(--brand-sand-500))" stopOpacity="0.25" />
+            <stop offset="60%" stopColor="rgb(var(--brand-sand-500))" stopOpacity="0.08" />
+            <stop offset="100%" stopColor="rgb(var(--brand-sand-500))" stopOpacity="0.00" />
           </linearGradient>
 
           {/* Hover Column Scanline Gradient */}
           <linearGradient id="crosshairGrad" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#14B8A6" stopOpacity="0.0" />
-            <stop offset="50%" stopColor="#14B8A6" stopOpacity="0.6" />
-            <stop offset="100%" stopColor="#14B8A6" stopOpacity="0.1" />
+            <stop offset="0%" stopColor="rgb(var(--brand-teal-500))" stopOpacity="0.0" />
+            <stop offset="50%" stopColor="rgb(var(--brand-teal-500))" stopOpacity="0.55" />
+            <stop offset="100%" stopColor="rgb(var(--brand-teal-500))" stopOpacity="0.08" />
           </linearGradient>
         </defs>
 
@@ -780,7 +782,7 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
               y1={baselineY - (maxProfitVal / niceMax) * innerHeight}
               x2={chartWidth - paddingRight}
               y2={baselineY - (maxProfitVal / niceMax) * innerHeight}
-              stroke="#0D9488"
+              stroke="rgb(var(--brand-teal-600))"
               strokeDasharray="4 4"
               strokeWidth="1.2"
               strokeOpacity="0.35"
@@ -810,14 +812,15 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
         {revSplineD && (
           <path
             d={revSplineD}
+            pathLength="1"
             fill="none"
-            stroke="#0D9488"
+            stroke="rgb(var(--brand-teal-600))"
             strokeWidth="3.0"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="pointer-events-none"
+            className="pointer-events-none scms-chart-line"
             style={{
-              filter: "drop-shadow(0 3px 6px rgba(13, 148, 136, 0.45))"
+              filter: "drop-shadow(0 3px 6px rgb(var(--brand-teal-600) / 0.42))"
             }}
           />
         )}
@@ -826,14 +829,15 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
         {profitSplineD && (
           <path
             d={profitSplineD}
+            pathLength="1"
             fill="none"
-            stroke="#E5A33C"
+            stroke="rgb(var(--brand-sand-500))"
             strokeWidth="2.2"
             strokeLinecap="round"
             strokeLinejoin="round"
-            className="pointer-events-none"
+            className="pointer-events-none scms-chart-line"
             style={{
-              filter: "drop-shadow(0 2px 4px rgba(229, 163, 60, 0.4))"
+              filter: "drop-shadow(0 2px 4px rgb(var(--brand-sand-500) / 0.4))"
             }}
           />
         )}
@@ -846,7 +850,7 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
               y1={paddingTop}
               x2={hoveredPoint.x}
               y2={baselineY}
-              stroke="#14B8A6"
+              stroke="rgb(var(--brand-teal-500))"
               strokeDasharray="3 3"
               strokeWidth="1.5"
               strokeOpacity="0.85"
@@ -874,11 +878,11 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                 cx={x}
                 cy={y}
                 r={isHovered ? 7 : 5}
-                fill="#EF4444"
+                fill="rgb(var(--brand-danger-600))"
                 stroke="#FFFFFF"
                 strokeWidth={isHovered ? 2.5 : 2}
                 style={{
-                  filter: "drop-shadow(0 0 6px rgba(239, 68, 68, 0.8))"
+                  filter: "drop-shadow(0 0 6px rgb(var(--brand-danger-600) / 0.75))"
                 }}
               />
               {/* Outer pulsing ring */}
@@ -887,7 +891,7 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                 cy={y}
                 r={isHovered ? 11 : 8}
                 fill="none"
-                stroke="#EF4444"
+                stroke="rgb(var(--brand-danger-600))"
                 strokeWidth="1.2"
                 strokeOpacity="0.5"
               />
@@ -909,7 +913,7 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                   cx={x}
                   cy={y}
                   r={12}
-                  fill="#14B8A6"
+                  fill="rgb(var(--brand-teal-500))"
                   fillOpacity="0.25"
                   className="animate-ping"
                 />
@@ -919,15 +923,15 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                 cy={y}
                 r={isHovered ? 7 : isPeak ? 5.5 : 4}
                 fill="#FFFFFF"
-                stroke={isPeak ? "#0D9488" : "#14B8A6"}
+                stroke={isPeak ? "rgb(var(--brand-teal-600))" : "rgb(var(--brand-teal-500))"}
                 strokeWidth={isHovered ? 3 : 2.5}
                 className="transition-all duration-150"
                 style={{
                   filter: isHovered
-                    ? "drop-shadow(0 0 10px rgba(45, 212, 191, 0.9))"
+                    ? "drop-shadow(0 0 10px rgb(var(--brand-teal-400) / 0.9))"
                     : isPeak
-                    ? "drop-shadow(0 0 6px rgba(13, 148, 136, 0.7))"
-                    : "drop-shadow(0 1px 3px rgba(0,0,0,0.25))"
+                    ? "drop-shadow(0 0 6px rgb(var(--brand-teal-600) / 0.7))"
+                    : "drop-shadow(0 1px 3px rgb(var(--brand-navy-900) / 0.25))"
                 }}
               />
             </g>
@@ -948,14 +952,14 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                     width={60}
                     height={20}
                     rx={10}
-                    fill="#0F766E"
+                    fill="rgb(var(--brand-teal-700))"
                     style={{
-                      filter: "drop-shadow(0 3px 6px rgba(15, 118, 110, 0.4))"
+                      filter: "drop-shadow(0 3px 6px rgb(var(--brand-teal-700) / 0.4))"
                     }}
                   />
                   <polygon
                     points={`${peakX - 4},${peakY - 6} ${peakX + 4},${peakY - 6} ${peakX},${peakY - 1}`}
-                    fill="#0F766E"
+                    fill="rgb(var(--brand-teal-700))"
                   />
                   <text
                     x={peakX}
@@ -987,7 +991,7 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                 y1={baselineY}
                 x2={x}
                 y2={baselineY + 5}
-                stroke={isHovered ? "#0D9488" : "rgb(var(--color-border))"}
+                stroke={isHovered ? "rgb(var(--brand-teal-600))" : "rgb(var(--color-border))"}
                 strokeWidth={isHovered ? "2" : "1.2"}
               />
               <text
@@ -996,7 +1000,7 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
                 textAnchor="middle"
                 fontSize="10.5"
                 fontWeight={isHovered || item.active ? "900" : "700"}
-                fill={isHovered ? "#0D9488" : item.active ? "#0F766E" : "rgb(var(--color-text-muted))"}
+                fill={isHovered ? "rgb(var(--brand-teal-600))" : item.active ? "rgb(var(--brand-teal-700))" : "rgb(var(--color-text-muted))"}
               >
                 {item.m}
               </text>
@@ -1018,18 +1022,18 @@ export function TwelveMonthRevenueExpensesProfitChart({ revenuePeriods = [] }) {
             <span>{months[activeHoverIdx].m}</span>
           </div>
           <div className="flex items-center gap-3">
-            <span className="text-teal-300 font-bold flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-teal-400 inline-block" />
+            <span className="text-brand-teal-300 font-bold flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-brand-teal-400 inline-block" />
               Thu: {months[activeHoverIdx].rev} tr
             </span>
             {months[activeHoverIdx].exp > 0 && (
-              <span className="text-rose-300 font-bold flex items-center gap-1">
-                <span className="w-2 h-2 rounded-full bg-rose-400 inline-block" />
+              <span className="text-brand-danger-300 font-bold flex items-center gap-1">
+                <span className="w-2 h-2 rounded-full bg-brand-danger-400 inline-block" />
                 Hoàn: {months[activeHoverIdx].exp} tr
               </span>
             )}
-            <span className="text-amber-300 font-black flex items-center gap-1">
-              <span className="w-2 h-2 rounded-full bg-amber-400 inline-block" />
+            <span className="text-brand-sand-300 font-black flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-brand-sand-400 inline-block" />
               Thực thu: {months[activeHoverIdx].profit} tr
             </span>
           </div>
@@ -1171,19 +1175,19 @@ export function SixMonthContractExpiryBars({ items = [], emptyText = 'Chưa có 
     switch (rank) {
       case 1:
         return (
-          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300 border border-amber-300/80 shrink-0 shadow-2xs">
+          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-brand-sand-100 text-brand-sand-800 dark:bg-brand-sand-950/70 dark:text-brand-sand-300 border border-brand-sand-300/80 shrink-0 shadow-2xs">
             🏆 #1
           </span>
         );
       case 2:
         return (
-          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-200 border border-slate-300/80 shrink-0 shadow-2xs">
+          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-brand-navy-100 text-brand-navy-700 dark:bg-brand-navy-800 dark:text-brand-navy-200 border border-brand-navy-300/80 shrink-0 shadow-2xs">
             🥈 #2
           </span>
         );
       case 3:
         return (
-          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-orange-100 text-orange-800 dark:bg-orange-950/70 dark:text-orange-300 border border-orange-300/80 shrink-0 shadow-2xs">
+          <span className="inline-flex items-center justify-center px-1.5 py-0.5 rounded-md text-[10px] font-black bg-brand-terra-100 text-brand-terra-800 dark:bg-brand-terra-950/70 dark:text-brand-terra-300 border border-brand-terra-300/80 shrink-0 shadow-2xs">
             🥉 #3
           </span>
         );

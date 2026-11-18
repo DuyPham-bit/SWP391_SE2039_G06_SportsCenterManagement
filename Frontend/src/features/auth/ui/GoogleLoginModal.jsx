@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth, authApi } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { loadGoogleIdentity, googleClientId } from '../../../shared/lib/googleIdentity.js';
 
 export function GoogleLoginModal({ isOpen, onClose, onSuccess, linkAccount = false }) {
@@ -66,7 +66,7 @@ export function GoogleLoginModal({ isOpen, onClose, onSuccess, linkAccount = fal
         type: 'standard',
         theme: 'outline',
         size: 'large',
-        width: 320,
+        width: Math.min(320, Math.max(220, window.innerWidth - 88)),
         text: linkAccount ? 'continue_with' : 'signin_with',
         shape: 'rectangular',
         logo_alignment: 'left'
@@ -91,8 +91,8 @@ export function GoogleLoginModal({ isOpen, onClose, onSuccess, linkAccount = fal
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-brand-navy-100 overflow-hidden transform transition-all duration-200 animate-modal-entrance"
         onClick={e => e.stopPropagation()}
       >
-        {/* Dải màu Google 4 màu ở mép trên cùng */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-[#4285F4] via-[#EA4335] via-[#FBBC05] to-[#34A853]" />
+        {/* Dải màu thương hiệu Olympic ở mép trên cùng */}
+        <div className="h-[3px] w-full bg-gradient-to-r from-brand-sage-700 via-brand-teal-500 to-brand-sand-300" />
 
         {/* Nút đóng (X) góc phải trên */}
         <button
@@ -152,24 +152,26 @@ export function GoogleLoginModal({ isOpen, onClose, onSuccess, linkAccount = fal
           )}
 
           {/* Khung nút đăng nhập Google được căn giữa và làm đẹp */}
-          <div className="p-4 rounded-2xl bg-brand-navy-50/80 border border-brand-navy-100 flex flex-col items-center justify-center">
-            <div className="w-full flex items-center justify-center py-1">
-              <div
-                ref={buttonRef}
-                className={`min-h-[44px] flex justify-center transition-all ${loading ? 'pointer-events-none opacity-40 scale-98' : 'hover:shadow-sm'}`}
-              />
-            </div>
-
-            {loading && (
-              <div className="flex items-center justify-center gap-2 text-sm font-medium text-brand-teal-700 dark:text-brand-teal-400 mt-2.5 animate-pulse">
-                <svg className="animate-spin h-4 w-4 text-brand-teal-700 dark:text-brand-teal-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span>Đang xác thực với Google...</span>
+          {googleClientId && (
+            <div className="p-4 rounded-2xl bg-brand-navy-50/80 border border-brand-navy-100 flex flex-col items-center justify-center">
+              <div className="w-full flex items-center justify-center py-1">
+                <div
+                  ref={buttonRef}
+                  className={`min-h-[44px] flex justify-center transition-all ${loading ? 'pointer-events-none opacity-40 scale-98' : 'hover:shadow-sm'}`}
+                />
               </div>
-            )}
-          </div>
+
+              {loading && (
+                <div className="flex items-center justify-center gap-2 text-sm font-medium text-brand-teal-700 dark:text-brand-teal-400 mt-2.5 animate-pulse">
+                  <svg className="animate-spin h-4 w-4 text-brand-teal-700 dark:text-brand-teal-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                  </svg>
+                  <span>Đang xác thực với Google...</span>
+                </div>
+              )}
+            </div>
+          )}
 
           {/* Dòng cam kết bảo mật */}
           <div className="flex items-center justify-center gap-1.5 text-[11px] text-brand-navy-400">
