@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { useAuth, authApi } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { loadGoogleIdentity, googleClientId } from '../../../shared/lib/googleIdentity.js';
 
 export function GoogleLoginModal({ isOpen, onClose, onSuccess, linkAccount = false }) {
