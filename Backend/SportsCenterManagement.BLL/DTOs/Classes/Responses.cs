@@ -17,30 +17,6 @@ public static class Responses
 
 namespace SportsCenterManagement.BLL.DTOs.Classes
 {
-public sealed record ClassSessionResponse(
-    long Id,
-    long ClassId,
-    DateOnly SessionDate,
-    TimeOnly StartTime,
-    TimeOnly EndTime,
-    long? RoomId,
-    long? CoachId,
-    string Status);
-
-public sealed record CenterScheduleResponse(
-    long ClassId,
-    string ClassName,
-    long? RoomId,
-    long? CoachId,
-    DateOnly SessionDate,
-    TimeOnly StartTime,
-    TimeOnly EndTime,
-    int Capacity,
-    int ConfirmedEnrollments);
-}
-
-namespace SportsCenterManagement.BLL.DTOs.Classes
-{
 // ---------- UC-12: Manage classes & weekly schedules ----------
 
 public sealed record ClassDetailResponse(
@@ -200,8 +176,6 @@ public sealed record ClassCoachResponse(
 
 namespace SportsCenterManagement.BLL.DTOs.Classes
 {
-public sealed record ClassOptionResponse(long Id, string Name, string? Type, int Capacity);
-public sealed record SportOptionResponse(long Id, string Name, string? Description);
 public sealed record ManagedSportResponse(
     long Id,
     string Name,
