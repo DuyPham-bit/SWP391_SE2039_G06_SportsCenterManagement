@@ -3,7 +3,7 @@ import { toIsoDate, formatDayMonth } from '../lib/attendanceCalendar.js';
 import { getSessionStatusInfo } from '../lib/attendanceStatus.js';
 import { canAttendSession } from '../../../entities/coach/index.js';
 import { getSportBadgeTheme } from '../lib/badges.js';
-import { translateSportName, translateClassName, translateRoomName } from '../../../shared/i18n/i18nHelper.js';
+import { translateSportName, translateClassName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function WeeklyScheduleView({ DAY_FULL_LABELS, activeSession, handleSelectSession, isEn, sessionsByDate, todayIso, weekDays }) {
   return (
