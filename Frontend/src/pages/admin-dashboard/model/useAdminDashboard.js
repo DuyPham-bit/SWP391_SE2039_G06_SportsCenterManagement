@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useMemo } from 'react';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { adminApi } from '../../../entities/center/index.js';
 import { parseApiDate } from '../../../shared/lib/dateTime.js';
 
