@@ -2,7 +2,7 @@ using SportsCenterManagement.DAL.Context;
 
 namespace SportsCenterManagement.API.HealthChecks;
 
-public sealed class DatabaseHealthCheck(SportsCenterDbContext db) : Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck
+public sealed class DatabaseHealthCheck(SportsCenterManagement.BLL.Common.SystemHealthService health) : Microsoft.Extensions.Diagnostics.HealthChecks.IHealthCheck
 {
     public async Task<Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult> CheckHealthAsync(
         Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckContext context,
@@ -10,7 +10,7 @@ public sealed class DatabaseHealthCheck(SportsCenterDbContext db) : Microsoft.Ex
     {
         try
         {
-            var canConnect = await db.Database.CanConnectAsync(cancellationToken);
+            var canConnect = await health.CanConnectToDatabaseAsync(cancellationToken);
             return canConnect
                 ? Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Healthy("Database connection is healthy.")
                 : Microsoft.Extensions.Diagnostics.HealthChecks.HealthCheckResult.Unhealthy("Database connection failed.");
