@@ -1,0 +1,1319 @@
+{
+  "centerId": 1,
+  "centerName": "SCMS",
+  "openingTime": null,
+  "closingTime": null,
+  "siteWidth": 130,
+  "siteDepth": 100,
+  "siteAreaM2": 13000,
+  "zonesAreaM2": 13000,
+  "generatedAt": "2026-11-18T05:00:00",
+  "zones": [
+    {
+      "id": 4,
+      "code": "L",
+      "kind": "service",
+      "nameVi": "S\u1EA3nh ch\u00EDnh \u2013 L\u1EC5 t\u00E2n, C\u0103n-tin \u0026 Y t\u1EBF",
+      "nameEn": "Main Lobby \u2013 Reception, Caf\u00E9 \u0026 Clinic",
+      "descriptionVi": "C\u1ED5ng ch\u00EDnh, qu\u1EA7y l\u1EC5 t\u00E2n v\u00E0 \u0111\u1EB7t s\u00E2n, c\u0103n-tin, tr\u1EA1m y t\u1EBF s\u01A1 c\u1EE9u, WC nam/n\u1EEF/ng\u01B0\u1EDDi khuy\u1EBFt t\u1EADt.",
+      "descriptionEn": "Main gate, reception \u0026 booking desk, caf\u00E9, first-aid clinic, men\u0027s/women\u0027s/accessible WC.",
+      "color": "#A78BFA",
+      "x": -5,
+      "z": 32.5,
+      "width": 20,
+      "depth": 35,
+      "areaM2": 700,
+      "buildingWidth": 16,
+      "buildingDepth": 14,
+      "floors": 1,
+      "openTime": "05:30",
+      "closeTime": "22:00",
+      "configuredStatus": "Open",
+      "status": "Open",
+      "imageUrl": null,
+      "amenities": [
+        "reception",
+        "cafe",
+        "first_aid",
+        "wc",
+        "wc_accessible",
+        "wifi",
+        "extinguisher"
+      ],
+      "features": [
+        {
+          "type": "space",
+          "variant": "reception",
+          "x": -5,
+          "z": 36.5,
+          "w": 16,
+          "d": 6,
+          "floor": 1,
+          "labelVi": "Qu\u1EA7y l\u1EC5 t\u00E2n \u0026 \u0111\u1EB7t s\u00E2n",
+          "labelEn": "Reception \u0026 booking"
+        },
+        {
+          "type": "space",
+          "variant": "cafe",
+          "x": -9.5,
+          "z": 29.5,
+          "w": 7,
+          "d": 8,
+          "floor": 1,
+          "labelVi": "C\u0103n-tin",
+          "labelEn": "Caf\u00E9"
+        },
+        {
+          "type": "space",
+          "variant": "medical",
+          "x": -3.5,
+          "z": 29.5,
+          "w": 5,
+          "d": 8,
+          "floor": 1,
+          "labelVi": "Tr\u1EA1m y t\u1EBF",
+          "labelEn": "First-aid clinic"
+        },
+        {
+          "type": "space",
+          "variant": "wc",
+          "x": 1,
+          "z": 29.5,
+          "w": 4,
+          "d": 8,
+          "floor": 1,
+          "labelVi": "WC nam/n\u1EEF/khuy\u1EBFt t\u1EADt",
+          "labelEn": "WC men/women/accessible"
+        },
+        {
+          "type": "gate",
+          "x": -5,
+          "z": 50,
+          "w": 12,
+          "variant": "main"
+        },
+        {
+          "type": "ramp",
+          "x": -5,
+          "z": 41,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "sign",
+          "x": -12,
+          "z": 47,
+          "variant": "directory",
+          "floor": 0
+        },
+        {
+          "type": "hydrant",
+          "x": 3,
+          "z": 48,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "extinguisher",
+          "x": 2,
+          "z": 39,
+          "variant": null,
+          "floor": 0
+        }
+      ],
+      "rooms": [],
+      "updatedAt": "2026-11-17T18:28:08.6017094Z"
+    },
+    {
+      "id": 2,
+      "code": "A",
+      "kind": "building",
+      "nameVi": "Khu A \u2013 B\u01A1i l\u1ED9i \u0026 Gym",
+      "nameEn": "Zone A \u2013 Aquatics \u0026 Gym",
+      "descriptionVi": "T\u1EA7ng 1 b\u1EC3 b\u01A1i 25 m (6 l\u00E0n) c\u00F9ng ph\u00F2ng thay \u0111\u1ED3 nam/n\u1EEF t\u00E1ch bi\u1EC7t, t\u1EA7ng 2 ph\u00F2ng Gym \u0026 Fitness.",
+      "descriptionEn": "Floor 1 25 m pool (6 lanes) with separate men\u0027s/women\u0027s lockers, floor 2 gym \u0026 fitness.",
+      "color": "#0EA5E9",
+      "x": -40,
+      "z": 7.5,
+      "width": 50,
+      "depth": 35,
+      "areaM2": 1750,
+      "buildingWidth": 44,
+      "buildingDepth": 29,
+      "floors": 2,
+      "openTime": "05:30",
+      "closeTime": "21:30",
+      "configuredStatus": "Open",
+      "status": "Open",
+      "imageUrl": null,
+      "amenities": [
+        "locker",
+        "shower",
+        "wc",
+        "wc_accessible",
+        "first_aid",
+        "extinguisher"
+      ],
+      "features": [
+        {
+          "type": "space",
+          "variant": "locker_m",
+          "x": -23,
+          "z": -1,
+          "w": 8,
+          "d": 10,
+          "floor": 1,
+          "labelVi": "Thay \u0111\u1ED3 \u0026 t\u1EAFm nam",
+          "labelEn": "Men\u0027s locker \u0026 shower"
+        },
+        {
+          "type": "space",
+          "variant": "locker_f",
+          "x": -23,
+          "z": 10,
+          "w": 8,
+          "d": 10,
+          "floor": 1,
+          "labelVi": "Thay \u0111\u1ED3 \u0026 t\u1EAFm n\u1EEF",
+          "labelEn": "Women\u0027s locker \u0026 shower"
+        },
+        {
+          "type": "space",
+          "variant": "wc",
+          "x": -23,
+          "z": 19,
+          "w": 8,
+          "d": 5,
+          "floor": 1,
+          "labelVi": "WC khuy\u1EBFt t\u1EADt",
+          "labelEn": "Accessible WC"
+        },
+        {
+          "type": "lifeguard",
+          "x": -44,
+          "z": -3,
+          "variant": null,
+          "floor": 1
+        },
+        {
+          "type": "ramp",
+          "x": -16.5,
+          "z": 7.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "extinguisher",
+          "x": -19,
+          "z": 4,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "extinguisher",
+          "x": -61,
+          "z": 20,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "exit",
+          "x": -62,
+          "z": 20,
+          "variant": "building",
+          "floor": 0
+        },
+        {
+          "type": "exit",
+          "x": -65,
+          "z": 7.5,
+          "variant": "site",
+          "floor": 0
+        }
+      ],
+      "rooms": [
+        {
+          "id": 7,
+          "name": "B\u1EC3 b\u01A1i 25m (6 l\u00E0n)",
+          "nameEn": "25 m Pool (6 lanes)",
+          "kind": "pool25",
+          "floor": 1,
+          "x": -44,
+          "z": 5,
+          "width": 25,
+          "depth": 12.5,
+          "rotation": 0,
+          "capacity": 30,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 8,
+          "name": "Ph\u00F2ng Gym High-Performance",
+          "nameEn": "High-Performance Gym",
+          "kind": "gym",
+          "floor": 2,
+          "x": -40,
+          "z": 7.5,
+          "width": 40,
+          "depth": 25,
+          "rotation": 0,
+          "capacity": 45,
+          "bookable": true,
+          "status": "Available"
+        }
+      ],
+      "updatedAt": "2026-11-17T18:28:08.6017094Z"
+    },
+    {
+      "id": 1,
+      "code": "B",
+      "kind": "building",
+      "nameVi": "Khu B \u2013 Nh\u00E0 thi \u0111\u1EA5u \u0111a n\u0103ng",
+      "nameEn": "Zone B \u2013 Multi-sport Arena",
+      "descriptionVi": "T\u1EA7ng 1 s\u00E2n b\u00F3ng r\u1ED5 28\u00D715 m c\u00F3 kh\u00E1n \u0111\u00E0i, t\u1EA7ng 2 b\u1ED1n s\u00E2n c\u1EA7u l\u00F4ng, t\u1EA7ng 3 khu b\u00F3ng b\u00E0n.",
+      "descriptionEn": "Floor 1 basketball court 28\u00D715 m with stand, floor 2 four badminton courts, floor 3 table tennis hall.",
+      "color": "#F59E0B",
+      "x": -40,
+      "z": -30,
+      "width": 50,
+      "depth": 40,
+      "areaM2": 2000,
+      "buildingWidth": 44,
+      "buildingDepth": 34,
+      "floors": 3,
+      "openTime": "06:00",
+      "closeTime": "22:00",
+      "configuredStatus": "Open",
+      "status": "Open",
+      "imageUrl": null,
+      "amenities": [
+        "locker",
+        "shower",
+        "wc",
+        "wc_accessible",
+        "extinguisher",
+        "water"
+      ],
+      "features": [
+        {
+          "type": "stand",
+          "x": -40,
+          "z": -19.5,
+          "w": 28,
+          "d": 4,
+          "floor": 1,
+          "rot": 0
+        },
+        {
+          "type": "space",
+          "variant": "locker_m",
+          "x": -59.5,
+          "z": -41,
+          "w": 5,
+          "d": 10,
+          "floor": 1,
+          "labelVi": "Thay \u0111\u1ED3 nam",
+          "labelEn": "Men\u0027s locker"
+        },
+        {
+          "type": "space",
+          "variant": "locker_f",
+          "x": -59.5,
+          "z": -30,
+          "w": 5,
+          "d": 10,
+          "floor": 1,
+          "labelVi": "Thay \u0111\u1ED3 n\u1EEF",
+          "labelEn": "Women\u0027s locker"
+        },
+        {
+          "type": "space",
+          "variant": "wc",
+          "x": -59.5,
+          "z": -20.5,
+          "w": 5,
+          "d": 7,
+          "floor": 1,
+          "labelVi": "WC nam/n\u1EEF/khuy\u1EBFt t\u1EADt",
+          "labelEn": "WC men/women/accessible"
+        },
+        {
+          "type": "ramp",
+          "x": -16.5,
+          "z": -30,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "extinguisher",
+          "x": -19,
+          "z": -27,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "extinguisher",
+          "x": -61,
+          "z": -46,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "exit",
+          "x": -62,
+          "z": -14,
+          "variant": "building",
+          "floor": 0
+        },
+        {
+          "type": "exit",
+          "x": -65,
+          "z": -30,
+          "variant": "site",
+          "floor": 0
+        }
+      ],
+      "rooms": [
+        {
+          "id": 1,
+          "name": "S\u00E2n B\u00F3ng R\u1ED5 Ti\u00EAu Chu\u1EA9n Phong Tr\u00E0o",
+          "nameEn": "Basketball Court (28\u00D715 m)",
+          "kind": "basketball",
+          "floor": 1,
+          "x": -40,
+          "z": -32,
+          "width": 28,
+          "depth": 15,
+          "rotation": 0,
+          "capacity": 25,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 2,
+          "name": "S\u00E2n C\u1EA7u l\u00F4ng Ti\u00EAu chu\u1EA9n #1",
+          "nameEn": "Badminton Court #1",
+          "kind": "badminton",
+          "floor": 2,
+          "x": -52.3,
+          "z": -30,
+          "width": 6.1,
+          "depth": 13.4,
+          "rotation": 0,
+          "capacity": 6,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 3,
+          "name": "S\u00E2n C\u1EA7u l\u00F4ng Ti\u00EAu chu\u1EA9n #2",
+          "nameEn": "Badminton Court #2",
+          "kind": "badminton",
+          "floor": 2,
+          "x": -44.1,
+          "z": -30,
+          "width": 6.1,
+          "depth": 13.4,
+          "rotation": 0,
+          "capacity": 6,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 4,
+          "name": "S\u00E2n C\u1EA7u l\u00F4ng Ti\u00EAu chu\u1EA9n #3",
+          "nameEn": "Badminton Court #3",
+          "kind": "badminton",
+          "floor": 2,
+          "x": -35.9,
+          "z": -30,
+          "width": 6.1,
+          "depth": 13.4,
+          "rotation": 0,
+          "capacity": 6,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 5,
+          "name": "S\u00E2n C\u1EA7u l\u00F4ng Ti\u00EAu chu\u1EA9n #4",
+          "nameEn": "Badminton Court #4",
+          "kind": "badminton",
+          "floor": 2,
+          "x": -27.7,
+          "z": -30,
+          "width": 6.1,
+          "depth": 13.4,
+          "rotation": 0,
+          "capacity": 6,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 6,
+          "name": "Khu B\u00F3ng B\u00E0n Trong Nh\u00E0",
+          "nameEn": "Table Tennis Hall",
+          "kind": "table_tennis",
+          "floor": 3,
+          "x": -40,
+          "z": -30,
+          "width": 32,
+          "depth": 16,
+          "rotation": 0,
+          "capacity": 20,
+          "bookable": true,
+          "status": "Available"
+        }
+      ],
+      "updatedAt": "2026-11-17T18:28:08.6017094Z"
+    },
+    {
+      "id": 3,
+      "code": "C",
+      "kind": "building",
+      "nameVi": "Khu C \u2013 V\u00F5 thu\u1EADt, Golf \u0026 Yoga",
+      "nameEn": "Zone C \u2013 Combat, Golf \u0026 Yoga",
+      "descriptionVi": "T\u1EA7ng 1 v\u00F5 \u0111\u00E0i Boxing \u0026 Kickfit, t\u1EA7ng 2 ph\u00F2ng golf m\u00F4 ph\u1ECFng 3D, t\u1EA7ng 3 ph\u00F2ng Yoga \u0026 Pilates Reformer.",
+      "descriptionEn": "Floor 1 boxing \u0026 kickfit ring, floor 2 3D golf simulator, floor 3 yoga \u0026 Pilates reformer studio.",
+      "color": "#F43F5E",
+      "x": -40,
+      "z": 37.5,
+      "width": 50,
+      "depth": 25,
+      "areaM2": 1250,
+      "buildingWidth": 42,
+      "buildingDepth": 19,
+      "floors": 3,
+      "openTime": "06:00",
+      "closeTime": "21:00",
+      "configuredStatus": "Open",
+      "status": "Open",
+      "imageUrl": null,
+      "amenities": [
+        "locker",
+        "shower",
+        "wc",
+        "extinguisher"
+      ],
+      "features": [
+        {
+          "type": "space",
+          "variant": "locker_m",
+          "x": -24,
+          "z": 33.5,
+          "w": 8,
+          "d": 7,
+          "floor": 1,
+          "labelVi": "Thay \u0111\u1ED3 nam",
+          "labelEn": "Men\u0027s locker"
+        },
+        {
+          "type": "space",
+          "variant": "locker_f",
+          "x": -24,
+          "z": 41.5,
+          "w": 8,
+          "d": 7,
+          "floor": 1,
+          "labelVi": "Thay \u0111\u1ED3 n\u1EEF",
+          "labelEn": "Women\u0027s locker"
+        },
+        {
+          "type": "ramp",
+          "x": -17.5,
+          "z": 37.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "extinguisher",
+          "x": -20,
+          "z": 30,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "exit",
+          "x": -61,
+          "z": 46,
+          "variant": "building",
+          "floor": 0
+        },
+        {
+          "type": "exit",
+          "x": -65,
+          "z": 37.5,
+          "variant": "site",
+          "floor": 0
+        }
+      ],
+      "rooms": [
+        {
+          "id": 9,
+          "name": "V\u00F5 \u0111\u00E0i Boxing \u0026 Kickfit",
+          "nameEn": "Boxing \u0026 Kickfit Ring",
+          "kind": "combat",
+          "floor": 1,
+          "x": -47,
+          "z": 37.5,
+          "width": 24,
+          "depth": 15,
+          "rotation": 0,
+          "capacity": 25,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 10,
+          "name": "T\u1ED5 H\u1EE3p S\u00E2n T\u1EADp Golf \u0026 3D Simulator",
+          "nameEn": "Golf Academy \u0026 3D Simulator",
+          "kind": "golf_sim",
+          "floor": 2,
+          "x": -40,
+          "z": 37.5,
+          "width": 38,
+          "depth": 15,
+          "rotation": 0,
+          "capacity": 30,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 11,
+          "name": "Ph\u00F2ng Yoga \u0026 Pilates Reformer",
+          "nameEn": "Yoga \u0026 Pilates Reformer Studio",
+          "kind": "studio",
+          "floor": 3,
+          "x": -40,
+          "z": 37.5,
+          "width": 38,
+          "depth": 15,
+          "rotation": 0,
+          "capacity": 20,
+          "bookable": true,
+          "status": "Available"
+        }
+      ],
+      "updatedAt": "2026-11-17T18:28:08.6017094Z"
+    },
+    {
+      "id": 6,
+      "code": "O",
+      "kind": "outdoor",
+      "nameVi": "Khu s\u00E2n ngo\u00E0i tr\u1EDDi \u2013 B\u00F3ng \u0111\u00E1 \u0026 Pickleball",
+      "nameEn": "Outdoor Courts \u2013 Football \u0026 Pickleball",
+      "descriptionVi": "S\u00E2n 7 ng\u01B0\u1EDDi 45\u00D728 m v\u00E0 s\u00E2n 5 ng\u01B0\u1EDDi 40\u00D720 m c\u1ECF nh\u00E2n t\u1EA1o c\u00F3 kh\u00E1n \u0111\u00E0i, 4 s\u00E2n Pickleball 13,4\u00D76,1 m, \u0111\u00E8n pha LED.",
+      "descriptionEn": "7-a-side 45\u00D728 m and 5-a-side 40\u00D720 m turf pitches with stands, four 13.4\u00D76.1 m pickleball courts, LED floodlights.",
+      "color": "#10B981",
+      "x": 35,
+      "z": -12.5,
+      "width": 60,
+      "depth": 75,
+      "areaM2": 4500,
+      "buildingWidth": 0,
+      "buildingDepth": 0,
+      "floors": 0,
+      "openTime": "05:30",
+      "closeTime": "22:00",
+      "configuredStatus": "Open",
+      "status": "Open",
+      "imageUrl": null,
+      "amenities": [
+        "floodlight",
+        "stand",
+        "wc",
+        "locker",
+        "water",
+        "extinguisher"
+      ],
+      "features": [
+        {
+          "type": "stand",
+          "x": 40,
+          "z": -23.5,
+          "w": 3,
+          "d": 30,
+          "floor": 0,
+          "rot": 90
+        },
+        {
+          "type": "stand",
+          "x": 53,
+          "z": -3.5,
+          "w": 20,
+          "d": 3,
+          "floor": 0,
+          "rot": 0
+        },
+        {
+          "type": "space",
+          "variant": "kiosk",
+          "x": 55,
+          "z": 13,
+          "w": 16,
+          "d": 10,
+          "floor": 0,
+          "labelVi": "Nh\u00E0 thay \u0111\u1ED3 \u0026 WC ngo\u00E0i tr\u1EDDi (nam/n\u1EEF)",
+          "labelEn": "Outdoor lockers \u0026 WC (men/women)"
+        },
+        {
+          "type": "light",
+          "x": 6,
+          "z": -48,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 38,
+          "z": -48,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 6,
+          "z": -23.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 38,
+          "z": -23.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 6,
+          "z": 1,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 38,
+          "z": 1,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 41.5,
+          "z": -48.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 64.5,
+          "z": -48.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 41.5,
+          "z": -5.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 64.5,
+          "z": -5.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 8,
+          "z": 22.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 26,
+          "z": 22.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "light",
+          "x": 44.5,
+          "z": 22.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "hydrant",
+          "x": 64,
+          "z": 24,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "hydrant",
+          "x": 6,
+          "z": -12,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "extinguisher",
+          "x": 47,
+          "z": 8,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "exit",
+          "x": 65,
+          "z": -20,
+          "variant": "site",
+          "floor": 0
+        },
+        {
+          "type": "tree_row",
+          "from": [
+            8,
+            24
+          ],
+          "to": [
+            44,
+            24
+          ],
+          "spacing": 6
+        },
+        {
+          "type": "tree_row",
+          "from": [
+            64,
+            -46
+          ],
+          "to": [
+            64,
+            -10
+          ],
+          "spacing": 6
+        }
+      ],
+      "rooms": [
+        {
+          "id": 13,
+          "name": "S\u00E2n B\u00F3ng \u0110\u00E1 C\u1ECF Nh\u00E2n T\u1EA1o (S\u00E2n 5)",
+          "nameEn": "5-a-side Turf Pitch",
+          "kind": "football5",
+          "floor": 0,
+          "x": 53,
+          "z": -27,
+          "width": 20,
+          "depth": 40,
+          "rotation": 0,
+          "capacity": 14,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 12,
+          "name": "S\u00E2n B\u00F3ng \u0110\u00E1 C\u1ECF Nh\u00E2n T\u1EA1o (S\u00E2n 7)",
+          "nameEn": "7-a-side Turf Pitch",
+          "kind": "football7",
+          "floor": 0,
+          "x": 22,
+          "z": -23.5,
+          "width": 28,
+          "depth": 45,
+          "rotation": 0,
+          "capacity": 20,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 14,
+          "name": "S\u00E2n Pickleball #1",
+          "nameEn": "Pickleball Court #1",
+          "kind": "pickleball",
+          "floor": 0,
+          "x": 12.6,
+          "z": 13,
+          "width": 6.1,
+          "depth": 13.4,
+          "rotation": 0,
+          "capacity": 4,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 15,
+          "name": "S\u00E2n Pickleball #2",
+          "nameEn": "Pickleball Court #2",
+          "kind": "pickleball",
+          "floor": 0,
+          "x": 21.7,
+          "z": 13,
+          "width": 6.1,
+          "depth": 13.4,
+          "rotation": 0,
+          "capacity": 4,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 16,
+          "name": "S\u00E2n Pickleball #3",
+          "nameEn": "Pickleball Court #3",
+          "kind": "pickleball",
+          "floor": 0,
+          "x": 30.8,
+          "z": 13,
+          "width": 6.1,
+          "depth": 13.4,
+          "rotation": 0,
+          "capacity": 4,
+          "bookable": true,
+          "status": "Available"
+        },
+        {
+          "id": 17,
+          "name": "S\u00E2n Pickleball #4",
+          "nameEn": "Pickleball Court #4",
+          "kind": "pickleball",
+          "floor": 0,
+          "x": 39.9,
+          "z": 13,
+          "width": 6.1,
+          "depth": 13.4,
+          "rotation": 0,
+          "capacity": 4,
+          "bookable": true,
+          "status": "Available"
+        }
+      ],
+      "updatedAt": "2026-11-17T18:28:08.6017094Z"
+    },
+    {
+      "id": 5,
+      "code": "G",
+      "kind": "landscape",
+      "nameVi": "Tr\u1EE5c c\u1EA3nh quan \u0026 l\u1ED1i \u0111i c\u00F3 m\u00E1i che",
+      "nameEn": "Green Spine \u0026 Covered Walkway",
+      "descriptionVi": "Tr\u1EE5c \u0111i b\u1ED9 trung t\u00E2m c\u00F3 m\u00E1i che, c\u00E2y xanh, bi\u1EC3n ch\u1EC9 d\u1EABn v\u00E0 l\u1ED1i tho\u00E1t hi\u1EC3m ph\u00EDa B\u1EAFc.",
+      "descriptionEn": "Central covered walkway with trees, wayfinding signs and the north emergency exit.",
+      "color": "#84CC16",
+      "x": -5,
+      "z": -17.5,
+      "width": 20,
+      "depth": 65,
+      "areaM2": 1300,
+      "buildingWidth": 0,
+      "buildingDepth": 0,
+      "floors": 0,
+      "openTime": null,
+      "closeTime": null,
+      "configuredStatus": "Open",
+      "status": "Open",
+      "imageUrl": null,
+      "amenities": [
+        "shade",
+        "water",
+        "sign"
+      ],
+      "features": [
+        {
+          "type": "path",
+          "canopy": false,
+          "points": [
+            [
+              -5,
+              50
+            ],
+            [
+              -5,
+              42
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": true,
+          "points": [
+            [
+              -5,
+              42
+            ],
+            [
+              -5,
+              39.5
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": true,
+          "points": [
+            [
+              -5,
+              25.5
+            ],
+            [
+              -5,
+              22
+            ],
+            [
+              -5,
+              7.5
+            ],
+            [
+              -5,
+              2.4
+            ],
+            [
+              -5,
+              -30
+            ],
+            [
+              -5,
+              -46
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": false,
+          "points": [
+            [
+              -5,
+              39.5
+            ],
+            [
+              -5,
+              25.5
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": true,
+          "points": [
+            [
+              -5,
+              7.5
+            ],
+            [
+              -16.5,
+              7.5
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": true,
+          "points": [
+            [
+              -5,
+              -30
+            ],
+            [
+              -16.5,
+              -30
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": true,
+          "points": [
+            [
+              -5,
+              42
+            ],
+            [
+              -14,
+              42
+            ],
+            [
+              -14,
+              37.5
+            ],
+            [
+              -17.5,
+              37.5
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": false,
+          "points": [
+            [
+              -5,
+              2.4
+            ],
+            [
+              4,
+              2.4
+            ],
+            [
+              12.6,
+              2.4
+            ],
+            [
+              21.7,
+              2.4
+            ],
+            [
+              30.8,
+              2.4
+            ],
+            [
+              39.9,
+              2.4
+            ],
+            [
+              42,
+              2.4
+            ],
+            [
+              50,
+              2.4
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": false,
+          "points": [
+            [
+              22,
+              2.4
+            ],
+            [
+              22,
+              1
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": false,
+          "points": [
+            [
+              42,
+              2.4
+            ],
+            [
+              42,
+              -7
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": false,
+          "points": [
+            [
+              50,
+              2.4
+            ],
+            [
+              50,
+              8
+            ]
+          ]
+        },
+        {
+          "type": "path",
+          "canopy": false,
+          "points": [
+            [
+              -5,
+              42
+            ],
+            [
+              6,
+              42
+            ],
+            [
+              6,
+              47.5
+            ],
+            [
+              41,
+              47.5
+            ]
+          ]
+        },
+        {
+          "type": "exit",
+          "x": -5,
+          "z": -50,
+          "variant": "site"
+        },
+        {
+          "type": "sign",
+          "x": -7,
+          "z": -28,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "sign",
+          "x": -7,
+          "z": 9.5,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "sign",
+          "x": -7,
+          "z": 22,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "sign",
+          "x": 3,
+          "z": 4,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "hydrant",
+          "x": -14,
+          "z": -46,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "hydrant",
+          "x": -14,
+          "z": -12,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "hydrant",
+          "x": -14,
+          "z": 22,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "tree_row",
+          "from": [
+            -12,
+            -47
+          ],
+          "to": [
+            -12,
+            12
+          ],
+          "spacing": 6
+        },
+        {
+          "type": "tree_row",
+          "from": [
+            2,
+            -47
+          ],
+          "to": [
+            2,
+            -2
+          ],
+          "spacing": 6
+        }
+      ],
+      "rooms": [],
+      "updatedAt": "2026-11-17T18:28:08.6017094Z"
+    },
+    {
+      "id": 7,
+      "code": "P",
+      "kind": "parking",
+      "nameVi": "B\u00E3i \u0111\u1ED7 xe \u00F4 t\u00F4 \u0026 xe m\u00E1y",
+      "nameEn": "Car \u0026 Motorbike Parking",
+      "descriptionVi": "26 \u00F4 \u00F4 t\u00F4 (2 \u00F4 cho ng\u01B0\u1EDDi khuy\u1EBFt t\u1EADt, 4 \u00F4 s\u1EA1c \u0111i\u1EC7n, m\u00E1i pin m\u1EB7t tr\u1EDDi) v\u00E0 khu xe m\u00E1y c\u00F3 m\u00E1i che 160 ch\u1ED7.",
+      "descriptionEn": "26 car bays (2 accessible, 4 EV chargers, solar canopy) and a covered 160-space motorbike area.",
+      "color": "#06B6D4",
+      "x": 35,
+      "z": 37.5,
+      "width": 60,
+      "depth": 25,
+      "areaM2": 1500,
+      "buildingWidth": 0,
+      "buildingDepth": 0,
+      "floors": 0,
+      "openTime": "05:00",
+      "closeTime": "23:00",
+      "configuredStatus": "Open",
+      "status": "Open",
+      "imageUrl": null,
+      "amenities": [
+        "parking",
+        "moto",
+        "ev",
+        "accessible_parking",
+        "security"
+      ],
+      "features": [
+        {
+          "type": "parking_car",
+          "x": 23.25,
+          "z": 37.5,
+          "w": 32.5,
+          "d": 16,
+          "count": 26,
+          "accessible": 2,
+          "ev": 4
+        },
+        {
+          "type": "parking_moto",
+          "x": 53,
+          "z": 37.5,
+          "w": 20,
+          "d": 19,
+          "count": 160
+        },
+        {
+          "type": "gate",
+          "x": 23,
+          "z": 50,
+          "w": 8,
+          "variant": "vehicle"
+        },
+        {
+          "type": "hydrant",
+          "x": 40,
+          "z": 26,
+          "variant": null,
+          "floor": 0
+        },
+        {
+          "type": "sign",
+          "x": 6,
+          "z": 44,
+          "variant": "parking",
+          "floor": 0
+        },
+        {
+          "type": "tree_row",
+          "from": [
+            8,
+            27
+          ],
+          "to": [
+            62,
+            27
+          ],
+          "spacing": 7
+        }
+      ],
+      "rooms": [],
+      "updatedAt": "2026-11-17T18:28:08.6017094Z"
+    }
+  ]
+}
