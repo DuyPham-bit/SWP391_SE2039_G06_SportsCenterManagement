@@ -1,17 +1,12 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { bookingApi } from '../../../entities/booking/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { bookingStart, formatMemberDate, formatMemberDateTime, getSportTheme } from '../../../entities/member/index.js';
-import {
-  translateClassName,
-  translateSportName,
-  translateCoachName,
-  translateRoomName
-} from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateSportName, translateCoachName, translateRoomName } from '../../../shared/lib/i18nHelper.js';
 
 export function MyAttendance() {
   const { currentUser } = useAuth();
