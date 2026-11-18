@@ -4,7 +4,7 @@
  * - admin:   GET/PUT /admin/home-content     → both languages; text fields are { vi, en }
  * No default content lives here: when the API fails the caller shows an error, never stale copy.
  */
-import { apiRequest } from '../../../shared/api/http.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 export const CONTENT_LANGUAGES = ['vi', 'en'];
 export const HOME_CONTENT_SECTIONS = ['heroBanner', 'whyUs', 'coursesSection', 'facilitiesSection', 'zonesLayout', 'ctaAndFooter', 'authShowcase'];
