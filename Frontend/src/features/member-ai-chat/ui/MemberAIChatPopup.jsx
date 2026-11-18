@@ -7,8 +7,17 @@ import { aiApi } from '../../../entities/ai-chat/index.js';
 import { clearMemberAIChatStorage, getMemberAIChatStorageKey } from '../../../shared/lib/memberAiChatStorage.js';
 import { hasCorruptedEncoding, parseFormattedMarkdown } from './chatMarkdown.jsx';
 import { ArenaMascot } from '../../../shared/ui/ArenaMascot.jsx';
+import { TiaInteractiveMascot } from './TiaInteractiveMascot.jsx';
+import './tiaInteractiveMascot.css';
 import { parseApiDate } from '../../../shared/lib/dateTime.js';
 import { detectSpeechLang } from '../../../shared/lib/speechLanguage.js';
+
+function getMascotDimensions() {
+  if (typeof window !== 'undefined' && window.innerWidth < 640) {
+    return { width: 116, height: 142 };
+  }
+  return { width: 148, height: 182 };
+}
 
 export function MemberAIChatPopup() {
   const { currentUser } = useAuth();
@@ -97,10 +106,29 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
   const [isBubbleMoving, setIsBubbleMoving] = useState(false);
   const [isWindowMoving, setIsWindowMoving] = useState(false);
+  const [isMascotHovered, setIsMascotHovered] = useState(false);
+  const [mascotSkill, setMascotSkill] = useState(null);
+  const burstOpenTimerRef = useRef(null);
   const isDraggingBubbleRef = useRef(false);
   const dragStartBubbleRef = useRef({ mouseX: 0, mouseY: 0, startX: 0, startY: 0, hasMoved: false });
   const isDraggingWindowRef = useRef(false);
   const dragStartWindowRef = useRef({ mouseX: 0, mouseY: 0, startX: 0, startY: 0, hasMoved: false });
+
+  useEffect(() => {
+    const handleSkillTrigger = (e) => {
+      const skill = e?.detail?.skill;
+      if (skill === 'skill_buff' || skill === 'skill_ultimate' || skill === 'hover') {
+        setMascotSkill(skill);
+      }
+    };
+    window.addEventListener('SCMS_MASCOT_SKILL', handleSkillTrigger);
+    return () => {
+      window.removeEventListener('SCMS_MASCOT_SKILL', handleSkillTrigger);
+      if (burstOpenTimerRef.current) {
+        window.clearTimeout(burstOpenTimerRef.current);
+      }
+    };
+  }, []);
 
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
@@ -138,8 +166,9 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     if (!pos || typeof window === 'undefined' || typeof pos.x !== 'number' || typeof pos.y !== 'number' || isNaN(pos.x) || isNaN(pos.y)) {
       return null;
     }
-    const x = Math.min(Math.max(12, pos.x), window.innerWidth - 68);
-    const y = Math.min(Math.max(12, pos.y), window.innerHeight - 68);
+    const { width, height } = getMascotDimensions();
+    const x = Math.min(Math.max(12, pos.x), window.innerWidth - width - 12);
+    const y = Math.min(Math.max(12, pos.y), window.innerHeight - height - 12);
     return { x, y };
   };
 
@@ -173,8 +202,9 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
     const clientY = e.clientY ?? e.touches?.[0]?.clientY;
     if (clientX === undefined || clientY === undefined) return;
 
-    const currentX = bubblePos?.x ?? (window.innerWidth - 76);
-    const currentY = bubblePos?.y ?? (window.innerHeight - 86);
+    const { width: mascotW, height: mascotH } = getMascotDimensions();
+    const currentX = bubblePos?.x ?? Math.max(12, window.innerWidth - mascotW - 24);
+    const currentY = bubblePos?.y ?? Math.max(12, window.innerHeight - mascotH - 24);
 
     dragStartBubbleRef.current = {
       mouseX: clientX,
@@ -201,8 +231,8 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
       if (dragStartBubbleRef.current.hasMoved) {
         if (moveEvent.cancelable) moveEvent.preventDefault();
-        const nextX = Math.min(Math.max(12, dragStartBubbleRef.current.startX + dx), window.innerWidth - 68);
-        const nextY = Math.min(Math.max(12, dragStartBubbleRef.current.startY + dy), window.innerHeight - 68);
+        const nextX = Math.min(Math.max(12, dragStartBubbleRef.current.startX + dx), window.innerWidth - mascotW - 12);
+        const nextY = Math.min(Math.max(12, dragStartBubbleRef.current.startY + dy), window.innerHeight - mascotH - 12);
         setBubblePos({ x: nextX, y: nextY });
       }
     };
@@ -553,67 +583,67 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
 
   return (
     <>
-      {/* 1. Floating Launch Bubble (When Closed) - Draggable FAB */}
+      {/* 1. Borderless Standalone Interactive Mascot (When Closed) - Zero circular frame or badge */}
       {!isOpen && (
         <div
           style={
             bubblePos
               ? { left: `${bubblePos.x}px`, top: `${bubblePos.y}px` }
-              : { bottom: '24px', right: '24px' }
+              : { bottom: '18px', right: '20px' }
           }
           onPointerDown={handleBubblePointerDown}
           className={`fixed z-40 touch-none select-none ${
-            isBubbleMoving ? 'cursor-grabbing scale-105 transition-none' : 'cursor-grab animate-in fade-in zoom-in-95 duration-200'
+            isBubbleMoving ? 'cursor-grabbing scale-105 transition-none' : 'cursor-grab'
           }`}
         >
           <button
             type="button"
+            onPointerEnter={() => setIsMascotHovered(true)}
+            onPointerLeave={() => setIsMascotHovered(false)}
             onClick={() => {
               if (isDraggingBubbleRef.current) return;
-              setIsOpen(true);
-              setIsMinimized(false);
-              setUnreadCount(0);
+              setMascotSkill('skill_buff');
+              setIsMascotHovered(false);
+              const prefersReduced = typeof window !== 'undefined' &&
+                window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+              const openChat = () => {
+                setIsOpen(true);
+                setIsMinimized(false);
+                setUnreadCount(0);
+              };
+              if (prefersReduced) {
+                openChat();
+              } else {
+                if (burstOpenTimerRef.current) window.clearTimeout(burstOpenTimerRef.current);
+                burstOpenTimerRef.current = window.setTimeout(openChat, 260);
+              }
             }}
-            aria-label={isEn ? "Open AI Assistant" : "Mở Trợ lý AI"}
-            className={`group relative flex items-center justify-center w-13 h-13 sm:w-14 sm:h-14 rounded-full bg-brand-navy-900 text-white border border-brand-sage-500/60 shadow-xl hover:shadow-2xl hover:border-brand-sage-500 hover:scale-105 active:scale-95 transition-all duration-200 font-sans focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-sage-500 ${
-              isBubbleMoving ? 'ring-4 ring-brand-sage-500/50 shadow-2xl' : ''
-            }`}
+            onDoubleClick={(e) => {
+              e.preventDefault();
+              if (isDraggingBubbleRef.current) return;
+              if (burstOpenTimerRef.current) {
+                window.clearTimeout(burstOpenTimerRef.current);
+                burstOpenTimerRef.current = null;
+              }
+              setMascotSkill('skill_ultimate');
+            }}
+            aria-label={isEn ? 'Open AI Assistant' : 'Mở Trợ lý AI'}
+            aria-expanded={isOpen}
+            className="group tia-hero-button"
           >
-            {/* Outer pulsating glow ring */}
-            <span className="absolute -inset-0.5 rounded-full bg-gradient-to-tr from-brand-sage-500 via-brand-sand-300 to-brand-sage-500 opacity-30 blur-sm group-hover:opacity-75 transition duration-300 animate-pulse pointer-events-none" />
-
-            {/* Inner 2D Mascot */}
-            <div className="relative z-10 w-full h-full rounded-full flex items-center justify-center pointer-events-none">
-              <ArenaMascot size={46} active={isAsking} />
-            </div>
-
-            {/* Drag Grip Indicator Dots on Hover */}
-            <div className="absolute -top-1 left-1/2 -translate-x-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 bg-brand-navy-900 px-1.5 py-0.2 rounded-full border border-brand-sage-500/40 text-[9px] text-brand-sand-300 pointer-events-none z-30">
-              <span className="material-symbols-outlined text-[11px]">drag_indicator</span>
-            </div>
-
-            {/* Online Green Pulse Indicator */}
-            <span className="absolute bottom-0 right-0 w-3.5 h-3.5 rounded-full bg-brand-sage-500 border-2 border-brand-navy-900 shadow-sm flex items-center justify-center z-20 pointer-events-none">
-              <span className="w-1.5 h-1.5 rounded-full bg-white animate-ping" />
-            </span>
+            <TiaInteractiveMascot
+              activeSkill={mascotSkill || (isAsking ? 'hover' : null)}
+              onSkillComplete={() => setMascotSkill(null)}
+              enableMouseTracking
+              hovered={isMascotHovered || isBubbleMoving}
+            />
 
             {/* Unread Message Pill Badge */}
             {unreadCount > 0 && (
-              <span className="absolute -top-1 -right-1 px-1.5 min-w-[20px] h-5 rounded-full bg-brand-terra-700 text-white text-[10px] font-bold shadow-md flex items-center justify-center animate-bounce z-20 pointer-events-none">
+              <span className="absolute top-2 right-2 px-1.5 min-w-[22px] h-5.5 rounded-full bg-brand-terra-700 text-white text-[11px] font-bold shadow-md flex items-center justify-center animate-bounce z-20 pointer-events-none">
                 {unreadCount}
               </span>
             )}
-
-            {/* Sleek Tooltip on hover (appears to the left) */}
-            <div className="hidden sm:flex absolute right-full mr-2.5 items-center gap-1.5 px-2.5 py-1 rounded-xl bg-brand-navy-900/95 backdrop-blur-md border border-brand-sage-500/40 text-white text-xs font-semibold whitespace-nowrap shadow-xl opacity-0 translate-x-2 pointer-events-none group-hover:opacity-100 group-hover:translate-x-0 group-focus-visible:opacity-100 group-focus-visible:translate-x-0 transition-all duration-200">
-              <span className="flex items-center gap-1">
-                <span className="material-symbols-outlined text-[14px] text-brand-sage-500">auto_awesome</span>
-                <span>{isEn ? "Olympic AI" : "Trợ lý AI Olympic"}</span>
-              </span>
-              <span className="px-1.5 py-0.5 rounded bg-brand-sand-300 text-brand-navy-900 text-[9px] font-black uppercase tracking-wider">
-                PRO
-              </span>
-            </div>
           </button>
         </div>
       )}
@@ -679,13 +709,14 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       {/* 3. Full Popup Window */}
       {isOpen && !isMinimized && (
         <div
+          id="member-ai-chat-popup"
           style={
             windowPos
               ? { left: `${windowPos.x}px`, top: `${windowPos.y}px` }
               : { bottom: '24px', right: '24px' }
           }
           className={`fixed z-50 w-[420px] max-w-[calc(100vw-2rem)] h-[600px] max-h-[calc(100dvh-5.5rem)] bg-white rounded-3xl shadow-2xl border border-brand-navy-200/90 flex flex-col overflow-hidden font-sans ${
-            isWindowMoving ? 'shadow-3xl ring-2 ring-brand-sage-500/50 transition-none' : 'animate-in fade-in slide-in-from-bottom-5 duration-300'
+            isWindowMoving ? 'shadow-3xl ring-2 ring-brand-sage-500/50 transition-none' : 'tia-chat-spring-in'
           }`}
         >
           {/* Header Bar - Draggable */}
