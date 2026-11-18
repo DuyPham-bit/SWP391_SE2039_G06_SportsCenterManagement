@@ -12,6 +12,7 @@ namespace SportsCenterManagement.API.Controllers.Classes;
 [Authorize(Roles = "MANAGER,ADMIN")]
 public sealed class ClassResourcesController(
     SportsCenterDbContext db,
+    CenterAccessGuard centerAccess,
     ISportManagementService sportManagementService,
     ICoachAssignmentQueryService coachAssignmentQueryService,
     IBusinessClock clock) : FlowControllerBase, IAsyncActionFilter
@@ -19,7 +20,7 @@ public sealed class ClassResourcesController(
     [HttpGet("centers/{centerId:long}/classes/all")]
     public async Task<IActionResult> Classes(long centerId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         return Ok(await (from cls in db.Classes
             join sport in db.Sports on cls.SportId equals sport.Id
             where cls.CenterId == centerId
@@ -38,28 +39,28 @@ public sealed class ClassResourcesController(
     [HttpGet("centers/{centerId:long}/sports")]
     public async Task<IActionResult> Sports(long centerId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         return Ok(await sportManagementService.GetActiveAsync(centerId, ct));
     }
 
     [HttpGet("centers/{centerId:long}/coaches")]
     public async Task<IActionResult> Coaches(long centerId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         return Ok(await coachAssignmentQueryService.GetCandidatesAsync(centerId, ct));
     }
 
     [HttpGet("centers/{centerId:long}/sports/all")]
     public async Task<IActionResult> AllSports(long centerId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         return Ok(await sportManagementService.GetAllAsync(centerId, ct));
     }
 
     [HttpPost("centers/{centerId:long}/sports")]
     public async Task<IActionResult> CreateSport(long centerId, SaveSportRequest request, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         return StatusCode(StatusCodes.Status201Created,
             await sportManagementService.CreateAsync(CurrentUserId, centerId, request, ct));
     }
@@ -67,14 +68,14 @@ public sealed class ClassResourcesController(
     [HttpPut("centers/{centerId:long}/sports/{sportId:long}")]
     public async Task<IActionResult> UpdateSport(long centerId, long sportId, SaveSportRequest request, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         return Ok(await sportManagementService.UpdateAsync(CurrentUserId, centerId, sportId, request, ct));
     }
 
     [HttpGet("centers/{centerId:long}/rooms")]
     public async Task<IActionResult> Rooms(long centerId, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         return Ok(await db.Rooms.Where(r => r.CenterId == centerId).OrderBy(r => r.Name)
             .Select(r => new { r.Id, r.Name, Type = r.RoomType, r.Capacity, Location = r.LocationDescription, r.Status }).ToListAsync(ct));
     }
@@ -87,7 +88,7 @@ public sealed class ClassResourcesController(
     [HttpPost("centers/{centerId:long}/rooms")]
     public async Task<IActionResult> CreateRoom(long centerId, RoomRequest request, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         Validate(request);
         await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         if (await db.Rooms.AnyAsync(r => r.CenterId == centerId && r.Name == request.Name.Trim(), ct))
@@ -106,7 +107,7 @@ public sealed class ClassResourcesController(
     [HttpPut("centers/{centerId:long}/rooms/{roomId:long}")]
     public async Task<IActionResult> UpdateRoom(long centerId, long roomId, RoomRequest request, CancellationToken ct)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         Validate(request);
         await using var tx = await db.Database.BeginTransactionAsync(System.Data.IsolationLevel.Serializable, ct);
         var room = await db.Rooms.SingleOrDefaultAsync(r => r.Id == roomId && r.CenterId == centerId, ct)
