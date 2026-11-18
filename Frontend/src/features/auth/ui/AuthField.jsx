@@ -5,10 +5,10 @@ import './auth-field.css';
 
 const TONES = {
   light: {
-    label: 'text-brand-navy-700 group-focus-within:text-brand-sage-700',
-    input: 'bg-brand-navy-50/60 text-brand-navy-900 placeholder:text-brand-navy-500 disabled:bg-brand-navy-100 disabled:text-brand-navy-500',
-    normal: 'border-brand-navy-200 hover:border-brand-navy-300 focus:bg-white focus:border-brand-sage-500 focus:ring-4 focus:ring-brand-sage-500/20',
-    invalid: 'border-brand-danger-300 bg-brand-danger-50/30 focus:bg-white focus:border-brand-danger-500 focus:ring-4 focus:ring-brand-danger-500/10',
+    label: 'text-brand-navy-600 group-focus-within:text-brand-sage-700',
+    input: 'bg-white text-brand-navy-900 shadow-[inset_0_1px_2px_rgb(var(--brand-sage-900)/0.04)] placeholder:text-brand-navy-400 disabled:bg-brand-navy-100 disabled:text-brand-navy-500',
+    normal: 'border-brand-navy-200/85 hover:border-brand-sage-700/40 focus:bg-white focus:border-brand-sage-600 focus:ring-4 focus:ring-brand-sage-500/15',
+    invalid: 'border-brand-danger-400 bg-brand-danger-50/40 focus:bg-white focus:border-brand-danger-500 focus:ring-4 focus:ring-brand-danger-500/10',
     eye: 'text-brand-navy-500 hover:text-brand-navy-800',
     hint: 'text-brand-navy-500',
     error: 'text-brand-danger-600',
@@ -97,7 +97,7 @@ export function AuthField({ id, label, type = 'text', error, hint, hintId, requi
         <div className="relative">
           {capsBadge}
           {icon && (
-            <span className="lp-field-icon material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 z-[1] text-[19px] text-brand-navy-400 group-focus-within:text-brand-sage-700 dark:group-focus-within:text-brand-sage-300" aria-hidden="true">{icon}</span>
+            <span className="lp-field-icon material-symbols-outlined pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 z-[2] text-[19px] text-brand-navy-400 group-focus-within:text-brand-sage-700 dark:group-focus-within:text-brand-sage-300" aria-hidden="true">{icon}</span>
           )}
           <input
             {...inputProps}
@@ -110,7 +110,7 @@ export function AuthField({ id, label, type = 'text', error, hint, hintId, requi
             required={required}
             aria-invalid={Boolean(displayedError)}
             aria-describedby={descriptionId}
-            className={`lp-float-input peer w-full h-[52px] pt-[19px] pb-[5px] ${icon ? 'pl-11' : 'pl-3.5'} ${isPassword ? (liveCheck?.ok ? 'pr-[4.5rem]' : 'pr-11') : liveCheck?.ok ? 'pr-10' : 'pr-3.5'} text-sm font-semibold rounded-xl border placeholder:font-normal outline-none transition-all duration-200 ${t.input} ${displayedError ? t.invalid : t.normal}`}
+            className={`lp-float-input peer w-full h-[56px] pt-[23px] pb-[5px] ${icon ? 'pl-11' : 'pl-3.5'} ${isPassword ? (liveCheck?.ok ? 'pr-[4.5rem]' : 'pr-11') : liveCheck?.ok ? 'pr-10' : 'pr-3.5'} text-sm font-semibold rounded-xl border placeholder:font-normal outline-none transition-all duration-200 ${t.input} ${displayedError ? t.invalid : t.normal}`}
           />
           <label htmlFor={id} className={`lp-float-label pointer-events-none absolute top-1/2 ${icon ? 'left-11' : 'left-3.5'} ${isPassword ? 'max-w-[calc(100%-6rem)]' : 'max-w-[calc(100%-4rem)]'} truncate text-[14px] font-medium ${t.label}`}>
             {label}{required && <span className="text-brand-terra-700 dark:text-brand-terra-400 ml-0.5 font-bold" aria-hidden="true">*</span>}
