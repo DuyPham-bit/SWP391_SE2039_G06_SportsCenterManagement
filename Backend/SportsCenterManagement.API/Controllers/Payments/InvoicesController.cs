@@ -13,7 +13,7 @@ namespace SportsCenterManagement.API.Controllers.Payments;
 [ApiController]
 [Route("api/invoices")]
 [Authorize]
-public sealed class InvoicesController(IPaymentService paymentService, SportsCenterDbContext db) : ControllerBase
+public sealed class InvoicesController(IPaymentService paymentService, CenterAccessGuard centerAccess) : ControllerBase
 {
     [Authorize(Roles = "RECEPTIONIST,MANAGER,ADMIN")]
     [CenterCapability("register_counter_package")]
@@ -21,27 +21,10 @@ public sealed class InvoicesController(IPaymentService paymentService, SportsCen
     public async Task<IActionResult> List(long centerId, CancellationToken ct, [FromQuery] string? query = null,
         [FromQuery] int page = 1, [FromQuery] int pageSize = 20)
     {
-        await CenterScope.EnsureCenterAccessAsync(db, User, centerId, ct);
+        await CenterScope.EnsureCenterAccessAsync(centerAccess, User, centerId, ct);
         if (page < 1 || page > 100000 || pageSize < 1 || pageSize > 100 || query?.Length > 200)
             return BadRequest(new { message = "Bộ lọc hoặc phân trang không hợp lệ." });
-        var rows = from invoice in db.Invoices.AsNoTracking()
-            join member in db.MemberProfiles.AsNoTracking() on invoice.MemberId equals member.Id
-            // Scope by the invoice's center only: a member who later moved center keeps their history here.
-            where invoice.CenterId == centerId
-            select new { invoice.InvoiceNumber, invoice.MemberId, MemberName = member.FullName,
-                member.MemberCode, invoice.IssuedAt, invoice.Status, invoice.TotalAmount, invoice.Id };
-        var term = query?.Trim();
-        if (!string.IsNullOrEmpty(term))
-        {
-            var lowerTerm = term.ToLower();
-            rows = rows.Where(r => r.InvoiceNumber.ToLower().Contains(lowerTerm)
-                || r.MemberName.ToLower().Contains(lowerTerm)
-                || r.MemberCode.ToLower().Contains(lowerTerm));
-        }
-        var totalCount = await rows.CountAsync(ct);
-        var items = await rows.OrderByDescending(r => r.IssuedAt).ThenByDescending(r => r.Id)
-            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(ct);
-        return Ok(new { items, totalCount, page, pageSize });
+        return Ok(await paymentService.ListCenterInvoicesAsync(centerId, query, page, pageSize, ct));
     }
 
     [HttpGet("{invoiceNumber}")]
