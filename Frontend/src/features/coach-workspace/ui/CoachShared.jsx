@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { classApi } from '../../../entities/class/index.js';
 import { coachDate } from '../../../entities/coach/index.js';
 import { BusinessAlert } from '../../../shared/ui/BusinessAlert.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 export const coachInput = 'w-full rounded-lg border border-brand-navy-300 px-3 py-2 text-xs bg-white focus:ring-2 focus:ring-brand-sage-500/20 focus:border-brand-sage-500 outline-none transition-all';
 
