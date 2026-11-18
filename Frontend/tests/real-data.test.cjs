@@ -10,7 +10,7 @@ function load(file, apiRequest = async () => {}, centerId = '15') {
   const context = vm.createContext({ module, Date, Set, Number, Error, Intl,
     testEnv: { VITE_SPORTS_CENTER_ID: centerId },
     require: id => {
-      if (id.endsWith('/http.js')) return { apiRequest };
+      if (id.endsWith('/http.js') || id.endsWith('/shared/api/index.js')) return { apiRequest };
       if (id.endsWith('/publicCatalog.js')) return load('entities/catalog/api/publicCatalog.js', apiRequest, centerId);
       throw new Error(`Unexpected dependency: ${id}`);
     }
@@ -124,7 +124,7 @@ function loadCatalogEditor(catalog) {
       if (id.includes('entities/catalog')) return { ...load('entities/catalog/api/publicCatalog.js'), usePublicCatalog: () => ({ catalog, loading: false, error: '' }) };
       if (id.includes('usePublicCatalog')) return { usePublicCatalog: () => ({ catalog, loading: false, error: '' }) };
       if (id.includes('publicCatalog.js')) return load('entities/catalog/api/publicCatalog.js');
-      if (id.includes('LanguageContext')) return { useLanguage: () => ({ language: 'vi', t: viT }) };
+      if (id.includes('LanguageContext') || id.endsWith('/shared/i18n/index.js')) return { useLanguage: () => ({ language: 'vi', t: viT }) };
       if (id.includes('entities/landing-content')) return load('entities/landing-content/api/homeContentService.js');
       throw new Error(`Unexpected dependency: ${id}`);
     }
@@ -256,7 +256,7 @@ test('open notification inbox keeps empty/error states instead of fabricating un
       require: id => {
         if (id === 'react') return { ...React, useState: () => [true, () => {}] };
         if (id.includes('AuthContext') || id.includes('entities/session')) return { useAuth: () => ({ role: 'COACH' }) };
-        if (id.includes('LanguageContext')) return { useLanguage: () => ({ language: 'vi' }) };
+        if (id.includes('LanguageContext') || id.endsWith('/shared/i18n/index.js')) return { useLanguage: () => ({ language: 'vi' }) };
         if (id.includes('useNotifications')) return { useNotifications: () => ({ items, loading: false, error, readingId: null }) };
         if (id.includes('memberOverview') || id.includes('entities/member')) return { formatMemberDateTime: () => 'Stored timestamp' };
         if (id.includes('i18nHelper')) return { translateNotificationTitle: value => value, translateNotificationContent: value => value };
