@@ -66,7 +66,7 @@ export function GoogleLoginModal({ isOpen, onClose, onSuccess, linkAccount = fal
         type: 'standard',
         theme: 'outline',
         size: 'large',
-        width: 320,
+        width: Math.min(320, Math.max(220, window.innerWidth - 88)),
         text: linkAccount ? 'continue_with' : 'signin_with',
         shape: 'rectangular',
         logo_alignment: 'left'
@@ -91,8 +91,8 @@ export function GoogleLoginModal({ isOpen, onClose, onSuccess, linkAccount = fal
         className="relative w-full max-w-md bg-white rounded-3xl shadow-2xl border border-brand-navy-100 overflow-hidden transform transition-all duration-200 animate-modal-entrance"
         onClick={e => e.stopPropagation()}
       >
-        {/* Dải màu Google 4 màu ở mép trên cùng */}
-        <div className="h-1.5 w-full bg-gradient-to-r from-[#4285F4] via-[#EA4335] via-[#FBBC05] to-[#34A853]" />
+        {/* Dải màu thương hiệu Olympic ở mép trên cùng */}
+        <div className="h-[3px] w-full bg-gradient-to-r from-brand-sage-700 via-brand-teal-500 to-brand-sand-300" />
 
         {/* Nút đóng (X) góc phải trên */}
         <button
