@@ -1,7 +1,7 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { getSportTheme } from '../lib/calendarView.js';
-import { translateSportName, translateDayOfWeek, translateClassName, translateRoomName, translateCoachName } from '../../../shared/i18n/i18nHelper.js';
+import { translateSportName, translateDayOfWeek, translateClassName, translateRoomName, translateCoachName } from '../../../shared/lib/i18nHelper.js';
 import { BusinessAlert } from '../../../shared/ui/BusinessAlert.jsx';
 import { PACKAGES_ROUTE, getSessionAction } from '../lib/sessionAction.js';
 
