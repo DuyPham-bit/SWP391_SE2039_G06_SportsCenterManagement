@@ -1,63 +1,70 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
+import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import {
-  getLandingContent,
+  fetchHomeContent,
+  getCachedHomeContent,
   getLandingPreviewContent,
-  hasPublishedLandingContent,
-  loadLandingContent,
-  LANDING_CONTENT_CHANGE_EVENT,
+  normalizeLanguage,
   subscribeLandingContentRefresh
-} from '../api/landingContentService.js';
+} from '../api/homeContentService.js';
 
+const REFRESH_INTERVAL_MS = 15000;
+
+function initialState(lang) {
+  const preview = getLandingPreviewContent(lang);
+  if (preview) return { ...preview, loaded: true, error: '' };
+  const cached = getCachedHomeContent(lang);
+  return cached ? { content: cached.content, stats: cached.stats, loaded: true, error: '' } : { content: null, stats: null, loaded: false, error: '' };
+}
+
+/**
+ * Published home content in the selected UI language. Switching language refetches (or reads the
+ * per-language cache) without reloading the page. On failure `content` stays null and `error` is set.
+ */
 export function useLandingContentState() {
-  const [content, setContent] = useState(() => getLandingPreviewContent() || getLandingContent());
-  const [loaded, setLoaded] = useState(() => Boolean(getLandingPreviewContent() || hasPublishedLandingContent()));
+  const { language } = useLanguage();
+  const lang = normalizeLanguage(language);
+  const [state, setState] = useState(() => initialState(lang));
+  const [reloadKey, setReloadKey] = useState(0);
+  const retry = useCallback(() => setReloadKey(key => key + 1), []);
 
   useEffect(() => {
-    if (getLandingPreviewContent()) {
-      setLoaded(true);
+    const preview = getLandingPreviewContent(lang);
+    if (preview) {
+      setState({ ...preview, loaded: true, error: '' });
       return undefined;
     }
+    setState(initialState(lang));
     let active = true;
     let loading = false;
     const controller = new AbortController();
-    const refresh = async (forceInitial = false) => {
-      if (loading || (!forceInitial && document.visibilityState === 'hidden')) return;
+    const refresh = async (force = false) => {
+      if (loading || (!force && document.visibilityState === 'hidden')) return;
       loading = true;
       try {
-        const result = await loadLandingContent({ signal: controller.signal });
-        if (active) {
-          setContent(result.content);
-          setLoaded(true);
-        }
+        const result = await fetchHomeContent(lang, { signal: controller.signal });
+        if (active) setState({ content: result.content, stats: result.stats, loaded: true, error: '' });
       } catch (error) {
         if (active && error.name !== 'AbortError') {
-          setContent(previous => ({ ...previous, _loadError: error.message }));
-          setLoaded(true);
+          // Keep content already shown for this language; only a first load ends with no content.
+          setState(previous => ({ ...previous, loaded: true, error: error.message || 'error' }));
         }
       } finally {
         loading = false;
       }
     };
-    const onChange = event => {
-      if (event.detail) {
-        setContent(event.detail);
-        setLoaded(true);
-      }
-    };
-    window.addEventListener(LANDING_CONTENT_CHANGE_EVENT, onChange);
     const unsubscribe = subscribeLandingContentRefresh(() => refresh(false));
-    const interval = window.setInterval(() => refresh(false), 15000);
+    const interval = window.setInterval(() => refresh(false), REFRESH_INTERVAL_MS);
     refresh(true);
     return () => {
       active = false;
       controller.abort();
       window.clearInterval(interval);
-      window.removeEventListener(LANDING_CONTENT_CHANGE_EVENT, onChange);
       unsubscribe();
     };
-  }, []);
+  }, [lang, reloadKey]);
 
-  return { content, loaded };
+  return { ...state, lang, retry };
 }
 
 export function useLandingContent() {
