@@ -4,28 +4,32 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { getMembershipAction } from '../../../entities/membership/index.js';
 import { useLandingContentState, normalizeZaloPhone, getExternalContactUrl } from '../../../entities/landing-content/index.js';
 import { usePublicCatalog, getLandingPresentation } from '../../../entities/catalog/index.js';
-import { translateLandingContent, translateSportName } from '../../../shared/i18n/i18nHelper.js';
-import { SPORT_CATEGORY_CONFIG } from '../lib/sportCategories.js';
 import { useHorizontalCarousel } from './useHorizontalCarousel.js';
+
+// Filter id meaning "every category" (category names themselves are published content).
+const ALL_CATEGORIES = 'all';
 
 export function useLandingPage() {
   const { isAuthenticated, role, logout } = useAuth();
-  const { language, setLanguage } = useLanguage();
-  const isEn = language === 'en';
-  const membershipAction = getMembershipAction(isAuthenticated, role, isEn);
-  const { content: editorialContent, loaded: editorialLoaded } = useLandingContentState();
+  const { language, setLanguage, t } = useLanguage();
+  const membershipAction = getMembershipAction(isAuthenticated, role, t);
+  // Content comes localized from GET /api/home-content?lang=…; no client-side translation or defaults.
+  const { content: editorialContent, stats: editorialStats, loaded: editorialLoaded, error: editorialError, retry: retryEditorial } = useLandingContentState();
   const { catalog, loading: catalogLoading, error: catalogError } = usePublicCatalog();
-  const rawLandingContent = getLandingPresentation(editorialContent, catalog);
-  const landingContent = useMemo(() => isEn ? translateLandingContent(rawLandingContent, true) : rawLandingContent, [rawLandingContent, isEn]);
+  const includedLabel = t('landing.priceIncluded');
+  const landingContent = useMemo(
+    () => getLandingPresentation(editorialContent, catalog, includedLabel),
+    [editorialContent, catalog, includedLabel]
+  );
   const facilitiesList = landingContent?.facilitiesSection?.facilitiesList || [];
   const catalogSportList = landingContent?.coursesSection?.sportsList || [];
-  const hours = landingContent?.ctaAndFooter?.hoursWeekdays || (catalog?.center?.openingTime && catalog?.center?.closingTime ? catalog.center.openingTime.slice(0, 5) + ' - ' + catalog.center.closingTime.slice(0, 5) : 'Chưa cập nhật');
+  const hours = landingContent?.ctaAndFooter?.hoursWeekdays || (catalog?.center?.openingTime && catalog?.center?.closingTime ? catalog.center.openingTime.slice(0, 5) + ' - ' + catalog.center.closingTime.slice(0, 5) : t('landing.hoursNotSet'));
   const zaloPhone = normalizeZaloPhone(landingContent.ctaAndFooter?.contactZaloPhone);
   const socialContacts = [
     { label: `Zalo: ${zaloPhone}`, icon: 'chat', url: zaloPhone ? `https://zalo.me/${zaloPhone}` : '' },
     { label: 'Facebook', icon: 'public', url: getExternalContactUrl(landingContent.ctaAndFooter?.contactFacebookUrl) }
   ].filter(contact => contact.url);
-  const [selectedCategory, setSelectedCategory] = useState('Tất cả');
+  const [selectedCategory, setSelectedCategory] = useState(ALL_CATEGORIES);
   const [selectedFacilityForModal, setSelectedFacilityForModal] = useState(null);
   const [activeNav, setActiveNav] = useState('trang-chu');
   const [isScrolled, setIsScrolled] = useState(false);
@@ -60,27 +64,27 @@ export function useLandingPage() {
     return () => observer.disconnect();
   }, [catalog, editorialContent, selectedCategory]);
 
-  // Danh sách các môn học (Chủ động ẩn/hiện bởi manager qua isVisible)
+  // Sport cards; managers hide/show them with isVisible.
   const sportsList = catalogSportList;
   const visibleSports = useMemo(() => {
     return sportsList.filter(s => s.isVisible !== false);
   }, [sportsList]);
 
   const leftSports = useMemo(() => {
-    const items = [{ id: 'all', name: isEn ? 'All Sports' : 'Tất cả' }];
-    visibleSports.slice(0, Math.ceil(visibleSports.length / 2)).forEach(s => items.push({ id: s.id, name: isEn ? translateSportName(s.name, true) : s.name }));
+    const items = [{ id: 'all', name: t('landing.nav.allSports') }];
+    visibleSports.slice(0, Math.ceil(visibleSports.length / 2)).forEach(s => items.push({ id: s.id, name: s.name }));
     return items;
-  }, [visibleSports, isEn]);
+  }, [visibleSports, t]);
 
   const rightSports = useMemo(() => {
-    return visibleSports.slice(Math.ceil(visibleSports.length / 2)).map(s => ({ id: s.id, name: isEn ? translateSportName(s.name, true) : s.name }));
-  }, [visibleSports, isEn]);
+    return visibleSports.slice(Math.ceil(visibleSports.length / 2)).map(s => ({ id: s.id, name: s.name }));
+  }, [visibleSports]);
 
   const navItems = [
-    { id: 'trang-chu', href: '#/', label: isEn ? 'HOME' : 'TRANG CHỦ', targetId: 'trang-chu' },
-    { id: 've-chung-toi', href: '#ve-chung-toi', label: isEn ? 'ABOUT US' : 'VỀ CHÚNG TÔI', targetId: 've-chung-toi' },
-    { id: 'khoa-hoc', href: '#khoa-hoc', label: isEn ? 'COURSES' : 'KHÓA HỌC', targetId: 'khoa-hoc', hasDropdown: true },
-    { id: 'co-so-vat-chat', href: '#co-so-vat-chat', label: isEn ? 'FACILITIES' : 'CƠ SỞ VẬT CHẤT', targetId: 'co-so-vat-chat' },
+    { id: 'trang-chu', href: '#/', label: t('landing.nav.home'), targetId: 'trang-chu' },
+    { id: 've-chung-toi', href: '#ve-chung-toi', label: t('landing.nav.about'), targetId: 've-chung-toi' },
+    { id: 'khoa-hoc', href: '#khoa-hoc', label: t('landing.nav.courses'), targetId: 'khoa-hoc', hasDropdown: true },
+    { id: 'co-so-vat-chat', href: '#co-so-vat-chat', label: t('landing.nav.facilities'), targetId: 'co-so-vat-chat' },
   ];
 
   const handleSportClick = (sport) => {
@@ -119,7 +123,7 @@ export function useLandingPage() {
     }, 900);
 
     if (item.id === 'all') {
-      setSelectedCategory('Tất cả');
+      setSelectedCategory(ALL_CATEGORIES);
       setHighlightedSportId(null);
       const sectionEl = document.getElementById('khoa-hoc');
       if (sectionEl) {
@@ -133,7 +137,7 @@ export function useLandingPage() {
 
     const sport = sportsList.find(s => s.id === item.id);
     if (sport) {
-      setSelectedCategory('Tất cả');
+      setSelectedCategory(ALL_CATEGORIES);
       setHighlightedSportId(sport.id);
 
       const targetEl = document.getElementById(`sport-card-${sport.id}`) || document.getElementById('khoa-hoc');
@@ -277,15 +281,14 @@ export function useLandingPage() {
   }, []);
 
   const categoryConfig = useMemo(() => [
-    { id: 'Tất cả', label: isEn ? 'All Sports' : 'Tất cả', icon: 'grid_view', count: visibleSports.length },
-    ...[...new Set(visibleSports.map(sport => sport.category).filter(Boolean))].map(category => {
-      const cfg = SPORT_CATEGORY_CONFIG[category];
-      const label = isEn ? (cfg?.labelEn || category) : (cfg?.label || category);
-      return { id: category, label, icon: 'sports', count: visibleSports.filter(sport => sport.category === category).length };
-    })
-  ], [visibleSports, isEn]);
+    { id: ALL_CATEGORIES, label: t('landing.nav.allSports'), icon: 'grid_view', count: visibleSports.length },
+    // Category names are published content in the page language.
+    ...[...new Set(visibleSports.map(sport => sport.category).filter(Boolean))].map(category => (
+      { id: category, label: category, icon: 'sports', count: visibleSports.filter(sport => sport.category === category).length }
+    ))
+  ], [visibleSports, t]);
 
-  const filteredSports = selectedCategory === 'Tất cả'
+  const filteredSports = selectedCategory === ALL_CATEGORIES
     ? visibleSports
     : visibleSports.filter(s => s.category === selectedCategory);
 
@@ -316,11 +319,11 @@ export function useLandingPage() {
 
   return {
     activeNav, catalog, catalogError, catalogLoading, categoryConfig, coursesDropdownRef,
-    editorialContent, editorialLoaded, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
+    editorialContent, editorialError, editorialLoaded, editorialStats, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
     handleCoursesMouseLeave, handleNavClick, handleScrollSportsToIndex, handleSelectMenuItem,
     handleSportClick, handleSportsScroll, highlightedSportId, hours, isAuthenticated,
-    isCoursesDropdownOpen, isEn, isMobileCoursesOpen, isMobileMenuOpen, isScrolled, isVideoMuted,
-    landingContent, language, leftSports, logout, membershipAction, navItems, rightSports, role,
+    isCoursesDropdownOpen, isMobileCoursesOpen, isMobileMenuOpen, isScrolled, isVideoMuted,
+    landingContent, language, leftSports, retryEditorial, t, logout, membershipAction, navItems, rightSports, role,
     selectedCategory, selectedFacilityForModal, selectedSportFromMenu, setIsMobileCoursesOpen,
     setIsMobileMenuOpen, setIsVideoMuted, setLanguage, setSelectedCategory,
     setSelectedFacilityForModal, setShowIntro, showIntro, socialContacts, sportCarouselIndex,
