@@ -10,7 +10,7 @@ namespace SportsCenterManagement.Tests.BLL.Catalog;
 
 public class HomeContentTests
 {
-    private static LandingContentService Service(SportsCenterDbContext db) => new(db, new ConfigurationBuilder().Build());
+    private static LandingContentService Service(SportsCenterDbContext db) => new(new UnitOfWork(db), new ConfigurationBuilder().Build());
 
     /// <summary>Two sports whose names differ in word order from the seed cards, plus the seeded rooms they train in.</summary>
     private static async Task<SportsCenterDbContext> SeededDbAsync()
