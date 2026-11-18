@@ -22,8 +22,14 @@ function spawn(width, height, anywhere) {
 }
 
 /** Torch embers drifting upwards on a canvas: capped count, DPR ≤ 2, paused while the tab is hidden. */
-export function EmberParticles() {
+export function EmberParticles({ phase = 'loading' }) {
   const canvasRef = useRef(null);
+  const phaseRef = useRef(phase);
+  const burstRef = useRef(0);
+  if (phase === 'exit' && phaseRef.current !== 'exit') {
+    burstRef.current = 1;
+  }
+  phaseRef.current = phase;
   const [on, setOn] = useState(false);
 
   useEffect(() => {
@@ -64,18 +70,31 @@ export function EmberParticles() {
       const dt = Math.min(0.05, (now - last) / 1000);
       last = now;
       const t = now / 1000;
+      const burst = burstRef.current;
+      if (burst > 0.005) burstRef.current *= Math.exp(-dt * 3.4);
+      else burstRef.current = 0;
       px += (tx - px) * PARALLAX_LERP;
       py += (ty - py) * PARALLAX_LERP;
       ctx.clearRect(0, 0, width, height);
+      const cx = width / 2;
+      const cy = height / 2;
       for (let i = 0; i < embers.length; i += 1) {
         let e = embers[i];
         e.y -= e.vy * dt;
         e.x += Math.sin(t * 0.7 + e.phase) * e.sway * dt;
+        if (burst > 0.01) {
+          const rx = e.x - cx;
+          const ry = e.y - cy;
+          const dist = Math.hypot(rx, ry) || 1;
+          const kick = (420 + (i % 5) * 90) * burst * dt;
+          e.x += (rx / dist) * kick;
+          e.y += (ry / dist) * kick;
+        }
         if (e.y < -10) e = embers[i] = spawn(width, height, false);
         // Fade in near the bottom, die out over the upper third, twinkle a little.
         const rise = Math.min(1, (height - e.y) / 140);
         const fall = Math.min(1, e.y / (height * 0.35));
-        const a = e.alpha * rise * fall * (0.75 + 0.25 * Math.sin(t * 3 + e.phase));
+        const a = Math.min(1, e.alpha * rise * fall * (0.75 + 0.25 * Math.sin(t * 3 + e.phase)) * (1 + burst * 0.85));
         if (a <= 0.01) continue;
         // Bigger embers read as closer, so they move further against the cursor.
         const depth = e.r / 2.1;
