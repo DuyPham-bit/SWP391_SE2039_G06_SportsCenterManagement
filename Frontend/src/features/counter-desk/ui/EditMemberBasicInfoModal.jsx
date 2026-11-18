@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { memberApi } from '../../../entities/member/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 
 const PHONE_PATTERN = /^\+?[0-9]{8,15}$/;
 
