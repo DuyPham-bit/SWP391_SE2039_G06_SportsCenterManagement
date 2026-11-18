@@ -92,11 +92,11 @@ public class AdminFlowTests
     {
         var valid = (string url) => Json($$"""
         {
-          "heroBanner": {},
-          "whyUs": {},
-          "coursesSection": {},
-          "facilitiesSection": {},
-          "zonesLayout": { "model3dUrl": "{{url}}" },
+          "heroBanner": { "badge": "B", "title": "T", "description": "D", "primaryCtaText": "C" },
+          "whyUs": { "title": "W" },
+          "coursesSection": { "title": "S" },
+          "facilitiesSection": { "title": "F" },
+          "zonesLayout": { "title": "Z", "model3dUrl": "{{url}}" },
           "ctaAndFooter": {}
         }
         """);
