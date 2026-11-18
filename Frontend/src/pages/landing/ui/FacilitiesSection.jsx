@@ -402,14 +402,14 @@ export function FacilitiesSection({ externalFacility = null, onModalClose = null
         )}
 
         {/* CAMPUS MAP: 3D model + 2D plan rendered from GET /api/campus-map (single source of zone data) */}
-        <div className="tiya-reveal--scale relative mb-12">
+        <div className="tiya-reveal--scale relative mb-8">
           <CampusMapExplorer />
           {(landingContent?.zonesLayout?.description || landingContent?.zonesLayout?.serviceAmenities?.length > 0) && (
-            <div className="mt-4 flex flex-col lg:flex-row lg:items-center gap-3">
+            <div className="tiya-campus-amenities-bar mt-3">
               {landingContent?.zonesLayout?.description && (
-                <p className="tiya-campus-directory__desc lg:max-w-xl m-0">{landingContent.zonesLayout.description}</p>
+                <p className="tiya-campus-directory__desc m-0">{landingContent.zonesLayout.description}</p>
               )}
-              <ul className="flex flex-wrap gap-2 m-0 p-0 list-none">
+              <ul className="tiya-campus-amenities-grid m-0 p-0 list-none">
                 {(landingContent?.zonesLayout?.serviceAmenities || []).map((amenity, idx) => {
                   const focusCode = amenity.icon === 'badge' || amenity.icon === 'shower' ? 'A' : 'L';
                   const focusFloor = amenity.icon === 'badge' ? 2 : 1;
