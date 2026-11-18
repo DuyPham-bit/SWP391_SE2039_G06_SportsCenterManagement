@@ -1,6 +1,8 @@
 import React from 'react';
+import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 
-export function ZonesSection({ facilitiesList, hours, isEn }) {
+export function ZonesSection({ facilitiesList, hours }) {
+  const { t } = useLanguage();
   return (
     <section className="section-bg-image">
       {/* Top Wave: White #ffffff */}
@@ -18,30 +20,28 @@ export function ZonesSection({ facilitiesList, hours, isEn }) {
             {/* Status Badge */}
             <div className="section-bg-badge">
               <span className="section-bg-badge-dot" aria-hidden="true" />
-              {isEn ? 'Facilities & Courts on Campus' : 'Phòng và sân tập tại trung tâm'}
+              {t('landing.zones.badge')}
             </div>
 
-            <h2>{isEn ? 'Find Your Sport & Training Package' : 'Chọn Bộ Môn & Gói Tập Phù Hợp'}</h2>
+            <h2>{t('landing.zones.title')}</h2>
 
             <p>
-              {isEn
-                ? 'Explore the facilities, choose a membership package, then book available classes covered by your package.'
-                : 'Khám phá cơ sở tập luyện, đăng ký gói tập rồi chọn ca học còn chỗ theo quyền lợi của gói.'}
+              {t('landing.zones.description')}
             </p>
 
             {/* 3 Key Highlights with High-Contrast Chips */}
             <div className="section-bg-features">
               <span className="section-bg-feature-chip">
                 <span className="material-symbols-outlined chip-icon chip-icon--amber" aria-hidden="true">bolt</span>
-                <span>{isEn ? 'Class Schedules' : 'Xem lịch lớp'}</span>
+                <span>{t('landing.zones.chipSchedule')}</span>
               </span>
               <span className="section-bg-feature-chip">
                 <span className="material-symbols-outlined chip-icon chip-icon--emerald" aria-hidden="true">groups</span>
-                <span>{isEn ? 'Official Info' : 'Thông tin từ trung tâm'}</span>
+                <span>{t('landing.zones.chipInfo')}</span>
               </span>
               <span className="section-bg-feature-chip">
                 <span className="material-symbols-outlined chip-icon chip-icon--sky" aria-hidden="true">light_mode</span>
-                <span>{isEn ? 'Nighttime LED' : 'Đèn LED Ban Đêm'}</span>
+                <span>{t('landing.zones.chipLed')}</span>
               </span>
             </div>
 
@@ -53,11 +53,11 @@ export function ZonesSection({ facilitiesList, hours, isEn }) {
                 </div>
                 <div className="section-bg-cta-text-group">
                   <span className="section-bg-cta-title">
-                    {isEn ? `System of ${facilitiesList.length} courts & halls` : `Hệ thống ${facilitiesList.length} cụm sân & phòng tập`}
+                    {t('landing.zones.system', { count: facilitiesList.length })}
                   </span>
                   <span className="section-bg-cta-sub">
                     <span className="section-bg-cta-sub-dot" aria-hidden="true" />
-                    {hours === 'Chưa cập nhật' && isEn ? '06:00 - 22:00 Daily' : hours}
+                    {hours}
                   </span>
                 </div>
               </div>
@@ -68,9 +68,9 @@ export function ZonesSection({ facilitiesList, hours, isEn }) {
                   const el = document.getElementById('co-so-vat-chat');
                   if (el) el.scrollIntoView({ behavior: 'smooth' });
                 }}
-                aria-label={isEn ? "View courts and rooms at center" : "Xem phòng và sân tập của trung tâm"}
+                aria-label={t('landing.zones.viewAria')}
               >
-                <span>{isEn ? `View ${facilitiesList.length} Courts / Rooms` : `Xem ${facilitiesList.length} Phòng / Sân`}</span>
+                <span>{t('landing.zones.view', { count: facilitiesList.length })}</span>
                 <span className="material-symbols-outlined" aria-hidden="true">arrow_forward</span>
               </button>
             </div>
