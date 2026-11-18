@@ -1,7 +1,7 @@
 import { LandingCatalogEditor } from './LandingCatalogEditor.jsx';
 import React from 'react';
 import { CloudMediaPickerModal } from '../../../features/media-upload/index.js';
-import { useHomeContentEditor } from '../model/useHomeContentEditor.js';
+import { TAB_SECTIONS, useHomeContentEditor } from '../model/useHomeContentEditor.js';
 import { HomeContentHeader } from './HomeContentHeader.jsx';
 import { HomeContentTabs } from './HomeContentTabs.jsx';
 import { HeroBannerTab } from './HeroBannerTab.jsx';
@@ -10,23 +10,41 @@ import { ZonesTab } from './ZonesTab.jsx';
 import { FooterTab } from './FooterTab.jsx';
 import { AuthShowcaseTab } from './AuthShowcaseTab.jsx';
 import { PublishBar } from './PublishBar.jsx';
+import { TabSaveFooter } from './TabSaveFooter.jsx';
+import { SectionHeading } from './fields.jsx';
+
+function EditorSkeleton({ label }) {
+  return (
+    <div role="status" aria-label={label} className="space-y-6 animate-pulse">
+      <div className="h-44 rounded-2xl bg-brand-navy-200/70 dark:bg-brand-navy-800" />
+      <div className="grid grid-cols-2 sm:grid-cols-4 xl:grid-cols-7 gap-2">
+        {Array.from({ length: 7 }, (_, i) => <div key={i} className="h-16 rounded-xl bg-brand-navy-100 dark:bg-brand-navy-800/70" />)}
+      </div>
+      <div className="rounded-2xl border border-brand-navy-200/80 dark:border-brand-navy-800 p-6 sm:p-8 space-y-4">
+        <div className="h-5 w-1/3 rounded bg-brand-navy-200/70 dark:bg-brand-navy-800" />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {[0, 1].map(column => (
+            <div key={column} className="space-y-3">
+              {[0, 1, 2].map(row => <div key={row} className="h-10 rounded-xl bg-brand-navy-100 dark:bg-brand-navy-800/70" />)}
+            </div>
+          ))}
+        </div>
+      </div>
+      <span className="sr-only">{label}</span>
+    </div>
+  );
+}
 
 export function HomeContentManagement() {
+  const editor = useHomeContentEditor();
   const {
-    activeTab, addToast, content, deleteFacilityCard, discardKey, handleDiscardChanges,
-    handlePreview, handleSaveAll, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
-    mediaPickerConfig, openMediaPicker, setContent, setIsDirty, setMediaPickerConfig, setReloadKey,
-    totalFacilities, totalSports, updateCatalogCards, updateContentField, visibleFacilities,
-    visibleSports
-  } = useHomeContentEditor();
+    activeTab, content, deleteFacilityCard, dirtySections, discardKey, editLang, handleDiscardChanges, handlePreview,
+    handleSaveAll, handleSaveSection, handleTabChange, isDirty, isLoading, isSaving, loadError, mediaPickerConfig,
+    missingBySection, openMediaPicker, saveStatus, setEditLang, setMediaPickerConfig, setReloadKey, stats, t,
+    updateCatalogCards, updateContentField
+  } = editor;
 
-  if (isLoading) {
-    return (
-      <div role="status" className="p-12 text-center text-brand-navy-500 dark:text-brand-navy-400 font-medium animate-pulse">
-        {isEn ? 'Loading homepage content...' : 'Đang tải nội dung trang chủ...'}
-      </div>
-    );
-  }
+  if (isLoading) return <EditorSkeleton label={t('homeContent.status.loading')} />;
 
   if (loadError) {
     return (
@@ -37,138 +55,93 @@ export function HomeContentManagement() {
           onClick={() => setReloadKey(value => value + 1)}
           className="px-4 py-2 bg-brand-danger-600 hover:bg-brand-danger-700 text-white rounded-xl text-xs font-bold transition-all shadow-sm"
         >
-          {isEn ? 'Try Again' : 'Thử lại'}
+          {t('homeContent.action.retry')}
         </button>
       </div>
     );
   }
 
+  const section = TAB_SECTIONS[activeTab];
+  const tabProps = {
+    addToast: editor.addToast, content, lang: editLang, setLang: setEditLang, missing: missingBySection[activeTab] || {}, openMediaPicker, stats, t,
+    updateContentField,
+    footer: (
+      <TabSaveFooter handleDiscardChanges={handleDiscardChanges} handleSaveSection={handleSaveSection} isDirty={isDirty}
+        isSectionDirty={dirtySections.has(section)} isSaving={isSaving} saveStatus={saveStatus} t={t} />
+    )
+  };
+  const catalogTab = type => {
+    const isSports = type === 'sports';
+    const sports = content.coursesSection || {};
+    const facilities = content.facilitiesSection || {};
+    return (
+      <div className="bg-white dark:bg-brand-navy-900 rounded-2xl border border-brand-navy-200/80 dark:border-brand-navy-800 shadow-sm p-6 sm:p-8 space-y-6">
+        <SectionHeading
+          title={t(isSports ? 'homeContent.catalog.sportsTitle' : 'homeContent.catalog.facilitiesTitle')}
+          description={t('homeContent.catalog.description', stats?.[isSports ? 'sports' : 'facilities'] || { visible: '—', total: '—' })}
+          lang={editLang} setLang={setEditLang} missing={tabProps.missing} t={t}
+        />
+        {isSports ? (
+          <LandingCatalogEditor
+            key={`sports-${discardKey}`}
+            type="sports"
+            lang={editLang}
+            metadata={sports.sportsList || []}
+            fallbackToCatalog={sports.catalogSource !== 'custom'}
+            facilities={facilities.facilitiesList?.length || facilities.catalogSource === 'custom' ? facilities.facilitiesList : undefined}
+            onChange={items => updateCatalogCards('coursesSection', 'sportsList', items)}
+            openMediaPicker={openMediaPicker}
+          />
+        ) : (
+          <LandingCatalogEditor
+            key={`facilities-${discardKey}`}
+            type="facilities"
+            lang={editLang}
+            metadata={facilities.facilitiesList || []}
+            fallbackToCatalog={facilities.catalogSource !== 'custom'}
+            sports={sports.sportsList?.length || sports.catalogSource === 'custom' ? sports.sportsList : undefined}
+            onChange={items => updateCatalogCards('facilitiesSection', 'facilitiesList', items)}
+            onDelete={deleteFacilityCard}
+            openMediaPicker={openMediaPicker}
+          />
+        )}
+        {tabProps.footer}
+      </div>
+    );
+  };
+
   return (
     <fieldset disabled={isSaving} aria-busy={isSaving} className="space-y-6 pb-20 font-inter min-w-0 animate-fade-slide-up">
-      {/* 1. TOP HEADER BANNER (Olympic Logo Gradient) */}
       <HomeContentHeader
         handleDiscardChanges={handleDiscardChanges}
         handlePreview={handlePreview}
         handleSaveAll={handleSaveAll}
         isDirty={isDirty}
-        isEn={isEn}
         isSaving={isSaving}
-        totalFacilities={totalFacilities}
-        totalSports={totalSports}
-        visibleFacilities={visibleFacilities}
-        visibleSports={visibleSports}
+        saveStatus={saveStatus}
+        stats={stats}
+        t={t}
       />
 
-      {/* 2. TAB NAVIGATION (7 Sections - All 7 tabs fully visible in responsive grid) */}
       <HomeContentTabs
         activeTab={activeTab}
+        content={content}
+        dirtySections={dirtySections}
         handleTabChange={handleTabChange}
-        isEn={isEn}
-        totalFacilities={totalFacilities}
-        totalSports={totalSports}
+        missingBySection={missingBySection}
+        sectionOf={TAB_SECTIONS}
+        stats={stats}
+        t={t}
       />
 
-      {/* 3. SECTION CONTENT */}
+      {activeTab === 'hero' && <HeroBannerTab {...tabProps} />}
+      {activeTab === 'whyUs' && <WhyUsTab {...tabProps} handleTabChange={handleTabChange} />}
+      {activeTab === 'sports' && catalogTab('sports')}
+      {activeTab === 'facilities' && catalogTab('facilities')}
+      {activeTab === 'zones' && <ZonesTab {...tabProps} />}
+      {activeTab === 'footer' && <FooterTab {...tabProps} />}
+      {activeTab === 'authShowcase' && <AuthShowcaseTab {...tabProps} />}
 
-      {/* TAB 1: HERO BANNER */}
-      {activeTab === 'hero' && (
-        <HeroBannerTab
-          content={content}
-          handleDiscardChanges={handleDiscardChanges}
-          handleSaveAll={handleSaveAll}
-          isDirty={isDirty}
-          isEn={isEn}
-          isSaving={isSaving}
-          openMediaPicker={openMediaPicker}
-          updateContentField={updateContentField}
-        />
-      )}
-
-      {/* TAB 2: WHY US & STATS */}
-      {activeTab === 'whyUs' && (
-        <WhyUsTab
-          content={content}
-          handleDiscardChanges={handleDiscardChanges}
-          handleSaveAll={handleSaveAll}
-          handleTabChange={handleTabChange}
-          isDirty={isDirty}
-          isEn={isEn}
-          isSaving={isSaving}
-          updateContentField={updateContentField}
-        />
-      )}
-
-      {/* TAB 3: SPORTS CATALOG */}
-      {activeTab === 'sports' && (
-        <LandingCatalogEditor
-          key={`sports-${discardKey}`}
-          type="sports"
-          metadata={content.coursesSection.sportsList}
-          fallbackToCatalog={content.coursesSection.catalogSource !== 'custom'}
-          facilities={content.facilitiesSection.facilitiesList.length || content.facilitiesSection.catalogSource === 'custom' ? content.facilitiesSection.facilitiesList : undefined}
-          onChange={items => updateCatalogCards('coursesSection', 'sportsList', items)}
-          openMediaPicker={openMediaPicker}
-        />
-      )}
-
-      {/* TAB 4: COURT FACILITIES */}
-      {activeTab === 'facilities' && (
-        <LandingCatalogEditor
-          key={`facilities-${discardKey}`}
-          type="facilities"
-          metadata={content.facilitiesSection.facilitiesList}
-          fallbackToCatalog={content.facilitiesSection.catalogSource !== 'custom'}
-          sports={content.coursesSection.sportsList.length || content.coursesSection.catalogSource === 'custom' ? content.coursesSection.sportsList : undefined}
-          onChange={items => updateCatalogCards('facilitiesSection', 'facilitiesList', items)}
-          onDelete={deleteFacilityCard}
-          openMediaPicker={openMediaPicker}
-        />
-      )}
-
-      {/* TAB 5: ZONES & AMENITIES */}
-      {activeTab === 'zones' && (
-        <ZonesTab
-          content={content}
-          handleDiscardChanges={handleDiscardChanges}
-          handleSaveAll={handleSaveAll}
-          isDirty={isDirty}
-          isEn={isEn}
-          isSaving={isSaving}
-          updateContentField={updateContentField}
-        />
-      )}
-
-      {/* TAB 6: CTA & FOOTER */}
-      {activeTab === 'footer' && (
-        <FooterTab
-          content={content}
-          handleDiscardChanges={handleDiscardChanges}
-          handleSaveAll={handleSaveAll}
-          isDirty={isDirty}
-          isEn={isEn}
-          isSaving={isSaving}
-          updateContentField={updateContentField}
-        />
-      )}
-
-      {/* TAB 7: AUTH SHOWCASE (Login & Register Column) */}
-      {activeTab === 'authShowcase' && (
-        <AuthShowcaseTab
-          addToast={addToast}
-          content={content}
-          handleDiscardChanges={handleDiscardChanges}
-          handleSaveAll={handleSaveAll}
-          isDirty={isDirty}
-          isEn={isEn}
-          isSaving={isSaving}
-          openMediaPicker={openMediaPicker}
-          setContent={setContent}
-          setIsDirty={setIsDirty}
-          updateContentField={updateContentField}
-        />
-      )}
-
-      {/* 4. CLOUD MEDIA PICKER MODAL */}
       <CloudMediaPickerModal
         isOpen={mediaPickerConfig.isOpen}
         title={mediaPickerConfig.title}
@@ -177,22 +150,10 @@ export function HomeContentManagement() {
           setMediaPickerConfig(prev => ({ ...prev, isOpen: false }));
           mediaPickerConfig.onClose?.();
         }}
-        onSelectImage={(url) => {
-          if (mediaPickerConfig.callback) {
-            mediaPickerConfig.callback(url);
-          }
-        }}
+        onSelectImage={url => mediaPickerConfig.callback?.(url)}
       />
 
-      {/* 5. STICKY FLOATING ACTION BAR FOR INSTANT SAVING */}
-      {isDirty && (
-        <PublishBar
-          handleDiscardChanges={handleDiscardChanges}
-          handleSaveAll={handleSaveAll}
-          isEn={isEn}
-          isSaving={isSaving}
-        />
-      )}
+      {isDirty && <PublishBar handleDiscardChanges={handleDiscardChanges} handleSaveAll={handleSaveAll} isSaving={isSaving} t={t} />}
     </fieldset>
   );
 }
