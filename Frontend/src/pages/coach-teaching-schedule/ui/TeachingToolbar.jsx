@@ -1,7 +1,7 @@
 import React from 'react';
 import { formatIsoDate, parseIsoDate } from '../../../shared/lib/calendar.js';
 import { getSportTheme } from '../lib/calendarView.js';
-import { translateSportName } from '../../../shared/i18n/i18nHelper.js';
+import { translateSportName } from '../../../shared/lib/i18nHelper.js';
 
 export function TeachingToolbar({
   availableSports, currentDate, handleNext, handlePrev, handleToday, isEn, periodTitle, schedule,
