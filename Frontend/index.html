@@ -45,8 +45,59 @@
       })();
     </script>
 
+    <!-- Splash styles: src/widgets/app-splash/ui/splash.css, inlined here by vite.config.mjs. -->
+    <!-- osa-splash-css -->
+    <link rel="preload" as="image" href="/logo-olympic-mark.png?v=20261109v4" />
   </head>
   <body class="notranslate bg-[#FAF8F5] dark:bg-slate-950 text-slate-800 dark:text-slate-100 font-sans antialiased selection:bg-[#81B29A] selection:text-white">
+    <!-- Boot copy of the splash (same markup as widgets/app-splash). The React splash covers it, then removes it. -->
+    <div id="osa-boot" class="osa-splash" data-phase="loading" role="status" aria-label="Đang khởi động Olympic Sports Arena">
+      <div class="osa-splash__bg" aria-hidden="true">
+        <div class="osa-splash__blob osa-splash__blob--a"></div>
+        <div class="osa-splash__blob osa-splash__blob--b"></div>
+        <div class="osa-splash__blob osa-splash__blob--c"></div>
+        <div class="osa-splash__glow"></div>
+        <div class="osa-splash__grain"></div>
+      </div>
+      <div class="osa-splash__fg" aria-hidden="true">
+        <div class="osa-splash__stage">
+          <div class="osa-splash__rings">
+            <span class="osa-splash__track osa-splash__track--outer"></span>
+            <span class="osa-splash__track osa-splash__track--inner"></span>
+            <span class="osa-splash__lane osa-splash__lane--back"><span class="osa-splash__orbit osa-splash__orbit--lane"><span class="osa-splash__comet"></span><span class="osa-splash__head"></span></span></span>
+            <span class="osa-splash__orbit osa-splash__orbit--outer"><span class="osa-splash__comet"></span><span class="osa-splash__head"></span></span>
+            <span class="osa-splash__orbit osa-splash__orbit--inner"><span class="osa-splash__comet"></span><span class="osa-splash__head"></span></span>
+            <svg class="osa-splash__progress" viewBox="0 0 100 100" focusable="false"><circle class="osa-splash__progress-track" cx="50" cy="50" r="49"></circle></svg>
+          </div>
+          <div class="osa-splash__flip"><div class="osa-splash__tilt"><div class="osa-splash__float"><div class="osa-splash__tile">
+            <img src="/logo-olympic-mark.png?v=20261109v4" alt="" width="160" height="160" />
+            <span class="osa-splash__sheen"></span><span class="osa-splash__flame"></span>
+          </div></div></div></div>
+          <span class="osa-splash__lane osa-splash__lane--front"><span class="osa-splash__orbit osa-splash__orbit--lane"><span class="osa-splash__comet"></span><span class="osa-splash__head"></span></span></span>
+        </div>
+        <div class="osa-splash__copy">
+          <p class="osa-splash__title"></p>
+          <p class="osa-splash__tagline"><span>Trung Tâm Thể Thao Olympic</span><span>Olympic Sports Center</span></p>
+          <p class="osa-splash__status"></p>
+        </div>
+      </div>
+    </div>
+    <script>
+      // Boot timestamp (the React splash syncs its loops to it), calm mode, and the per-letter title.
+      (function () {
+        window.__osaBootT = performance.now();
+        var boot = document.getElementById('osa-boot');
+        try {
+          if (matchMedia('(prefers-reduced-motion: reduce)').matches || localStorage.getItem('SCMS_REDUCE_MOTION') === 'true') boot.setAttribute('data-calm', '');
+        } catch (e) {}
+        var name = 'OLYMPIC SPORTS ARENA', html = '';
+        for (var i = 0; i < name.length; i++) {
+          var c = name.charAt(i);
+          html += '<span class="osa-splash__ch" style="--i:' + i + '" data-ch="' + c + '">' + (c === ' ' ? '&nbsp;' : c) + '</span>';
+        }
+        boot.querySelector('.osa-splash__title').innerHTML = html;
+      })();
+    </script>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
