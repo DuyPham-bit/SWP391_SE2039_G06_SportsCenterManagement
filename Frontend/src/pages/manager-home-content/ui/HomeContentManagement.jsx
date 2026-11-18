@@ -1,6 +1,6 @@
 import { LandingCatalogEditor } from './LandingCatalogEditor.jsx';
 import React from 'react';
-import { CloudMediaPickerModal } from '../../../features/media-upload/index.js';
+import { CloudMediaPickerModal } from './CloudMediaPickerModal.jsx';
 import { TAB_SECTIONS, useHomeContentEditor } from '../model/useHomeContentEditor.js';
 import { HomeContentHeader } from './HomeContentHeader.jsx';
 import { HomeContentTabs } from './HomeContentTabs.jsx';
