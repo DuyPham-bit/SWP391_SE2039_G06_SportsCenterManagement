@@ -1,7 +1,7 @@
 import React from 'react';
 import { AuthProvider } from '../entities/session/index.js';
-import { ToastProvider } from '../shared/ui/toast/ToastContext.jsx';
-import { LanguageProvider } from '../shared/i18n/LanguageContext.jsx';
+import { ToastProvider } from '../shared/ui/toast/index.js';
+import { LanguageProvider } from '../shared/i18n/index.js';
 import AppRouter from './router/AppRouter.jsx';
 import { isLandingRoute, normalizeRouteHash } from './router/routeNormalization.js';
 import { SplashScreen } from '../widgets/app-splash/index.js';
