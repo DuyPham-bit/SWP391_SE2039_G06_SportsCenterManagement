@@ -8,8 +8,11 @@ using SportsCenterManagement.DAL.Context;
 namespace SportsCenterManagement.BLL.Services.Training;
 
 /// <summary>Builds an allowlist of public facts. Never serializes database entities or private member data.</summary>
-public sealed class MemberAiContextService(SportsCenterDbContext db, TimeProvider timeProvider)
+public sealed class MemberAiContextService(IUnitOfWork unitOfWork, TimeProvider timeProvider)
 {
+    // Data access goes through the unit of work (same scoped DbContext instance).
+    private readonly SportsCenterDbContext db = unitOfWork.Context;
+
     private const int MaxPackages = 50;
     private const int MaxFacilities = 100;
     private const int MaxSessions = 200;
