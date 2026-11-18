@@ -1,4 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
+import viLocale from './locales/vi.json';
+import enLocale from './locales/en.json';
 
 const LanguageContext = createContext(null);
 
@@ -290,6 +292,26 @@ export const TRANSLATIONS = {
   }
 };
 
+const LOCALES = { vi: viLocale, en: enLocale };
+
+/** Replaces {name} tokens with values from params. */
+export function interpolate(text, params) {
+  if (!params || typeof text !== 'string') return text;
+  return text.replace(/\{(\w+)\}/g, (match, name) => (params[name] ?? match));
+}
+
+/**
+ * Looks a key up in the JSON locales (locales/vi.json, locales/en.json), then the legacy TRANSLATIONS table.
+ * Usage: t('key'), t('key', 'fallback'), t('key', { count }), t('key', 'fallback', { count }).
+ */
+export function translate(language, key, fallbackOrParams, params) {
+  const fallback = typeof fallbackOrParams === 'string' ? fallbackOrParams : '';
+  const values = typeof fallbackOrParams === 'object' && fallbackOrParams !== null ? fallbackOrParams : params;
+  const lang = LOCALES[language] ? language : 'vi';
+  const text = LOCALES[lang][key] ?? TRANSLATIONS[lang]?.[key] ?? (fallback || LOCALES.vi[key] || TRANSLATIONS.vi[key] || key);
+  return interpolate(text, values);
+}
+
 export function LanguageProvider({ children }) {
   const [language, setLanguageState] = useState(() => {
     return localStorage.getItem('SCMS_LANGUAGE') || 'vi';
@@ -302,13 +324,7 @@ export function LanguageProvider({ children }) {
     window.dispatchEvent(new CustomEvent('SCMS_LANG_CHANGED', { detail: lang }));
   };
 
-  const t = (key, fallback = '') => {
-    const dict = TRANSLATIONS[language] || TRANSLATIONS.vi;
-    if (dict[key] !== undefined) return dict[key];
-    if (fallback) return fallback;
-    const defaultDict = TRANSLATIONS.vi;
-    return defaultDict[key] || key;
-  };
+  const t = (key, fallbackOrParams, params) => translate(language, key, fallbackOrParams, params);
 
   return (
     <LanguageContext.Provider value={{ language, setLanguage, t }}>
@@ -323,7 +339,7 @@ export function useLanguage() {
     return {
       language: 'vi',
       setLanguage: () => {},
-      t: (key, fallback) => fallback || key
+      t: (key, fallbackOrParams, params) => translate('vi', key, fallbackOrParams, params)
     };
   }
   return context;
