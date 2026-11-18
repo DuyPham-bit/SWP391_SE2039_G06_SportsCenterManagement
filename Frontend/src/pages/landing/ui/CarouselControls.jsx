@@ -1,5 +1,5 @@
 import React from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 export function CarouselSideArrows({ carousel, itemCount = 0, sectionLabel = '' }) {
   const { t } = useLanguage();
