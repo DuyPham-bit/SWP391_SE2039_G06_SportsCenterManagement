@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 
-// Cấu trúc 3 cột chữ OLYMPIC SPORTS ARENA định vị trên vành cung không gian 3D (Cylindrical Arc)
-// Phân bổ góc xoay cân xứng (-28°, 0°, +28°) tạo hiệu ứng vòm khán đài Olympic
+// Three letter columns (OLYMPIC SPORTS ARENA) placed on a 3D cylindrical arc.
+// Symmetric rotations (-28°, 0°, +28°) give the stadium-dome effect.
 const OLYMPIC_COLUMNS = [
   {
     key: 'col-olympic',
@@ -57,17 +58,18 @@ const OLYMPIC_COLUMNS = [
 ];
 
 export function IntroSplashScreen({ onFinish, duration = 4000 }) {
+  const { t } = useLanguage();
   const [isExiting, setIsExiting] = useState(false);
   const [showFullWords, setShowFullWords] = useState(false);
   const [isLocked, setIsLocked] = useState(false);
   const tickerRef = useRef(null);
 
   useEffect(() => {
-    // Khóa cuộn trang khi đang hiển thị intro
+    // Lock page scrolling while the intro is shown.
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
 
-    // Cập nhật đồng hồ bấm giờ thể thao trực tiếp qua DOM (requestAnimationFrame)
+    // Update the stopwatch directly in the DOM (requestAnimationFrame).
     let animFrameId;
     const startTimestamp = performance.now();
 
@@ -87,29 +89,29 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
 
     animFrameId = requestAnimationFrame(updateTimer);
 
-    // GIAI ĐOẠN 1: Ban đầu chỉ hiện 3 chữ cái O - S - A và xoay mượt 1 vòng 360 độ (1.35s).
-    // GIAI ĐOẠN 2: Khi xoay xong 1 vòng, kích hoạt tuôn rơi toàn bộ chữ (full words OLYMPIC SPORTS ARENA)!
+    // Phase 1: only the letters O - S - A show and spin a full 360° (1.35s).
+    // Phase 2: after the spin, the full words OLYMPIC SPORTS ARENA drop in.
     const wordsTimer = setTimeout(() => {
       setShowFullWords(true);
     }, 1350);
 
-    // GIAI ĐOẠN 3: Khóa vị trí và bùng sáng 3 gam màu nhận diện thương hiệu Olympic (1.9s)
+    // Phase 3: lock the position and light up the three brand colours (1.9s).
     const lockTimer = setTimeout(() => {
       setIsLocked(true);
     }, 1900);
 
-    // Kích hoạt rèm trượt lên trên (slide-up reveal) ở giây thứ 2.75
+    // Slide-up reveal at 2.75s.
     const exitTimer = setTimeout(() => {
       setIsExiting(true);
     }, Math.max(1400, duration - 550));
 
-    // Kết thúc và tháo gỡ intro screen
+    // Finish and unmount the intro.
     const finishTimer = setTimeout(() => {
       document.body.style.overflow = originalOverflow;
       if (onFinish) onFinish();
     }, duration);
 
-    // Bấm phím bất kỳ để bỏ qua nhanh
+    // Any key skips the intro.
     const handleKeyDown = (e) => {
       if (e.key === 'Escape' || e.key === ' ' || e.key === 'Enter') {
         triggerExit();
@@ -160,9 +162,9 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
         touchAction: 'manipulation',
         WebkitTapHighlightColor: 'transparent'
       }}
-      title="Bấm để vào nhanh (Click / Space to skip)"
+      title={t('landing.intro.skipTitle')}
     >
-      {/* 1. Hiệu ứng thể thao: Ánh đèn sân vận động đa sắc (Olympic Tri-Color Spotlights) */}
+      {/* 1. Tri-colour stadium spotlights */}
       <div
         className="absolute -top-32 -left-32 w-80 sm:w-96 h-80 sm:h-96 rounded-full bg-gradient-to-br from-brand-teal-600/25 to-transparent blur-[80px] sm:blur-[120px] pointer-events-none"
       />
@@ -173,9 +175,9 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
         className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[380px] sm:w-[480px] h-[380px] sm:h-[480px] rounded-full bg-gradient-to-tr from-brand-sage-700/15 via-transparent to-brand-teal-500/10 blur-[100px] pointer-events-none"
       />
 
-      {/* 2. Khung chữ 3D: Hiện O - S - A trước, xoay 1 vòng tròn 360 độ rồi tuôn rơi toàn bộ OLYMPIC SPORTS ARENA */}
+      {/* 2. 3D lettering: O - S - A spin 360°, then the full OLYMPIC SPORTS ARENA drops in */}
       <div className="scms-3d-stage relative flex items-center justify-center w-full px-2 sm:px-4 overflow-visible scale-[0.78] xs:scale-[0.88] sm:scale-95 md:scale-100">
-        {/* Khung chữ 3D: Cả 3 cột chữ đều căn thẳng hàng ngang ở đỉnh (top-0) để O - S - A hoàn toàn đều nhau */}
+        {/* All three columns align at the top (top-0) so O - S - A line up evenly */}
         <div
           className="scms-spinner-1turn flex items-start justify-center w-[280px] sm:w-[320px] md:w-[340px] h-[460px] sm:h-[500px] md:h-[520px]"
           style={{
@@ -202,7 +204,7 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
                 {col.letters.map((char, rowIdx) => {
                   const isTopHeader = rowIdx === 0;
 
-                  // Hàng đầu tiên (O - S - A): Luôn hiển thị trong lúc xoay 1 vòng
+                  // First row (O - S - A): always visible during the spin.
                   if (isTopHeader) {
                     const topColor = isLocked
                       ? `${col.topTextClass} font-black scale-110`
@@ -227,8 +229,8 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
                     );
                   }
 
-                  // Các ký tự bên dưới (L-Y-M-P-I-C, P-O-R-T-S, R-E-N-A):
-                  // Xuất hiện sau khi đã xoay xong 1 vòng tròn (showFullWords = true) với điểm nhấn màu đặc trưng
+                  // Remaining letters (L-Y-M-P-I-C, P-O-R-T-S, R-E-N-A):
+                  // appear after the spin (showFullWords = true) with their accent colour.
                   const customOpacity = Math.max(0.18, 0.95 - (rowIdx - 1) * 0.13);
                   const styleClass = col.rowStyles[rowIdx - 1] || 'text-white/20 font-normal';
 
@@ -259,7 +261,7 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
         </div>
       </div>
 
-      {/* 3. Hiệu ứng thể thao: Đồng hồ điện tử bấm giờ mili-giây (Olympic Timing Meter & Tri-Color Badge) */}
+      {/* 3. Millisecond stopwatch and tri-colour badge */}
       <div className="absolute bottom-6 sm:bottom-10 md:bottom-12 pb-[env(safe-area-inset-bottom,0px)] flex flex-col items-center gap-1.5 font-mono text-[10px] sm:text-xs tracking-[0.2em] sm:tracking-[0.25em] uppercase text-white/50 pointer-events-none">
         <div className="flex items-center gap-2">
           <span
@@ -282,7 +284,7 @@ export function IntroSplashScreen({ onFinish, duration = 4000 }) {
           </span>
         </div>
         <span className="text-[9px] text-white/40 tracking-[0.25em] sm:tracking-[0.3em]">
-          BẤM MÀN HÌNH / SPACE ĐỂ TIẾP TỤC
+          {t('landing.intro.skipHint')}
         </span>
       </div>
     </div>
