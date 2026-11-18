@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import {
   fetchAdminHomeContent, loadHomeContentDraft, missingLanguages, openLandingPreview, publishHomeContent,
   saveHomeContentSection
