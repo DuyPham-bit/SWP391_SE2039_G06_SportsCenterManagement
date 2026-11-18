@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { useNotifications } from '../model/useNotifications.js';
 import { formatMemberDateTime } from '../../../entities/member/index.js';
-import { translateNotificationTitle, translateNotificationContent } from '../../../shared/i18n/i18nHelper.js';
+import { translateNotificationTitle, translateNotificationContent } from '../../../shared/lib/i18nHelper.js';
 import { notificationTarget, getNotificationActionLabel, parseNotificationDetails } from '../lib/notificationNavigation.js';
 
 export function NotificationInbox() {
