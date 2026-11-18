@@ -1,6 +1,6 @@
 import React from 'react';
 import { Logo } from '../../../shared/ui/Logo.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 export function LandingFooter({
   facilitiesList, handleNavClick, handleSportClick, landingContent, navItems, socialContacts,
