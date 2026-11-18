@@ -32,7 +32,7 @@ function loadService(apiRequest, { blockedStorage = false, popupBlocked = false 
     sessionStorage: { getItem: key => previewStore.get(key) ?? null },
     CustomEvent: class { constructor(type, { detail }) { this.type = type; this.detail = detail; } },
     require: id => {
-      if (id.endsWith('/http.js')) return { apiRequest };
+      if (id.endsWith('/http.js') || id.endsWith('/shared/api/index.js')) return { apiRequest };
       throw new Error(`Unexpected dependency: ${id}`);
     }
   });
