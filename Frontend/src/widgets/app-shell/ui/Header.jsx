@@ -5,6 +5,7 @@ import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { NotificationInbox } from '../../../features/notifications/index.js';
 import { Logo } from '../../../shared/ui/Logo.jsx';
 import { translateCoachName } from '../../../shared/i18n/i18nHelper.js';
+import { switchThemeWithReveal, isReduceMotionOn, setReduceMotion } from '../../../shared/lib/motion.js';
 
 // Ngôn ngữ hỗ trợ
 export const LANGUAGES = [
@@ -78,6 +79,14 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
     if (saved) return saved === 'dark';
     return typeof document !== 'undefined' && document.documentElement.classList.contains('dark');
   });
+
+  // State 3b: Giảm hiệu ứng (in-app reduced motion, remembered)
+  const [reduceMotion, setReduceMotionState] = useState(() => isReduceMotionOn());
+  const handleToggleReduceMotion = () => {
+    const next = !reduceMotion;
+    setReduceMotion(next);
+    setReduceMotionState(next);
+  };
 
   // State 4: Toàn màn hình (Fullscreen)
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -157,17 +166,20 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
   };
 
   // Handler bật / tắt Dark Mode
-  const handleToggleDarkMode = () => {
+  // The new theme spreads as a circle from the toggle (View Transitions; instant fallback).
+  const handleToggleDarkMode = (event) => {
     const nextState = !isDarkMode;
+    const box = event?.currentTarget?.getBoundingClientRect?.();
+    const apply = () => {
+      document.documentElement.classList.toggle('dark', nextState);
+      localStorage.setItem('SCMS_THEME_MODE', nextState ? 'dark' : 'light');
+    };
+    switchThemeWithReveal(apply, box ? box.left + box.width / 2 : undefined, box ? box.top + box.height / 2 : undefined);
     setIsDarkMode(nextState);
     if (nextState) {
-      document.documentElement.classList.add('dark');
-      localStorage.setItem('SCMS_THEME_MODE', 'dark');
       if (showSuccess) showSuccess(language === 'vi' ? 'Đã chuyển sang Chế độ tối 🌙' : 'Dark Mode enabled 🌙');
-    } else {
-      document.documentElement.classList.remove('dark');
-      localStorage.setItem('SCMS_THEME_MODE', 'light');
-      if (showInfo) showInfo(language === 'vi' ? 'Đã chuyển sang Chế độ sáng ☀️' : 'Light Mode enabled ☀️');
+    } else if (showInfo) {
+      showInfo(language === 'vi' ? 'Đã chuyển sang Chế độ sáng ☀️' : 'Light Mode enabled ☀️');
     }
   };
 
@@ -253,7 +265,7 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
   const currentLangObj = LANGUAGES.find(l => l.code === language) || LANGUAGES[0];
 
   return (
-    <header className="h-16 bg-surface text-ink border-b border-line sticky top-0 z-40 pr-3 sm:pr-6 flex items-center justify-between shadow-xs transition-colors">
+    <header className="scms-header h-16 bg-surface text-ink border-b border-line sticky top-0 z-40 pr-3 sm:pr-6 flex items-center justify-between shadow-xs transition-colors">
       {/* Left: Brand Logo SCMS & Edge Toggle Button (Merged seamlessly with sidebar below) */}
       <div className="flex items-center h-full min-w-0">
         {/* Brand Logo Zone: smoothly transitions between full logo (w-64) and compact logo (w-20) */}
@@ -366,7 +378,7 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
           aria-label={isDarkMode ? t('header.light_mode', 'Chế độ sáng') : t('header.dark_mode', 'Chế độ tối')}
           aria-pressed={isDarkMode}
         >
-          <span aria-hidden="true" className="material-symbols-outlined text-[20px]">
+          <span key={isDarkMode ? 'sun' : 'moon'} aria-hidden="true" className="material-symbols-outlined text-[20px] animate-[scmsThemeIcon_420ms_cubic-bezier(0.34,1.56,0.64,1)]">
             {isDarkMode ? 'light_mode' : 'bedtime'}
           </span>
         </button>
@@ -462,6 +474,20 @@ export function Header({ onOpenProfile, onToggleSidebar, isSidebarCollapsed = fa
                   <span className="material-symbols-outlined text-[18px] text-brand-navy-400">home</span>
                   <span>{t('header.landing', 'Trang chủ Landing Page')}</span>
                 </a>
+
+                <button
+                  type="button"
+                  role="switch"
+                  aria-checked={reduceMotion}
+                  onClick={handleToggleReduceMotion}
+                  className="w-full text-left px-3.5 py-2 text-xs text-ink hover:bg-surface-muted rounded-lg flex items-center gap-2.5 transition-colors font-medium cursor-pointer"
+                >
+                  <span className="material-symbols-outlined text-[18px] text-brand-navy-400">animation</span>
+                  <span className="flex-1">{language === 'vi' ? 'Giảm hiệu ứng chuyển động' : 'Reduce motion'}</span>
+                  <span aria-hidden="true" className={`relative w-8 h-[18px] rounded-full transition-colors ${reduceMotion ? 'bg-brand-sage-700' : 'bg-brand-navy-200 dark:bg-brand-navy-700'}`}>
+                    <span className={`absolute top-[2px] left-[2px] w-[14px] h-[14px] rounded-full bg-white shadow transition-transform ${reduceMotion ? 'translate-x-[14px]' : ''}`} />
+                  </span>
+                </button>
 
                 {(role === 'MEMBER' || role === 'COACH') && (
                   <a
