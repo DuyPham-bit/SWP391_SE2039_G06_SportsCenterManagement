@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { authApi, useAuth } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { AccountInfoBox, AccountSetupShell, SetPasswordForm } from '../../../features/auth/index.js';
 
 const REDIRECT_SECONDS = 3;
