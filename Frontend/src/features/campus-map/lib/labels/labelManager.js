@@ -204,7 +204,14 @@ export function createLabelManager({ labelLayer, onSelect, getBuildingTotalHeigh
     }
   }
 
-  function updateNamesAndSubs(campus, labelSubs) {
+  const statusTone = (status) => {
+    if (status === 'Open' || status === 'Available') return 'success';
+    if (status === 'Closed' || status === 'Maintenance') return 'danger';
+    if (status === 'Full' || status === 'InUse') return 'warning';
+    return 'muted';
+  };
+
+  function updateNamesAndSubs(campus, labelSubs, statusAt) {
     for (const zone of campus.zones) {
       const label = labels.get(zone.id);
       if (label) {
@@ -213,6 +220,8 @@ export function createLabelManager({ labelLayer, onSelect, getBuildingTotalHeigh
         const sub = labelSubs?.[zone.id] || '';
         const small = label.el.querySelector('small');
         if (small.textContent !== sub) small.textContent = sub;
+        const tone = statusTone(statusAt?.[zone.id] ?? zone.status);
+        if (small.dataset.tone !== tone) small.dataset.tone = tone;
       }
     }
   }
