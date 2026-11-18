@@ -203,7 +203,7 @@ try {
         db.Add(new ClassSession { ClassId = cls.Id, SessionDate = today.AddDays(2), StartTime = new TimeOnly(0, 30), EndTime = new TimeOnly(1, 30), SessionStatus = "Scheduled" });
         await db.SaveChangesAsync(); db.ChangeTracker.Clear();
         var clock = new FixedTimeProvider(new DateTimeOffset(today.ToDateTime(new TimeOnly(5, 0), DateTimeKind.Utc)));
-        var professional = new CoachProfessionalService(db, clock);
+        var professional = new CoachProfessionalService(new UnitOfWork(db), clock);
         await Check("coach KPI excludes future sessions from completion and income", async () => {
             var json = JsonSerializer.SerializeToElement(await professional.GetKpi(coach.Id, today.Year, today.Month, default));
             return json.GetProperty("CompletedSessions").GetInt32() == 1;
@@ -401,7 +401,7 @@ try {
         });
         async Task<bool> ConcurrentAttempt(Func<CoachProfessionalService, Task<long>> action) {
             await using var isolated = new SportsCenterDbContext(options);
-            try { return await action(new CoachProfessionalService(isolated, clock)) > 0; }
+            try { return await action(new CoachProfessionalService(new UnitOfWork(isolated), clock)) > 0; }
             catch (BusinessException e) when (e.StatusCode == HttpStatusCode.Conflict) { return false; }
             catch (Exception e) when (e.GetBaseException() is Npgsql.PostgresException { SqlState: Npgsql.PostgresErrorCodes.DeadlockDetected or Npgsql.PostgresErrorCodes.SerializationFailure }) { return false; }
         }
@@ -527,7 +527,7 @@ try {
             db.EquipmentIssues.Add(new EquipmentIssue { CenterId = center.Id, ResourceId = resource.Id, ReportedByUserId = manager.Id,
                 Title = "Audit belt slipping", Description = "Belt slips at speed 8", Severity = "High", Status = "Open", ReportedAt = DateTime.UtcNow });
             await db.SaveChangesAsync();
-            var workspace = await new CoachProfessionalService(db, clock).ManagerWorkspace(manager.Id, default);
+            var workspace = await new CoachProfessionalService(new UnitOfWork(db), clock).ManagerWorkspace(manager.Id, default);
             var json = JsonSerializer.Serialize(workspace, new JsonSerializerOptions(JsonSerializerDefaults.Web));
             using var parsed = JsonDocument.Parse(json);
             var root = parsed.RootElement;
