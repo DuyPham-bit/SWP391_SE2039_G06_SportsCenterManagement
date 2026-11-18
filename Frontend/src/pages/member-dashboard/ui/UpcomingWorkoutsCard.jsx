@@ -1,6 +1,6 @@
 import React from 'react';
 import { parseDateParts, getSportMeta, getCurrentPlan } from '../lib/display.js';
-import { translateClassName, translateRoomName, translateCoachName, translateCoachFeedback, translateWorkoutResult, translatePlanTitle, translatePlanGoal } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateRoomName, translateCoachName, translateCoachFeedback, translateWorkoutResult, translatePlanTitle, translatePlanGoal } from '../../../shared/lib/i18nHelper.js';
 import { getBookingStatusLabel, isUpcomingBooking, formatMemberDate } from '../../../entities/member/index.js';
 
 export function UpcomingWorkoutsCard({
