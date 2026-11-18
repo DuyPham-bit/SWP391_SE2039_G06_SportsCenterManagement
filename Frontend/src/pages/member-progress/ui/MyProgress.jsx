@@ -1,21 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { memberApi, formatMeasurement, formatMemberDate, getLatestProgress } from '../../../entities/member/index.js';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { CountUp } from '../../../shared/ui/CountUp.jsx';
 import { EmptyState } from '../../../shared/ui/Feedback.jsx';
-import {
-  translatePlanTitle,
-  translatePlanGoal,
-  translateCoachName,
-  translateClassName,
-  translateWorkoutResult,
-  translateCoachFeedback,
-  translateExerciseName,
-  translateExerciseNote,
-  translateReps
-} from '../../../shared/i18n/i18nHelper.js';
+import { translatePlanTitle, translatePlanGoal, translateCoachName, translateClassName, translateWorkoutResult, translateCoachFeedback, translateExerciseName, translateExerciseNote, translateReps } from '../../../shared/lib/i18nHelper.js';
 
 /** Accessible multi-metric SVG InBody trend chart (weight solid, muscle dashed, body fat dotted) with draw-in & data-table fallback. */
 function InBodyTrendChart({ records, isEn }) {
