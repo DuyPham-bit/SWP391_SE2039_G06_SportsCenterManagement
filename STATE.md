@@ -18,8 +18,19 @@ Decisions: FE stays JS + FSD; keep the HttpOnly cookie session; no new runtime l
 - Phase 1 (committed): .gitignore gets coverage/; Frontend/tmp deleted (386 MB, local); verification/* added to the .slnx (BE build 0 errors, 51/51). No wwwroot/.gitkeep, because build:api empties the folder.
 - User decisions (2026-11-18): proposals approved. Keep the .bak and both logos. Group 4: keep verification + database, move postman → tools/, delete tools/SqlScriptRunner (do this in Phase 6). Uncommitted WIP: option (c), so each phase stages only its own files.
 
+- WIP snapshot committed as 8d50654 (user picked option a).
+- Phase 2a ea84dcd: entities -> DAL/Entities/<Domain>/, namespaces unchanged; the __StructureCheck migration came out empty and was removed.
+- Phase 2b 459554c: BLL Interfaces+Services -> Services/<Domain>/ (ns BLL.Services.<Domain>); IFlow2Services split; BusinessClock -> Common. GlobalUsings.cs in BLL/API/Tests/verification x3.
+- Phase 2c f4ab5fa: controllers -> Controllers/<Domain>/ (FlowControllerBase + Health stay at root). Route check script: docs/refactor/check-api-routes.sh (243/243 identical).
+- Phase 2d 8bb95eb: API/DTOs/Auth merged into BLL/DTOs/Auth (API LoginRequest -> LoginCredentialsRequest, same JSON). Exceptions -> BLL/Common/Exceptions. DAL seeds -> DAL/Seed.
+- Domains = the BLL/DTOs folder names, plus Reports (ReportService has no DTO folder). AI services/controller -> Training. SportManagementService -> Classes (its DTOs live in DTOs.Classes).
+- Kept on purpose: BLL/Seed/home-content.seed.json (an embedded resource read by LandingContentService, not a DB seed); API/Services (R2, SendMail, MedicalNlp) are infrastructure and are reviewed in Phase 3.
+
 ## Next
-- Phase 2 (BE file moves). Before starting, ask about WIP files that overlap the moves (Program.cs, DbInitializer, Room/Sport entities, LandingContentService, PublicCatalogService, AdminFlowTests are modified but uncommitted).
+- 2e: merge DTO files per domain into Requests.cs/Responses.cs (Catalog, Checkins, Classes x5, CoachProfessional, Media x2, Members (+Activation ns), Notifications, Payroll, Profile, Support, Training). Check for name clashes; keep JSON identical.
+- 2f: DAL Repositories/{Interfaces,Implementations} -> Repositories/Common (+ domain); add DAL/BLL DependencyInjection.cs (AddDataAccess/AddBusinessLogic); slim down Program.cs.
+- 2g: Tests -> <Layer>/<Domain>/. Then the Phase 2 report.
+- Every step: dotnet build + test (51/51) + check-api-routes diff.
 
 ## Assumptions
 - Entities keep their namespace. The DbContext class name is kept, because migrations reference it in [DbContext(typeof(...))].
