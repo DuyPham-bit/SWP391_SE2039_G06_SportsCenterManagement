@@ -22,4 +22,8 @@ public class Sport : Common.BaseEntity
     [Column("status")]
     public string Status { get; set; } = null!;
 
+    /// <summary>Shown on the public landing page; counted for the home-content "x/y visible" badges.</summary>
+    [Column("is_visible_on_landing")]
+    public bool IsVisibleOnLanding { get; set; } = true;
+
 }
