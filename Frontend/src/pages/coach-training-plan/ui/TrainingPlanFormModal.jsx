@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { translateClassName, translateSportName } from '../../../shared/i18n/i18nHelper.js';
+import { translateClassName, translateSportName } from '../../../shared/lib/i18nHelper.js';
 
 export function TrainingPlanFormModal({
   activeModalClass, coachClasses, editingMemberName, editingPlanId, endDate, exercises, goal,
