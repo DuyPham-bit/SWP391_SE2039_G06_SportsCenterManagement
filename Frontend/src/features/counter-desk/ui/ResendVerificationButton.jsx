@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useSyncExternalStore } from 'react';
 import { receptionApi } from '../../../entities/member/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { Badge } from '../../../shared/ui/StatCard.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 export const RESEND_COOLDOWN_SECONDS = 60;
 
