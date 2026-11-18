@@ -5,8 +5,8 @@
 
 export const LIGHTING_MODES = ['day', 'sunset', 'night'];
 
-/** Simulated clock per lighting mode, so "night" really shows which zones are closed at night. */
-export const LIGHTING_TIME = { day: '10:00', sunset: '18:30', night: '21:15' };
+/** Simulated clock per lighting mode; 20:30 shows evening LED ambiance while keeping every zone open cleanly. */
+export const LIGHTING_TIME = { day: '10:00', sunset: '18:30', night: '20:30' };
 
 export const STRINGS = {
   vi: {
@@ -59,7 +59,7 @@ export const STATUS_META = {
   Open: { vi: 'Đang mở', en: 'Open', tone: 'success' },
   Full: { vi: 'Đã kín chỗ', en: 'Full', tone: 'warning' },
   Maintenance: { vi: 'Bảo trì', en: 'Maintenance', tone: 'danger' },
-  Closed: { vi: 'Đã đóng cửa', en: 'Closed', tone: 'muted' },
+  Closed: { vi: 'Đã đóng cửa', en: 'Closed', tone: 'danger' },
   Available: { vi: 'Còn trống', en: 'Available', tone: 'success' },
   InUse: { vi: 'Đang có lớp', en: 'In use', tone: 'warning' },
   Inactive: { vi: 'Ngừng hoạt động', en: 'Inactive', tone: 'muted' }
