@@ -80,10 +80,10 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
   if (!isOpen) return null;
 
   const modalNode = (
-    <div className="fixed inset-0 z-[100] overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
+    <div className="scms-modal-stage fixed inset-0 z-[100] overflow-y-auto p-4 sm:p-6 flex items-center justify-center">
       {/* Backdrop */}
       <div
-        className="fixed inset-0 bg-brand-navy-900/60 dark:bg-black/75 backdrop-blur-xs transition-opacity"
+        className="fixed inset-0 bg-brand-navy-900/45 dark:bg-black/65 backdrop-blur-md backdrop-saturate-150 animate-[backdrop-fade-in_240ms_ease-out]"
         onClick={onClose}
         aria-hidden="true"
       />
@@ -95,7 +95,7 @@ export function Modal({ isOpen, onClose, title, children, maxWidth = 'max-w-lg' 
         aria-modal="true"
         aria-label={title}
         tabIndex={-1}
-        className={`relative bg-surface rounded-2xl sm:rounded-3xl shadow-2xl border border-line/90 w-full ${maxWidth} max-h-[min(90vh,820px)] flex flex-col overflow-hidden transform transition-all z-10 animate-scaleUp`}
+        className={`relative bg-surface/95 backdrop-blur-xl rounded-2xl sm:rounded-3xl shadow-[var(--shadow-4)] ring-1 ring-white/40 dark:ring-white/10 border border-line/90 w-full ${maxWidth} max-h-[min(90vh,820px)] flex flex-col overflow-hidden z-10 scms-modal-3d`}
       >
         {/* Header */}
         <div className="shrink-0 flex items-center justify-between px-6 py-4.5 border-b border-line bg-surface-muted/70">
