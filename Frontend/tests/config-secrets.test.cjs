@@ -55,7 +55,11 @@ test('tracked environment overrides contain no nonempty private settings', () =>
 });
 
 test('application startup cannot create or reset accounts with published demo passwords', () => {
-  const program = fs.readFileSync(path.join(root, api, 'Program.cs'), 'utf8');
+  // Startup lives in Program.cs plus the API/Extensions it calls (AddApiServices, InitializeDatabaseAsync...).
+  const extensionsDir = path.join(root, api, 'Extensions');
+  const program = [path.join(root, api, 'Program.cs'),
+    ...fs.readdirSync(extensionsDir).filter(name => name.endsWith('.cs')).map(name => path.join(extensionsDir, name))]
+    .map(file => fs.readFileSync(file, 'utf8')).join('\n');
   assert.ok(!/DevelopmentAccountBootstrapper|SeedDemoAccounts|ResetExistingDemoAccounts/.test(program),
     'Startup still enables creation or reset of accounts with published demo credentials');
   const knownDemoPassword = /\b(?:Admin|Manager|Reception|Coach|Member)@123456\b/;

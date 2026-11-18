@@ -28,10 +28,13 @@ Decisions: FE stays JS + FSD; keep the HttpOnly cookie session; no new runtime l
 
 - Phase 2e c820f5b: each DTO domain now has Requests.cs/Responses.cs (216/216 types kept; Members.Activation ns -> Members). Catalog, CoachProfessional and Media have only one of the two files, because the other would be empty.
 - Phase 2f-1: repositories -> Repositories/Common (Generic, UnitOfWork) + Auth/Catalog/Classes/Notifications; global usings updated.
-- PAUSED 2026-11-18: the user asked for a login page redesign mid-phase.
+- Side branch feature/login-premium (login redesign + sports constellation) is branched from 4cd182b and is not merged.
+- 676ddcb: Frontend/tests read backend sources by path; repointed them to the Phase 2 folders (npm test 200/200). LESSON: run npm test after every BE move.
+- Phase 2f-2: Program.cs is now 19 lines. DAL AddDataAccess, BLL AddBusinessLogic, API/Extensions (ResolveConnectionString, AddApiServices, InitializeDatabaseAsync, UseApiPipeline), API/HealthChecks/DatabaseHealthCheck. Code moved verbatim: 68/68 DI registrations and the middleware order are identical. Smoke run on :5099 (AutoMigrate off): health 200, public 200, protected 401. config-secrets test now also scans API/Extensions.
 
 ## Next
-- 2f-2: DAL/DependencyInjection.cs AddDataAccess(connStr) (DbContext + repos); BLL/DependencyInjection.cs AddBusinessLogic(connStr) (BLL services; typed HttpClients VnPay/MoMo/Gemini stay in the API, because the BLL has no Microsoft.Extensions.Http); API/Extensions: ResolveConnectionString, AddApiServices, InitializeDatabaseAsync, UseApiPipeline (move verbatim); DatabaseHealthCheck -> API/HealthChecks.
+- 2g: Tests -> <Layer>/<Domain>/ (SportsCenterManagement.Tests is flat, 12 files). Then the Phase 2 report.
+- Then Phase 3 (BLL off DbContext -> UnitOfWork/repositories, one domain at a time; 12 controllers + 7 API classes still use the DbContext).
 - 2g: Tests -> <Layer>/<Domain>/. Then the Phase 2 report.
 - Every step: dotnet build + test (51/51) + check-api-routes diff.
 
