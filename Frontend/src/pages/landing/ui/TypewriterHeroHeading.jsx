@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 export function TypewriterHeroHeading({ heroBadge, heroReady = true, heroTitle }) {
   const customTitle = typeof heroTitle === 'string' ? heroTitle.trim() : '';
