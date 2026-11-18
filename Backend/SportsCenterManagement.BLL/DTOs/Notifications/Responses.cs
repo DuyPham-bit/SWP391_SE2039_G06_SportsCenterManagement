@@ -1,4 +1,17 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace SportsCenterManagement.BLL.DTOs.Notifications;
+
+
+
+public sealed record SendCenterNotificationResponse(
+    long NotificationId,
+    int RecipientCount,
+    IReadOnlyList<string> TargetRoles,
+    DateTime CreatedAt);
+
+
+
 
 public sealed record UserNotificationResponse(
     long Id,

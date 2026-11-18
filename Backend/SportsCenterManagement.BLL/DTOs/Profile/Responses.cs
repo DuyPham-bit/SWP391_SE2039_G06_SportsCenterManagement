@@ -1,5 +1,7 @@
 namespace SportsCenterManagement.BLL.DTOs.Profile;
 
+
+
 public sealed record UserProfileResponse(
     long UserId,
     string Email,
@@ -16,9 +18,4 @@ public sealed record UserProfileResponse(
     bool IsEmailVerified = true,
     string? StaffCode = null,
     string? CenterName = null);
-
-public sealed record UpdateUserProfileRequest(
-    string FullName,
-    string? Phone = null,
-    string? AvatarKey = null);
 

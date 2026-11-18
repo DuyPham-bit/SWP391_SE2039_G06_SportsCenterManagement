@@ -9,8 +9,3 @@ public sealed record SendCenterNotificationRequest(
     string[] TargetRoles,
     string[]? Channels = null);
 
-public sealed record SendCenterNotificationResponse(
-    long NotificationId,
-    int RecipientCount,
-    IReadOnlyList<string> TargetRoles,
-    DateTime CreatedAt);

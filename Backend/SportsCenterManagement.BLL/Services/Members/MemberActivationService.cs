@@ -5,7 +5,7 @@ using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.Common.Helpers;
-using SportsCenterManagement.BLL.DTOs.Members.Activation;
+using SportsCenterManagement.BLL.DTOs.Members;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 using MembersResponses = SportsCenterManagement.BLL.DTOs.Members.Responses;

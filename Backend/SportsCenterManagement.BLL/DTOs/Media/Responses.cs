@@ -10,3 +10,11 @@ public sealed record UploadMediaResultDto(
     DateTime CreatedAt,
     string? ThumbnailUrl = null
 );
+
+
+
+public sealed record MediaStorageStatusDto(bool IsConnected, int TotalMedia, string Provider)
+{
+    public int TotalImages => TotalMedia;
+}
+

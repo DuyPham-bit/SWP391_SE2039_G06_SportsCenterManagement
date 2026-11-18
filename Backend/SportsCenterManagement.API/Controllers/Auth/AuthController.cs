@@ -30,10 +30,10 @@ public sealed class AuthController(
     [HttpPost("verify-email/preview")]
     [EnableRateLimiting("password-reset")]
     [AllowAnonymous]
-    [ProducesResponseType(typeof(SportsCenterManagement.BLL.DTOs.Members.Activation.ActivationPreviewResponse), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(SportsCenterManagement.BLL.DTOs.Members.ActivationPreviewResponse), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> PreviewActivation(
-        [FromBody] SportsCenterManagement.BLL.DTOs.Members.Activation.ActivationPreviewRequest request,
+        [FromBody] SportsCenterManagement.BLL.DTOs.Members.ActivationPreviewRequest request,
         CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
@@ -54,7 +54,7 @@ public sealed class AuthController(
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> VerifyAndChangePassword(
-        [FromBody] SportsCenterManagement.BLL.DTOs.Members.Activation.VerifyAndChangePasswordRequest request,
+        [FromBody] SportsCenterManagement.BLL.DTOs.Members.VerifyAndChangePasswordRequest request,
         CancellationToken cancellationToken)
     {
         Response.Headers.CacheControl = "no-store";
@@ -76,7 +76,7 @@ public sealed class AuthController(
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ChangeInitialPassword(
-        [FromBody] SportsCenterManagement.BLL.DTOs.Members.Activation.InitialPasswordChangeRequest request,
+        [FromBody] SportsCenterManagement.BLL.DTOs.Members.InitialPasswordChangeRequest request,
         CancellationToken cancellationToken)
     {
         if (!TryGetUserId(out var userId))

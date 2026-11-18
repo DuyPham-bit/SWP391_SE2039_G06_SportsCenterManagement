@@ -1,4 +1,4 @@
-using SportsCenterManagement.BLL.DTOs.Members.Activation;
+using SportsCenterManagement.BLL.DTOs.Members;
 using SportsCenterManagement.DAL.Entities;
 
 namespace SportsCenterManagement.BLL.Services.Members;
