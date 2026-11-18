@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { authApi } from '../../../entities/session/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { PasswordInput } from './PasswordInput.jsx';
 import { OtpCodeInput } from '../../../shared/ui/OtpCode.jsx';
