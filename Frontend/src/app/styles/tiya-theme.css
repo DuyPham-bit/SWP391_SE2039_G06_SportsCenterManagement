@@ -2549,42 +2549,75 @@
   text-shadow: none !important;
 }
 
+.tiya-campus-amenities-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 14px;
+  align-items: center;
+  padding: 16px 20px;
+  border-radius: 16px;
+  background: #162032;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 12px 28px rgba(15, 23, 42, 0.16);
+}
+
+@media (min-width: 1024px) {
+  .tiya-campus-amenities-bar {
+    grid-template-columns: minmax(0, 0.95fr) minmax(0, 1.55fr);
+    gap: 20px;
+  }
+}
+
 .tiya-campus-directory__desc {
-  color: #9AA0B6 !important;
-  font-size: 13.5px !important;
-  line-height: 1.6 !important;
-  margin-bottom: 22px !important;
+  color: #CBD5E1 !important;
+  font-size: 13px !important;
+  line-height: 1.55 !important;
+  margin-bottom: 0 !important;
+}
+
+.tiya-campus-amenities-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 8px;
+}
+
+@media (min-width: 640px) {
+  .tiya-campus-amenities-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
 }
 
 .tiya-campus-amenity-item {
   display: flex;
   align-items: center;
-  gap: 14px;
-  padding: 12px 16px;
-  border-radius: 14px;
-  background: #2A2E44 !important;
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  color: #ffffff !important;
-  font-size: 13px;
-  font-weight: 400;
+  gap: 10px;
+  padding: 10px 14px;
+  border-radius: 12px;
+  background: #232D42 !important;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #F8FAFC !important;
+  font-size: 12.5px;
+  font-weight: 500;
   transition: all 0.2s ease;
 }
 
 .tiya-campus-amenity-item:hover {
-  background: #343954 !important;
-  border-color: rgba(255, 255, 255, 0.12);
+  background: #2E3B56 !important;
+  border-color: rgba(56, 211, 159, 0.35);
+  transform: translateY(-1px);
 }
 
 .tiya-campus-amenity-item .material-symbols-outlined {
-  color: #38D39F !important;
-  font-size: 20px;
+  color: #34D399 !important;
+  font-size: 18px;
   flex-shrink: 0;
 }
 
 .tiya-campus-amenity-item span:last-child {
-  color: #E2E8F0 !important;
-  font-size: 13px !important;
-  line-height: 1.4;
+  color: #F1F5F9 !important;
+  font-size: 12.5px !important;
+  line-height: 1.35;
 }
 
 .tiya-zone-card {
