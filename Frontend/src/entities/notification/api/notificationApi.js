@@ -1,4 +1,4 @@
-import { apiRequest } from '../../../shared/api/http.js';
+import { apiRequest } from '../../../shared/api/index.js';
 
 export const notificationApi = {
   getMine: () => apiRequest('notifications/me'),
