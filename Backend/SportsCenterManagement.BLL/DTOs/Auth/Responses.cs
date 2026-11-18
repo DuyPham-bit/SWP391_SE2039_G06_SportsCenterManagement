@@ -4,7 +4,6 @@ public static class Responses
 {
     public sealed record AuthenticatedUser(long UserId, string Username, string Role, long? CenterId, string Email = "", int AuthVersion = 0);
 
-    public sealed record LoginResponse(string AccessToken, DateTime ExpiresAt, string Username, string Role);
 
     /// <summary>JWT authentication result returned after login or password change.</summary>
     public sealed record AuthResponse(string? AccessToken, long UserId, string Role, DateTimeOffset ExpiresAt);
