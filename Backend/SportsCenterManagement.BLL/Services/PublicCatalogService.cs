@@ -26,11 +26,11 @@ public sealed class PublicCatalogService(ICatalogRepository catalogRepository) :
             center.ClosingTime);
 
         var sportsDto = sports
-            .Select(s => new PublicSportDto(s.Id, s.Name, s.Description))
+            .Select(s => new PublicSportDto(s.Id, s.Name, s.Description, s.IsVisibleOnLanding))
             .ToList();
 
         var roomsDto = rooms
-            .Select(r => new PublicRoomDto(r.Id, r.Name, r.RoomType, r.Capacity, r.LocationDescription))
+            .Select(r => new PublicRoomDto(r.Id, r.Name, r.RoomType, r.Capacity, r.LocationDescription, r.IsVisibleOnLanding))
             .ToList();
 
         var classesDto = classes
