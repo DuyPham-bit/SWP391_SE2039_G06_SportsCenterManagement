@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { useAuth } from '../../../entities/session/index.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { isReduceMotionOn, prefersReducedMotion, replayPageEnter } from '../../../shared/lib/motion.js';
 import { useSplashRouteReady } from '../../../shared/lib/splashSignal.js';
 import { DISMISS_LABEL, RETRY_LABEL, SPLASH_COPY } from '../model/splashCopy.js';
