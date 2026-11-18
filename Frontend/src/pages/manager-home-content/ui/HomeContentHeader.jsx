@@ -6,11 +6,14 @@ import {
   SCMS_HERO_SECTION_CLASS,
   ScmsHeroDecor
 } from '../../../shared/ui/ScmsHeroBanner.jsx';
+import { SaveStatusText } from './TabSaveFooter.jsx';
 
-export function HomeContentHeader({
-  handleDiscardChanges, handlePreview, handleSaveAll, isDirty, isEn, isSaving, totalFacilities,
-  totalSports, visibleFacilities, visibleSports
-}) {
+/** Header with DB-counted visibility badges and the real save state. */
+export function HomeContentHeader({ handleDiscardChanges, handlePreview, handleSaveAll, isDirty, isSaving, saveStatus, stats, t }) {
+  const chips = [
+    { icon: 'sports_score', tone: 'text-brand-sand-200', key: 'homeContent.header.sportsVisible', count: stats?.sports },
+    { icon: 'stadium', tone: 'text-brand-sand-300', key: 'homeContent.header.facilitiesVisible', count: stats?.facilities }
+  ];
   return (
     <section className={`${SCMS_HERO_SECTION_CLASS} sm:p-8`}>
       <ScmsHeroDecor />
@@ -19,62 +22,37 @@ export function HomeContentHeader({
         <div>
           <div className={`${SCMS_HERO_BADGE_CLASS} mb-2`}>
             <span className="w-2 h-2 rounded-full bg-brand-sage-500 animate-pulse shrink-0" />
-            <span>DYNAMIC CONTENT MANAGEMENT &amp; CLOUD STORAGE</span>
+            <span>{t('homeContent.header.badge')}</span>
           </div>
           <h1 className="font-chivo text-2xl sm:text-3xl font-black text-white uppercase tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.22)]">
-            {isEn ? 'Homepage Content & Media Management' : 'Quản Lý Nội Dung Trang Chủ & Đa Phương Tiện'}
+            {t('homeContent.header.title')}
           </h1>
           <p className="text-xs sm:text-sm text-white/95 mt-1 max-w-2xl leading-relaxed font-medium drop-shadow-xs">
-            {isEn
-              ? 'Customize public landing page content: edit headlines, upload cloud media, and toggle visibility of sports and court facilities.'
-              : 'Tùy biến toàn bộ nội dung hiển thị ở Landing Page: chỉnh sửa văn bản, cập nhật ảnh đám mây, chủ động ẩn hoặc hiển thị các thẻ môn học và cụm sân thi đấu.'}
+            {t('homeContent.header.description')}
           </p>
 
-          {/* Metrics Chips */}
           <div className="flex flex-wrap items-center gap-3 mt-4 text-xs font-semibold">
-            <div className="px-3 py-1.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center gap-2 text-white">
-              <span className="material-symbols-outlined text-[16px] text-brand-sand-200">sports_score</span>
-              <span>
-                {isEn ? 'Sports:' : 'Môn thể thao:'} <strong>{visibleSports}/{totalSports}</strong> {isEn ? 'visible' : 'đang hiển thị'}
-              </span>
-            </div>
-            <div className="px-3 py-1.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center gap-2 text-white">
-              <span className="material-symbols-outlined text-[16px] text-brand-sand-300">stadium</span>
-              <span>
-                {isEn ? 'Facilities:' : 'Cụm sân bãi:'} <strong>{visibleFacilities}/{totalFacilities}</strong> {isEn ? 'visible' : 'đang hiển thị'}
-              </span>
-            </div>
-
-            {isDirty && (
-              <div className="px-3 py-1.5 rounded-xl bg-brand-navy-950/75 border border-brand-sand-300/60 text-brand-sand-200 flex items-center gap-1.5 animate-pulse">
-                <span className="material-symbols-outlined text-[16px]">edit_note</span>
-                <span>{isEn ? 'Unsaved changes' : 'Có thay đổi chưa lưu (Bấm Lưu để áp dụng)'}</span>
+            {chips.map(chip => (
+              <div key={chip.key} className="px-3 py-1.5 rounded-xl bg-white/15 backdrop-blur-sm border border-white/25 flex items-center gap-2 text-white">
+                <span className={`material-symbols-outlined text-[16px] ${chip.tone}`}>{chip.icon}</span>
+                <span>{t(chip.key, { visible: chip.count?.visible ?? '—', total: chip.count?.total ?? '—' })}</span>
               </div>
-            )}
+            ))}
+            <div className="px-3 py-1.5 rounded-xl bg-brand-navy-950/60 border border-white/20 text-white">
+              <SaveStatusText saveStatus={saveStatus} isDirty={isDirty} t={t} />
+            </div>
           </div>
         </div>
 
-        {/* Action buttons */}
         <div className="flex flex-wrap items-center gap-2.5 shrink-0 w-full sm:w-auto">
-          <button
-            type="button"
-            onClick={handlePreview}
-            className={SCMS_HERO_BTN_GLASS}
-            title={isEn ? 'Open homepage preview in new tab' : 'Mở xem trang chủ trong tab mới'}
-          >
+          <button type="button" onClick={handlePreview} className={SCMS_HERO_BTN_GLASS} title={t('homeContent.action.previewHint')}>
             <span className="material-symbols-outlined text-[17px] text-brand-sand-200">visibility</span>
-            <span>{isEn ? 'Preview Homepage' : 'Xem Trước Trang Chủ'}</span>
+            <span>{t('homeContent.action.preview')}</span>
           </button>
 
-          <button
-            type="button"
-            onClick={handleDiscardChanges}
-            disabled={!isDirty || isSaving}
-            className={SCMS_HERO_BTN_GLASS}
-            title={isEn ? 'Restore content from the last successful save' : 'Trở về nội dung ở lần lưu thành công gần nhất'}
-          >
+          <button type="button" onClick={handleDiscardChanges} disabled={!isDirty || isSaving} className={SCMS_HERO_BTN_GLASS} title={t('homeContent.action.discardHint')}>
             <span className="material-symbols-outlined text-[17px]">undo</span>
-            <span>{isEn ? 'Discard Changes' : 'Hủy thay đổi'}</span>
+            <span>{t('homeContent.action.discard')}</span>
           </button>
 
           <button
@@ -90,11 +68,7 @@ export function HomeContentHeader({
             <span className={`material-symbols-outlined text-[18px] ${isDirty ? 'text-brand-sand-300' : ''} ${isSaving ? 'animate-spin' : ''}`}>
               {isSaving ? 'sync' : 'save'}
             </span>
-            <span>
-              {isSaving
-                ? (isEn ? 'Saving...' : 'Đang lưu...')
-                : (isEn ? 'Save All Changes' : 'Lưu Toàn Bộ Thay Đổi')}
-            </span>
+            <span>{isSaving ? t('homeContent.status.saving') : t('homeContent.action.saveAll')}</span>
           </button>
         </div>
       </div>
