@@ -1,3 +1,3 @@
-export { NotFoundView } from './NotFoundView.jsx';
-export { default } from './NotFoundView.jsx';
+export { NotFoundView } from './ui/NotFoundView.jsx';
+export { default } from './ui/NotFoundView.jsx';
 
