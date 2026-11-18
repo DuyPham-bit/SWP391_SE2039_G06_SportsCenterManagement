@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { packageApi } from '../../../entities/membership/index.js';
 import { classApi } from '../../../entities/class/index.js';
-import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
+import { useToast } from '../../../shared/ui/toast/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { LoadingSpinner } from '../../../shared/ui/Table.jsx';
 import { BusinessAlert } from '../../../shared/ui/BusinessAlert.jsx';
 import { MAX_PACKAGE_PRICE, sortMembershipPackages, validatePackagePrice, canEditPackage } from '../model/packageManagementForm.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { PACKAGE_PRESETS, QUICK_PRICES, QUICK_DURATIONS, QUICK_BADGES } from '../model/presets.js';
 import {
   SCMS_HERO_BADGE_CLASS,
