@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { systemApi } from '../../../entities/permission/index.js';
 import { Table, LoadingSpinner } from '../../../shared/ui/Table.jsx';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 import { useAuth } from '../../../entities/session/index.js';
 import { MotionButton } from '../../../shared/ui/MotionButton.jsx';
 import {
