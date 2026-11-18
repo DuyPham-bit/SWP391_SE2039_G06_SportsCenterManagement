@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { motion, AnimatePresence, MotionConfig } from 'motion/react';
 import { useAuth, authApi } from '../../../entities/session/index.js';
@@ -14,10 +14,8 @@ import { CountUp } from '../../../shared/ui/CountUp.jsx';
 import { prefersReducedMotion } from '../../../shared/lib/motion.js';
 import { useCan3D, SplitWords, TiltCard, MagneticLink, AnimatedCheckbox, useTilt } from './authMotion.jsx';
 import { playAuthTransition } from '../lib/authTransition.js';
+import { HeroTrack } from './HeroTrack.jsx';
 import './auth-experience.css';
-
-// The stadium scene (three.js) is fetched only on capable desktops, after the page has painted.
-const AuthHeroScene = lazy(() => import('./AuthHeroScene.jsx'));
 
 const DUST = Array.from({ length: 14 }, (_, i) => ({
   left: `${(i * 41) % 100}%`, s: `${2 + (i % 3)}px`, t: `${12 + (i % 5) * 2}s`, dl: `${-(i * 1.6).toFixed(1)}s`, dx: `${((i % 5) - 2) * 14}px`,
@@ -77,7 +75,7 @@ function SportsMarquee({ sports, className = '' }) {
     </ul>
   );
   return (
-    <div className={`lp-marquee relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] py-3 backdrop-blur-md [mask-image:linear-gradient(90deg,transparent,rgb(255_255_255)_12%,rgb(255_255_255)_88%,transparent)] ${className}`}>
+    <div className={`lp-marquee relative overflow-hidden rounded-2xl border border-white/10 bg-white/[0.04] py-3 backdrop-blur-md [mask-image:linear-gradient(90deg,transparent,rgb(255_255_255)_16%,rgb(255_255_255)_84%,transparent)] ${className}`}>
       <p className="sr-only">Các bộ môn: {sports.join(', ')}</p>
       <div className="lp-marquee-track flex w-max">
         {row(true)}{row(true)}
@@ -174,6 +172,7 @@ export function LoginPage() {
   // Cursor spotlight on the showcase: one CSS variable pair, updated once per frame.
   const asideRef = useRef(null);
   const spotFrame = useRef(0);
+
   const moveSpotlight = event => {
     const el = asideRef.current;
     if (!el || spotFrame.current || event.pointerType === 'touch') return;
@@ -189,8 +188,8 @@ export function LoginPage() {
     });
   };
 
+  // Capable desktops get the animated CSS athletics track; others keep the CMS poster/video backdrop.
   const can3D = useCan3D();
-  const [sceneReady, setSceneReady] = useState(false);
   const cardTiltRef = useTilt(3);
   // Tab content slides in from the side of the tab that was picked.
   const [slideDir, setSlideDir] = useState('');
@@ -605,24 +604,19 @@ export function LoginPage() {
     <MotionConfig reducedMotion="user">
     <div ref={asideRef} onPointerMove={moveSpotlight} className="auth-root min-h-screen lg:h-screen w-full relative flex flex-col lg:flex-row overflow-x-hidden font-sans select-text bg-brand-sand-100 dark:bg-brand-navy-950 text-brand-navy-900 dark:text-white">
       {/* ========================================================
-          CỘT TRÁI: SÂN VẬN ĐỘNG 3D (three.js, lazy) · fallback parallax
+          CỘT TRÁI: ĐƯỜNG CHẠY 3D (CSS) · fallback poster/video
           ======================================================== */}
       <aside className="hidden lg:flex lg:w-[53%] xl:w-[55%] 2xl:w-[56%] h-full relative z-10 flex-col p-8 xl:p-12 2xl:px-16 select-none shrink-0 overflow-hidden bg-brand-forest-950 text-white">
         <div className="absolute inset-0 pointer-events-none" aria-hidden="true">
           <HeroFallback posterUrl={can3D ? '' : showcasePosterUrl} videoUrl={can3D ? '' : authVideoUrl} />
-          {can3D && (
-            <div className={`lp-scene absolute inset-0 ${sceneReady ? 'is-ready' : ''}`}>
-              <Suspense fallback={null}>
-                <AuthHeroScene onReady={() => setSceneReady(true)} />
-              </Suspense>
-            </div>
-          )}
+          {can3D && <HeroTrack />}
+          <div className="lp-grain" />
           {/* Subtle intentional vignettes keeping foreground copy crisp */}
           <div className="absolute inset-0 bg-gradient-to-b from-brand-forest-950/75 via-brand-forest-950/10 to-brand-forest-950/75" />
           <div className="absolute inset-0 bg-gradient-to-r from-brand-forest-950/80 via-brand-forest-950/30 to-transparent" />
           <div className="lp-spot absolute inset-0" />
         </div>
-        <div className="absolute right-0 inset-y-0 w-px bg-gradient-to-b from-transparent via-brand-sand-300/25 to-transparent pointer-events-none z-10" aria-hidden="true" />
+        <div className="absolute right-0 inset-y-0 w-px bg-gradient-to-b from-transparent via-brand-sand-300/35 to-transparent pointer-events-none z-10" aria-hidden="true" />
 
         <div className="relative z-10 w-full max-w-[700px] xl:max-w-[760px] mx-auto h-full flex flex-col justify-between gap-5 xl:gap-6">
           <div className="lp-in flex items-center justify-between gap-4">
@@ -635,7 +629,7 @@ export function LoginPage() {
             )}
           </div>
 
-          <div className="my-auto flex flex-col gap-5 py-2 max-w-[500px] xl:max-w-[540px] 2xl:max-w-[580px]">
+          <div className="relative my-auto flex flex-col gap-5 py-2 max-w-[500px] min-[1440px]:max-w-[540px] 2xl:max-w-[580px]">
             {showcaseTagline && (
               <div style={{ '--d': '80ms' }} className="lp-in lp-ring-border self-start inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-brand-sage-700/35 backdrop-blur-xl text-xs font-bold uppercase tracking-[0.14em] text-brand-sand-100 shadow-sm">
                 <span className="lp-pulse scale-75" aria-hidden="true"><i /></span>
@@ -697,7 +691,7 @@ export function LoginPage() {
 
           {/* Footer cột trái: số liệu count-up + vạch sáng đồng nhất */}
           <div style={{ '--d': '700ms' }} className="lp-in pt-6 flex items-end justify-between gap-6 border-t border-white/10">
-            <div className="grid grid-cols-3 divide-x divide-white/10 [&>div]:px-6 [&>div:first-child]:pl-0 [&>div:last-child]:pr-0">
+            <div className="grid flex-1 grid-cols-3 divide-x divide-white/10 [&>div]:px-4 xl:[&>div]:px-6 [&>div:first-child]:pl-0 [&>div:last-child]:pr-0">
               {[
                 { value: stat1Value, label: stat1Label, delay: 720, gold: false },
                 { value: stat2Value, label: stat2Label, delay: 840, gold: false },
@@ -708,7 +702,7 @@ export function LoginPage() {
                     <CountUp value={stat.value} delay={stat.delay} />
                   </div>
                   <div className="lp-statbar" style={{ '--d': `${1.2 + i * 0.4}s` }} aria-hidden="true" />
-                  <div className="text-[12.5px] text-brand-sand-100/80 font-medium mt-2 truncate">{stat.label}</div>
+                  <div className="text-[12.5px] text-brand-sand-100/80 font-medium mt-2 leading-snug [text-wrap:balance]">{stat.label}</div>
                 </div>
               ))}
             </div>
@@ -781,7 +775,7 @@ export function LoginPage() {
           <motion.div
             layout
             transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-            className="relative overflow-hidden bg-white dark:bg-brand-navy-900 rounded-3xl p-6 sm:p-8 border border-brand-sage-700/12 dark:border-white/10"
+            className="relative overflow-hidden bg-white/95 dark:bg-brand-navy-900/95 backdrop-blur-xl rounded-3xl p-6 sm:p-8 border border-brand-sage-700/18 dark:border-white/12 shadow-[0_1px_0_rgb(255_255_255/0.7)_inset]"
           >
             <span className="lp-topline" aria-hidden="true" />
             {/* Tab chuyển đổi Đăng nhập / Đăng ký */}
@@ -870,12 +864,12 @@ export function LoginPage() {
             </div>
 
             {/* Dòng phân cách "hoặc qua email" */}
-            <div className="relative flex items-center justify-center my-4">
-              <div className="border-t border-brand-navy-200 dark:border-white/15 w-full" />
-              <span className="bg-white dark:bg-brand-navy-900 px-3 text-[11.5px] uppercase tracking-wider text-brand-navy-600 dark:text-brand-navy-400 font-semibold shrink-0">
+            <div className="relative flex items-center justify-center my-5 gap-3">
+              <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brand-navy-200 dark:via-white/20 to-brand-navy-200 dark:to-white/20" />
+              <span className="text-[11px] uppercase tracking-[0.12em] text-brand-navy-500 dark:text-brand-navy-400 font-bold shrink-0">
                 hoặc qua email
               </span>
-              <div className="border-t border-brand-navy-200 dark:border-white/15 w-full" />
+              <div className="h-px flex-1 bg-gradient-to-l from-transparent via-brand-navy-200 dark:via-white/20 to-brand-navy-200 dark:to-white/20" />
             </div>
 
             {/* Thông báo lỗi tổng quát */}
