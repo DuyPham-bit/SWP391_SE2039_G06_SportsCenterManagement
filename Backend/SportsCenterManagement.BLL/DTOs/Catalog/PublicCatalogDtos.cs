@@ -13,14 +13,16 @@ public sealed record PublicCenterDto(
 public sealed record PublicSportDto(
     long Id,
     string Name,
-    string? Description);
+    string? Description,
+    bool IsVisibleOnLanding = true);
 
 public sealed record PublicRoomDto(
     long Id,
     string Name,
     string? RoomType,
     int Capacity,
-    string? LocationDescription);
+    string? LocationDescription,
+    bool IsVisibleOnLanding = true);
 
 public sealed record PublicClassDto(
     long Id,
