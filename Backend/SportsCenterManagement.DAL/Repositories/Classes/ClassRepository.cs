@@ -1,9 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
-namespace SportsCenterManagement.DAL.Repositories.Implementations;
+namespace SportsCenterManagement.DAL.Repositories.Classes;
 
 public sealed class ClassRepository(SportsCenterDbContext db) : IClassRepository
 {

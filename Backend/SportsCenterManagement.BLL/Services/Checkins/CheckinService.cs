@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.DTOs.Checkins;
 using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.Checkins;
 

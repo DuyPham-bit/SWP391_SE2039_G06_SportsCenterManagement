@@ -13,7 +13,6 @@ using SportsCenterManagement.API.Authentication;
 using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.API.Controllers.Payments;
 using SportsCenterManagement.DAL.Authorization;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -23,7 +22,6 @@ using SportsCenterManagement.BLL.DTOs.Payments;
 using SportsCenterManagement.BLL.DTOs.CoachProfessional;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Implementations;
 
 AppContext.SetSwitch("Npgsql.EnableLegacyTimestampBehavior", true);
 var name = "scms_logicaudit_" + Guid.NewGuid().ToString("N");

@@ -2,7 +2,6 @@ using System.Text.Json;
 using SportsCenterManagement.BLL.DTOs.Notifications;
 using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.Notifications;
 

@@ -1,9 +1,8 @@
 using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.DAL.Context;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
-namespace SportsCenterManagement.DAL.Repositories.Implementations;
+namespace SportsCenterManagement.DAL.Repositories.Common;
 
 public class GenericRepository<T>(SportsCenterDbContext context) : IGenericRepository<T> where T : class
 {

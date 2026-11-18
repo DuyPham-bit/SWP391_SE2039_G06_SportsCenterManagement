@@ -2,7 +2,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.DTOs.Classes;
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.Classes;
 

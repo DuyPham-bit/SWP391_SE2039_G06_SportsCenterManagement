@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.BLL.DTOs.MembershipPackages;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.MembershipPackages;
 

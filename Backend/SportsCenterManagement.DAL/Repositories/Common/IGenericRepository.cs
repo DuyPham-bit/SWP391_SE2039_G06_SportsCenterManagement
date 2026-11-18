@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace SportsCenterManagement.DAL.Repositories.Interfaces;
+namespace SportsCenterManagement.DAL.Repositories.Common;
 
 public interface IGenericRepository<T> where T : class
 {

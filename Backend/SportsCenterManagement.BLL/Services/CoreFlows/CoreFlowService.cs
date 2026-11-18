@@ -7,7 +7,6 @@ using SportsCenterManagement.BLL.Common.Helpers;
 using Microsoft.Extensions.Configuration;
 using SportsCenterManagement.BLL.DTOs.CoreFlows;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.CoreFlows;
 

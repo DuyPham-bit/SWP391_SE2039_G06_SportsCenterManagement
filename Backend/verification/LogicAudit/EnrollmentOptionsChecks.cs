@@ -4,7 +4,6 @@ using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.DTOs.Classes;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Implementations;
 
 /// <summary>
 /// Member self-service sport/coach enrollment: the options tree must only offer classes the member can

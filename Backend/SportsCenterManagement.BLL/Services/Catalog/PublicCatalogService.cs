@@ -1,5 +1,4 @@
 using SportsCenterManagement.BLL.DTOs.Catalog;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.Catalog;
 

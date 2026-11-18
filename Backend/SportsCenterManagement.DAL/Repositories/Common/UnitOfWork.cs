@@ -1,9 +1,8 @@
 using System.Collections.Concurrent;
 using Microsoft.EntityFrameworkCore.Storage;
 using SportsCenterManagement.DAL.Context;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
-namespace SportsCenterManagement.DAL.Repositories.Implementations;
+namespace SportsCenterManagement.DAL.Repositories.Common;
 
 public sealed class UnitOfWork(SportsCenterDbContext context) : IUnitOfWork
 {

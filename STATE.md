@@ -26,9 +26,12 @@ Decisions: FE stays JS + FSD; keep the HttpOnly cookie session; no new runtime l
 - Domains = the BLL/DTOs folder names, plus Reports (ReportService has no DTO folder). AI services/controller -> Training. SportManagementService -> Classes (its DTOs live in DTOs.Classes).
 - Kept on purpose: BLL/Seed/home-content.seed.json (an embedded resource read by LandingContentService, not a DB seed); API/Services (R2, SendMail, MedicalNlp) are infrastructure and are reviewed in Phase 3.
 
+- Phase 2e c820f5b: each DTO domain now has Requests.cs/Responses.cs (216/216 types kept; Members.Activation ns -> Members). Catalog, CoachProfessional and Media have only one of the two files, because the other would be empty.
+- Phase 2f-1: repositories -> Repositories/Common (Generic, UnitOfWork) + Auth/Catalog/Classes/Notifications; global usings updated.
+- PAUSED 2026-11-18: the user asked for a login page redesign mid-phase.
+
 ## Next
-- 2e: merge DTO files per domain into Requests.cs/Responses.cs (Catalog, Checkins, Classes x5, CoachProfessional, Media x2, Members (+Activation ns), Notifications, Payroll, Profile, Support, Training). Check for name clashes; keep JSON identical.
-- 2f: DAL Repositories/{Interfaces,Implementations} -> Repositories/Common (+ domain); add DAL/BLL DependencyInjection.cs (AddDataAccess/AddBusinessLogic); slim down Program.cs.
+- 2f-2: DAL/DependencyInjection.cs AddDataAccess(connStr) (DbContext + repos); BLL/DependencyInjection.cs AddBusinessLogic(connStr) (BLL services; typed HttpClients VnPay/MoMo/Gemini stay in the API, because the BLL has no Microsoft.Extensions.Http); API/Extensions: ResolveConnectionString, AddApiServices, InitializeDatabaseAsync, UseApiPipeline (move verbatim); DatabaseHealthCheck -> API/HealthChecks.
 - 2g: Tests -> <Layer>/<Domain>/. Then the Phase 2 report.
 - Every step: dotnet build + test (51/51) + check-api-routes diff.
 

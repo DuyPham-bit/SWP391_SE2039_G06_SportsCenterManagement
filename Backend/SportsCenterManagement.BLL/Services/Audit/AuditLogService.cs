@@ -2,7 +2,6 @@ using System.ComponentModel.DataAnnotations;
 using Microsoft.EntityFrameworkCore;
 using AuditResponses = SportsCenterManagement.BLL.DTOs.Audit.Responses;
 using SportsCenterManagement.DAL.Authorization;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.Audit;
 

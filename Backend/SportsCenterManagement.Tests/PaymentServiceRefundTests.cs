@@ -2,7 +2,6 @@ using Microsoft.Extensions.Configuration;
 using SportsCenterManagement.BLL.DTOs.Payments;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Implementations;
 
 namespace SportsCenterManagement.Tests;
 

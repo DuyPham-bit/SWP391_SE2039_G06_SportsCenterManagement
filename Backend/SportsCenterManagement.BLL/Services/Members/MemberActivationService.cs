@@ -7,7 +7,6 @@ using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.BLL.DTOs.Members;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 using MembersResponses = SportsCenterManagement.BLL.DTOs.Members.Responses;
 
 namespace SportsCenterManagement.BLL.Services.Members;

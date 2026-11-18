@@ -1,6 +1,6 @@
 using SportsCenterManagement.DAL.Entities;
 
-namespace SportsCenterManagement.DAL.Repositories.Interfaces;
+namespace SportsCenterManagement.DAL.Repositories.Auth;
 
 public interface IUserRepository
 {

@@ -22,3 +22,8 @@ global using SportsCenterManagement.BLL.Services.Staff;
 global using SportsCenterManagement.BLL.Services.Support;
 global using SportsCenterManagement.BLL.Services.Training;
 global using SportsCenterManagement.API.Controllers;
+global using SportsCenterManagement.DAL.Repositories.Common;
+global using SportsCenterManagement.DAL.Repositories.Auth;
+global using SportsCenterManagement.DAL.Repositories.Catalog;
+global using SportsCenterManagement.DAL.Repositories.Classes;
+global using SportsCenterManagement.DAL.Repositories.Notifications;

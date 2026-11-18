@@ -1,7 +1,7 @@
 using Microsoft.EntityFrameworkCore.Storage;
 using SportsCenterManagement.DAL.Context;
 
-namespace SportsCenterManagement.DAL.Repositories.Interfaces;
+namespace SportsCenterManagement.DAL.Repositories.Common;
 
 public interface IUnitOfWork : IAsyncDisposable
 {

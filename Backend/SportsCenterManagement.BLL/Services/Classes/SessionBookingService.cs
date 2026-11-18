@@ -3,7 +3,6 @@ using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.BLL.DTOs.Classes;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.Classes;
 
@@ -12,7 +11,7 @@ namespace SportsCenterManagement.BLL.Services.Classes;
 /// BR-BOOK-02 (cancel ≥ 2h before), BR-BOOK-03 (no overlapping sessions the same day),
 /// BR-BOOK-04 (promote waitlist), BR-CLASS-01 (capacity).
 /// </summary>
-public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterManagement.DAL.Repositories.Interfaces.IClassRepository classRepository, ICenterScopeService centerScopeService) : ISessionBookingService
+public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterManagement.DAL.Repositories.Classes.IClassRepository classRepository, ICenterScopeService centerScopeService) : ISessionBookingService
 {
     private static readonly TimeSpan MinLeadTime = TimeSpan.FromMinutes(30);
     private static readonly TimeSpan MaxLeadTime = TimeSpan.FromDays(7);

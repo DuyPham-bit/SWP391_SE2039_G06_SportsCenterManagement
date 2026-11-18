@@ -5,7 +5,6 @@ using AccessControlResponses = SportsCenterManagement.BLL.DTOs.AccessControl.Res
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Interfaces;
 
 namespace SportsCenterManagement.BLL.Services.AccessControl;
 

@@ -3,7 +3,6 @@ using Microsoft.Extensions.Configuration;
 using MembersRequests = SportsCenterManagement.BLL.DTOs.Members.Requests;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
-using SportsCenterManagement.DAL.Repositories.Implementations;
 
 namespace SportsCenterManagement.Tests;
 
