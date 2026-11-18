@@ -1,6 +1,5 @@
 using System.Text;
 using System.Buffers.Binary;
-using SportsCenterManagement.BLL.Exceptions;
 
 namespace SportsCenterManagement.BLL.Services.Media;
 

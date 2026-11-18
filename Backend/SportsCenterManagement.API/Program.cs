@@ -15,6 +15,7 @@ using SportsCenterManagement.API.Authorization;
 using SportsCenterManagement.API.BackgroundServices;
 using SportsCenterManagement.BLL.Common;
 using SportsCenterManagement.DAL.Context;
+using SportsCenterManagement.DAL.Seed;
 using SportsCenterManagement.DAL.Repositories.Implementations;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 using SportsCenterManagement.API.Models;

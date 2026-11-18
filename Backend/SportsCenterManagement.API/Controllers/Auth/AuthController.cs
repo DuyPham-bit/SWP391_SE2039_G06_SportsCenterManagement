@@ -7,7 +7,8 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.RateLimiting;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Authentication;
-using SportsCenterManagement.API.DTOs.Auth;
+using static SportsCenterManagement.BLL.DTOs.Auth.Requests;
+using static SportsCenterManagement.BLL.DTOs.Auth.Responses;
 using SportsCenterManagement.BLL.Common.Helpers;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
@@ -115,7 +116,7 @@ public sealed class AuthController(
             var profile = await authService.RegisterAsync(request, cancellationToken: cancellationToken);
             return Created("/api/members/me", profile);
         }
-        catch (SportsCenterManagement.BLL.Common.OtpAttemptException exception)
+        catch (SportsCenterManagement.BLL.Common.Exceptions.OtpAttemptException exception)
         {
             return BadRequest(new { message = exception.Message, code = "OTP_INVALID", remainingAttempts = exception.RemainingAttempts });
         }
@@ -187,7 +188,7 @@ public sealed class AuthController(
     [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(423)]
     public async Task<ActionResult<AuthResponse>> Login(
-        [FromBody] LoginRequest request,
+        [FromBody] LoginCredentialsRequest request,
         CancellationToken cancellationToken)
     {
         var loginIdentifier = request.Email.Trim();

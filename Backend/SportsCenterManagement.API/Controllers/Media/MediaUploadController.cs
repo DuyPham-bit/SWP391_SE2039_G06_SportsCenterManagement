@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.API.Filters;
 using SportsCenterManagement.API.Services;
 using SportsCenterManagement.BLL.DTOs.Media;
-using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 

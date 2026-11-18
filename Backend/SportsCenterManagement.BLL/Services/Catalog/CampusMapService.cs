@@ -1,7 +1,6 @@
 using System.Text.Json;
 using System.Text.RegularExpressions;
 using Microsoft.EntityFrameworkCore;
-using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 

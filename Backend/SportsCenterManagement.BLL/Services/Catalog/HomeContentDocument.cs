@@ -1,7 +1,6 @@
 using System.Text;
 using System.Text.Json.Nodes;
 using System.Text.RegularExpressions;
-using SportsCenterManagement.BLL.Exceptions;
 
 namespace SportsCenterManagement.BLL.Services.Catalog;
 

@@ -1,6 +1,5 @@
 using System.Text.Json;
 using SportsCenterManagement.BLL.DTOs.Notifications;
-using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;

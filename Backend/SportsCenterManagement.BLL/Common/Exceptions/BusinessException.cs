@@ -1,6 +1,6 @@
 using System.Net;
 
-namespace SportsCenterManagement.BLL.Common;
+namespace SportsCenterManagement.BLL.Common.Exceptions;
 
 public sealed class BusinessException : Exception
 {

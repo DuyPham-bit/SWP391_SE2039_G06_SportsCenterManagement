@@ -1,4 +1,4 @@
-namespace SportsCenterManagement.BLL.Exceptions;
+namespace SportsCenterManagement.BLL.Common.Exceptions;
 
 /// <summary>
 /// Business-rule failure carrying the HTTP status the presentation layer should answer with.

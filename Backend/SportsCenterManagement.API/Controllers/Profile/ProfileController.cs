@@ -2,7 +2,8 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using SportsCenterManagement.API.DTOs.Auth;
+using static SportsCenterManagement.BLL.DTOs.Auth.Requests;
+using static SportsCenterManagement.BLL.DTOs.Auth.Responses;
 using SportsCenterManagement.BLL.DTOs.Profile;
 
 namespace SportsCenterManagement.API.Controllers.Profile;

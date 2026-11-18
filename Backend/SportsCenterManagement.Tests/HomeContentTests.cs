@@ -2,8 +2,8 @@ using System.Text.Json;
 using System.Text.Json.Nodes;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Context;
+using SportsCenterManagement.DAL.Seed;
 using SportsCenterManagement.DAL.Entities;
 
 namespace SportsCenterManagement.Tests;

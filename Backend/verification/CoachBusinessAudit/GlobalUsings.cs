@@ -1,5 +1,6 @@
 // Phase 2b: BLL services are grouped by domain folder; these keep the former flat-namespace visibility.
 global using SportsCenterManagement.BLL.Common;
+global using SportsCenterManagement.BLL.Common.Exceptions;
 global using SportsCenterManagement.BLL.Services.AccessControl;
 global using SportsCenterManagement.BLL.Services.Audit;
 global using SportsCenterManagement.BLL.Services.Auth;

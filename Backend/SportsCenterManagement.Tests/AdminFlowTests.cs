@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Entities;
 
 namespace SportsCenterManagement.Tests;

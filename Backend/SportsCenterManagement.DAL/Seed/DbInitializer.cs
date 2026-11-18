@@ -2,7 +2,9 @@ using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.DAL.Authorization;
 using SportsCenterManagement.DAL.Entities;
 
-namespace SportsCenterManagement.DAL.Context;
+using SportsCenterManagement.DAL.Context;
+
+namespace SportsCenterManagement.DAL.Seed;
 
 /// <summary>Initializes schema and required authorization data only.</summary>
 public static class DbInitializer

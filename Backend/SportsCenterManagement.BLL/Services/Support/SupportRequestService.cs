@@ -1,7 +1,6 @@
 using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.BLL.DTOs.Support;
-using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Entities;
 using SportsCenterManagement.DAL.Repositories.Interfaces;
 

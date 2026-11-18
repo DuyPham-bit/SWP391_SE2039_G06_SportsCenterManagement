@@ -2,7 +2,9 @@ using System.Text.Json;
 using Microsoft.EntityFrameworkCore;
 using SportsCenterManagement.DAL.Entities;
 
-namespace SportsCenterManagement.DAL.Context;
+using SportsCenterManagement.DAL.Context;
+
+namespace SportsCenterManagement.DAL.Seed;
 
 /// <summary>
 /// Reference campus layout for the demo center: 130 m x 100 m site (X[-65,65], Z[-50,50], north = -Z)

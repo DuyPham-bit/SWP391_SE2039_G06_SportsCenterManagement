@@ -1,5 +1,5 @@
-using SportsCenterManagement.BLL.Exceptions;
 using SportsCenterManagement.DAL.Context;
+using SportsCenterManagement.DAL.Seed;
 using SportsCenterManagement.DAL.Entities;
 using Xunit;
 
