@@ -6,7 +6,7 @@ using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Seed;
 using SportsCenterManagement.DAL.Entities;
 
-namespace SportsCenterManagement.Tests;
+namespace SportsCenterManagement.Tests.BLL.Catalog;
 
 public class HomeContentTests
 {

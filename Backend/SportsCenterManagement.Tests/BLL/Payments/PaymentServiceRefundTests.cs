@@ -3,7 +3,7 @@ using SportsCenterManagement.BLL.DTOs.Payments;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 
-namespace SportsCenterManagement.Tests;
+namespace SportsCenterManagement.Tests.BLL.Payments;
 
 public class PaymentServiceRefundTests
 {

@@ -32,9 +32,11 @@ Decisions: FE stays JS + FSD; keep the HttpOnly cookie session; no new runtime l
 - 676ddcb: Frontend/tests read backend sources by path; repointed them to the Phase 2 folders (npm test 200/200). LESSON: run npm test after every BE move.
 - Phase 2f-2: Program.cs is now 19 lines. DAL AddDataAccess, BLL AddBusinessLogic, API/Extensions (ResolveConnectionString, AddApiServices, InitializeDatabaseAsync, UseApiPipeline), API/HealthChecks/DatabaseHealthCheck. Code moved verbatim: 68/68 DI registrations and the middleware order are identical. Smoke run on :5099 (AutoMigrate off): health 200, public 200, protected 401. config-secrets test now also scans API/Extensions.
 
+- Phase 2g: Tests -> Tests/BLL/<Domain>/ (namespace Tests.BLL.<Domain>; TestDb stays at the root). AdminFlowTests was split into BLL/Payroll/PayrollPolicyTests + BLL/Catalog/LandingContentServiceTests. The split exposed a timing-flaky test (versions <1 ms apart count as equal); added a 5 ms gap between the saves in the test, product logic unchanged. 51/51 over 5 runs.
+- PHASE 2 DONE.
+
 ## Next
-- 2g: Tests -> <Layer>/<Domain>/ (SportsCenterManagement.Tests is flat, 12 files). Then the Phase 2 report.
-- Then Phase 3 (BLL off DbContext -> UnitOfWork/repositories, one domain at a time; 12 controllers + 7 API classes still use the DbContext).
+- Phase 3 (BLL off DbContext -> UnitOfWork/repositories, one domain at a time; 12 controllers + 7 API classes still use the DbContext).
 - 2g: Tests -> <Layer>/<Domain>/. Then the Phase 2 report.
 - Every step: dotnet build + test (51/51) + check-api-routes diff.
 

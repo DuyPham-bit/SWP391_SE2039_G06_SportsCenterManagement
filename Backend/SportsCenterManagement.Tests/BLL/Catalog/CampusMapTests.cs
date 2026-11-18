@@ -3,7 +3,7 @@ using SportsCenterManagement.DAL.Seed;
 using SportsCenterManagement.DAL.Entities;
 using Xunit;
 
-namespace SportsCenterManagement.Tests;
+namespace SportsCenterManagement.Tests.BLL.Catalog;
 
 public class CampusMapTests
 {

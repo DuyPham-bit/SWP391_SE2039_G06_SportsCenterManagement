@@ -4,7 +4,7 @@ using MembersRequests = SportsCenterManagement.BLL.DTOs.Members.Requests;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 
-namespace SportsCenterManagement.Tests;
+namespace SportsCenterManagement.Tests.BLL.Members;
 
 public class MemberBasicInfoTests
 {

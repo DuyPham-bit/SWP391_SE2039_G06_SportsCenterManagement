@@ -3,7 +3,7 @@ using Microsoft.Extensions.Configuration;
 using SportsCenterManagement.DAL.Context;
 using SportsCenterManagement.DAL.Entities;
 
-namespace SportsCenterManagement.Tests;
+namespace SportsCenterManagement.Tests.BLL.CoreFlows;
 
 public class MembershipPurchaseTests
 {

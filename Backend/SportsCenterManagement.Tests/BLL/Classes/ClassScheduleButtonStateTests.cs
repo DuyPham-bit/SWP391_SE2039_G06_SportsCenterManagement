@@ -1,5 +1,5 @@
 
-namespace SportsCenterManagement.Tests;
+namespace SportsCenterManagement.Tests.BLL.Classes;
 
 public class ClassScheduleButtonStateTests
 {

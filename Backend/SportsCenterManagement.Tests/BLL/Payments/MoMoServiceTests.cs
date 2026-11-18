@@ -1,7 +1,7 @@
 using System.Net;
 using Microsoft.Extensions.Configuration;
 
-namespace SportsCenterManagement.Tests;
+namespace SportsCenterManagement.Tests.BLL.Payments;
 
 public class MoMoServiceTests
 {
