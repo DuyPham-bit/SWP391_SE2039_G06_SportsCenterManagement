@@ -55,6 +55,9 @@ public interface IPaymentService
         string reason,
         CancellationToken cancellationToken = default);
 
+    /// <summary>Invoices issued by a center, newest first, filtered by invoice number / member name / member code.</summary>
+    Task<CenterInvoicePage> ListCenterInvoicesAsync(long centerId, string? query, int page, int pageSize, CancellationToken cancellationToken = default);
+
     Task<InvoiceDetailsResponse?> GetInvoiceAsync(
         long actorUserId,
         string actorRole,
