@@ -1,127 +1,110 @@
-import { useState, useRef, useEffect } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
 import { useToast } from '../../../shared/ui/toast/ToastContext.jsx';
-import { getLandingContent, loadLandingContent, loadLandingDraft, getLegacyLandingContent, saveLandingContent, openLandingPreview } from '../../../entities/landing-content/index.js';
+import {
+  fetchAdminHomeContent, loadHomeContentDraft, missingLanguages, openLandingPreview, publishHomeContent,
+  saveHomeContentSection
+} from '../../../entities/landing-content/index.js';
 import { cloneContent, saveDraft, clearDraft, readLocalDraft, flushDraft, setDraftVersion, onDraftConflict } from './draft.js';
 
+/** Editor tab → document section it edits. */
+export const TAB_SECTIONS = {
+  hero: 'heroBanner', whyUs: 'whyUs', sports: 'coursesSection', facilities: 'facilitiesSection',
+  zones: 'zonesLayout', footer: 'ctaAndFooter', authShowcase: 'authShowcase'
+};
+const TAB_STORAGE_KEY = 'SCMS_MANAGER_ACTIVE_TAB';
+
+function readInitialTab() {
+  try {
+    const hash = window.location.hash || '';
+    const query = hash.includes('?') ? hash.split('?')[1] : '';
+    const fromQuery = new URLSearchParams(query).get('tab');
+    if (fromQuery && TAB_SECTIONS[fromQuery]) return fromQuery;
+    const fromSession = sessionStorage.getItem(TAB_STORAGE_KEY);
+    if (fromSession && TAB_SECTIONS[fromSession]) return fromSession;
+  } catch { /* storage or URL unavailable */ }
+  return 'hero';
+}
+
+const sameJson = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
+
 export function useHomeContentEditor() {
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const isEn = language === 'en';
   const { showToast: addToast } = useToast();
-  const [content, setContent] = useState(() => getLandingContent());
-  const [activeTab, setActiveTab] = useState(() => {
-    try {
-      const hash = window.location.hash || '';
-      const query = hash.includes('?') ? hash.split('?')[1] : '';
-      const tabFromQuery = new URLSearchParams(query).get('tab');
-      if (tabFromQuery) return tabFromQuery;
-      const tabFromSession = sessionStorage.getItem('SCMS_MANAGER_ACTIVE_TAB');
-      if (tabFromSession) return tabFromSession;
-    } catch { /* ignore */ }
-    return 'hero';
-  });
-
-  const handleTabChange = (tabId) => {
-    setActiveTab(tabId);
-    try {
-      sessionStorage.setItem('SCMS_MANAGER_ACTIVE_TAB', tabId);
-      const hash = window.location.hash || '';
-      const [path, queryString] = hash.split('?');
-      const params = new URLSearchParams(queryString || '');
-      params.set('tab', tabId);
-      window.history.replaceState(null, '', `${path}?${params.toString()}`);
-    } catch { /* ignore */ }
-  };
-
-  const [isDirty, setIsDirty] = useState(false);
+  const [activeTab, setActiveTab] = useState(readInitialTab);
+  const [content, setContent] = useState(null);
+  const [savedContent, setSavedContent] = useState(null);
+  const [stats, setStats] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
-  const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
   const [reloadKey, setReloadKey] = useState(0);
-  const savedContentRef = useRef(null);
-  const latestContentRef = useRef(content);
   const [discardKey, setDiscardKey] = useState(0);
+  // { state: 'idle' | 'saving' | 'saved' | 'error', at?: Date, message?: string }
+  const [saveStatus, setSaveStatus] = useState({ state: 'idle' });
+  // Content language being edited, per tab (UI language is separate).
+  const [editLangs, setEditLangs] = useState({});
+  const latestContentRef = useRef(null);
+  const [mediaPickerConfig, setMediaPickerConfig] = useState({ isOpen: false, title: '', currentUrl: '', callback: null });
 
-  useEffect(() => {
-    latestContentRef.current = content;
-  }, [content]);
+  useEffect(() => { latestContentRef.current = content; }, [content]);
 
-  // States cho Modal chọn ảnh đám mây
-  const [mediaPickerConfig, setMediaPickerConfig] = useState({
-    isOpen: false,
-    title: '',
-    targetField: '',
-    currentUrl: '',
-    callback: null
-  });
+  const errorText = error => (error?.i18nKey ? t(error.i18nKey) : (error?.message || t('homeContent.status.saveFailed')));
 
-  // Do not replace an unsaved draft with a background refresh.
   useEffect(() => {
     let active = true;
     const controller = new AbortController();
     setIsLoading(true);
     setLoadError('');
     Promise.all([
-      loadLandingContent({ signal: controller.signal }),
+      fetchAdminHomeContent({ signal: controller.signal }),
       // The draft lives in the DB; a failed lookup only means "no draft to restore".
-      loadLandingDraft({ signal: controller.signal }).catch(() => null)
-    ]).then(([result, serverDraft]) => {
+      loadHomeContentDraft({ signal: controller.signal }).catch(() => null)
+    ]).then(([published, serverDraft]) => {
       if (!active) return;
+      if (!published?.content) {
+        setLoadError(t('homeContent.error.empty'));
+        return;
+      }
+      setStats(published.stats ?? null);
       setDraftVersion(serverDraft?.updatedAt);
-      savedContentRef.current = cloneContent(result.content);
-      const published = JSON.stringify(result.content);
+      setSavedContent(cloneContent(published.content));
       // Prefer the server draft; a local copy only exists if a previous autosave could not reach the server.
       const localDraft = readLocalDraft();
-      const draft = serverDraft?.content && JSON.stringify(serverDraft.content) !== published ? serverDraft.content
-        : localDraft && JSON.stringify(localDraft) !== published ? localDraft
+      const draft = serverDraft?.content && !sameJson(serverDraft.content, published.content) ? serverDraft.content
+        : localDraft && !sameJson(localDraft, published.content) ? localDraft
         : null;
-
+      setContent(cloneContent(draft || published.content));
+      setSaveStatus({ state: 'idle' });
       if (draft) {
-        setContent(draft);
-        setIsDirty(true);
         if (draft === localDraft) saveDraft(localDraft); // push the offline copy to the server
-        addToast(
-          isEn
-            ? 'Restored the saved draft. Click "Save All Changes" to publish it.'
-            : 'Đã khôi phục bản nháp đã lưu. Bấm "Lưu Toàn Bộ Thay Đổi" để công bố.',
-          'info'
-        );
-      } else {
-        const legacy = !result.hasPublishedContent ? getLegacyLandingContent() : null;
-        setContent(legacy || result.content);
-        setIsDirty(Boolean(legacy));
-        if (legacy) {
-          addToast(
-            isEn
-              ? 'Loaded previous browser content as draft. Click Save to publish.'
-              : 'Đã tải nội dung cũ trên trình duyệt thành bản nháp. Bấm Lưu để công bố cho mọi người.',
-            'info'
-          );
-        }
+        addToast(t('homeContent.toast.draftRestored'), 'info');
       }
     }).catch(error => {
-      if (active) setLoadError(error.message || (isEn ? 'Failed to load homepage content.' : 'Không thể tải nội dung trang chủ.'));
+      if (active && error.name !== 'AbortError') setLoadError(error.message || t('homeContent.error.load'));
     }).finally(() => { if (active) setIsLoading(false); });
     return () => { active = false; controller.abort(); };
-  }, [reloadKey, isEn]);
+  }, [reloadKey]);
 
   // Save any pending autosave when the editor is left inside the app.
   useEffect(() => () => { void flushDraft(); }, []);
 
   // Shared draft edited elsewhere: keep this editor's copy locally and tell the user instead of overwriting.
   useEffect(() => {
-    onDraftConflict(() => addToast(
-      isEn
-        ? 'Another manager changed the draft. Your edits are kept in this browser; reload to see the latest draft.'
-        : 'Bản nháp vừa được người khác chỉnh sửa. Thay đổi của bạn vẫn được giữ trên trình duyệt này; tải lại trang để xem bản mới nhất.',
-      'warning'
-    ));
+    onDraftConflict(() => addToast(t('homeContent.toast.draftConflict'), 'warning'));
     return () => onDraftConflict(null);
-  }, [isEn]);
+  }, [language]);
 
-  // Prevent accidental loss of edits when hitting F5
+  const dirtySections = useMemo(() => {
+    if (!content || !savedContent) return new Set();
+    return new Set(Object.values(TAB_SECTIONS).filter(section => !sameJson(content[section], savedContent[section])));
+  }, [content, savedContent]);
+  const isDirty = dirtySections.size > 0;
+  const isSaving = saveStatus.state === 'saving';
+
+  // Prevent accidental loss of edits when hitting F5.
   useEffect(() => {
-    const handleBeforeUnload = (event) => {
+    const handleBeforeUnload = event => {
       void flushDraft();
       if (isDirty) {
         event.preventDefault();
@@ -132,127 +115,116 @@ export function useHomeContentEditor() {
     return () => window.removeEventListener('beforeunload', handleBeforeUnload);
   }, [isDirty]);
 
-  // Đánh dấu có thay đổi và lưu bản nháp vào localStorage
-  const updateContentField = (section, key, value) => {
-    setContent(prev => {
-      const updated = {
-        ...prev,
-        [section]: {
-          ...(prev[section] || {}),
-          [key]: value
-        }
-      };
-      saveDraft(updated);
-      return updated;
-    });
-    setIsDirty(true);
-  };
-
-  // Cập nhật danh sách thẻ trong bản nháp
-  const updateCatalogCards = (section, key, items) => {
-    setContent(prev => {
-      const updated = {
-        ...prev,
-        [section]: { ...(prev[section] || {}), [key]: items, catalogSource: 'custom' }
-      };
-      saveDraft(updated);
-      return updated;
-    });
-    setIsDirty(true);
-  };
-
-  const deleteFacilityCard = (record, items, fallbackSports) => {
-    setContent(prev => {
-      const section = prev.coursesSection;
-      const sports = section.sportsList.length || section.catalogSource === 'custom' ? section.sportsList : fallbackSports;
-      const hasLinks = sports.some(sport => String(sport.facilityId) === String(record.id));
-      const updated = {
-        ...prev,
-        facilitiesSection: { ...prev.facilitiesSection, facilitiesList: items, catalogSource: 'custom' },
-        coursesSection: hasLinks ? {
-          ...section,
-          sportsList: sports.map(sport => String(sport.facilityId) === String(record.id) ? { ...sport, facilityId: '' } : sport),
-          catalogSource: 'custom'
-        } : section
-      };
-      saveDraft(updated);
-      return updated;
-    });
-    setIsDirty(true);
-  };
-
-  // Lưu toàn bộ nội dung thủ công khi người dùng bấm nút Lưu
-  const handleSaveAll = async () => {
-    if (isSaving) return;
-    setIsSaving(true);
+  const handleTabChange = tabId => {
+    setActiveTab(tabId);
     try {
-      const target = latestContentRef.current || content;
-      const saved = await saveLandingContent(target);
-      savedContentRef.current = cloneContent(saved);
-      setContent(saved);
-      clearDraft();
-      setIsDirty(false);
-      addToast(
-        isEn
-          ? 'Homepage content saved and published successfully!'
-          : 'Đã lưu và công bố toàn bộ nội dung thành công!',
-        'success'
-      );
+      sessionStorage.setItem(TAB_STORAGE_KEY, tabId);
+      const [path, queryString] = (window.location.hash || '').split('?');
+      const params = new URLSearchParams(queryString || '');
+      params.set('tab', tabId);
+      window.history.replaceState(null, '', `${path}?${params.toString()}`);
+    } catch { /* storage or history unavailable */ }
+  };
+
+  const editLang = editLangs[activeTab] || 'vi';
+  const setEditLang = lang => setEditLangs(previous => ({ ...previous, [activeTab]: lang }));
+  const missingBySection = useMemo(() => Object.fromEntries(
+    Object.entries(TAB_SECTIONS).map(([tab, section]) => [tab, missingLanguages(content?.[section])])
+  ), [content]);
+
+  const applyEdit = updater => {
+    setContent(previous => {
+      const updated = updater(previous);
+      saveDraft(updated);
+      return updated;
+    });
+    setSaveStatus(previous => (previous.state === 'error' ? previous : { state: 'idle' }));
+  };
+
+  const updateContentField = (section, key, value) =>
+    applyEdit(previous => ({ ...previous, [section]: { ...(previous[section] || {}), [key]: value } }));
+
+  const updateCatalogCards = (section, key, items) =>
+    applyEdit(previous => ({ ...previous, [section]: { ...(previous[section] || {}), [key]: items, catalogSource: 'custom' } }));
+
+  const deleteFacilityCard = (record, items, fallbackSports) => applyEdit(previous => {
+    const section = previous.coursesSection;
+    const sports = section.sportsList?.length || section.catalogSource === 'custom' ? section.sportsList : fallbackSports;
+    const hasLinks = sports.some(sport => String(sport.facilityId) === String(record.id));
+    return {
+      ...previous,
+      facilitiesSection: { ...previous.facilitiesSection, facilitiesList: items, catalogSource: 'custom' },
+      coursesSection: hasLinks ? {
+        ...section,
+        sportsList: sports.map(sport => String(sport.facilityId) === String(record.id) ? { ...sport, facilityId: '' } : sport),
+        catalogSource: 'custom'
+      } : section
+    };
+  });
+
+  const finishSave = (response, sections) => {
+    const published = response.content;
+    setStats(response.stats ?? null);
+    setSavedContent(cloneContent(published));
+    // Saving one section keeps unsaved edits in the others (the form is disabled while saving).
+    const current = latestContentRef.current;
+    const next = sections
+      ? { ...current, ...Object.fromEntries(sections.map(section => [section, cloneContent(published[section])])) }
+      : cloneContent(published);
+    latestContentRef.current = next;
+    setContent(next);
+    return Object.values(TAB_SECTIONS).some(section => !sameJson(next[section], published[section])) ? next : null;
+  };
+
+  const runSave = async (save, sections) => {
+    if (isSaving) return;
+    setSaveStatus({ state: 'saving' });
+    try {
+      const response = await save();
+      const remainingDraft = finishSave(response, sections);
+      if (remainingDraft) saveDraft(remainingDraft); else clearDraft();
+      setSaveStatus({ state: 'saved', at: new Date() });
+      const missing = response.missingTranslations?.length || 0;
+      addToast(missing ? t('homeContent.toast.savedMissingEn', { count: missing }) : t('homeContent.toast.saved'), missing ? 'warning' : 'success');
     } catch (error) {
-      addToast(error.message || (isEn ? 'Error saving content. Please try again.' : 'Lỗi khi lưu nội dung. Vui lòng kiểm tra lại.'), 'error');
-    } finally {
-      setIsSaving(false);
+      const message = errorText(error);
+      setSaveStatus({ state: 'error', message });
+      addToast(message, 'error');
     }
+  };
+
+  const handleSaveAll = () => runSave(() => publishHomeContent(latestContentRef.current));
+
+  const handleSaveSection = () => {
+    const section = TAB_SECTIONS[activeTab];
+    return runSave(() => saveHomeContentSection(section, latestContentRef.current[section]), [section]);
   };
 
   const handleDiscardChanges = () => {
-    if (isSaving || !isDirty || !savedContentRef.current) return;
-    setContent(cloneContent(savedContentRef.current));
+    if (isSaving || !isDirty || !savedContent) return;
+    setContent(cloneContent(savedContent));
     clearDraft();
-    setIsDirty(false);
+    setSaveStatus({ state: 'idle' });
     setDiscardKey(previous => previous + 1);
     setMediaPickerConfig(previous => ({ ...previous, isOpen: false, callback: null, onClose: undefined }));
-    addToast(
-      isEn
-        ? 'Unsaved changes discarded. Content restored to the last successful save.'
-        : 'Đã hủy thay đổi chưa lưu và khôi phục nội dung từ lần lưu thành công gần nhất.',
-      'info'
-    );
+    addToast(t('homeContent.toast.discarded'), 'info');
   };
 
-  // Xem trước trang chủ ở tab mới an toàn mà không làm thay đổi URL/hash của tab hiện tại
   const handlePreview = () => {
     try {
-      openLandingPreview(content);
+      openLandingPreview(content, stats);
     } catch (error) {
-      addToast(error.message || (isEn ? 'Cannot open preview.' : 'Không thể mở bản xem trước.'), 'error');
+      addToast(errorText(error), 'error');
     }
   };
 
-  // Nút lưu trực tiếp tại chân mỗi mục để không cần cuộn lên trên cùng
-
-  // Mở Cloud Media Picker
-  const openMediaPicker = (title, currentUrl, callback, onClose) => {
-    setMediaPickerConfig({
-      isOpen: true,
-      title,
-      currentUrl,
-      callback,
-      onClose
-    });
-  };
-
-  // Thống kê nhanh
-  const totalSports = content.coursesSection?.sportsList?.length || 0;
-  const visibleSports = (content.coursesSection?.sportsList || []).filter(s => s.isVisible !== false).length;
-  const totalFacilities = content.facilitiesSection?.facilitiesList?.length || 0;
-  const visibleFacilities = (content.facilitiesSection?.facilitiesList || []).filter(f => f.isVisible !== false).length;
+  const openMediaPicker = (title, currentUrl, callback, onClose) =>
+    setMediaPickerConfig({ isOpen: true, title, currentUrl, callback, onClose });
 
   return {
-    activeTab, addToast, content, deleteFacilityCard, discardKey, handleDiscardChanges,
-    handlePreview, handleSaveAll, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
-    mediaPickerConfig, openMediaPicker, setContent, setIsDirty, setMediaPickerConfig, setReloadKey,
-    totalFacilities, totalSports, updateCatalogCards, updateContentField, visibleFacilities,
-    visibleSports
+    activeTab, addToast, content, deleteFacilityCard, dirtySections, discardKey, editLang, handleDiscardChanges,
+    handlePreview, handleSaveAll, handleSaveSection, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
+    mediaPickerConfig, missingBySection, openMediaPicker, saveStatus, setEditLang, setMediaPickerConfig,
+    setReloadKey, stats, t, updateCatalogCards, updateContentField
   };
 }
