@@ -18,28 +18,25 @@ export function getPostLoginRoute(role, intent = null) {
   })[normalized] || '#/';
 }
 
-export function getMembershipAction(isAuthenticated, role, isEn = false) {
+/** `t` is the i18n translator (useLanguage().t); labels live in the locale files. */
+export function getMembershipAction(isAuthenticated, role, t) {
   const isMember = String(role || '').toUpperCase() === 'MEMBER';
   return {
     href: !isAuthenticated ? '#/login?next=packages' : (isMember ? MEMBER_ROUTES.packages : getPostLoginRoute(role)),
-    label: isAuthenticated && !isMember
-      ? (isEn ? 'Go to Workspace' : 'Về trang làm việc')
-      : (isEn ? 'View Packages' : 'Xem gói tập')
+    label: t(isAuthenticated && !isMember ? 'landing.membership.workspace' : 'landing.membership.viewPackages')
   };
 }
 
-export function getMembershipBanner(footer = {}, isEn = false) {
-  const defaults = isEn ? {
-    ctaBadge: 'MEMBERSHIP & CLASS BOOKINGS', ctaTitle: 'Choose Your Training Package',
-    ctaDescription: 'Choose a package, complete payment, then book available classes covered by your membership.'
-  } : {
-    ctaBadge: 'GÓI TẬP & LỊCH LỚP', ctaTitle: 'Chọn gói tập cho hành trình của bạn',
-    ctaDescription: 'Chọn gói tập, hoàn tất thanh toán, sau đó đặt ca học còn chỗ theo quyền lợi của gói.'
-  };
+// The public page sells memberships only: court-rental / tournament copy is never promoted.
+const RENTAL_COPY = /thuê|rental|rent\b|tournament|giải đấu|sự kiện|event/i;
+const BANNER_KEYS = { ctaBadge: 'landing.membership.bannerBadge', ctaTitle: 'landing.membership.bannerTitle', ctaDescription: 'landing.membership.bannerDescription' };
+
+/** Published CTA copy (already in the page language) unless empty or about rentals; then the localized default. */
+export function getMembershipBanner(footer = {}, t) {
   const result = {};
-  for (const key of Object.keys(defaults)) {
-    const saved = footer[key];
-    result[key] = !isEn && saved && !/thuê|rental|rent\b|tournament|giải đấu|sự kiện/i.test(saved) ? saved : defaults[key];
+  for (const [key, labelKey] of Object.entries(BANNER_KEYS)) {
+    const saved = footer?.[key];
+    result[key] = typeof saved === 'string' && saved.trim() && !RENTAL_COPY.test(saved) ? saved : t(labelKey);
   }
   return result;
 }
