@@ -4,17 +4,12 @@ import { motion, AnimatePresence } from 'motion/react';
 const OTP_LENGTH = 6;
 const BOX_STEP = 52; // box width + gap (px), dùng để gom 6 ô về giữa
 
-// Bảng màu theo mẫu "Verifikasi Email" (dark).
+// Light palette, pinned to tokens.css (sage-700, teal-500, danger-600, sage-500).
 const C = {
-  surface: '#121826',
-  surface2: '#171F30',
-  border: '#232C40',
-  text: '#E9ECF3',
-  muted: '#8B90A3',
-  violet: '#7C5CFC',
-  cyan: '#45E0DD',
-  danger: '#FF6B6B',
-  success: '#3DDC97'
+  violet: 'rgb(var(--brand-sage-700))',
+  cyan: 'rgb(var(--brand-teal-500))',
+  danger: 'rgb(var(--brand-danger-600))',
+  success: 'rgb(var(--brand-sage-500))'
 };
 
 /** Chờ promise nhưng kéo dài tối thiểu `ms` để kịp thấy animation xác thực (kể cả khi lỗi). */
@@ -31,21 +26,21 @@ export async function withMinDuration(promise, ms = 1400) {
 }
 
 export const OTP_CARD_CLASS =
-  'relative w-full max-w-[400px] overflow-hidden rounded-[24px] border border-[#232C40] bg-[#0D1220] px-6 pt-6 pb-6 sm:px-7 text-center text-[#E9ECF3] shadow-[0_30px_80px_-24px_rgba(0,0,0,0.8)] animate-scaleUp focus:outline-none';
+  'relative w-full max-w-[400px] overflow-hidden rounded-[24px] border border-brand-sand-200 bg-brand-sand-100 px-6 pt-6 pb-6 sm:px-7 text-center text-brand-navy-900 shadow-[0_30px_80px_-24px_rgba(15,23,42,0.35)] scms-modal-3d focus:outline-none';
 
 const LIGHT_BOX = {
   success: 'bg-brand-sage-50 border-brand-sage-500 text-brand-sage-700',
   error: 'bg-brand-danger-50 border-brand-danger-500 text-brand-danger-600',
-  current: 'bg-white border-brand-navy-700 ring-4 ring-brand-navy-700/15 text-brand-navy-900',
-  filled: 'bg-white border-brand-navy-200 text-brand-navy-900',
-  empty: 'bg-brand-navy-50 border-brand-navy-50 text-brand-navy-900'
+  current: 'bg-white border-brand-sage-700 ring-4 ring-brand-sage-700/20 text-brand-navy-900',
+  filled: 'bg-white border-brand-sand-200 text-brand-navy-900',
+  empty: 'bg-white/70 border-brand-sand-200 text-brand-navy-900'
 };
 const DARK_BOX = {
-  success: 'bg-[#3DDC97]/10 border-[#3DDC97] text-[#3DDC97]',
-  error: 'bg-[#FF6B6B]/[0.06] border-[#FF6B6B] text-[#FF6B6B]',
-  current: 'bg-[#121826] border-[#7C5CFC] text-[#E9ECF3] shadow-[0_0_0_4px_rgba(124,92,252,0.2),0_0_18px_rgba(124,92,252,0.45)]',
-  filled: 'bg-[#171F30] border-[#2E3850] text-[#E9ECF3]',
-  empty: 'bg-[#121826] border-[#232C40] text-[#E9ECF3]'
+  success: 'bg-brand-sage-500/15 border-brand-sage-400 text-brand-sage-300',
+  error: 'bg-brand-danger-500/10 border-brand-danger-400 text-brand-danger-300',
+  current: 'bg-brand-navy-950 border-brand-teal-500 text-brand-navy-100 shadow-[0_0_0_4px_rgb(var(--brand-teal-500)/0.2),0_0_18px_rgb(var(--brand-teal-500)/0.4)]',
+  filled: 'bg-brand-navy-900 border-brand-navy-700 text-brand-navy-100',
+  empty: 'bg-brand-navy-950 border-brand-navy-800 text-brand-navy-100'
 };
 
 /**
@@ -169,7 +164,7 @@ export function OtpCodeInput({
                 className={`w-11 h-[54px] rounded-xl border-[1.5px] text-center text-xl font-semibold caret-transparent outline-none transition-[background-color,border-color,box-shadow,color] duration-200 select-none ${palette[tone]}`}
               />
               {isCurrent && (
-                <span className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1.5px] h-5 rounded-full animate-pulse ${dark ? 'bg-[#E9ECF3]' : 'bg-brand-navy-700'}`} />
+                <span className={`pointer-events-none absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-[1.5px] h-5 rounded-full animate-pulse ${dark ? 'bg-brand-sand-100' : 'bg-brand-navy-700'}`} />
               )}
             </motion.div>
           );
@@ -213,8 +208,8 @@ function OtpBlob({ kind }) {
       <motion.div
         className="absolute inset-0 rounded-[18px]"
         style={{
-          background: `linear-gradient(135deg, ${C.violet} 0%, #6E8BFF 50%, ${C.cyan} 100%)`,
-          boxShadow: '0 0 36px rgba(124,92,252,0.55), 0 0 60px rgba(69,224,221,0.25)'
+          background: `linear-gradient(135deg, ${C.violet} 0%, rgb(var(--brand-teal-600)) 50%, ${C.cyan} 100%)`,
+          boxShadow: '0 10px 30px rgb(var(--brand-sage-700) / 0.35), 0 0 40px rgb(var(--brand-teal-500) / 0.25)'
         }}
         initial={false}
         animate={{ opacity: resolved ? [1, 1, 0, 0] : 1, borderRadius: resolved ? ['18px', '50%', '18px', '18px'] : '18px' }}
@@ -229,7 +224,7 @@ function OtpBlob({ kind }) {
           animate={{ opacity: [0, 0, 1, 1] }}
           transition={{ duration: 0.85, times: [0, 0.35, 0.5, 1] }}
         >
-          <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="#0A0E16" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+          <svg className="h-7 w-7" viewBox="0 0 24 24" fill="none" stroke="#fff" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
             {kind === 'success' ? (
               <motion.polyline points="20 6 9 17 4 12" initial={{ pathLength: 0 }} animate={{ pathLength: 1 }} transition={{ duration: 0.3, delay: 0.6 }} />
             ) : (
@@ -290,48 +285,48 @@ export function OtpDialogContent({
   const statusId = `${inputId}-status`;
   return (
     <>
-      <div className="pointer-events-none absolute -top-28 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full bg-[#7C5CFC]/20 blur-3xl" aria-hidden="true" />
+      <div className="pointer-events-none absolute -top-28 left-1/2 h-48 w-72 -translate-x-1/2 rounded-full bg-amber-200/40 blur-3xl" aria-hidden="true" />
 
       <button
         type="button"
         onClick={onClose}
         disabled={status === 'verifying'}
         aria-label={labels.close}
-        className="absolute top-4 right-4 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-white/5 text-[#8B90A3] transition-colors hover:bg-white/10 hover:text-[#E9ECF3] disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#7C5CFC]"
+        className="absolute top-4 right-4 z-20 flex h-8 w-8 cursor-pointer items-center justify-center rounded-full bg-brand-sand-200/70 text-slate-500 transition-colors hover:bg-brand-sand-200 hover:text-brand-navy-900 disabled:opacity-40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500"
       >
         <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round"><path d="M6 6l12 12M18 6L6 18" /></svg>
       </button>
 
       <div className="relative">
-        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[14px] border border-[#232C40] bg-[#171F30] text-[#7C5CFC]">
+        <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-[14px] border border-brand-sand-200 bg-white text-emerald-700 shadow-sm">
           <svg className="h-5 w-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
             <rect x="3" y="5" width="18" height="14" rx="2.5" />
             <path d="M3.5 7l8.5 6 8.5-6" />
           </svg>
         </div>
 
-        <h3 id={titleId} className="mt-4 text-[21px] font-semibold tracking-tight text-[#E9ECF3]">{labels.title}</h3>
-        <p className="mt-1.5 text-[13px] leading-relaxed text-[#8B90A3]">
-          {labels.sentTo} <strong className="font-semibold text-[#E9ECF3] break-all">{maskEmail(email)}</strong>{labels.sentToSuffix}
+        <h3 id={titleId} className="mt-4 text-[21px] font-semibold tracking-tight text-brand-navy-900">{labels.title}</h3>
+        <p className="mt-1.5 text-[13px] leading-relaxed text-slate-600">
+          {labels.sentTo} <strong className="font-semibold text-brand-navy-900 break-all">{maskEmail(email)}</strong>{labels.sentToSuffix}
         </p>
 
         <div className="mt-6 flex h-[62px] items-center justify-center">
           <OtpCodeInput
             id={inputId} value={code} onChange={onCodeChange} status={status}
-            describedBy={statusId} dark morph onErrorReset={onErrorReset}
+            describedBy={statusId} morph onErrorReset={onErrorReset}
           />
         </div>
 
         <div id={statusId} role={status === 'error' ? 'alert' : 'status'} aria-live="polite" className="mt-4 min-h-[20px] text-[13px]">
           <AnimatePresence mode="wait">
             {status === 'success' ? (
-              <motion.span key="ok" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="text-[#3DDC97]">{labels.success}</motion.span>
+              <motion.span key="ok" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5 }} className="text-emerald-700">{labels.success}</motion.span>
             ) : status === 'error' ? (
-              <motion.span key="err" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-[#FF6B6B]">{errorText}</motion.span>
+              <motion.span key="err" initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4 }} className="text-red-600">{errorText}</motion.span>
             ) : status === 'verifying' ? (
-              <motion.span key="ver" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-[#8B90A3]">{labels.verifying}</motion.span>
+              <motion.span key="ver" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.4 }} className="text-slate-500">{labels.verifying}</motion.span>
             ) : notice ? (
-              <motion.span key="notice" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-[#A996FF]">{notice}</motion.span>
+              <motion.span key="notice" initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="text-emerald-700">{notice}</motion.span>
             ) : null}
           </AnimatePresence>
         </div>
@@ -340,24 +335,24 @@ export function OtpDialogContent({
           type="button"
           disabled={status === 'verifying' || (status === 'success' ? !onContinue : code.length !== 6 || status === 'error')}
           onClick={status === 'success' ? onContinue : onSubmit}
-          className="mt-4 h-12 w-full cursor-pointer rounded-[14px] bg-[#7C5CFC] text-sm font-semibold text-white shadow-[0_10px_30px_-10px_rgba(124,92,252,0.9)] transition-all hover:brightness-110 disabled:cursor-not-allowed disabled:bg-[#2B2563] disabled:text-white/50 disabled:shadow-none"
+          className="mt-4 h-12 w-full cursor-pointer rounded-[14px] bg-gradient-to-br from-brand-sand-300 to-brand-sand-400 text-sm font-bold text-brand-navy-800 shadow-lg shadow-brand-sand-500/25 transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:from-brand-sand-200 disabled:to-brand-sand-200 disabled:text-brand-navy-400 disabled:shadow-none"
         >
           {status === 'success' ? labels.continue : status === 'verifying' ? labels.submitting : labels.submit}
         </button>
 
-        <p className="mt-4 text-[13px] text-[#8B90A3]" aria-live="polite">
+        <p className="mt-4 text-[13px] text-slate-500" aria-live="polite">
           {labels.noCode}{' '}
           <button
             type="button"
             disabled={busy || resendSeconds > 0}
             onClick={onResend}
-            className="cursor-pointer font-medium text-[#A996FF] hover:underline disabled:cursor-default disabled:text-[#7C5CFC]/80 disabled:no-underline"
+            className="cursor-pointer font-semibold text-emerald-700 hover:underline disabled:cursor-default disabled:text-slate-400 disabled:no-underline"
           >
             {labels.resend}{resendSeconds > 0 ? ` (${resendSeconds}s)` : ''}
           </button>
         </p>
         {onBack && (
-          <button type="button" disabled={busy} onClick={onBack} className="mt-2 cursor-pointer text-[13px] text-[#8B90A3] hover:text-[#E9ECF3] disabled:opacity-50">
+          <button type="button" disabled={busy} onClick={onBack} className="mt-2 cursor-pointer text-[13px] text-slate-500 hover:text-brand-navy-900 disabled:opacity-50">
             {labels.back}
           </button>
         )}
