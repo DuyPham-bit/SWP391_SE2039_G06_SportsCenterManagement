@@ -159,12 +159,14 @@ export function VisionSalesOverviewChart({ data = [], groupBy = 'day' }) {
           {lineD && (
             <path
               d={lineD}
+              pathLength="1"
               fill="none"
               stroke="rgb(var(--color-chart-5))"
               strokeWidth="3"
               strokeLinecap="round"
               strokeLinejoin="round"
               filter="url(#visionGlowLine)"
+              className="scms-chart-line"
             />
           )}
 
