@@ -9,6 +9,8 @@ public static class DependencyInjection
     public static IServiceCollection AddBusinessLogic(this IServiceCollection services, string connectionString)
     {
         services.AddDataAccess(connectionString);
+        services.AddScoped<CenterAccessGuard>();
+        services.AddScoped<SportsCenterManagement.BLL.Common.SystemHealthService>();
 
         // Layer 2: BLL (Business Logic Services)
         // Flow 1 Services
