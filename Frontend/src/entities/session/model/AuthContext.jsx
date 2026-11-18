@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { authApi } from '../api/authApi.js';
-import { getApiSession } from '../../../shared/api/http.js';
-import { assertAuthUser, getAuthVersion } from '../../../shared/api/authState.js';
+import { getApiSession } from '../../../shared/api/index.js';
+import { assertAuthUser, getAuthVersion } from '../../../shared/api/index.js';
 import { clearMemberAIChatStorage } from '../../../shared/lib/memberAiChatStorage.js';
 import { peekLegacyAvatar, forgetLegacyAvatar } from '../../../shared/lib/avatarHelper.js';
 
