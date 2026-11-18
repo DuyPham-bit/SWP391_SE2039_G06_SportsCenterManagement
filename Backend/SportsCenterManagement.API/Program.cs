@@ -203,6 +203,7 @@ builder.Services.AddScoped<ClassReminderService>();
 builder.Services.AddHostedService<ClassReminderWorker>();
 builder.Services.AddHostedService<CommunicationDeliveryWorker>();
 builder.Services.AddScoped<LandingContentService>();
+builder.Services.AddScoped<CampusMapService>();
 
 // MailKit SendMailService
 builder.Services.Configure<MailSettings>(builder.Configuration.GetSection("MailSettings"));
@@ -266,6 +267,7 @@ if (autoMigrateOnStartup)
     {
         await DbInitializer.SeedAsync(dbContext, app.Configuration.GetValue<bool>("Database:SeedDemoData", false));
         await AdminBootstrapper.SeedAsync(dbContext, app.Configuration);
+        await LandingContentService.EnsureSeededAsync(dbContext);
     }
     finally
     {
