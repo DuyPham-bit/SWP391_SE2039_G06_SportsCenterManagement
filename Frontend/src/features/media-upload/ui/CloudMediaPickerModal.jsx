@@ -142,7 +142,7 @@ export function CloudMediaPickerModal({
         aria-hidden="true"
       />
 
-      <div className="relative w-full max-w-4xl bg-white dark:bg-brand-navy-900 rounded-2xl shadow-2xl border border-brand-navy-200 dark:border-brand-navy-800 overflow-hidden max-h-[min(92vh,860px)] flex flex-col font-inter my-auto z-10 animate-scaleUp">
+      <div className="relative w-full max-w-4xl bg-white dark:bg-brand-navy-900 rounded-2xl shadow-2xl border border-brand-navy-200 dark:border-brand-navy-800 overflow-hidden max-h-[min(92vh,860px)] flex flex-col font-inter my-auto z-10 scms-modal-3d">
         
         {/* Header */}
         <div className="p-4 sm:p-5 bg-gradient-to-r from-brand-sage-900 via-brand-sage-700 to-brand-sage-600 text-white flex items-center justify-between border-b border-brand-sage-700/30 shrink-0">
