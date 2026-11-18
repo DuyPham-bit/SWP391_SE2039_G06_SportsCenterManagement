@@ -1,7 +1,7 @@
 import React from 'react';
 import { TypewriterHeroHeading } from './TypewriterHeroHeading.jsx';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
-import { useLanguage } from '../../../shared/i18n/LanguageContext.jsx';
+import { useLanguage } from '../../../shared/i18n/index.js';
 
 /** All copy comes from the published home content (already in the selected language); no fallback text. */
 export function HeroSection({ heroReady = true, isVideoMuted, landingContent, setIsVideoMuted, videoRef }) {
