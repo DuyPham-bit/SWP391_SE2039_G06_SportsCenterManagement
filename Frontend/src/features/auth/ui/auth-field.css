@@ -1,0 +1,52 @@
+/* Auth form fields: floating label, focus rule, messages, animated eye and checkbox. Transform/opacity only. */
+/* ── Floating-label fields ────────────────────────────────────────────── */
+.lp-float-label {
+  transform: translate3d(0, -50%, 0);
+  transform-origin: left center;
+  transition: transform 0.22s var(--auth-ease), color 0.2s;
+}
+.lp-float-input:focus ~ .lp-float-label,
+.lp-float-input:not(:placeholder-shown) ~ .lp-float-label,
+.lp-float-input:-webkit-autofill ~ .lp-float-label { transform: translate3d(0, -112%, 0) scale(0.8); }
+.lp-float-input::placeholder { opacity: 0; transition: opacity 0.2s; }
+.lp-float-input:focus::placeholder { opacity: 1; }
+.lp-field-bar {
+  position: absolute;
+  left: 12px;
+  right: 12px;
+  bottom: 0;
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgb(var(--brand-teal-500)), rgb(var(--brand-sage-700)) 50%, rgb(var(--brand-sand-300)));
+  transform: scaleX(0);
+  transition: transform 0.45s var(--auth-ease);
+  pointer-events: none;
+}
+.lp-float-input:focus ~ .lp-field-bar { transform: scaleX(1); }
+.lp-float-input[aria-invalid='true'] ~ .lp-field-bar { background: rgb(var(--brand-danger-600)); }
+.lp-field-icon { transition: color 0.2s, transform 0.3s var(--auth-spring); }
+.group:focus-within .lp-field-icon { transform: scale(1.1); }
+@keyframes lp-msg-in { from { opacity: 0; transform: translate3d(0, -6px, 0); } to { opacity: 1; transform: none; } }
+.lp-msg-in { animation: lp-msg-in 0.28s var(--auth-ease) both; }
+@keyframes lp-pop { 0% { opacity: 0; transform: scale(0.4); } 70% { transform: scale(1.15); } 100% { opacity: 1; transform: none; } }
+.lp-tick { animation: lp-pop 0.35s cubic-bezier(0.2, 0.8, 0.2, 1) both; }
+
+/* Eye: lid squashes and a slash draws when the password is visible. */
+.lp-eye-lid { transform-origin: 12px 12px; transition: transform 0.3s var(--auth-spring); }
+.lp-eye-pupil { transform-origin: 12px 12px; transition: transform 0.3s var(--auth-spring); }
+.lp-eye-slash { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.32s var(--auth-ease); }
+.lp-eye.is-closed .lp-eye-lid { transform: scaleY(0.55); }
+.lp-eye.is-closed .lp-eye-pupil { transform: scale(0.5); }
+.lp-eye.is-closed .lp-eye-slash { stroke-dashoffset: 0; }
+button:hover > .lp-eye.is-open .lp-eye-pupil { transform: translate(1px, 0) scale(1.1); }
+
+/* Checkbox tick draws in. */
+.lp-check-tick path { stroke-dasharray: 1; stroke-dashoffset: 1; transition: stroke-dashoffset 0.32s var(--auth-ease) 0.05s; }
+.lp-check input:checked ~ .lp-check-tick path { stroke-dashoffset: 0; }
+.lp-check input:checked ~ .lp-check-box { animation: lp-check-pop 0.35s var(--auth-spring); }
+@keyframes lp-check-pop { 50% { transform: scale(0.86); } }
+
+@media (prefers-reduced-motion: reduce) {
+  .lp-tick, .lp-msg-in, .lp-check input:checked ~ .lp-check-box { animation: none !important; }
+  .lp-float-label, .lp-field-bar, .lp-eye-lid, .lp-eye-pupil, .lp-eye-slash, .lp-check-tick path { transition: none !important; }
+}
