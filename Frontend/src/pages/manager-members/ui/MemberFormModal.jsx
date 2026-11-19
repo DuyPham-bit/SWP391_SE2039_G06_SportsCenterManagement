@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { labelClass, inputClass } from './formStyles.js';
+import { labelClass, inputClass } from '../../../shared/ui/formStyles.js';
 import { today } from '../lib/memberDisplay.js';
 
 export function MemberFormModal({ busy, form, handleFormChange, handleSaveMember, isEn, modal, setModal }) {
@@ -19,7 +19,7 @@ export function MemberFormModal({ busy, form, handleFormChange, handleSaveMember
       }
       maxWidth="max-w-2xl"
     >
-      <form onSubmit={handleSaveMember} className="space-y-4">
+      <form onSubmit={handleSaveMember} autoComplete="off" className="space-y-4">
         <div className="p-3 bg-brand-sage-50/70 dark:bg-brand-sage-950/40 border border-brand-sage-200/60 dark:border-brand-sage-800/60 rounded-xl text-xs text-brand-sage-900 dark:text-brand-sage-300 flex items-start gap-2.5">
           <span className="material-symbols-outlined text-brand-sage-700 dark:text-brand-sage-500 text-[18px] flex-shrink-0 mt-0.5">info</span>
           <span>
@@ -41,6 +41,7 @@ export function MemberFormModal({ busy, form, handleFormChange, handleSaveMember
                 <input
                   className={inputClass}
                   name="username"
+                  autoComplete="off"
                   required
                   minLength={3}
                   maxLength={100}
@@ -93,6 +94,7 @@ export function MemberFormModal({ busy, form, handleFormChange, handleSaveMember
               className={inputClass}
               name="email"
               type="email"
+              autoComplete="off"
               readOnly={Boolean(modal?.row)}
               required
               maxLength={150}

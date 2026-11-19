@@ -710,6 +710,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       {isOpen && !isMinimized && (
         <div
           id="member-ai-chat-popup"
+          data-lenis-prevent
           style={
             windowPos
               ? { left: `${windowPos.x}px`, top: `${windowPos.y}px` }
@@ -805,7 +806,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
           </div>
 
           {/* Messages Stream Container */}
-          <div className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-4 bg-brand-sand-50/50">
+          <div data-lenis-prevent className="flex-1 p-3.5 sm:p-4 overflow-y-auto space-y-4 bg-brand-sand-50/50 overscroll-contain">
             {messages.map((msg) => (
               <div
                 key={msg.id}

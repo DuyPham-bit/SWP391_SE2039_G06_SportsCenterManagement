@@ -444,7 +444,7 @@ export function LoginPage() {
     if (isSubmitting) return;
     const identifier = loginEmail.trim();
     const errors = {};
-    if (!identifier) errors['login-email'] = 'Vui lòng nhập email hoặc số điện thoại.';
+    if (!identifier) errors['login-email'] = 'Vui lòng nhập email, số điện thoại hoặc tên đăng nhập.';
     else if (!isValidLoginIdentifier(identifier)) {
       errors['login-email'] = 'Email, số điện thoại hoặc tên đăng nhập không hợp lệ.';
     }
@@ -874,7 +874,7 @@ export function LoginPage() {
             <div className="relative flex items-center justify-center my-5 gap-3">
               <div className="h-px flex-1 bg-gradient-to-r from-transparent via-brand-navy-200 dark:via-white/20 to-brand-navy-200 dark:to-white/20" />
               <span className="text-[11px] uppercase tracking-[0.12em] text-brand-navy-500 dark:text-brand-navy-400 font-bold shrink-0">
-                hoặc qua email
+                hoặc qua tài khoản
               </span>
               <div className="h-px flex-1 bg-gradient-to-l from-transparent via-brand-navy-200 dark:via-white/20 to-brand-navy-200 dark:to-white/20" />
             </div>
@@ -913,15 +913,15 @@ export function LoginPage() {
                   <AuthField
                     key="login-email"
                     floating
-                    icon="alternate_email"
+                    icon="person"
                     id="login-email"
-                    label="Email hoặc số điện thoại"
+                    label="Email, SĐT hoặc tên đăng nhập"
                     type="text"
                     autoComplete="username"
                     autoCapitalize="none"
                     spellCheck={false}
                     maxLength={150}
-                    placeholder="ban@example.com hoặc 0912345678"
+                    placeholder="ten_dang_nhap, email hoặc 0912345678"
                     required
                     value={loginEmail}
                     error={fieldErrors['login-email']}
@@ -954,7 +954,7 @@ export function LoginPage() {
                           if (!event.target.checked) saveRememberedEmail('');
                         }}
                       />
-                      <span className="font-medium">Ghi nhớ email</span>
+                      <span className="font-medium">Ghi nhớ tài khoản</span>
                     </label>
 
                     <button

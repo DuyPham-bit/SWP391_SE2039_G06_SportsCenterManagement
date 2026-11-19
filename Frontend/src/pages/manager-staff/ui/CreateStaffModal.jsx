@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { labelClass, inputClass } from './formStyles.js';
+import { labelClass, inputClass } from '../../../shared/ui/formStyles.js';
 import { today, getAvatarGradient, getInitials } from '../lib/staffDisplay.js';
 import { SpecialtyPicker } from './SpecialtyPicker.jsx';
 
@@ -47,7 +47,7 @@ export function CreateStaffModal({
           </button>
         </div>
 
-        <form onSubmit={handleSaveStaff} className="space-y-4">
+        <form onSubmit={handleSaveStaff} autoComplete="off" className="space-y-4">
           {createMode === 'DIRECT' ? (
             <div className="space-y-4">
               <div className="p-3 bg-brand-sage-50/70 dark:bg-brand-sage-950/40 border border-brand-sage-200/60 dark:border-brand-sage-800/60 rounded-xl text-xs text-brand-sage-900 dark:text-brand-sage-300 flex items-start gap-2.5">
@@ -102,6 +102,7 @@ export function CreateStaffModal({
                   <input
                     className={inputClass}
                     name="username"
+                    autoComplete="off"
                     required
                     minLength={3}
                     maxLength={100}
@@ -153,6 +154,7 @@ export function CreateStaffModal({
                     className={inputClass}
                     type="email"
                     name="email"
+                    autoComplete="off"
                     required
                     maxLength={150}
                     placeholder="email@sportscenter.vn"
@@ -219,17 +221,17 @@ export function CreateStaffModal({
               </div>
 
               {form.role === 'COACH' && (
-              <div>
-                <label className={labelClass}>{isEn ? 'Biography / Notes' : 'Tiểu sử / Ghi chú'}</label>
-                <textarea
-                  rows={2}
-                  className={inputClass}
-                  name="bio"
-                  placeholder={isEn ? 'Brief description about coaching background, achievements...' : 'Mô tả ngắn gọn về kinh nghiệm, thành tích hoặc phân công chuyên môn...'}
-                  value={form.bio}
-                  onChange={handleFormChange}
-                />
-              </div>
+                <div>
+                  <label className={labelClass}>{isEn ? 'Biography / Notes' : 'Tiểu sử / Ghi chú'}</label>
+                  <textarea
+                    rows={2}
+                    className={inputClass}
+                    name="bio"
+                    placeholder={isEn ? 'Brief description about coaching background, achievements...' : 'Mô tả ngắn gọn về kinh nghiệm, thành tích hoặc phân công chuyên môn...'}
+                    value={form.bio}
+                    onChange={handleFormChange}
+                  />
+                </div>
               )}
             </div>
           ) : (
@@ -454,32 +456,34 @@ export function CreateStaffModal({
                     onChange={handleFormChange}
                   />
                 </div>
-                {form.role === 'COACH' && <SpecialtyPicker addingSpecialty={addingSpecialty} form={form} handleAddSpecialty={handleAddSpecialty} isEn={isEn} loadSports={loadSports} newSpecialtyName={newSpecialtyName} saving={saving} setForm={setForm} setNewSpecialtyName={setNewSpecialtyName} sports={sports} sportsError={sportsError} />}
-                {form.role === 'COACH' && (<>
-                <div>
-                  <label className={labelClass}>{isEn ? 'Certifications' : 'Chứng chỉ quốc tế'}</label>
-                  <input
-                    className={inputClass}
-                    name="certification"
-                    placeholder={isEn ? 'e.g. NASM-CPT, AFC...' : 'VD: NASM-CPT, AFC...'}
-                    value={form.certification}
-                    onChange={handleFormChange}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>{isEn ? 'Years of Experience' : 'Số năm kinh nghiệm'}</label>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    name="experienceYears"
-                    min="0"
-                    max="50"
-                    placeholder={isEn ? 'e.g. 3' : 'VD: 3'}
-                    value={form.experienceYears}
-                    onChange={handleFormChange}
-                  />
-                </div>
-                </>)}
+                {form.role === 'COACH' && (
+                  <>
+                    <SpecialtyPicker addingSpecialty={addingSpecialty} form={form} handleAddSpecialty={handleAddSpecialty} isEn={isEn} loadSports={loadSports} newSpecialtyName={newSpecialtyName} saving={saving} setForm={setForm} setNewSpecialtyName={setNewSpecialtyName} sports={sports} sportsError={sportsError} />
+                    <div>
+                      <label className={labelClass}>{isEn ? 'Certifications' : 'Chứng chỉ quốc tế'}</label>
+                      <input
+                        className={inputClass}
+                        name="certification"
+                        placeholder={isEn ? 'e.g. NASM-CPT, AFC...' : 'VD: NASM-CPT, AFC...'}
+                        value={form.certification}
+                        onChange={handleFormChange}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>{isEn ? 'Years of Experience' : 'Số năm kinh nghiệm'}</label>
+                      <input
+                        className={inputClass}
+                        type="number"
+                        name="experienceYears"
+                        min="0"
+                        max="50"
+                        placeholder={isEn ? 'e.g. 3' : 'VD: 3'}
+                        value={form.experienceYears}
+                        onChange={handleFormChange}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}

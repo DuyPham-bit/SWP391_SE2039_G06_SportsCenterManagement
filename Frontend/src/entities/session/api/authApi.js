@@ -21,6 +21,8 @@ async function loadCurrentUser(session = getApiSession(), version = getAuthVersi
       status: String(profile.status || 'Active').toUpperCase(),
       memberCode: profile.memberCode,
       centerId: profile.centerId,
+      centerName: profile.centerName || null,
+      staffCode: profile.staffCode || null,
       createdAt: profile.createdAt,
       mustChangePassword: true,
       emailVerified: profile.isEmailVerified !== false,

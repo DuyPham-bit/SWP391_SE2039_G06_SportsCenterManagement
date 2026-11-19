@@ -76,7 +76,7 @@ export function NotificationInbox() {
 
       {/* Dropdown Panel */}
       {open && (
-        <div className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-brand-navy-900 rounded-2xl shadow-xl border border-brand-navy-200/80 dark:border-brand-navy-800 z-50 overflow-hidden">
+        <div data-lenis-prevent className="absolute right-0 mt-2 w-80 sm:w-96 bg-white dark:bg-brand-navy-900 rounded-2xl shadow-xl border border-brand-navy-200/80 dark:border-brand-navy-800 z-50 overflow-hidden">
           {/* Header */}
           <div className="p-4 border-b border-brand-navy-100 dark:border-brand-navy-800/80 flex items-center justify-between bg-brand-navy-50/50 dark:bg-brand-navy-800/40">
             <div className="flex items-center gap-2">
@@ -103,7 +103,7 @@ export function NotificationInbox() {
           </div>
 
           {/* List */}
-          <div className="max-h-80 overflow-y-auto divide-y divide-brand-navy-100 dark:divide-brand-navy-800/60">
+          <div data-lenis-prevent className="max-h-80 overflow-y-auto divide-y divide-brand-navy-100 dark:divide-brand-navy-800/60 overscroll-contain">
             {loading && items.length === 0 ? (
               <div className="p-8 text-center text-brand-navy-400 text-xs flex items-center justify-center gap-2">
                 <span className="w-3.5 h-3.5 border-2 border-brand-danger-600 border-t-transparent rounded-full animate-spin" />

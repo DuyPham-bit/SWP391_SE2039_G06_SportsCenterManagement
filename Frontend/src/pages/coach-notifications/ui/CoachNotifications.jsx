@@ -508,7 +508,7 @@ export function CoachNotifications() {
             /* --- CHẾ ĐỘ 1: MASTER-DETAIL SPLIT VIEW (DỄ QUAN SÁT NHẤT) --- */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-3.5 items-start">
               {/* CỘT TRÁI (5/12): Danh sách các bản tin thu nhỏ */}
-              <div className="lg:col-span-5 space-y-2 max-h-[620px] overflow-y-auto pr-1">
+              <div data-lenis-prevent className="lg:col-span-5 space-y-2 max-h-[620px] overflow-y-auto pr-1 overscroll-contain">
                 <div className="text-[11px] font-bold text-brand-navy-400 px-1 uppercase tracking-wider flex items-center justify-between">
                   <span>Danh sách ({filteredNotifications.length})</span>
                   <span>Bấm để xem chi tiết bên phải</span>
@@ -829,7 +829,7 @@ export function CoachNotifications() {
                     {selectedClassIds.length === classes.length ? 'Bỏ chọn tất cả' : 'Chọn tất cả các lớp'}
                   </button>
                 </div>
-                <div className="max-h-36 overflow-y-auto space-y-1.5 pr-1">
+                <div data-lenis-prevent className="max-h-36 overflow-y-auto space-y-1.5 pr-1 overscroll-contain">
                   {classes.map(cls => {
                     const cid = String(cls.id);
                     const isChecked = selectedClassIds.includes(cid);

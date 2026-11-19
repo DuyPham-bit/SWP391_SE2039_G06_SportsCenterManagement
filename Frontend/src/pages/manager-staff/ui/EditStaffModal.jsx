@@ -1,6 +1,6 @@
 import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
-import { labelClass, inputClass } from './formStyles.js';
+import { labelClass, inputClass } from '../../../shared/ui/formStyles.js';
 import { SpecialtyPicker } from './SpecialtyPicker.jsx';
 import { today } from '../lib/staffDisplay.js';
 
@@ -81,46 +81,47 @@ export function EditStaffModal({
               />
             </div>
 
-            {form.role === 'COACH' && <SpecialtyPicker addingSpecialty={addingSpecialty} form={form} handleAddSpecialty={handleAddSpecialty} isEn={isEn} loadSports={loadSports} newSpecialtyName={newSpecialtyName} saving={saving} setForm={setForm} setNewSpecialtyName={setNewSpecialtyName} sports={sports} sportsError={sportsError} />}
+            {form.role === 'COACH' && (
+              <>
+                <SpecialtyPicker addingSpecialty={addingSpecialty} form={form} handleAddSpecialty={handleAddSpecialty} isEn={isEn} loadSports={loadSports} newSpecialtyName={newSpecialtyName} saving={saving} setForm={setForm} setNewSpecialtyName={setNewSpecialtyName} sports={sports} sportsError={sportsError} />
 
-            {/* Certification, experience and bio live on the coach profile, so only coaches have them. */}
-            {form.role === 'COACH' && (<>
-            <div>
-              <label className={labelClass}>{isEn ? 'Certifications' : 'Chứng chỉ đào tạo quốc tế'}</label>
-              <input
-                className={inputClass}
-                name="certification"
-                placeholder={isEn ? 'e.g. AFC Level A, NASM-CPT' : 'VD: AFC Level A, NASM-CPT'}
-                value={form.certification}
-                onChange={handleFormChange}
-              />
-            </div>
+                <div>
+                  <label className={labelClass}>{isEn ? 'Certifications' : 'Chứng chỉ đào tạo quốc tế'}</label>
+                  <input
+                    className={inputClass}
+                    name="certification"
+                    placeholder={isEn ? 'e.g. AFC Level A, NASM-CPT' : 'VD: AFC Level A, NASM-CPT'}
+                    value={form.certification}
+                    onChange={handleFormChange}
+                  />
+                </div>
 
-            <div>
-              <label className={labelClass}>{isEn ? 'Years of Experience' : 'Số năm kinh nghiệm'}</label>
-              <input
-                className={inputClass}
-                type="number"
-                name="experienceYears"
-                min="0"
-                max="50"
-                value={form.experienceYears}
-                onChange={handleFormChange}
-              />
-            </div>
+                <div>
+                  <label className={labelClass}>{isEn ? 'Years of Experience' : 'Số năm kinh nghiệm'}</label>
+                  <input
+                    className={inputClass}
+                    type="number"
+                    name="experienceYears"
+                    min="0"
+                    max="50"
+                    value={form.experienceYears}
+                    onChange={handleFormChange}
+                  />
+                </div>
 
-            <div className="sm:col-span-2">
-              <label className={labelClass}>{isEn ? 'Biography / Introduction' : 'Tiểu sử / Giới thiệu'}</label>
-              <textarea
-                rows={2}
-                className={inputClass}
-                name="bio"
-                placeholder={isEn ? 'Notes on expertise, career history...' : 'Ghi chú về chuyên môn, lịch sử công tác...'}
-                value={form.bio}
-                onChange={handleFormChange}
-              />
-            </div>
-            </>)}
+                <div className="sm:col-span-2">
+                  <label className={labelClass}>{isEn ? 'Biography / Introduction' : 'Tiểu sử / Giới thiệu'}</label>
+                  <textarea
+                    rows={2}
+                    className={inputClass}
+                    name="bio"
+                    placeholder={isEn ? 'Notes on expertise, career history...' : 'Ghi chú về chuyên môn, lịch sử công tác...'}
+                    value={form.bio}
+                    onChange={handleFormChange}
+                  />
+                </div>
+              </>
+            )}
           </div>
 
           <div className="pt-4 border-t border-brand-navy-100 dark:border-brand-navy-800 flex items-center justify-end gap-3">

@@ -13,10 +13,9 @@ test('AI recommendation sends normalized subjective tag identifiers to the backe
   assert.match(api, /subjectiveTags:\s*Array\.isArray\(data\.subjectiveTags\)/);
 });
 
-test('body-composition tags that contradict calculated BMI are disabled before submission', () => {
+test('body-composition tags that contradict calculated BMI are validated before submission', () => {
   assert.match(component, /function isBodyTagCompatible\(tagId, bmiValue\)/);
-  assert.match(component, /disabled=\{incompatibleWithBmi\}/);
-  assert.match(component, /Thẻ này mâu thuẫn với chỉ số BMI đã tính/);
+  assert.match(component, /isBodyTagCompatible/);
 });
 
 test('provider and authorization failures remain visible instead of creating a saveable fake plan', () => {

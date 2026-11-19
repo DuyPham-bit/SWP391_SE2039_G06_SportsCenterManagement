@@ -39,9 +39,9 @@ public sealed class LandingContentService(IUnitOfWork unitOfWork, IConfiguration
     {
         var language = HomeContentDocument.NormalizeLanguage(lang);
         var (setting, doc) = await LoadAsync(SettingKey, ct);
+        if (doc is not null) await ApplyVisibilityAsync(doc, ct);
         var stats = await GetStatsAsync(await ResolveCenterIdAsync(centerId, null, ct), doc, ct);
         if (doc is null) return new(null, stats, language, null);
-        await ApplyVisibilityAsync(doc, ct);
         var localized = HomeContentDocument.Localize(doc, language);
         return new(ToPublicElement(localized), stats, language, setting!.UpdatedAt);
     }
@@ -49,9 +49,9 @@ public sealed class LandingContentService(IUnitOfWork unitOfWork, IConfiguration
     public async Task<AdminHomeContentResponse> GetAdminAsync(long? centerId, long userId, CancellationToken ct)
     {
         var (setting, doc) = await LoadAsync(SettingKey, ct);
+        if (doc is not null) await ApplyVisibilityAsync(doc, ct);
         var stats = await GetStatsAsync(await ResolveCenterIdAsync(centerId, userId, ct), doc, ct);
         if (doc is null) return new(null, stats, null, []);
-        await ApplyVisibilityAsync(doc, ct);
         return new(ToPublicElement(doc), stats, setting!.UpdatedAt, MissingTranslations(doc));
     }
 
@@ -408,33 +408,60 @@ public sealed class LandingContentService(IUnitOfWork unitOfWork, IConfiguration
     }
 
     /// <summary>
-    /// Counts from the Sports/Rooms tables. When the home page has cards linked to DB records, only those
-    /// records count (one card = one sport / one facility cluster), so "x/y" matches the cards shown;
-    /// courts that are not on the home page (extra rooms of a cluster) are not counted. Without linked
-    /// cards (catalog fallback) every active record counts.
+    /// Counts match the cards configured in coursesSection.sportsList / facilitiesSection.facilitiesList
+    /// (every card counts as one sport / one facility cluster, with DB-linked cards reflecting IsVisibleOnLanding).
+    /// Without cards (catalog fallback), active DB records for the center count instead.
     /// </summary>
     public async Task<HomeContentStats> GetStatsAsync(long? centerId, JsonObject? doc, CancellationToken ct)
     {
-        var sports = db.Sports.AsNoTracking().Where(s => s.Status == "Active");
-        var rooms = db.Rooms.AsNoTracking().Where(r => r.Status == "Active");
+        var sports = await CountSectionAsync(doc?["coursesSection"], "sportsList", centerId, isSport: true, ct);
+        var facilities = await CountSectionAsync(doc?["facilitiesSection"], "facilitiesList", centerId, isSport: false, ct);
+
+        // Real catalog size for the login page, independent of the home-page cards: every active sport /
+        // training room of the center in the database.
+        var activeSports = db.Sports.AsNoTracking().Where(s => s.Status == "Active");
+        var activeRooms = db.Rooms.AsNoTracking().Where(r => r.Status == "Active");
         if (centerId is { } id)
         {
-            sports = sports.Where(s => s.CenterId == id || s.CenterId == null);
-            rooms = rooms.Where(r => r.CenterId == id);
+            activeSports = activeSports.Where(s => s.CenterId == id || s.CenterId == null);
+            activeRooms = activeRooms.Where(r => r.CenterId == id);
         }
-        // Real catalog size, independent of which cards the home page shows (login page stats).
-        var activeSports = await sports.CountAsync(ct);
-        var activeRooms = await rooms.CountAsync(ct);
+        return new(sports, facilities, await activeSports.CountAsync(ct), await activeRooms.CountAsync(ct));
+    }
 
-        var sportIds = DbCards(doc?["coursesSection"]?["sportsList"]).Keys.ToList();
-        var roomIds = DbCards(doc?["facilitiesSection"]?["facilitiesList"]).Keys.ToList();
-        if (sportIds.Count > 0) sports = sports.Where(s => sportIds.Contains(s.Id));
-        if (roomIds.Count > 0) rooms = rooms.Where(r => roomIds.Contains(r.Id));
+    private async Task<VisibilityCount> CountSectionAsync(JsonNode? sectionNode, string listKey, long? centerId, bool isSport, CancellationToken ct)
+    {
+        var section = sectionNode as JsonObject;
+        var cards = (section?[listKey] as JsonArray)?.OfType<JsonObject>().ToList() ?? [];
+        var isCustom = string.Equals(Str(section?["catalogSource"]), "custom", StringComparison.Ordinal);
 
-        return new(
-            new(await sports.CountAsync(s => s.IsVisibleOnLanding, ct), await sports.CountAsync(ct)),
-            new(await rooms.CountAsync(r => r.IsVisibleOnLanding, ct), await rooms.CountAsync(ct)),
-            activeSports, activeRooms);
+        if (cards.Count > 0 || isCustom)
+        {
+            var ids = cards.Select(CardId).OfType<string>().Where(IsDbId).Select(long.Parse).Distinct().ToList();
+            Dictionary<long, bool> dbVisible = [];
+            if (ids.Count > 0)
+            {
+                dbVisible = isSport
+                    ? await db.Sports.AsNoTracking().Where(s => ids.Contains(s.Id)).ToDictionaryAsync(s => s.Id, s => s.IsVisibleOnLanding, ct)
+                    : await db.Rooms.AsNoTracking().Where(r => ids.Contains(r.Id)).ToDictionaryAsync(r => r.Id, r => r.IsVisibleOnLanding, ct);
+            }
+            var visibleCount = cards.Count(card =>
+                long.TryParse(CardId(card), out var dbId) && dbVisible.TryGetValue(dbId, out var visible)
+                    ? visible
+                    : IsCardVisible(card));
+            return new(visibleCount, cards.Count);
+        }
+
+        if (isSport)
+        {
+            var query = db.Sports.AsNoTracking().Where(s => s.Status == "Active");
+            if (centerId is { } id) query = query.Where(s => s.CenterId == id || s.CenterId == null);
+            return new(await query.CountAsync(s => s.IsVisibleOnLanding, ct), await query.CountAsync(ct));
+        }
+
+        var roomQuery = db.Rooms.AsNoTracking().Where(r => r.Status == "Active");
+        if (centerId is { } roomCenterId) roomQuery = roomQuery.Where(r => r.CenterId == roomCenterId);
+        return new(await roomQuery.CountAsync(r => r.IsVisibleOnLanding, ct), await roomQuery.CountAsync(ct));
     }
 
     /// <summary>Requested center, else the staff member's center, else the only active center; null counts every center.</summary>

@@ -1,5 +1,5 @@
 import React from 'react';
-import { labelClass, inputClass } from './formStyles.js';
+import { labelClass, inputClass } from '../../../shared/ui/formStyles.js';
 
 // Sport specialty selector shared by the create and edit staff dialogs.
 export function SpecialtyPicker({ addingSpecialty, form, handleAddSpecialty, isEn, loadSports, newSpecialtyName, saving, setForm, setNewSpecialtyName, sports, sportsError }) {

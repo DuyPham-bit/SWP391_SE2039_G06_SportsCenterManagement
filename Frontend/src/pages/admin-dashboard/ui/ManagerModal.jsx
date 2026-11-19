@@ -18,10 +18,13 @@ export function ManagerModal({ centers, onClose, onSaved }) {
     centerId: activeCenters[0]?.id || ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  // Delay editability on credential fields until user interaction so browsers do not autofill the signed-in admin's login on F5.
+  const [fieldsUnlocked, setFieldsUnlocked] = useState(false);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState('');
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+  const unlockFields = () => setFieldsUnlocked(true);
 
   useEffect(() => {
     const handleKey = (e) => {
@@ -93,7 +96,7 @@ export function ManagerModal({ centers, onClose, onSaved }) {
         </div>
 
         {/* Form Body */}
-        <form onSubmit={save} className="relative z-10 space-y-4">
+        <form onSubmit={save} autoComplete="off" className="relative z-10 space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-brand-navy-700 dark:text-brand-navy-300 mb-1.5">
@@ -103,6 +106,8 @@ export function ManagerModal({ centers, onClose, onSaved }) {
                 <span className="material-symbols-outlined absolute left-3.5 top-3 text-[18px] text-brand-navy-400">badge</span>
                 <input
                   type="text"
+                  name="manager-full-name"
+                  autoComplete="off"
                   required
                   autoFocus
                   placeholder="VD: Trần Đình Trọng"
@@ -121,6 +126,11 @@ export function ManagerModal({ centers, onClose, onSaved }) {
                 <span className="material-symbols-outlined absolute left-3.5 top-3 text-[18px] text-brand-navy-400">person</span>
                 <input
                   type="text"
+                  name="manager-username"
+                  autoComplete="off"
+                  readOnly={!fieldsUnlocked}
+                  onFocus={unlockFields}
+                  onPointerDown={unlockFields}
                   required
                   placeholder="VD: manager_q1"
                   value={form.username}
@@ -140,6 +150,11 @@ export function ManagerModal({ centers, onClose, onSaved }) {
                 <span className="material-symbols-outlined absolute left-3.5 top-3 text-[18px] text-brand-navy-400">mail</span>
                 <input
                   type="email"
+                  name="manager-work-email"
+                  autoComplete="off"
+                  readOnly={!fieldsUnlocked}
+                  onFocus={unlockFields}
+                  onPointerDown={unlockFields}
                   required
                   placeholder="VD: manager.q1@sportscenter.vn"
                   value={form.email}
@@ -157,6 +172,8 @@ export function ManagerModal({ centers, onClose, onSaved }) {
                 <span className="material-symbols-outlined absolute left-3.5 top-3 text-[18px] text-brand-navy-400">call</span>
                 <input
                   type="tel"
+                  name="manager-phone"
+                  autoComplete="off"
                   placeholder="VD: 0912345678"
                   value={form.phone}
                   onChange={(e) => set('phone', e.target.value)}
@@ -174,6 +191,11 @@ export function ManagerModal({ centers, onClose, onSaved }) {
               <span className="material-symbols-outlined absolute left-3.5 top-3 text-[18px] text-brand-navy-400">key</span>
               <input
                 type={showPassword ? 'text' : 'password'}
+                name="manager-initial-password"
+                autoComplete="new-password"
+                readOnly={!fieldsUnlocked}
+                onFocus={unlockFields}
+                onPointerDown={unlockFields}
                 required
                 minLength={6}
                 placeholder="Tối thiểu 6 ký tự"

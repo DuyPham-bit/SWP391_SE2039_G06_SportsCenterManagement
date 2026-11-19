@@ -35,7 +35,7 @@ services:
       - ASPNETCORE_URLS=http://+:8080
       - TZ=Asia/Ho_Chi_Minh
       - Reports__TimeZoneId=Asia/Ho_Chi_Minh
-      - ConnectionStrings__SportsCenter=Host=postgres;Port=5432;Database=SportsCenterDB;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env}
+      - ConnectionStrings__SportsCenter=${EXTERNAL_DATABASE_URL:-Host=postgres;Port=5432;Database=SportsCenterDB;Username=postgres;Password=${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in docker/.env}}
       - Jwt__Key=${JWT_KEY:?Set JWT_KEY in docker/.env}
       - Jwt__Issuer=SportsCenterManagement.API
       - Jwt__Audience=SportsCenterManagement.FE
@@ -94,7 +94,7 @@ services:
       dockerfile: docker/frontend/Dockerfile
       args:
         - VITE_API_BASE_URL=${VITE_API_BASE_URL:-/api}
-        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:-380948467454-g1hvo5luhoqfhogoe2m4f95b1m20vk1s.apps.googleusercontent.com}}
+        - VITE_GOOGLE_CLIENT_ID=${VITE_GOOGLE_CLIENT_ID:-${GOOGLE_CLIENT_ID:-480541058737-5mk2slkekdomo0nrfr8q2nnfm8qfigfe.apps.googleusercontent.com}}
     container_name: scms-frontend
     restart: unless-stopped
     depends_on:

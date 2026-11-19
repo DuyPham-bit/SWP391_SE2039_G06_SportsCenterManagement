@@ -750,65 +750,7 @@ export function AIRecommendation() {
                   </p>
                 </div>
 
-                {/* TÙY CHỌN NÂNG CAO (BỘ LỌC TAG THỦ CÔNG & KIỂM TRA MẪU THUẪN) */}
-                <details className="text-xs pt-1 group">
-                  <summary className="cursor-pointer text-brand-navy-500 dark:text-brand-navy-400 hover:text-brand-navy-700 dark:hover:text-brand-navy-200 font-semibold py-1 flex items-center gap-1 select-none">
-                    <span className="material-symbols-outlined text-[15px] text-brand-navy-400 group-open:rotate-90 transition-transform">chevron_right</span>
-                    <span>{isEn ? 'Optional: Manual Tag Filter & Verification' : 'Tùy chọn kiểm thử: Bộ lọc Tag thủ công & Đánh giá'}</span>
-                  </summary>
-                  <div className="mt-2 space-y-3 p-3 bg-brand-navy-50/70 dark:bg-brand-navy-800/40 rounded-xl border border-brand-navy-200/80 dark:border-brand-navy-700">
-                    <div className="space-y-1">
-                      <label className="block text-[11px] font-bold text-brand-navy-600 dark:text-brand-navy-300">
-                        {isEn ? 'Current Fitness Level' : 'Trình độ đánh giá'}
-                      </label>
-                      <input
-                        aria-label={isEn ? 'Fitness Level' : 'Trình độ AI'}
-                        maxLength={50}
-                        className={coachInput}
-                        placeholder={isEn ? 'Enter evaluated fitness level' : 'Nhập trình độ đã đánh giá'}
-                        value={level}
-                        onChange={e => setLevel(e.target.value)}
-                      />
-                    </div>
 
-                    <div className="space-y-2">
-                      <span className="text-[11px] font-bold text-brand-navy-600 dark:text-brand-navy-300 block">
-                        {isEn ? 'Physical Condition Tags:' : 'Gắn tag thể trạng thủ công:'}
-                      </span>
-                      {CONDITION_GROUPS.map((grp, gIdx) => (
-                        <div key={gIdx} className="space-y-1">
-                          <div className="text-[10px] font-semibold text-brand-navy-500">{grp.groupTitle}</div>
-                          <div className="flex flex-wrap gap-1">
-                            {grp.items.map(item => {
-                              const active = selectedTagIds.includes(item.id);
-                              const incompatibleWithBmi = !isBodyTagCompatible(item.id, Number(context?.bmi));
-                              return (
-                                <button
-                                  key={item.id}
-                                  type="button"
-                                  disabled={incompatibleWithBmi}
-                                  title={incompatibleWithBmi
-                                    ? (isEn ? 'This tag conflicts with the calculated BMI.' : 'Thẻ này mâu thuẫn với chỉ số BMI đã tính.')
-                                    : undefined}
-                                  onClick={() => handleToggleTag(item)}
-                                  className={`px-2 py-0.5 rounded text-[11px] transition-all cursor-pointer border ${
-                                    incompatibleWithBmi
-                                      ? 'bg-brand-navy-100 text-brand-navy-400 border-brand-navy-200 opacity-50 cursor-not-allowed dark:bg-brand-navy-800'
-                                      : active
-                                      ? 'bg-brand-navy-900 text-brand-sand-300 border-brand-navy-900 font-bold shadow-2xs'
-                                      : 'bg-white dark:bg-brand-navy-800 text-brand-navy-600 dark:text-brand-navy-300 border-brand-navy-200 dark:border-brand-navy-700'
-                                  }`}
-                                >
-                                  {item.label}
-                                </button>
-                              );
-                            })}
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                </details>
               </div>
 
               <button

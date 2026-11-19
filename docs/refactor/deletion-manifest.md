@@ -35,3 +35,26 @@ Searches for `*.bak`, `*.old`, `*.orig`, `*.tmp`, `*-old.*`, `*2.jsx`, and `back
 | `Backend/postman/` (2 collections, 3 environments, a generator `.ps1`) | Its own README only | Generated from the route list; may be stale | **Consolidate into `tools/postman`** and regenerate from the baseline |
 | `Backend/database/` (`SportsCenterDB.sql` + README) | `Backend/README.md`, `docker/postgres/README.md`, `docs/findings.md`, `Frontend/docs/real-database.md` | A SQL dump next to EF migrations, so it can drift | **Keep** (docs depend on it). Confirm that it is still current |
 | `Backend/tools/SqlScriptRunner` | No real references (only `.claude/skills` matches, which are unrelated) | Unknown | **Delete**, or keep if you still run it by hand |
+
+## Phase 5 results (dead code)
+
+| Path | Category | Evidence | Action |
+|---|---|---|---|
+| `BLL/DTOs/Auth` `LoginResponse`; `BLL/DTOs/Classes` `ClassSessionResponse`, `CenterScheduleResponse`, `ClassOptionResponse`, `SportOptionResponse`; `BLL/DTOs/Payments` `MomoOption` | G3 BE unused types | Each name appears only at its own declaration across API/BLL/DAL/Tests/verification, Frontend and docs | **Deleted** (`a3ab7b1c`, `13e8ef7c`, `5451ed64`) |
+| 155 `using` / `global using` lines in 96 files | G3 IDE0005 | `dotnet format style --diagnostics IDE0005` (Migrations excluded); the diff contains removals only | **Deleted** (`6b3f43b8`) |
+| NuGet: DAL `BCrypt.Net-Next`, DAL `Microsoft.Extensions.Configuration.Abstractions`, BLL `System.IdentityModel.Tokens.Jwt` | G3 unused packages | 0 references in the project; build-checked one at a time | **Removed** (`c5c10216`) |
+| `Frontend/src/shared/ui/gradients.js` | G3 FE unused file | knip (entries: main, campus entry, tests) + no string/dynamic reference | **Deleted** (`e5edcd2b`) |
+| `pages/manager-members/ui/formStyles.js` = `pages/manager-staff/ui/formStyles.js` | G2 same hash | Byte-identical | **Merged** into `shared/ui/formStyles.js` (`e5edcd2b`) |
+| 77 "unused exports" reported by knip | G3 | Many are read by tests through `vm` or source reads, which knip cannot see | Kept. NEEDS CONFIRMATION per export |
+| Debug `console.log` / `debugger` / `Console.WriteLine`; `TODO`/`FIXME` | G3 | Searches return 0 | Nothing to remove |
+| Unused i18n keys; commented-out code blocks | G3 | Keys are often built dynamically (`` t(`landing.nav.${x}`) ``) | Not removed. NEEDS CONFIRMATION |
+| `System.Security.Cryptography.Pkcs` (DAL) | Package | No direct use; looks like a transitive security pin | Kept. NEEDS CONFIRMATION |
+
+## Phase 6 results (Group 4, approved 2026-11-18)
+
+| Path | Action |
+|---|---|
+| `Backend/verification/` | **Kept**, and builds with the solution since Phase 1 |
+| `Backend/database/` | **Kept** (referenced by READMEs and docker docs) |
+| `Backend/postman/` | **Moved** to `Backend/tools/postman/`. The generator script resolves paths relative to itself |
+| `Backend/tools/SqlScriptRunner/` | **Deleted** from disk. It was never tracked and held only `bin/` and `obj/` build output, no source |
