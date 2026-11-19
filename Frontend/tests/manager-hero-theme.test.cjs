@@ -8,7 +8,6 @@ const SRC = path.join(__dirname, '../src');
 const MANAGER_HERO_FILES = [
   'pages/manager-dashboard/ui/ManagerDashboard.jsx',
   'pages/counter-invoices/ui/CounterInvoices.jsx',
-  'pages/payroll/ui/PayrollHeader.jsx',
   'pages/manager-members/ui/MembersHeroBanner.jsx',
   'pages/manager-staff/ui/StaffHeroBanner.jsx',
   'pages/manager-packages/ui/PackageManagement.jsx',

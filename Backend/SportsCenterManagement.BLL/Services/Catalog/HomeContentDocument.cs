@@ -276,6 +276,36 @@ public static partial class HomeContentDocument
     [GeneratedRegex(@"^#(/[A-Za-z0-9\-_/]*|[A-Za-z0-9\-_]+)(\?[A-Za-z0-9\-_=&%.]*)?$")]
     private static partial Regex InternalLinkPattern();
 
+    /// <summary>
+    /// Restores required texts that are blank in every language so that saving an unrelated field (e.g. an
+    /// image) is not rejected by a heading the editor never filled: the value is taken from each fallback
+    /// document in order (previously published content, then the seed). English-only text is left alone
+    /// so <see cref="Validate"/> still asks for the Vietnamese version.
+    /// </summary>
+    public static void FillMissingRequiredText(JsonObject doc, params JsonNode?[] fallbacks)
+    {
+        foreach (var path in RequiredText)
+        {
+            var dot = path.IndexOf('.');
+            if (doc[path[..dot]] is not JsonObject section) continue;
+            var key = path[(dot + 1)..];
+            var node = section[key];
+            if (HasVietnamese(node) || (IsLocalized(node) && Text(node, "en").Trim().Length > 0)) continue;
+
+            foreach (var fallback in fallbacks)
+            {
+                if (fallback is not JsonObject source || source[path[..dot]] is not JsonObject fallbackSection) continue;
+                var candidate = fallbackSection[key];
+                if (!HasVietnamese(candidate)) continue;
+                section[key] = candidate!.DeepClone();
+                break;
+            }
+        }
+    }
+
+    private static bool HasVietnamese(JsonNode? node) =>
+        IsNonEmptyString(node) || (IsLocalized(node) && Text(node, "vi").Trim().Length > 0);
+
     private static bool IsNonEmptyString(JsonNode? node) =>
         node is JsonValue v && v.TryGetValue<string>(out var s) && s.Trim().Length > 0;
 

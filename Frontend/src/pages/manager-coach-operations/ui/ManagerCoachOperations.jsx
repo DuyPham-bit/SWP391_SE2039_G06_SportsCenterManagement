@@ -1,6 +1,6 @@
-import { vietnamDate, formatVietnamDateTime } from '../../../shared/lib/dateTime.js';
+import { formatVietnamDateTime } from '../../../shared/lib/dateTime.js';
 import React, { useEffect, useState } from 'react';
-import { managerCoachApi, currency } from '../../../entities/coach/index.js';
+import { managerCoachApi } from '../../../entities/coach/index.js';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
 import { useToast } from '../../../shared/ui/toast/index.js';
 import { useLanguage } from '../../../shared/i18n/index.js';
@@ -16,9 +16,6 @@ import {
 const inputStyle = 'w-full rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 px-3 py-2 text-sm text-brand-navy-800 dark:text-brand-navy-100 focus:outline-none focus:ring-2 focus:ring-brand-sage-500/40 focus:border-brand-sage-500 transition-all';
 const primaryBtnStyle = 'rounded-xl bg-brand-sage-700 hover:bg-brand-sage-900 px-4 py-2 text-sm font-bold text-white transition-all shadow-sm hover-lift disabled:opacity-50';
 const secondaryBtnStyle = 'rounded-xl border border-brand-navy-200 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 px-4 py-2 text-sm font-bold text-brand-navy-700 dark:text-brand-navy-200 hover:bg-brand-navy-100 dark:hover:bg-brand-navy-700 transition-all disabled:opacity-50';
-const currentMonthStart = () => {
-  return `${vietnamDate().slice(0, 7)}-01`;
-};
 
 function Card({ title, badge, children }) {
   return (
@@ -114,24 +111,6 @@ export function ManagerCoachOperations() {
   const pendingLeaveCount = (data?.leaves || []).filter(x => x.status === 'Pending').length;
   const visibleLeaves = (data?.leaves || []).filter(x => leaveStatusFilter === 'All' || x.status === leaveStatusFilter);
 
-  const compensation = (e) => {
-    e.preventDefault();
-    const formElement = e.currentTarget;
-    const f = new FormData(formElement);
-    return act(
-      () =>
-        managerCoachApi.saveCompensation({
-          coachId: Number(f.get('coachId')),
-          monthlyBaseSalary: Number(f.get('monthlyBaseSalary')),
-          commissionPerSession: Number(f.get('commissionPerSession')),
-          targetSessions: Number(f.get('targetSessions')),
-          effectiveFrom: f.get('effectiveFrom'),
-          effectiveTo: f.get('effectiveTo') || null
-        }),
-      isEn ? 'Compensation policy updated successfully.' : 'Đã cập nhật chính sách thù lao và ca dạy.'
-    ).then((ok) => ok && formElement.reset());
-  };
-
   const resource = (e) => {
     e.preventDefault();
     const f = new FormData(e.currentTarget);
@@ -152,7 +131,6 @@ export function ManagerCoachOperations() {
 
   const tabs = [
     { id: 'leaves', label: isEn ? `Leave Approvals (${pendingLeaveCount})` : `Duyệt đơn nghỉ (${pendingLeaveCount})`, icon: 'event_busy' },
-    { id: 'compensation', label: isEn ? 'Salary & KPI Report' : 'Lương & Báo cáo KPI', icon: 'payments' },
     // Restored tabs: their data (resources, equipment issues, delivery log) comes from the DB again.
     { id: 'resources', label: isEn ? 'Equipment & Zones' : 'Tài nguyên & Thiết bị', icon: 'inventory_2' },
     { id: 'issues', label: isEn ? `Maintenance Issues (${openIssueCount})` : `Sự cố bảo trì (${openIssueCount})`, icon: 'build' },
@@ -181,8 +159,8 @@ export function ManagerCoachOperations() {
             </h1>
             <p className="mt-1 text-xs sm:text-sm text-white/95 max-w-2xl leading-relaxed font-medium drop-shadow-xs">
               {isEn
-                ? 'Approve coach leave requests and manage transparent salary and KPI policies.'
-                : 'Duyệt đơn nghỉ của HLV và quản lý chính sách lương, KPI minh bạch.'}
+                ? 'Approve coach leave requests and manage center resources and equipment.'
+                : 'Duyệt đơn nghỉ của HLV và quản lý tài nguyên, thiết bị của trung tâm.'}
             </p>
           </div>
 
@@ -399,98 +377,6 @@ export function ManagerCoachOperations() {
             </div>
           )}
         </Card>
-      )}
-
-      {/* Tab: COMPENSATION */}
-      {tab === 'compensation' && (
-        <div className="grid gap-6 xl:grid-cols-2">
-          <Card title={isEn ? 'Configure Compensation & Target Sessions' : 'Thiết lập Thù lao & Chỉ tiêu ca dạy'}>
-            <form onSubmit={compensation} className="grid gap-4 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <Label title={isEn ? 'Coach' : 'Huấn luyện viên'}>
-                  <select name="coachId" required className={inputStyle}>
-                    {coachOptions.filter(x => x.isPayrollActive).map((x) => (
-                      <option key={x.id} value={x.id}>
-                        {x.fullName} ({x.email || `#${x.id}`})
-                      </option>
-                    ))}
-                  </select>
-                </Label>
-              </div>
-
-              <Label title={isEn ? 'Effective From' : 'Hiệu lực từ'}>
-                <input name="effectiveFrom" type="date" required defaultValue={currentMonthStart()} className={inputStyle} />
-              </Label>
-
-              <Label title={isEn ? 'Effective To (Optional)' : 'Hiệu lực đến (Tùy chọn)'}>
-                <input name="effectiveTo" type="date" className={inputStyle} />
-              </Label>
-
-              <Label title={isEn ? 'Base Salary (VND)' : 'Lương cơ bản (VND)'}>
-                <input name="monthlyBaseSalary" type="number" min="0" defaultValue="8000000" required className={inputStyle} />
-              </Label>
-
-              <Label title={isEn ? 'Session Pay (VND)' : 'Thù lao mỗi ca dạy (VND)'}>
-                <input name="commissionPerSession" type="number" min="0" defaultValue="100000" required className={inputStyle} />
-              </Label>
-
-              <div className="sm:col-span-2">
-                <Label title={isEn ? 'Target Sessions / Month' : 'Chỉ tiêu ca dạy / tháng (KPI)'}>
-                  <input name="targetSessions" type="number" min="0" defaultValue="60" required className={inputStyle} />
-                </Label>
-              </div>
-
-              <div className="sm:col-span-2 pt-2">
-                <button disabled={working} className={`${primaryBtnStyle} w-full`}>
-                  <span className="inline-flex items-center justify-center gap-1.5">
-                    <span className="material-symbols-outlined text-[16px]">save</span>
-                    {isEn ? 'Save Compensation Policy' : 'Lưu chính sách thù lao'}
-                  </span>
-                </button>
-              </div>
-            </form>
-          </Card>
-
-          <Card title={isEn ? 'Active Policies Overview' : 'Danh sách chính sách đang áp dụng'}>
-            <a href="#/manager/payroll" className="mb-4 inline-flex w-full items-center justify-center gap-2 rounded-xl border border-brand-sage-700/30 bg-brand-sage-50 px-4 py-2.5 text-xs font-bold text-brand-sage-700 hover:bg-brand-sage-100 dark:bg-brand-sage-950/30 dark:text-brand-sage-500">
-              <span className="material-symbols-outlined text-[17px]">summarize</span>
-              {isEn ? 'Open salary & payroll report' : 'Mở Lương & Báo cáo tiền lương'}
-            </a>
-            <div className="space-y-3 max-h-[420px] overflow-y-auto pr-1">
-              {!data?.policies?.length ? (
-                <p className="text-xs text-brand-navy-500 dark:text-brand-navy-400 py-6 text-center">
-                  {isEn ? 'No compensation policies configured yet.' : 'Chưa có chính sách nào được cấu hình.'}
-                </p>
-              ) : (
-                data.policies.map((p) => {
-                  const coach = coachOptions.find((c) => c.id === p.coachId);
-                  return (
-                    <div
-                      key={p.id}
-                      className="p-3.5 rounded-2xl bg-brand-navy-50 dark:bg-brand-navy-800/60 border border-brand-navy-100 dark:border-brand-navy-800 flex items-center justify-between gap-3 text-xs"
-                    >
-                      <div>
-                        <div className="font-bold text-brand-navy-800 dark:text-brand-navy-200">
-                          {coach?.fullName || `HLV #${p.coachId}`}
-                        </div>
-                        <div className="text-[11px] text-brand-navy-400 mt-0.5">
-                          {isEn ? 'Base' : 'Lương cứng'}: <strong>{currency(p.monthlyBaseSalary)}</strong> • {isEn ? 'Per Session' : 'Ca dạy'}:{' '}
-                          <strong className="text-brand-teal-700 dark:text-brand-teal-400">{currency(p.commissionPerSession)}</strong>
-                        </div>
-                        <div className="text-[10px] text-brand-navy-400 mt-0.5">
-                          {isEn ? 'Target' : 'Chỉ tiêu'}: {p.targetSessions} ca/tháng • Từ: {dt(p.effectiveFrom)}
-                        </div>
-                      </div>
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-sage-100 text-brand-sage-800 dark:bg-brand-sage-950/60 dark:text-brand-sage-300 shrink-0">
-                        {p.status}
-                      </span>
-                    </div>
-                  );
-                })
-              )}
-            </div>
-          </Card>
-        </div>
       )}
 
       {/* Tab: RESOURCES */}

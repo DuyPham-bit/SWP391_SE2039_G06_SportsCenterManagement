@@ -163,12 +163,6 @@ public sealed class CoachProfessionalController(CoachProfessionalService service
     public async Task<IActionResult> ReviewLeave(long id, ReviewLeaveRequest request, CancellationToken ct)
     { await service.ReviewLeave(CurrentUserId, id, request, ct); return NoContent(); }
 
-    [HttpPost("manager/coach-operations/compensation")]
-    [Authorize(Roles = "MANAGER")]
-    [CenterCapability("manage_coach_operations")]
-    public async Task<IActionResult> Compensation(SaveCompensationPolicyRequest request, CancellationToken ct) =>
-        Ok(new { Id = await service.SaveCompensation(CurrentUserId, request, ct) });
-
     [HttpPost("manager/coach-operations/resources")]
     [Authorize(Roles = "MANAGER")]
     [CenterCapability("manage_coach_operations")]

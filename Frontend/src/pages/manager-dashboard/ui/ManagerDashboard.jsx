@@ -232,18 +232,6 @@ export function ManagerDashboard() {
         hoverCard: 'hover:border-brand-teal-400 dark:hover:border-brand-teal-600 hover:shadow-brand-teal-500/10 hover:bg-brand-teal-50/20',
         badge: 'bg-brand-teal-100/70 text-brand-teal-800 dark:bg-brand-teal-950/70 dark:text-brand-teal-300'
       }
-    },
-    {
-      path: 'payroll',
-      icon: 'account_balance_wallet',
-      title: isEn ? 'Coach & Staff Payroll' : 'Bảng lương nhân sự & HLV',
-      description: isEn ? 'Review monthly teaching hours, commission and payroll sheets.' : 'Tổng hợp công giảng dạy, hoa hồng và bảng lương định kỳ.',
-      tag: isEn ? 'Payroll' : 'Bảng lương',
-      theme: {
-        iconBg: 'bg-brand-sand-50 dark:bg-brand-sand-950/50 text-brand-sand-800 dark:text-brand-sand-400 border border-brand-sand-200/80 dark:border-brand-sand-800/60',
-        hoverCard: 'hover:border-brand-sand-400 dark:hover:border-brand-sand-600 hover:shadow-brand-sand-500/10 hover:bg-brand-sand-50/20',
-        badge: 'bg-brand-sand-100/70 text-brand-sand-800 dark:bg-brand-sand-950/70 dark:text-brand-sand-300'
-      }
     }
   ];
 

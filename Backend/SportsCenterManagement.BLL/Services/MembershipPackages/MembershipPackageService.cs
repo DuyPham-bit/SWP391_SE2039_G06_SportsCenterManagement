@@ -410,7 +410,6 @@ public sealed class MembershipPackageService(IUnitOfWork unitOfWork) : IMembersh
         var derivedTier = request.AllowedSports >= 10 ? 4 : request.AllowedSports >= 6 ? 3 : request.AllowedSports >= 3 ? 2 : 1;
         package.TierLevel = request.TierLevel ?? (isNew ? derivedTier : package.TierLevel);
         package.IsAllAccess = request.IsAllAccess ?? (isNew ? request.AllowedSports >= 10 : package.IsAllAccess);
-        package.CancelBeforeHours = request.CancelBeforeHours ?? package.CancelBeforeHours;
         package.MaxFreezeDays = request.MaxFreezeDays ?? package.MaxFreezeDays;
     }
 

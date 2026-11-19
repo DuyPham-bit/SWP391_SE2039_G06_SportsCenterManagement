@@ -476,7 +476,7 @@ public sealed class CoachProfessionalService(IUnitOfWork unitOfWork, TimeProvide
 
         var sessionIds = coachSessions.Select(s => s.Id).ToList();
 
-        // Same definition as payroll (CoachSessionRules): ended and not cancelled.
+        // Same definition as the coach KPI (CoachSessionRules): ended and not cancelled.
         var completedClassSessions = coachSessions.Count(x => CoachSessionRules.IsCompleted(x, today, currentTime));
 
         var completedPt = await db.CoachWorkEvents.CountAsync(x => x.CoachId == coach.Id && x.EventType == "PersonalTraining" &&
@@ -1087,11 +1087,7 @@ public sealed class CoachProfessionalService(IUnitOfWork unitOfWork, TimeProvide
         var manager = await Manager(userId, ct);
         var coaches = await db.CoachProfiles.AsNoTracking().Where(x => x.CenterId == manager.CenterId)
             .OrderBy(x => x.FullName).Select(x => new { x.Id, x.UserId, x.FullName, x.CoachCode, x.Status,
-                x.Specialization, x.Certification,
-                IsPayrollActive = db.Users.Any(user => user.Id == x.UserId && user.Status == "Active") &&
-                    (x.Status == "Active" || db.StaffProfiles.Any(staff => staff.UserId == x.UserId &&
-                        staff.CenterId == manager.CenterId && staff.Status == "Active")) }).ToArrayAsync(ct);
-        var coachIds = coaches.Select(x => x.Id).ToArray();
+                x.Specialization, x.Certification }).ToArrayAsync(ct);
         var leaveRows = await (from leave in db.CoachLeaves.AsNoTracking() join coach in db.CoachProfiles on leave.CoachId equals coach.Id
             where coach.CenterId == manager.CenterId orderby leave.RequestedAt descending
             select new { leave.Id, leave.CoachId, CoachName = coach.FullName, leave.StartAt, leave.EndAt, leave.LeaveType,
@@ -1126,8 +1122,6 @@ public sealed class CoachProfessionalService(IUnitOfWork unitOfWork, TimeProvide
                 ReplacementCandidates = replacementCandidates
             });
         }
-        var policies = await db.CoachCompensationPolicies.AsNoTracking().Where(x => coachIds.Contains(x.CoachId) && x.Status == "Active")
-            .OrderByDescending(x => x.EffectiveFrom).ToArrayAsync(ct);
         // Restored: the Resources / Equipment issues / Delivery tabs read these from the DB again.
         var resources = await db.FacilityResources.AsNoTracking().Where(x => x.CenterId == manager.CenterId).OrderBy(x => x.Name).ToArrayAsync(ct);
         var resourceIds = resources.Select(x => x.Id).ToArray();
@@ -1148,7 +1142,7 @@ public sealed class CoachProfessionalService(IUnitOfWork unitOfWork, TimeProvide
                     (db.MemberProfiles.Any(m => m.UserId == u.Id && m.CenterId == manager.CenterId) ||
                      db.CoachProfiles.Any(c => c.UserId == u.Id && c.CenterId == manager.CenterId))))
             .GroupBy(x => new { x.Channel, x.Status }).Select(g => new { g.Key.Channel, g.Key.Status, Count = g.Count() }).ToArrayAsync(ct);
-        return new { Coaches = coaches, Leaves = leaves, Policies = policies,
+        return new { Coaches = coaches, Leaves = leaves,
             Resources = resources, ResourceBookings = bookings, EquipmentIssues = issues, DeliverySummary = deliveries };
     }
 
@@ -1260,32 +1254,6 @@ public sealed class CoachProfessionalService(IUnitOfWork unitOfWork, TimeProvide
         await transaction.CommitAsync(ct);
     }
 
-    public async Task<long> SaveCompensation(long userId, SaveCompensationPolicyRequest request, CancellationToken ct)
-    {
-        var manager = await Manager(userId, ct);
-        if (!await db.CoachProfiles.AnyAsync(x => x.Id == request.CoachId && x.CenterId == manager.CenterId &&
-                db.Users.Any(user => user.Id == x.UserId && user.Status == "Active") &&
-                (x.Status == "Active" || db.StaffProfiles.Any(staff => staff.UserId == x.UserId &&
-                    staff.CenterId == manager.CenterId && staff.Status == "Active")), ct))
-            throw BusinessException.NotFound("HLV không thuộc danh sách nhân sự đang hoạt động của trung tâm.");
-        if (request.EffectiveTo.HasValue && request.EffectiveTo < request.EffectiveFrom) throw Invalid("Ngày hiệu lực chính sách không hợp lệ.");
-        var previous = await db.CoachCompensationPolicies.Where(x => x.CoachId == request.CoachId && x.Status == "Active").ToListAsync(ct);
-        // Same rule as PayrollService: an older policy keeps paying the months before the new one starts.
-        foreach (var item in previous)
-        {
-            var (effectiveTo, status) = PayrollService.Supersede(item.EffectiveFrom, item.EffectiveTo, request.EffectiveFrom);
-            item.EffectiveTo = effectiveTo; item.Status = status;
-        }
-        var row = new CoachCompensationPolicy { CoachId = request.CoachId, MonthlyBaseSalary = request.MonthlyBaseSalary,
-            CommissionPerSession = request.CommissionPerSession,
-            TargetSessions = request.TargetSessions,
-            EffectiveFrom = request.EffectiveFrom,
-            EffectiveTo = request.EffectiveTo, UpdatedBy = userId, UpdatedAt = UtcNow };
-        db.CoachCompensationPolicies.Add(row); await db.SaveChangesAsync(ct);
-        AddAudit(userId, manager.CenterId, "payroll.coach_policy.saved", nameof(CoachCompensationPolicy), row.Id);
-        await db.SaveChangesAsync(ct);
-        return row.Id;
-    }
 
 
     public async Task<long> CreateResource(long userId, CreateResourceRequest request, CancellationToken ct)

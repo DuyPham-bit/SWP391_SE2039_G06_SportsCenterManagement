@@ -58,7 +58,6 @@ export const TRANSLATIONS = {
     'nav.coach_messages': 'Tin nhắn học viên',
     'nav.coach_ai_recommendation': 'Gợi ý giáo án AI',
     'nav.coach_performance': 'Thống kê hiệu suất',
-    'nav.coach_salary_kpi': 'Thống kê hiệu suất',
     'nav.coach_resources': 'Tài nguyên & Thiết bị',
     'nav.coach_professional': 'Hồ sơ chuyên môn HLV',
     'nav.coach_support': 'Yêu cầu hỗ trợ giảng viên',
@@ -88,7 +87,7 @@ export const TRANSLATIONS = {
     'nav.admin_roles_permissions': 'Vai trò & phân quyền',
     'nav.admin_audit_logs': 'Nhật ký audit hệ thống',
     'nav.admin_home_content': 'Nội dung trang chủ',
-    'nav.admin_payroll': 'Lương toàn hệ thống',
+    'nav.admin_reports': 'Báo cáo hệ thống',
 
     // Sidebar Categories
     'cat.learning': 'HỌC TẬP',
@@ -201,7 +200,6 @@ export const TRANSLATIONS = {
     'nav.coach_messages': 'Student Messages',
     'nav.coach_ai_recommendation': 'AI Lesson Plan Advice',
     'nav.coach_performance': 'Teaching Performance',
-    'nav.coach_salary_kpi': 'Teaching Performance',
     'nav.coach_resources': 'Resources & Equipment',
     'nav.coach_professional': 'Professional Profile',
     'nav.coach_support': 'Coach Support Requests',
@@ -231,7 +229,7 @@ export const TRANSLATIONS = {
     'nav.admin_roles_permissions': 'Roles & Permissions',
     'nav.admin_audit_logs': 'System Audit Logs',
     'nav.admin_home_content': 'Homepage Content',
-    'nav.admin_payroll': 'System Payroll',
+    'nav.admin_reports': 'System Reports',
 
     // Sidebar Categories
     'cat.learning': 'TRAINING & SCHEDULE',

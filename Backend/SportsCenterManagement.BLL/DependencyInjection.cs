@@ -46,7 +46,6 @@ public static class DependencyInjection
         services.AddScoped<SupportRequestService>();
         services.AddScoped<TrainingService>();
         services.AddScoped<CoachProfessionalService>();
-        services.AddScoped<PayrollService>();
         services.AddScoped<MemberAiContextService>();
         services.AddSingleton<IBusinessClock, BusinessClock>();
         services.AddScoped<ClassReminderService>();

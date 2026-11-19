@@ -125,20 +125,10 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
         if (start <= now) // UH04
             throw new InvalidOperationException("Không thể hủy buổi đã qua.") { Data = { ["StatusCode"] = 400 } };
 
-        // Package rule: block cancellation inside the package window; 0 keeps the legacy late-cancel penalty.
-        var cancelBeforeHours = booking.SubscriptionId is { } subscriptionId
-            ? await (from subscription in Db.MemberSubscriptions
-                     join package in Db.MembershipPackages on subscription.PackageId equals package.Id
-                     where subscription.Id == subscriptionId
-                     select package.CancelBeforeHours).FirstOrDefaultAsync(cancellationToken)
-            : 0;
-        if (cancelBeforeHours > 0 && start - now < TimeSpan.FromHours(cancelBeforeHours))
-            throw new InvalidOperationException($"Gói của bạn yêu cầu hủy lịch trước ít nhất {cancelBeforeHours} giờ.")
-            {
-                Data = { ["StatusCode"] = 409, ["Code"] = "BOOK-CANCEL-WINDOW" }
-            };
-
-        var late = start - now < CancelCutoff; // BR-BOOK-02
+        // One rule for every package (BR-BOOK-02): a member may always cancel a future session.
+        // More than 2 hours ahead the credit is returned; inside 2 hours the cancel is "late" and the
+        // credit is consumed, but the seat is still released to the waitlist. No package blocks cancelling.
+        var late = start - now < CancelCutoff;
         booking.Status = late ? FlowStatuses.BookingCancelledLate : FlowStatuses.BookingCancelled;
         AuditLogWriter.Add(unitOfWork, actorUserId ?? currentUserId, cls.CenterId, "CANCEL_SESSION_BOOKING", "SessionBooking", bookingId, newValues: new { IsLateCancellation = late });
 

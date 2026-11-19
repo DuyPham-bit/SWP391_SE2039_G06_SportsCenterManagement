@@ -108,7 +108,6 @@ export function AppLayout({ children, currentPath }) {
       '#/coach/messages': 'nav.coach_messages',
       '#/coach/ai-recommendation': 'nav.coach_ai_recommendation',
       '#/coach/performance': 'nav.coach_performance',
-      '#/coach/salary-kpi': 'nav.coach_performance',
       '#/coach/kpi': 'nav.coach_performance',
       '#/coach/resources': 'nav.coach_resources',
       '#/coach/equipment': 'nav.coach_resources',
@@ -145,7 +144,7 @@ export function AppLayout({ children, currentPath }) {
       '#/admin/roles-permissions': 'nav.admin_roles_permissions',
       '#/admin/audit-logs': 'nav.admin_audit_logs',
       '#/admin/home-content': 'nav.admin_home_content',
-      '#/admin/payroll': 'nav.admin_payroll'
+      '#/admin/reports': 'nav.admin_reports'
     };
 
     const key = routeKeyMap[clean];

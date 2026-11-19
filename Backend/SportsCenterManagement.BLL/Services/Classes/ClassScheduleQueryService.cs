@@ -225,7 +225,7 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
         // Stacked renewals of the same package extend the visible end date.
         var endDate = entitlements.Where(e => e.PackageId == current.PackageId).Max(e => e.EndDate);
         return new MemberEntitlementResponse(true, current.SubscriptionId, current.PackageId, current.PackageName,
-            current.TierLevel, current.IsAllAccess, current.AllowedSports, current.CancelBeforeHours,
+            current.TierLevel, current.IsAllAccess, current.AllowedSports, 0 /* no package blocks cancelling; late (<2h) cancels only consume the credit */,
             current.MaxFreezeDays, endDate, current.LockedToSportIds, activeSportCount);
     }
 

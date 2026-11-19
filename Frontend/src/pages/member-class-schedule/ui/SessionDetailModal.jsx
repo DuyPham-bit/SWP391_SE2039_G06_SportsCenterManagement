@@ -22,7 +22,6 @@ export function SessionDetailModal({
         const queueLength = activeSession.waitlistCount || 0;
         const isFull = activeSession.enrolledCount >= activeSession.capacity;
         const needsPackage = action.action === 'packages';
-        const cancelHours = entitlements?.cancelBeforeHours || 0;
         const remainingSlots = Math.max(0, activeSession.capacity - activeSession.enrolledCount);
         const theme = getSportTheme(activeSession.sportName, isEn);
 
@@ -172,13 +171,9 @@ export function SessionDetailModal({
                 <span>{isEn ? 'Booking & Cancellation Policy:' : 'Chính sách đặt & hủy chỗ:'}</span>
               </div>
               <p>
-                {cancelHours > 0
-                  ? (isEn
-                    ? `• Your package requires cancelling at least ${cancelHours} hours before class; later cancellations are blocked.`
-                    : `• Gói của bạn yêu cầu hủy lịch trước ít nhất ${cancelHours} giờ; sau mốc này không thể hủy.`)
-                  : (isEn
-                    ? '• Cancel at least 2 hours prior to class start to have your session credit refunded.'
-                    : '• Hủy ca học trước tối thiểu 2 giờ sẽ được hoàn lại lượt tập vào gói hội viên.')}
+                {isEn
+                  ? '• Cancel at least 2 hours before class to get your session credit back; a later cancellation is allowed but consumes the credit.'
+                  : '• Hủy trước giờ học tối thiểu 2 tiếng sẽ được hoàn lại lượt tập; hủy sát giờ (dưới 2 tiếng) vẫn được nhưng bị trừ lượt.'}
               </p>
               <p>
                 {isEn

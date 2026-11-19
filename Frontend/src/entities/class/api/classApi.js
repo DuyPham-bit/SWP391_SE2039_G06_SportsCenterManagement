@@ -2,8 +2,10 @@ import { asArray, centerId } from '../../../shared/api/index.js';
 import { getAuthUser } from '../../../shared/api/index.js';
 import { apiRequest } from '../../../shared/api/index.js';
 
-export async function loadSessionsBetween(from, to) {
+/** Admin passes requestedCenterId to scope the list; staff are scoped by their token on the server. */
+export async function loadSessionsBetween(from, to, requestedCenterId = null) {
   const sessions = [];
+  const centerParam = requestedCenterId ? { centerId: String(requestedCenterId) } : {};
   let rangeStart = from;
   while (rangeStart <= to) {
     const startDate = new Date(`${rangeStart}T00:00:00Z`);
@@ -11,11 +13,11 @@ export async function loadSessionsBetween(from, to) {
     const rangeEnd = startDate.toISOString().slice(0, 10) < to
       ? startDate.toISOString().slice(0, 10)
       : to;
-    const firstPage = await apiRequest(`class-sessions?${new URLSearchParams({ from: rangeStart, to: rangeEnd, page: '1', pageSize: '100' })}`);
+    const firstPage = await apiRequest(`class-sessions?${new URLSearchParams({ from: rangeStart, to: rangeEnd, page: '1', pageSize: '100', ...centerParam })}`);
     sessions.push(...asArray(firstPage));
     const totalPages = Math.ceil((firstPage.totalCount || 0) / (firstPage.pageSize || 100));
     for (let page = 2; page <= totalPages; page += 1) {
-      const result = await apiRequest(`class-sessions?${new URLSearchParams({ from: rangeStart, to: rangeEnd, page: String(page), pageSize: '100' })}`);
+      const result = await apiRequest(`class-sessions?${new URLSearchParams({ from: rangeStart, to: rangeEnd, page: String(page), pageSize: '100', ...centerParam })}`);
       sessions.push(...asArray(result));
     }
     const nextDate = new Date(`${rangeEnd}T00:00:00Z`);

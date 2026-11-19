@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { refundApi } from '../../../entities/payment/index.js';
 import { safeHref } from '../../../shared/lib/safeUrl.js';
-import { uploadMediaFileToCloud } from '../../../shared/api/index.js';
 import { useLanguage } from '../../../shared/i18n/index.js';
 import { useToast } from '../../../shared/ui/toast/index.js';
 import { Modal } from '../../../shared/ui/Modal.jsx';
@@ -30,12 +29,14 @@ export function RefundManagement({ embedded = false }) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
     setBusy(true);
+    let transferProofUrl = null;
+    let reviewCompleted = false;
     try {
-      let transferProofUrl = null;
       if (decision === 'Approved') {
         const file = form.get('proof');
         if (!(file instanceof File) || !file.size) throw new Error(isEn ? 'Transfer proof image is required.' : 'Bắt buộc chọn ảnh xác nhận chuyển khoản.');
-        transferProofUrl = (await uploadMediaFileToCloud(file)).url;
+        // Must go through /refund-bills: the review endpoint only accepts its private `refund-bills/...` key.
+        transferProofUrl = await refundApi.uploadTransferProof(file);
       }
       await refundApi.review(selected.id, {
         status: decision,
@@ -43,10 +44,17 @@ export function RefundManagement({ embedded = false }) {
         transferReference: form.get('transferReference')?.trim() || null,
         reviewNote: form.get('reviewNote')?.trim() || null
       });
+      reviewCompleted = true;
       showSuccess(decision === 'Approved' ? (isEn ? 'Refund approved and recorded.' : 'Đã duyệt và ghi nhận hoàn tiền.') : (isEn ? 'Refund request rejected.' : 'Đã từ chối yêu cầu hoàn tiền.'));
       setSelected(null);
       await load();
-    } catch (error) { showError(error); } finally { setBusy(false); }
+    } catch (error) {
+      // Review failed after the upload: remove the orphaned proof (best effort, keep the original error).
+      if (transferProofUrl && !reviewCompleted) {
+        try { await refundApi.deleteTransferProof(transferProofUrl); } catch { /* ignore */ }
+      }
+      showError(error);
+    } finally { setBusy(false); }
   };
 
   return <div className="space-y-6 animate-fade-slide-up">

@@ -20,16 +20,19 @@ import { SportsDetailTable } from './SportsDetailTable.jsx';
 import { RoomsDetailTable } from './RoomsDetailTable.jsx';
 import { CoachesDetailTable } from './CoachesDetailTable.jsx';
 import { RevenueLogTable } from './RevenueLogTable.jsx';
+import { AdminCenterComparison, AdminCenterDrilldownBar, AdminScopeSelector } from './AdminReportScope.jsx';
 
-export function ReportsAnalytics() {
+/** adminMode: Admin reads every center (system total or one center), read-only. */
+export function ReportsAnalytics({ adminMode = false }) {
   const {
+    centers, centersError, centersLoading, reportScopeLabel, selectedCenterId, setSelectedCenterId,
     activeTableTab, classSearch, classSortBy, classSportFilter, error, events, exportExcel,
     exportPdf, exportReport, exportingCsv, exportingPdf, exportingXlsx, isEn, loading, membership,
     metrics, period, periodLabel, processedClasses, processedRooms, range, revenue, roomSortBy,
     setActiveTableTab, setClassSearch, setClassSortBy, setClassSportFilter, setPeriod, setRange,
     setRevision, setRoomSortBy, setSelection, showError, topClass, topRevenueSport, topRoom,
     topSport
-  } = useReportsAnalytics();
+  } = useReportsAnalytics({ adminMode });
 
   return (
     <div className="space-y-6 pb-12 animate-fade-slide-up print:space-y-4 print:pb-0">
@@ -48,6 +51,17 @@ export function ReportsAnalytics() {
         loading={loading}
         metrics={metrics}
       />
+
+      {adminMode && (
+        <AdminScopeSelector
+          centers={centers}
+          centersError={centersError}
+          centersLoading={centersLoading}
+          isEn={isEn}
+          selectedCenterId={selectedCenterId}
+          setSelectedCenterId={setSelectedCenterId}
+        />
+      )}
 
       {/* 2. DATE RANGE & PERIOD SELECTOR */}
       <ReportPeriodSelector
@@ -74,6 +88,13 @@ export function ReportsAnalytics() {
         />
       ) : metrics && (
         <>
+          {adminMode && selectedCenterId === 'ALL' && (
+            <AdminCenterComparison centers={centers} isEn={isEn} metrics={metrics} setSelectedCenterId={setSelectedCenterId} />
+          )}
+          {adminMode && selectedCenterId !== 'ALL' && (
+            <AdminCenterDrilldownBar isEn={isEn} reportScopeLabel={reportScopeLabel} setSelectedCenterId={setSelectedCenterId} />
+          )}
+
           {/* 3. TIER 1: EXECUTIVE TOP KPI CARDS (Vision UI 4-Card Style with Olympic Palette) */}
           <ExecutiveKpiCards isEn={isEn} metrics={metrics} />
 

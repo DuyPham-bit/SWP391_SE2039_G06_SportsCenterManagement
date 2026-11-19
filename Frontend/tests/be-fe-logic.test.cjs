@@ -121,6 +121,47 @@ test('report utilization excludes cancelled sessions', async () => {
   assert.equal(overview.coachesWithoutSessions, 1);
 });
 
+test('admin system report queries every center with its own centerId and sums them', async () => {
+  const centerOf = route => Number(new URLSearchParams(route.split('?')[1] || '').get('centerId') || route.match(/centers\/(\d+)\//)?.[1]);
+  const api = client(route => {
+    const id = centerOf(route);
+    if (route.startsWith('reports/revenue?')) return { net: id === 15 ? 1000 : 3000, gross: id === 15 ? 1200 : 3000, refunds: id === 15 ? 200 : 0, periods: [] };
+    if (route.startsWith('reports/operations?')) return {
+      totalStaff: 3, activeStaff: 2, totalRooms: 2, activeRooms: 1, sessionsCount: 1,
+      occupancyRate: id === 15 ? 20 : 50, classes: [], sports: [], rooms: [], coaches: []
+    };
+    if (route.startsWith('class-sessions?')) return { items: [
+      { sessionId: id, classId: id, className: `C${id}`, sessionStatus: 'Scheduled', capacity: 10, bookedCount: id === 15 ? 2 : 5 }
+    ], totalCount: 1, pageSize: 100 };
+    return reportFixture(route);
+  }, '2026-10-17T18:00:00Z', { role: 'ADMIN', centerId: null });
+
+  const system = await api.reportApi.getSystemOverview('DAY', [{ id: 15, name: 'A' }, { id: 16, name: 'B' }]);
+  assert.equal(system.centerCount, 2);
+  assert.equal(system.netRevenue, 4000);
+  assert.equal(system.refundedRevenue, 200);
+  assert.equal(system.totalMembers, 10);
+  assert.equal(system.totalCapacity, 20);
+  // Seat-weighted over all centers: (10 * 20% + 10 * 50%) / 20 seats = 35%.
+  assert.equal(system.occupancyRate, 35);
+  // Sorted by net revenue (center 16 earns more). Compared as JSON: arrays come from the vm realm.
+  assert.equal(JSON.stringify(system.centerSummaries.map(item => item.centerId)), '[16,15]');
+  for (const id of [15, 16]) {
+    assert.ok(api.calls.some(route => route.startsWith('reports/revenue?') && route.includes(`centerId=${id}`)));
+    assert.ok(api.calls.some(route => route.startsWith('class-sessions?') && route.includes(`centerId=${id}`)));
+    assert.ok(api.calls.includes(`centers/${id}/rooms`));
+  }
+});
+
+test('admin single-center report uses the requested center, not the token center', async () => {
+  const api = client(reportFixture, '2026-10-17T18:00:00Z', { role: 'ADMIN', centerId: null });
+  await api.reportApi.getOverview('DAY', { centerId: 42 });
+  assert.ok(api.calls.every(route => !route.includes('centerId=null') && !route.includes('centers/null')));
+  assert.ok(api.calls.includes('centers/42/classes/all'));
+  // Without an explicit center an Admin (no center in the token) gets a clear error, never centerId=null.
+  await assert.rejects(api.reportApi.getOverview('DAY'), /Chưa xác định trung tâm/);
+});
+
 test('report API failure is not converted into an empty successful report', async () => {
   const api = client(route => {
     if (route.includes('/rooms')) throw new Error('Rooms unavailable');

@@ -10,7 +10,9 @@ namespace SportsCenterManagement.BLL.Services.Catalog;
 
 public sealed record LandingContentResponse(JsonElement? Content, DateTime? UpdatedAt);
 public sealed record VisibilityCount(int Visible, int Total);
-public sealed record HomeContentStats(VisibilityCount Sports, VisibilityCount Facilities);
+/// <param name="ActiveSports">Every active sport of the center in the database (not limited to home-page cards).</param>
+/// <param name="ActiveRooms">Every active training room/court of the center in the database.</param>
+public sealed record HomeContentStats(VisibilityCount Sports, VisibilityCount Facilities, int ActiveSports = 0, int ActiveRooms = 0);
 public sealed record PublicHomeContentResponse(JsonElement? Content, HomeContentStats Stats, string Lang, DateTime? UpdatedAt);
 /// <param name="MissingTranslations">Paths whose Vietnamese text has no English yet (a warning, not an error).</param>
 public sealed record AdminHomeContentResponse(JsonElement? Content, HomeContentStats Stats, DateTime? UpdatedAt, IReadOnlyList<string> MissingTranslations);
@@ -282,6 +284,8 @@ public sealed class LandingContentService(IUnitOfWork unitOfWork, IConfiguration
         TransformR2Urls(doc, toPublicUrl: false);
         HomeContentDocument.Normalize(doc, BuildTranslations(stored));
         doc["schemaVersion"] = HomeContentDocument.SchemaVersion;
+        // An image-only edit must not fail on a required heading left empty earlier: restore it first.
+        HomeContentDocument.FillMissingRequiredText(doc, stored, Seed.Value.Content);
         HomeContentDocument.Validate(doc);
 
         var previous = new { setting?.UpdatedAt, setting?.UpdatedBy };
@@ -418,13 +422,19 @@ public sealed class LandingContentService(IUnitOfWork unitOfWork, IConfiguration
             sports = sports.Where(s => s.CenterId == id || s.CenterId == null);
             rooms = rooms.Where(r => r.CenterId == id);
         }
+        // Real catalog size, independent of which cards the home page shows (login page stats).
+        var activeSports = await sports.CountAsync(ct);
+        var activeRooms = await rooms.CountAsync(ct);
+
         var sportIds = DbCards(doc?["coursesSection"]?["sportsList"]).Keys.ToList();
         var roomIds = DbCards(doc?["facilitiesSection"]?["facilitiesList"]).Keys.ToList();
         if (sportIds.Count > 0) sports = sports.Where(s => sportIds.Contains(s.Id));
         if (roomIds.Count > 0) rooms = rooms.Where(r => roomIds.Contains(r.Id));
+
         return new(
             new(await sports.CountAsync(s => s.IsVisibleOnLanding, ct), await sports.CountAsync(ct)),
-            new(await rooms.CountAsync(r => r.IsVisibleOnLanding, ct), await rooms.CountAsync(ct)));
+            new(await rooms.CountAsync(r => r.IsVisibleOnLanding, ct), await rooms.CountAsync(ct)),
+            activeSports, activeRooms);
     }
 
     /// <summary>Requested center, else the staff member's center, else the only active center; null counts every center.</summary>

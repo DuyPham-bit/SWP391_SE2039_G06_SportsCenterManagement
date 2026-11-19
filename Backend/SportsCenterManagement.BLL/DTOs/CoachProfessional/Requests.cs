@@ -115,16 +115,6 @@ public sealed record ResolveEquipmentIssueRequest(
     [Required, StringLength(30)] string Status,
     [StringLength(1000)] string? ResolutionNote);
 
-// Coach pay = base salary + commission per taught session (PayrollService). Sales-based commission was
-// never paid, so its fields (and the sales-credit endpoint) were removed; the DB columns stay at 0.
-public sealed record SaveCompensationPolicyRequest(
-    long CoachId,
-    [Range(0, 1000000000)] decimal MonthlyBaseSalary,
-    [Range(0, 100000000)] decimal CommissionPerSession,
-    [Range(0, 10000)] int TargetSessions,
-    DateOnly EffectiveFrom,
-    DateOnly? EffectiveTo);
-
 public sealed record SaveCoachReviewRequest(
     long CoachId,
     long? WorkEventId,

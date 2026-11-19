@@ -2,10 +2,12 @@ import { useState, useMemo, useEffect } from 'react';
 import { useLanguage } from '../../../shared/i18n/index.js';
 import { useToast } from '../../../shared/ui/toast/index.js';
 import { reportApi } from '../../../entities/report/index.js';
+import { adminApi } from '../../../entities/center/index.js';
 import { downloadReportFile } from '../../../shared/lib/reportFiles.js';
 import { createReportCsv } from '../../../shared/lib/reportExport.js';
 
-export function useReportsAnalytics() {
+/** adminMode: Admin reads the whole system or drills into one center (restored from scms-v1.5). */
+export function useReportsAnalytics({ adminMode = false } = {}) {
   const { language } = useLanguage();
   const isEn = language === 'en';
   const { showError } = useToast();
@@ -21,6 +23,10 @@ export function useReportsAnalytics() {
   const [exportingPdf, setExportingPdf] = useState(false);
   const [exportingXlsx, setExportingXlsx] = useState(false);
   const [exportingCsv, setExportingCsv] = useState(false);
+  const [centers, setCenters] = useState([]);
+  const [selectedCenterId, setSelectedCenterId] = useState('ALL');
+  const [centersLoading, setCentersLoading] = useState(adminMode);
+  const [centersError, setCentersError] = useState(null);
 
   // Table filters
   const [activeTableTab, setActiveTableTab] = useState('classes'); // classes | sports | rooms | coaches | logs
@@ -36,22 +42,53 @@ export function useReportsAnalytics() {
   }, [period, isEn]);
 
   useEffect(() => {
+    if (!adminMode) return undefined;
+    let active = true;
+    // Re-run on revision too, so "Retry" also retries a failed center list.
+    setCentersLoading(true);
+    setCentersError(null);
+    adminApi.getCenters()
+      .then(data => { if (active) setCenters(Array.isArray(data) ? data : (data?.items || [])); })
+      .catch(e => { if (active) setCentersError(e); })
+      .finally(() => { if (active) setCentersLoading(false); });
+    return () => { active = false; };
+  }, [adminMode, revision]);
+
+  useEffect(() => {
+    if (adminMode && centersLoading) return undefined;
+    if (adminMode && centersError) {
+      setLoading(false);
+      setError(centersError);
+      return undefined;
+    }
     let active = true;
     setLoading(true);
     setError(null);
     setMetrics(null);
 
-    reportApi.getOverview(selection)
+    const request = adminMode
+      ? (selectedCenterId === 'ALL'
+          ? reportApi.getSystemOverview(selection, centers)
+          : reportApi.getOverview(selection, { centerId: Number(selectedCenterId) }))
+      : reportApi.getOverview(selection);
+    request
       .then(data => { if (active) setMetrics(data); })
       .catch(e => { if (active) setError(e); })
       .finally(() => { if (active) setLoading(false); });
 
     return () => { active = false; };
-  }, [selection, revision]);
+  }, [adminMode, centers, centersError, centersLoading, selectedCenterId, selection, revision]);
+
+  const selectedCenter = centers.find(center => String(center.id) === String(selectedCenterId));
+  const reportScopeLabel = adminMode
+    ? (selectedCenterId === 'ALL'
+        ? (isEn ? `All centers (${centers.length})` : `Toàn hệ thống (${centers.length} cơ sở)`)
+        : selectedCenter?.name || (isEn ? 'Selected center' : 'Cơ sở đã chọn'))
+    : 'SCMS Olympic Sports Arena';
 
   const exportOptions = () => ({
     language,
-    centerLabel: 'SCMS Olympic Sports Arena',
+    centerLabel: reportScopeLabel,
     generatedAt: new Date()
   });
 
@@ -127,6 +164,7 @@ export function useReportsAnalytics() {
   const topRoom = highlights.mostBookedRoom;
 
   return {
+    adminMode, centers, centersError, centersLoading, reportScopeLabel, selectedCenterId, setSelectedCenterId,
     activeTableTab, classSearch, classSortBy, classSportFilter, error, events, exportExcel,
     exportPdf, exportReport, exportingCsv, exportingPdf, exportingXlsx, isEn, loading, membership,
     metrics, period, periodLabel, processedClasses, processedRooms, range, revenue, roomSortBy,

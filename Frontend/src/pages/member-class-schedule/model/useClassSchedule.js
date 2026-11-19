@@ -253,7 +253,7 @@ export function useClassSchedule() {
     }
   };
 
-  // Hủy vé: backend chặn nếu chưa đủ CancelBeforeHours của gói.
+  // Hủy vé: luôn được hủy; dưới 2 giờ trước giờ học là hủy muộn (bị trừ lượt).
   const handleCancelBooking = async (bookingId) => {
     if (!bookingId) return;
     setCancelLoading(true);

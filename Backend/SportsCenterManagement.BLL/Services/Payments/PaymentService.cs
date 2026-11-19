@@ -22,6 +22,8 @@ public sealed class PaymentService(
     IBusinessClock? clock = null,
     ISessionBookingService? sessionBookings = null) : IPaymentService
 {
+    // VNPay links expire after 15 minutes; 20 leaves margin for a slow return before closing the attempt.
+    private const int VnPayAbandonedAttemptMinutes = 20;
     private readonly ISessionBookingService? _sessionBookings = sessionBookings;
     private readonly IUnitOfWork _unitOfWork = unitOfWork;
     private readonly IVnPayService _vnPayService = vnPayService;
@@ -32,23 +34,27 @@ public sealed class PaymentService(
     public async Task<CenterInvoicePage> ListCenterInvoicesAsync(long centerId, string? query, int page, int pageSize, CancellationToken cancellationToken = default)
     {
         var db = _unitOfWork.Context;
+        // Filter and sort on entity columns BEFORE projecting: EF Core cannot translate member access
+        // on a record built through its positional constructor, which made every search return HTTP 500.
         var rows = from invoice in db.Invoices.AsNoTracking()
             join member in db.MemberProfiles.AsNoTracking() on invoice.MemberId equals member.Id
             // Scope by the invoice's center only: a member who later moved center keeps their history here.
             where invoice.CenterId == centerId
-            select new CenterInvoiceListItem(invoice.InvoiceNumber, invoice.MemberId, member.FullName,
-                member.MemberCode, invoice.IssuedAt, invoice.Status, invoice.TotalAmount, invoice.Id);
+            select new { invoice, member };
         var term = query?.Trim();
         if (!string.IsNullOrEmpty(term))
         {
             var lowerTerm = term.ToLower();
-            rows = rows.Where(r => r.InvoiceNumber.ToLower().Contains(lowerTerm)
-                || r.MemberName.ToLower().Contains(lowerTerm)
-                || r.MemberCode.ToLower().Contains(lowerTerm));
+            rows = rows.Where(r => r.invoice.InvoiceNumber.ToLower().Contains(lowerTerm)
+                || r.member.FullName.ToLower().Contains(lowerTerm)
+                || r.member.MemberCode.ToLower().Contains(lowerTerm));
         }
         var totalCount = await rows.CountAsync(cancellationToken);
-        var items = await rows.OrderByDescending(r => r.IssuedAt).ThenByDescending(r => r.Id)
-            .Skip((page - 1) * pageSize).Take(pageSize).ToListAsync(cancellationToken);
+        var items = await rows.OrderByDescending(r => r.invoice.IssuedAt).ThenByDescending(r => r.invoice.Id)
+            .Skip((page - 1) * pageSize).Take(pageSize)
+            .Select(r => new CenterInvoiceListItem(r.invoice.InvoiceNumber, r.invoice.MemberId, r.member.FullName,
+                r.member.MemberCode, r.invoice.IssuedAt, r.invoice.Status, r.invoice.TotalAmount, r.invoice.Id))
+            .ToListAsync(cancellationToken);
         return new CenterInvoicePage(items, totalCount, page, pageSize);
     }
 
@@ -1567,6 +1573,31 @@ public sealed class PaymentService(
         {
             throw BusinessException.Conflict($"{provider} chỉ nhận số tiền VND nguyên; số dư hóa đơn đang có phần thập phân.");
         }
+        // Restored from scms-v1.5 (lost in merge 7993cfc). A VNPay link expires after 15 minutes
+        // (vnp_ExpireDate), so an abandoned attempt (popup closed without returning) can never complete.
+        // Close it so the member can retry; a late signed success callback still marks it Succeeded in
+        // CompleteGatewayPaymentAsync.
+        var vnPayLinkCutoff = DateTime.UtcNow.AddMinutes(-VnPayAbandonedAttemptMinutes);
+        var abandonedVnPayAttempts = await _unitOfWork.Context.Payments
+            .Where(candidate => candidate.InvoiceId == invoice.Id &&
+                                candidate.PaymentStatus == "Pending" &&
+                                candidate.PaymentMethod == "VNPAY" &&
+                                candidate.GatewayPaymentUrl != null &&
+                                candidate.AttemptedAt < vnPayLinkCutoff)
+            .ToListAsync(cancellationToken);
+        if (abandonedVnPayAttempts.Count > 0)
+        {
+            var expiredAt = DateTime.UtcNow;
+            foreach (var abandoned in abandonedVnPayAttempts)
+            {
+                abandoned.PaymentStatus = "Failed";
+                abandoned.Note = "Link VNPay đã hết hạn mà không nhận được kết quả; đóng để cho phép thanh toán lại.";
+                _unitOfWork.Context.AuditLogs.Add(CreateAudit(null, "Payment.GatewayLinkExpired", "Payment", abandoned.Id,
+                    new { abandoned.GatewayReference, abandoned.AttemptedAt }, expiredAt));
+            }
+            await _unitOfWork.Context.SaveChangesAsync(cancellationToken);
+        }
+
         var pendingPayments = await _unitOfWork.Context.Payments
             .Where(candidate => candidate.InvoiceId == invoice.Id && candidate.PaymentStatus == "Pending")
             .OrderByDescending(candidate => candidate.Id)

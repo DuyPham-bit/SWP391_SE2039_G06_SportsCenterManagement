@@ -33,13 +33,13 @@ const PACKAGE_PERKS = {
       'Lựa chọn 3 bộ môn kết hợp (Gym + Bơi lội + Cầu lông/Yoga)',
       'Tặng 1 buổi đo và phân tích thể trạng InBody 770 chuyên sâu',
       'Tham gia lớp rèn luyện thể lực nhóm chuyên biệt',
-      'Quyền đổi và bảo lưu lịch tập linh hoạt trước 24 giờ'
+      'Quyền đổi và bảo lưu lịch tập linh hoạt trước 2 giờ'
     ],
     en: [
       'Multi-sport combination of 3 sports (Gym + Swim + Badminton/Yoga)',
       'Complimentary InBody 770 comprehensive body composition test',
       'Access to dedicated group functional fitness classes',
-      'Flexible reschedule & freeze rights 24h in advance'
+      'Flexible reschedule & freeze rights 2h in advance'
     ]
   },
   elite: {

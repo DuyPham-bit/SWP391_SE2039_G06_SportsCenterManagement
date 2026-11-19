@@ -46,7 +46,7 @@ export const SYSTEM_CAPABILITIES = [
   {
     id: 'manage_coach_operations',
     label: 'Vận hành đội ngũ HLV',
-    desc: 'Duyệt nghỉ phép, cấu hình KPI/hoa hồng, tài nguyên và bảo trì thiết bị',
+    desc: 'Duyệt nghỉ phép, tài nguyên và bảo trì thiết bị',
     path: '#/manager/coach-operations',
     icon: 'manage_accounts',
     category: 'VẬN HÀNH & NHÂN SỰ',

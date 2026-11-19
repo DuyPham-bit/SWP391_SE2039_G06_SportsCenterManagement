@@ -3,7 +3,11 @@ import { asArray, centerId } from '../../../shared/api/index.js';
 import { apiRequest } from '../../../shared/api/index.js';
 
 export const reportApi = {
-  async getOverview(period = '30D') {
+  /**
+   * One center's report. Managers use their own center; Admin passes { centerId } explicitly
+   * (restored from scms-v1.5 so Admin can read every center's report).
+   */
+  async getOverview(period = '30D', { centerId: explicitCenterId } = {}) {
     const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10);
     const year = Number(today.slice(0, 4));
     const month = Number(today.slice(5, 7));
@@ -59,18 +63,22 @@ export const reportApi = {
         || from > to || (endDate - startDate) / 86400000 > 365 || !['day', 'month'].includes(groupBy)) {
       throw new Error('Chọn khoảng ngày hợp lệ, tối đa 366 ngày, nhóm theo ngày hoặc tháng.');
     }
-    const query = new URLSearchParams({ from, to, groupBy, centerId: String(centerId()) });
-    const checkinQuery = new URLSearchParams({ from: today, to: today, centerId: String(centerId()) });
+    const scopedCenterId = Number(explicitCenterId ?? centerId());
+    if (!Number.isSafeInteger(scopedCenterId) || scopedCenterId <= 0) {
+      throw new Error('Cơ sở dùng để lập báo cáo không hợp lệ.');
+    }
+    const query = new URLSearchParams({ from, to, groupBy, centerId: String(scopedCenterId) });
+    const checkinQuery = new URLSearchParams({ from: today, to: today, centerId: String(scopedCenterId) });
     const [revenue, sportRevenue, membership, classes, rawSessionItems, operations, checkins, rawRooms, rawClasses] = await Promise.all([
       apiRequest(`reports/revenue?${query}`),
-      apiRequest(`reports/revenue-by-sport?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
+      apiRequest(`reports/revenue-by-sport?${new URLSearchParams({ from, to, centerId: String(scopedCenterId) })}`),
       apiRequest(`reports/membership?${query}`),
       apiRequest(`reports/classes?${query}`),
-      loadSessionsBetween(from, to),
-      apiRequest(`reports/operations?${new URLSearchParams({ from, to, centerId: String(centerId()) })}`),
+      loadSessionsBetween(from, to, scopedCenterId),
+      apiRequest(`reports/operations?${new URLSearchParams({ from, to, centerId: String(scopedCenterId) })}`),
       apiRequest(`reports/checkins?${checkinQuery}`),
-      apiRequest(`centers/${centerId()}/rooms`),
-      apiRequest(`centers/${centerId()}/classes/all`)
+      apiRequest(`centers/${scopedCenterId}/rooms`),
+      apiRequest(`centers/${scopedCenterId}/classes/all`)
     ]);
     const sessionItems = rawSessionItems.filter(item => String(item.sessionStatus).toUpperCase() !== 'CANCELLED');
     const capacity = sessionItems.reduce((sum, item) => sum + (item.capacity || 0), 0);
@@ -244,6 +252,7 @@ export const reportApi = {
       totalRooms: operations.totalRooms || 0,
       activeRooms: operations.activeRooms || 0,
       totalClasses: operations.sessionsCount ?? sessionItems.length,
+      totalCapacity: capacity,
       totalBookings: activeBookingCount,
       todayCheckins: checkins.count,
       occupancyRate: Number(operations.occupancyRate ?? (capacity ? Math.round((booked / capacity) * 100) : 0)),
@@ -275,5 +284,163 @@ export const reportApi = {
         mostBookedRoom: reportRooms[0] || null
       }
     };
+  },
+
+  /** Admin: every center's report fetched with its own centerId, then summed into one system view. */
+  async getSystemOverview(period = 'MONTH', centers = []) {
+    const validCenters = centers
+      .map(center => ({ id: Number(center.id), name: center.name || `Cơ sở ${center.id}` }))
+      .filter(center => Number.isSafeInteger(center.id) && center.id > 0);
+    if (!validCenters.length) throw new Error('Chưa có cơ sở hợp lệ để lập báo cáo toàn hệ thống.');
+    const scopedReports = await Promise.all(validCenters.map(async center => ({
+      center,
+      report: await reportApi.getOverview(period, { centerId: center.id })
+    })));
+    return mergeCenterReports(scopedReports);
   }
 };
+
+function mergeCenterReports(scopedReports) {
+  const reports = scopedReports.map(item => item.report);
+  const sum = key => reports.reduce((total, report) => total + Number(report[key] || 0), 0);
+  const mergePeriods = key => {
+    const rows = new Map();
+    for (const report of reports) {
+      for (const item of report[key] || []) {
+        const id = item.periodStart || item.date || item.label || '';
+        const merged = rows.get(id) || {};
+        for (const [field, value] of Object.entries(item)) {
+          if (typeof value === 'number') merged[field] = Number(merged[field] || 0) + value;
+          else if (merged[field] == null) merged[field] = value;
+        }
+        rows.set(id, merged);
+      }
+    }
+    return [...rows.values()].sort((a, b) => String(a.periodStart || '').localeCompare(String(b.periodStart || '')));
+  };
+  const classStatusCounts = {};
+  for (const report of reports) {
+    for (const [status, count] of Object.entries(report.classStatusCounts || {})) {
+      classStatusCounts[status] = Number(classStatusCounts[status] || 0) + Number(count || 0);
+    }
+  }
+  const withCenter = key => scopedReports.flatMap(({ center, report }) => (report[key] || []).map(item => ({
+    ...item,
+    id: `${center.id}-${item.id ?? item.name}`,
+    centerId: center.id,
+    centerName: center.name
+  })));
+  const topClasses = withCenter('topClasses').sort((a, b) => Number(b.booked || 0) - Number(a.booked || 0));
+  const topRooms = withCenter('topRooms').sort((a, b) => Number(b.booked || 0) - Number(a.booked || 0));
+  const coaches = withCenter('coaches');
+
+  const sportMap = new Map();
+  for (const report of reports) {
+    for (const sport of report.topSports || []) {
+      const key = sport.name || `sport-${sport.sportId}`;
+      const current = sportMap.get(key) || { ...sport, booked: 0, capacity: 0, sessionsCount: 0, classesCount: 0 };
+      current.booked += Number(sport.booked || 0);
+      current.capacity += Number(sport.capacity || 0);
+      current.sessionsCount += Number(sport.sessionsCount || 0);
+      current.classesCount += Number(sport.classesCount || 0);
+      sportMap.set(key, current);
+    }
+  }
+  const totalSportBookings = [...sportMap.values()].reduce((total, sport) => total + sport.booked, 0);
+  const topSports = [...sportMap.values()].map(sport => {
+    const occupancyRate = sport.capacity > 0 ? Math.round((sport.booked / sport.capacity) * 100) : 0;
+    const bookingShare = totalSportBookings > 0 ? Math.round((sport.booked / totalSportBookings) * 100) : 0;
+    return { ...sport, occupancyRate, percentage: occupancyRate, bookingShare, share: bookingShare };
+  }).sort((a, b) => b.booked - a.booked);
+
+  const revenueSportMap = new Map();
+  for (const report of reports) {
+    for (const sport of report.revenueBySport || []) {
+      const key = sport.sportId ?? sport.name ?? 'unallocated';
+      const current = revenueSportMap.get(key) || {};
+      for (const [field, value] of Object.entries(sport)) {
+        // Shares (%) cannot be added across centers; they are recomputed from the merged net below.
+        if (typeof value === 'number' && field !== 'sportId' && field !== 'share') current[field] = Number(current[field] || 0) + value;
+        else if (current[field] == null && field !== 'share') current[field] = value;
+      }
+      if (!('sportId' in current)) current.sportId = sport.sportId ?? null;
+      revenueSportMap.set(key, current);
+    }
+  }
+  const revenueBySport = [...revenueSportMap.values()];
+  const mergedSportNet = revenueBySport.reduce((total, sport) => total + Number(sport.net || 0), 0);
+  for (const sport of revenueBySport) {
+    sport.share = mergedSportNet > 0 ? Math.round((Number(sport.net || 0) / mergedSportNet) * 10000) / 100 : 0;
+  }
+  revenueBySport.sort((a, b) => Number(b.net || 0) - Number(a.net || 0));
+
+  // System occupancy = booked seats / offered seats over all centers (not an average of percentages).
+  const totalCapacity = sum('totalCapacity');
+  const bookedSeats = reports.reduce((total, report) =>
+    total + Number(report.totalCapacity || 0) * Number(report.occupancyRate || 0) / 100, 0);
+  const centerSummaries = scopedReports.map(({ center, report }) => ({
+    centerId: center.id,
+    centerName: center.name,
+    netRevenue: Number(report.netRevenue || 0),
+    totalMembers: Number(report.totalMembers || 0),
+    activeMembers: Number(report.activeMembers || 0),
+    activeStaff: Number(report.activeStaff || 0),
+    totalRooms: Number(report.totalRooms || 0),
+    totalClasses: Number(report.totalClasses || 0),
+    totalBookings: Number(report.totalBookings || 0),
+    todayCheckins: Number(report.todayCheckins || 0),
+    occupancyRate: Number(report.occupancyRate || 0)
+  })).sort((a, b) => b.netRevenue - a.netRevenue || b.totalMembers - a.totalMembers);
+
+  return {
+    from: reports[0].from,
+    to: reports[0].to,
+    groupBy: reports[0].groupBy,
+    centerId: null,
+    centerCount: scopedReports.length,
+    totalMembers: sum('totalMembers'),
+    activeMembers: sum('activeMembers'),
+    membersWithPackage: sum('membersWithPackage'),
+    membersWithoutPackage: sum('membersWithoutPackage'),
+    expiredMembers: sum('expiredMembers'),
+    newMembers: sum('newMembers'),
+    membershipPeriods: mergePeriods('membershipPeriods'),
+    classStatusCounts,
+    classPeriods: mergePeriods('classPeriods'),
+    totalStaff: sum('totalStaff'),
+    activeStaff: sum('activeStaff'),
+    managerCount: sum('managerCount'),
+    coachCount: sum('coachCount'),
+    receptionistCount: sum('receptionistCount'),
+    totalRooms: sum('totalRooms'),
+    activeRooms: sum('activeRooms'),
+    totalClasses: sum('totalClasses'),
+    totalCapacity,
+    totalBookings: sum('totalBookings'),
+    todayCheckins: sum('todayCheckins'),
+    occupancyRate: totalCapacity > 0 ? Math.round((bookedSeats / totalCapacity) * 100) : 0,
+    netRevenue: sum('netRevenue'),
+    monthlyRevenue: sum('netRevenue'),
+    grossRevenue: sum('grossRevenue'),
+    refundedRevenue: sum('refundedRevenue'),
+    revenueGrowth: null,
+    revenuePeriods: mergePeriods('revenuePeriods'),
+    revenueBySport,
+    allocatedSportRevenue: sum('allocatedSportRevenue'),
+    unallocatedSportRevenue: sum('unallocatedSportRevenue'),
+    utilizationBySport: topSports.map(item => ({ name: item.name, capacity: item.capacity, booked: item.booked, percentage: item.percentage })),
+    topSports,
+    topClasses,
+    topRooms,
+    coaches,
+    centerSummaries,
+    coachesWithSessions: coaches.filter(coach => Number(coach.sessionsCount || 0) > 0).length,
+    coachesWithoutSessions: coaches.filter(coach => Number(coach.sessionsCount || 0) === 0).length,
+    highlights: {
+      mostPopularClass: topClasses[0] || null,
+      mostPopularSport: topSports[0] || null,
+      highestRevenueSport: revenueBySport.find(sport => sport.sportId != null) || null,
+      mostBookedRoom: topRooms[0] || null
+    }
+  };
+}

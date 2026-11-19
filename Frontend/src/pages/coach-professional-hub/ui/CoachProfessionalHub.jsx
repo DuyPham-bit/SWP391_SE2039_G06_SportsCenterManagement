@@ -37,7 +37,7 @@ export function CoachProfessionalHub() {
   const tabsConfig = [
     { id: 'schedule', icon: 'edit_calendar', label: isEn ? 'Schedule & Leave' : 'Lịch & Xin nghỉ' },
     { id: 'communication', icon: 'chat', label: isEn ? 'Student Messages' : 'Tin nhắn học viên' },
-    { id: 'performance', icon: 'monitoring', label: isEn ? 'Performance & Salary' : 'Hiệu suất & Lương' }
+    { id: 'performance', icon: 'monitoring', label: isEn ? 'Teaching Performance' : 'Thống kê hiệu suất' }
   ];
 
   const load = async () => {

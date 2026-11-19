@@ -4,8 +4,8 @@ using SportsCenterManagement.DAL.Entities;
 namespace SportsCenterManagement.BLL.Services.CoachProfessional;
 
 /// <summary>
-/// Single definition of "sessions a coach taught" shared by the coach KPI and payroll, so the
-/// numbers a coach sees match what they are paid for.
+/// Single definition of "sessions a coach taught" used by the coach KPI and attendance views, so
+/// every screen counts the same sessions.
 /// </summary>
 internal static class CoachSessionRules
 {

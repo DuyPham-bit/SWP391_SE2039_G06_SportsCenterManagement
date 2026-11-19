@@ -32,7 +32,6 @@ const API_MODULES = [
   'entities/support-request/api/supportApi.js',
   'entities/payment/api/refundApi.js',
   'entities/payment/api/paymentReturnApi.js',
-  'entities/payroll/api/payrollApi.js',
   'entities/ai-chat/api/aiApi.js'
 ];
 
@@ -56,7 +55,6 @@ const API_OBJECTS = {
   'entities/support-request/api/supportApi.js': ['supportApi'],
   'entities/payment/api/refundApi.js': ['refundApi'],
   'entities/payment/api/paymentReturnApi.js': ['paymentReturnApi'],
-  'entities/payroll/api/payrollApi.js': ['payrollApi'],
   'entities/ai-chat/api/aiApi.js': ['aiApi']
 };
 

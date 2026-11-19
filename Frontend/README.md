@@ -119,8 +119,7 @@ src/
 │   ├── coach-ai-recommendation/  coach-performance/  coach-professional-hub/
 │   ├── member-dashboard/  member-packages/  member-class-schedule/  member-bookings/
 │   ├── member-progress/  member-attendance/  member-notifications/  member-ai-assistant/
-│   ├── member-coach-portal/  member-refund-requests/  my-support-requests/
-│   └── payroll/
+│   └── member-coach-portal/  member-refund-requests/  my-support-requests/
 │
 ├── widgets/                      # Khối giao diện lớn dùng ở nhiều trang
 │   ├── app-shell/                # AppLayout, Header, Sidebar
@@ -145,7 +144,7 @@ src/
 │   ├── coach/                    # coachApi, coachProfessionalApi, memberCoachApi, managerCoachApi
 │   ├── membership/               # packageApi + luồng chọn gói trước/sau đăng nhập
 │   ├── class/  booking/  facility/  staff/  report/  center/
-│   ├── notification/  support-request/  payment/  payroll/  ai-chat/
+│   ├── notification/  support-request/  payment/  ai-chat/
 │   ├── catalog/                  # Danh mục sân & môn công khai
 │   └── landing-content/          # Nội dung trang chủ đã xuất bản
 │

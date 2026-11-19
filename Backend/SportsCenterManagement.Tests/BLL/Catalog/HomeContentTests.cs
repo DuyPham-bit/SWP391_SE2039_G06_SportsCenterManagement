@@ -124,10 +124,68 @@ public class HomeContentTests
 
     [Theory]
     [InlineData("title", """{"vi":"  ","en":"Title"}""", "bắt buộc có bản tiếng Việt")]
-    [InlineData("title", """{"vi":"","en":""}""", "heroBanner.title")]
     [InlineData("posterUrl", "\"javascript:alert(1)\"", "heroBanner.posterUrl")]
     [InlineData("primaryCtaLink", "\"#/<script>\"", "liên kết nội bộ")]
     public async Task InvalidHero_IsRejected_AndNothingIsSaved(string field, string value, string expected)
+    {
+        await AssertHeroRejectedAsync(field, value, expected);
+    }
+
+    [Fact]
+    public async Task LoginStats_CountEveryActiveSportAndRoom_NotOnlyHomePageCards()
+    {
+        using var db = await SeededDbAsync();
+        db.Sports.AddRange(
+            new Sport { Id = 104, Name = "Cầu lông", Status = "Active" },          // no home-page card
+            new Sport { Id = 105, Name = "Môn đã ngừng", Status = "Inactive" });   // not active: not counted
+        db.Rooms.AddRange(
+            new Room { Id = 203, CenterId = 1, Name = "Sân cầu lông", Capacity = 20, Status = "Active" },
+            new Room { Id = 204, CenterId = 2, Name = "Phòng cơ sở khác", Capacity = 20, Status = "Active" });
+        await db.SaveChangesAsync();
+        var doc = (JsonObject)JsonNode.Parse((await db.SystemSettings.AsNoTracking().SingleAsync()).SettingValue!)!;
+
+        var stats = await Service(db).GetStatsAsync(1, doc, default);
+
+        Assert.Equal(4, stats.ActiveSports);   // 101, 102, 103, 104
+        Assert.Equal(3, stats.ActiveRooms);    // 201, 202, 203 (204 belongs to another center)
+        Assert.True(stats.Sports.Total < stats.ActiveSports); // card-based landing count stays as it was
+    }
+
+    [Fact]
+    public async Task BlankRequiredHeading_KeepsPublishedValue_SoImageEditsStillSave()
+    {
+        using var db = await SeededDbAsync();
+        var service = Service(db);
+        var hero = JsonNode.Parse((await service.GetAdminAsync(null, 1, default)).Content!.Value.GetRawText())!["heroBanner"]!;
+        hero["title"] = JsonNode.Parse("""{"vi":"","en":""}""");
+        hero["posterUrl"] = "https://example.test/new-poster.jpg";
+
+        await service.SaveSectionAsync("heroBanner", JsonSerializer.SerializeToElement(hero), 1, null, default);
+
+        var published = (await service.GetPublicAsync("vi", null, default)).Content!.Value.GetProperty("heroBanner");
+        Assert.Equal("SHAPING RESILIENCE THROUGH SPORTS", published.GetProperty("title").GetString());
+        Assert.Equal("https://example.test/new-poster.jpg", published.GetProperty("posterUrl").GetString());
+    }
+
+    [Fact]
+    public async Task BlankHeadingInUntouchedSection_DoesNotBlockSavingAnotherSection()
+    {
+        using var db = await SeededDbAsync();
+        var setting = await db.SystemSettings.SingleAsync();
+        var stored = JsonNode.Parse(setting.SettingValue!)!;
+        stored["heroBanner"]!["title"] = JsonNode.Parse("""{"vi":"","en":""}""");
+        setting.SettingValue = stored.ToJsonString();
+        await db.SaveChangesAsync();
+        var service = Service(db);
+        var whyUs = JsonNode.Parse((await service.GetAdminAsync(null, 1, default)).Content!.Value.GetRawText())!["whyUs"]!;
+
+        await service.SaveSectionAsync("whyUs", JsonSerializer.SerializeToElement(whyUs), 1, null, default);
+
+        var published = (await service.GetPublicAsync("vi", null, default)).Content!.Value.GetProperty("heroBanner");
+        Assert.Equal("SHAPING RESILIENCE THROUGH SPORTS", published.GetProperty("title").GetString());
+    }
+
+    private async Task AssertHeroRejectedAsync(string field, string value, string expected)
     {
         using var db = await SeededDbAsync();
         var service = Service(db);

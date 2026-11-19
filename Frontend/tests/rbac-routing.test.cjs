@@ -10,7 +10,7 @@ test('manager routes default to MANAGER only; Admin is opted in per route', () =
   assert.match(src, /allowedRoles = \['MANAGER'\]/);
   // Only center-independent screens are opened to Admin explicitly.
   const adminOptIns = [...src.matchAll(/renderManagerRoute\((\w+), undefined, \['MANAGER', 'ADMIN'\]\)/g)].map(m => m[1]).sort();
-  assert.deepEqual(adminOptIns, ['CounterInvoices', 'HomeContentManagement', 'PayrollPage']);
+  assert.deepEqual(adminOptIns, ['CounterInvoices', 'HomeContentManagement']);
 });
 
 test('Admin uses only the refund queue on the shared invoices screen', () => {

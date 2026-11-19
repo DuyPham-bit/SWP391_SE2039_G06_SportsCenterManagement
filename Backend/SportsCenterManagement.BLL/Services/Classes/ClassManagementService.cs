@@ -310,6 +310,17 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork, ISessionBooki
 
         var (sessions, bookings) = await CancelUpcomingSessionsAsync(
             Db.ClassSessions.Where(s => s.ClassId == classId), actorUserId, cancellationToken);
+        // Upcoming sessions already produced a per-session notice; a class with none left still tells its coaches.
+        if (sessions == 0)
+        {
+            var coachUserIds = await Db.CoachProfiles
+                .Where(coach => Db.ClassCoaches.Any(link => link.ClassId == classId && link.CoachId == coach.Id))
+                .Select(coach => coach.UserId).Distinct().ToListAsync(cancellationToken);
+            await FlowNotificationWriter.CreateAsync(Db, actorUserId, coachUserIds,
+                $"Lớp đã bị hủy: {entity.Name}",
+                $"Trung tâm đã hủy lớp {entity.Name} mà bạn phụ trách. Lớp không còn buổi dạy nào sắp tới.",
+                "CoachSessionCancelled", cancellationToken);
+        }
 
         entity.Status = FlowStatuses.ClassCancelled;
         entity.UpdatedAt = now;
@@ -878,6 +889,7 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork, ISessionBooki
         // Persist recipient links in the same transaction as the schedule change.
         await NotifyBookedMembersAsync(actorUserId, ids, "Lịch học đã bị hủy",
             "Trung tâm đã hủy lịch học bạn đã đăng ký. Vui lòng xem lịch cá nhân để kiểm tra buổi bị hủy và chọn buổi học khác.", ct);
+        await NotifyTeachingCoachesAsync(actorUserId, sessions, ct);
         foreach (var session in sessions) session.SessionStatus = FlowStatuses.SessionCancelled;
         foreach (var booking in bookings) booking.Status = FlowStatuses.BookingCancelled;
         var waitlists = await Db.ClassWaitlists
@@ -885,6 +897,33 @@ public sealed class ClassManagementService(IUnitOfWork unitOfWork, ISessionBooki
             .ToListAsync(ct);
         foreach (var waitlist in waitlists) waitlist.Status = FlowStatuses.WaitlistCancelled;
         return (sessions.Count, bookings.Count);
+    }
+
+    /// <summary>Tells every coach teaching the cancelled sessions (session override or class coach) which sessions were dropped.</summary>
+    private async Task NotifyTeachingCoachesAsync(long actorUserId, List<ClassSession> sessions, CancellationToken ct)
+    {
+        if (sessions.Count == 0) return;
+        foreach (var group in sessions.GroupBy(s => s.ClassId))
+        {
+            var classId = group.Key;
+            var sessionCoachIds = group.Where(s => s.CoachId.HasValue).Select(s => s.CoachId!.Value).Distinct().ToList();
+            var coachUserIds = await Db.CoachProfiles
+                .Where(coach => sessionCoachIds.Contains(coach.Id)
+                    || Db.ClassCoaches.Any(link => link.ClassId == classId && link.CoachId == coach.Id))
+                .Select(coach => coach.UserId).Distinct().ToListAsync(ct);
+            if (coachUserIds.Count == 0) continue;
+
+            var className = await Db.Classes.Where(c => c.Id == classId).Select(c => c.Name).SingleAsync(ct);
+            var ordered = group.OrderBy(s => s.SessionDate).ThenBy(s => s.StartTime).ToList();
+            var first = ordered[0];
+            var detail = ordered.Count == 1
+                ? $"buổi ngày {first.SessionDate:dd/MM/yyyy} lúc {first.StartTime:HH:mm}"
+                : $"{ordered.Count} buổi sắp tới (từ {first.SessionDate:dd/MM/yyyy})";
+            await FlowNotificationWriter.CreateAsync(Db, actorUserId, coachUserIds,
+                $"Lịch dạy đã bị hủy: {className}",
+                $"Trung tâm đã hủy {detail} của lớp {className} mà bạn phụ trách. Vui lòng kiểm tra lịch dạy.",
+                "CoachSessionCancelled", ct);
+        }
     }
 
     private async Task NotifyBookedMembersAsync(long actorUserId, List<long> sessionIds, string title, string message, CancellationToken ct)

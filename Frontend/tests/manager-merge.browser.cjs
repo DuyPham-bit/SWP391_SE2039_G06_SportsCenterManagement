@@ -20,9 +20,6 @@ const classes = [
 ];
 const member = { memberId: 1, userId: 3, memberCode: 'MEM-TEST', fullName: 'Hội viên kiểm thử', email: 'member@example.test', accountStatus: 'Active' };
 const staff = { userId: 10, fullName: 'Coach Yoga', email: 'coach@example.test', roleName: 'Coach', status: 'Active', specialization: 'Yoga', sportIds: [1] };
-const payrollCoach = { userId: 10, fullName: 'HLV Lương Kiểm Thử', role: 'Coach', employeeCode: 'EMP-PAY-01', centerName: 'Cơ sở kiểm thử',
-  baseSalary: 8000000, allowance: 0, commissionPerSession: 150000, targetSessions: 20, completedSessions: 12, sessionBonus: 1800000,
-  estimatedTotal: 9800000, policyConfigured: true, effectiveFrom: '2026-11-01', effectiveTo: null };
 const roleMatrix = [{ roleId: 2, roleName: 'Coach', permissions: [], availablePermissions: [],
   capabilityIds: ['view_teaching_schedule'], availableCapabilities: ['view_teaching_schedule', 'take_attendance'] }];
 let subscriptionFailure = true, browser, socket, cdp, origin;
@@ -77,8 +74,6 @@ const server = http.createServer(async (req, res) => {
     if (route === '/api/reports/revenue-by-sport') return json(res, { allocatedNet: 12345, unallocatedNet: 77655, sports: [{ sportId: 1, sportName: 'Yoga', net: 12345, gross: 12345, refunds: 0, share: 13.7 }] });
     if (route === '/api/reports/membership') return json(res, { totalMembers: 1, activeMembers: 1, newMembers: 1, periods: [{ periodStart: today, newMembers: 1 }] });
     if (route === '/api/reports/classes') return json(res, { currentStatusCounts: { Booked: 4 }, periods: [] });
-    if (route === '/api/payroll/report') return json(res, { employees: [payrollCoach] });
-    if (route === '/api/payroll/staff-policy' && req.method === 'POST') return json(res, {});
     if (route === '/api/reports/operations') return json(res, {
       totalStaff: 2, activeStaff: 2, managerCount: 1, coachCount: 1, receptionistCount: 0,
       totalRooms: 1, activeRooms: 1, sessionsCount: 1, bookedSeats: 4, capacitySeats: 20, occupancyRate: 20,
@@ -387,20 +382,6 @@ async function closeDialog() {
   await until('yearly report', () => requests.filter(r => r.route === '/api/reports/revenue').length > revenueCalls);
   assert.equal(requests.filter(r => r.route === '/api/reports/revenue').pop().query.from, `${today.slice(0, 4)}-01-01`);
   checks.push('Reports: all five detail tables render and the yearly quick filter reloads from 1 January');
-
-  // Payroll: sheet, reports tab, payslip and salary-policy dialogs render; saving posts the policy.
-  await route('#/manager/payroll', payrollCoach.fullName);
-  await pressTitled('Xem phiếu lương');
-  await expectDialog('Phiếu lương nhân sự', payrollCoach.employeeCode);
-  await pressInMain('Sửa lương & KPI');
-  await until('policy dialog', () => evaluate(`document.querySelector('[role=dialog]')?.textContent.includes('Cấu hình chính sách lương & ca dạy') === true`));
-  await evaluate(`document.querySelector('[role=dialog] form').requestSubmit()`);
-  await until('policy saved', () => requests.some(r => r.route === '/api/payroll/staff-policy' && r.method === 'POST'));
-  assert.equal(requests.find(r => r.route === '/api/payroll/staff-policy').body.userId, payrollCoach.userId);
-  await until('policy dialog closed', () => evaluate(`!document.querySelector('[role=dialog]')`));
-  await pressInMain('Tab 2: Báo cáo & Phân tích ca dạy');
-  await until('payroll reports tab', () => mainHas('Phân bổ chi phí lương theo bộ phận & vai trò'));
-  checks.push('Payroll: sheet, payslip, salary policy save and the reports tab render');
 
   // Role and permission configuration is admin-only (#/admin/roles-permissions); managers must not reach it.
   const permissionRequestsBefore = requests.filter(r => r.route.includes('/permissions')).length;

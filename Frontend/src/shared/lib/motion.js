@@ -344,7 +344,7 @@ export function replayPageEnter() {
  * html[data-scms-view="dashboard"] in theme.css; work screens (tables, forms) stay calm.
  * JS only (1) flags the current view and (2) feeds the cursor position to the card spotlight.
  */
-const DASHBOARD_ROUTE = /^#\/(admin|manager|receptionist|coach|member)\/(dashboard|performance|kpi|salary-kpi)(?:[?/]|$)|^#\/(admin|manager|receptionist|coach|member)\/?$/;
+const DASHBOARD_ROUTE = /^#\/(admin|manager|receptionist|coach|member)\/(dashboard|performance|kpi)(?:[?/]|$)|^#\/(admin|manager|receptionist|coach|member)\/?$/;
 // Spotlight follows the cursor on cards of every page (dashboards style it more strongly).
 const SPOT_CARD = '.scms-page .grid > *';
 

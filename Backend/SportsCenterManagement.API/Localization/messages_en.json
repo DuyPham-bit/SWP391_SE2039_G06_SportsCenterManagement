@@ -474,15 +474,9 @@
   "Đã void hóa đơn chưa thu tiền.": "The unpaid invoice has been voided.",
   "Đường dẫn ảnh xác nhận chuyển khoản không hợp lệ.": "Invalid bank transfer confirmation image path.",
   "Ảnh xác nhận chuyển khoản là bắt buộc khi duyệt hoàn tiền.": "A bank transfer confirmation image is required to approve a refund.",
-  "Bạn không có quyền cập nhật lương.": "You are not allowed to update salaries.",
-  "Bạn không có quyền xem báo cáo lương.": "You are not allowed to view salary reports.",
   "Chỉ được cập nhật nhân sự trong trung tâm của bạn.": "You can only update staff in your own center.",
-  "Khoảng hiệu lực chính sách lương không hợp lệ.": "Invalid salary policy effective period.",
   "Không tìm thấy nhân sự.": "Staff member not found.",
-  "Kỳ lương không hợp lệ.": "Invalid payroll period.",
   "Quản lý chưa được gán trung tâm.": "The manager is not assigned to a center.",
-  "Quản lý không được cập nhật lương của chính mình hoặc của quản lý khác.": "A manager cannot update their own salary or another manager's salary.",
-  "Tài khoản chưa có hồ sơ nhân sự để xem lương.": "The account has no staff profile to view salary.",
   "Tài khoản không hợp lệ.": "Invalid account.",
   "Không tìm thấy người dùng.": "User not found.",
   "Số điện thoại cần có từ 8 đến 15 chữ số; có thể bắt đầu bằng dấu +.": "The phone number must have 8 to 15 digits and may start with +.",
@@ -839,10 +833,6 @@
   {
    "vi": "Bạn đã có buổi '{clash.ClassName}' ({clash.StartTime:HH\\:mm}-{clash.EndTime:HH\\:mm}) trùng giờ trong ngày này.",
    "en": "You already have session '{clash.ClassName}' ({clash.StartTime:HH\\:mm}-{clash.EndTime:HH\\:mm}) at the same time on this day."
-  },
-  {
-   "vi": "Gói của bạn yêu cầu hủy lịch trước ít nhất {cancelBeforeHours} giờ.",
-   "en": "Your package requires cancelling at least {cancelBeforeHours} hours in advance."
   },
   {
    "vi": "{memberName} {action}: {cls.Name}, ngày {session.SessionDate:dd/MM/yyyy} lúc {session.StartTime:HH:mm}.",

@@ -80,6 +80,8 @@ export function notificationTarget(item, role) {
   if (
     type === 'CoachBookingCreated' ||
     type === 'CoachBookingCancelled' ||
+    type === 'CoachSessionCancelled' ||
+    type === 'ScheduleChanged' ||
     type === 'BookingConfirmed' ||
     type === 'BookingCancelled' ||
     type === 'WaitlistJoined' ||
@@ -176,7 +178,7 @@ export function notificationTarget(item, role) {
   if (normalizedRole === 'COACH') return '#/coach/schedule';
   if (normalizedRole === 'MEMBER') return '#/member/schedule';
   if (normalizedRole === 'MANAGER') return '#/manager/dashboard';
-  // Admin has no center: manager screens other than invoices/payroll/home-content are not available.
+  // Admin has no center: manager screens other than invoices/home-content are not available.
   if (['ADMIN', 'SYSTEMADMIN'].includes(normalizedRole)) return '#/admin/dashboard';
   if (normalizedRole === 'RECEPTIONIST') return '#/receptionist/dashboard';
 

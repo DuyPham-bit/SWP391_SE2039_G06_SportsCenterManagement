@@ -9,7 +9,7 @@ import { AuthField, ForgotPasswordModal, GoogleLoginModal } from '../../../featu
 import { Logo } from '../../../shared/ui/Logo.jsx';
 import { OtpDialogContent, OTP_CARD_CLASS, withMinDuration } from '../../../shared/ui/OtpCode.jsx';
 import { getMembershipIntent, getPostLoginRoute } from '../../../entities/membership/index.js';
-import { useLandingContent } from '../../../entities/landing-content/index.js';
+import { useLandingContentState } from '../../../entities/landing-content/index.js';
 import { CountUp } from '../../../shared/ui/CountUp.jsx';
 import { prefersReducedMotion } from '../../../shared/lib/motion.js';
 import { useCan3D, SplitWords, TiltCard, MagneticLink, AnimatedCheckbox, useTilt } from './authMotion.jsx';
@@ -138,7 +138,7 @@ function saveRememberedEmail(email) {
 export function LoginPage() {
   const { login, register, logout, loginWithGoogle, isAuthenticated, role } = useAuth();
   const { showSuccess, showError } = useToast();
-  const landingContent = useLandingContent();
+  const { content: landingContent, stats: landingStats } = useLandingContentState();
   const authShowcase = landingContent?.authShowcase || {};
   const supportPhone = landingContent?.ctaAndFooter?.contactPhone?.trim() || '';
 
@@ -159,13 +159,16 @@ export function LoginPage() {
   const feature2Desc = authShowcase.feature2Desc || '';
   const feature2Icon = authShowcase.feature2Icon || '';
 
-  const stat1Value = authShowcase.stat1Value || '';
+  // Sports and training zones are live database counts (every active sport / room of the center, not only
+  // the home-page cards); the member figure stays the managed showcase text. Stored text is the fallback.
+  const dbCount = value => (Number.isFinite(value) ? Number(value).toLocaleString('vi-VN') : '');
+  const stat1Value = dbCount(landingStats?.activeSports) || authShowcase.stat1Value || '';
   const stat1Label = authShowcase.stat1Label || '';
 
-  const stat2Value = authShowcase.stat2Value || '';
+  const stat2Value = dbCount(landingStats?.activeRooms) || authShowcase.stat2Value || '';
   const stat2Label = authShowcase.stat2Label || '';
 
-  const stat3Value = authShowcase.stat3Value || '';
+  const stat3Value = authShowcase.stat3Value || '2.5K+';
   const stat3Label = authShowcase.stat3Label || '';
   const sports = sportsFromZones(landingContent?.zonesLayout?.zones);
 

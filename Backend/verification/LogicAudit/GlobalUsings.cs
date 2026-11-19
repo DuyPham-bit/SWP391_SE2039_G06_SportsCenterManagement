@@ -14,7 +14,6 @@ global using SportsCenterManagement.BLL.Services.Members;
 global using SportsCenterManagement.BLL.Services.MembershipPackages;
 global using SportsCenterManagement.BLL.Services.Notifications;
 global using SportsCenterManagement.BLL.Services.Payments;
-global using SportsCenterManagement.BLL.Services.Payroll;
 global using SportsCenterManagement.BLL.Services.Profile;
 global using SportsCenterManagement.BLL.Services.Reports;
 global using SportsCenterManagement.BLL.Services.Roles;
