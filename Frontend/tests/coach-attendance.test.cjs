@@ -28,6 +28,18 @@ test('backend roster and attendance honor replacement coach and active class enr
   assert.match(backendCode, /e\.Status == "Active" \|\| e\.Status == "Confirmed" \|\| e\.Status == "Enrolled"/);
 });
 
+test('attendance schedule count uses the same roster sources as attendance', () => {
+  const schedule = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.BLL/Services/Classes/ClassScheduleQueryService.cs'), 'utf8');
+  assert.match(schedule, /Booked = Db\.MemberProfiles\.Count\(m =>/);
+  assert.match(schedule, /Db\.SessionBookings\.Any\(b => b\.SessionId ==/);
+  assert.match(schedule, /Db\.ClassEnrollments\.Any\(e => e\.ClassId ==/);
+});
+
+test('attendance endpoint binds the submitted JSON array explicitly', () => {
+  const controller = fs.readFileSync(path.join(__dirname, '../../Backend/SportsCenterManagement.API/Controllers/Classes/BookingOperationsController.cs'), 'utf8');
+  assert.match(controller, /\[FromBody\] AttendanceItem\[\] records/);
+});
+
 test('attendance schedule excludes cancelled class and session history', () => {
   const attendance = readSlice('pages/coach-attendance');
   const shared = fs.readFileSync(path.join(__dirname, '../src/features/coach-workspace/ui/CoachShared.jsx'), 'utf8');
