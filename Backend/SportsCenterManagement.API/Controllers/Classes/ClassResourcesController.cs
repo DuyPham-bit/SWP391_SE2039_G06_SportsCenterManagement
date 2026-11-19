@@ -118,9 +118,14 @@ public sealed class ClassResourcesController(
         if (await (from s in db.ClassSessions join c in db.Classes on s.ClassId equals c.Id
             where (s.RoomId ?? c.RoomId) == roomId && s.SessionDate >= clock.Today
                 && s.SessionStatus == "Scheduled"
-                && db.SessionBookings.Count(b => b.SessionId == s.Id && b.Status == "Booked") > request.Capacity
+                // Occupied seats = drop-in bookings OR enrolled class members, counted once (BLL SessionSeats).
+                && db.MemberProfiles.Count(m =>
+                    db.Users.Any(u => u.Id == m.UserId && u.Status == "Active") &&
+                    (db.SessionBookings.Any(b => b.SessionId == s.Id && b.MemberId == m.Id && b.Status == "Booked") ||
+                     db.ClassEnrollments.Any(e => e.ClassId == c.Id && e.MemberId == m.Id &&
+                        (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")))) > request.Capacity
             select s.Id).AnyAsync(ct))
-            throw new InvalidOperationException("Sức chứa mới nhỏ hơn số chỗ đã đặt trong một buổi sắp tới.") { Data = { ["StatusCode"] = 409 } };
+            throw new InvalidOperationException("Sức chứa mới nhỏ hơn số học viên đã đặt chỗ hoặc ghi danh trong một buổi sắp tới.") { Data = { ["StatusCode"] = 409 } };
         var newStatus = RoomStatuses.FirstOrDefault(s => s.Equals(request.Status?.Trim(), StringComparison.OrdinalIgnoreCase)) ?? room.Status;
         // Taking a room out of service must not strand upcoming sessions: booking/enrollment already reject inactive rooms.
         if (room.Status == "Active" && newStatus != "Active")

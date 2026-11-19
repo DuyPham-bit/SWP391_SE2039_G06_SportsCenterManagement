@@ -1,3 +1,5 @@
+using Microsoft.EntityFrameworkCore;
+
 namespace SportsCenterManagement.BLL.Services.Classes;
 
 /// <summary>Shared time helpers. Class schedules are stored in center-local time (Vietnam, UTC+7).</summary>
@@ -18,6 +20,24 @@ internal static class ScheduleTime
         var e2 = end2 ?? DateOnly.MaxValue;
         return s1 <= e2 && s2 <= e1;
     }
+}
+
+/// <summary>
+/// Who takes a seat in a session: a member who booked it OR is enrolled in its class, counted once.
+/// Same people as the coach roll call (ClassRepository.GetSessionRosterAsync). Booking capacity,
+/// waitlist promotion and every "x/capacity" figure must use this, otherwise enrolled members are
+/// invisible (a class of 8 enrolled showed 0/16 and accepted 16 more drop-in bookings).
+/// </summary>
+internal static class SessionSeats
+{
+    public static Task<int> CountOccupiedAsync(
+        SportsCenterManagement.DAL.Context.SportsCenterDbContext db, long sessionId, long classId, CancellationToken ct) =>
+        db.MemberProfiles.CountAsync(member =>
+            db.Users.Any(user => user.Id == member.UserId && user.Status == "Active") &&
+            (db.SessionBookings.Any(b => b.SessionId == sessionId && b.MemberId == member.Id
+                    && b.Status == FlowStatuses.BookingBooked) ||
+             db.ClassEnrollments.Any(e => e.ClassId == classId && e.MemberId == member.Id &&
+                    (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled"))), ct);
 }
 
 internal static class FlowStatuses

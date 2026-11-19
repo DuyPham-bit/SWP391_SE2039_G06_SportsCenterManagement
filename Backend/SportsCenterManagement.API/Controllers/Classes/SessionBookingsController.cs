@@ -14,6 +14,12 @@ public sealed class SessionBookingsController(ISessionBookingService service) : 
     public async Task<IActionResult> GetMine(CancellationToken ct) =>
         Ok(await service.ListMyBookingsAsync(CurrentUserId, ct));
 
+    /// <summary>Roll-call results received through a class enrollment (sessions the member did not book).</summary>
+    [HttpGet("members/me/class-attendance")]
+    [CenterCapability("book_class")]
+    public async Task<IActionResult> GetMyClassAttendance(CancellationToken ct) =>
+        Ok(await service.ListMyClassAttendanceAsync(CurrentUserId, ct));
+
     /// <summary>201 when booked; 202 when the session was full and the member joined the waitlist.</summary>
     [HttpPost("class-sessions/{sessionId:long}/bookings")]
     [CenterCapability("book_class")]

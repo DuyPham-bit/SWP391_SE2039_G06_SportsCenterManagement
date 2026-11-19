@@ -8,6 +8,7 @@ public interface ISessionBookingService
     Task<BookSessionResult> BookSessionAsync(long currentUserId, long sessionId, CancellationToken cancellationToken = default, long? actorUserId = null);
     Task<CancelBookingResult> CancelBookingAsync(long currentUserId, long bookingId, CancellationToken cancellationToken = default, long? actorUserId = null);
     Task<IReadOnlyList<SessionBookingResponse>> ListMyBookingsAsync(long currentUserId, CancellationToken cancellationToken = default);
+    Task<IReadOnlyList<SessionBookingResponse>> ListMyClassAttendanceAsync(long currentUserId, CancellationToken cancellationToken = default);
 
     Task<long> ResolveMemberUserIdAsync(long actorUserId, bool isAdmin, long memberId, CancellationToken ct = default);
     Task<BookSessionResult> BookForMemberAsync(long actorUserId, bool isAdmin, long memberId, long sessionId, CancellationToken ct = default);

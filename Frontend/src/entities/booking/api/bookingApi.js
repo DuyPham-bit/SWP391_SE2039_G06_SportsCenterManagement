@@ -36,6 +36,11 @@ export const bookingApi = {
     return asArray(await apiRequest('members/me/session-bookings')).map(mapBooking);
   },
 
+  /** Roll-call results from class enrollments (sessions the member did not book themselves). */
+  async getMyClassAttendance() {
+    return asArray(await apiRequest('members/me/class-attendance')).map(mapBooking);
+  },
+
   async bookClass(_memberId, sessionId) {
     const result = await apiRequest(`class-sessions/${sessionId}/bookings`, { method: 'POST' });
     return { ...result, booking: result.booking ? mapBooking(result.booking) : null };

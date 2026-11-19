@@ -36,10 +36,13 @@ export function MyAttendance() {
     setLoading(true);
     setError('');
 
-    bookingApi
-      .getMemberBookings()
-      .then(data => {
-        if (active) setBookings(data || []);
+    // Bookings carry their own attendance; enrolled members are marked on class sessions they never
+    // booked, so those results come from a second list (one row per session, bookings win).
+    Promise.all([bookingApi.getMemberBookings(), bookingApi.getMyClassAttendance()])
+      .then(([booked, enrolled]) => {
+        if (!active) return;
+        const bookedSessions = new Set((booked || []).map(b => b.sessionId));
+        setBookings([...(booked || []), ...(enrolled || []).filter(r => !bookedSessions.has(r.sessionId))]);
       })
       .catch(err => {
         if (active) {

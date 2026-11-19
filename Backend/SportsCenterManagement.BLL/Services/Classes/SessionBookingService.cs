@@ -57,8 +57,8 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
         var subscription = await EnsureEligibleAsync(member, session, cls, now, cancellationToken);
 
         var capacity = await GetEffectiveCapacityAsync(session, cls, cancellationToken);
-        var booked = await Db.SessionBookings.CountAsync(
-            b => b.SessionId == sessionId && b.Status == FlowStatuses.BookingBooked, cancellationToken);
+        // Enrolled class members hold a seat in every session, not just drop-in bookings.
+        var booked = await SessionSeats.CountOccupiedAsync(Db, sessionId, cls.Id, cancellationToken);
 
         if (booked >= capacity)
         {
@@ -182,6 +182,36 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
                 attendance == null ? null : attendance.AttendanceStatus,
                 attendance == null ? null : attendance.Note,
                 attendance == null ? null : attendance.CheckInTime)).ToListAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Attendance the member received through a class enrollment, i.e. sessions with an attendance row but
+    /// no booking of their own. ListMyBookingsAsync only joins attendance onto bookings, so enrolled
+    /// members never saw the roll call a coach recorded for them. Id is the negated attendance id so it
+    /// cannot collide with a booking id; Status is "Enrolled" (never cancellable).
+    /// </summary>
+    public async Task<IReadOnlyList<SessionBookingResponse>> ListMyClassAttendanceAsync(long currentUserId, CancellationToken cancellationToken = default)
+    {
+        var member = await GetMemberAsync(currentUserId, cancellationToken);
+        return await (
+            from attendance in Db.Attendances
+            join s in Db.ClassSessions on attendance.SessionId equals s.Id
+            join c in Db.Classes on s.ClassId equals c.Id
+            let effectiveRoomId = s.RoomId ?? c.RoomId
+            let effectiveCoachId = s.CoachId ?? Db.ClassCoaches
+                .Where(cc => cc.ClassId == c.Id && cc.IsPrimary).Select(cc => (long?)cc.CoachId).FirstOrDefault()
+            join room in Db.Rooms on effectiveRoomId equals (long?)room.Id into rooms
+            from room in rooms.DefaultIfEmpty()
+            join coach in Db.CoachProfiles on effectiveCoachId equals (long?)coach.Id into coaches
+            from coach in coaches.DefaultIfEmpty()
+            where attendance.MemberId == member.Id
+                && !Db.SessionBookings.Any(b => b.SessionId == attendance.SessionId && b.MemberId == member.Id)
+            orderby s.SessionDate descending, s.StartTime descending
+            select new SessionBookingResponse(
+                -attendance.Id, s.Id, c.Id, c.Name, s.SessionDate, s.StartTime, s.EndTime, "Enrolled", attendance.CreatedAt,
+                s.SessionStatus, room == null ? null : room.Name,
+                coach == null ? null : coach.FullName, coach == null ? null : coach.Specialization,
+                attendance.AttendanceStatus, attendance.Note, attendance.CheckInTime)).ToListAsync(cancellationToken);
     }
 
     // ------------------------------------------------------------------ rules
@@ -414,8 +444,7 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
     private async Task<long?> PromoteNextWaitlistAsync(ClassSession session, ClassEntity cls, DateTime now, long actorUserId, CancellationToken ct)
     {
         var capacity = await GetEffectiveCapacityAsync(session, cls, ct);
-        var booked = await Db.SessionBookings.CountAsync(
-            b => b.SessionId == session.Id && b.Status == FlowStatuses.BookingBooked, ct);
+        var booked = await SessionSeats.CountOccupiedAsync(Db, session.Id, cls.Id, ct);
         if (booked >= capacity) return null;
 
         var waiting = await Db.ClassWaitlists
@@ -676,7 +705,16 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
             throw new InvalidOperationException("Có học viên không đăng ký buổi học này.") { Data = { ["StatusCode"] = 400 } };
 
         await using var tx = await unitOfWork.BeginTransactionAsync(ct);
+        // Snapshot before the upsert so re-saving an unchanged roll call does not notify members again.
+        var previous = await Db.Attendances.AsNoTracking()
+            .Where(a => a.SessionId == sessionId && ids.Contains(a.MemberId))
+            .Select(a => new { a.MemberId, a.AttendanceStatus, a.Note })
+            .ToDictionaryAsync(a => a.MemberId, ct);
         await classRepository.UpsertAttendancesAsync(sessionId, coachUserId, records.Select(r => (r.MemberId, r.Status, r.Note)).ToList(), ct);
+        var changed = records.Where(r => !previous.TryGetValue(r.MemberId, out var old)
+            || !string.Equals(old.AttendanceStatus, r.Status, StringComparison.OrdinalIgnoreCase)
+            || !string.Equals(old.Note ?? "", r.Note ?? "", StringComparison.Ordinal)).ToList();
+        await NotifyAttendanceResultsAsync(coachUserId, session, changed, ct);
 
         var centerId = await classRepository.GetCenterIdByClassIdAsync(session.ClassId, ct);
         var auditRepo = unitOfWork.Repository<AuditLog>();
@@ -693,6 +731,34 @@ public sealed class SessionBookingService(IUnitOfWork unitOfWork, SportsCenterMa
         await unitOfWork.SaveChangesAsync(ct);
         await tx.CommitAsync(ct);
         return records.Count;
+    }
+
+    /// <summary>Tells each member their own roll-call result (new or changed only).</summary>
+    private async Task NotifyAttendanceResultsAsync(long coachUserId, ClassSession session,
+        IReadOnlyList<AttendanceRecordDto> changed, CancellationToken ct)
+    {
+        if (changed.Count == 0) return;
+        var className = await Db.Classes.Where(c => c.Id == session.ClassId).Select(c => c.Name).SingleAsync(ct);
+        var memberIds = changed.Select(r => r.MemberId).ToList();
+        var userIds = await Db.MemberProfiles.Where(m => memberIds.Contains(m.Id))
+            .ToDictionaryAsync(m => m.Id, m => m.UserId, ct);
+        foreach (var record in changed)
+        {
+            if (!userIds.TryGetValue(record.MemberId, out var userId)) continue;
+            var result = record.Status.ToUpperInvariant() switch
+            {
+                "PRESENT" => "Có mặt",
+                "LATE" => "Đi muộn",
+                "ABSENT" => "Vắng mặt",
+                "EXCUSED" => "Vắng có phép",
+                _ => record.Status
+            };
+            var note = string.IsNullOrWhiteSpace(record.Note) ? "" : $" Ghi chú của HLV: {record.Note.Trim()}";
+            await FlowNotificationWriter.CreateAsync(Db, coachUserId, [userId],
+                $"Kết quả điểm danh: {className}",
+                $"Buổi {className} ngày {session.SessionDate:dd/MM/yyyy} lúc {session.StartTime:HH:mm}: {result}.{note}",
+                "AttendanceRecorded", ct);
+        }
     }
 
 }

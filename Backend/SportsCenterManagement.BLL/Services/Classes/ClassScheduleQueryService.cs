@@ -91,7 +91,14 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
                             && coach.CenterId == x.cls.CenterId && coach.Status == "Active"
                             && Db.Users.Any(user => user.Id == coach.UserId && user.Status == "Active"
                                 && (!user.LockedUntil.HasValue || user.LockedUntil.Value <= DateTime.UtcNow)))),
-                Booked = Db.SessionBookings.Count(b => b.SessionId == x.session.Id && b.Status == FlowStatuses.BookingBooked),
+                // Same occupancy as SessionSeats / the roll call: bookings OR enrolled class members.
+                // Drives "x/capacity" and the free seats shown to members (was bookings only: 0/16).
+                Booked = Db.MemberProfiles.Count(member =>
+                    Db.Users.Any(user => user.Id == member.UserId && user.Status == "Active") &&
+                    (Db.SessionBookings.Any(b => b.SessionId == x.session.Id && b.MemberId == member.Id
+                            && b.Status == FlowStatuses.BookingBooked) ||
+                     Db.ClassEnrollments.Any(e => e.ClassId == x.cls.Id && e.MemberId == member.Id &&
+                            (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled")))),
                 Waiting = Db.ClassWaitlists.Count(w => w.SessionId == x.session.Id && w.Status == FlowStatuses.WaitlistWaiting)
             })
             .ToListAsync(cancellationToken);
