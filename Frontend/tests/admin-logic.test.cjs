@@ -59,3 +59,10 @@ test('ManagerModal disables browser credential autofill on manager provisioning 
   assert.match(src, /autoComplete="new-password"/);
   assert.match(src, /readOnly=\{!fieldsUnlocked\}/);
 });
+
+test('ProfileController maps StaffCode and CenterName onto ProfileResponse', () => {
+  const controller = read('Backend/SportsCenterManagement.API/Controllers/Profile/ProfileController.cs');
+  const dto = read('Backend/SportsCenterManagement.BLL/DTOs/Auth/Responses.cs');
+  assert.match(dto, /string\? StaffCode = null,\s*string\? CenterName = null/);
+  assert.match(controller, /dto\.StaffCode,\s*dto\.CenterName\);/);
+});
