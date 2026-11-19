@@ -47,7 +47,7 @@ export function CreateStaffModal({
           </button>
         </div>
 
-        <form onSubmit={handleSaveStaff} className="space-y-4">
+        <form onSubmit={handleSaveStaff} autoComplete="off" className="space-y-4">
           {createMode === 'DIRECT' ? (
             <div className="space-y-4">
               <div className="p-3 bg-brand-sage-50/70 dark:bg-brand-sage-950/40 border border-brand-sage-200/60 dark:border-brand-sage-800/60 rounded-xl text-xs text-brand-sage-900 dark:text-brand-sage-300 flex items-start gap-2.5">
@@ -102,6 +102,7 @@ export function CreateStaffModal({
                   <input
                     className={inputClass}
                     name="username"
+                    autoComplete="off"
                     required
                     minLength={3}
                     maxLength={100}
@@ -153,6 +154,7 @@ export function CreateStaffModal({
                     className={inputClass}
                     type="email"
                     name="email"
+                    autoComplete="off"
                     required
                     maxLength={150}
                     placeholder="email@sportscenter.vn"

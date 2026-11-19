@@ -52,3 +52,10 @@ test('Admin Dashboard UI handles 0-count badges, disabled account unlock buttons
   assert.match(accSrc, /const isLocked = isLockedByTime \|\| String\(a\.status \|\| ''\)\.toLowerCase\(\) === 'disabled';/);
   assert.match(mgrSrc, /const isManagerActive = m\.status === 'Active' && !\(m\.lockedUntil && parseApiDate\(m\.lockedUntil\) > new Date\(\)\);/);
 });
+
+test('ManagerModal disables browser credential autofill on manager provisioning inputs', () => {
+  const src = read('Frontend/src/pages/admin-dashboard/ui/ManagerModal.jsx');
+  assert.match(src, /<form[^>]*autoComplete="off"/);
+  assert.match(src, /autoComplete="new-password"/);
+  assert.match(src, /readOnly=\{!fieldsUnlocked\}/);
+});
