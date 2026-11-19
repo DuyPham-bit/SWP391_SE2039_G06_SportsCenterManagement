@@ -39,7 +39,7 @@
   "homeContent.catalog.deleteLinked": "{count} linked sport card(s) will be kept with their facility link cleared.",
   "homeContent.catalog.deleteNamed": "Delete card: {name}",
   "homeContent.catalog.deleteTitle": "Delete card?",
-  "homeContent.catalog.description": "Add cards and edit their content, images and visibility. {visible}/{total} visible (counted by the system, updated after saving).",
+  "homeContent.catalog.description": "Add cards and edit their content, images and visibility. {visible}/{total} cards visible.",
   "homeContent.catalog.draftHint": "Changes stay in your draft. Click Save after closing.",
   "homeContent.catalog.editNamed": "Edit card ({lang}): {name}",
   "homeContent.catalog.empty": "No cards yet. Add a card to start.",

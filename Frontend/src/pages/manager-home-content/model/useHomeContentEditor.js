@@ -28,6 +28,15 @@ function readInitialTab() {
 
 const sameJson = (a, b) => JSON.stringify(a ?? null) === JSON.stringify(b ?? null);
 
+function countSectionCards(section, listKey, fallback) {
+  const list = Array.isArray(section?.[listKey]) ? section[listKey] : [];
+  if (list.length === 0 && section?.catalogSource !== 'custom') return fallback;
+  return {
+    visible: list.filter(card => card?.isVisible !== false).length,
+    total: list.length
+  };
+}
+
 export function useHomeContentEditor() {
   const { language, t } = useLanguage();
   const isEn = language === 'en';
@@ -132,6 +141,14 @@ export function useHomeContentEditor() {
     Object.entries(TAB_SECTIONS).map(([tab, section]) => [tab, missingLanguages(content?.[section])])
   ), [content]);
 
+  const effectiveStats = useMemo(() => {
+    if (!content) return stats;
+    return {
+      sports: countSectionCards(content.coursesSection, 'sportsList', stats?.sports),
+      facilities: countSectionCards(content.facilitiesSection, 'facilitiesList', stats?.facilities)
+    };
+  }, [content, stats]);
+
   const applyEdit = updater => {
     setContent(previous => {
       const updated = updater(previous);
@@ -212,7 +229,7 @@ export function useHomeContentEditor() {
 
   const handlePreview = () => {
     try {
-      openLandingPreview(content, stats);
+      openLandingPreview(content, effectiveStats);
     } catch (error) {
       addToast(errorText(error), 'error');
     }
@@ -225,6 +242,6 @@ export function useHomeContentEditor() {
     activeTab, addToast, content, deleteFacilityCard, dirtySections, discardKey, editLang, handleDiscardChanges,
     handlePreview, handleSaveAll, handleSaveSection, handleTabChange, isDirty, isEn, isLoading, isSaving, loadError,
     mediaPickerConfig, missingBySection, openMediaPicker, saveStatus, setEditLang, setMediaPickerConfig,
-    setReloadKey, stats, t, updateCatalogCards, updateContentField
+    setReloadKey, stats: effectiveStats, t, updateCatalogCards, updateContentField
   };
 }

@@ -39,7 +39,7 @@
   "homeContent.catalog.deleteLinked": "{count} thẻ bộ môn liên kết sẽ được giữ lại và chuyển về trạng thái chưa liên kết cụm sân.",
   "homeContent.catalog.deleteNamed": "Xóa thẻ: {name}",
   "homeContent.catalog.deleteTitle": "Xóa thẻ?",
-  "homeContent.catalog.description": "Thêm thẻ, chỉnh nội dung, hình ảnh và ẩn/hiện. Đang hiển thị {visible}/{total} (đếm từ hệ thống, cập nhật sau khi lưu).",
+  "homeContent.catalog.description": "Thêm thẻ, chỉnh nội dung, hình ảnh và ẩn/hiện. Đang hiển thị {visible}/{total} thẻ.",
   "homeContent.catalog.draftHint": "Thay đổi được giữ trong bản nháp. Bấm Lưu sau khi đóng.",
   "homeContent.catalog.editNamed": "Chỉnh sửa thẻ ({lang}): {name}",
   "homeContent.catalog.empty": "Chưa có thẻ. Bấm thêm thẻ để bắt đầu.",
