@@ -220,17 +220,19 @@ export function CreateStaffModal({
                 )}
               </div>
 
-              <div>
-                <label className={labelClass}>{isEn ? 'Biography / Notes' : 'Tiểu sử / Ghi chú'}</label>
-                <textarea
-                  rows={2}
-                  className={inputClass}
-                  name="bio"
-                  placeholder={isEn ? 'Brief description about coaching background, achievements...' : 'Mô tả ngắn gọn về kinh nghiệm, thành tích hoặc phân công chuyên môn...'}
-                  value={form.bio}
-                  onChange={handleFormChange}
-                />
-              </div>
+              {form.role === 'COACH' && (
+                <div>
+                  <label className={labelClass}>{isEn ? 'Biography / Notes' : 'Tiểu sử / Ghi chú'}</label>
+                  <textarea
+                    rows={2}
+                    className={inputClass}
+                    name="bio"
+                    placeholder={isEn ? 'Brief description about coaching background, achievements...' : 'Mô tả ngắn gọn về kinh nghiệm, thành tích hoặc phân công chuyên môn...'}
+                    value={form.bio}
+                    onChange={handleFormChange}
+                  />
+                </div>
+              )}
             </div>
           ) : (
             /* APPOINT MODE */
@@ -454,30 +456,34 @@ export function CreateStaffModal({
                     onChange={handleFormChange}
                   />
                 </div>
-                {form.role === 'COACH' && <SpecialtyPicker addingSpecialty={addingSpecialty} form={form} handleAddSpecialty={handleAddSpecialty} isEn={isEn} loadSports={loadSports} newSpecialtyName={newSpecialtyName} saving={saving} setForm={setForm} setNewSpecialtyName={setNewSpecialtyName} sports={sports} sportsError={sportsError} />}
-                <div>
-                  <label className={labelClass}>{isEn ? 'Certifications' : 'Chứng chỉ quốc tế'}</label>
-                  <input
-                    className={inputClass}
-                    name="certification"
-                    placeholder={isEn ? 'e.g. NASM-CPT, AFC...' : 'VD: NASM-CPT, AFC...'}
-                    value={form.certification}
-                    onChange={handleFormChange}
-                  />
-                </div>
-                <div>
-                  <label className={labelClass}>{isEn ? 'Years of Experience' : 'Số năm kinh nghiệm'}</label>
-                  <input
-                    className={inputClass}
-                    type="number"
-                    name="experienceYears"
-                    min="0"
-                    max="50"
-                    placeholder={isEn ? 'e.g. 3' : 'VD: 3'}
-                    value={form.experienceYears}
-                    onChange={handleFormChange}
-                  />
-                </div>
+                {form.role === 'COACH' && (
+                  <>
+                    <SpecialtyPicker addingSpecialty={addingSpecialty} form={form} handleAddSpecialty={handleAddSpecialty} isEn={isEn} loadSports={loadSports} newSpecialtyName={newSpecialtyName} saving={saving} setForm={setForm} setNewSpecialtyName={setNewSpecialtyName} sports={sports} sportsError={sportsError} />
+                    <div>
+                      <label className={labelClass}>{isEn ? 'Certifications' : 'Chứng chỉ quốc tế'}</label>
+                      <input
+                        className={inputClass}
+                        name="certification"
+                        placeholder={isEn ? 'e.g. NASM-CPT, AFC...' : 'VD: NASM-CPT, AFC...'}
+                        value={form.certification}
+                        onChange={handleFormChange}
+                      />
+                    </div>
+                    <div>
+                      <label className={labelClass}>{isEn ? 'Years of Experience' : 'Số năm kinh nghiệm'}</label>
+                      <input
+                        className={inputClass}
+                        type="number"
+                        name="experienceYears"
+                        min="0"
+                        max="50"
+                        placeholder={isEn ? 'e.g. 3' : 'VD: 3'}
+                        value={form.experienceYears}
+                        onChange={handleFormChange}
+                      />
+                    </div>
+                  </>
+                )}
               </div>
             </div>
           )}
