@@ -61,3 +61,11 @@ test('canEditPackage returns false if package has subscribers or orders, true ot
   assert.equal(canEditPackage({ status: 'ACTIVE', subscriberCount: 0, hasOrders: false }), true);
 });
 
+test('PackageManagement numeric inputs allow clearing empty string without coercing back to 0', () => {
+  const src = fs.readFileSync(path.resolve(__dirname, '../src/pages/manager-packages/ui/PackageManagement.jsx'), 'utf8');
+  assert.doesNotMatch(src, /setPrice\(Number\(e\.target\.value\)\)/);
+  assert.doesNotMatch(src, /setDurationDays\(Number\(e\.target\.value\)\)/);
+  assert.match(src, /onChange=\{e => setPrice\(e\.target\.value\)\}/);
+  assert.match(src, /onChange=\{e => setDurationDays\(e\.target\.value\)\}/);
+});
+

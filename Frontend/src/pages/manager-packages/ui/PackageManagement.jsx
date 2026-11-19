@@ -236,7 +236,7 @@ export function PackageManagement() {
       return;
     }
 
-    if (Number(durationDays) <= 0) {
+    if (durationDays === '' || !Number.isFinite(Number(durationDays)) || Number(durationDays) <= 0) {
       showError({
         message: isEn ? 'Duration must be at least 1 day.' : 'Thời hạn sử dụng gói phải từ 1 ngày trở lên.',
         code: 'VAL-PKG-DURATION',
@@ -737,8 +737,10 @@ export function PackageManagement() {
                 disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
                 min={1}
                 max={MAX_PACKAGE_PRICE}
+                step="any"
+                placeholder="VD: 500000"
                 value={price}
-                onChange={e => setPrice(Number(e.target.value))}
+                onChange={e => setPrice(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-sage-500 disabled:bg-brand-navy-100 disabled:dark:bg-brand-navy-800/60 disabled:cursor-not-allowed"
               />
               <div className="mt-1.5 flex items-center gap-1 flex-wrap">
@@ -750,7 +752,7 @@ export function PackageManagement() {
                     disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
                     onClick={() => setPrice(qp)}
                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-chivo transition-all cursor-pointer ${
-                      price === qp
+                      price !== '' && Number(price) === qp
                         ? 'bg-brand-sage-700 text-white shadow-xs'
                         : 'bg-brand-navy-100 dark:bg-brand-navy-800 text-brand-navy-600 dark:text-brand-navy-400 hover:bg-brand-navy-200 dark:hover:bg-brand-navy-700'
                     }`}
@@ -770,8 +772,9 @@ export function PackageManagement() {
                 required
                 disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
                 min={1}
+                placeholder="VD: 30"
                 value={durationDays}
-                onChange={e => setDurationDays(Number(e.target.value))}
+                onChange={e => setDurationDays(e.target.value)}
                 className="w-full px-3.5 py-2.5 rounded-xl border border-brand-navy-300 dark:border-brand-navy-700 bg-white dark:bg-brand-navy-800 text-brand-navy-900 dark:text-white text-sm focus:outline-none focus:ring-2 focus:ring-brand-sage-500 disabled:bg-brand-navy-100 disabled:dark:bg-brand-navy-800/60 disabled:cursor-not-allowed"
               />
               <div className="mt-1.5 flex items-center gap-1 flex-wrap">
@@ -783,7 +786,7 @@ export function PackageManagement() {
                     disabled={Boolean(editingPkg && !canEditPackage(editingPkg))}
                     onClick={() => setDurationDays(qd.days)}
                     className={`px-1.5 py-0.5 rounded text-[10px] font-bold font-chivo transition-all cursor-pointer ${
-                      durationDays === qd.days
+                      durationDays !== '' && Number(durationDays) === qd.days
                         ? 'bg-brand-sage-700 text-white shadow-xs'
                         : 'bg-brand-navy-100 dark:bg-brand-navy-800 text-brand-navy-600 dark:text-brand-navy-400 hover:bg-brand-navy-200 dark:hover:bg-brand-navy-700'
                     }`}
