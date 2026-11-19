@@ -244,7 +244,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
       </div>
 
       {/* Chat Studio Box */}
-      <div className="bg-white rounded-3xl border border-brand-navy-200 shadow-sm flex flex-col h-[650px] overflow-hidden">
+      <div data-lenis-prevent className="bg-white rounded-3xl border border-brand-navy-200 shadow-sm flex flex-col h-[650px] overflow-hidden">
         {/* Chat Header Bar */}
         <div className="px-6 py-4 bg-brand-navy-50/80 border-b border-brand-navy-200 flex items-center justify-between">
           <div className="flex items-center gap-3">
@@ -279,7 +279,7 @@ Bạn muốn tìm hiểu thông tin nào hôm nay?`,
         </div>
 
         {/* Messages Body */}
-        <div className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 bg-brand-navy-50/30">
+        <div data-lenis-prevent className="flex-1 p-4 sm:p-6 overflow-y-auto space-y-5 bg-brand-navy-50/30 overscroll-contain">
           {messages.map((msg) => (
             <div
               key={msg.id}

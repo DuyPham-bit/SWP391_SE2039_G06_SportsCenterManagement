@@ -118,6 +118,30 @@ export function installMotion() {
 
 let lenisInstance = null;
 
+function isPreventedScrollNode(node) {
+  if (!node || !(node instanceof Element)) return false;
+  // Fast check for explicitly prevented containers, modal dialogs, popups, chat, notifications, and scrollable classes
+  if (node.closest(
+    '[data-lenis-prevent], [role="dialog"], .scms-modal-stage, .sidebar-scroll-container, .cm-viewport, #member-ai-chat-popup, [class*="overflow-y-auto"], [class*="overflow-auto"], [class*="overflow-y-scroll"], [class*="overflow-x-auto"]'
+  )) {
+    return true;
+  }
+  // Structural check: detect any ancestor with active scrollable overflow
+  let curr = node;
+  while (curr && curr !== document.body && curr !== document.documentElement) {
+    if (curr.scrollHeight > curr.clientHeight || curr.scrollWidth > curr.clientWidth) {
+      const style = window.getComputedStyle(curr);
+      const oy = style.overflowY;
+      const ox = style.overflowX;
+      if (oy === 'auto' || oy === 'scroll' || ox === 'auto' || ox === 'scroll') {
+        return true;
+      }
+    }
+    curr = curr.parentElement;
+  }
+  return false;
+}
+
 /** Lenis smooth scroll: active for non-reduced-motion browsing, respects nested scroll & modals. */
 function installSmoothScroll() {
   if (typeof window === 'undefined' || prefersReducedMotion() || lenisInstance) return;
@@ -128,7 +152,7 @@ function installSmoothScroll() {
       smoothWheel: true,
       wheelMultiplier: 0.95,
       touchMultiplier: 1.4,
-      prevent: (node) => Boolean(node?.closest?.('[role="dialog"], .scms-modal-stage, .sidebar-scroll-container, [data-lenis-prevent], .cm-viewport')),
+      prevent: isPreventedScrollNode,
     });
     lenisInstance = lenis;
     let rafId = 0;
