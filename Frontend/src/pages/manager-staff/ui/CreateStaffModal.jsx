@@ -218,6 +218,7 @@ export function CreateStaffModal({
                 )}
               </div>
 
+              {form.role === 'COACH' && (
               <div>
                 <label className={labelClass}>{isEn ? 'Biography / Notes' : 'Tiểu sử / Ghi chú'}</label>
                 <textarea
@@ -229,6 +230,7 @@ export function CreateStaffModal({
                   onChange={handleFormChange}
                 />
               </div>
+              )}
             </div>
           ) : (
             /* APPOINT MODE */
@@ -453,6 +455,7 @@ export function CreateStaffModal({
                   />
                 </div>
                 {form.role === 'COACH' && <SpecialtyPicker addingSpecialty={addingSpecialty} form={form} handleAddSpecialty={handleAddSpecialty} isEn={isEn} loadSports={loadSports} newSpecialtyName={newSpecialtyName} saving={saving} setForm={setForm} setNewSpecialtyName={setNewSpecialtyName} sports={sports} sportsError={sportsError} />}
+                {form.role === 'COACH' && (<>
                 <div>
                   <label className={labelClass}>{isEn ? 'Certifications' : 'Chứng chỉ quốc tế'}</label>
                   <input
@@ -476,6 +479,7 @@ export function CreateStaffModal({
                     onChange={handleFormChange}
                   />
                 </div>
+                </>)}
               </div>
             </div>
           )}

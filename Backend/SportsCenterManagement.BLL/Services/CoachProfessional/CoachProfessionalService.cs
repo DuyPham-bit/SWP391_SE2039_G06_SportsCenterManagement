@@ -802,19 +802,27 @@ public sealed class CoachProfessionalService(IUnitOfWork unitOfWork, TimeProvide
         return row.Id;
     }
 
+    /// <summary>
+    /// Whether the caller is the coach side of the thread. Decided by the coach profile first: a coach
+    /// appointed from a member account keeps a member profile, and checking that first treated the
+    /// coach as a member ("Bạn không thuộc phạm vi trao đổi với HLV này").
+    /// </summary>
+    private Task<bool> IsThreadCoachAsync(long userId, long coachId, CancellationToken ct) =>
+        db.CoachProfiles.AnyAsync(x => x.Id == coachId && x.UserId == userId, ct);
+
     public async Task<object> Messages(long userId, long coachId, long memberId, CancellationToken ct)
     {
-        var member = await db.MemberProfiles.SingleOrDefaultAsync(x => x.UserId == userId, ct);
-        if (member is not null)
+        if (await IsThreadCoachAsync(userId, coachId, ct))
         {
-            if (member.Id != memberId || !await AssignedMemberIds(coachId).AnyAsync(x => x == memberId, ct))
-                throw BusinessException.Forbidden("Bạn không thuộc phạm vi trao đổi với HLV này.");
+            var coach = await Coach(userId, ct);
+            await EnsureCoachMember(coach.Id, memberId, ct);
         }
         else
         {
-            var coach = await Coach(userId, ct);
-            if (coach.Id != coachId) throw BusinessException.Forbidden("Bạn không được đọc cuộc trò chuyện này.");
-            await EnsureCoachMember(coach.Id, memberId, ct);
+            var member = await db.MemberProfiles.SingleOrDefaultAsync(x => x.UserId == userId, ct)
+                ?? throw BusinessException.Forbidden("Bạn không được đọc cuộc trò chuyện này.");
+            if (member.Id != memberId || !await AssignedMemberIds(coachId).AnyAsync(x => x == memberId, ct))
+                throw BusinessException.Forbidden("Bạn không thuộc phạm vi trao đổi với HLV này.");
         }
         var unread = await db.CoachMessages.Where(x => x.CoachId == coachId && x.MemberId == memberId &&
             x.SenderUserId != userId && x.ReadAt == null).ToListAsync(ct);
@@ -827,22 +835,22 @@ public sealed class CoachProfessionalService(IUnitOfWork unitOfWork, TimeProvide
     public async Task<long> SendMessage(long userId, SendCoachMessageRequest request, CancellationToken ct)
     {
         await using var transaction = await db.Database.BeginTransactionAsync(IsolationLevel.Serializable, ct);
-        var member = await db.MemberProfiles.SingleOrDefaultAsync(x => x.UserId == userId, ct);
         long recipient;
-        if (member is not null)
+        if (await IsThreadCoachAsync(userId, request.CoachId, ct))
         {
-            if (member.Id != request.MemberId || !await AssignedMemberIds(request.CoachId).AnyAsync(x => x == member.Id, ct))
-                throw BusinessException.Forbidden("Bạn không thuộc phạm vi trao đổi với HLV này.");
-            recipient = await db.CoachProfiles.Where(x => x.Id == request.CoachId && x.Status == "Active" &&
+            var coach = await Coach(userId, ct);
+            await EnsureCoachMember(coach.Id, request.MemberId, ct);
+            recipient = await db.MemberProfiles.Where(x => x.Id == request.MemberId &&
                     db.Users.Any(u => u.Id == x.UserId && u.Status == "Active"))
                 .Select(x => x.UserId).SingleOrDefaultAsync(ct);
         }
         else
         {
-            var coach = await Coach(userId, ct);
-            if (coach.Id != request.CoachId) throw BusinessException.Forbidden("Bạn không được gửi tin trong cuộc trò chuyện này.");
-            await EnsureCoachMember(coach.Id, request.MemberId, ct);
-            recipient = await db.MemberProfiles.Where(x => x.Id == request.MemberId &&
+            var member = await db.MemberProfiles.SingleOrDefaultAsync(x => x.UserId == userId, ct)
+                ?? throw BusinessException.Forbidden("Bạn không được gửi tin trong cuộc trò chuyện này.");
+            if (member.Id != request.MemberId || !await AssignedMemberIds(request.CoachId).AnyAsync(x => x == member.Id, ct))
+                throw BusinessException.Forbidden("Bạn không thuộc phạm vi trao đổi với HLV này.");
+            recipient = await db.CoachProfiles.Where(x => x.Id == request.CoachId && x.Status == "Active" &&
                     db.Users.Any(u => u.Id == x.UserId && u.Status == "Active"))
                 .Select(x => x.UserId).SingleOrDefaultAsync(ct);
         }

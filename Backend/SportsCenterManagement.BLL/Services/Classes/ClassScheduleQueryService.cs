@@ -280,7 +280,15 @@ public sealed class ClassScheduleQueryService(IUnitOfWork unitOfWork) : IClassSc
                 session.SessionStatus,
                 ClassStatus = cls.Status,
                 cls.Capacity,
-                Booked = Db.SessionBookings.Count(b => b.SessionId == session.Id && b.Status == FlowStatuses.BookingBooked)
+                // Same people as the attendance roster (ClassRepository.GetSessionRosterAsync): members who
+                // booked this session OR are enrolled in the class. Counting bookings alone showed 0/16 for
+                // a class whose 8 enrolled members are all on the roll call.
+                Booked = Db.MemberProfiles.Count(member =>
+                    Db.Users.Any(user => user.Id == member.UserId && user.Status == "Active") &&
+                    (Db.SessionBookings.Any(b => b.SessionId == session.Id && b.MemberId == member.Id
+                            && b.Status == FlowStatuses.BookingBooked) ||
+                     Db.ClassEnrollments.Any(e => e.ClassId == cls.Id && e.MemberId == member.Id &&
+                            (e.Status == "Active" || e.Status == "Confirmed" || e.Status == "Enrolled"))))
             }).ToListAsync(cancellationToken);
 
         return rows.Select(r => new TeachingScheduleItemResponse(

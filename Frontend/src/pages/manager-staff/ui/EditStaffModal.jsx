@@ -2,6 +2,7 @@ import React from 'react';
 import { Modal } from '../../../shared/ui/Modal.jsx';
 import { labelClass, inputClass } from './formStyles.js';
 import { SpecialtyPicker } from './SpecialtyPicker.jsx';
+import { today } from '../lib/staffDisplay.js';
 
 export function EditStaffModal({
   addingSpecialty, editingStaff, form, handleAddSpecialty, handleFormChange, handleSaveStaff, isEn,
@@ -74,6 +75,7 @@ export function EditStaffModal({
                 className={inputClass}
                 type="date"
                 name="hireDate"
+                max={today()}
                 value={form.hireDate}
                 onChange={handleFormChange}
               />
@@ -81,6 +83,8 @@ export function EditStaffModal({
 
             {form.role === 'COACH' && <SpecialtyPicker addingSpecialty={addingSpecialty} form={form} handleAddSpecialty={handleAddSpecialty} isEn={isEn} loadSports={loadSports} newSpecialtyName={newSpecialtyName} saving={saving} setForm={setForm} setNewSpecialtyName={setNewSpecialtyName} sports={sports} sportsError={sportsError} />}
 
+            {/* Certification, experience and bio live on the coach profile, so only coaches have them. */}
+            {form.role === 'COACH' && (<>
             <div>
               <label className={labelClass}>{isEn ? 'Certifications' : 'Chứng chỉ đào tạo quốc tế'}</label>
               <input
@@ -116,6 +120,7 @@ export function EditStaffModal({
                 onChange={handleFormChange}
               />
             </div>
+            </>)}
           </div>
 
           <div className="pt-4 border-t border-brand-navy-100 dark:border-brand-navy-800 flex items-center justify-end gap-3">
