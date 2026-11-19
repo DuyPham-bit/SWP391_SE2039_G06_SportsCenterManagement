@@ -4,7 +4,8 @@ import { useLanguage } from '../../../shared/i18n/index.js';
 export function ZonesSection({ facilitiesList, hours }) {
   const { t } = useLanguage();
   return (
-    <section className="section-bg-image">
+    // Carries the "ve-chung-toi" anchor (nav "About us", hero scroll cue) since the empty About section was removed.
+    <section className="section-bg-image" id="ve-chung-toi" style={{ scrollMarginTop: '72px' }}>
       {/* Top Wave: White #ffffff */}
       <svg className="section-bg-image-top-wave" viewBox="0 0 1265 144" xmlns="http://www.w3.org/2000/svg" preserveAspectRatio="none">
         <path fill="rgba(255, 255, 255, 1)" d="M 0 40 C 164 40 164 20 328 20 L 328 20 L 328 0 L 0 0 Z" strokeWidth="0" />

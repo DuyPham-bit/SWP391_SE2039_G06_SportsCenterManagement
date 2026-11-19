@@ -4,7 +4,6 @@ import { IntroSplashScreen } from './IntroSplashScreen.jsx';
 import { useLandingPage } from '../model/useLandingPage.js';
 import { LandingHeader } from './LandingHeader.jsx';
 import { HeroSection } from './HeroSection.jsx';
-import { AboutSection } from './AboutSection.jsx';
 import { ZonesSection } from './ZonesSection.jsx';
 import { CoursesSection } from './CoursesSection.jsx';
 import { LandingFooter } from './LandingFooter.jsx';
@@ -12,7 +11,7 @@ import { LandingFooter } from './LandingFooter.jsx';
 export function LandingPage() {
   const {
     activeNav, catalog, catalogError, catalogLoading, categoryConfig, coursesDropdownRef,
-    editorialContent, editorialError, editorialLoaded, editorialStats, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
+    editorialContent, editorialError, editorialLoaded, facilitiesList, filteredSports, getDashboardLink, handleCoursesMouseEnter,
     handleCoursesMouseLeave, handleNavClick, handleScrollSportsToIndex, handleSelectMenuItem,
     handleSportClick, handleSportsScroll, highlightedSportId, hours, isAuthenticated,
     isCoursesDropdownOpen, isMobileCoursesOpen, isMobileMenuOpen, isScrolled, isVideoMuted,
@@ -81,11 +80,6 @@ export function LandingPage() {
         setIsVideoMuted={setIsVideoMuted}
         videoRef={videoRef}
       />
-
-      {/* ─────────────────────────────────────────────────────────────
-          2. ABOUT SECTION (Tiya Pure White Background #ffffff)
-      ───────────────────────────────────────────────────────────── */}
-      <AboutSection landingContent={landingContent} stats={editorialStats} />
 
       {/* ─────────────────────────────────────────────────────────────
           3. BACKGROUND IMAGE SECTION WITH FROSTED GLASS BLOCK (Tiya Signature)
